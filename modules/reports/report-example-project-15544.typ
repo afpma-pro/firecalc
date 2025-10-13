@@ -1,3 +1,8 @@
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+//
+
 #import "@preview/fancy-units:0.1.1": num, unit, qty, fancy-units-configure, add-macros
 #import "@preview/based:0.1.0": base64
 
