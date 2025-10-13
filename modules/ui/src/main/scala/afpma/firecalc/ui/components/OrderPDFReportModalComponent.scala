@@ -118,13 +118,26 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
     import scala.scalajs.js
     import scala.util.{Try, Success, Failure}
 
-    /** Convert AppState (FireCalcYAML) to base64-encoded YAML string using JavaScript btoa */
+    /** Convert AppState (FireCalcYAML) to base64-encoded YAML string using UTF-8 safe encoding.
+      * Uses TextEncoder to properly handle Unicode characters (e.g., Greek letters like ζ)
+      * that are outside the Latin1 range, which standard btoa() cannot handle.
+      */
     private def convertProjectToBase64(fireCalcYaml: FireCalcYAML): Try[String] =
         // Use CustomYAMLEncoderDecoder to convert to YAML string
         AppState.encodeToYaml(fireCalcYaml).flatMap { yamlString =>
             Try {
-                // Use JavaScript's btoa to encode to base64
-                js.Dynamic.global.btoa(yamlString).asInstanceOf[String]
+                // Use TextEncoder to convert UTF-8 string to bytes
+                val textEncoder = js.Dynamic.newInstance(js.Dynamic.global.TextEncoder)()
+                val utf8Bytes = textEncoder.encode(yamlString)
+                
+                // Convert Uint8Array bytes to binary string
+                val byteArray = utf8Bytes.asInstanceOf[js.typedarray.Uint8Array]
+                val binString = (0 until byteArray.length).map { i =>
+                    js.Dynamic.global.String.fromCodePoint(byteArray(i)).asInstanceOf[String]
+                }.mkString("")
+                
+                // Encode binary string to base64
+                js.Dynamic.global.btoa(binString).asInstanceOf[String]
             }
         }
 
@@ -160,6 +173,7 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
             case Failure(error) =>
                 val errorMsg = s"Failed to convert project to base64: ${error.getMessage}"
                 dom.console.error(errorMsg)
+                // dom.console.error(error.getStackTrace().toList.mkString("\n"))
                 Left(errorMsg)
         
         // If conversion failed, return error immediately
@@ -294,10 +308,10 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
             case Right(response) =>
                 // Store the response in the state on success
                 verify_and_process_response_var.set(Some(Right(response)))
-                dom.console.log(s"Verification successful. Payment URL: ${response.paymentUrl}")
+                // dom.console.log(s"Verification successful. Payment URL: ${response.paymentUrl}")
             case Left(errorMessage) =>
                 // Log error and store in state for display
-                dom.console.error(s"Verification failed: $errorMessage")
+                // dom.console.error(s"Verification failed: $errorMessage")
                 verify_and_process_response_var.set(Some(Left(errorMessage)))
         }
 
