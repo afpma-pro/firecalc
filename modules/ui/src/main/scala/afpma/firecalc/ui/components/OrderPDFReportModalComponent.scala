@@ -5,6 +5,7 @@
 
 package afpma.firecalc.ui.components
 
+import scala.scalajs.js
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.FireCalcProjet
@@ -338,6 +339,22 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
             dialogTag(
                 idAttr := modal_id,
                 cls    := "modal",
+                onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]](
+                    mount = ctx => {
+                        val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
+                        val closeHandler: js.Function1[dom.Event, Unit] = _ => {
+                            pdf_report_ordering_var.set(PDFReportOrderingState.init)
+                        }
+                        dialog.addEventListener("close", closeHandler)
+                        closeHandler
+                    },
+                    unmount = (thisNode, maybeHandler) => {
+                        maybeHandler.foreach { handler =>
+                            val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
+                            dialog.removeEventListener("close", handler)
+                        }
+                    }
+                ),
                 div(
                     cls := "modal-box w-8/12 max-w-5xl max-h-10/12",
                     h3(
@@ -364,18 +381,6 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                         ),
                         div(cls := "divider"),
                         BillingInfoUI()._form,
-                        // label(
-                        //     cls := "label",
-                        //     input(
-                        //         tpe := "checkbox",
-                        //         defaultChecked <-- pdf_report_ordering_sig.map(_.cgv_accepted),
-                        //         onClick.mapToChecked --> { accepted => 
-                        //             pdf_report_ordering_var.update(_.copy(cgv_accepted = accepted)) 
-                        //         },
-                        //         cls := "checkbox"
-                        //     ),
-                        //     "J'accepte les Conditions Générales de Vente"
-                        // ),
 
                         // CGV
 
@@ -581,19 +586,10 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                                 ),
                                 div(cls := "flex-1", ""),
                             )
-                        ),
-                        
-                        // button(
-                        //     cls := "btn btn-outline btn-accent",
-                        //     "CLIQUER POUR PASSER AU PAIEMENT"
-                        // ),
+                        ),  
                     ),
                     div(
                         cls := "modal-action",
-                        // button(
-                        //     cls := "btn btn-outline btn-accent",
-                        //     "Passer au paiement"
-                        // ),
                         form(
                             method := "dialog",
                             button(

@@ -281,7 +281,7 @@ object PaymentsBackendApiConnectivity:
         // Create a var to track if we should stop polling
         var shouldContinuePolling = true
 
-        scalajs.js.Dynamic.global.console.log("creating new polling stream")
+        // scalajs.js.Dynamic.global.console.log("creating new polling stream")
         
         // Create the polling stream
         val pollingStream = EventStream
