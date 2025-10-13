@@ -187,7 +187,7 @@ object Main extends IOApp:
 
       pdfReportEmail = PdfReportEmail(
         email = EmailAddress(context.customer.email),
-        reportName = fileDesc.filename.replace(".yaml", "").replace(".yml", ""),
+        reportName = fileDesc.filename,
         customerName = context.customer.individualNameOrCompanyName,
         orderId = Some(context.order.id.value.toString),
         pdfBytes = Files.readAllBytes(pdfReportFile.toPath),
