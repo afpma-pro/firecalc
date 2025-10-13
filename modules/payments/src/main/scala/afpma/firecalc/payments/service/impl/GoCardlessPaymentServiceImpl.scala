@@ -30,6 +30,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import java.util.Base64
 import scala.deriving.Mirror
+import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
 
 case class GoCardlessConfig private (
     accessToken: String,
@@ -910,23 +911,20 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             productOpt <- orderService.findProduct(orderId)
             product <- Async[F].fromOption(productOpt, new RuntimeException(s"Product for order ${orderId.value} not found when sending payment link email"))
             
-            // Combine product name and description for a richer email experience
-            productDisplayName = s"${product.name} - ${product.description}"
-            
             // Use the language from the order to ensure consistency
             languageFromOrder = order.language
             
             paymentLinkEmail = PaymentLinkEmail(
                 email = EmailAddress(customerEmail),
                 paymentUrl = paymentUrl,
-                productName = productDisplayName,
+                productName = product.name,
                 amount = amount
             )
             
             // Send email using the order's language for proper translations
             _ <- emailService.sendUserPaymentLink(paymentLinkEmail)(using languageFromOrder)
             
-            _ <- logger.info(s"Payment link email sent to $customerEmail for order ${orderId.value} with product: $productDisplayName in language: ${languageFromOrder.code}")
+            _ <- logger.info(s"Payment link email sent to $customerEmail for order ${orderId.value} with product: ${product.name} in language: ${languageFromOrder.code}")
         } yield ()
 
 object GoCardlessPaymentServiceImpl:

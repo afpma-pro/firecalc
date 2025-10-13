@@ -112,9 +112,12 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
   override def sendUserPaymentLink(paymentLink: PaymentLinkEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
     val translations = I18N_Payments
     
+    val prodNameI18nKey = paymentLink.productName
+    val translatedProductName = lookupTranslation(prodNameI18nKey).getOrElse(prodNameI18nKey)
+
     val mail = createEmilMail(
       to = paymentLink.email,
-      subject = translations.emails.payment_link.subject(paymentLink.productName),
+      subject = translations.emails.payment_link.subject(translatedProductName),
       htmlContent = buildPaymentLinkContent(paymentLink)
     )
 
@@ -286,6 +289,10 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     val translations = I18N_Payments
     val currentDate = java.time.LocalDate.now().toString
 
+    val prodNameI18nKey = invoice.productName
+    val translatedProductName = lookupTranslation(prodNameI18nKey).getOrElse(prodNameI18nKey)
+
+
     s"""
     |<html>
     |<body>
@@ -295,7 +302,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |  <ul>
     |    <li><strong>${translations.emails.invoice.order_details.order_id_label}</strong> ${invoice.orderId}</li>
     |    <li><strong>${translations.emails.invoice.invoice_number_label}</strong> ${invoice.invoiceNumber}</li>
-    |    <li><strong>${translations.emails.invoice.order_details.product_label}</strong> ${invoice.productName}</li>
+    |    <li><strong>${translations.emails.invoice.order_details.product_label}</strong> ${translatedProductName}</li>
     |    <li><strong>${translations.emails.invoice.customer_label}</strong> ${invoice.customerName}</li>
     |    <li><strong>${translations.emails.invoice.order_details.amount_label}</strong> ${invoice.amount} ${invoice.currency}</li>
     |    <li><strong>${translations.emails.invoice.order_details.date_label}</strong> $currentDate</li>
