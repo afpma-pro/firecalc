@@ -12,6 +12,7 @@ import afpma.firecalc.ui.services.VersionService
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import io.taig.babel.Locale
 import afpma.firecalc.utils.BuildInfo
+import afpma.firecalc.ui.config.ViteEnv
 
 final case class Footer()(using Locale) extends Component {
 
@@ -41,9 +42,13 @@ final case class Footer()(using Locale) extends Component {
         cls := "flex flex-col justify-center items-center py-2 my-2",
         p(
           cls := "col-md-4 mb-0 text-gray-400",
-          I18N_UI.footer.app_name
+          s"${I18N_UI.footer.app_name}"
         ),
-        versionElement
+        versionElement,
+        p(
+          cls := "col-md-4 mb-0 text-gray-400",
+          s"[${ViteEnv.modeString}]"
+        ),
       ),
     //   div(
     //     cls := "flex justify-center items-center",

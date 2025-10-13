@@ -36,8 +36,6 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                                 p(
                                     cls := "flex-none text-base-content/40 text-sm self-center mt-1",
                                     s"(${summon[Locale].language.value})",
-                                    " - ",
-                                    s"[${ViteEnv.modeString}]"
                                 )
                             ),
                             buttonString = I18N_UI.buttons.menu
