@@ -30,7 +30,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
 
     test("ProductRepository.upsert - create new product from catalog") {
       // Given a test product from the development catalog
-      val testProduct = DevelopmentProductCatalog.TEST_PRODUCT
+      val testProduct = DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023
       
       val result = (for {
         conn <- setupTestDatabase
@@ -110,7 +110,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
       // Then it should be the development catalog
       assert(catalog == DevelopmentCatalog)
       assert(catalog.allProducts.nonEmpty)
-      assert(catalog.allProducts.contains(DevelopmentProductCatalog.TEST_PRODUCT))
+      assert(catalog.allProducts.contains(DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023))
     }
 
     test("ProductCatalogSelector - return staging catalog") {
@@ -120,7 +120,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
       // Then it should be the staging catalog
       assert(catalog == StagingCatalog)
       assert(catalog.allProducts.nonEmpty)
-      assert(catalog.allProducts.contains(StagingProductCatalog.PDF_REPORT_EN_15544_2023_STAGING))
+      assert(catalog.allProducts.contains(StagingProductCatalog.PDF_REPORT_EN_15544_2023))
     }
 
     test("ProductCatalogSelector - return production catalog") {
@@ -184,7 +184,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
 
     test("Product catalogs - consistent product IDs between staging and production") {
       // Given staging and production catalogs
-      val stagingProduct = StagingProductCatalog.PDF_REPORT_EN_15544_2023_STAGING
+      val stagingProduct = StagingProductCatalog.PDF_REPORT_EN_15544_2023
       val productionProduct = ProductionProductCatalog.PDF_REPORT_EN_15544_2023
       
       // Then staging and production should use the same product ID

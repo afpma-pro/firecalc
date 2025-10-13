@@ -283,20 +283,20 @@ object v1:
 
     /** Development product catalog - use in development/testing */
     object DevelopmentProductCatalog:
-      val TEST_PRODUCT = ProductInfo(
-        id = ProductId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000001")),
-        nameKey = "products.test.name",
-        descriptionKey = "products.test.description",
-        price = BigDecimal(1.00),
+      val PDF_REPORT_EN_15544_2023 = ProductInfo(
+        id = ProductId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000002")),
+        nameKey = "products.pdf_report_EN_15544_2023.name",
+        descriptionKey = "products.pdf_report_EN_15544_2023.description",
+        price = BigDecimal(89.00),
         currency = "EUR",
         active = true
       )
       
-      val allProducts: List[ProductInfo] = List(TEST_PRODUCT)
+      val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
 
     /** Staging product catalog - use in staging environment for testing production-like products */
     object StagingProductCatalog:
-      val PDF_REPORT_EN_15544_2023_STAGING = ProductInfo(
+      val PDF_REPORT_EN_15544_2023 = ProductInfo(
         id = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")), // Same ID as production
         nameKey = "products.pdf_report_EN_15544_2023.name",
         descriptionKey = "products.pdf_report_EN_15544_2023.description",
@@ -305,7 +305,7 @@ object v1:
         active = true
       )
       
-      val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023_STAGING)
+      val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
 
     /** Trait representing a product catalog */
     sealed trait ProductCatalog:

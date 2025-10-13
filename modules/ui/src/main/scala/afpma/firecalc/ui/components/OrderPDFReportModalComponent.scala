@@ -8,7 +8,7 @@ package afpma.firecalc.ui.components
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.FireCalcProjet
-import afpma.firecalc.ui.config.UIConfig
+import afpma.firecalc.ui.config.{UIConfig, ViteEnv, BuildMode}
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.utils.PaymentsBackendApiConnectivity
@@ -133,8 +133,11 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
         // Get language from current locale
         val language: BillingLanguage = locale.transformInto[BillingLanguage]
         
-        // TODO: Replace with actual product ID - this is a placeholder
-        val productId = ProductId(UUID.fromString("2fe6ed7d-b953-419b-8d7e-12ef8455ad0d"))
+        // Select product ID based on build mode
+        val productId = ViteEnv.buildMode match
+            case BuildMode.Development  => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case BuildMode.Staging      => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case BuildMode.Production   => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.id
         
         // Use transformers to convert BillingInfo + language to CustomerInfo
         val billingInfoWithLanguage = BillingInfoWithLanguage.fromBillingInfoAndLanguage(
