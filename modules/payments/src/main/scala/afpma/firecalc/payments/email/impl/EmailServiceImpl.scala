@@ -214,11 +214,13 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
   }
 
   private def sendEmilMail(mail: Mail[F]): F[EmailResult] = {
-    emil(smtpConfig).send(mail).map(_ => EmailSent).handleErrorWith { error =>
-      for {
-        _ <- logger.error(error)(s"Failed to send email")
-      } yield EmailFailed(error.getMessage)
-    }
+    Async[F].blocking {
+      emil(smtpConfig).send(mail).map(_ => EmailSent).handleErrorWith { error =>
+        for {
+          _ <- logger.error(error)(s"Failed to send email")
+        } yield EmailFailed(error.getMessage)
+      }
+    }.flatten
   }
 
   // DRY helper methods for common operations
