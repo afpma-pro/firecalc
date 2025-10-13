@@ -56,8 +56,8 @@ case class GoCardlessConfig private (
 }
 
 object GoCardlessConfig:
-    def sandbox(domain: String, protocol: "http" | "https", adminEmail: String) = GoCardlessConfig(
-        accessToken = "sandbox_GC_TOKEN",
+    def sandbox(accessToken: String, domain: String, protocol: "http" | "https", adminEmail: String) = GoCardlessConfig(
+        accessToken = accessToken,
         baseUrl = "https://api-sandbox.gocardless.com",
         environment = "sandbox",
         redirectUri = s"$protocol://$domain/v1/payment_complete",

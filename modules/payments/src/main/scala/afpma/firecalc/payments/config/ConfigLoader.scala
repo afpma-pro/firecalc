@@ -63,8 +63,9 @@ object ConfigLoader:
             val protocol: "http" | "https" = if (redirectUri.startsWith("https://")) "https" else "http"
             val domain = redirectUri.replace("https://", "").replace("http://", "").split("/")(0)
             val adminEmail = sandboxConfig.getString("admin-email")
+            val accessToken = sandboxConfig.getString("access-token")
             
-            GoCardlessConfig.sandbox(domain, protocol, adminEmail)
+            GoCardlessConfig.sandbox(accessToken, domain, protocol, adminEmail)
                 .withWebhookSecret(sandboxConfig.getString("webhook-secret"))
         }
 
