@@ -13,6 +13,14 @@ Dimensioning software for one‑off masonry heaters (EN 15544, EN 13384).
 
 We welcome early adopters to test the software and provide feedback. Please report any issues you encounter.
 
+## Compliant PDF Report
+
+This software can generate detailed PDF report, compliant with [NF EN 15544:2023](https://www.boutique.afnor.org/fr-fr/norme/nf-en-15544/poeles-en-faience-poeles-en-maconnerie-fabriques-in-situ-dimensionnement/fa201853/344826)
+
+See example here : [🗎 PDF Report Example](modules/reports/report-example-project-15544.pdf)
+
+⚠️ We're still waiting for **official validation** from French authorities
+
 ## 📖 Documentation
 
 **[Complete Documentation →](docs/README.md)**

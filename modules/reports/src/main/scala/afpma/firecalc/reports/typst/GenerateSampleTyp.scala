@@ -18,7 +18,16 @@ import io.taig.babel.Locale
 import scala.io.Source
 import io.github.fatihcatalkaya.javatypst.JavaTypst
 import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict
+import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 
+/**
+ * Fast iteration tool for PDF/Typst report generation
+ * 
+ * Usage:
+ * - Run: sbt "reports/runMain afpma.firecalc.reports.typst.GenerateSampleTyp"
+ * - Auto-reload: sbt "~reports/runMain afpma.firecalc.reports.typst.GenerateSampleTyp"
+ * 
+ */
 object GenerateSampleTyp:
 
     def main(args: Array[String]): Unit = 
@@ -29,7 +38,7 @@ object GenerateSampleTyp:
 
         FireCalcReportFactory_15544_Strict
             .init()
-            .loadFireCalcProject(CasType_15544_C3)
+            .loadFireCalcProject(ExampleProject_15544)
             .fold(
                 err => 
                     System.err.println(err)
@@ -44,7 +53,7 @@ object GenerateSampleTyp:
                             System.exit(-1)
                         case Right(typstString) =>
                             println("Writing intermediate .typ file...")
-                            val typOutPath = wd / "modules" / "reports" / "report-example.typ"
+                            val typOutPath = wd / "modules" / "reports" / "report-example-project-15544.typ"
                             os.write.over(
                                 typOutPath,
                                 typstString
@@ -60,7 +69,7 @@ object GenerateSampleTyp:
                     
                         case Right(pdfBuffer) =>
                             println("Generating PDF...")
-                            val outPath = wd / "modules" / "reports" / "report-example.pdf"
+                            val outPath = wd / "modules" / "reports" / "report-example-project-15544.pdf"
                             os.write.over(
                                 outPath,
                                 pdfBuffer
