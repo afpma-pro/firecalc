@@ -35,6 +35,8 @@ EXCLUDE_PATTERNS=(
     "*.gif"
     "*.ico"
     "*.pdf"
+    "modules/reports/report-*.typ"
+    "modules/reports/report-*.pdf"
 )
 
 # Specific files to exclude
