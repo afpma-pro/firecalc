@@ -24,6 +24,7 @@ import emil.builder.Trans
 import afpma.firecalc.payments.i18n.implicits.given
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.email.*
+import afpma.firecalc.payments.shared.i18n.implicits.lookupTranslation
 import io.taig.babel.{Locale, Locales}
 
 class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailService[F] {
@@ -260,8 +261,9 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
       translations.emails.authentication.intro_existing_user
     }
     
-    val productText = authCode.productName.fold("")(name => 
-      s"<p>${translations.emails.authentication.product_info(name)}</p>"
+    val productText = authCode.productName.fold("")(i18nKey =>
+      val translatedProductName = lookupTranslation(i18nKey).getOrElse(i18nKey)
+      s"<p>${translations.emails.authentication.product_info(translatedProductName)}</p>"
     )
 
     s"""
@@ -306,13 +308,15 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
 
   private def buildPaymentLinkContent(paymentLink: PaymentLinkEmail)(using language: BackendCompatibleLanguage): String = {
     val translations = I18N_Payments
+    
+    val translatedProductName = lookupTranslation(paymentLink.productName).getOrElse(paymentLink.productName)
 
     s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.payment_link.greeting}</h2>
     |  <p>${translations.emails.payment_link.intro}</p>
-    |  <p><strong>${translations.emails.authentication.product_info(paymentLink.productName)}</strong></p>
+    |  <p><strong>${translations.emails.authentication.product_info(translatedProductName)}</strong></p>
     |  <p>${translations.emails.payment_link.amount_info(s"${translations.common.currency_symbol}${paymentLink.amount}")}</p>
     |  <p><a href="${paymentLink.paymentUrl}" style="background-color: #4CAF50; color: white; padding: 15px 32px; text-decoration: none; display: inline-block; border-radius: 4px;">${translations.emails.payment_link.payment_button}</a></p>
     |  <p><em>${translations.emails.payment_link.expiry_note}</em></p>
