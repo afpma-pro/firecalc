@@ -26,33 +26,45 @@ object FireCalcProjet:
 
     case class HardCodedAppStateComponent(nextAppState: AppState, buttonTitle: String)(using Locale) extends Component:
         lazy val node = 
-            DaisyUITooltip(
-                ttContent = p(I18N_UI.tooltips.load_project(buttonTitle)),
-                element = 
-                    div(
-                        cls := "h-4 cursor-pointer",
-                        buttonTitle,
-                        onClick --> { _ => 
-                            appStateVar.set(nextAppState)
-                        }
-                    ),
-                ttPosition = "tooltip-bottom"
+            div( 
+                cls := "h-5",
+                DaisyUITooltip(
+                    ttContent = p(I18N_UI.tooltips.load_project("'Exemple'")),
+                    element = 
+                        div(
+                            cls := "h-4 cursor-pointer",
+                            div(
+                                cls := "flex flex-row items-center gap-x-2",
+                                lucide.`file-question-mark`(stroke_width = 1),
+                                // p( cls := "text-sm", buttonTitle),
+                            ),
+                            onClick --> { _ => 
+                                appStateVar.set(nextAppState)
+                            }
+                        ),
+                    ttPosition = "tooltip-bottom"
+                )
             )
+            
     
     case class NewBlankComponent()(using Locale) extends Component:
         lazy val node = 
-            DaisyUITooltip(
-                ttContent = p(I18N_UI.tooltips.new_project),
-                element = 
-                    div(
-                        cls := "w-4 h-4 cursor-pointer",
-                        lucide.`file`(stroke_width = 1),
-                        onClick --> { _ => 
-                            appStateVar.set(AppState.init)
-                        }
-                    ),
-                ttPosition = "tooltip-bottom"
+            div(
+                cls := "",
+                DaisyUITooltip(
+                    ttContent = p(I18N_UI.tooltips.new_project),
+                    element = 
+                        div(
+                            cls := "w-4 h-4 cursor-pointer",
+                            lucide.`file`(stroke_width = 1),
+                            onClick --> { _ => 
+                                appStateVar.set(AppState.init)
+                            }
+                        ),
+                    ttPosition = "tooltip-bottom"
+                )
             )
+            
 
 
     case class BackupComponent()(using Locale) extends Component:
@@ -119,7 +131,7 @@ object FireCalcProjet:
             
             
 
-    
+
     case class UploadComponent()(using Locale) extends Component:
 
         val isLoadingVar = Var(false)

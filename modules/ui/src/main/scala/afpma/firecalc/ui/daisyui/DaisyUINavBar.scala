@@ -51,21 +51,25 @@ object DaisyUINavBar:
                 titleLeftNode
             ),
             div(
-                cls := "flex-1 flex flex-row justify-center gap-x-6",
+                cls := "flex-1 flex flex-row items-center justify-center gap-x-6",
                 FireCalcProjet.NewBlankComponent(),
                 FireCalcProjet.UploadComponent(),
                 FireCalcProjet.BackupComponent(),
+                FireCalcProjet.HardCodedAppStateComponent(
+                    nextAppState = AppState.example_projet_15544,
+                    buttonTitle = I18N_UI.buttons.load_example_project_15544
+                ),
             ),
             // OPTIONAL
             
-            div(
-                cls := "flex-1 flex flex-row justify-center gap-x-6",
+            // div(
+            //     cls := "flex-1 flex flex-row justify-center gap-x-6",
 
-                FireCalcProjet.HardCodedAppStateComponent(
-                    nextAppState = AppState.init_as_CasType_15544_C3,
-                    buttonTitle = I18N_UI.buttons.load_case_type_c3
-                ),
-            ),
+            //     FireCalcProjet.HardCodedAppStateComponent(
+            //         nextAppState = AppState.example_projet_15544,
+            //         buttonTitle = I18N_UI.buttons.load_example_project_15544
+            //     ),
+            // ),
 
             // OPTIONAL
 

@@ -38,6 +38,7 @@ import afpma.firecalc.dto.FireCalcYAML
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
+import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 
 type AppState = FireCalcYAML
 
@@ -45,6 +46,25 @@ object AppState:
 
     // given Decoder[AppState] = FireCalcYAML_V1.decoder
     // given Encoder[AppState] = FireCalcYAML_V1.encoder
+
+    val example_projet_15544 = FireCalcYAML_V1(
+        locale                          = Locale(Languages.Fr),
+        display_units                   = DisplayUnits.SI,
+        standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
+        project_description             = ProjectDescr(
+            reference = ExampleProject_15544.project.reference,
+            date      = ExampleProject_15544.project.date,
+            country   = ExampleProject_15544.project.country
+        ),
+        local_conditions                = ExampleProject_15544.localConditions,
+        stove_params                    = ExampleProject_15544.stoveParams,
+        air_intake_descr                = ExampleProject_15544.conduit_air_descr,
+        firebox                         = ExampleProject_15544.foyer_descr.transformInto[Firebox.EcoLabeled](using From_CalculPdM_V_0_2_32.transformer_inv_EcoLabeled),
+        flue_pipe_descr                 = ExampleProject_15544.accumulateur_descr,
+        connector_pipe_descr            = ExampleProject_15544.conduit_raccordement_descr,
+        chimney_pipe_descr              = ExampleProject_15544.conduit_fumees_descr,
+    )
+        
 
     val init_as_CasType_15544_C3 = FireCalcYAML_V1(
         locale                          = Locale(Languages.Fr),

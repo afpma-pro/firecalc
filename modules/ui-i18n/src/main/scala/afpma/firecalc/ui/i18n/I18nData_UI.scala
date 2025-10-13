@@ -3,6 +3,11 @@
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
 
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
 package afpma.firecalc.ui.i18n
 
 import afpma.firecalc.ui.i18n.I18nData_UI.*
@@ -32,7 +37,7 @@ object I18nData_UI:
   case class Buttons(
     add: String,
     cancel: String,
-    load_case_type_c3: String,
+    load_example_project_15544: String,
     menu: String,
     order_pdf_report: String,
     units: String,
