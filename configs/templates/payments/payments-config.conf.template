@@ -3,24 +3,36 @@
 # Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 #
 
-# Payments Configuration
-# This file configures invoice number generation and other payment-related settings
+# Payments Configuration Template
+# 
+# IMPORTANT: This template should be copied to the appropriate environment directory:
+#   - configs/dev/payments/payments-config.conf (for development)
+#   - configs/staging/payments/payments-config.conf (for staging)
+#   - configs/prod/payments/payments-config.conf (for production)
+#
+# Each environment directory should contain ONLY its own configuration section.
+# Update the 'environment' field and the section name to match your target environment.
 
 payments {
-  # Default environment - can be overridden by setting payments.environment
+  # Set this to match your environment: "development", "staging", or "production"
   environment = "development"
   
-  # Development/Testing Configuration
+  # Configuration section - rename this to match your environment
+  # (e.g., "development", "staging", or "production")
   development {
-    # Product catalog to use: "development" or "production"
+    # Product catalog to use: "development", "staging", or "production"
     product-catalog = "development"
     
     database {
       filename = "firecalc-payments-dev.db"
-      path = "./firecalc-payments-dev.db"
+      path = "./databases/dev/firecalc-payments-dev.db"
     }
     
     invoice {
+      # Invoice number prefix - customize per environment:
+      # - Development: "FCALC-DEV-[YYYY]-"
+      # - Staging: "FCALC-STG-[YYYY]-"
+      # - Production: "FCALC-[YYYY]-"
       number-prefix = "FCALC-DEV-[YYYY]-"
       number-digits = 4
       counter-starting-number = 1
@@ -29,90 +41,29 @@ payments {
     
     invoice-generation {
       enabled = true
-      config-file-path = "../../modules/invoices/configs/company-invoice.yaml"
+      # Update path to match your environment directory
+      config-file-path = "configs/dev/invoices/company-invoice.yaml"
       email-enabled = true
       pdf-generation-enabled = true
     }
     
     retry {
+      # Development/Staging: More retries, shorter delays for faster feedback
+      # Production: Fewer retries, longer delays for stability
       max-retries = 5
       base-delay-ms = 1000
       max-delay-ms = 30000
     }
     
     admin {
+      # Update with environment-specific admin email
       email = "admin-dev@example.com"
     }
-  }
-  
-  # Staging Configuration
-  staging {
-    # Product catalog to use: "development", "staging", or "production"
-    product-catalog = "staging"
     
-    database {
-      filename = "firecalc-payments-staging.db"
-      path = "./firecalc-payments-staging.db"
-    }
-    
-    invoice {
-      number-prefix = "FCALC-STG-[YYYY]-"
-      number-digits = 4
-      counter-starting-number = 1
-      timezone = "Europe/Paris"
-    }
-    
-    invoice-generation {
-      enabled = true
-      config-file-path = "configs/staging/invoices/company-invoice.yaml"
-      email-enabled = true
-      pdf-generation-enabled = true
-    }
-    
-    retry {
-      max-retries = 5
-      base-delay-ms = 1000
-      max-delay-ms = 30000
-    }
-    
-    admin {
-      email = "admin-staging@example.com"
-    }
-  }
-  
-  # Production Configuration
-  production {
-    # Product catalog to use: "development" or "production"
-    product-catalog = "production"
-    
-    database {
-      filename = "firecalc-payments-prod.db"
-      path = "./firecalc-payments-prod.db"
-    }
-    
-    invoice {
-      number-prefix = "FCALC-[YYYY]-"
-      number-digits = 4
-      counter-starting-number = 1
-      timezone = "Europe/Paris"
-    }
-    
-    invoice-generation {
-      enabled = true
-      config-file-path = "modules/invoices/configs/company-invoice.yaml"
-      email-enabled = true
-      pdf-generation-enabled = true
-    }
-    
-    retry {
-      max-retries = 3
-      base-delay-ms = 2000
-      max-delay-ms = 60000
-    }
-    
-    admin {
-      email = "admin@example.com"
-    }
+    # Report configuration
+    # Development/Staging: true (draft mode for testing)
+    # Production: false (final reports)
+    report-as-draft = true
   }
 }
 

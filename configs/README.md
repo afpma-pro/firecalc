@@ -4,6 +4,8 @@
 
 This directory contains centralized configuration for all modules, organized by environment. This replaces the previous approach of embedding configuration files in JAR resources, providing better flexibility and security.
 
+**IMPORTANT PRINCIPLE**: Each environment directory (`dev/`, `staging/`, `prod/`) contains ONLY its own configuration. The [`ConfigPathResolver`](../modules/utils/src/main/scala/afpma/firecalc/config/ConfigPathResolver.scala) automatically loads the correct file based on the `FIRECALC_ENV` environment variable or `firecalc.env` system property.
+
 ## Quick Start
 
 1. **Copy template files to your environment directory:**
@@ -84,6 +86,20 @@ The system determines which environment to use through this priority order:
 1. `FIRECALC_ENV` environment variable
 2. `firecalc.env` system property (`-Dfirecalc.env=dev`)
 3. Default to `dev`
+
+### Configuration File Structure
+
+**Each environment directory should contain ONLY its own configuration section.** For example:
+
+- `configs/dev/payments/payments-config.conf` contains only `payments.development { ... }`
+- `configs/staging/payments/payments-config.conf` contains only `payments.staging { ... }`
+- `configs/prod/payments/payments-config.conf` contains only `payments.production { ... }`
+
+This separation ensures:
+- Clear environment boundaries
+- No accidental cross-environment configuration leaks
+- Easier deployment and configuration management
+- Simpler troubleshooting when environment-specific issues arise
 
 ### Required Files by Module
 
