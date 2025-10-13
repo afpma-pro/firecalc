@@ -1,0 +1,9 @@
+# Environment-specific configurations (contain sensitive data)
+dev/
+prod/
+staging/
+
+# Keep only templates and documentation
+!templates/
+!README.md
+!.gitignore

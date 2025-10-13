@@ -1,0 +1,124 @@
+{
+    "files.watcherExclude": {
+        "**/target": true
+    },
+    "metals.enableSemanticHighlighting": true,
+    "editor.semanticHighlighting.enabled": true,
+    "editor.detectIndentation": false,
+    "metals.serverProperties": [
+        "-Dmetals.enable-best-effort=true",
+        "-Xss10m",
+        "-Xms16g",
+        "-Xmx16g",
+        "-XX:MaxInlineLevel=32"
+    ],
+    "metals.enableIndentOnPaste": true,
+    "makefile.configureOnOpen": false,
+    "editor.tabSize": 4,
+    "editor.indentSize": "tabSize",
+    "metals.serverVersion": "1.6.2+121-1609f037-SNAPSHOT",
+    "metals.startMcpServer": true,
+    "metals.mcpServerPort": 37277,
+    "metals.suggestLatestUpgrade": true,
+    "metals.customRepositories": [
+        "sonatype:releases|sonatype:snapshots|jcenter"
+    ],
+    "tinymist.exportPdf": "onSave",
+    "tinymist.preview.refresh": "onSave",
+    "chat.mcp.access": "all",
+    "files.autoSave": "off",
+    "psi-header.config": {
+        "license": "AGPL-3.0-or-later",
+        "forceToTop": true,
+        "blankLinesAfter": 1
+    },
+    "psi-header.changes-tracking": {
+        "isActive": true,
+        "autoHeader": "autoSave",
+        "enforceHeader": true,
+        "updateLicenseVariables": false,
+        "exclude": [
+            "json",
+            "jsonc",
+            "markdown",
+            "html",
+            "xml"
+        ],
+        "excludeGlob": [
+            "**/node_modules/**",
+            "**/target/**",
+            "**/project/target/**",
+            "**/project/project/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/out/**",
+            "**/.git/**",
+            "**/moleculeGen/**",
+            "**/databases/**",
+            "**/public/assets/**",
+            "**/*.min.*",
+            "**/*.lock",
+            "**/yarn.lock",
+            "**/pnpm-lock.yaml",
+            "**/package-lock.json",
+            "**/*.{svg,png,jpg,jpeg,gif,ico,pdf}",
+            "**/.vscode/settings.json",
+            "**/web/electron-app/resources/fontconfig/**",
+            "**/.gitignore"
+        ]
+    },
+    "psi-header.variables": [
+        ["copyrightholder", "Association Française du Poêle Maçonné Artisanal"],
+        ["company", "Association Française du Poêle Maçonné Artisanal"]
+    ],
+    "psi-header.templates": [
+        {
+            "language": "*",
+            "template": [
+                "SPDX-License-Identifier: <<spdxid>>",
+                "Copyright (C) <<year>> <<copyrightholder>>"
+            ]
+        }
+    ],
+    "psi-header.lang-config": [
+        {
+            "language": "shellscript", // VS Code language id for .sh/.bash
+            "begin": "#", // compact mode: single-line comments
+            "prefix": "# ",
+            "end": "#",
+            "beforeHeader": [" "],
+            "forceToTop": false,
+            "ignoreLines": [ // prevents duplicate detection issues
+                "#!"
+            ]
+        },
+        { "language": "scala", "ignoreLines": ["package"] },
+        { "language": "hocon", "begin": "#", "prefix": "# ", "end": "#" },
+        {
+            "language": ".template",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
+        { "language": "properties", "begin": "#", "prefix": "# ", "end": "#" },
+        { "language": "makefile", "begin": "#", "prefix": "# ", "end": "#" },
+        { "language": ".yaml", "begin": "#", "prefix": "# ", "end": "#"},
+        {
+            "language": ".typ",
+            "begin": "//",
+            "prefix": "// ",
+            "end": "//"
+        },
+        {
+            "language": ".yml",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
+    ],
+    "[hocon]": {
+        "files.trimTrailingWhitespace": true,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2
+    }
+}

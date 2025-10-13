@@ -1,0 +1,70 @@
+# Email Configuration
+# This file configures SMTP settings for sending emails
+
+email {
+  # Default environment - can be overridden by PAYMENTS_ENVIRONMENT env var
+  environment = "development"
+  
+  # Development/Testing Configuration
+  # Use a service like Mailtrap.io for testing emails without sending real ones
+  development {
+    smtp {
+      host = "sandbox.smtp.mailtrap.io"
+      port = 2525
+      username = "your-mailtrap-username"
+      password = "your-mailtrap-password"
+      use-tls = true
+    }
+    
+    from {
+      address = "noreply-dev@firecalc.example.com"
+      name = "FireCalc Development"
+    }
+  }
+  
+  # Production Configuration
+  # Example using SendGrid - replace with your actual SMTP provider
+  production {
+    smtp {
+      host = "smtp.sendgrid.net"
+      port = 587
+      username = "apikey"
+      password = "your-sendgrid-api-key"
+      use-tls = true
+    }
+    
+    from {
+      address = "noreply@firecalc.example.com"
+      name = "FireCalc"
+    }
+  }
+}
+
+# Alternative SMTP providers configuration examples:
+#
+# AWS SES:
+# smtp {
+#   host = "email-smtp.eu-west-1.amazonaws.com"
+#   port = 587
+#   username = "your-aws-smtp-username"
+#   password = "your-aws-smtp-password"
+#   use-tls = true
+# }
+#
+# Gmail (for testing only, not recommended for production):
+# smtp {
+#   host = "smtp.gmail.com"
+#   port = 587
+#   username = "your-email@gmail.com"
+#   password = "your-app-specific-password"
+#   use-tls = true
+# }
+#
+# Mailgun:
+# smtp {
+#   host = "smtp.mailgun.org"
+#   port = 587
+#   username = "postmaster@your-domain.mailgun.org"
+#   password = "your-mailgun-smtp-password"
+#   use-tls = true
+# }

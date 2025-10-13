@@ -1,0 +1,45 @@
+.bloop
+.bsp
+.DS_Store
+.idea
+.metals
+dist
+docu/
+modules/ui/.vite
+node_modules
+project/project
+project/target
+target
+metals.sbt
+modules/ui/firecalc-ui.js
+
+web/dist
+web/dist-static
+
+# Company-specific deployment configs (sensitive information)
+deployment/
+modules/*/configs/*.yaml
+modules/*/samples/*.pdf
+modules/*/samples/*.typ
+modules/*/samples/*.png
+modules/*/samples/*.jpg
+*.local.conf
+.env
+.env.local
+.env.production
+
+# Company-specific overrides for i18n
+modules/*/src/main/resources/company-overlay/
+modules/*/src/main/resources/deployment/
+
+# Scalamolecule generated files
+modules/payments/src/main/resources/moleculeGen
+
+# Generated files with sensitive data
+**/company-*.conf
+**/production-*.yaml
+**/staging-*.yaml
+
+# Development tools
+gc
+astformatter

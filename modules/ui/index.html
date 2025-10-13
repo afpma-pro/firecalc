@@ -1,0 +1,38 @@
+<!doctype html>
+<!--
+ SPDX-License-Identifier: AGPL-3.0-or-later
+ Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+-->
+
+<html lang="en">
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	
+	<!-- Content Security Policy for web browser mode -->
+	<meta http-equiv="Content-Security-Policy"
+	      content="default-src 'self'; connect-src 'self' http://localhost:8181 https://raw.githubusercontent.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;">
+	
+	<meta name="author" content="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<meta name="description" content="" />
+	<meta name="keywords" content="" />
+
+    <script type="module" src="/firecalc-ui.js"></script>
+    <script data-ui5-config type="application/json">
+    {
+    	"defaultFontLoading": false
+    }
+    </script>
+
+	<title>FireCalc AFPMA</title>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script type="module" src="/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+appId: pro.afpma.firecalc
+productName: FireCalc AFPMA
+copyright: Copyright © 2025 AFPMA
+
+# Artifact naming with conditional suffix
+# ARTIFACT_SUFFIX: Controls the artifact name suffix
+#   - Local builds: Always includes suffix (e.g., "-dev", "-staging", "-production")
+#   - CI production: Empty (no suffix)
+#   - CI dev/staging: Includes suffix (e.g., "-dev", "-staging")
+#
+# Use npm scripts which set ARTIFACT_SUFFIX automatically:
+#   npm run build:electron:dev        → FireCalc AFPMA-0.1.0-dev.AppImage
+#   npm run build:electron:staging    → FireCalc AFPMA-0.1.0-staging.AppImage
+#   npm run build:electron:production → FireCalc AFPMA-0.1.0-production.AppImage (local)
+#                                       FireCalc AFPMA-0.1.0.AppImage (CI production)
+artifactName: "${productName}-${version}${env.ARTIFACT_SUFFIX}.${ext}"
+
+directories:
+  buildResources: electron-app/build
+  output: electron-app/dist
+
+files:
+  - electron-app/src/**/*
+  - package.json
+  - dist-app/**/*
+  - .dev-build
+
+extraResources:
+  - from: dist-app
+    to: app/dist-app
+  - from: .dev-build
+    to: .dev-build
+    filter:
+      - "**/*"
+  - from: electron-app/resources
+    to: app/resources
+    filter:
+      - "**/*"
+
+mac:
+  category: public.app-category.utilities
+  target:
+    - dmg
+  icon: icon.png
+  darkModeSupport: true
+  # Configuration for unsigned builds
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+
+win:
+  target:
+    - nsis
+  icon: icon.png
+  # Configuration for unsigned builds
+  publisherName: "AFPMA (Unsigned)"
+  verifyUpdateCodeSignature: false
+
+linux:
+  target:
+    - AppImage
+  category: Utility
+  icon: icon.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+publish:
+  provider: github
+  owner: ${env.GITHUB_REPO_OWNER}
+  repo: ${env.GITHUB_REPO_NAME}
+  releaseType: release
+
+# Configuration for unsigned builds
+afterSign: null

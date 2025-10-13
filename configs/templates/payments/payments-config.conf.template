@@ -1,0 +1,134 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# Payments Configuration
+# This file configures invoice number generation and other payment-related settings
+
+payments {
+  # Default environment - can be overridden by setting payments.environment
+  environment = "development"
+  
+  # Development/Testing Configuration
+  development {
+    # Product catalog to use: "development" or "production"
+    product-catalog = "development"
+    
+    database {
+      filename = "firecalc-payments-dev.db"
+      path = "./firecalc-payments-dev.db"
+    }
+    
+    invoice {
+      number-prefix = "FCALC-DEV-[YYYY]-"
+      number-digits = 4
+      counter-starting-number = 1
+      timezone = "Europe/Paris"
+    }
+    
+    invoice-generation {
+      enabled = true
+      config-file-path = "../../modules/invoices/configs/company-invoice.yaml"
+      email-enabled = true
+      pdf-generation-enabled = true
+    }
+    
+    retry {
+      max-retries = 5
+      base-delay-ms = 1000
+      max-delay-ms = 30000
+    }
+    
+    admin {
+      email = "admin-dev@example.com"
+    }
+  }
+  
+  # Staging Configuration
+  staging {
+    # Product catalog to use: "development", "staging", or "production"
+    product-catalog = "staging"
+    
+    database {
+      filename = "firecalc-payments-staging.db"
+      path = "./firecalc-payments-staging.db"
+    }
+    
+    invoice {
+      number-prefix = "FCALC-STG-[YYYY]-"
+      number-digits = 4
+      counter-starting-number = 1
+      timezone = "Europe/Paris"
+    }
+    
+    invoice-generation {
+      enabled = true
+      config-file-path = "configs/staging/invoices/company-invoice.yaml"
+      email-enabled = true
+      pdf-generation-enabled = true
+    }
+    
+    retry {
+      max-retries = 5
+      base-delay-ms = 1000
+      max-delay-ms = 30000
+    }
+    
+    admin {
+      email = "admin-staging@example.com"
+    }
+  }
+  
+  # Production Configuration
+  production {
+    # Product catalog to use: "development" or "production"
+    product-catalog = "production"
+    
+    database {
+      filename = "firecalc-payments-prod.db"
+      path = "./firecalc-payments-prod.db"
+    }
+    
+    invoice {
+      number-prefix = "FCALC-[YYYY]-"
+      number-digits = 4
+      counter-starting-number = 1
+      timezone = "Europe/Paris"
+    }
+    
+    invoice-generation {
+      enabled = true
+      config-file-path = "modules/invoices/configs/company-invoice.yaml"
+      email-enabled = true
+      pdf-generation-enabled = true
+    }
+    
+    retry {
+      max-retries = 3
+      base-delay-ms = 2000
+      max-delay-ms = 60000
+    }
+    
+    admin {
+      email = "admin@example.com"
+    }
+  }
+}
+
+# Alternative: Use environment variables for specific settings
+payments-env {
+  environment = ${?PAYMENTS_ENVIRONMENT}
+  
+  invoice {
+    number-prefix = ${?INVOICE_PREFIX}
+    number-digits = ${?INVOICE_DIGITS}
+    counter-starting-number = ${?INVOICE_STARTING_NUMBER}
+  }
+  
+  retry {
+    max-retries = ${?RETRY_MAX_RETRIES}
+    base-delay-ms = ${?RETRY_BASE_DELAY_MS}
+    max-delay-ms = ${?RETRY_MAX_DELAY_MS}
+  }
+}

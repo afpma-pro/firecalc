@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SPDX-License-Identifier: AGPL-3.0-or-later
+ Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+-->
+
+<schemalist>
+  <!-- Minimal schema to satisfy GTK lookups for font rendering keys on older GNOME -->
+  <schema id="org.gnome.desktop.interface" path="/org/gnome/desktop/interface/">
+    <key name="font-antialiasing" type="s">
+      <!-- Allowed values historically include 'none', 'grayscale', 'rgba' -->
+      <default>'rgba'</default>
+      <summary>Font antialiasing</summary>
+      <description>Configure font antialiasing method. Typical values: 'none', 'grayscale', 'rgba'.</description>
+    </key>
+    <key name="font-hinting" type="s">
+      <!-- Allowed values historically include 'none', 'slight', 'medium', 'full' -->
+      <default>'slight'</default>
+      <summary>Font hinting</summary>
+      <description>Configure font hinting style. Typical values: 'none', 'slight', 'medium', 'full'.</description>
+    </key>
+  </schema>
+</schemalist>

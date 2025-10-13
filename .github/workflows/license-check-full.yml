@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+# GitHub Actions workflow for full repository license header scan
+
+name: License Header Check (Full Repository)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 6 AM UTC
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  full-scan:
+    name: Full Repository Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Shallow clone for full scan
+        
+      - name: Run full license check
+        run: |
+          chmod +x scripts/ci/check-license-headers.sh
+          chmod +x scripts/ci/exclusions.sh
+          ./scripts/ci/check-license-headers.sh --all
+          
+      - name: Generate compliance report
+        if: always()
+        run: |
+          echo "License compliance scan completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > license-compliance-report.txt
+          echo "" >> license-compliance-report.txt
+          if [ -f "$GITHUB_STEP_SUMMARY" ]; then
+            cat "$GITHUB_STEP_SUMMARY" >> license-compliance-report.txt
+          fi
+          
+      - name: Upload compliance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-compliance-report-${{ github.run_id }}
+          path: license-compliance-report.txt
+          retention-days: 90
+          
+      - name: Fail job if violations found
+        if: failure()
+        run: |
+          echo "::error::License header violations found. See job summary for details."
+          exit 1

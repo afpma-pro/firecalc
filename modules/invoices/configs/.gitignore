@@ -1,0 +1,16 @@
+# Invoice configuration files (may contain sensitive data)
+# Uncomment the lines below to ignore all config files:
+# *.yaml
+# *.yml
+
+# Or ignore specific files:
+# private-invoice.yaml
+# client-confidential.yaml
+
+# Company logo (sensitive branding information)
+# Users should replace this with their own logo
+logo.png
+
+# Generated output (these should be ignored)
+../samples/*.pdf
+../samples/*.typ

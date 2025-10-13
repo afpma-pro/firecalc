@@ -1,0 +1,75 @@
+invoice: 
+  invoiceNumber: "${INVOICE_NUMBER:-INV-EXAMPLE-001}"
+  invoiceDate: "${INVOICE_DATE:-2025-09-05}"
+  dueDate: "${DUE_DATE:-2025-10-05}"
+  reference: "${INVOICE_REFERENCE:-Test Invoice}"
+  sender: 
+    name: "${COMPANY_LEGAL_NAME:-Your Company Legal Name Inc}"
+    displayName: "${COMPANY_DISPLAY_NAME:-Your Company}"
+    address: 
+      street: "${COMPANY_STREET:-123 Your Business Street}"
+      streetLine2: "${COMPANY_STREET_LINE2:-Suite 100}"
+      city: "${COMPANY_CITY:-Your City}"
+      postalCode: "${COMPANY_POSTAL_CODE:-12345}"
+      region: "${COMPANY_REGION:-Your Region}"
+      country: "${COMPANY_COUNTRY:-Your Country}"
+    vatNumber: "${COMPANY_VAT_NUMBER:-YOUR_VAT_NUMBER_HERE}"
+    registrationNumber: "${COMPANY_REGISTRATION:-YOUR_REGISTRATION_NUMBER_HERE}"
+    email: "${COMPANY_EMAIL:-billing@yourcompany.com}"
+    phone: "${COMPANY_PHONE:-+1 555 123 4567}"
+    website: "${COMPANY_WEBSITE:-https://www.yourcompany.com}"
+    logo: !!null
+  recipient: 
+    name: "${CLIENT_COMPANY_NAME:-Client Company Ltd}"
+    displayName: !!null
+    address: 
+      street: "${CLIENT_STREET:-456 Client Boulevard}"
+      streetLine2: !!null
+      city: "${CLIENT_CITY:-Client City}"
+      postalCode: "${CLIENT_POSTAL_CODE:-67890}"
+      region: "${CLIENT_REGION:-Client Region}"
+      country: "${CLIENT_COUNTRY:-Client Country}"
+    vatNumber: "${CLIENT_VAT_NUMBER:-CLIENT_VAT_NUMBER_HERE}"
+    registrationNumber: "${CLIENT_REGISTRATION:-CLIENT_REGISTRATION_HERE}"
+    email: "${CLIENT_EMAIL:-accounts@clientcompany.com}"
+    phone: "${CLIENT_PHONE:-+1 555 987 6543}"
+    website: "${CLIENT_WEBSITE:-https://www.clientcompany.com}"
+    logo: !!null
+  billTo: !!null
+  lineItems: 
+    - 
+      description: "Professional Software License"
+      quantity: 1
+      unitPrice: 2500.00
+      taxRate: 20.0
+      discountPercentage: !!null
+      unit: "license"
+      productCode: !!null
+    - 
+      description: "Implementation Services"
+      quantity: 40
+      unitPrice: 150.00
+      taxRate: 20.0
+      discountPercentage: !!null
+      unit: "hours"
+      productCode: !!null
+  paymentTerms: 
+    dueDays: ${PAYMENT_DUE_DAYS:-30}
+    description: "Payment due within ${PAYMENT_DUE_DAYS:-30} days of invoice date"
+    lateFeePercentage: ${LATE_FEE_PERCENTAGE:-1.5}
+    discountPercentage: ${EARLY_DISCOUNT_PERCENTAGE:-2.0}
+    discountDays: ${EARLY_DISCOUNT_DAYS:-10}
+    methods: 
+      - 
+        BankTransfer: 
+          iban: "${COMPANY_IBAN:-YOUR_IBAN_NUMBER_HERE}"
+          bic: "${COMPANY_BIC:-YOUR_BIC_CODE_HERE}"
+    notes: "Early payment discount: ${EARLY_DISCOUNT_PERCENTAGE:-2}% if paid within ${EARLY_DISCOUNT_DAYS:-10} days"
+  currency: "${COMPANY_CURRENCY:-EUR}"
+  notes: "${INVOICE_NOTES:-Thank you for your business! This is a sample invoice.}"
+  discountPercentage: !!null
+  status: "Draft"
+template: 
+  logoPosition: "${TEMPLATE_LOGO_POSITION:-top-left}"
+  primaryColor: "${TEMPLATE_PRIMARY_COLOR:-#2563eb}"
+  fontFamily: "${TEMPLATE_FONT_FAMILY:-Liberation Sans}"

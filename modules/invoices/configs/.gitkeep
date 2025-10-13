@@ -1,0 +1,6 @@
+# This directory contains company-specific invoice configurations
+# 
+# Files in this directory are git-ignored for security reasons
+# Copy templates from config-templates/ and configure for your company
+#
+# See config-templates/README-DEPLOYMENT.md for setup instructions

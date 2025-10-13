@@ -1,0 +1,6 @@
+# Environment-specific configurations (contain sensitive data)
+dev/
+prod/
+staging/
+
+!.gitignore

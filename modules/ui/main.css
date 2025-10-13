@@ -1,0 +1,95 @@
+/**
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
+@import "tailwindcss";
+@import "./style.css";
+
+/* @source "./src/main/scala/"; */
+@source "./target/scala-3.7.3/firecalc-ui-fastopt"; 
+
+@plugin "@tailwindcss/typography";
+
+
+/* 
+ * AFPMA Color Palette
+ * 3B2416 = oklch(28.57% 0.0424 51.65)
+ * 531E00 = oklch(31.12% 0.0883 45.44)
+ * BC2132 = oklch(51.66% 0.1882 22.06)
+ * EF662F = oklch(67.36% 0.182 40.47)
+ * F59331 = oklch(75.1% 0.1578 60.32)
+ * FAAF4C = oklch(80.84% 0.1425 70.58)
+ * FFDC38 = oklch(89.82% 0.171 96.2)
+ *
+ * extra (fonds clairs)
+ * fffbb7 = oklch(97.53% 0.0861 105.05)
+ * e8f1fb = oklch(95.43% 0.0166 250.84)
+ * f6f6f6 = oklch(97.31% 0 0)
+ *
+ * Thank you https://oklch.com/ 
+ */
+
+@plugin "daisyui/theme" {
+    name: "afpma";
+    default: true;
+    prefersdark: false;
+    color-scheme: "light";
+    --color-base-100: oklch(100% 0 0);
+    --color-base-200: oklch(98.462% 0.001 247.838);
+    --color-base-300: oklch(92.462% 0.001 247.838);
+    --color-base-content: oklch(20% 0 0);
+    --color-primary: oklch(67.36% 0.182 40.47);
+    --color-primary-content: oklch(28.57% 0.0424 51.65);
+    --color-secondary: oklch(80.84% 0.1425 70.58);
+    --color-secondary-content: oklch(31.12% 0.0883 45.44);
+    --color-accent: oklch(31.12% 0.0883 45.44);
+    --color-accent-content: oklch(100% 0 0);
+    --color-neutral: oklch(44% 0.043 257.281);
+    --color-neutral-content: oklch(92% 0.013 255.508);
+    --color-info: oklch(86% 0.127 207.078);
+    --color-info-content: oklch(20% 0 0);
+    --color-success: oklch(79% 0.209 151.711);
+    --color-success-content: oklch(20% 0 0);
+    --color-warning: oklch(75.1% 0.1578 60.32);
+    --color-warning-content: oklch(100% 0 0);
+    --color-error: oklch(51.66% 0.1882 22.06);
+    --color-error-content: oklch(98% 0.003 247.858);
+    --radius-selector: 1rem;
+    --radius-field: 0.25rem;
+    --radius-box: 0.25rem;
+    --size-selector: 0.1875rem;
+    --size-field: 0.1875rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+    --color-vlight-ocre: oklch(97.53% 0.05 95);
+    --color-light-ocre: oklch(97.53% 0.0861 105.05);
+}
+
+@plugin "daisyui" {
+    themes: afpma --default;
+    root: ":root";
+    logs: true;
+}
+
+.lucide * {
+    vector-effect: non-scaling-stroke;
+}
+
+:root {
+    --scrollbar-width: 0;
+}
+
+html {
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+}
+
+body {
+    padding-right: calc(var(--scrollbar-width) * 0);
+}
+
+.pr-scollbar {
+    padding-right: calc(var(--scrollbar-width) * 0);
+}

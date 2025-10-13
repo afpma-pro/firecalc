@@ -1,0 +1,1 @@
+This placeholder ensures the gsettings directory is packaged. Add gschemas.compiled here if you later ship custom schemas.

@@ -1,0 +1,105 @@
+================================================================================
+LICENSE HEADER TEMPLATES FOR FireCalc AFPMA
+================================================================================
+
+Use these templates when creating new files in the project.
+All new files MUST include the appropriate license header.
+
+================================================================================
+SCALA FILES (.scala)
+================================================================================
+
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
+================================================================================
+JAVASCRIPT/TYPESCRIPT FILES (.js, .ts, .jsx, .tsx)
+================================================================================
+
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
+================================================================================
+CONFIGURATION FILES (.conf, .yaml, .yml, .properties)
+================================================================================
+
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+
+================================================================================
+SQL FILES (.sql)
+================================================================================
+
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+
+================================================================================
+MARKDOWN FILES (.md)
+================================================================================
+
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+-->
+
+================================================================================
+SBT FILES (.sbt)
+================================================================================
+
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
+================================================================================
+HTML FILES (.html)
+================================================================================
+
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+-->
+
+================================================================================
+CSS FILES (.css)
+================================================================================
+
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
+================================================================================
+SHELL SCRIPTS (.sh)
+================================================================================
+
+#!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+
+================================================================================
+TYPST FILES (.typ)
+================================================================================
+
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+
+================================================================================
+NOTES
+================================================================================
+
+1. SPDX-License-Identifier is a standardized way to indicate license.
+   See: https://spdx.org/licenses/
+
+2. "AGPL-3.0-or-later" means the code can be used under AGPLv3 or any
+   later version of the AGPL license.
+
+3. Always place the header at the very top of the file, before any other
+   code or comments (except shebang lines in scripts).
+
+4. For existing files without headers, add the header when making
+   substantial modifications.

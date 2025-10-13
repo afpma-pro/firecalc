@@ -1,0 +1,89 @@
+{
+  "invoiceNumber": "INV-2025-001",
+  "invoiceDate": "2025-01-09",
+  "dueDate": "2025-02-08",
+  "currency": "EUR",
+  "status": "Draft",
+  "reference": "CONTRACT-2025-ABC",
+  "notes": "Thank you for your business! For any questions regarding this invoice, please contact our accounting department.",
+  "globalDiscountPercentage": 0,
+  "globalDiscountAmount": 0,
+  "sender": {
+    "name": "ACME Corp",
+    "tradingName": "ACME Solutions",
+    "address": {
+      "street": "123 Business Street",
+      "streetLine2": "Suite 100",
+      "city": "Paris",
+      "region": "Île-de-France",
+      "postalCode": "75001",
+      "country": "France"
+    },
+    "email": "contact@acme-corp.com",
+    "phone": "+33 1 23 45 67 89",
+    "website": "https://www.acme-corp.com",
+    "vatNumber": "FR12345678901",
+    "registrationNumber": "RCS Paris 123 456 789",
+    "logo": "logo.png"
+  },
+  "billTo": {
+    "name": "Client Industries",
+    "address": {
+      "street": "456 Client Avenue",
+      "city": "Lyon",
+      "region": "Auvergne-Rhône-Alpes",
+      "postalCode": "69001",
+      "country": "France"
+    },
+    "email": "finance@client-industries.com",
+    "phone": "+33 4 78 90 12 34",
+    "website": "https://www.client-industries.com",
+    "vatNumber": "FR98765432101",
+    "registrationNumber": "RCS Lyon 987 654 321"
+  },
+  "lineItems": [
+    {
+      "description": "Professional Software License",
+      "quantity": 1,
+      "unit": "license",
+      "unitPrice": 2500.00,
+      "taxRate": 20.0,
+      "discountPercentage": 0
+    },
+    {
+      "description": "Implementation and Training",
+      "quantity": 40,
+      "unit": "hours",
+      "unitPrice": 150.00,
+      "taxRate": 20.0,
+      "discountPercentage": 10
+    },
+    {
+      "description": "Annual Support Contract",
+      "quantity": 1,
+      "unit": "year",
+      "unitPrice": 800.00,
+      "taxRate": 20.0,
+      "discountPercentage": 0
+    }
+  ],
+  "paymentTerms": {
+    "description": "Payment due within 30 days",
+    "dueDays": 30,
+    "methods": [
+      {
+        "type": "BankTransfer",
+        "iban": "FR14 2004 1010 0505 0001 3M02 606",
+        "bic": "PSST FR PP XXX"
+      },
+      {
+        "type": "PayPal",
+        "email": "payments@acme-corp.com"
+      }
+    ],
+    "lateFeePercentage": 1.5,
+    "discountPercentage": 2.0,
+    "discountDays": 10,
+    "notes": "Early payment discount: 2% if paid within 10 days"
+  }
+}

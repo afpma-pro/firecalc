@@ -1,0 +1,210 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+
+version: 1
+locale: "fr"
+display_units: "SI"
+standard_or_computation_method: "EN 15544:2023"
+project_description: 
+  reference: ""
+  date: ""
+  customer: 
+    first_name: ""
+    last_name: ""
+    phone: ""
+    email: ""
+  billing_address: 
+    header: ""
+    num: ""
+    street: ""
+    zip: ""
+    city: ""
+    region_state: ""
+    country: "France"
+  project_address: 
+    header: ""
+    num: ""
+    street: ""
+    zip: ""
+    city: ""
+    region_state: ""
+    country: "France"
+local_conditions: 
+  altitude: 
+    value: "100"
+    unit: "meter"
+  coastal_region: false
+  chimney_termination: 
+    chimney_location_on_roof: 
+      chimney_height_above_ridgeline: "MoreThan40cm"
+      horizontal_distance_between_chimney_and_ridgeline: !!null
+      slope: !!null
+      outside_air_intake_and_chimney_locations: !!null
+      horizontal_distance_between_chimney_and_ridgeline_bis: !!null
+    adjacent_buildings: 
+      horizontal_distance_between_chimney_and_adjacent_buildings: "MoreThan15m"
+      horizontal_angle_between_chimney_and_adjacent_buildings: !!null
+      vertical_angle_between_chimney_and_adjacent_buildings: !!null
+stove_params: 
+  sizing_method: "MaxLoad"
+  maximum_load: 
+    value: "10"
+    unit: "kilogram"
+  nominal_heat_output: !!null
+  heating_cycle: 
+    value: "8"
+    unit: "hour"
+  min_efficiency: 
+    value: "78"
+    unit: "percent"
+  facing_type: "WithoutAirGap"
+  inner_construction_material: "WithinSpecs"
+air_intake_descr: 
+firebox: 
+  Traditional: 
+    heat_output_reduced: !!null
+    firebox_depth: 
+      value: "0.332"
+      unit: "meter"
+    firebox_width: 
+      value: "0.332"
+      unit: "meter"
+    firebox_height: 
+      value: "0.52"
+      unit: "meter"
+    pressure_loss_coefficient_from_door: 
+      value: "0.3"
+      unit: "1"
+    total_air_intake_surface_area_on_door: 
+      value: "0.01"
+      unit: "meter^2"
+    glass_width: 
+      value: "0.3"
+      unit: "meter"
+    glass_height: 
+      value: "0.3"
+      unit: "meter"
+flue_pipe_descr: 
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.003"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Square: 
+          side: 
+            value: "0.18"
+            unit: "meter"
+  - 
+    AddSectionHorizontal: 
+      name: "sortie de foyer"
+      horizontal_length: 
+        value: "0.3"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "vers descente"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    AddSectionVertical: 
+      name: "descente"
+      elevation_gain: 
+        value: "-1"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "vers section horizontale"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    AddSectionHorizontal: 
+      name: "section horizontale"
+      horizontal_length: 
+        value: "2"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "vers remont�e"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    AddSectionVertical: 
+      name: "remont�e"
+      elevation_gain: 
+        value: "2"
+        unit: "meter"
+connector_pipe_descr: 
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.001"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.2"
+            unit: "meter"
+  - 
+    SetLayers: 
+      layers: 
+        - 
+          FromThermalResistanceUsingThickness: 
+            thickness: 
+              value: "0.001"
+              unit: "meter"
+            thermal_resistance: 
+              value: "56"
+              unit: "(meter^2 Kelvin)/watt"
+  - 
+    SetPipeLocation: 
+      pipe_location: "HeatedArea"
+  - 
+    AddSectionVertical: 
+      name: "connecteur"
+      elevation_gain: 
+        value: "0.05"
+        unit: "meter"
+chimney_pipe_descr: 
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.001"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.2"
+            unit: "meter"
+  - 
+    SetLayers: 
+      layers: 
+        - 
+          FromThermalResistanceUsingThickness: 
+            thickness: 
+              value: "0.026000000000000002"
+              unit: "meter"
+            thermal_resistance: 
+              value: "0.44"
+              unit: "(meter^2 Kelvin)/watt"
+  - 
+    SetPipeLocation: 
+      pipe_location: "HeatedArea"
+  - 
+    AddSectionVertical: 
+      name: "conduit double peau isol�."
+      elevation_gain: 
+        value: "6"
+        unit: "meter"

@@ -1,0 +1,67 @@
+invoice: 
+  invoiceNumber: "FCALC-001"
+  invoiceDate: "2025-09-05"
+  dueDate: "2025-10-05"
+  reference: "-"
+  sender: 
+    name: "Association Française du Poêle Maçonné Artisanal"
+    displayName: "Association Française du Poêle Maçonné Artisanal"
+    address: 
+      street: "Lycée des Métiers du Bâtiment"
+      streetLine2: "43 route d'Aubusson"
+      city: "FELLETIN"
+      postalCode: "23500"
+      region: "Nouvelle-Aquitaine"
+      country: "France"
+    vatNumber: "non applicable"
+    registrationNumber: "RNA W031002573"
+    email: "contact@afpma.pro"
+    phone: "(+33) 5 55 83 46 29"
+    website: "www.afpma.pro"
+    logo: !!null
+  recipient: 
+    name: "ACME France"
+    displayName: !!null
+    address: 
+      street: "${CLIENT_STREET:-123 Boulevard}"
+      streetLine2: !!null
+      city: "Paris"
+      postalCode: "75000}"
+      region: "Ile-de-France"
+      country: "France"
+    vatNumber: "TVA FR XXXXXXXX"
+    registrationNumber: "-"
+    email: "client@domaine.fr"
+    phone: "+33 1 23 45 67 89"
+    website: "www.domaine.fr"
+    logo: !!null
+  billTo: !!null
+  lineItems: 
+    - 
+      description: "Génération rapport PDF conforme à EN 15544"
+      quantity: 1
+      unitPrice: 89.00
+      taxRate: 20.0
+      discountPercentage: !!null
+      unit: "u"
+      productCode: !!null
+  paymentTerms: 
+    dueDays: ${PAYMENT_DUE_DAYS:-30}
+    description: "Payment due within ${PAYMENT_DUE_DAYS:-30} days of invoice date"
+    lateFeePercentage: ${LATE_FEE_PERCENTAGE:-1.5}
+    discountPercentage: ${EARLY_DISCOUNT_PERCENTAGE:-0.0}
+    discountDays: ${EARLY_DISCOUNT_DAYS:-10}
+    methods: 
+      - 
+        BankTransfer: 
+          iban: "[REDACTED]"
+          bic: "[REDACTED]"
+    notes: ""
+  currency: "${COMPANY_CURRENCY:-EUR}"
+  notes: "L'AFPMA vous remercie pour votre commande !"
+  discountPercentage: !!null
+  status: "Draft"
+template: 
+  logoPosition: "${TEMPLATE_LOGO_POSITION:-top-left}"
+  primaryColor: "${TEMPLATE_PRIMARY_COLOR:-#2563eb}"
+  fontFamily: "${TEMPLATE_FONT_FAMILY:-Liberation Sans}"

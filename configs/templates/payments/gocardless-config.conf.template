@@ -1,0 +1,51 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# GoCardless Configuration Example
+# This file shows how to configure GoCardless for different environments
+
+# For development/testing with sandbox
+gocardless {
+  # For development/testing
+  sandbox {
+    access-token = "sandbox_GC_TOKEN"
+    base-url = "https://api-sandbox.gocardless.com"
+    environment = "sandbox"
+    webhook-secret = "GC_WEBHOOK_TOKEN"
+    admin-email = "logiciel@afpma.pro"
+    
+    # These should point to your actual domain where you host the HTML files
+    redirect-uri = "http://localhost:8181/v1/payment_complete"
+    exit-uri = "http://localhost:8181/v1/payment_cancelled"
+  }
+  
+  # For production
+  live {
+    access-token = ${?GOCARDLESS_ACCESS_TOKEN}
+    base-url = "https://api.gocardless.com"
+    environment = "live"
+    webhook-secret = ${?GOCARDLESS_WEBHOOK_SECRET}
+    admin-email = ${?GOCARDLESS_ADMIN_EMAIL}
+    
+    # Production redirect URIs - these MUST be HTTPS
+    redirect-uri = "https://firecalc.afpma.pro/v1/payment_complete"
+    exit-uri = "https://firecalc.afpma.pro/v1/payment_cancelled"
+  }
+}
+
+# Alternative: Use environment variables for all settings
+gocardless-env {
+  access-token = ${?GOCARDLESS_ACCESS_TOKEN}
+  base-url = ${?GOCARDLESS_BASE_URL}
+  environment = ${?GOCARDLESS_ENVIRONMENT}
+  webhook-secret = ${?GOCARDLESS_WEBHOOK_SECRET}
+  redirect-uri = ${?GOCARDLESS_REDIRECT_URI}
+  exit-uri = ${?GOCARDLESS_EXIT_URI}
+}

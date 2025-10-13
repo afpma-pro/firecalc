@@ -1,0 +1,4 @@
+-Xss10m
+-Xms16g
+-Xmx16g
+-XX:MaxInlineLevel=32

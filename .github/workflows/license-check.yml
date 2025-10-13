@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+# GitHub Actions workflow to check license headers in changed files
+
+name: License Header Check (Changed Files)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore:
+      - main
+      - master
+
+jobs:
+  check-headers:
+    name: Check License Headers
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate diff
+          
+      - name: Get base reference
+        id: base-ref
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "base=origin/main" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Run license header check
+        run: |
+          chmod +x scripts/ci/check-license-headers.sh
+          ./scripts/ci/check-license-headers.sh --changed --base-ref ${{ steps.base-ref.outputs.base }}
+          
+      - name: Upload results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-check-results-${{ github.run_id }}
+          path: |
+            scripts/ci/check-license-headers.sh
+            scripts/ci/exclusions.sh
+          retention-days: 7

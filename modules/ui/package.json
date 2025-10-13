@@ -1,0 +1,32 @@
+{
+    "name": "firecalc-ui",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "license": "AGPL-3.0-or-later",
+    "devDependencies": {
+        "@scala-js/vite-plugin-scalajs": "^1.1.0",
+        "@tailwindcss/typography": "^0.5.19",
+        "tailwindcss": "^4.1.13",
+        "typescript": "^5.9.2",
+        "vite": "^7.1.7",
+        "vite-plugin-singlefile": "^2.3.0"
+    },
+    "browserslist": [
+        "defaults"
+    ],
+    "scripts": {
+        "dev": "vite --mode development",
+        "dev:staging": "vite --mode staging",
+        "dev:production": "vite --mode production",
+        "build": "vite build --mode development --emptyOutDir",
+        "build:staging": "vite build --mode staging --emptyOutDir",
+        "build:production": "vite build --mode production --emptyOutDir",
+        "serve": "vite preview",
+        "clean": "rm -rf node_modules"
+    },
+    "dependencies": {
+        "@tailwindcss/vite": "^4.1.13",
+        "daisyui": "^5.1.23"
+    }
+}

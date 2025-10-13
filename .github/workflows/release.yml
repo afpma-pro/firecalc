@@ -1,0 +1,172 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: ${{ contains(github.ref, '-dev') || contains(github.ref, '-staging') }}
+
+  build:
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Setup sbt (Ubuntu/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          curl -fL https://github.com/sbt/sbt/releases/download/v1.9.7/sbt-1.9.7.tgz | tar xzf -
+          echo "$GITHUB_WORKSPACE/sbt/bin" >> $GITHUB_PATH
+          
+      - name: Setup sbt (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install sbt
+          
+      - name: Build Scala/ScalaJS UI module
+        run: sbt "ui/fullLinkJS"
+        
+      - name: Install UI dependencies
+        working-directory: modules/ui
+        run: npm ci
+        
+      - name: Build UI for production
+        working-directory: modules/ui
+        run: npm run build:production
+        
+      - name: Copy UI dist to web
+        run: |
+          mkdir -p web/dist-app
+          cp -r modules/ui/dist/* web/dist-app/
+          
+      - name: Determine build environment and artifact suffix
+        id: build_env
+        run: |
+          if [[ "${{ github.ref }}" == *"-dev"* ]]; then
+            echo "BUILD_ENV=dev" >> $GITHUB_ENV
+            echo "ARTIFACT_SUFFIX=-dev" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == *"-staging"* ]]; then
+            echo "BUILD_ENV=staging" >> $GITHUB_ENV
+            echo "ARTIFACT_SUFFIX=-staging" >> $GITHUB_ENV
+          else
+            echo "BUILD_ENV=production" >> $GITHUB_ENV
+            echo "ARTIFACT_SUFFIX=" >> $GITHUB_ENV
+          fi
+        shell: bash
+        
+      - name: Install Electron dependencies
+        working-directory: web
+        run: npm ci
+        
+      - name: Build Electron App (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: web
+        run: dotenv -e .env.electron -- electron-builder
+        env:
+          BUILD_ENV: ${{ env.BUILD_ENV }}
+          ARTIFACT_SUFFIX: ${{ env.ARTIFACT_SUFFIX }}
+
+      - name: Build Electron App (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: web
+        run: dotenv -e .env.electron -- electron-builder
+        env:
+          BUILD_ENV: ${{ env.BUILD_ENV }}
+          ARTIFACT_SUFFIX: ${{ env.ARTIFACT_SUFFIX }}
+
+      - name: Build Electron App (macOS)
+        if: matrix.os == 'macos-latest'
+        working-directory: web
+        run: dotenv -e .env.electron -- electron-builder
+        env:
+          BUILD_ENV: ${{ env.BUILD_ENV }}
+          ARTIFACT_SUFFIX: ${{ env.ARTIFACT_SUFFIX }}
+        
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_SUFFIX: ${{ env.ARTIFACT_SUFFIX }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: web/electron-app/dist/*.AppImage
+          asset_name: FireCalc-AFPMA-${{ github.ref_name }}${{ env.ARTIFACT_SUFFIX }}.AppImage
+          asset_content_type: application/octet-stream
+          
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_SUFFIX: ${{ env.ARTIFACT_SUFFIX }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: web/electron-app/dist/*.exe
+          asset_name: FireCalc-AFPMA-Setup-${{ github.ref_name }}${{ env.ARTIFACT_SUFFIX }}.exe
+          asset_content_type: application/octet-stream
+          
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_SUFFIX: ${{ env.ARTIFACT_SUFFIX }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: web/electron-app/dist/*.dmg
+          asset_name: FireCalc-AFPMA-${{ github.ref_name }}${{ env.ARTIFACT_SUFFIX }}.dmg
+          asset_content_type: application/octet-stream
+          
+      - name: Upload auto-update metadata
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: web/electron-app/dist/latest-linux.yml
+          asset_name: latest-linux.yml
+          asset_content_type: text/yaml

@@ -1,0 +1,31 @@
+{
+  "name": "firecalc-desktop",
+  "version": "0.9.0-b1+engine-0.3.0-b1",
+  "description": "FireCalc AFPMA - Dimensioning software for one‑off masonry heaters (EN 15544, EN 13384).",
+  "main": "electron-app/src/main.js",
+  "type": "module",
+  "keywords": [
+    "electron",
+    "desktop",
+    "mass-heater",
+    "stove-design"
+  ],
+  "scripts": {
+    "dev": "electron ./electron-app/src/main.js",
+    "dev:vite": "VITE_DEV_SERVER=true VITE_DEV_SERVER_URL=http://localhost:5173 electron ./electron-app/src/main.js",
+    "build:electron": "dotenv -e .env.electron -- electron-builder",
+    "build:electron:dev": "dotenv -e .env.electron -- BUILD_ENV=dev ARTIFACT_SUFFIX=-dev electron-builder",
+    "build:electron:staging": "dotenv -e .env.electron -- BUILD_ENV=staging ARTIFACT_SUFFIX=-staging electron-builder",
+    "build:electron:production": "dotenv -e .env.electron -- BUILD_ENV=production ARTIFACT_SUFFIX=-production electron-builder"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^10.0.0",
+    "electron": "^38.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "author": "AFPMA",
+  "license": "AGPL-3.0-or-later"
+}
