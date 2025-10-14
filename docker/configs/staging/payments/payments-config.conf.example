@@ -1,0 +1,193 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# =============================================================================
+# Payments Configuration - STAGING Environment
+# =============================================================================
+# This file contains the payments backend configuration for the staging
+# environment. It should be copied to payments-config.conf and customized
+# with your actual staging values.
+#
+# IMPORTANT: 
+# - This file contains ONLY staging configuration
+# - Use test/sandbox credentials only
+# - Never use production credentials in staging
+# - Remove .example extension when deploying: 
+#   cp payments-config.conf.example payments-config.conf
+# =============================================================================
+
+payments {
+  # Environment identifier - must match FIRECALC_ENV
+  environment = "staging"
+  
+  # Staging Configuration Section
+  staging {
+    # ---------------------------------------------------------------------
+    # Product Catalog
+    # ---------------------------------------------------------------------
+    # Which product catalog to use for this environment
+    # Options: "development", "staging", "production"
+    # Staging typically uses "staging" catalog with test products
+    product-catalog = "staging"
+    
+    # ---------------------------------------------------------------------
+    # Database Configuration
+    # ---------------------------------------------------------------------
+    database {
+      # Database filename
+      filename = "firecalc-payments-staging.db"
+      
+      # Database path (relative to application working directory)
+      # In Docker: mounted to /app/databases
+      path = "./databases/staging/firecalc-payments-staging.db"
+    }
+    
+    # ---------------------------------------------------------------------
+    # Invoice Configuration
+    # ---------------------------------------------------------------------
+    invoice {
+      # Invoice number prefix - identifies staging invoices
+      # Format: PREFIX + YEAR + COUNTER
+      # Example: FCALC-STG-2025-0001
+      # 
+      # IMPORTANT: Use staging-specific prefix to distinguish from production
+      number-prefix = "FCALC-STG-[YYYY]-"
+      
+      # Number of digits for the counter (zero-padded)
+      # 4 digits = 0001, 0002, ..., 9999
+      number-digits = 4
+      
+      # Starting number for invoice counter
+      # Usually 1 for new environments
+      counter-starting-number = 1
+      
+      # Timezone for invoice dates
+      # Used for date calculations and timestamps
+      timezone = "Europe/Paris"
+    }
+    
+    # ---------------------------------------------------------------------
+    # Invoice Generation Configuration
+    # ---------------------------------------------------------------------
+    invoice-generation {
+      # Enable/disable invoice generation feature
+      enabled = true
+      
+      # Path to invoice configuration YAML file
+      # Contains company details, styling, templates
+      # Must exist before starting the application
+      config-file-path = "./configs/staging/invoices/invoice-config.yaml"
+      
+      # Enable/disable email sending for invoices
+      # Staging: Use test email service (e.g., Mailtrap.io)
+      email-enabled = true
+      
+      # Enable/disable PDF generation for invoices
+      # Requires Typst to be installed
+      pdf-generation-enabled = true
+    }
+    
+    # ---------------------------------------------------------------------
+    # Retry Configuration
+    # ---------------------------------------------------------------------
+    # Configure retry behavior for failed operations (payments, emails, etc.)
+    retry {
+      # Maximum number of retry attempts
+      # Staging: More retries for easier debugging
+      max-retries = 5
+      
+      # Base delay between retries (milliseconds)
+      # First retry: base-delay-ms
+      # Subsequent retries: exponential backoff up to max-delay-ms
+      base-delay-ms = 1000
+      
+      # Maximum delay between retries (milliseconds)
+      # Caps the exponential backoff
+      max-delay-ms = 30000
+    }
+    
+    # ---------------------------------------------------------------------
+    # Admin Configuration
+    # ---------------------------------------------------------------------
+    admin {
+      # Admin email for system notifications
+      # Receives alerts, error reports, payment notifications
+      # UPDATE THIS with your staging admin email
+      email = "admin-staging@example.com"
+    }
+    
+    # ---------------------------------------------------------------------
+    # Report Configuration
+    # ---------------------------------------------------------------------
+    # Generate reports in draft mode (adds watermark/draft indicator)
+    # Staging: true (clearly marks reports as non-production)
+    # Production: false (final reports)
+    report-as-draft = true
+  }
+}
+
+# =============================================================================
+# Alternative: Environment Variable Configuration
+# =============================================================================
+# You can override specific settings using environment variables
+# This is useful for Docker deployments and CI/CD pipelines
+#
+# Uncomment and customize as needed:
+
+# payments-env {
+#   # Override environment from env var
+#   environment = ${?PAYMENTS_ENVIRONMENT}
+#   
+#   invoice {
+#     number-prefix = ${?INVOICE_PREFIX}
+#     number-digits = ${?INVOICE_DIGITS}
+#     counter-starting-number = ${?INVOICE_STARTING_NUMBER}
+#   }
+#   
+#   retry {
+#     max-retries = ${?RETRY_MAX_RETRIES}
+#     base-delay-ms = ${?RETRY_BASE_DELAY_MS}
+#     max-delay-ms = ${?RETRY_MAX_DELAY_MS}
+#   }
+#   
+#   admin {
+#     email = ${?ADMIN_EMAIL}
+#   }
+# }
+
+# =============================================================================
+# CONFIGURATION NOTES
+# =============================================================================
+#
+# File Location:
+#   This file must be located at:
+#   docker/configs/staging/payments/payments-config.conf
+#
+# Environment Detection:
+#   Set FIRECALC_ENV=staging when running the application
+#   The system automatically loads configs from configs/staging/
+#
+# Testing Configuration:
+#   After editing, test the configuration:
+#   FIRECALC_ENV=staging sbt "payments/run"
+#
+# Related Files:
+#   - email-config.conf: SMTP configuration for emails
+#   - gocardless-config.conf: Payment gateway configuration
+#   - docker/configs/staging/invoices/invoice-config.yaml: Invoice templates
+#
+# Security:
+#   - This file may contain sensitive paths and settings
+#   - Ensure proper file permissions: chmod 600 payments-config.conf
+#   - Never commit actual config (without .example) to version control
+#
+# Staging Best Practices:
+#   - Use test/sandbox credentials only
+#   - Separate database from production
+#   - Use staging-specific invoice prefix
+#   - Enable draft mode for reports
+#   - Use test email service (no real emails sent)
+#
+# =============================================================================

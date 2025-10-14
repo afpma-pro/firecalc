@@ -1,0 +1,330 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# =============================================================================
+# GoCardless Payment Gateway Configuration - STAGING Environment
+# =============================================================================
+# This file contains GoCardless payment gateway configuration for the staging
+# environment. GoCardless provides direct debit payment processing.
+#
+# CRITICAL STAGING REQUIREMENT:
+# - ALWAYS use SANDBOX environment for staging
+# - NEVER use production/live credentials in staging
+# - Sandbox transactions are for testing only and not real
+#
+# Documentation: https://developer.gocardless.com/
+#
+# Remove .example extension when deploying:
+#   cp gocardless-config.conf.example gocardless-config.conf
+# =============================================================================
+
+gocardless {
+  # Deployment environment (not GoCardless environment)
+  # This tells the loader which config section to use
+  # For staging deployment, we use "sandbox" (not "live")
+  environment = "sandbox"
+  
+  # Sandbox Configuration - For Staging/Testing
+  # Note: The section name is "sandbox" because that's the GoCardless environment
+  # This is used for staging deployment even though our deployment is called "staging"
+  sandbox {
+    # ---------------------------------------------------------------------
+    # GoCardless Environment
+    # ---------------------------------------------------------------------
+    # MUST be "sandbox" for staging/testing
+    # Options: "sandbox" (testing) or "live" (production)
+    # 
+    # CRITICAL: Never use "live" in staging environment!
+    environment = "sandbox"
+    
+    # ---------------------------------------------------------------------
+    # API Access Token (SENSITIVE)
+    # ---------------------------------------------------------------------
+    # Obtain from GoCardless dashboard:
+    # 1. Log in to https://manage-sandbox.gocardless.com
+    # 2. Navigate to Developers > API tokens
+    # 3. Create new access token
+    # 4. Copy token here
+    #
+    # SECURITY: Consider using environment variable ${?GOCARDLESS_ACCESS_TOKEN}
+    # Format: sandbox_xxxxxxxxxxxxxxxxxxxxxxxxxxxx (sandbox tokens start with "sandbox_")
+    access-token = "sandbox_your_access_token_here"
+    
+    # ---------------------------------------------------------------------
+    # API Base URL
+    # ---------------------------------------------------------------------
+    # Automatically set based on environment
+    # Sandbox: https://api-sandbox.gocardless.com
+    # Live: https://api.gocardless.com
+    base-url = "https://api-sandbox.gocardless.com"
+    
+    # ---------------------------------------------------------------------
+    # Webhook Secret (SENSITIVE)
+    # ---------------------------------------------------------------------
+    # Used to verify webhook authenticity from GoCardless
+    # Obtain from GoCardless dashboard:
+    # 1. Log in to https://manage-sandbox.gocardless.com
+    # 2. Navigate to Developers > Webhooks
+    # 3. Create new webhook endpoint
+    # 4. Copy webhook secret
+    #
+    # SECURITY: Consider using environment variable ${?GOCARDLESS_WEBHOOK_SECRET}
+    webhook-secret = "your_webhook_secret_here"
+    
+    # ---------------------------------------------------------------------
+    # Admin Email
+    # ---------------------------------------------------------------------
+    # Email address to receive payment notifications and alerts
+    # Should be monitored regularly in staging for testing
+    admin-email = "admin-staging@example.com"
+    
+    # ---------------------------------------------------------------------
+    # Redirect URIs
+    # ---------------------------------------------------------------------
+    # URLs where users are redirected after payment flow
+    # Must match your domain configuration
+    #
+    # IMPORTANT for Staging:
+    # - Use your staging domain (e.g., api.staging.example.com)
+    # - HTTPS is required (Let's Encrypt in docker-compose)
+    # - Must be registered in GoCardless dashboard
+    
+    # Success redirect URI
+    # User is redirected here after completing payment setup
+    # The backend handles this endpoint to finalize payment
+    redirect-uri = "https://api.staging.example.com/v1/payment_complete"
+    
+    # Cancellation/Exit URI
+    # User is redirected here if they cancel the payment flow
+    # The backend handles this endpoint to record cancellation
+    exit-uri = "https://api.staging.example.com/v1/payment_cancelled"
+  }
+}
+
+# =============================================================================
+# Alternative: Environment Variable Configuration
+# =============================================================================
+# Override configuration using environment variables
+# Recommended for Docker deployments and CI/CD pipelines
+# This approach keeps sensitive credentials out of config files
+#
+# Uncomment to enable:
+
+# gocardless-env {
+#   environment = ${?GOCARDLESS_ENVIRONMENT}
+#   access-token = ${?GOCARDLESS_ACCESS_TOKEN}
+#   base-url = ${?GOCARDLESS_BASE_URL}
+#   webhook-secret = ${?GOCARDLESS_WEBHOOK_SECRET}
+#   admin-email = ${?GOCARDLESS_ADMIN_EMAIL}
+#   redirect-uri = ${?GOCARDLESS_REDIRECT_URI}
+#   exit-uri = ${?GOCARDLESS_EXIT_URI}
+# }
+
+# =============================================================================
+# GOCARDLESS SETUP GUIDE
+# =============================================================================
+#
+# Step 1: Create Sandbox Account
+# -------------------------------
+# 1. Visit https://manage-sandbox.gocardless.com
+# 2. Sign up for a free sandbox account
+# 3. Complete account verification
+#
+# Step 2: Generate API Access Token
+# ----------------------------------
+# 1. Log in to sandbox dashboard
+# 2. Navigate to: Developers > API tokens
+# 3. Click "Create access token"
+# 4. Name it: "FireCalc Staging"
+# 5. Copy the generated token (starts with "sandbox_")
+# 6. Update 'access-token' in this file
+#
+# IMPORTANT: Token is shown only once - save it securely!
+#
+# Step 3: Configure Webhooks
+# ---------------------------
+# 1. Navigate to: Developers > Webhooks
+# 2. Click "Create webhook endpoint"
+# 3. Enter webhook URL:
+#    https://api.staging.example.com/v1/webhooks/gocardless
+# 4. Copy the webhook secret
+# 5. Update 'webhook-secret' in this file
+#
+# Step 4: Register Redirect URIs
+# -------------------------------
+# 1. Navigate to: Developers > Redirect URIs
+# 2. Add success URI:
+#    https://api.staging.example.com/v1/payment_complete
+# 3. Add exit URI:
+#    https://api.staging.example.com/v1/payment_cancelled
+# 4. Save changes
+#
+# Step 5: Test Payment Flow
+# --------------------------
+# 1. Start the application with staging config
+# 2. Initiate a test payment
+# 3. Use GoCardless test account details:
+#    - Account number: 55779911
+#    - Sort code: 200000
+#    - Any valid UK address
+# 4. Complete payment flow
+# 5. Verify webhook delivery in GoCardless dashboard
+#
+# =============================================================================
+# SANDBOX VS LIVE ENVIRONMENTS
+# =============================================================================
+#
+# Sandbox (Staging/Testing):
+# ---------------------------
+# - Base URL: https://api-sandbox.gocardless.com
+# - Dashboard: https://manage-sandbox.gocardless.com
+# - Tokens start with: "sandbox_"
+# - Use test bank account details
+# - No real money is processed
+# - Unlimited test transactions
+# - Separate from live environment
+# - Can simulate various scenarios (successes, failures)
+#
+# Live (Production Only):
+# -----------------------
+# - Base URL: https://api.gocardless.com
+# - Dashboard: https://manage.gocardless.com
+# - Tokens start with: "live_"
+# - Real bank account details required
+# - Real money is processed
+# - Transaction fees apply
+# - Requires business verification
+# - Compliance requirements
+# - NEVER use in staging!
+#
+# =============================================================================
+# TESTING SCENARIOS
+# =============================================================================
+#
+# Test Successful Payment:
+# ------------------------
+# Use these test details in sandbox:
+# - Account number: 55779911
+# - Sort code: 200000
+# - Name: Any name
+# - Address: Any valid UK address
+#
+# Test Failed Payment:
+# --------------------
+# Use these test details to simulate failures:
+# - Account number: 55779912 (insufficient funds)
+# - Sort code: 200000
+#
+# Webhook Testing:
+# ----------------
+# GoCardless sends webhooks for events:
+# - payment_created
+# - payment_confirmed
+# - payment_failed
+# - payment_cancelled
+# - mandate_created
+# - mandate_failed
+#
+# Monitor webhook delivery in:
+# Developers > Webhooks > View logs
+#
+# =============================================================================
+# SECURITY BEST PRACTICES
+# =============================================================================
+#
+# 1. Credential Management:
+#    - Never commit actual tokens to version control
+#    - Use environment variables for sensitive data
+#    - Rotate tokens regularly (every 90 days)
+#    - Use different tokens for each environment
+#
+# 2. File Permissions:
+#    chmod 600 gocardless-config.conf
+#
+# 3. Webhook Security:
+#    - Always verify webhook signatures
+#    - Use HTTPS for webhook endpoints
+#    - Log webhook payloads for debugging
+#    - Monitor for suspicious webhook activity
+#
+# 4. Access Control:
+#    - Limit who has access to sandbox dashboard
+#    - Use separate accounts for different team members
+#    - Review access logs regularly
+#
+# 5. Testing:
+#    - Test payment flows thoroughly in sandbox
+#    - Verify error handling
+#    - Test webhook processing
+#    - Document test scenarios
+#
+# =============================================================================
+# TROUBLESHOOTING
+# =============================================================================
+#
+# Issue: "Authentication failed"
+# Solution: 
+# - Verify access token is correct
+# - Ensure token starts with "sandbox_" for staging
+# - Check token hasn't expired or been revoked
+# - Regenerate token if necessary
+#
+# Issue: "Invalid redirect URI"
+# Solution:
+# - Verify URI matches exactly in GoCardless dashboard
+# - Ensure HTTPS is used
+# - Check for typos in domain name
+# - Confirm DNS points to correct server
+#
+# Issue: "Webhook verification failed"
+# Solution:
+# - Verify webhook secret is correct
+# - Check webhook signature calculation
+# - Review webhook logs in dashboard
+# - Ensure webhook endpoint is accessible
+#
+# Issue: "Payment creation failed"
+# Solution:
+# - Check API rate limits
+# - Verify customer details are valid
+# - Review error response from API
+# - Check sandbox dashboard for details
+#
+# Issue: "SSL/TLS errors"
+# Solution:
+# - Ensure Let's Encrypt certificate is valid
+# - Verify domain DNS is correctly configured
+# - Check nginx-ssl-proxy logs
+# - Test HTTPS access manually: curl https://your-domain.com
+#
+# =============================================================================
+# RELATED FILES
+# =============================================================================
+#
+# - payments-config.conf: Main payments configuration
+# - email-config.conf: Email/SMTP settings
+# - ../.env: Environment variables for Docker
+# - ../invoices/invoice-config.yaml: Invoice templates
+#
+# =============================================================================
+# FURTHER READING
+# =============================================================================
+#
+# GoCardless Developer Documentation:
+# https://developer.gocardless.com/
+#
+# API Reference:
+# https://developer.gocardless.com/api-reference/
+#
+# Webhook Guide:
+# https://developer.gocardless.com/getting-started/api/webhooks/
+#
+# Testing Guide:
+# https://developer.gocardless.com/getting-started/api/testing/
+#
+# Security Best Practices:
+# https://developer.gocardless.com/security/
+#
+# =============================================================================

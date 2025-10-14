@@ -1,0 +1,318 @@
+# =============================================================================
+# Invoice Configuration - STAGING Environment
+# =============================================================================
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+# This file contains invoice generation configuration for the staging
+# environment. It defines company information, invoice templates, and
+# styling that will be used when generating PDF invoices.
+#
+# IMPORTANT:
+# - This is a YAML configuration file (indentation matters!)
+# - Supports environment variable substitution: ${VAR_NAME} or ${VAR_NAME:-default}
+# - Remove .example extension when deploying:
+#   cp invoice-config.yaml.example invoice-config.yaml
+# - Update company details with your actual information
+# =============================================================================
+
+invoice:
+  # Invoice identification
+  # These fields are typically set dynamically by the application
+  # but can be overridden here for testing
+  invoiceNumber: "${INVOICE_NUMBER:-FCALC-STG-2025-0001}"
+  invoiceDate: "${INVOICE_DATE:-2025-09-05}"
+  dueDate: "${DUE_DATE:-2025-10-05}"
+  reference: "${INVOICE_REFERENCE:-Staging Invoice}"
+  
+  # ---------------------------------------------------------------------------
+  # Sender Information (Your Company)
+  # ---------------------------------------------------------------------------
+  # This section defines your company/organization details that appear on
+  # invoices as the sender/biller. Update with your actual information.
+  sender:
+    # Company legal name (as registered)
+    name: "${COMPANY_LEGAL_NAME:-Your Company Legal Name Inc}"
+    
+    # Display name (can be shorter/marketing name)
+    # Set to null to use legal name
+    displayName: "${COMPANY_DISPLAY_NAME:-Your Company}"
+    
+    # Company address
+    address:
+      street: "${COMPANY_STREET:-123 Your Business Street}"
+      streetLine2: "${COMPANY_STREET_LINE2:-Suite 100}"
+      city: "${COMPANY_CITY:-Your City}"
+      postalCode: "${COMPANY_POSTAL_CODE:-12345}"
+      region: "${COMPANY_REGION:-Your Region}"
+      country: "${COMPANY_COUNTRY:-Your Country}"
+    
+    # Legal and financial identifiers
+    vatNumber: "${COMPANY_VAT_NUMBER:-YOUR_VAT_NUMBER_HERE}"
+    registrationNumber: "${COMPANY_REGISTRATION:-YOUR_REGISTRATION_NUMBER_HERE}"
+    
+    # Contact information
+    email: "${COMPANY_EMAIL:-billing@yourcompany.com}"
+    phone: "${COMPANY_PHONE:-+1 555 123 4567}"
+    website: "${COMPANY_WEBSITE:-https://www.yourcompany.com}"
+    
+    # Company logo (optional)
+    # Path relative to this config file or null to omit
+    # Place logo file at: configs/staging/invoices/logo.png
+    logo: null
+  
+  # ---------------------------------------------------------------------------
+  # Recipient Information (Customer)
+  # ---------------------------------------------------------------------------
+  # This section is typically populated dynamically from customer data
+  # but can be set here for testing invoice generation
+  recipient:
+    name: "${CLIENT_COMPANY_NAME:-Test Client Company Ltd}"
+    displayName: null
+    
+    address:
+      street: "${CLIENT_STREET:-456 Client Boulevard}"
+      streetLine2: null
+      city: "${CLIENT_CITY:-Client City}"
+      postalCode: "${CLIENT_POSTAL_CODE:-67890}"
+      region: "${CLIENT_REGION:-Client Region}"
+      country: "${CLIENT_COUNTRY:-Client Country}"
+    
+    vatNumber: "${CLIENT_VAT_NUMBER:-CLIENT_VAT_NUMBER_HERE}"
+    registrationNumber: "${CLIENT_REGISTRATION:-CLIENT_REGISTRATION_HERE}"
+    email: "${CLIENT_EMAIL:-accounts@clientcompany.com}"
+    phone: "${CLIENT_PHONE:-+1 555 987 6543}"
+    website: "${CLIENT_WEBSITE:-https://www.clientcompany.com}"
+    logo: null
+  
+  # Bill-to address (if different from recipient)
+  # Set to null to use recipient address
+  billTo: null
+  
+  # ---------------------------------------------------------------------------
+  # Line Items (Products/Services)
+  # ---------------------------------------------------------------------------
+  # This section is typically populated dynamically from order data
+  # Example items shown here for testing
+  lineItems:
+    - description: "FireCalc Professional License - Annual Subscription"
+      quantity: 1
+      unitPrice: 89.00
+      taxRate: 20.0
+      discountPercentage: null
+      unit: "license"
+      productCode: "FCALC-PRO-ANNUAL"
+    
+    - description: "PDF Report Generation Service"
+      quantity: 1
+      unitPrice: 29.00
+      taxRate: 20.0
+      discountPercentage: null
+      unit: "service"
+      productCode: "FCALC-PDF-GEN"
+  
+  # ---------------------------------------------------------------------------
+  # Payment Terms
+  # ---------------------------------------------------------------------------
+  paymentTerms:
+    # Number of days until payment is due
+    dueDays: ${PAYMENT_DUE_DAYS:-30}
+    
+    # Payment terms description
+    description: "Payment due within ${PAYMENT_DUE_DAYS:-30} days of invoice date"
+    
+    # Late payment fee (percentage)
+    lateFeePercentage: ${LATE_FEE_PERCENTAGE:-1.5}
+    
+    # Early payment discount (percentage)
+    discountPercentage: ${EARLY_DISCOUNT_PERCENTAGE:-2.0}
+    
+    # Days to qualify for early payment discount
+    discountDays: ${EARLY_DISCOUNT_DAYS:-10}
+    
+    # Payment methods accepted
+    methods:
+      - BankTransfer:
+          iban: "${COMPANY_IBAN:-YOUR_IBAN_NUMBER_HERE}"
+          bic: "${COMPANY_BIC:-YOUR_BIC_CODE_HERE}"
+    
+    # Additional payment notes
+    notes: "Early payment discount: ${EARLY_DISCOUNT_PERCENTAGE:-2}% if paid within ${EARLY_DISCOUNT_DAYS:-10} days"
+  
+  # Currency code (ISO 4217)
+  # EUR = Euro, USD = US Dollar, GBP = British Pound, etc.
+  currency: "${COMPANY_CURRENCY:-EUR}"
+  
+  # Additional notes/terms to display on invoice
+  notes: "Thank you for your business! This is a STAGING invoice for testing purposes only."
+  
+  # Invoice-level discount (optional)
+  # Set to null for no discount
+  discountPercentage: null
+  
+  # Invoice status
+  # Options: Draft, Sent, Paid, Overdue, Cancelled
+  status: "Draft"
+
+# =============================================================================
+# Template Styling
+# =============================================================================
+# Customize the visual appearance of generated invoices
+template:
+  # Logo position on invoice
+  # Options: top-left, top-center, top-right
+  logoPosition: "${TEMPLATE_LOGO_POSITION:-top-left}"
+  
+  # Primary brand color (hex format)
+  # Used for headers, accents, and branding elements
+  primaryColor: "${TEMPLATE_PRIMARY_COLOR:-#2563eb}"
+  
+  # Font family for invoice text
+  # Options: Liberation Sans, Liberation Serif, Arial, Helvetica, Times New Roman
+  fontFamily: "${TEMPLATE_FONT_FAMILY:-Liberation Sans}"
+
+# =============================================================================
+# ENVIRONMENT VARIABLE REFERENCE
+# =============================================================================
+#
+# This configuration file supports environment variable substitution.
+# Variables can be set in docker/.env or as system environment variables.
+#
+# Required Variables (no defaults):
+# ----------------------------------
+# COMPANY_LEGAL_NAME        - Your company's legal name
+# COMPANY_IBAN              - Bank account IBAN for payments
+# COMPANY_BIC               - Bank account BIC/SWIFT code
+#
+# Company Information:
+# --------------------
+# COMPANY_DISPLAY_NAME      - Marketing/display name
+# COMPANY_STREET            - Street address line 1
+# COMPANY_STREET_LINE2      - Street address line 2
+# COMPANY_CITY              - City
+# COMPANY_POSTAL_CODE       - Postal/ZIP code
+# COMPANY_REGION            - State/Region/Province
+# COMPANY_COUNTRY           - Country
+# COMPANY_VAT_NUMBER        - VAT/Tax ID number
+# COMPANY_REGISTRATION      - Company registration number
+# COMPANY_EMAIL             - Billing email address
+# COMPANY_PHONE             - Contact phone number
+# COMPANY_WEBSITE           - Company website URL
+# COMPANY_CURRENCY          - Currency code (EUR, USD, GBP, etc.)
+#
+# Payment Terms:
+# --------------
+# PAYMENT_DUE_DAYS          - Days until payment due (default: 30)
+# LATE_FEE_PERCENTAGE       - Late payment fee % (default: 1.5)
+# EARLY_DISCOUNT_PERCENTAGE - Early payment discount % (default: 2.0)
+# EARLY_DISCOUNT_DAYS       - Days to qualify for discount (default: 10)
+#
+# Template Styling:
+# -----------------
+# TEMPLATE_LOGO_POSITION    - Logo position (default: top-left)
+# TEMPLATE_PRIMARY_COLOR    - Brand color hex (default: #2563eb)
+# TEMPLATE_FONT_FAMILY      - Font name (default: Liberation Sans)
+#
+# Dynamic Variables (set by application):
+# ----------------------------------------
+# INVOICE_NUMBER            - Invoice number (auto-generated)
+# INVOICE_DATE              - Invoice date (current date)
+# DUE_DATE                  - Payment due date (calculated)
+# INVOICE_REFERENCE         - Invoice reference/description
+#
+# Client Variables (from order data):
+# ------------------------------------
+# CLIENT_COMPANY_NAME       - Client company name
+# CLIENT_STREET             - Client street address
+# CLIENT_CITY               - Client city
+# CLIENT_POSTAL_CODE        - Client postal code
+# CLIENT_REGION             - Client region
+# CLIENT_COUNTRY            - Client country
+# CLIENT_VAT_NUMBER         - Client VAT number
+# CLIENT_REGISTRATION       - Client registration number
+# CLIENT_EMAIL              - Client email
+# CLIENT_PHONE              - Client phone
+# CLIENT_WEBSITE            - Client website
+#
+# =============================================================================
+# CONFIGURATION NOTES
+# =============================================================================
+#
+# File Location:
+#   This file must be located at:
+#   docker/configs/staging/invoices/invoice-config.yaml
+#
+# Environment Detection:
+#   Set FIRECALC_ENV=staging when running the application
+#   The system automatically loads configs from configs/staging/
+#
+# Logo Setup:
+#   1. Place your logo file at: docker/configs/staging/invoices/logo.png
+#   2. Supported formats: PNG (recommended), JPG, JPEG
+#   3. Recommended size: 200x200 pixels or similar aspect ratio
+#   4. Update 'sender.logo' field with filename: "logo.png"
+#   5. Or leave as null to omit logo
+#
+# Testing Invoice Generation:
+#   1. Update company information in this file or via environment variables
+#   2. Run application: FIRECALC_ENV=staging sbt "payments/run"
+#   3. Create a test order/purchase
+#   4. Trigger invoice generation
+#   5. Check generated PDF in output directory
+#
+# Currency Codes:
+#   Common ISO 4217 codes:
+#   - EUR: Euro
+#   - USD: US Dollar
+#   - GBP: British Pound
+#   - CHF: Swiss Franc
+#   - CAD: Canadian Dollar
+#   - AUD: Australian Dollar
+#   - JPY: Japanese Yen
+#
+# Tax/VAT Rates:
+#   Line item taxRate is a percentage (e.g., 20.0 for 20% VAT)
+#   Common EU VAT rates:
+#   - France: 20% standard, 10% reduced, 5.5% reduced, 2.1% super-reduced
+#   - Germany: 19% standard, 7% reduced
+#   - UK: 20% standard, 5% reduced, 0% zero-rated
+#
+# YAML Syntax Notes:
+#   - Indentation matters! Use spaces, not tabs
+#   - Use null for empty/missing values
+#   - Strings with special characters need quotes
+#   - ${VAR} requires environment variable to be set
+#   - ${VAR:-default} uses default if variable not set
+#
+# Security:
+#   - This file may contain sensitive company information
+#   - Set file permissions: chmod 600 invoice-config.yaml
+#   - Never commit actual config (without .example) to version control
+#   - Use environment variables for truly sensitive data
+#
+# Related Files:
+#   - ../payments/payments-config.conf: Main payments config
+#   - ../payments/email-config.conf: Email delivery config
+#   - ../../.env: Environment variables for Docker deployment
+#
+# Troubleshooting:
+#   - "YAML parsing error": Check indentation and syntax
+#   - "Missing required field": Verify all required fields are present
+#   - "Environment variable not found": Check .env file and exports
+#   - "Logo not loading": Verify file exists and path is correct
+#   - "Currency not supported": Use valid ISO 4217 currency code
+#
+# =============================================================================
+# STAGING-SPECIFIC CONSIDERATIONS
+# =============================================================================
+#
+# For staging environment:
+# - Add clear watermark/notice that invoices are for testing
+# - Use separate bank account or test account details
+# - Set distinct invoice number prefix (e.g., FCALC-STG-)
+# - Use test email service to avoid sending real invoices
+# - Consider adding "STAGING" or "TEST" to company display name
+# - Keep payment amounts low for testing
+# - Use sandbox payment gateway credentials only
+#
+# =============================================================================

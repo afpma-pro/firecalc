@@ -1,0 +1,261 @@
+# =============================================================================
+# FireCalc Payments Backend - Docker Compose Configuration
+# =============================================================================
+# This file orchestrates the FireCalc payments backend service with SSL
+# termination via nginx-ssl-proxy. The setup includes:
+# - Backend service running the Scala payments application
+# - Nginx SSL proxy for HTTPS termination and routing
+# - Shared internal network for secure inter-service communication
+# - Volume mounts for configuration and database persistence
+#
+# Usage:
+#   docker-compose up -d              # Start all services in detached mode
+#   docker-compose logs -f backend    # View backend logs
+#   docker-compose down               # Stop and remove containers
+#
+# Environment Variables (via .env file):
+#   DOMAIN              - Domain name for SSL (e.g., api.staging.example.com)
+#   FIRECALC_ENV        - Environment name (staging, production, etc.)
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # Backend Service - FireCalc Payments API
+  # ===========================================================================
+  # Scala-based payments backend service handling payment processing,
+  # invoice generation, and database operations. This service is not directly
+  # exposed to the internet; all traffic comes through the nginx-ssl-proxy.
+  backend:
+    # Build configuration
+    build:
+      context: ..                    # Build from project root
+      dockerfile: docker/Dockerfile  # Use Dockerfile in docker/ directory
+    
+    image: firecalc-payments:latest
+    container_name: firecalc-payments-backend
+    
+    # Restart policy: always restart unless explicitly stopped
+    restart: unless-stopped
+    
+    # Environment variables
+    # FIRECALC_ENV determines which configuration file to load
+    # Additional env vars can be added via the .env file
+    environment:
+      - FIRECALC_ENV=${FIRECALC_ENV:-staging}
+    
+    # Load additional environment variables from .env file
+    env_file:
+      - .env
+    
+    # Volume mounts for configuration and data persistence
+    volumes:
+      # Configuration files (read-only)
+      # Contains YAML/CONF files for application settings
+      - ./configs:/app/configs:ro
+      
+      # Database directory (read-write)
+      # SQLite database files with persistent storage
+      - ./databases:/app/databases:rw
+    
+    # Network configuration
+    # Only expose port internally to the docker network
+    # Not published to host - only accessible via nginx-ssl-proxy
+    networks:
+      - firecalc-network
+    
+    # Expose port 8181 internally (not to host)
+    expose:
+      - "8181"
+    
+    # Health check configuration
+    # Verifies the application is responsive
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits (optional - uncomment and adjust as needed)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2.0'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1.0'
+    #       memory: 1G
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # Nginx SSL Proxy - SSL/TLS Termination
+  # ===========================================================================
+  # Provides SSL/TLS termination and reverse proxy functionality.
+  # Automatically obtains and renews Let's Encrypt certificates.
+  # Redirects HTTP to HTTPS and proxies requests to backend service.
+  nginx-ssl-proxy:
+    image: danieldent/nginx-ssl-proxy:latest
+    container_name: firecalc-ssl-proxy
+    
+    # Restart policy: always restart unless explicitly stopped
+    restart: unless-stopped
+    
+    # Port mappings - expose to host
+    ports:
+      # HTTPS port - primary service endpoint
+      - "443:443"
+      # HTTP port - redirects to HTTPS
+      - "80:80"
+    
+    # Environment variables for SSL proxy configuration
+    environment:
+      # Server name for nginx configuration
+      # Must match DNS A/AAAA record pointing to this server
+      - SERVERNAME=${DOMAIN}
+      
+      # Alternative domain specification (some nginx-ssl-proxy versions use this)
+      - DOMAIN=${DOMAIN}
+      
+      # Target service to proxy requests to
+      # Format: service_name:port
+      - UPSTREAM=backend:8181
+      - TARGET_SERVICE=backend:8181
+      
+      # Enable HTTP to HTTPS redirect
+      - HTTPS_REDIRECT=true
+      
+      # Optional: Email for Let's Encrypt notifications
+      # - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
+      
+      # Optional: Staging mode for testing certificate issuance
+      # - LETSENCRYPT_STAGING=false
+    
+    # Load additional environment variables from .env file
+    env_file:
+      - .env
+    
+    # Volume mounts for SSL certificates and configuration
+    volumes:
+      # Let's Encrypt certificates persistence
+      # Prevents rate-limiting by reusing certificates across restarts
+      - letsencrypt-certs:/etc/letsencrypt
+      
+      # Nginx configuration (if custom config needed)
+      # - ./nginx-custom.conf:/etc/nginx/conf.d/custom.conf:ro
+    
+    # Service dependencies
+    # Ensure backend is started before nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    # Network configuration
+    # Must be on same network as backend to proxy requests
+    networks:
+      - firecalc-network
+    
+    # Health check for the proxy itself
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+# =============================================================================
+# Networks
+# =============================================================================
+# Custom bridge network for inter-service communication
+# Provides DNS resolution between services using service names
+networks:
+  firecalc-network:
+    driver: bridge
+    # Optional: Custom network configuration
+    # ipam:
+    #   config:
+    #     - subnet: 172.28.0.0/16
+
+# =============================================================================
+# Volumes
+# =============================================================================
+# Named volumes for data persistence
+volumes:
+  # Let's Encrypt certificates
+  # Persists SSL certificates across container restarts
+  # Critical for avoiding Let's Encrypt rate limits
+  letsencrypt-certs:
+    driver: local
+
+# =============================================================================
+# Production Deployment Notes
+# =============================================================================
+# 
+# 1. DNS Configuration:
+#    - Ensure DOMAIN in .env points to a valid DNS A/AAAA record
+#    - DNS must resolve to the server's public IP address
+#    - Allow time for DNS propagation before starting services
+#
+# 2. Firewall Configuration:
+#    - Open port 443 (HTTPS) for incoming traffic
+#    - Open port 80 (HTTP) for Let's Encrypt validation and redirects
+#    - Ensure ports are accessible from the internet
+#
+# 3. Environment Variables (.env file):
+#    Create a .env file in the project root with:
+#    ```
+#    DOMAIN=api.staging.example.com
+#    FIRECALC_ENV=staging
+#    # Optional: LETSENCRYPT_EMAIL=admin@example.com
+#    ```
+#
+# 4. Pre-deployment Checklist:
+#    - Build the application JAR: make package or sbt assembly
+#    - Verify JAR exists at modules/payments/target/scala-3.7.3/firecalc-payments-assembly.jar
+#    - Create configs/ directory with necessary YAML/CONF files
+#    - Ensure databases/ directory exists (will be created if missing)
+#    - Review and update .env file with production values
+#
+# 5. SSL Certificate Management:
+#    - First run may take a few minutes to obtain certificates
+#    - Monitor logs: docker-compose logs -f nginx-ssl-proxy
+#    - Certificates auto-renew before expiration
+#    - Volume letsencrypt-certs persists certificates
+#
+# 6. Monitoring and Maintenance:
+#    - Check service health: docker-compose ps
+#    - View logs: docker-compose logs -f [service_name]
+#    - Restart services: docker-compose restart [service_name]
+#    - Update services: docker-compose pull && docker-compose up -d
+#
+# 7. Backup Strategy:
+#    - Backup databases/ directory regularly
+#    - Backup letsencrypt-certs volume: docker run --rm -v letsencrypt-certs:/certs -v $(pwd):/backup alpine tar czf /backup/certs-backup.tar.gz -C /certs .
+#    - Backup configs/ directory
+#
+# 8. Security Considerations:
+#    - Services run as non-root users inside containers
+#    - Backend not exposed to host, only via nginx proxy
+#    - Use secrets management for sensitive data (not in .env)
+#    - Regular security updates: docker-compose pull
+#    - Review and rotate database encryption keys
+#
+# 9. Troubleshooting:
+#    - Certificate issues: Check DNS resolution and port accessibility
+#    - Backend not responding: Check health endpoint and logs
+#    - Connection refused: Verify network configuration
+#    - Database locked: Ensure proper volume permissions
+#
+# =============================================================================

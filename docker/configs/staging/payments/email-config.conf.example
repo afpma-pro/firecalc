@@ -1,0 +1,298 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# =============================================================================
+# Email Configuration - STAGING Environment
+# =============================================================================
+# This file contains SMTP configuration for sending emails from the staging
+# environment. For staging, it's recommended to use a test email service
+# like Mailtrap.io to avoid sending real emails.
+#
+# IMPORTANT:
+# - This file contains ONLY staging email configuration
+# - Use test SMTP service (e.g., Mailtrap.io, MailHog)
+# - Never use production SMTP credentials in staging
+# - Remove .example extension when deploying:
+#   cp email-config.conf.example email-config.conf
+# =============================================================================
+
+email {
+  # Environment identifier - must match FIRECALC_ENV
+  environment = "staging"
+  
+  # Staging Email Configuration
+  staging {
+    # ---------------------------------------------------------------------
+    # SMTP Server Configuration
+    # ---------------------------------------------------------------------
+    # For staging, use a test email service that captures emails without
+    # sending them to real recipients. Recommended services:
+    # - Mailtrap.io (https://mailtrap.io) - Free tier available
+    # - MailHog (https://github.com/mailhog/MailHog) - Self-hosted
+    # - Mailpit (https://github.com/axllent/mailpit) - Self-hosted
+    
+    smtp {
+      # SMTP server hostname
+      # Mailtrap: sandbox.smtp.mailtrap.io
+      # MailHog (local): localhost
+      host = "sandbox.smtp.mailtrap.io"
+      
+      # SMTP server port
+      # Standard ports: 25 (plain), 587 (TLS), 465 (SSL), 2525 (alternative)
+      # Mailtrap uses: 2525 or 587
+      port = 2525
+      
+      # SMTP authentication username
+      # Get from your test email service dashboard
+      # SECURITY: Consider using environment variable ${?SMTP_USERNAME}
+      username = "your-mailtrap-username"
+      
+      # SMTP authentication password
+      # Get from your test email service dashboard
+      # SECURITY: Consider using environment variable ${?SMTP_PASSWORD}
+      password = "your-mailtrap-password"
+      
+      # Enable TLS/STARTTLS encryption
+      # Recommended: true for security even in staging
+      use-tls = true
+    }
+    
+    # ---------------------------------------------------------------------
+    # Sender Information
+    # ---------------------------------------------------------------------
+    # Configures the "From" address for outgoing emails
+    
+    from {
+      # Email address that appears as sender
+      # Should be a no-reply or system address
+      # For staging, clearly identify as non-production
+      address = "noreply-staging@firecalc.example.com"
+      
+      # Display name that appears as sender
+      # Clearly marked as staging environment
+      name = "FireCalc Staging"
+    }
+  }
+}
+
+# =============================================================================
+# Alternative SMTP Providers - Examples
+# =============================================================================
+# Below are configuration examples for various SMTP providers.
+# Uncomment and customize as needed.
+
+# -----------------------------------------------------------------------------
+# Mailtrap.io (Recommended for Staging)
+# -----------------------------------------------------------------------------
+# Free tier: 500 emails/month, unlimited inboxes
+# Sign up at: https://mailtrap.io
+#
+# email {
+#   staging {
+#     smtp {
+#       host = "sandbox.smtp.mailtrap.io"
+#       port = 2525
+#       username = ${?SMTP_USERNAME}
+#       password = ${?SMTP_PASSWORD}
+#       use-tls = true
+#     }
+#     from {
+#       address = "noreply-staging@firecalc.example.com"
+#       name = "FireCalc Staging"
+#     }
+#   }
+# }
+
+# -----------------------------------------------------------------------------
+# MailHog (Self-Hosted Local Testing)
+# -----------------------------------------------------------------------------
+# Install: docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
+# Web UI: http://localhost:8025
+#
+# email {
+#   staging {
+#     smtp {
+#       host = "localhost"
+#       port = 1025
+#       username = ""
+#       password = ""
+#       use-tls = false
+#     }
+#     from {
+#       address = "noreply-staging@firecalc.example.com"
+#       name = "FireCalc Staging"
+#     }
+#   }
+# }
+
+# -----------------------------------------------------------------------------
+# SendGrid (Production-Grade Service)
+# -----------------------------------------------------------------------------
+# Not recommended for staging (use test service instead)
+# Free tier: 100 emails/day
+# Sign up at: https://sendgrid.com
+#
+# email {
+#   staging {
+#     smtp {
+#       host = "smtp.sendgrid.net"
+#       port = 587
+#       username = "apikey"
+#       password = ${?SENDGRID_API_KEY}
+#       use-tls = true
+#     }
+#     from {
+#       address = "noreply-staging@firecalc.example.com"
+#       name = "FireCalc Staging"
+#     }
+#   }
+# }
+
+# -----------------------------------------------------------------------------
+# AWS SES (Amazon Simple Email Service)
+# -----------------------------------------------------------------------------
+# Not recommended for staging (use test service instead)
+# Requires AWS account and verified domain/email
+# Pricing: $0.10 per 1,000 emails
+#
+# email {
+#   staging {
+#     smtp {
+#       host = "email-smtp.eu-west-1.amazonaws.com"
+#       port = 587
+#       username = ${?AWS_SMTP_USERNAME}
+#       password = ${?AWS_SMTP_PASSWORD}
+#       use-tls = true
+#     }
+#     from {
+#       address = "noreply-staging@firecalc.example.com"
+#       name = "FireCalc Staging"
+#     }
+#   }
+# }
+
+# -----------------------------------------------------------------------------
+# Gmail (Testing Only - Not Recommended)
+# -----------------------------------------------------------------------------
+# Requires app-specific password (not regular Gmail password)
+# Limitations: 500 emails/day, may get flagged as suspicious
+# Only use for quick local testing, never for staging/production
+#
+# email {
+#   staging {
+#     smtp {
+#       host = "smtp.gmail.com"
+#       port = 587
+#       username = "your-email@gmail.com"
+#       password = ${?GMAIL_APP_PASSWORD}
+#       use-tls = true
+#     }
+#     from {
+#       address = "your-email@gmail.com"
+#       name = "FireCalc Staging"
+#     }
+#   }
+# }
+
+# -----------------------------------------------------------------------------
+# Mailgun
+# -----------------------------------------------------------------------------
+# Not recommended for staging (use test service instead)
+# Free tier: 5,000 emails/month for 3 months
+# Sign up at: https://mailgun.com
+#
+# email {
+#   staging {
+#     smtp {
+#       host = "smtp.mailgun.org"
+#       port = 587
+#       username = ${?MAILGUN_SMTP_USERNAME}
+#       password = ${?MAILGUN_SMTP_PASSWORD}
+#       use-tls = true
+#     }
+#     from {
+#       address = "noreply-staging@firecalc.example.com"
+#       name = "FireCalc Staging"
+#     }
+#   }
+# }
+
+# =============================================================================
+# Environment Variable Configuration
+# =============================================================================
+# Override configuration using environment variables
+# Useful for Docker deployments and CI/CD pipelines
+#
+# Uncomment to enable:
+
+# email-env {
+#   environment = ${?EMAIL_ENVIRONMENT}
+#   
+#   smtp {
+#     host = ${?SMTP_HOST}
+#     port = ${?SMTP_PORT}
+#     username = ${?SMTP_USERNAME}
+#     password = ${?SMTP_PASSWORD}
+#     use-tls = ${?SMTP_USE_TLS}
+#   }
+#   
+#   from {
+#     address = ${?EMAIL_FROM_ADDRESS}
+#     name = ${?EMAIL_FROM_NAME}
+#   }
+# }
+
+# =============================================================================
+# CONFIGURATION NOTES
+# =============================================================================
+#
+# File Location:
+#   This file must be located at:
+#   docker/configs/staging/payments/email-config.conf
+#
+# Environment Detection:
+#   Set FIRECALC_ENV=staging when running the application
+#   The system automatically loads configs from configs/staging/
+#
+# Testing Email Configuration:
+#   1. Start your test email service (e.g., Mailtrap.io)
+#   2. Update SMTP credentials in this file
+#   3. Run application: FIRECALC_ENV=staging sbt "payments/run"
+#   4. Trigger an email action (e.g., invoice generation)
+#   5. Check your test email service inbox for captured emails
+#
+# Mailtrap.io Setup:
+#   1. Sign up at https://mailtrap.io (free tier available)
+#   2. Create an inbox for staging environment
+#   3. Copy SMTP credentials from inbox settings
+#   4. Update 'username' and 'password' in this file
+#   5. Use port 2525 or 587 (both work with Mailtrap)
+#
+# MailHog Setup (Docker):
+#   docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+#   - SMTP: localhost:1025
+#   - Web UI: http://localhost:8025
+#   - No authentication required
+#
+# Security Best Practices:
+#   - Use environment variables for sensitive credentials
+#   - Never commit actual credentials to version control
+#   - Set file permissions: chmod 600 email-config.conf
+#   - Rotate credentials regularly
+#   - Use different credentials for each environment
+#
+# Troubleshooting:
+#   - "Connection refused": Check host/port configuration
+#   - "Authentication failed": Verify username/password
+#   - "TLS error": Ensure use-tls matches server requirements
+#   - "Rate limited": Check service limits and quotas
+#   - No emails received: Verify 'from' address and test service inbox
+#
+# Related Files:
+#   - payments-config.conf: Main payments configuration
+#   - gocardless-config.conf: Payment gateway configuration
+#   - ../.env: Environment variables for Docker deployment
+#
+# =============================================================================
