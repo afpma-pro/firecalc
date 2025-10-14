@@ -844,6 +844,7 @@ lazy val payments = (project in file("modules/payments"))
 
     // Merge strategy for conflicting files
     assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard
       case PathList("reference.conf") => MergeStrategy.concat
       case _ => MergeStrategy.first
