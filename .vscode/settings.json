@@ -19,7 +19,7 @@
     "metals.serverVersion": "1.6.3+5-fd911a1b-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 37277,
-    "metals.suggestLatestUpgrade": true,
+    "metals.suggestLatestUpgrade": "on",
     "metals.customRepositories": [
         "sonatype:releases|sonatype:snapshots|jcenter"
     ],

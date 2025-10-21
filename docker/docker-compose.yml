@@ -1,3 +1,8 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
 # =============================================================================
 # FireCalc Payments Backend - Docker Compose Configuration
 # =============================================================================
@@ -14,7 +19,8 @@
 #   docker-compose down               # Stop and remove containers
 #
 # Environment Variables (via .env file):
-#   DOMAIN              - Domain name for SSL (e.g., api.staging.example.com)
+#   UI_DOMAIN           - UI domain name (e.g., firecalc.staging.example.com)
+#   API_DOMAIN          - API domain name (e.g., api.staging.example.com)
 #   FIRECALC_ENV        - Environment name (staging, production, etc.)
 # =============================================================================
 
@@ -115,15 +121,19 @@ services:
     
     # Environment variables for SSL proxy configuration
     environment:
-      # Server name for nginx configuration
-      # Must match DNS A/AAAA record pointing to this server
-      - SERVERNAME=${DOMAIN}
+      # Server names for nginx configuration (space-separated)
+      # Must match DNS A/AAAA records pointing to this server
+      - SERVERNAME=${UI_DOMAIN} ${API_DOMAIN}
       
       # Alternative domain specification (some nginx-ssl-proxy versions use this)
-      - DOMAIN=${DOMAIN}
+      - DOMAIN=${UI_DOMAIN} ${API_DOMAIN}
       
-      # Target service to proxy requests to
-      # Format: service_name:port
+      # Pass domain names to nginx config for server blocks
+      - UI_DOMAIN=${UI_DOMAIN}
+      - API_DOMAIN=${API_DOMAIN}
+      
+      # Target service to proxy requests to (for default config)
+      # Our custom config overrides this per domain
       - UPSTREAM=backend:8181
       - TARGET_SERVICE=backend:8181
       
@@ -146,8 +156,13 @@ services:
       # Prevents rate-limiting by reusing certificates across restarts
       - letsencrypt-certs:/etc/letsencrypt
       
-      # Nginx configuration (if custom config needed)
-      # - ./nginx-custom.conf:/etc/nginx/conf.d/custom.conf:ro
+      # UI static files (built web application)
+      # Served by nginx at root path /
+      - ../web/dist-app:/usr/share/nginx/html:ro
+      
+      # Custom nginx configuration for UI serving and API proxying
+      # Adds location blocks for static files and /v1/ API routes
+      - ./nginx-ui.conf:/etc/nginx/conf.d/ui.conf:ro
     
     # Service dependencies
     # Ensure backend is started before nginx
@@ -214,12 +229,15 @@ volumes:
 #    - Ensure ports are accessible from the internet
 #
 # 3. Environment Variables (.env file):
-#    Create a .env file in the project root with:
+#    Create a .env file in the docker/ directory with:
 #    ```
-#    DOMAIN=api.staging.example.com
+#    UI_DOMAIN=firecalc.staging.example.com
+#    API_DOMAIN=api.staging.example.com
 #    FIRECALC_ENV=staging
 #    # Optional: LETSENCRYPT_EMAIL=admin@example.com
 #    ```
+#
+#    Note: Both domains must have DNS A/AAAA records pointing to this server
 #
 # 4. Pre-deployment Checklist:
 #    - Build the application JAR: make package or sbt assembly
