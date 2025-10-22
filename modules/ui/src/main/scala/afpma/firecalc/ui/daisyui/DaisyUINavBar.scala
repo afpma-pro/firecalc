@@ -44,8 +44,10 @@ object DaisyUINavBar:
         buttonString: String
     )(using Locale) extends Component:
 
+        val disabledAttr: HtmlAttr[Boolean]   = htmlAttr("disabled"     , BooleanAsAttrPresenceCodec)
+
         val node = div(
-            cls := "flex flew-row navbar items-center justify-center bg-(--color-vlight-ocre) shadow-sm",
+            cls := "flex flew-row navbar items-center justify-center bg-(--color-vlight-ocre) shadow-sm gap-x-2",
             div(
                 cls := "flex-none",
                 titleLeftNode
@@ -81,6 +83,36 @@ object DaisyUINavBar:
             //         buttonTitle = "Cas pratique ex03"
             //     ),
             // ),
+
+            // EN15544 button
+            div(
+                    cls := "flex items-stretch gap-2",
+                    div(
+                            tabIndex        := 0,
+                            role            := "button",
+                            disabledAttr    := true,
+                            cls             := "btn btn-outline hover:btn-secondary rounded-field",
+                            "EN 15544:2023"
+                    ),
+                    // div(
+                    //     cls := "dropdown dropdown-end",
+                    //     div(
+                    //         tabIndex := 0,
+                    //         role     := "button",
+                    //         cls      := "btn btn-outline rounded-field",
+                    //         "EN 15544:2023"
+                    //     ),
+                    //     ul(
+                    //         tabIndex := 0,
+                    //         cls      := "menu dropdown-content bg-base-200 rounded-box z-1 mt-4 w-24 p-2 shadow-sm",
+                    //         li(a("EN 15544:2023")),
+                    //         // MCE
+                    //         // Other variants
+                    //     )
+                    // )
+            ),
+
+            // ORDER PDF BUTTON
             div(
                 cls := "shrink flex flex-row justify-end gap-2",
 
@@ -111,35 +143,8 @@ object DaisyUINavBar:
                     )
                 ),
 
-                // EN15544 button
-                div(
-                    cls := "flex items-stretch gap-2",
-                    div(
-                        tabIndex := 0,
-                        role     := "button",
-                        cls      := "btn btn-outline hover:btn-secondary rounded-field",
-                        "EN 15544:2023"
-                    ),
-                    // div(
-                    //     cls := "dropdown dropdown-end",
-                    //     div(
-                    //         tabIndex := 0,
-                    //         role     := "button",
-                    //         cls      := "btn btn-outline rounded-field",
-                    //         "EN 15544:2023"
-                    //     ),
-                    //     ul(
-                    //         tabIndex := 0,
-                    //         cls      := "menu dropdown-content bg-base-200 rounded-box z-1 mt-4 w-24 p-2 shadow-sm",
-                    //         li(a("EN 15544:2023")),
-                    //         // MCE
-                    //         // Other variants
-                    //     )
-                    // )
-                ),
-
                 
-                // language button
+                // LANGUAGE button
                 div(
                     cls := "flex items-stretch",
                     div(
@@ -149,7 +154,7 @@ object DaisyUINavBar:
                             role     := "button",
                             cls      := "btn not-focus:btn-outline rounded-field hover:btn-secondary focus:btn-secondary focus:btn",
                             div(cls := "w-4 h-4 flex items-center justify-center", lucide.languages(stroke_width = 1.5)),
-                            div(cls := "w-4 h-4 flex items-center justify-center", lucide.`chevron-down`),
+                            // div(cls := "w-4 h-4 flex items-center justify-center", lucide.`chevron-down`),
                         ),
                         ul(
                             tabIndex := 0,
@@ -166,7 +171,7 @@ object DaisyUINavBar:
                     )
                 ),
                 
-                // units button
+                // UNITS button
                 div(
                     cls := "flex items-stretch gap-2",
                     div(
