@@ -133,7 +133,6 @@ object I18nData_Payments:
   final case class Common(
       currency_symbol: String,
       date_format: String,
-      company_name: String,
       payment_description: io.taig.babel.StringFormat2 // "Payment for order {0}: {1}"
   )
 
