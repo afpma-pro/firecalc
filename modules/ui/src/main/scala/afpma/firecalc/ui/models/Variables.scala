@@ -54,6 +54,8 @@ import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.payments.shared.*
 import afpma.firecalc.ui.instances.custom_yaml
 import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
+import afpma.firecalc.ui.models.schema.SchemaMigrations
+import afpma.firecalc.ui.models.schema.LocalStorageKeys
 import io.scalaland.chimney.dsl.*
 
 // ============================================================================
@@ -66,11 +68,23 @@ import io.scalaland.chimney.dsl.*
  */
 val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema_V1] =
     WebStorageVar
-        .localStorage(key = "app_state_schema", syncOwner = None)
+        .localStorage(key = LocalStorageKeys.APP_STATE_SCHEMA, syncOwner = None)
         .withCodec(
             encode =
                 AppStateSchemaHelper.encodeToYaml(_).toOption.getOrElse(""),
-            decode = AppStateSchemaHelper.decodeFromYaml,
+            decode = (raw: String) => {
+                // NEW: Attempt migration before decode
+                SchemaMigrations.migrateToLatest(raw) match {
+                    case Some(schema) =>
+                        // Migration successful
+                        Success(schema)
+                    
+                    case None =>
+                        // Migration failed - clear storage and use defaults
+                        SchemaMigrations.clearInvalidData()
+                        Success(AppStateSchemaHelper.createInitialSchema())
+                }
+            },
             default = Success(AppStateSchemaHelper.createInitialSchema()),
             syncDistinctByFn = _ == _
         )
