@@ -43,7 +43,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
         
         // Create test email with no attachments
         message = EmailMessage(
-          to = EmailAddress(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
+          to = EmailAddress.unsafeFromString(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
           subject = EmailSubject("Test Email - No Attachments"),
           content = EmailContent(
             """
@@ -89,7 +89,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
         
         // Create test email with one attachment
         message = EmailMessage(
-          to = EmailAddress(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
+          to = EmailAddress.unsafeFromString(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
           subject = EmailSubject("Test Email - One PDF Attachment"),
           content = EmailContent(
             """
@@ -143,7 +143,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
         
         // Create test email with two attachments
         message = EmailMessage(
-          to = EmailAddress(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
+          to = EmailAddress.unsafeFromString(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
           subject = EmailSubject("Test Email - Two PDF Attachments"),
           content = EmailContent(
             """
@@ -205,7 +205,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
         
         // Create test email
         message = EmailMessage(
-          to = EmailAddress(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
+          to = EmailAddress.unsafeFromString(DEFAULT_RECIPIENT_EMAIL_FOR_TEST),
           subject = EmailSubject("Test Email - Should Fail"),
           content = EmailContent("<html><body><p>This should fail</p></body></html>"),
           attachments = List.empty

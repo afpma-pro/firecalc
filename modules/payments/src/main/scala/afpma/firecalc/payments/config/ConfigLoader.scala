@@ -216,7 +216,7 @@ object ConfigLoader:
                 smtpPort = smtpConfig.getInt("port"),
                 username = smtpConfig.getString("username"),
                 password = smtpConfig.getString("password"),
-                fromAddress = EmailAddress(fromConfig.getString("address")),
+                fromAddress = EmailAddress.unsafeFromString(fromConfig.getString("address")),
                 fromName = fromConfig.getString("name"),
                 useTLS = Try(smtpConfig.getBoolean("use-tls")).getOrElse(true)
             )

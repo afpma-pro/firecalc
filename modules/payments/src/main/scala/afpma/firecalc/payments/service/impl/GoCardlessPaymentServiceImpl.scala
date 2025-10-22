@@ -595,7 +595,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
     // Helper method to send admin notifications with error handling
     private def sendAdminNotification(subject: String, message: String, orderId: Option[OrderId] = None)(using lang: BackendCompatibleLanguage): F[Unit] =
         val notification = AdminNotification(
-            adminEmail = EmailAddress(config.adminEmail),
+            adminEmail = EmailAddress.unsafeFromString(config.adminEmail),
             subject = subject,
             message = message,
             orderId = orderId.map(_.value.toString)
@@ -915,7 +915,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             languageFromOrder = order.language
             
             paymentLinkEmail = PaymentLinkEmail(
-                email = EmailAddress(customerEmail),
+                email = EmailAddress.unsafeFromString(customerEmail),
                 paymentUrl = paymentUrl,
                 productName = product.name,
                 amount = amount

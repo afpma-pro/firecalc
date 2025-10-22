@@ -10,7 +10,27 @@ import afpma.firecalc.payments.shared.api.*
 import java.time.Instant
 
 // Base email types
-case class EmailAddress(value: String) extends AnyVal
+opaque type EmailAddress = String
+object EmailAddress:
+    // RFC 5322 simplified regex - rejects double @@
+    private val EMAIL_REGEX = """^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$""".r
+    
+    def fromString(email: String): Either[String, EmailAddress] =
+        if email.trim.isEmpty then
+            Left("Email address cannot be empty")
+        else if email.contains("@@") then
+            Left("Email address contains double @ character")
+        else if EMAIL_REGEX.matches(email.trim) then
+            Right(email.trim)
+        else
+            Left(s"Invalid email format: $email")
+    
+    // Unsafe constructor for when validation already happened
+    def unsafeFromString(email: String): EmailAddress = email
+    
+    extension (email: EmailAddress)
+        def value: String = email
+
 case class EmailSubject(value: String) extends AnyVal
 case class EmailContent(value: String) extends AnyVal
 

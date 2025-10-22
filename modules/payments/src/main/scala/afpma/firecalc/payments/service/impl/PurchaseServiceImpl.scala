@@ -80,16 +80,26 @@ class PurchaseServiceImpl[F[_]: Async](
       isNewUser = customerOpt.isEmpty
 
       authCodeEmail = AuthenticationCodeEmail(
-        email = EmailAddress(request.customer.email),
+        email = EmailAddress.unsafeFromString(request.customer.email),
         code = authCode,
         isNewUser = isNewUser,
         productName = Some(product.name),
         amount = product.price
       )
-      _ <- {
+      emailResult <- {
         given BackendCompatibleLanguage = request.customer.language
         emailService.sendUserAuthenticationCode(authCodeEmail)
       }
+      _ <- emailResult match
+        case EmailSent => Async[F].unit
+        case EmailFailed(error) =>
+          Async[F].raiseError(
+            EmailSendingFailedException(
+              orderId = UUID.fromString("00000000-0000-0000-0000-000000000000"),
+              recipient = request.customer.email,
+              reason = error
+            )
+          )
 
       _ <- logger.info(s"Purchase intent created: ${intent.token}")
     yield intent.token

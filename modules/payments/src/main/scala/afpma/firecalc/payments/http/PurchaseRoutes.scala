@@ -115,6 +115,12 @@ class PurchaseRoutes[F[_]: Async](
                     _ <- logger.error(s"JWT generation failed: ${ex.getMessage}")
                     response <- ServiceUnavailable(createErrorResponse(ex))
                 yield response
+                
+            case ex: EmailSendingFailedException =>
+                for
+                    _ <- logger.error(s"Email sending failed: ${ex.getMessage}")
+                    response <- ServiceUnavailable(createErrorResponse(ex))
+                yield response
             
             // General purchase processing errors - 422 Unprocessable Entity
             case ex: PurchaseIntentProcessingException =>

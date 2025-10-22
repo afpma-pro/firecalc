@@ -149,7 +149,7 @@ object Main extends IOApp:
     pdfBytes: Array[Byte]
   ): InvoiceEmail = {
     InvoiceEmail(
-      email = EmailAddress(email),
+      email = EmailAddress.unsafeFromString(email),
       orderId = context.order.id.value.toString,
       invoiceNumber = invoiceNumber,
       productName = context.product.name,
@@ -186,7 +186,7 @@ object Main extends IOApp:
       invoiceEmail = buildInvoiceEmail(context, context.customer.email, invoiceNumber, pdfInvoiceAsBytes)
 
       pdfReportEmail = PdfReportEmail(
-        email = EmailAddress(context.customer.email),
+        email = EmailAddress.unsafeFromString(context.customer.email),
         reportName = fileDesc.filename,
         customerName = context.customer.individualNameOrCompanyName,
         orderId = Some(context.order.id.value.toString),
@@ -373,7 +373,7 @@ object Main extends IOApp:
                       IO.println(s"[EMAIL-NOTIFIER] Product: ${context.product.name} - Amount: ${context.order.amount}")
                       // Here you could send a completion email using the emailService
                       val adminNotif = AdminNotification(
-                        adminEmail = EmailAddress(adminEmail),
+                        adminEmail = EmailAddress.unsafeFromString(adminEmail),
                         subject = s"Order ${context.order.status} : ${context.order.id.value}",
                         message = s"PDF Report generation failed for customer '${context.customer.individualNameOrCompanyName}' (${context.customer.email}) ? Or payment failed (mandate cancelled ?) ? Make sure the customer will pay its bill by other payment methods.",
                         orderId = Some(context.order.id.value.toString)
