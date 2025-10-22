@@ -62,8 +62,11 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
 
     private val validation_code_sent_sig = pdf_report_ordering_var.signal.map(_.validation_code_sent)
 
-    private val verify_and_process_response_var = 
+    private val verify_and_process_response_var =
         Var[Option[Either[String, VerifyAndProcessResponse]]](None)
+    
+    private val create_purchase_intent_response_var =
+        Var[Option[Either[String, CreatePurchaseIntentResponse]]](None)
 
     private val six_digits_code_var = pdf_report_ordering_var.zoomLazy(_.six_digits_code)((x, c) => x.copy(six_digits_code = c))
 
@@ -80,9 +83,16 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
         case _ => false
 
     val billing_email_sig = billingInfoVar.signal.map(_.email)
-    val billing_email_valid_sig = billing_email_sig.map { email => 
-        if (email != "" && email.contains("@")) true else false 
+    val billing_email_valid_sig = billing_email_sig.map { email =>
+        validateEmail(email)
     }
+
+    private def validateEmail(email: String): Boolean =
+        if email.trim.isEmpty then false
+        else if email.contains("@@") then false
+        else
+            val EMAIL_REGEX = """^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$""".r
+            EMAIL_REGEX.matches(email.trim)
 
     val send_validation_code_btn_shown_sig = connectivity_sig
 
@@ -219,17 +229,19 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                         Left(s"Network error: ${fetchError.getMessage}")
             }
 
-    def handlePurchaseCreateIntentResponse(): Observer[Either[String, CreatePurchaseIntentResponse]] = 
-        Observer[Either[String, CreatePurchaseIntentResponse]] { 
+    def handlePurchaseCreateIntentResponse(): Observer[Either[String, CreatePurchaseIntentResponse]] =
+        Observer[Either[String, CreatePurchaseIntentResponse]] {
             case Right(response) =>
                 // Store the purchase token in the state on success
                 pdf_report_ordering_var.update(_.copy(
                     purchase_token = Some(response.purchase_token),
                     validation_code_sent = true
                 ))
+                // Clear any previous errors
+                create_purchase_intent_response_var.set(Some(Right(response)))
             case Left(errorMessage) =>
-                // Log error and keep validation_code_sent as false
-                dom.console.error(s"Purchase intent creation failed: $errorMessage")
+                // Store error in state for display
+                create_purchase_intent_response_var.set(Some(Left(errorMessage)))
                 // Reset state to allow retry
                 pdf_report_ordering_var.update(_.copy(
                     validation_code_sent = false,
@@ -363,6 +375,8 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                         val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
                         val closeHandler: js.Function1[dom.Event, Unit] = _ => {
                             pdf_report_ordering_var.set(PDFReportOrderingState.init)
+                            create_purchase_intent_response_var.set(None)
+                            verify_and_process_response_var.set(None)
                         }
                         dialog.addEventListener("close", closeHandler)
                         closeHandler
@@ -476,30 +490,41 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                         button(
                             cls := "btn btn-block h-24 mt-6",
                             cls <-- hiddenUnless(send_validation_code_btn_shown_sig),
-                            disabledAttr <-- send_validation_code_btn_active_sig.map(!_),
+                            disabledAttr <-- send_validation_code_btn_active_sig.combineWith(create_purchase_intent_response_var.signal).map:
+                                case (btn_active, Some(Left(_))) => false  // Allow retry after error
+                                case (btn_active, _) => !btn_active
+                            ,
                             onClick.flatMap(_ => makePurchaseCreateIntentRequest()) --> handlePurchaseCreateIntentResponse(),
                             div(
                                 cls := "flex flex-row items-center w-full gap-3",
                                 div(cls := "flex-none w-14", ""),
                                 div(cls := "flex-none w-14",
-                                    child <-- validation_code_sent_sig.map: code_sent =>
-                                        if (code_sent)
+                                    child <-- create_purchase_intent_response_var.signal.combineWith(validation_code_sent_sig).map:
+                                        case (Some(Left(_)), _) =>
+                                            lucide.`square-x`(w = 32, h = 32, stroke_width = 2)
+                                        case (_, true) =>
                                             lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
-                                        else
+                                        case _ =>
                                             lucide.square(w = 32, h = 32, stroke_width = 2)
                                 ),
-                                div(cls := "flex flex-initial", 
-                                    p(
-                                        cls := "text-xl", 
-                                        text <-- validation_code_sent_sig
-                                            .combineWith(send_validation_code_btn_active_sig)
-                                            .combineWith(billing_email_sig)
-                                            .map: (code_sent, btn_active, billing_email) =>
-                                                (code_sent, btn_active) match
-                                                    case (true, _)      => I18N_UI.pdf_ordering.modal.validation_code_sent_to.apply(billing_email)
-                                                    case (false, true)  => I18N_UI.pdf_ordering.modal.send_validation_code_to.apply(billing_email)
-                                                    case (false, false) => I18N_UI.pdf_ordering.modal.invalid_email.apply(billing_email)
-                                    )),
+                                div(cls := "flex flex-initial",
+                                    child <-- create_purchase_intent_response_var.signal
+                                        .combineWith(validation_code_sent_sig)
+                                        .combineWith(send_validation_code_btn_active_sig)
+                                        .combineWith(billing_email_sig)
+                                        .map: (response, code_sent, btn_active, billing_email) =>
+                                            response match
+                                                case Some(Left(errorMsg)) =>
+                                                    p(cls := "text-xl", I18N_UI.pdf_ordering.modal.error_prefix.apply(errorMsg))
+                                                case _ =>
+                                                    p(
+                                                        cls := "text-xl",
+                                                        (code_sent, btn_active) match
+                                                            case (true, _)      => I18N_UI.pdf_ordering.modal.validation_code_sent_to.apply(billing_email)
+                                                            case (false, true)  => I18N_UI.pdf_ordering.modal.send_validation_code_to.apply(billing_email)
+                                                            case (false, false) => I18N_UI.pdf_ordering.modal.invalid_email.apply(billing_email)
+                                                    )
+                                ),
                                 div(cls := "flex-1", ""),
                             )
                         ),
