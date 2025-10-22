@@ -105,8 +105,8 @@ staging {
   webhook-secret = "YOUR_WEBHOOK_SECRET_HERE"
   
   # Update with your staging domain
-  redirect-uri = "https://staging.firecalc.afpma.pro/v1/payment_complete"
-  exit-uri = "https://staging.firecalc.afpma.pro/v1/payment_cancelled"
+  redirect-uri = "https://staging.firecalc.example.com/v1/payment_complete"
+  exit-uri = "https://staging.firecalc.example.com/v1/payment_cancelled"
 }
 ```
 
@@ -152,7 +152,7 @@ Configure to point to staging backend:
 
 ```env
 VITE_BACKEND_PROTOCOL=https
-VITE_BACKEND_HOST=staging.firecalc.afpma.pro
+VITE_BACKEND_HOST=staging.firecalc.example.com
 VITE_BACKEND_PORT=443
 VITE_BACKEND_BASE_PATH=/v1
 ```
@@ -182,10 +182,10 @@ FIRECALC_ENV=staging sbt "payments/run"
 Test endpoints:
 ```bash
 # Health check
-curl https://staging.firecalc.afpma.pro/v1/health
+curl https://staging.firecalc.example.com/v1/health
 
 # Create purchase intent (example)
-curl -X POST https://staging.firecalc.afpma.pro/v1/purchase/create-intent \
+curl -X POST https://staging.firecalc.example.com/v1/purchase/create-intent \
   -H "Content-Type: application/json" \
   -d '{"productId": "...", "amount": 89.00}'
 ```
@@ -284,7 +284,7 @@ cd modules/ui
 npm run build -- --mode staging
 
 # Deploy dist/ to staging web server
-rsync -avz dist/ staging-server:/var/www/staging.firecalc.afpma.pro/
+rsync -avz dist/ staging-server:/var/www/staging.firecalc.example.com/
 ```
 
 ## Maintenance

@@ -166,7 +166,7 @@ find . -name "*.template" -exec bash -c 'mv "$1" "${1%.template}"' _ {} \;
 # 4. Add staging logos and test credentials
 # - Use GoCardless SANDBOX environment
 # - Use test email service (e.g., Mailtrap.io)
-# - Configure staging domain (e.g., staging.firecalc.afpma.pro)
+# - Configure staging domain (e.g., staging.firecalc.example.com)
 ```
 
 ### Running in Staging
@@ -183,7 +183,7 @@ cd modules/ui && npm run dev -- --mode staging
 - **Email**: Use test email service (Mailtrap.io) to avoid sending real emails
 - **Database**: Use separate staging database (`firecalc-payments-staging.db`)
 - **Invoice Prefix**: Use `FCALC-STG-` to differentiate from dev/prod
-- **Domain**: Use staging subdomain (e.g., `staging.firecalc.afpma.pro`)
+- **Domain**: Use staging subdomain (e.g., `staging.firecalc.example.com`)
 
 ## Production Deployment
 

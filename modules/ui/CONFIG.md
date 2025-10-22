@@ -42,7 +42,7 @@ npm run build
 Default configuration:
 ```env
 VITE_BACKEND_PROTOCOL=https
-VITE_BACKEND_HOST=api.firecalc.afpma.pro
+VITE_BACKEND_HOST=api.firecalc.example.com
 VITE_BACKEND_PORT=443
 VITE_BACKEND_BASE_PATH=/v1
 ```
@@ -126,10 +126,10 @@ UIConfig.Endpoints.healthcheck          // http://localhost:8181/v1/healthcheck
 UIConfig.Endpoints.createPurchaseIntent // http://localhost:8181/v1/purchase/create-intent
 UIConfig.Endpoints.verifyAndProcess     // http://localhost:8181/v1/purchase/verify-and-process
 
-// Production (https://api.firecalc.afpma.pro/v1)
-UIConfig.Endpoints.healthcheck          // https://api.firecalc.afpma.pro/v1/healthcheck
-UIConfig.Endpoints.createPurchaseIntent // https://api.firecalc.afpma.pro/v1/purchase/create-intent
-UIConfig.Endpoints.verifyAndProcess     // https://api.firecalc.afpma.pro/v1/purchase/verify-and-process
+// Production (https://api.firecalc.example.com/v1)
+UIConfig.Endpoints.healthcheck          // https://api.firecalc.example.com/v1/healthcheck
+UIConfig.Endpoints.createPurchaseIntent // https://api.firecalc.example.com/v1/purchase/create-intent
+UIConfig.Endpoints.verifyAndProcess     // https://api.firecalc.example.com/v1/purchase/verify-and-process
 ```
 
 ## Port Handling

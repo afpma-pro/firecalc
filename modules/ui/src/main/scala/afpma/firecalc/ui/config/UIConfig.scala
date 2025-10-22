@@ -27,7 +27,7 @@ object UIConfig {
    * 
    * Format: {protocol}://{host}:{port}{basePath}
    * Example (dev): http://localhost:8181/v1
-   * Example (prod): https://api.firecalc.afpma.pro:443/v1
+   * Example (prod): https://api.firecalc.example.com:443/v1
    */
   lazy val backendBaseUrl: String = {
     // Log configuration on first access for debugging

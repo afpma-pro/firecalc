@@ -106,8 +106,8 @@ production {
   environment = "live"
   webhook-secret = ${?GOCARDLESS_WEBHOOK_SECRET}
   
-  redirect-uri = "https://firecalc.afpma.pro/v1/payment_complete"
-  exit-uri = "https://firecalc.afpma.pro/v1/payment_cancelled"
+  redirect-uri = "https://firecalc.example.com/v1/payment_complete"
+  exit-uri = "https://firecalc.example.com/v1/payment_cancelled"
 }
 ```
 
@@ -141,7 +141,7 @@ production {
   }
   
   from {
-    address = "noreply@firecalc.afpma.pro"
+    address = "noreply@firecalc.example.com"
     name = "FireCalc"
   }
 }
@@ -158,7 +158,7 @@ production {
 
 ```env
 VITE_BACKEND_PROTOCOL=https
-VITE_BACKEND_HOST=firecalc.afpma.pro
+VITE_BACKEND_HOST=firecalc.example.com
 VITE_BACKEND_PORT=443
 VITE_BACKEND_BASE_PATH=/v1
 ```
@@ -178,7 +178,7 @@ VITE_BACKEND_BASE_PATH=/v1
 | **Invoice Prefix** | FCALC-DEV- | FCALC-STG- | **FCALC-** |
 | **GoCardless** | Sandbox | Sandbox | **LIVE** ⚠️ |
 | **Email** | Mock | Test Service | **Production SMTP** |
-| **Domain** | localhost | staging.domain | **firecalc.afpma.pro** |
+| **Domain** | localhost | staging.domain | **firecalc.example.com** |
 | **Data** | Test | Realistic test | **Real** |
 | **Uptime SLA** | N/A | N/A | **99.9%+** |
 | **Backups** | Optional | Recommended | **Daily (Critical)** |
@@ -247,20 +247,20 @@ ssh prod-server "tail -f /var/log/firecalc/backend.log"
 
 ```bash
 # Deploy to web server
-rsync -avz --delete dist/ prod-server:/var/www/firecalc.afpma.pro/
+rsync -avz --delete dist/ prod-server:/var/www/firecalc.example.com/
 
 # Verify deployment
-curl -I https://firecalc.afpma.pro
+curl -I https://firecalc.example.com
 ```
 
 #### 4. Post-Deployment Verification
 
 ```bash
 # Health check
-curl https://firecalc.afpma.pro/v1/health
+curl https://firecalc.example.com/v1/health
 
 # Test critical endpoints
-curl https://firecalc.afpma.pro/v1/products
+curl https://firecalc.example.com/v1/products
 
 # Monitor logs
 ssh prod-server "tail -f /var/log/firecalc/backend.log"

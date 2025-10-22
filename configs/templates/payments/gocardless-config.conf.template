@@ -19,7 +19,7 @@ gocardless {
     base-url = "https://api-sandbox.gocardless.com"
     environment = "sandbox"
     webhook-secret = "GC_WEBHOOK_TOKEN"
-    admin-email = "logiciel@afpma.pro"
+    admin-email = "firecalc@example.com"
     
     # These should point to your actual domain where you host the HTML files
     redirect-uri = "http://localhost:8181/v1/payment_complete"
@@ -35,8 +35,8 @@ gocardless {
     admin-email = ${?GOCARDLESS_ADMIN_EMAIL}
     
     # Production redirect URIs - these MUST be HTTPS
-    redirect-uri = "https://firecalc.afpma.pro/v1/payment_complete"
-    exit-uri = "https://firecalc.afpma.pro/v1/payment_cancelled"
+    redirect-uri = "https://firecalc.example.com/v1/payment_complete"
+    exit-uri = "https://firecalc.example.com/v1/payment_cancelled"
   }
 }
 

@@ -1,3 +1,8 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
 invoice: 
   invoiceNumber: "FCALC-001"
   invoiceDate: "2025-09-05"
@@ -7,17 +12,17 @@ invoice:
     name: "Association Française du Poêle Maçonné Artisanal"
     displayName: "Association Française du Poêle Maçonné Artisanal"
     address: 
-      street: "Lycée des Métiers du Bâtiment"
-      streetLine2: "43 route d'Aubusson"
+      street: "street address line 1"
+      streetLine2: "street address line 2"
       city: "FELLETIN"
       postalCode: "23500"
       region: "Nouvelle-Aquitaine"
       country: "France"
     vatNumber: "non applicable"
-    registrationNumber: "RNA W031002573"
-    email: "contact@afpma.pro"
-    phone: "(+33) 5 55 83 46 29"
-    website: "www.afpma.pro"
+    registrationNumber: "RNA WXXXXXX"
+    email: "contact@example.com"
+    phone: "(+33) 5 12 23 45 56"
+    website: "www.example.com"
     logo: !!null
   recipient: 
     name: "ACME France"
@@ -26,7 +31,7 @@ invoice:
       street: "${CLIENT_STREET:-123 Boulevard}"
       streetLine2: !!null
       city: "Paris"
-      postalCode: "75000}"
+      postalCode: "75000"
       region: "Ile-de-France"
       country: "France"
     vatNumber: "TVA FR XXXXXXXX"
@@ -54,8 +59,8 @@ invoice:
     methods: 
       - 
         BankTransfer: 
-          iban: "[REDACTED]"
-          bic: "[REDACTED]"
+          iban: "FRXX XXXX XXXX XXXX XXXX"
+          bic: "BICYYXXYY"
     notes: ""
   currency: "${COMPANY_CURRENCY:-EUR}"
   notes: "L'AFPMA vous remercie pour votre commande !"

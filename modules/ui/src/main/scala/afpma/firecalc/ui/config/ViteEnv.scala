@@ -37,7 +37,7 @@ private object ImportMetaEnv extends js.Any {
  * Usage:
  * ```scala
  * val protocol = ViteEnv.backendProtocol  // "http" or "https"
- * val host = ViteEnv.backendHost         // "localhost" or "api.firecalc.afpma.pro"
+ * val host = ViteEnv.backendHost         // "localhost" or "api.firecalc.example.com"
  *
  * // Type-safe mode checking
  * ViteEnv.buildMode match {
@@ -56,7 +56,7 @@ object ViteEnv {
   /** Backend protocol: "http" or "https" */
   def backendProtocol: String = ImportMetaEnv.VITE_BACKEND_PROTOCOL
   
-  /** Backend host: e.g., "localhost" or "api.firecalc.afpma.pro" */
+  /** Backend host: e.g., "localhost" or "api.firecalc.example.com" */
   def backendHost: String = ImportMetaEnv.VITE_BACKEND_HOST
   
   /** Backend port: e.g., "8181" or "443" */
