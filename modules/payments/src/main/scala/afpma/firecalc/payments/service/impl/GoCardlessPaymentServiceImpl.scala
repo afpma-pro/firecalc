@@ -918,7 +918,8 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 email = EmailAddress.unsafeFromString(customerEmail),
                 paymentUrl = paymentUrl,
                 productName = product.name,
-                amount = amount
+                amount = amount,
+                currency = product.currency.toString
             )
             
             // Send email using the order's language for proper translations

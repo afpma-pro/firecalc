@@ -326,7 +326,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |  <h2>${translations.emails.payment_link.greeting}</h2>
     |  <p>${translations.emails.payment_link.intro}</p>
     |  <p><strong>${translations.emails.authentication.product_info(translatedProductName)}</strong></p>
-    |  <p>${translations.emails.payment_link.amount_info(s"${translations.common.currency_symbol}${paymentLink.amount}")}</p>
+    |  <p>${translations.emails.payment_link.amount_info(s"${paymentLink.amount} ${paymentLink.currency}")}</p>
     |  <p><a href="${paymentLink.paymentUrl}" style="background-color: #4CAF50; color: white; padding: 15px 32px; text-decoration: none; display: inline-block; border-radius: 4px;">${translations.emails.payment_link.payment_button}</a></p>
     |  <p><em>${translations.emails.payment_link.expiry_note}</em></p>
     |  <p>${translations.emails.payment_link.footer}</p>

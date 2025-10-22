@@ -76,7 +76,8 @@ case class PaymentLinkEmail(
   email: EmailAddress,
   paymentUrl: String,
   productName: String,
-  amount: BigDecimal
+  amount: BigDecimal,
+  currency: String
 ) extends EmailType
 
 case class PdfReportEmail(
