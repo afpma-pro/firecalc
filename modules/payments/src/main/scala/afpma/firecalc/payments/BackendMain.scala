@@ -351,13 +351,13 @@ object Main extends IOApp:
                                 case ex: EN15544ValidationException =>
                                     {
                                         val userNotif = UserNotification(
-                                            email = EmailAddress(context.customer.email),
+                                            email = EmailAddress.unsafeFromString(context.customer.email),
                                             error = ex,
                                             orderId = Some(context.order.id.value.toString),
                                             language = context.customer.language
                                         )
                                         val adminNotif = AdminNotification(
-                                            adminEmail = EmailAddress(paymentsConfig.adminConfig.email),
+                                            adminEmail = EmailAddress.unsafeFromString(paymentsConfig.adminConfig.email),
                                             subject = s"EN15544 Validation Failed for Order ${context.order.id.value}",
                                             message = s"Customer ${context.customer.individualNameOrCompanyName} (${context.customer.email}) uploaded an invalid FireCalc project.\n\nValidation errors:\n${ex.validationErrors.mkString("\n- ", "\n- ", "")}",
                                             orderId = Some(context.order.id.value.toString)

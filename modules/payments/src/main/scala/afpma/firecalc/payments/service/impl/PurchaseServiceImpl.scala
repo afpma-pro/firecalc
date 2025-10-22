@@ -32,6 +32,13 @@ class PurchaseServiceImpl[F[_]: Async](
     for
       _ <- logger.info(s"Creating purchase intent for email: ${request.customer.email}")
 
+      // Validate email address at API entry point
+      validatedEmail <- EmailAddress.fromString(request.customer.email) match {
+        case Right(_) => Async[F].pure(request.customer.email)
+        case Left(errorMsg) =>
+          Async[F].raiseError(CustomerValidationException(List(s"Invalid email address: $errorMsg")))
+      }
+
       // Validate customer information based on type
       _ <- request.customer.customerType match {
         case CustomerType.Individual =>
@@ -49,14 +56,14 @@ class PurchaseServiceImpl[F[_]: Async](
 
       authCode <- authService.generateAuthCode()
       
-      // Create or findAndUpdate existing customer
-      customerOpt <- customerRepo.findByEmailAndUpdate(request.customer.email, request.customer)
+      // Create or findAndUpdate existing customer (using validated email)
+      customerOpt <- customerRepo.findByEmailAndUpdate(validatedEmail, request.customer)
       customer <- customerOpt match
-        case Some(existingCustomer) => 
+        case Some(existingCustomer) =>
           logger.info(s"Using existing customer: ${existingCustomer.id}") *>
           Async[F].pure(existingCustomer)
-        case None => 
-          logger.info(s"Creating new customer for email: ${request.customer.email}") *>
+        case None =>
+          logger.info(s"Creating new customer for email: ${validatedEmail}") *>
           customerRepo.create(request.customer)
 
       // Store productMetadata if present and get productMetadataId
@@ -80,7 +87,7 @@ class PurchaseServiceImpl[F[_]: Async](
       isNewUser = customerOpt.isEmpty
 
       authCodeEmail = AuthenticationCodeEmail(
-        email = EmailAddress.unsafeFromString(request.customer.email),
+        email = EmailAddress.unsafeFromString(validatedEmail),
         code = authCode,
         isNewUser = isNewUser,
         productName = Some(product.name),
@@ -96,7 +103,7 @@ class PurchaseServiceImpl[F[_]: Async](
           Async[F].raiseError(
             EmailSendingFailedException(
               orderId = UUID.fromString("00000000-0000-0000-0000-000000000000"),
-              recipient = request.customer.email,
+              recipient = validatedEmail,
               reason = error
             )
           )
@@ -107,6 +114,13 @@ class PurchaseServiceImpl[F[_]: Async](
   def verifyAndProcess(request: VerifyAndProcessRequest): F[VerifyAndProcessResponse] =
     (for
       _ <- logger.info(s"Processing verification for token: ${request.purchaseToken}")
+
+      // Step 0: Validate email address at API entry point
+      validatedEmail <- EmailAddress.fromString(request.email) match {
+        case Right(_) => Async[F].pure(request.email)
+        case Left(errorMsg) =>
+          Async[F].raiseError(CustomerValidationException(List(s"Invalid email address: $errorMsg")))
+      }
 
       // Step 1: Validate authentication code with typed error
       _ <- validateAuthenticationCode(request.purchaseToken, request.code)
@@ -148,10 +162,11 @@ class PurchaseServiceImpl[F[_]: Async](
     }
 
   private def processVerifiedRequest(
-    request: VerifyAndProcessRequest, 
-    intent: PurchaseIntent, 
+    request: VerifyAndProcessRequest,
+    intent: PurchaseIntent,
     customer: Customer
   ): F[VerifyAndProcessResponse] = {
+    // Email is already validated at API entry point before calling this method
     val customerCreated = request.email != customer.email
     
     for {
