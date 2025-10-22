@@ -5,6 +5,7 @@
 
 import scala.io.Source
 import org.scalajs.linker.interface.ModuleSplitStyle
+import sbtassembly.MergeStrategy
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / scalafixOnCompile := false
@@ -136,6 +137,17 @@ val commonSettings = Seq(
     // "-source:future",
   )
 )
+val commonAssemblyMergeStrategy: String => MergeStrategy = {
+  case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
+  case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+  case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".SF")) => MergeStrategy.discard
+  case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".DSA")) => MergeStrategy.discard
+  case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".RSA")) => MergeStrategy.discard
+  case PathList("META-INF", xs @ _*) => MergeStrategy.first
+  case PathList("reference.conf") => MergeStrategy.concat
+  case _ => MergeStrategy.first
+}
+
 
 lazy val root = (project in file("."))
   .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, engine.js, engine.jvm, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
@@ -776,11 +788,7 @@ lazy val reports = (project in file("modules/reports"))
     assembly / assemblyJarName := "firecalc-reports-assembly.jar",
 
     // Merge strategy for conflicting files
-    assembly / assemblyMergeStrategy := {
-      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-      case PathList("reference.conf") => MergeStrategy.concat
-      case _ => MergeStrategy.first
-    },
+    assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
 
     libraryDependencies ++= Seq(
         // i18n
@@ -843,12 +851,7 @@ lazy val payments = (project in file("modules/payments"))
     assembly / assemblyJarName := "firecalc-payments-assembly.jar",
 
     // Merge strategy for conflicting files
-    assembly / assemblyMergeStrategy := {
-      case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
-      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-      case PathList("reference.conf") => MergeStrategy.concat
-      case _ => MergeStrategy.first
-    },
+    assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
 
     libraryDependencies ++= Seq(
         "org.http4s"     %% "http4s-ember-server" % "0.23.30",
@@ -910,11 +913,7 @@ lazy val invoices = (project in file("modules/invoices"))
     assembly / assemblyJarName := "firecalc-invoices-assembly.jar",
 
     // Merge strategy for conflicting files
-    assembly / assemblyMergeStrategy := {
-      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-      case PathList("reference.conf") => MergeStrategy.concat
-      case _ => MergeStrategy.first
-    },
+    assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
 
     libraryDependencies ++= Seq(
         // i18n
