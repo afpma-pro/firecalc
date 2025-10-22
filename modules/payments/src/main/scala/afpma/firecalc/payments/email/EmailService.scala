@@ -33,6 +33,9 @@ trait EmailService[F[_]] {
   /** Send notification to administrators */
   def sendAdminNotification(notification: AdminNotification): F[EmailResult]
 
+  /** Send notification to user for unexpected errors */
+  def sendUserNotification(notification: UserNotification): F[EmailResult]
+
   /** Generic email sending method */
   def sendEmail(message: EmailMessage): F[EmailResult]
 }

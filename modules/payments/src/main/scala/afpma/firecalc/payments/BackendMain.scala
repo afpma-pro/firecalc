@@ -43,6 +43,7 @@ import afpma.firecalc.payments.shared.api.*
 import io.taig.babel.Locale
 import java.util.UUID
 import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict
+import afpma.firecalc.reports.{FireCalcReportError, YAMLFileReadException, YAMLDecodingException, EN15544ValidationException, TypstRenderingException, PDFFileCreationException}
 import scala.io.Source
 import java.io.File
 import java.nio.file.Files
@@ -77,31 +78,27 @@ object Main extends IOApp:
 
       val reportFactory = FireCalcReportFactory_15544_Strict.init()
       
-      // Handle YAML parsing errors
+      // Propagate typed errors directly from the report factory
       reportFactory.loadYAMLString(yamlContent) match {
-        case Left(err) =>
-          throw YAMLLoadingException(fileDesc.filename, err)
+        case Left(err) => throw err  // Re-throw FireCalcReportError as-is
         case Right(loadedFactory) =>
-          // Handle PDF generation errors
           loadedFactory.makePDF(isDraft = asDraft) match {
-            case Left(err) =>
-              throw PDFGenerationFailedException(fileDesc.filename, err)
-            case Right(pdfFile) =>
-              pdfFile
+            case Left(err) => throw err  // Re-throw FireCalcReportError as-is
+            case Right(pdfFile) => pdfFile
           }
       }
     }
 
   def generatePdfReportAndInvoiceNumber[F[_]: Log4CatsLogger: Async](
-    fileDesc: FileDescriptionWithContent, 
-    context: OrderCompletionContext, 
+    fileDesc: FileDescriptionWithContent,
+    context: OrderCompletionContext,
     invoiceNumberService: InvoiceNumberService[F],
     locale: Locale,
     asDraft: Boolean
-  ): F[(File, String)] = 
+  ): F[(File, String)] =
     val logger = Log4CatsLogger[F]
     generatePdfReportBlocking(fileDesc, locale, asDraft)
-    .flatMap { f => 
+    .flatMap { f =>
         for
             // PDF report generation successful
             _ <- Log4CatsLogger[F].info(s"[REPORT-GENERATION] Generated PDF report: ${f.getAbsolutePath}")
@@ -116,11 +113,7 @@ object Main extends IOApp:
                 } else Async[F].pure(context.order.invoiceNumber.get)
         yield (f, invoiceNumber)
     }
-    .handleErrorWith { err =>
-        // PDF report generattion failed
-        logger.error(s"[REPORT-GENERATION] Could not generate PDF report for order ${context.order.id} : ${err.getMessage}") *>
-        Async[F].raiseError(PDFGenerationFailedException(fileDesc.filename, err.getMessage, Some(err)))
-    }
+    // Propagate typed FireCalcReportErrors without wrapping them
   
   import BackendCompatibleLanguage.given
 
@@ -351,12 +344,48 @@ object Main extends IOApp:
                                 _                   <- logger.info(s"[ADMIN-INVOICE] Sending admin invoice notification for order ${newContext.order.id}")
                                 _                   <- sendAdminInvoiceNotification(newContext, paymentsConfig.adminConfig.email, pdfInvoiceAsBytes, emailService)
                             yield ()
-                        ).handleErrorWith { err => 
+                        ).handleErrorWith { err =>
                             logger.error(s"[REPORT-GENERATION] Error : ${err.getMessage}") *>
                             (err match
-                                case ex: (ProductMetadataMissingException | PDFGenerationFailedException | InvoiceNumberGenerationFailedException) => 
-                                    logger.info(s"[REPORT-GENERATION] Update Order ${context.order.id} with stauts 'Failed' because of : ${err.getMessage}") *>
+                                // Handle EN15544 validation errors - notify customer and admin about invalid project
+                                case ex: EN15544ValidationException =>
+                                    {
+                                        val userNotif = UserNotification(
+                                            email = EmailAddress(context.customer.email),
+                                            error = ex,
+                                            orderId = Some(context.order.id.value.toString),
+                                            language = context.customer.language
+                                        )
+                                        val adminNotif = AdminNotification(
+                                            adminEmail = EmailAddress(paymentsConfig.adminConfig.email),
+                                            subject = s"EN15544 Validation Failed for Order ${context.order.id.value}",
+                                            message = s"Customer ${context.customer.individualNameOrCompanyName} (${context.customer.email}) uploaded an invalid FireCalc project.\n\nValidation errors:\n${ex.validationErrors.mkString("\n- ", "\n- ", "")}",
+                                            orderId = Some(context.order.id.value.toString)
+                                        )
+                                        
+                                        logger.info(s"[REPORT-GENERATION] EN15544 validation failed for order ${context.order.id}: ${ex.validationErrors.mkString(", ")}") *>
+                                        logger.info(s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' due to validation errors") *>
+                                        orderService.updateOrderStatus(context.order.id, OrderStatus.Failed) *>
+                                        logger.info(s"[REPORT-GENERATION] Sending validation error notifications to customer and admin") *>
+                                        emailService.sendUserNotification(userNotif).handleErrorWith(e =>
+                                            logger.error(s"[REPORT-GENERATION] Failed to send user notification: ${e.getMessage}") *> IO.unit
+                                        ) *>
+                                        emailService.sendAdminNotification(adminNotif).handleErrorWith(e =>
+                                            logger.error(s"[REPORT-GENERATION] Failed to send admin notification: ${e.getMessage}") *> IO.unit
+                                        ).void
+                                    }
+                                
+                                // Handle other report errors - mark order as failed
+                                case ex: (YAMLFileReadException | YAMLDecodingException | TypstRenderingException | PDFFileCreationException) =>
+                                    logger.info(s"[REPORT-GENERATION] Report generation error for order ${context.order.id}: ${ex.getClass.getSimpleName}") *>
+                                    logger.info(s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' because of: ${err.getMessage}") *>
                                     orderService.updateOrderStatus(context.order.id, OrderStatus.Failed).void
+                                
+                                // Handle payment exceptions - mark order as failed
+                                case ex: (ProductMetadataMissingException | PDFGenerationFailedException | InvoiceNumberGenerationFailedException) =>
+                                    logger.info(s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' because of: ${err.getMessage}") *>
+                                    orderService.updateOrderStatus(context.order.id, OrderStatus.Failed).void
+                                
                                 case other =>
                                     IO.raiseError(other)
                             )

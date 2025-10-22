@@ -24,6 +24,7 @@ object I18nData_Payments:
       payment_link: PaymentLinkEmail,
       pdf_report: PdfReportEmail,
       admin_notification: AdminNotificationEmail,
+      user_notification: UserNotificationEmail,
       common: EmailCommon
   )
 
@@ -83,6 +84,20 @@ object I18nData_Payments:
       greeting: String, // "Admin,"
       order_id_label: String, // "Order ID:"
       signature: String // "FireCalc Backend"
+  )
+
+  final case class UserNotificationEmail(
+      greeting: String, // "Dear Customer,"
+      order_id_label: String, // "Order ID:"
+      footer: String, // "If you have any questions, please contact our support team."
+      signature: String, // "Best regards,\nThe FireCalc Team"
+      en15544_validation_error: EN15544ValidationErrorNotification
+  )
+
+  final case class EN15544ValidationErrorNotification(
+      subject: StringFormat1, // "Project Validation Error for Order {0}"
+      intro: String, // "Your FireCalc project could not be validated..."
+      errors_heading: String // "Validation Errors:"
   )
 
   final case class EmailCommon(

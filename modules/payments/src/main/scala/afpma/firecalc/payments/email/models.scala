@@ -8,6 +8,7 @@ package afpma.firecalc.payments.email
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.shared.api.*
 import java.time.Instant
+import afpma.firecalc.reports.EN15544ValidationException
 
 // Base email types
 opaque type EmailAddress = String
@@ -94,6 +95,13 @@ case class AdminNotification(
   subject: String,
   message: String,
   orderId: Option[String] = None
+) extends EmailType
+
+case class UserNotification(
+  email: EmailAddress,
+  error: EN15544ValidationException,
+  orderId: Option[String] = None,
+  language: BackendCompatibleLanguage
 ) extends EmailType
 
 // Email sending result

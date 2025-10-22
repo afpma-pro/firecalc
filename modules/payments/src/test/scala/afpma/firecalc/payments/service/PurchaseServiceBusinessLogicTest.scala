@@ -14,7 +14,7 @@ import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.service.impl.PurchaseServiceImpl
 import afpma.firecalc.payments.service.{OrderStateTransition, OrderCompletionCallback}
 import afpma.firecalc.payments.repository.*
-import afpma.firecalc.payments.email.{EmailService, EmailAddress, AuthenticationCodeEmail, EmailMessage, InvoiceEmail, PaymentLinkEmail, PdfReportEmail, AdminNotification, EmailResult, EmailSent, EmailFailed}
+import afpma.firecalc.payments.email.{EmailService, EmailAddress, AuthenticationCodeEmail, EmailMessage, InvoiceEmail, PaymentLinkEmail, PdfReportEmail, AdminNotification, UserNotification, EmailResult, EmailSent, EmailFailed}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import java.util.UUID
@@ -246,10 +246,13 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
       def sendUserPdfReport(pdfReport: PdfReportEmail)(using language: BackendCompatibleLanguage): IO[EmailResult] = 
         IO.pure(EmailSent)
       
-      def sendAdminNotification(notification: AdminNotification): IO[EmailResult] = 
+      def sendAdminNotification(notification: AdminNotification): IO[EmailResult] =
         IO.pure(EmailSent)
       
-      def sendEmail(message: EmailMessage): IO[EmailResult] = 
+      def sendUserNotification(notification: UserNotification): IO[EmailResult] =
+        IO.pure(EmailSent)
+      
+      def sendEmail(message: EmailMessage): IO[EmailResult] =
         IO.pure(EmailSent)
     }
     

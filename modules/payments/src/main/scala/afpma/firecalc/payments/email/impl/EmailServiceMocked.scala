@@ -110,6 +110,17 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     } yield EmailSent
   }
 
+  override def sendUserNotification(notification: UserNotification): F[EmailResult] = {
+    for {
+      _ <- logger.info(s"[MOCK] Sending user notification email")
+      _ <- logger.info(s"  To: ${notification.email.value}")
+      _ <- logger.info(s"  Error Type: ${notification.error.getClass.getSimpleName}")
+      _ <- logger.info(s"  Error Message: ${notification.error.getMessage}")
+      _ <- logger.info(s"  Language: ${notification.language.code}")
+      _ <- notification.orderId.traverse_(orderId => logger.info(s"  Order ID: $orderId"))
+    } yield EmailSent
+  }
+
   override def sendEmail(message: EmailMessage): F[EmailResult] = {
     for {
       _ <- logger.info(s"[MOCK] Sending generic email")

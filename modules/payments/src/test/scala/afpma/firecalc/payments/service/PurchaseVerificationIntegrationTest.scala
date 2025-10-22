@@ -247,6 +247,9 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
       def sendAdminNotification(notification: AdminNotification): IO[email.EmailResult] = 
         IO.pure(EmailSent)
       
+      def sendUserNotification(notification: UserNotification): IO[email.EmailResult] = 
+        IO.pure(EmailSent)
+      
       def sendEmail(message: EmailMessage): IO[email.EmailResult] = 
         IO.pure(EmailSent)
     }

@@ -38,7 +38,7 @@ object GenerateSampleTyp:
 
         FireCalcReportFactory_15544_Strict
             .init()
-            .loadFireCalcProject(ExampleProject_15544)
+            .loadAndValidateFireCalcProject(ExampleProject_15544)
             .fold(
                 err => 
                     System.err.println(err)

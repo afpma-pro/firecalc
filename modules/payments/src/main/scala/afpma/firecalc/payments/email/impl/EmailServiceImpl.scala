@@ -178,6 +178,29 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     } yield result
   }
 
+  override def sendUserNotification(notification: UserNotification): F[EmailResult] = {
+    given BackendCompatibleLanguage = notification.language
+    val translations = I18N_Payments
+    
+    // Build subject based on error type
+    val subject = notification.error match {
+      case ex: afpma.firecalc.reports.EN15544ValidationException =>
+        translations.emails.user_notification.en15544_validation_error.subject(notification.orderId.getOrElse("N/A"))
+    }
+    
+    val mail = createEmilMail(
+      to = notification.email,
+      subject = subject,
+      htmlContent = buildUserNotificationContent(notification)
+    )
+
+    for {
+      _ <- logger.info(s"Sending user notification: $subject to ${notification.email.value}")
+      result <- sendEmilMail(mail)
+      _ <- logger.info(s"User notification result: $result")
+    } yield result
+  }
+
   override def sendEmail(message: EmailMessage): F[EmailResult] = {
     val attachments = message.attachments.map { att =>
       AttachStream[F](
@@ -404,6 +427,40 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |  <p>${translations.emails.pdf_report.attachment_note}</p>
     |  <p>${translations.emails.pdf_report.footer}</p>
     |  <p><em>${translations.emails.pdf_report.signature}</em></p>
+    |</body>
+    |</html>
+    """.stripMargin
+  }
+
+  private def buildUserNotificationContent(notification: UserNotification): String = {
+    given BackendCompatibleLanguage = notification.language
+    val translations = I18N_Payments
+    val orderInfo = notification.orderId.fold("")(id =>
+      s"<p><strong>${translations.emails.user_notification.order_id_label}</strong> $id</p>"
+    )
+
+    // Build content based on error type
+    val errorContent = notification.error match {
+      case ex: afpma.firecalc.reports.EN15544ValidationException =>
+        val errorsList = ex.validationErrors.map(err => s"<li>$err</li>").mkString("\n")
+        s"""
+        |  <p>${translations.emails.user_notification.en15544_validation_error.intro}</p>
+        |  <h3>${translations.emails.user_notification.en15544_validation_error.errors_heading}</h3>
+        |  <ul>
+        |    $errorsList
+        |  </ul>
+        """.stripMargin
+      
+    }
+
+    s"""
+    |<html>
+    |<body>
+    |  <h2>${translations.emails.user_notification.greeting}</h2>
+    |  $orderInfo
+    |  $errorContent
+    |  <p>${translations.emails.user_notification.footer}</p>
+    |  <p><em>${translations.emails.user_notification.signature}</em></p>
     |</body>
     |</html>
     """.stripMargin

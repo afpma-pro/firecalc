@@ -146,10 +146,13 @@ object PaymentLinkCreationTest extends TestSuite {
       def sendUserPdfReport(pdfReport: PdfReportEmail)(using language: BackendCompatibleLanguage): IO[email.EmailResult] = 
         IO.pure(EmailSent)
       
-      def sendAdminNotification(notification: AdminNotification): IO[email.EmailResult] = 
+      def sendAdminNotification(notification: AdminNotification): IO[email.EmailResult] =
         IO.pure(EmailSent)
       
-      def sendEmail(message: EmailMessage): IO[email.EmailResult] = 
+      def sendUserNotification(notification: UserNotification): IO[email.EmailResult] =
+        IO.pure(EmailSent)
+      
+      def sendEmail(message: EmailMessage): IO[email.EmailResult] =
         IO.pure(EmailSent)
     }
     
