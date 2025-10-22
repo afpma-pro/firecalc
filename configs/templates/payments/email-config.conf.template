@@ -1,3 +1,8 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
 # Email Configuration
 # This file configures SMTP settings for sending emails
 
@@ -20,6 +25,14 @@ email {
       address = "noreply-dev@firecalc.example.com"
       name = "FireCalc Development"
     }
+    
+    support {
+      address = "support-development@firecalc.example.com"
+    }
+    
+    website {
+      url = "https://firecalc.example.com"
+    }
   }
   
   # Production Configuration
@@ -36,6 +49,14 @@ email {
     from {
       address = "noreply@firecalc.example.com"
       name = "FireCalc"
+    }
+    
+    support {
+      address = "support@firecalc.com"
+    }
+    
+    website {
+      url = "https://firecalc.example.com"
     }
   }
 }

@@ -86,9 +86,6 @@ object I18nData_Payments:
   )
 
   final case class EmailCommon(
-      company_name: String,
-      support_email: String,
-      website_url: String,
       unsubscribe: String,
       privacy_policy: String,
       report_details_heading: String, // "Report Details"
@@ -116,6 +113,8 @@ object I18nData_Payments:
       order_info: String,
       next_steps: String,
       support_contact: String,
+      security_notice: String,
+      unable_to_close: String,
       return_home: String
   )
 
@@ -126,6 +125,8 @@ object I18nData_Payments:
       reason_info: String,
       retry_payment: String,
       support_contact: String,
+      need_help_contact: StringFormat1,
+      unable_to_close: String,
       return_home: String
   )
 
@@ -133,7 +134,6 @@ object I18nData_Payments:
       currency_symbol: String,
       date_format: String,
       company_name: String,
-      support_email: String,
       payment_description: io.taig.babel.StringFormat2 // "Payment for order {0}: {1}"
   )
 

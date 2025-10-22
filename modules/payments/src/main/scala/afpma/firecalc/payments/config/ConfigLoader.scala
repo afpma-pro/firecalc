@@ -210,6 +210,8 @@ object ConfigLoader:
             
             val smtpConfig = envConfig.getConfig("smtp")
             val fromConfig = envConfig.getConfig("from")
+            val supportConfig = envConfig.getConfig("support")
+            val websiteConfig = envConfig.getConfig("website")
             
             EmailConfig(
                 smtpHost = smtpConfig.getString("host"),
@@ -218,6 +220,8 @@ object ConfigLoader:
                 password = smtpConfig.getString("password"),
                 fromAddress = EmailAddress.unsafeFromString(fromConfig.getString("address")),
                 fromName = fromConfig.getString("name"),
-                useTLS = Try(smtpConfig.getBoolean("use-tls")).getOrElse(true)
+                useTLS = Try(smtpConfig.getBoolean("use-tls")).getOrElse(true),
+                supportEmail = EmailAddress.unsafeFromString(supportConfig.getString("address")),
+                websiteUrl = websiteConfig.getString("url")
             )
         }

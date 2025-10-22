@@ -29,5 +29,7 @@ case class EmailConfig(
   password: String,
   fromAddress: EmailAddress,
   fromName: String,
-  useTLS: Boolean = true
+  useTLS: Boolean = true,
+  supportEmail: EmailAddress,
+  websiteUrl: String
 )

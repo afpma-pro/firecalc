@@ -18,6 +18,7 @@ import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.shared.*
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.domain.Codecs.given
+import afpma.firecalc.payments.email.EmailConfig
 import org.typelevel.log4cats.Logger
 import org.typelevel.ci.CIStringSyntax
 
@@ -25,7 +26,7 @@ import org.typelevel.ci.CIStringSyntax
 import afpma.firecalc.payments.i18n.implicits.given
 import io.taig.babel.*
 
-class StaticPageRoutes[F[_]: Async]()(implicit logger: Logger[F])
+class StaticPageRoutes[F[_]: Async](emailConfig: EmailConfig)(implicit logger: Logger[F])
     extends Http4sDsl[F]:
 
     import BackendCompatibleLanguage.given
@@ -172,15 +173,14 @@ class StaticPageRoutes[F[_]: Async]()(implicit logger: Logger[F])
             <h3>${page.next_steps}</h3>
             <ul>
                 <li>${page.order_info}</li>
-                <li>${page.support_contact}</li>
+                <li>${emailConfig.supportEmail.value}</li>
             </ul>
         </div>
         
         <button class="button" onclick="handleCloseWindow()">${page.return_home}</button>
         
         <div class="security-note">
-            <strong>Security Notice:</strong> This page does not store any of your payment information. 
-            All data is processed securely through our payment partner GoCardless.
+            ${page.security_notice}
         </div>
     </div>
 
@@ -201,8 +201,7 @@ class StaticPageRoutes[F[_]: Async]()(implicit logger: Logger[F])
                 if (container) {
                     container.innerHTML += `
                         <div style="margin-top: 20px; padding: 16px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; color: #856404;">
-                            <strong>Unable to close window automatically.</strong><br>
-                            Please close this browser tab manually.
+                            ${page.unable_to_close}
                         </div>
                     `;
                 }
@@ -364,8 +363,8 @@ class StaticPageRoutes[F[_]: Async]()(implicit logger: Logger[F])
         <div class="info-box">
             <h3>${page.reason_info}</h3>
             <ul>
-                <li>${page.support_contact}</li>
                 <li>${page.retry_payment}</li>
+                <li>${emailConfig.supportEmail.value}</li>
             </ul>
         </div>
         
@@ -374,7 +373,7 @@ class StaticPageRoutes[F[_]: Async]()(implicit logger: Logger[F])
         </div>
         
         <div class="contact-info">
-            <strong>Need help?</strong> ${page.support_contact}
+            ${page.need_help_contact(emailConfig.supportEmail.value)}
         </div>
     </div>
 
@@ -395,8 +394,7 @@ class StaticPageRoutes[F[_]: Async]()(implicit logger: Logger[F])
                 if (container) {
                     container.innerHTML += `
                         <div style="margin-top: 20px; padding: 16px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; color: #721c24;">
-                            <strong>Unable to close window automatically.</strong><br>
-                            Please close this browser tab manually.
+                            ${page.unable_to_close}
                         </div>
                     `;
                 }
@@ -435,5 +433,5 @@ class StaticPageRoutes[F[_]: Async]()(implicit logger: Logger[F])
     }
 
 object StaticPageRoutes:
-    def create[F[_]: Async]()(implicit logger: Logger[F]): StaticPageRoutes[F] =
-        new StaticPageRoutes[F]()
+    def create[F[_]: Async](emailConfig: EmailConfig)(implicit logger: Logger[F]): StaticPageRoutes[F] =
+        new StaticPageRoutes[F](emailConfig)

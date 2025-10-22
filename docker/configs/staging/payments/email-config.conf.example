@@ -74,6 +74,28 @@ email {
       # Clearly marked as staging environment
       name = "FireCalc Staging"
     }
+    
+    # ---------------------------------------------------------------------
+    # Support Contact Information
+    # ---------------------------------------------------------------------
+    # Email address for customer support inquiries
+    # Used in email footers and support-related communications
+    
+    support {
+      # Support email address for staging environment
+      # Clearly marked as staging to avoid confusion
+      address = "support+staging@firecalc.example.com"
+    }
+    
+    # ---------------------------------------------------------------------
+    # Website URL Configuration
+    # ---------------------------------------------------------------------
+    # Website URL used in emails for links and references
+    
+    website {
+      # Website URL for staging environment
+      url = "https://staging.firecalc.example.com"
+    }
   }
 }
 

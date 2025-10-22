@@ -100,6 +100,12 @@
             "prefix": "# ",
             "end": "#"
         },
+        {
+            "language": ".example",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
         { "language": "properties", "begin": "#", "prefix": "# ", "end": "#" },
         { "language": "makefile", "begin": "#", "prefix": "# ", "end": "#" },
         { "language": ".yaml", "begin": "#", "prefix": "# ", "end": "#"},

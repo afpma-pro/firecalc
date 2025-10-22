@@ -407,7 +407,7 @@ object Main extends IOApp:
                 // Setup routes
                 purchaseRoutes = PurchaseRoutes.create[IO](purchaseService)
                 webhookRoutes  = WebhookRoutes.create[IO](paymentService)
-                staticRoutes   = StaticPageRoutes.create[IO]()
+                staticRoutes   = StaticPageRoutes.create[IO](emailConfig)
                 healthRoutes   = HealthCheckRoutes.create[IO]
                 sourceRoutes   = SourceRoutes.create[IO]
 
