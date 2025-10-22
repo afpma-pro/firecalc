@@ -321,10 +321,15 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
             div(
                 cls    := "flex items-stretch gap-2",
                 DaisyUITooltip(
-                    ttContent = div(I18N_UI.tooltips.order_pdf_report),
+                    ttContent = div(
+                         text <-- all_conditions_and_results_satisfied_sig.map(
+                            if (_) I18N_UI.tooltips.order_pdf_report else I18N_UI.tooltips.order_pdf_report_not_possible
+                        )
+                    ),
                     element = div(
                         tabIndex := 0,
                         role     := "button",
+                        disabledAttr <-- all_conditions_and_results_not_satisfied_sig,
                         cls      := "btn btn-outline hover:btn-secondary rounded-field",
                         cls(
                             "text-base-content"

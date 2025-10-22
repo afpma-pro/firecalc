@@ -153,6 +153,7 @@ object I18nData_UI:
     open_project: String,
     save_project: String,
     order_pdf_report: String,
+    order_pdf_report_not_possible: String,
     display_details: String,
     ph_static_pressure: String,
     pr_loss_to_friction: String,
