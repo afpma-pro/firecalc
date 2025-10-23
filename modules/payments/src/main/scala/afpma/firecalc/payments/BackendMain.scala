@@ -26,6 +26,7 @@ import org.typelevel.log4cats.Logger as Log4CatsLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import afpma.firecalc.payments.shared.api.ProductCatalogSelector
+import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.email.*
@@ -178,9 +179,14 @@ object Main extends IOApp:
       // Use helper method to build invoice email
       invoiceEmail = buildInvoiceEmail(context, context.customer.email, invoiceNumber, pdfInvoiceAsBytes)
 
+      // Extract base name by removing .firecalc.yaml or .yaml suffix
+      reportBaseName = fileDesc.filename
+        .stripSuffix(FIRECALC_FILE_EXTENSION)
+        .stripSuffix(".yaml")
+      
       pdfReportEmail = PdfReportEmail(
         email = EmailAddress.unsafeFromString(context.customer.email),
-        reportName = fileDesc.filename,
+        reportName = reportBaseName,
         customerName = context.customer.individualNameOrCompanyName,
         orderId = Some(context.order.id.value.toString),
         pdfBytes = Files.readAllBytes(pdfReportFile.toPath),

@@ -9,6 +9,7 @@ import scala.util.Failure
 import scala.util.Success
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
+import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.daisyui.DaisyUITooltip
@@ -21,8 +22,6 @@ import io.taig.babel.Locale
 import org.scalajs.dom
 
 object FireCalcProjet:
-
-    val FIRECALC_FILE_EXTENSION = ".firecalc.yaml"
 
     case class HardCodedAppStateComponent(nextAppState: AppState, buttonTitle: String)(using Locale) extends Component:
         lazy val node = 

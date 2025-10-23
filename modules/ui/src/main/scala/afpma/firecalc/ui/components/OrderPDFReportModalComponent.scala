@@ -10,6 +10,7 @@ import scala.scalajs.js
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.FireCalcProjet
 import afpma.firecalc.ui.config.{UIConfig, ViteEnv, BuildMode}
+import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.utils.PaymentsBackendApiConnectivity
@@ -176,7 +177,7 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
         val productMetadataResult: Either[String, FileDescriptionWithContent] = convertProjectToBase64(currentProject) match
             case Success(base64Content) =>
                 Right(FileDescriptionWithContent(
-                    filename = "project.firecalc.yaml",
+                    filename = s"project${FIRECALC_FILE_EXTENSION}",
                     mimeType = "application/yaml",
                     content = base64Content
                 ))

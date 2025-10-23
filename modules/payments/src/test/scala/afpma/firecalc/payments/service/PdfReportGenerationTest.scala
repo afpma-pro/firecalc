@@ -5,6 +5,7 @@
 
 package afpma.firecalc.payments.service
 
+import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import utest.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -43,7 +44,7 @@ object PdfReportGenerationTest extends TestSuite {
 
         // Create FileDescriptionWithContent with base64 content
         val fileDesc = FileDescriptionWithContent(
-          filename = "test-project.firecalc.yaml",
+          filename = s"test-project${FIRECALC_FILE_EXTENSION}",
           mimeType = "application/yaml",
           content = base64Content
         )

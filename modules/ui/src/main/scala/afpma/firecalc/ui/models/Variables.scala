@@ -47,6 +47,7 @@ import cats.data.Validated
 import afpma.firecalc.engine.models.PipesResult_15544
 import com.raquo.airstream.eventbus.EventBus
 import afpma.firecalc.ui.components.FireCalcProjet
+import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.engine.models.en15544.typedefs.CitedConstraints
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.models.en13384.typedefs.P_L
@@ -138,7 +139,7 @@ val filename_var = project_descr_var.zoomLazy(prj =>
         .replaceAll("_+", "_")
         .stripPrefix("_")
         .stripSuffix("_")
-    s"${fname_noext}${FireCalcProjet.FIRECALC_FILE_EXTENSION}"
+    s"${fname_noext}${FIRECALC_FILE_EXTENSION}"
 )((p, _) => p)
 
 // local conditions
