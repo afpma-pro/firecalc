@@ -63,6 +63,7 @@ final case class I18nData(
     type_of_load: TypeOfLoad,
     units: Units,
     yes: String,
+    area_name: String,
     area_heating_status: AreaHeatingStatus,
     reports: Reports,
     warnings: Warnings
@@ -253,6 +254,9 @@ object I18nData:
         _ambiant_air_temperatures: EN13384.AmbiantAirTemperatures,
         ambiant_air_temperatures: String,
         _ambiant_air_temperature: EN13384.AmbiantAirTemperature,
+        duct_type_non_concentric_high_thermal_resistance : String,
+        duct_type_non_concentric_low_thermal_resistance : String,
+        duct_type_concentric : String,
         flue_gas_conditions: String,
         flue_gas_conditions_wet: String,
         flue_gas_conditions_dry: String,

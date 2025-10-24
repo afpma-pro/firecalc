@@ -5,12 +5,16 @@
 
 package afpma.firecalc.dto.common
 
+import afpma.firecalc.i18n.*
+import magnolia1.Transl
+
 import cats.*
 import cats.derived.derived
 
 /**
  * See EN13384_2019 Section 7.8.1
  */
+@Transl(I(_.set_prop.SetDuctType))
 enum DuctType derives Show:
     case
         /**
@@ -29,3 +33,14 @@ enum DuctType derives Show:
         NonConcentricDuctsLowThermalResistance,
         /** Not implemented */
         ConcentricDucts
+
+object DuctType:
+
+    @Transl(I(_.en13384.duct_type_non_concentric_high_thermal_resistance))
+    type NonConcentricDuctsHighThermalResistance = NonConcentricDuctsHighThermalResistance.type
+
+    @Transl(I(_.en13384.duct_type_non_concentric_low_thermal_resistance))
+    type NonConcentricDuctsLowThermalResistance = NonConcentricDuctsLowThermalResistance.type
+
+    @Transl(I(_.en13384.duct_type_concentric))
+    type ConcentricDucts = ConcentricDucts.type

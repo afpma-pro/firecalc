@@ -44,7 +44,7 @@ trait DaisyUIHorizontalForm[A] extends LaminarForm[A, DaisyUIHorizontalForm[A]]:
 
 object DaisyUIHorizontalForm 
 extends LaminarFormFactory[DaisyUIHorizontalForm]
-with AutoDerivation[DaisyUIHorizontalForm]:
+with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better control
 
     type TypeClass[A] = DaisyUIHorizontalForm[A]
 

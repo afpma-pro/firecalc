@@ -32,7 +32,7 @@ object horizontal_form:
     type CtxDF[A] = DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[A]
     type LocDF[A] = Locale ?=> DaisyUIHorizontalForm[A]
 
-    import DaisyUIHorizontalForm.{autoDerived as _, given}
+    import DaisyUIHorizontalForm.given
     import SUnits.given
     // import defaultable.given
     import dual.given
@@ -43,7 +43,7 @@ object horizontal_form:
         import hastranslations.given
         import afpma.firecalc.ui.daisyui.DaisyUIHorizontalForm.autoOverwriteFieldNames
         DaisyUIHorizontalForm
-            .autoDerived[A](using m)
+            .derived[A](using m)
             .autoOverwriteFieldNames
 
     // BasicTypes

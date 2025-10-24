@@ -243,6 +243,40 @@ object instances:
     given Decoder[PipeLocation.AreaHeatingStatus] = deriveDecoderForEnum[PipeLocation.AreaHeatingStatus](PipeLocation.AreaHeatingStatus.valueOf)
     given Encoder[PipeLocation.AreaHeatingStatus] = deriveEncoderForEnum[PipeLocation.AreaHeatingStatus]
 
+    // PipeLocation.AreaName
+    import PipeLocation.AreaName
+
+    given decoder_AreaName_BoilerRoom        : Decoder[AreaName.BoilerRoom        ]   = Decoder.decodeString.emap(s => if (s == AreaName.BoilerRoom        .toString) Right(AreaName.BoilerRoom        ) else Left(s"$s could not be decoded as 'AreaName.BoilerRoom'"))
+    given decoder_AreaName_HeatedArea        : Decoder[AreaName.HeatedArea        ]   = Decoder.decodeString.emap(s => if (s == AreaName.HeatedArea        .toString) Right(AreaName.HeatedArea        ) else Left(s"$s could not be decoded as 'AreaName.HeatedArea'"))
+    given decoder_AreaName_UnheatedInside    : Decoder[AreaName.UnheatedInside    ]   = Decoder.decodeString.emap(s => if (s == AreaName.UnheatedInside    .toString) Right(AreaName.UnheatedInside    ) else Left(s"$s could not be decoded as 'AreaName.UnheatedInside'"))
+    given decoder_AreaName_OutsideOrExterior : Decoder[AreaName.OutsideOrExterior ]   = Decoder.decodeString.emap(s => if (s == AreaName.OutsideOrExterior .toString) Right(AreaName.OutsideOrExterior ) else Left(s"$s could not be decoded as 'AreaName.OutsideOrExterior'"))
+    given decoder_AreaName_CustomArea        : Decoder[AreaName.CustomArea        ]   = semiauto.deriveDecoder[AreaName.CustomArea]
+
+    given Decoder[AreaName] = 
+        import cats.implicits.toFunctorOps
+        List[Decoder[AreaName]](
+            Decoder[AreaName.BoilerRoom        ].widen,
+            Decoder[AreaName.HeatedArea        ].widen,
+            Decoder[AreaName.UnheatedInside    ].widen,
+            Decoder[AreaName.OutsideOrExterior ].widen,
+            Decoder[AreaName.CustomArea        ].widen
+        ).reduceLeft(_ or _)
+
+    given encoder_AreaName_BoilerRoom:        Encoder[AreaName.BoilerRoom]           = Encoder.encodeString.contramap(_.toString)
+    given encoder_AreaName_HeatedArea:        Encoder[AreaName.HeatedArea]           = Encoder.encodeString.contramap(_.toString)
+    given encoder_AreaName_UnheatedInside:    Encoder[AreaName.UnheatedInside]       = Encoder.encodeString.contramap(_.toString)
+    given encoder_AreaName_OutsideOrExterior: Encoder[AreaName.OutsideOrExterior]    = Encoder.encodeString.contramap(_.toString)
+    given encoder_AreaName_CustomArea:        Encoder[AreaName.CustomArea]           = semiauto.deriveEncoder[AreaName.CustomArea]
+
+    given Encoder[AreaName] = 
+        Encoder.instance {
+            case x: AreaName.BoilerRoom          => Encoder[AreaName.BoilerRoom].apply(x)
+            case x: AreaName.HeatedArea          => Encoder[AreaName.HeatedArea].apply(x)
+            case x: AreaName.UnheatedInside      => Encoder[AreaName.UnheatedInside].apply(x)
+            case x: AreaName.OutsideOrExterior   => Encoder[AreaName.OutsideOrExterior].apply(x)
+            case x: AreaName.CustomArea          => Encoder[AreaName.CustomArea].apply(x)
+        }
+
     // PipeShape
 
     given Decoder[PipeShape] = semiauto.deriveDecoder[PipeShape]

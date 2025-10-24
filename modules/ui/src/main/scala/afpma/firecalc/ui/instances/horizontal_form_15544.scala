@@ -52,6 +52,7 @@ object horizontal_form_15544:
         .forEnumOrSumTypeLike_UsingShowAsId[Material_15544](Material_15544.values.toList)
 
     given horizontal_form_SetMaterial: CtxDF[SetMaterial] = 
+        given DF[Material_15544] = horizontal_form_Material_15544
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
     given horizontal_form_SetNumberOfFlows: CtxDF[SetNumberOfFlows] = 

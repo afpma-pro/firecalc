@@ -131,6 +131,7 @@ object validatevar:
 
     // business logic types
 
+    object areaName                         extends Valid_and_ValidOption_Always_Factory[PipeLocation.AreaName]
     object billingLanguage                  extends Valid_and_ValidOption_Always_Factory[BillingLanguage]
     object FacingType                       extends Valid_and_ValidOption_Always_Factory[FacingType]
     object billableCountry                  extends Valid_and_ValidOption_Always_Factory[BillableCountry]
@@ -140,6 +141,7 @@ object validatevar:
     object customer                         extends Valid_and_ValidOption_Always_Factory[Customer]
     object innerConstructionMaterial        extends Valid_and_ValidOption_Always_Factory[InnerConstructionMaterial]
     object sizingMethod                     extends Valid_and_ValidOption_Always_Factory[SizingMethod]
+    object pipeLocation                     extends Valid_and_ValidOption_Always_Factory[PipeLocation]
 
     object roughness extends ValidOption_WhenPositive_Factory[Roughness](_ >= 0.meters)
 

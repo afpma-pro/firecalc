@@ -17,7 +17,7 @@ import magnolia1.Transl
 
 @Transl(I(_.pipe_location.short))
 sealed trait PipeLocation(
-    val areaName: String,
+    val areaName: PipeLocation.AreaName,
     val areaHeatingStatus: PipeLocation.AreaHeatingStatus
 ) 
     extends InsideOrOutside
@@ -47,21 +47,51 @@ object PipeLocation:
         case HeatedArea         => I18N.pipe_location.heated_area
         case UnheatedInside     => I18N.pipe_location.unheated_inside
         case OutsideOrExterior  => I18N.pipe_location.outside_or_exterior
-        case _: CustomArea   => I18N.pipe_location.custom_area
+        case _: CustomArea      => I18N.pipe_location.custom_area
+
+    @Transl(I(_.area_name))
+    sealed trait AreaName
+    object AreaName:
         
-    case object BoilerRoom          extends PipeLocation("BoilerRoom"       , AreaHeatingStatus.NotHeated)    with Inside
+        given show_AreaName: Locale => Show[AreaName] = Show.show:
+            case BoilerRoom         => I18N.pipe_location.boiler_room
+            case HeatedArea         => I18N.pipe_location.heated_area
+            case UnheatedInside     => I18N.pipe_location.unheated_inside
+            case OutsideOrExterior  => I18N.pipe_location.outside_or_exterior
+            case _: CustomArea      => I18N.pipe_location.custom_area
+
+        case object BoilerRoom extends AreaName
+        @Transl(I(_.pipe_location.boiler_room))
+        type BoilerRoom = BoilerRoom.type
+
+        case object HeatedArea extends AreaName
+        @Transl(I(_.pipe_location.heated_area))
+        type HeatedArea = HeatedArea.type
+
+        case object UnheatedInside extends AreaName
+        @Transl(I(_.pipe_location.unheated_inside))
+        type UnheatedInside = UnheatedInside.type
+
+        case object OutsideOrExterior extends AreaName
+        @Transl(I(_.pipe_location.outside_or_exterior))
+        type OutsideOrExterior = OutsideOrExterior.type
+
+        @Transl(I(_.pipe_location.custom_area))
+        case class CustomArea(name: String) extends AreaName
+
+    case object BoilerRoom          extends PipeLocation(AreaName.BoilerRoom       , AreaHeatingStatus.NotHeated)    with Inside
     @Transl(I(_.pipe_location.boiler_room))
     type BoilerRoom = BoilerRoom.type
     
-    case object HeatedArea          extends PipeLocation("HeatedArea"       , AreaHeatingStatus.Heated)       with Inside
+    case object HeatedArea          extends PipeLocation(AreaName.HeatedArea       , AreaHeatingStatus.Heated)       with Inside
     @Transl(I(_.pipe_location.heated_area))
     type HeatedArea = HeatedArea.type
     
-    case object UnheatedInside      extends PipeLocation("UnheatedInside"   , AreaHeatingStatus.NotHeated)    with Inside
+    case object UnheatedInside      extends PipeLocation(AreaName.UnheatedInside   , AreaHeatingStatus.NotHeated)    with Inside
     @Transl(I(_.pipe_location.unheated_inside))
     type UnheatedInside = UnheatedInside.type
     
-    case object OutsideOrExterior   extends PipeLocation("OutsideOrExterior", AreaHeatingStatus.NotHeated)    with Outside
+    case object OutsideOrExterior   extends PipeLocation(AreaName.OutsideOrExterior, AreaHeatingStatus.NotHeated)    with Outside
     @Transl(I(_.pipe_location.outside_or_exterior))
     type OutsideOrExterior = OutsideOrExterior.type
     
@@ -77,7 +107,7 @@ object PipeLocation:
       */
     @Transl(I(_.pipe_location.custom_area))
     case class CustomArea(
-        area_name: String,
+        area_name: AreaName,
         area_heating_status: AreaHeatingStatus, 
         inside: Boolean,
         ambiant_air_temperature_set: AmbiantAirTemperatureSet
@@ -91,7 +121,7 @@ object PipeLocation:
             inside: Boolean, 
             tu_forAllConditions: TCelsius
         ) = CustomArea(
-            area_name, 
+            AreaName.CustomArea(area_name), 
             area_heating_status, 
             inside, 
             AmbiantAirTemperatureSet.fromSingleTu(tu_forAllConditions)
