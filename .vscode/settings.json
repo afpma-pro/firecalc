@@ -16,13 +16,14 @@
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.3+6-59d9ab71-SNAPSHOT",
+    "metals.serverVersion": "1.6.3+10-b8c83766-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 37277,
     "metals.suggestLatestUpgrade": "on",
     "metals.customRepositories": [
         "sonatype:releases|sonatype:snapshots|jcenter"
     ],
+    "telemetry.telemetryLevel": "off",
     "tinymist.exportPdf": "onSave",
     "tinymist.preview.refresh": "onSave",
     "chat.mcp.access": "all",
@@ -126,5 +127,6 @@
         "files.trimTrailingWhitespace": true,
         "editor.insertSpaces": true,
         "editor.tabSize": 2
-    }
+    },
+    "metals.inlayHints.implicitArguments.enable": false
 }
