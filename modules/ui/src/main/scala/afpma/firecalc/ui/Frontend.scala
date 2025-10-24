@@ -34,17 +34,17 @@ object Frontend {
     child <-- router.currentPageSignal.map(renderPage)
   ).amend(
     writeUnifiedSchemaSubscription,
-    results_en15544_outputs.map(err => ("OUTPUTS 15544", err))
-        .tapEach(consoleLogVNelStringErrors) --> errorBusConsole
+    // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))
+    //     .tapEach(consoleLogVNelStringErrors) --> errorBusConsole
   )
 
-  def consoleLogVNelStringErrors(k_vnel: (String, VNelString[?])): Unit = k_vnel match
-    case (key, Validated.Invalid(nel)) =>
-        scala.scalajs.js.Dynamic.global.console.log(s"[$key] ======")
-        scala.scalajs.js.Dynamic.global.console.log(s"[$key] ERROR :")
-        nel.toList.foreach(x => scala.scalajs.js.Dynamic.global.console.log(x))
-        scala.scalajs.js.Dynamic.global.console.log(s"[$key] ======")
-    case _ => ()  
+//   def consoleLogVNelStringErrors(k_vnel: (String, VNelString[?])): Unit = k_vnel match
+//     case (key, Validated.Invalid(nel)) =>
+//         scala.scalajs.js.Dynamic.global.console.log(s"[$key] ======")
+//         scala.scalajs.js.Dynamic.global.console.log(s"[$key] ERROR :")
+//         nel.toList.foreach(x => scala.scalajs.js.Dynamic.global.console.log(x))
+//         scala.scalajs.js.Dynamic.global.console.log(s"[$key] ======")
+//     case _ => ()  
 
 
   def renderPage(page: Page): Div = page match
