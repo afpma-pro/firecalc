@@ -300,7 +300,7 @@ object v1:
         id = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")), // Same ID as production
         nameKey = "products.pdf_report_EN_15544_2023.name",
         descriptionKey = "products.pdf_report_EN_15544_2023.description",
-        price = BigDecimal(0.01), // Minimal price for staging tests
+        price = BigDecimal(89.00),
         currency = "EUR",
         active = true
       )
