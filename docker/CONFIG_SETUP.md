@@ -72,16 +72,13 @@ nano invoice-config.yaml
 cd ../../..
 make staging-backend-build
 
-# 9. Start Docker services
+# 9. Start Docker services (with rebuild to ensure latest JAR is used)
 cd docker
-docker-compose up -d
+docker compose down
+docker compose up -d --build
 
 # 10. Monitor logs
-docker-compose logs -f
-```
-
-# 9. Monitor logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Configuration Structure
@@ -359,23 +356,24 @@ sudo chmod -R 755 docker/databases
    ls -lh modules/payments/target/scala-*/firecalc-payments-assembly.jar
    ```
 
-4. **Start services**
+4. **Start services (always rebuild to use latest JAR)**
    ```bash
    cd docker
-   docker-compose up -d
+   docker compose down
+   docker compose up -d --build
    ```
 
 5. **Monitor startup**
    ```bash
    # Watch logs from both services
-   docker-compose logs -f
+   docker compose logs -f
    
    # Watch specific service
-   docker-compose logs -f backend
-   docker-compose logs -f nginx-ssl-proxy
+   docker compose logs -f backend
+   docker compose logs -f nginx-ssl-proxy
    
    # Check service status
-   docker-compose ps
+   docker compose ps
    ```
 
 6. **Wait for SSL certificates**
@@ -397,16 +395,26 @@ sudo chmod -R 755 docker/databases
    
    Both domains use standard HTTPS port 443, with routing handled by nginx based on the `server_name`.
 
-8. **Verify SSL certificate**
+8. **Verify deployment**
    ```bash
+   # Check API version (should match build.sbt version)
+   curl -s https://api.staging.example.com/v1/healthcheck
+   
    # Check certificate includes both domains
    docker exec firecalc-ssl-proxy openssl x509 -in /etc/letsencrypt/fullchain-copy.pem -noout -text | grep DNS
    ```
    
-   Expected output:
+   Expected healthcheck output:
+   ```json
+   {"info":{"engine_version":"0.3.0-b4","payments_base_version":"0.9.0-b4",...}}
+   ```
+   
+   Expected certificate output:
    ```
    DNS:staging.firecalc.example.com, DNS:api.staging.firecalc.example.com
    ```
+
+> **⚠️ IMPORTANT**: After rebuilding the JAR with `make staging-backend-build`, you **MUST** use `docker compose up -d --build` to rebuild the Docker image. Simply restarting containers with `docker compose restart` will **NOT** update the JAR inside the container. The `--build` flag ensures the new JAR is copied into a fresh Docker image.
 
 ## Configuration Files
 
