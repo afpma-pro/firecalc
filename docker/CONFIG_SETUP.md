@@ -93,6 +93,8 @@ docker/
 ├── docker-compose.yml            # Docker orchestration
 ├── Dockerfile                    # Application container definition
 ├── CONFIG_SETUP.md               # This file
+├── nginx-ui-server.conf          # UI static file server configuration
+├── nginx-proxy-custom.conf       # SSL proxy configuration (both domains)
 │
 ├── configs/
 │   └── staging/                  # Staging environment configs (git-ignored)
@@ -115,23 +117,35 @@ docker/
         └── firecalc-payments-staging.db
 ```
 
+**Nginx Architecture:** FireCalc uses a three-container architecture:
+1. **backend** - Scala payments application (port 8181)
+2. **ui-server** - nginx:alpine serving static UI files (port 80, internal)
+3. **nginx-ssl-proxy** - Single SSL termination proxy handling both UI and API domains with automatic Let's Encrypt certificates (ports 443/80)
+
 ## Step-by-Step Setup
 
-### Step 1: Configure Domain and DNS
+### Step 1: Configure Domains and DNS
 
-1. **Register domain or subdomain** for your staging environment
-   - Example: `api.staging.example.com` (replace with your actual domain)
+FireCalc uses TWO separate domains for better security and separation of concerns:
 
-2. **Configure DNS A record**
-   - Point domain to your server's public IP address
+1. **UI_DOMAIN** - Serves the web application frontend (e.g., `firecalc.staging.example.com`)
+2. **API_DOMAIN** - Handles all backend API requests (e.g., `api.staging.example.com`)
+
+**Register both domains**:
+   - UI Domain example: `firecalc.staging.example.com`
+   - API Domain example: `api.staging.example.com`
+
+**Configure DNS A records** for BOTH domains:
+   - Point both domains to your server's public IP address
    - Wait for DNS propagation (can take up to 48 hours, usually minutes)
 
-3. **Verify DNS resolution**
+**Verify DNS resolution**:
    ```bash
-   # Check DNS resolution
+   # Check both domains resolve to your server
+   nslookup firecalc.staging.example.com
    nslookup api.staging.example.com
    
-   # Should return your server's IP address
+   # Both should return your server's IP address
    ```
 
 ### Step 2: Configure Docker Environment
@@ -149,7 +163,8 @@ docker/
 3. **Set required variables**
    ```env
    # Minimum required for staging:
-   DOMAIN=api.staging.example.com
+   UI_DOMAIN=firecalc.staging.example.com
+   API_DOMAIN=api.staging.example.com
    FIRECALC_ENV=staging
    
    # Company information
@@ -244,13 +259,13 @@ docker/
 
 3. **Configure webhook**
    - Navigate to: Developers > Webhooks
-   - Create endpoint: `https://api.staging.example.com/v1/webhooks/gocardless`
+   - Create endpoint using your API_DOMAIN: `https://api.staging.example.com/v1/webhooks/gocardless`
    - Copy webhook secret
 
 4. **Register redirect URIs**
    - Navigate to: Developers > Redirect URIs
-   - Add: `https://api.staging.example.com/v1/payment_complete`
-   - Add: `https://api.staging.example.com/v1/payment_cancelled`
+   - Add (using API_DOMAIN): `https://api.staging.example.com/v1/payment_complete`
+   - Add (using API_DOMAIN): `https://api.staging.example.com/v1/payment_cancelled`
 
 5. **Copy template**
    ```bash
@@ -363,10 +378,35 @@ sudo chmod -R 755 docker/databases
    docker-compose ps
    ```
 
-6. **Wait for SSL certificate**
-   - First startup takes 2-5 minutes to obtain Let's Encrypt certificate
-   - Monitor nginx-ssl-proxy logs for certificate issuance
+6. **Wait for SSL certificates**
+   - First startup takes 2-5 minutes to obtain Let's Encrypt certificates for BOTH domains
+   - Monitor the nginx-ssl-proxy logs:
+     ```bash
+     docker compose logs -f nginx-ssl-proxy
+     ```
    - Once ready, you'll see "Certificate obtained successfully"
+   - The nginx-ssl-proxy container automatically handles:
+     - SSL certificate generation for both domains (single certificate with SANs)
+     - HTTP to HTTPS redirects
+     - Certificate renewal before expiration
+     - Routing to appropriate upstream based on domain (UI → ui-server, API → backend)
+
+7. **Access the services**
+   - **UI**: https://staging.firecalc.example.com (port 443)
+   - **API**: https://api.staging.firecalc.example.com (port 443)
+   
+   Both domains use standard HTTPS port 443, with routing handled by nginx based on the `server_name`.
+
+8. **Verify SSL certificate**
+   ```bash
+   # Check certificate includes both domains
+   docker exec firecalc-ssl-proxy openssl x509 -in /etc/letsencrypt/fullchain-copy.pem -noout -text | grep DNS
+   ```
+   
+   Expected output:
+   ```
+   DNS:staging.firecalc.example.com, DNS:api.staging.firecalc.example.com
+   ```
 
 ## Configuration Files
 
