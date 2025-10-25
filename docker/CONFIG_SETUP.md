@@ -68,9 +68,17 @@ nano invoice-config.yaml
 # 7. (Optional) Add company logo
 # Place logo file at: configs/staging/invoices/logo.png
 
-# 8. Build and start services
+# 8. Build the application
 cd ../../..
+make staging-backend-build
+
+# 9. Start Docker services
+cd docker
 docker-compose up -d
+
+# 10. Monitor logs
+docker-compose logs -f
+```
 
 # 9. Monitor logs
 docker-compose logs -f
@@ -326,11 +334,11 @@ sudo chmod -R 755 docker/databases
    # Look for any errors or warnings
    ```
 
-3. **Build the application** (if not built already)
+3. **Build the application for staging**
    ```bash
    # From project root
    cd ..
-   sbt "payments/assembly"
+   make staging-backend-build
    
    # Verify JAR exists
    ls -lh modules/payments/target/scala-*/firecalc-payments-assembly.jar

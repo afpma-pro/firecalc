@@ -255,6 +255,13 @@ staging-backend-run:
 	@echo "Starting payments backend in staging mode..."
 	@FIRECALC_ENV=staging sbt "payments/run"
 
+staging-backend-build:
+	@echo "Building for staging deployment..."
+	@echo "Building backend JAR..."
+	@sbt "payments/assembly"
+	@echo "Building UI..."
+	@make staging-web-ui-build
+
 ## ================================
 ## STAGING - SETUP/VERIFICATION
 ## ================================

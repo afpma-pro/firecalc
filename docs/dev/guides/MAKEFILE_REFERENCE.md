@@ -306,6 +306,19 @@ make staging-backend-run
 
 ---
 
+### `make staging-backend-build`
+Build entire project for staging deployment.
+
+```bash
+make staging-backend-build
+```
+
+**Builds:**
+1. Backend JAR (`sbt payments/assembly`)
+2. UI staging build (`make staging-web-ui-build`)
+
+---
+
 ## Staging - Setup/Verification
 
 ### `make staging-env-setup`
