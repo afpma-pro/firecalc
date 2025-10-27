@@ -4,13 +4,27 @@
  */
 
 import { resolve } from 'path'
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";
 import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+    // Load environment variables for the current mode
+    const env = loadEnv(mode, process.cwd(), '');
+    
+    // Build the backend URL from environment variables
+    const backendProtocol = env.VITE_BACKEND_PROTOCOL || 'http';
+    const backendHost = env.VITE_BACKEND_HOST || 'localhost';
+    const backendPort = env.VITE_BACKEND_PORT || '8181';
+    
+    // Construct the full backend URL for CSP
+    const backendUrl = `${backendProtocol}://${backendHost}${backendPort && backendPort !== '443' && backendPort !== '80' ? ':' + backendPort : ''}`;
+    
+    console.log(`[Vite Config] Mode: ${mode}, Backend URL for CSP: ${backendUrl}`);
+    
+    return {
     base: "./",
     publicDir: "../../public",
     build: {
@@ -39,6 +53,35 @@ export default defineConfig({
             projectID: 'ui',
         }),
         tailwindcss(),
+        // Transform index.html to inject environment-specific CSP
+        {
+            name: 'inject-csp',
+            transformIndexHtml(html) {
+                // Environment-specific CSP directives
+                
+                // 1. GitHub source maps: Only in development for Scala.js debugging
+                const githubSourceMaps = mode === 'development' ? ' https://raw.githubusercontent.com' : '';
+                
+                // 2. Unsafe eval: Only in development (may be needed by Scala.js dev workflow)
+                //    Remove in staging/production for better security
+                //    Keep 'unsafe-inline' in all modes (required for inline <script> tags in index.html)
+                const scriptSrc = mode === 'development'
+                    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
+                    : `script-src 'self' 'unsafe-inline'`;
+                
+                // Build the CSP policy
+                const cspContent = `default-src 'self'; connect-src 'self' ${backendUrl}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;`;
+                
+                console.log(`[CSP] ${mode} mode - Backend: ${backendUrl}`);
+                console.log(`[CSP] ${mode} mode - GitHub: ${githubSourceMaps ? 'enabled' : 'disabled'}`);
+                console.log(`[CSP] ${mode} mode - Script: ${scriptSrc}`);
+                
+                return html.replace(
+                    /<meta http-equiv="Content-Security-Policy"[^>]*content="[^"]*"[^>]*>/,
+                    `<meta http-equiv="Content-Security-Policy" content="${cspContent}">`
+                );
+            }
+        },
         // Dev-only middleware: rewrite absolute FS paths to Vite's /@fs so DevTools can fetch .scala sources.
         // Avoid Node's require in ESM Vite config to prevent "Dynamic require is not supported" errors.
         {
@@ -164,5 +207,5 @@ export default defineConfig({
         logOverride: {
             'missing source files': 'silent',
         },
-    }
-})
+    },
+}});
