@@ -5,15 +5,24 @@ This directory contains everything needed to deploy the FireCalc payments backen
 
 ## Quick Start
 
+For a complete staging deployment (recommended):
+
 ```bash
-# 1. Copy environment template
-cp .env.example .env
+# From project root
+cd /path/to/firecalc
 
-# 2. Edit .env with your values
-nano .env
+# 1. Install UI dependencies (first time only)
+make ui-setup
 
-# 3. Copy configuration templates
-cd configs/staging/payments
+# 2. Copy environment template
+cp docker/.env.example docker/.env
+
+# 3. Edit .env with your values
+nano docker/.env
+# Update UI_DOMAIN, API_DOMAIN, FIRECALC_ENV
+
+# 4. Copy configuration templates
+cd docker/configs/staging/payments
 cp payments-config.conf.example payments-config.conf
 cp email-config.conf.example email-config.conf
 cp gocardless-config.conf.example gocardless-config.conf
@@ -21,16 +30,19 @@ cp gocardless-config.conf.example gocardless-config.conf
 cd ../invoices
 cp invoice-config.yaml.example invoice-config.yaml
 
-# 4. Edit all configuration files
+# 5. Edit all configuration files
 # Update with your actual credentials and company information
 
-# 5. Build and deploy
-cd ../../..
-docker-compose up -d
+# 6. Build and deploy (builds backend JAR + UI, then deploys)
+cd /path/to/firecalc
+make staging-docker-deploy-up
 
-# 6. Monitor logs
-docker-compose logs -f
+# 7. Monitor logs
+cd docker
+docker compose logs -f
 ```
+
+**Note:** `make staging-docker-deploy-up` automatically builds both the backend JAR and UI, then deploys to Docker with image rebuild.
 
 ## Directory Structure
 
@@ -82,51 +94,55 @@ All templates are in `configs/staging/` with `.example` extension:
 
 ```bash
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # Stop services
-docker-compose down
+docker compose down
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # View specific service logs
-docker-compose logs -f backend
-docker-compose logs -f nginx-ssl-proxy
+docker compose logs -f backend
+docker compose logs -f nginx-ssl-proxy
 
 # Restart services
-docker-compose restart
+docker compose restart
 
-# Rebuild and restart
-docker-compose up -d --build
+# Rebuild and restart (REQUIRED after JAR/UI changes)
+docker compose up -d --build
 
 # Check service status
-docker-compose ps
+docker compose ps
 
 # Validate configuration
-docker-compose config
+docker compose config
 ```
 
 ## Pre-Deployment Checklist
 
 Before deploying:
 
-- [ ] Domain DNS configured and propagated
+- [ ] Both UI and API domains DNS configured and propagated
 - [ ] Ports 80 and 443 open in firewall
-- [ ] `.env` file created and configured
+- [ ] `.env` file created and configured with both UI_DOMAIN and API_DOMAIN
 - [ ] All config files copied from `.example` templates
 - [ ] Company information updated in all configs
 - [ ] GoCardless credentials obtained (sandbox for staging)
 - [ ] SMTP service configured (Mailtrap.io recommended for staging)
-- [ ] Application JAR built with fixed merge strategy: `sbt "payments/assembly"`
+- [ ] UI dependencies installed: `make ui-setup` (first time only)
+- [ ] Backend JAR built: `make staging-backend-build` (also builds UI)
 - [ ] JAR exists at: `../modules/payments/target/scala-*/firecalc-payments-assembly.jar`
+- [ ] UI built: `../web/dist-app/index.html` exists
 - [ ] Database directory has proper ownership: `sudo chown -R 999:999 docker/databases && sudo chmod -R 755 docker/databases`
+- [ ] UI dist-app has proper ownership: `sudo chown -R $USER:$USER web/dist-app` (if needed)
 
 ## Deployment Environments
 
 ### Staging (Current Configuration)
 
-- Domain: `api.staging.example.com` (replace with your actual domain)
+- UI Domain: `firecalc.staging.example.com` (replace with your actual domain)
+- API Domain: `api.staging.example.com` (replace with your actual domain)
 - Environment: `FIRECALC_ENV=staging`
 - GoCardless: **SANDBOX only** (use `sandbox` config section)
 - Email: Test service (Mailtrap.io recommended)

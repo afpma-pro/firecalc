@@ -39,47 +39,52 @@ Before starting configuration:
 For staging deployment:
 
 ```bash
-# 1. Navigate to docker directory
-cd /path/to/firecalc/docker
+# 1. Navigate to project root
+cd /path/to/firecalc
 
-# 2. Copy environment template
-cp .env.example .env
+# 2. Install UI dependencies (first time only)
+make ui-setup
 
-# 3. Edit .env with your staging values
-nano .env
-# Update DOMAIN, FIRECALC_ENV, and other variables
+# 3. Copy environment template
+cp docker/.env.example docker/.env
 
-# 4. Create staging configuration files
-cd configs/staging/payments
+# 4. Edit .env with your staging values
+nano docker/.env
+# Update UI_DOMAIN, API_DOMAIN, FIRECALC_ENV, and other variables
+
+# 5. Create staging configuration files
+cd docker/configs/staging/payments
 cp payments-config.conf.example payments-config.conf
 cp email-config.conf.example email-config.conf
 cp gocardless-config.conf.example gocardless-config.conf
 
-# 5. Create staging invoice configuration
+# 6. Create staging invoice configuration
 cd ../invoices
 cp invoice-config.yaml.example invoice-config.yaml
 
-# 6. Edit all .conf and .yaml files with your actual values
+# 7. Edit all .conf and .yaml files with your actual values
 nano payments-config.conf
 nano email-config.conf
 nano gocardless-config.conf
 nano invoice-config.yaml
 
-# 7. (Optional) Add company logo
+# 8. (Optional) Add company logo
 # Place logo file at: configs/staging/invoices/logo.png
 
-# 8. Build the application
-cd ../../..
-make staging-backend-build
-
-# 9. Start Docker services (with rebuild to ensure latest JAR is used)
-cd docker
-docker compose down
-docker compose up -d --build
+# 9. Deploy to Docker (builds backend JAR + UI, then deploys)
+cd /path/to/firecalc
+make staging-docker-deploy-up
 
 # 10. Monitor logs
+cd docker
 docker compose logs -f
 ```
+
+**Note:** The `staging-docker-deploy-up` target automatically:
+- Builds the backend JAR (`sbt payments/assembly`)
+- Builds the UI static files (Scala.js compilation + Vite build)
+- Rebuilds Docker images with `--build` flag
+- Deploys containers with `docker compose up -d`
 
 ## Configuration Structure
 
@@ -332,38 +337,47 @@ sudo chmod -R 755 docker/databases
 
 ### Step 8: Build and Deploy
 
-1. **Navigate to docker directory**
+1. **Validate configuration**
    ```bash
-   cd docker
-   ```
-
-2. **Validate configuration**
-   ```bash
+   # From project root
+   cd /path/to/firecalc
+   
    # Check docker-compose configuration
-   docker-compose config
+   cd docker
+   docker compose config
    
    # This should show your configuration with .env variables substituted
    # Look for any errors or warnings
    ```
 
-3. **Build the application for staging**
+2. **Deploy using Makefile (recommended)**
    ```bash
    # From project root
-   cd ..
+   cd /path/to/firecalc
+   
+   # This single command builds backend JAR, builds UI, and deploys to Docker
+   make staging-docker-deploy-up
+   ```
+   
+   **OR manually (for more control):**
+   ```bash
+   # From project root
+   cd /path/to/firecalc
+   
+   # Build backend JAR (also builds UI automatically)
    make staging-backend-build
    
-   # Verify JAR exists
+   # Verify builds
    ls -lh modules/payments/target/scala-*/firecalc-payments-assembly.jar
-   ```
-
-4. **Start services (always rebuild to use latest JAR)**
-   ```bash
+   ls -lh web/dist-app/index.html
+   
+   # Deploy to Docker
    cd docker
    docker compose down
    docker compose up -d --build
    ```
 
-5. **Monitor startup**
+3. **Monitor startup**
    ```bash
    # Watch logs from both services
    docker compose logs -f
@@ -376,7 +390,7 @@ sudo chmod -R 755 docker/databases
    docker compose ps
    ```
 
-6. **Wait for SSL certificates**
+4. **Wait for SSL certificates**
    - First startup takes 2-5 minutes to obtain Let's Encrypt certificates for BOTH domains
    - Monitor the nginx-ssl-proxy logs:
      ```bash
@@ -389,13 +403,13 @@ sudo chmod -R 755 docker/databases
      - Certificate renewal before expiration
      - Routing to appropriate upstream based on domain (UI → ui-server, API → backend)
 
-7. **Access the services**
+5. **Access the services**
    - **UI**: https://staging.firecalc.example.com (port 443)
    - **API**: https://api.staging.firecalc.example.com (port 443)
    
    Both domains use standard HTTPS port 443, with routing handled by nginx based on the `server_name`.
 
-8. **Verify deployment**
+6. **Verify deployment**
    ```bash
    # Check API version (should match build.sbt version)
    curl -s https://api.staging.example.com/v1/healthcheck
@@ -414,7 +428,18 @@ sudo chmod -R 755 docker/databases
    DNS:staging.firecalc.example.com, DNS:api.staging.firecalc.example.com
    ```
 
-> **⚠️ IMPORTANT**: After rebuilding the JAR with `make staging-backend-build`, you **MUST** use `docker compose up -d --build` to rebuild the Docker image. Simply restarting containers with `docker compose restart` will **NOT** update the JAR inside the container. The `--build` flag ensures the new JAR is copied into a fresh Docker image.
+> **⚠️ IMPORTANT - Docker Image Rebuild**:
+> - After rebuilding the JAR or UI, you **MUST** use `docker compose up -d --build` to rebuild the Docker image
+> - Simply restarting with `docker compose restart` will **NOT** update the JAR or UI files inside containers
+> - The `--build` flag ensures new files are copied into fresh Docker images
+> - **Best practice**: Use `make staging-docker-deploy-up` which handles all build steps and Docker rebuild automatically
+
+> **⚠️ IMPORTANT - UI Build Required**:
+> - The UI must be built (`web/dist-app/` directory) before Docker deployment
+> - If `web/dist-app/` is empty or contains root-owned files, you'll get a **403 Forbidden** error
+> - Run `make ui-setup` once to install dependencies, then `make staging-web-ui-build` to build UI
+> - Or use `make staging-backend-build` which builds both backend and UI
+> - Fix permissions if needed: `sudo chown -R $USER:$USER web/dist-app`
 
 ## Configuration Files
 
