@@ -88,7 +88,7 @@ gocardless {
     #
     # IMPORTANT for Staging:
     # - Use your staging domain (e.g., api.staging.example.com)
-    # - HTTPS is required (Let's Encrypt in docker-compose)
+    # - HTTPS is required (Let's Encrypt in docker compose)
     # - Must be registered in GoCardless dashboard
     
     # Success redirect URI

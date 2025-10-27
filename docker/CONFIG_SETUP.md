@@ -342,7 +342,7 @@ sudo chmod -R 755 docker/databases
    # From project root
    cd /path/to/firecalc
    
-   # Check docker-compose configuration
+   # Check docker compose configuration
    cd docker
    docker compose config
    

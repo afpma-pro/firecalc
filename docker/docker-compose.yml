@@ -14,9 +14,9 @@
 # - Volume mounts for configuration and database persistence
 #
 # Usage:
-#   docker-compose up -d              # Start all services in detached mode
-#   docker-compose logs -f backend    # View backend logs
-#   docker-compose down               # Stop and remove containers
+#   docker compose up -d              # Start all services in detached mode
+#   docker compose logs -f backend    # View backend logs
+#   docker compose down               # Stop and remove containers
 #
 # Environment Variables (via .env file):
 #   UI_DOMAIN           - UI domain name (e.g., firecalc.staging.example.com)
@@ -250,15 +250,15 @@ volumes:
 #
 # 5. SSL Certificate Management:
 #    - First run may take a few minutes to obtain certificates
-#    - Monitor logs: docker-compose logs -f nginx-ssl-proxy
+#    - Monitor logs: docker compose logs -f nginx-ssl-proxy
 #    - Certificates auto-renew before expiration
 #    - Volume letsencrypt-certs persists certificates
 #
 # 6. Monitoring and Maintenance:
-#    - Check service health: docker-compose ps
-#    - View logs: docker-compose logs -f [service_name]
-#    - Restart services: docker-compose restart [service_name]
-#    - Update services: docker-compose pull && docker-compose up -d
+#    - Check service health: docker compose ps
+#    - View logs: docker compose logs -f [service_name]
+#    - Restart services: docker compose restart [service_name]
+#    - Update services: docker compose pull && docker compose up -d
 #
 # 7. Backup Strategy:
 #    - Backup databases/ directory regularly
@@ -269,7 +269,7 @@ volumes:
 #    - Services run as non-root users inside containers
 #    - Backend not exposed to host, only via nginx proxy
 #    - Use secrets management for sensitive data (not in .env)
-#    - Regular security updates: docker-compose pull
+#    - Regular security updates: docker compose pull
 #    - Review and rotate database encryption keys
 #
 # 9. Troubleshooting:

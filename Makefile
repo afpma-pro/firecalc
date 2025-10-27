@@ -453,7 +453,7 @@ prod-electron-package-linux:
 prod-docker-deploy-up:
 	@echo "Deploying UI to Docker (production)..."
 	@make prod-web-ui-build
-	@cd docker && docker-compose down && docker-compose up -d --build
+	@cd docker && docker compose down && docker compose up -d --build
 	@echo "✅ Deployment complete!"
 	@echo "   UI:  https://\$${UI_DOMAIN}"
 	@echo "   API: https://\$${API_DOMAIN}"
@@ -463,7 +463,7 @@ prod-docker-deploy-up:
 staging-docker-deploy-up:
 	@echo "Deploying UI to Docker (staging)..."
 	@make staging-web-ui-build
-	@cd docker && docker-compose down && docker-compose up -d --build
+	@cd docker && docker compose down && docker compose up -d --build
 	@echo "✅ Deployment complete!"
 	@echo "   UI:  https://\$${UI_DOMAIN}"
 	@echo "   API: https://\$${API_DOMAIN}"
@@ -473,7 +473,7 @@ staging-docker-deploy-up:
 dev-docker-deploy-up:
 	@echo "Deploying UI to Docker (development)..."
 	@make dev-web-ui-build
-	@cd docker && docker-compose down && docker-compose up -d --build
+	@cd docker && docker compose down && docker compose up -d --build
 	@echo "✅ Deployment complete!"
 	@echo "   UI:  https://\$${UI_DOMAIN}"
 	@echo "   API: https://\$${API_DOMAIN}"
@@ -482,16 +482,16 @@ dev-docker-deploy-up:
 # Stop Docker containers
 docker-deploy-down:
 	@echo "Stopping Docker containers..."
-	@cd docker && docker-compose down
+	@cd docker && docker compose down
 	@echo "✅ Containers stopped!"
 
 # Restart Docker containers without rebuilding
 docker-deploy-restart:
 	@echo "Restarting Docker containers..."
-	@cd docker && docker-compose restart
+	@cd docker && docker compose restart
 	@echo "✅ Containers restarted!"
 
 # View Docker logs
 docker-deploy-logs:
-	@cd docker && docker-compose logs -f
+	@cd docker && docker compose logs -f
 
