@@ -70,7 +70,7 @@ export default defineConfig(({ mode }) => {
                     : `script-src 'self' 'unsafe-inline'`;
                 
                 // Build the CSP policy
-                const cspContent = `default-src 'self'; connect-src 'self' ${backendUrl}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;`;
+                const cspContent = `default-src 'self'; connect-src 'self' https://1.1.1.1 ${backendUrl}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;`;
                 
                 console.log(`[CSP] ${mode} mode - Backend: ${backendUrl}`);
                 console.log(`[CSP] ${mode} mode - GitHub: ${githubSourceMaps ? 'enabled' : 'disabled'}`);
