@@ -19,5 +19,10 @@
       <summary>Font hinting</summary>
       <description>Configure font hinting style. Typical values: 'none', 'slight', 'medium', 'full'.</description>
     </key>
+    <key name="gtk-key-theme" type="s">
+      <default>'Default'</default>
+      <summary>GTK key theme</summary>
+      <description>Name of the GTK key theme to use. Default value is 'Default'.</description>
+    </key>
   </schema>
 </schemalist>
