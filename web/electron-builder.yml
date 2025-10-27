@@ -1,3 +1,8 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
 appId: pro.afpma.firecalc
 productName: FireCalc AFPMA
 copyright: Copyright © 2025 AFPMA
@@ -53,7 +58,6 @@ win:
     - nsis
   icon: icon.png
   # Configuration for unsigned builds
-  publisherName: "AFPMA (Unsigned)"
   verifyUpdateCodeSignature: false
 
 linux:
