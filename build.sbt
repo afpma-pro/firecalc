@@ -512,14 +512,57 @@ lazy val ui = (project in file("modules/ui"))
     // Generate JavaScript constants for renderer process
     TaskKey[Unit]("generateJsConstants") := {
       val jsFilePath = file("web/generated-constants.js")
+      
+      // Read backend URLs from .env files
+      def readEnvFile(envFile: File): Map[String, String] = {
+        if (envFile.exists()) {
+          Source.fromFile(envFile).getLines()
+            .filter(_.contains("="))
+            .filterNot(_.trim.startsWith("#"))
+            .map { line =>
+              val Array(key, value) = line.split("=", 2).map(_.trim)
+              key -> value
+            }
+            .toMap
+        } else Map.empty
+      }
+      
+      // Build backend URLs from environment files
+      def buildBackendUrl(envMap: Map[String, String]): String = {
+        val protocol = envMap.getOrElse("VITE_BACKEND_PROTOCOL", "http")
+        val host = envMap.getOrElse("VITE_BACKEND_HOST", "localhost")
+        val port = envMap.getOrElse("VITE_BACKEND_PORT", "8181")
+        val portSuffix = if (port == "443" || port == "80") "" else s":$port"
+        s"$protocol://$host$portSuffix"
+      }
+      
+      val devEnv = readEnvFile(file("modules/ui/.env.development"))
+      val stagingEnvLocal = readEnvFile(file("modules/ui/.env.staging.local"))
+      val stagingEnv = readEnvFile(file("modules/ui/.env.staging"))
+      val prodEnvLocal = readEnvFile(file("modules/ui/.env.production.local"))
+      val prodEnv = readEnvFile(file("modules/ui/.env.production"))
+      
+      // Prefer .local files over base files (local overrides base)
+      val devBackendUrl = buildBackendUrl(devEnv)
+      val stagingBackendUrl = buildBackendUrl(stagingEnv ++ stagingEnvLocal)
+      val prodBackendUrl = buildBackendUrl(prodEnv ++ prodEnvLocal)
+      
       val jsContent = s"""// Auto-generated from build.sbt - DO NOT EDIT MANUALLY
                         |export const GITHUB_REPO_OWNER = '$githubOwner';
                         |export const GITHUB_REPO_NAME = '$githubRepo';
                         |export const UI_VERSION = '$ui_version';
+                        |
+                        |// Backend API URLs per environment
+                        |export const BACKEND_API_DEV = '$devBackendUrl';
+                        |export const BACKEND_API_STAGING = '$stagingBackendUrl';
+                        |export const BACKEND_API_PRODUCTION = '$prodBackendUrl';
                         |""".stripMargin
       
       IO.write(jsFilePath, jsContent)
       System.err.println("[info] => Generated web/generated-constants.js for renderer process")
+      System.err.println(s"[info] \tBACKEND_API_DEV: $devBackendUrl")
+      System.err.println(s"[info] \tBACKEND_API_STAGING: $stagingBackendUrl")
+      System.err.println(s"[info] \tBACKEND_API_PRODUCTION: $prodBackendUrl")
     },
     
     // Combined task to sync all build configuration

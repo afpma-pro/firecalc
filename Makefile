@@ -350,18 +350,21 @@ prod-env-test:
 # Shared target for fast development builds
 dev-electron-ui-build:
 	@sbt ui/syncBuildConfig
+	$(call generate_ui_version,dev)
 	@sbt ui/fastLinkJS
 	@cd modules/ui && npm run build
 
 # Shared target for optimized staging builds
 staging-electron-ui-build:
 	@sbt ui/syncBuildConfig
+	$(call generate_ui_version,staging)
 	@sbt ui/fullLinkJS
 	@cd modules/ui && npm run build:staging
 
 # Shared target for optimized production builds
 prod-electron-ui-build:
 	@sbt ui/syncBuildConfig
+	$(call generate_ui_version,)
 	@sbt ui/fullLinkJS
 	@cd modules/ui && npm run build:production
 
@@ -405,29 +408,33 @@ staging-electron-package-all:
 	@echo "Building Electron app for all platforms (staging-optimized)..."
 	@make staging-electron-ui-build
 	@echo "true" > web/.dev-build
+	@echo "staging" > web/.build-env
 	@cd web && npm run build:electron:staging
-	@rm -f web/.dev-build
+	@rm -f web/.dev-build web/.build-env
 
 staging-electron-package-mac:
 	@echo "Building Electron app for macOS (staging-optimized)..."
 	@make staging-electron-ui-build
 	@echo "true" > web/.dev-build
+	@echo "staging" > web/.build-env
 	@cd web && npm run build:electron:staging -- --mac
-	@rm -f web/.dev-build
+	@rm -f web/.dev-build web/.build-env
 
 staging-electron-package-win:
 	@echo "Building Electron app for Windows (staging-optimized)..."
 	@make staging-electron-ui-build
 	@echo "true" > web/.dev-build
+	@echo "staging" > web/.build-env
 	@cd web && npm run build:electron:staging -- --win
-	@rm -f web/.dev-build
+	@rm -f web/.dev-build web/.build-env
 
 staging-electron-package-linux:
 	@echo "Building Electron app for Linux (staging-optimized)..."
 	@make staging-electron-ui-build
 	@echo "true" > web/.dev-build
+	@echo "staging" > web/.build-env
 	@cd web && npm run build:electron:staging -- --linux
-	@rm -f web/.dev-build
+	@rm -f web/.dev-build web/.build-env
 
 ## ================================
 ## PRODUCTION - ELECTRON PACKAGING
@@ -436,22 +443,30 @@ staging-electron-package-linux:
 prod-electron-package-all:
 	@echo "Building Electron app for all platforms (production-optimized)..."
 	@make prod-electron-ui-build
+	@echo "production" > web/.build-env
 	@cd web && npm run build:electron:production
+	@rm -f web/.build-env
 
 prod-electron-package-mac:
 	@echo "Building Electron app for macOS (production-optimized)..."
 	@make prod-electron-ui-build
+	@echo "production" > web/.build-env
 	@cd web && npm run build:electron:production -- --mac
+	@rm -f web/.build-env
 
 prod-electron-package-win:
 	@echo "Building Electron app for Windows (production-optimized)..."
 	@make prod-electron-ui-build
+	@echo "production" > web/.build-env
 	@cd web && npm run build:electron:production -- --win
+	@rm -f web/.build-env
 
 prod-electron-package-linux:
 	@echo "Building Electron app for Linux (production-optimized)..."
 	@make prod-electron-ui-build
+	@echo "production" > web/.build-env
 	@cd web && npm run build:electron:production -- --linux
+	@rm -f web/.build-env
 
 ## ================================
 ## DOCKER DEPLOYMENT

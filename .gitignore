@@ -15,6 +15,13 @@ modules/ui/firecalc-ui.js
 
 web/dist
 web/dist-static
+web/.dev-build
+web/.build-env
+web/dist-app
+web/electron-app/dist
+web/node_modules
+web/.env.electron
+web/generated-constants.js
 
 # Company-specific deployment configs (sensitive information)
 deployment/

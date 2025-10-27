@@ -19,7 +19,13 @@ import {
 import { spawn, execFileSync } from 'child_process';
 import os from 'os';
 import crypto from 'crypto';
-import { GITHUB_REPO_OWNER, GITHUB_REPO_NAME } from '../../generated-constants.js';
+import {
+  GITHUB_REPO_OWNER,
+  GITHUB_REPO_NAME,
+  BACKEND_API_DEV,
+  BACKEND_API_STAGING,
+  BACKEND_API_PRODUCTION
+} from '../../generated-constants.js';
 
 const { autoUpdater } = updaterPkg;
 
@@ -230,6 +236,37 @@ if (shouldRelaunchForDebianGnomeWayland()) {
 
   const isDev = isDevBuild;
   const useViteDevServer = process.env.VITE_DEV_SERVER === 'true';
+  
+  // Determine build environment from .build-env marker file (created during packaging)
+  const buildEnv = (() => {
+    try {
+      const buildEnvPath = app.isPackaged
+        ? path.join(process.resourcesPath, '.build-env')
+        : path.join(__dirname, '../../.build-env');
+      
+      logDebug('Looking for .build-env at:', buildEnvPath);
+      logDebug('.build-env exists?', existsSync(buildEnvPath));
+      
+      if (existsSync(buildEnvPath)) {
+        const env = readFileSync(buildEnvPath, 'utf-8').trim();
+        logDebug('Build environment from .build-env:', env);
+        logDebug('Build environment length:', env.length);
+        return env;
+      } else {
+        logDebug('.build-env file not found at expected path');
+      }
+    } catch (e) {
+      logDebug('.build-env read error:', e.message || e);
+    }
+    logDebug('Falling back to dev environment');
+    return 'dev';
+  })();
+  
+  const isStaging = buildEnv === 'staging';
+  const isProduction = buildEnv === 'production';
+  
+  logDebug('Environment detection:', { buildEnv, isStaging, isProduction, isDev });
+  logDebug('Backend URLs:', { BACKEND_API_DEV, BACKEND_API_STAGING, BACKEND_API_PRODUCTION });
 
   // Configure auto-updater for MANUAL updates only (no code signing)
   autoUpdater.autoDownload = false;
@@ -590,9 +627,28 @@ if (shouldRelaunchForDebianGnomeWayland()) {
         "font-src 'self' data:",
         // Allow images from various sources
         "img-src 'self' file: data: blob:",
-        // Allow connections to localhost in dev mode for Vite HMR and payments backend
-        // Also allow Cloudflare 1.1.1.1 for internet connectivity check
-        `connect-src 'self' https://1.1.1.1 ${isDev ? 'http://localhost:* ws://localhost:* wss://localhost:*' : 'http://localhost:8181'}`
+        // Allow connections based on build environment:
+        // BUILD_ENV takes precedence over dev build marker
+        // - Dev: localhost for Vite HMR and local backend from config
+        // - Staging: staging API from config
+        // - Production: production API from config
+        // - Always: 1.1.1.1 for internet connectivity check
+        (() => {
+          const connectSources = ["'self'", "https://1.1.1.1"];
+          
+          // Check BUILD_ENV first (set during packaging), then fall back to isDev
+          if (isStaging) {
+            if (BACKEND_API_STAGING) connectSources.push(BACKEND_API_STAGING);
+          } else if (isProduction) {
+            if (BACKEND_API_PRODUCTION) connectSources.push(BACKEND_API_PRODUCTION);
+          } else {
+            // Dev mode or unpackaged
+            connectSources.push('http://localhost:*', 'ws://localhost:*', 'wss://localhost:*');
+            if (BACKEND_API_DEV) connectSources.push(BACKEND_API_DEV);
+          }
+          
+          return `connect-src ${connectSources.join(' ')}`;
+        })()
       ];
 
       const csp = cspDirectives.join('; ');
