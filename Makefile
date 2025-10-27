@@ -257,6 +257,10 @@ staging-backend-run:
 
 staging-backend-build:
 	@echo "Building for staging deployment..."
+	@echo "Copying staging logos for PDF generation..."
+	@mkdir -p modules/invoices/configs modules/reports/src/main/resources
+	@cp docker/configs/staging/invoices/logo.png modules/invoices/configs/logo.png
+	@cp docker/configs/staging/reports/logo.jpg modules/reports/src/main/resources/logo.jpg
 	@echo "Building backend JAR..."
 	@sbt "payments/assembly"
 	@echo "Building UI..."
@@ -312,6 +316,10 @@ prod-backend-run:
 
 prod-backend-build:
 	@echo "Building for production deployment..."
+	@echo "Copying production logos for PDF generation..."
+	@mkdir -p modules/invoices/configs modules/reports/src/main/resources
+	@cp docker/configs/prod/invoices/logo.png modules/invoices/configs/logo.png 2>/dev/null || cp docker/configs/staging/invoices/logo.jpg modules/invoices/configs/logo.jpg
+	@cp docker/configs/prod/reports/logo.jpg modules/reports/src/main/resources/logo.jpg 2>/dev/null || cp docker/configs/staging/reports/logo.jpg modules/reports/src/main/resources/logo.jpg
 	@echo "Building backend JAR..."
 	@sbt "payments/assembly"
 	@echo "Building UI..."
@@ -451,8 +459,8 @@ prod-electron-package-linux:
 
 # Deploy UI to Docker Compose (production)
 prod-docker-deploy-up:
-	@echo "Deploying UI to Docker (production)..."
-	@make prod-web-ui-build
+	@echo "Deploying to Docker (production)..."
+	@make prod-backend-build
 	@cd docker && docker compose down && docker compose up -d --build
 	@echo "✅ Deployment complete!"
 	@echo "   UI:  https://\$${UI_DOMAIN}"
@@ -461,8 +469,8 @@ prod-docker-deploy-up:
 
 # Deploy UI to Docker Compose (staging)
 staging-docker-deploy-up:
-	@echo "Deploying UI to Docker (staging)..."
-	@make staging-web-ui-build
+	@echo "Deploying to Docker (staging)..."
+	@make staging-backend-build
 	@cd docker && docker compose down && docker compose up -d --build
 	@echo "✅ Deployment complete!"
 	@echo "   UI:  https://\$${UI_DOMAIN}"

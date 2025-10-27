@@ -68,8 +68,10 @@ nano email-config.conf
 nano gocardless-config.conf
 nano invoice-config.yaml
 
-# 8. (Optional) Add company logo
-# Place logo file at: configs/staging/invoices/logo.png
+# 8. Add company logo for invoices and reports
+# Copy your logo to BOTH directories (REQUIRED for PDF generation):
+cp /path/to/your/logo.png docker/configs/staging/invoices/logo.png
+cp /path/to/your/logo.jpg docker/configs/staging/reports/logo.jpg
 
 # 9. Deploy to Docker (builds backend JAR + UI, then deploys)
 cd /path/to/firecalc
@@ -110,9 +112,9 @@ docker/
 │       ├── invoices/
 │       │   ├── invoice-config.yaml.example       # Template
 │       │   ├── invoice-config.yaml               # Your config
-│       │   └── logo.png                          # Your company logo (optional)
+│       │   └── logo.jpg                          # Company logo for invoices (REQUIRED)
 │       └── reports/
-│           └── logo.png                          # Logo for PDF reports (optional)
+│           └── logo.jpg                          # Company logo for reports (REQUIRED)
 │
 └── databases/
     └── staging/                  # Staging database (git-ignored, auto-created)
@@ -305,14 +307,16 @@ FireCalc uses TWO separate domains for better security and separation of concern
    - Contact information (email, phone, website)
    - Bank details (IBAN, BIC)
 
-3. **Add company logo (optional)**
+3. **Add company logo (REQUIRED for PDF generation)**
    ```bash
-   # Copy your logo to the invoices directory
-   cp /path/to/your/logo.png docker/configs/staging/invoices/logo.png
+   # Copy your company logo to BOTH directories
+   # These logos will be embedded in the JAR during build and used by Typst for PDF generation
+   cp /path/to/your/logo.jpg docker/configs/staging/invoices/logo.jpg
+   cp /path/to/your/logo.jpg docker/configs/staging/reports/logo.jpg
    
-   # Update invoice-config.yaml
-   # Change: logo: null
-   # To: logo: "logo.png"
+   # Note: The logo must be in JPG format
+   # Recommended size: 200x200 pixels or similar aspect ratio
+   # Both files should be identical (invoices module and reports module both need the logo)
    ```
 
 4. **Secure the file**

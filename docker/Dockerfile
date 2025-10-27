@@ -68,6 +68,13 @@ COPY --from=builder /usr/local/cargo/bin/typst /usr/local/bin/typst
 # This assumes the JAR has been built outside the Docker build process
 COPY modules/payments/target/scala-3.7.3/firecalc-payments-assembly.jar /app/firecalc-payments-assembly.jar
 
+# Copy logos for invoice and report generation (Typst requires files on filesystem)
+# The logos are copied from modules/*/configs/*.jpg which were placed there during the build
+# This ensures Typst can find the logos at their expected paths relative to /app
+RUN mkdir -p /app/modules/invoices/configs /app/modules/reports/src/main/resources
+COPY modules/invoices/configs/logo.png /app/modules/invoices/configs/logo.png
+COPY modules/reports/src/main/resources/logo.jpg /app/modules/reports/src/main/resources/logo.jpg
+
 # Create mount points for configuration and data persistence
 # These directories are intended to be mounted as volumes at runtime:
 # - /app/configs: Application configuration files (YAML, CONF)
