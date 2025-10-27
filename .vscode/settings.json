@@ -122,6 +122,12 @@
             "prefix": "# ",
             "end": "#"
         },
+        {
+            "language": ".txt",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
     ],
     "[hocon]": {
         "files.trimTrailingWhitespace": true,
