@@ -29,6 +29,7 @@ files:
   - package.json
   - dist-app/**/*
   - .dev-build
+  - generated-constants.js
 
 extraResources:
   - from: dist-app

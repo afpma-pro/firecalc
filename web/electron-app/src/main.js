@@ -1,4 +1,4 @@
-/**
+/*
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
@@ -19,7 +19,7 @@ import {
 import { spawn, execFileSync } from 'child_process';
 import os from 'os';
 import crypto from 'crypto';
-import { GITHUB_REPO_OWNER, GITHUB_REPO_NAME } from '../generated-constants.js';
+import { GITHUB_REPO_OWNER, GITHUB_REPO_NAME } from '../../generated-constants.js';
 
 const { autoUpdater } = updaterPkg;
 
