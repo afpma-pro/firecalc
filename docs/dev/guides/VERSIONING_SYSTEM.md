@@ -5,6 +5,8 @@ Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 
 # FireCalc UI Versioning System
 
+> **Note**: This document covers **runtime version display** in the UI. For **release and tagging strategy**, see [VERSIONING_AND_RELEASE_STRATEGY.md](./VERSIONING_AND_RELEASE_STRATEGY.md).
+
 ## Why
 
 The versioning system provides:
@@ -101,3 +103,9 @@ cat modules/ui/firecalc-ui.js
 The git hash `e3d4c6c1` is an 8-character abbreviated commit SHA-1 hash from `git rev-parse --short=8 HEAD`.
 
 This provides exact commit identification for deployment traceability and debugging.
+
+## Related Documentation
+
+- **[VERSIONING_AND_RELEASE_STRATEGY.md](./VERSIONING_AND_RELEASE_STRATEGY.md)** - Release strategy, beta versioning, and when to increment version numbers
+- **[GITHUB_ACTIONS_RELEASES.md](./GITHUB_ACTIONS_RELEASES.md)** - CI/CD workflow for automated releases
+- **[STAGING.md](./STAGING.md)** - Staging environment deployment

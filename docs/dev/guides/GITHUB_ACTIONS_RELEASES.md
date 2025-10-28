@@ -1,5 +1,7 @@
 # GitHub Actions Release Guide
 
+> **Related Docs**: See [VERSIONING_AND_RELEASE_STRATEGY.md](./VERSIONING_AND_RELEASE_STRATEGY.md) for when to increment versions and [VERSIONING_SYSTEM.md](./VERSIONING_SYSTEM.md) for runtime version display.
+
 ## Overview
 
 This project uses GitHub Actions to build cross-platform Electron apps on macOS, Windows, and Linux. Releases are triggered by Git tags and are created as **draft releases** (private) until manually published.
@@ -188,7 +190,9 @@ git tag -d v0.9.0-b7-staging.1
 
 ## Related Documentation
 
-- [Makefile Reference](./MAKEFILE_REFERENCE.md)
-- [Desktop App Guide](./electron/DESKTOP_APP.md)
-- [Packaging Guide](./electron/PACKAGING_AND_DISTRIBUTION.md)
-- [Staging Environment](./STAGING.md)
+- **[VERSIONING_AND_RELEASE_STRATEGY.md](./VERSIONING_AND_RELEASE_STRATEGY.md)** - Version incrementing strategy (beta, patch, iterations)
+- **[VERSIONING_SYSTEM.md](./VERSIONING_SYSTEM.md)** - Runtime version display in the UI
+- **[MAKEFILE_REFERENCE.md](./MAKEFILE_REFERENCE.md)** - Build system commands
+- **[STAGING.md](./STAGING.md)** - Staging environment setup
+- **[Electron Packaging](./electron/PACKAGING_AND_DISTRIBUTION.md)** - Desktop app packaging
+- **[Desktop App Guide](./electron/DESKTOP_APP.md)** - Electron app architecture

@@ -1,5 +1,7 @@
 # Versioning and Release Strategy
 
+> **Scope**: This document covers **release tagging and version incrementing strategy**. For **runtime version display** in the UI, see [VERSIONING_SYSTEM.md](./VERSIONING_SYSTEM.md).
+
 ## Version Format Explained
 
 Your project uses a multi-component version format:
@@ -460,6 +462,7 @@ git push origin v0.9.0-b6-staging.2
 
 ## Related Documentation
 
-- [Versioning System](./VERSIONING_SYSTEM.md) - Technical implementation details
-- [GitHub Actions Releases](./GITHUB_ACTIONS_RELEASES.md) - CI/CD workflow
-- [Staging Guide](./STAGING.md) - Staging environment setup
+- **[VERSIONING_SYSTEM.md](./VERSIONING_SYSTEM.md)** - Runtime version display in the UI
+- **[GITHUB_ACTIONS_RELEASES.md](./GITHUB_ACTIONS_RELEASES.md)** - CI/CD workflow and release automation
+- **[STAGING.md](./STAGING.md)** - Staging environment setup and deployment
+- **[Electron Packaging](./electron/PACKAGING_AND_DISTRIBUTION.md)** - Desktop app packaging guide

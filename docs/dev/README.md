@@ -15,6 +15,8 @@ Essential guides for getting started and working with the codebase:
 
 - **[MAKEFILE_REFERENCE.md](guides/MAKEFILE_REFERENCE.md)** - Build system commands reference
 - **[VERSIONING_SYSTEM.md](guides/VERSIONING_SYSTEM.md)** - Version management and git workflow
+- **[VERSIONING_AND_RELEASE_STRATEGY.md](guides/VERSIONING_AND_RELEASE_STRATEGY.md)** - ⭐ Release versioning strategy (beta, patch, release iterations)
+- **[GITHUB_ACTIONS_RELEASES.md](guides/GITHUB_ACTIONS_RELEASES.md)** - GitHub Actions CI/CD and staging releases
 - **[STAGING.md](guides/STAGING.md)** - Staging environment setup and deployment
 - **[PRODUCTION.md](guides/PRODUCTION.md)** - Production build and deployment guide
 - **[I18N.md](guides/I18N.md)** - Internationalization system (Babel, translations)
@@ -34,11 +36,12 @@ Complete documentation for Electron desktop development:
 - **[Auto-Update](guides/electron/AUTO_UPDATE.md)** - Update mechanism and GitHub Releases
 - **[Packaging & Distribution](guides/electron/PACKAGING_AND_DISTRIBUTION.md)** - Release process and versioning
 
-### [Architecture & Design](design/)
+### [Architecture & Design](./)
 
 Core architectural patterns and design decisions:
 
-- **[SCHEMA_VERSIONING_ARCHITECTURE.md](SCHEMA_VERSIONING_ARCHITECTURE.md)** - ⭐ Versioned schema architecture and migration guide
+- **[SCHEMA_VERSIONING_ARCHITECTURE.md](SCHEMA_VERSIONING_ARCHITECTURE.md)** - ⭐ Data schema versioning architecture (AppState, BillingInfo, etc.)
+- **[TRANSLATION_AUTOMATION_SPEC.md](TRANSLATION_AUTOMATION_SPEC.md)** - Automated translation discovery system
 
 ## 🏗️ Architecture Documentation
 
@@ -55,7 +58,8 @@ For high-level architecture, see:
 2. **Git Hooks**: Install pre-commit hook for license header enforcement (**required**)
 3. **Build**: Reference [MAKEFILE_REFERENCE.md](guides/MAKEFILE_REFERENCE.md) for commands
 4. **Development**: Use [Electron Live Reload](guides/electron/LIVE_RELOAD.md) for hot reload
-5. **Deployment**: Review [STAGING.md](guides/STAGING.md) for staging environment
+5. **Versioning**: Understand [release strategy](guides/VERSIONING_AND_RELEASE_STRATEGY.md) (beta → stable)
+6. **Deployment**: Review [STAGING.md](guides/STAGING.md) and [GitHub Actions](guides/GITHUB_ACTIONS_RELEASES.md)
 
 ## 🔧 Common Development Tasks
 
