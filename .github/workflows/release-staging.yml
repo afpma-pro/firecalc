@@ -1,0 +1,109 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+name: Build and Release (Staging)
+
+on:
+  push:
+    tags:
+      - 'v*-staging*'  # Triggers on staging tags like v0.9.0-b6-staging, v0.9.0-b6-staging.1, etc.
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - name: Create Draft Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }} (Staging)
+          draft: true  # Private until manually published
+          prerelease: true  # Mark as pre-release
+          generate_release_notes: true
+
+  build:
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            make_target: staging-electron-package-linux
+          - os: windows-latest
+            platform: windows
+            make_target: staging-electron-package-win
+          - os: macos-latest
+            platform: mac
+            make_target: staging-electron-package-mac
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            web/package-lock.json
+            modules/ui/package-lock.json
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt'
+          
+      - name: Setup sbt (Ubuntu/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          curl -fL https://github.com/sbt/sbt/releases/download/v1.11.6/sbt-1.11.6.tgz | tar xzf -
+          echo "$GITHUB_WORKSPACE/sbt/bin" >> $GITHUB_PATH
+          
+      - name: Setup sbt (Windows)
+        if: runner.os == 'Windows'
+        run: choco install sbt
+      
+      - name: Install UI dependencies
+        run: make ui-setup
+        
+      - name: Install Electron dependencies
+        run: make electron-setup
+      
+      - name: Sync build configuration
+        run: make sync-build-config
+      
+      - name: Build Electron App (Linux)
+        if: matrix.platform == 'linux'
+        run: make staging-electron-package-linux
+        
+      - name: Build Electron App (Windows)
+        if: matrix.platform == 'windows'
+        run: make staging-electron-package-win
+        
+      - name: Build Electron App (macOS)
+        if: matrix.platform == 'mac'
+        run: make staging-electron-package-mac
+        
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            web/electron-app/dist/*.AppImage
+            web/electron-app/dist/*.exe
+            web/electron-app/dist/*.dmg
+            web/electron-app/dist/*.zip
+            web/electron-app/dist/latest*.yml
