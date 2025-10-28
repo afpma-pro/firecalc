@@ -8,7 +8,7 @@ name: Build and Release (Staging)
 on:
   push:
     tags:
-      - 'v*-staging*'  # Triggers on staging tags like v0.9.0-b6-staging, v0.9.0-b6-staging.1, etc.
+      - 'electron-v*-staging*'  # Triggers on Electron app staging tags like electron-v0.9.0-b6-staging, electron-v0.9.0-b6-staging.1, etc.
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -24,10 +24,30 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }} (Staging)
+          name: Release ${{ github.ref_name }} (Staging - Electron Desktop App)
           draft: true  # Private until manually published
           prerelease: true  # Mark as pre-release
           generate_release_notes: true
+          body: |
+            ## Electron Desktop App - Staging Release
+            
+            This is a staging release for the **Electron desktop application** module.
+            
+            **Module**: Electron Desktop App
+            **Version**: ${{ github.ref_name }}
+            **Environment**: Staging
+            **Status**: Draft (Private)
+            
+            ### Platform Builds
+            - ✅ macOS DMG
+            - ✅ Windows NSIS Installer
+            - ✅ Linux AppImage
+            
+            ### Testing
+            Download the appropriate artifact for your platform to test before publishing.
+            
+            ---
+            *This release is part of the FireCalc monorepo. For other modules, see tags with different prefixes (e.g., `payments-v*`, `ui-v*`).*
 
   build:
     needs: create-release

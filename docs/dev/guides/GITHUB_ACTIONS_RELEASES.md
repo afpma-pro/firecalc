@@ -10,20 +10,30 @@ This project uses GitHub Actions to build cross-platform Electron apps on macOS,
 
 ### Trigger Mechanism
 
-Staging releases are triggered by pushing a tag matching the pattern `v*-staging*`:
+Staging releases are triggered by pushing a tag matching the pattern `electron-v*-staging*`:
 
 ```bash
-# Example staging tags
-git tag v0.9.0-b6-staging
-git push origin v0.9.0-b6-staging
+# Example staging tags for Electron desktop app
+git tag electron-v0.9.0-b6-staging
+git push origin electron-v0.9.0-b6-staging
 
 # For subsequent staging releases of the same version
-git tag v0.9.0-b6-staging.1
-git push origin v0.9.0-b6-staging.1
+git tag electron-v0.9.0-b6-staging.1
+git push origin electron-v0.9.0-b6-staging.1
 
-git tag v0.9.0-b6-staging.2
-git push origin v0.9.0-b6-staging.2
+git tag electron-v0.9.0-b6-staging.2
+git push origin electron-v0.9.0-b6-staging.2
 ```
+
+### Monorepo Module Prefixes
+
+This is a **monorepo** containing multiple modules. Tag prefixes identify which module is being released:
+
+- `electron-v*` - Electron desktop app releases (this workflow)
+- `payments-v*` - Backend API releases (future)
+- `ui-v*` - Standalone UI releases (future)
+
+The `electron-` prefix ensures tags are specific to the Electron desktop app module.
 
 ### What Happens When You Push a Staging Tag
 
@@ -114,14 +124,14 @@ git push origin v1.0.0
 # 1. Ensure your code is ready
 git status  # Check for uncommitted changes
 
-# 2. Create and push a staging tag
+# 2. Create and push a staging tag for Electron app
 # First staging release for this version
-git tag v0.9.0-b7-staging
-git push origin v0.9.0-b7-staging
+git tag electron-v0.9.0-b7-staging
+git push origin electron-v0.9.0-b7-staging
 
 # OR for subsequent staging releases
-git tag v0.9.0-b7-staging.1
-git push origin v0.9.0-b7-staging.1
+git tag electron-v0.9.0-b7-staging.1
+git push origin electron-v0.9.0-b7-staging.1
 
 # 3. Monitor the build
 # Go to: https://github.com/afpma-pro/firecalc/actions
@@ -139,10 +149,10 @@ git push origin v0.9.0-b7-staging.1
 
 ```bash
 # 1. Delete the remote tag
-git push --delete origin v0.9.0-b7-staging.1
+git push --delete origin electron-v0.9.0-b7-staging.1
 
 # 2. Delete the local tag
-git tag -d v0.9.0-b7-staging.1
+git tag -d electron-v0.9.0-b7-staging.1
 
 # 3. Delete the draft release on GitHub
 # Go to releases page and click "Delete"
@@ -172,7 +182,7 @@ git tag -d v0.9.0-b7-staging.1
 
 | Aspect | Local Build | CI Build (GitHub Actions) |
 |--------|-------------|---------------------------|
-| Trigger | `make staging-electron-package-mac` | Push `v*-staging*` tag |
+| Trigger | `make staging-electron-package-mac` | Push `electron-v*-staging*` tag |
 | Platform | Single (your OS) | All 3 platforms in parallel |
 | Environment | Local tools | Fresh runner for each build |
 | Artifacts | `web/electron-app/dist/` | Attached to GitHub release |

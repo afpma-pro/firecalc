@@ -7,22 +7,38 @@
 Your project uses a multi-component version format:
 
 ```
-vA.B.X-bN-staging.Y
-│ │ │  │   │       │
-│ │ │  │   │       └─ Release iteration (GitHub Actions only)
-│ │ │  │   └───────── Environment suffix
-│ │ │  └───────────── Beta number (pre-release identifier)
-│ │ └──────────────── Patch version (from build.sbt)
-│ └─────────────────── Minor version (from build.sbt)
-└───────────────────── Major version (from build.sbt)
+electron-vA.B.X-bN-staging.Y
+│        │ │ │  │   │       │
+│        │ │ │  │   │       └─ Release iteration (GitHub Actions only)
+│        │ │ │  │   └───────── Environment suffix
+│        │ │ │  └───────────── Beta number (pre-release identifier)
+│        │ │ └──────────────── Patch version (from build.sbt)
+│        │ └─────────────────── Minor version (from build.sbt)
+│        └───────────────────── Major version (from build.sbt)
+└────────────────────────────── Module identifier (electron app)
 ```
 
-### Example: `v0.9.0-b6-staging.1`
+### Example: `electron-v0.9.0-b6-staging.1`
 
+- `electron-` = Module identifier (Electron desktop app releases)
 - `0.9.0` = Semantic version (defined in [`build.sbt`](../../../build.sbt))
 - `b6` = **Beta 6** - pre-release version identifier
 - `staging` = Environment (staging/production)
 - `.1` = Release iteration (CI/packaging only)
+
+### Monorepo Module Tags
+
+This is a **monorepo** containing multiple modules:
+- **`payments`** - Backend API module
+- **`ui`** - Frontend UI module (can be deployed standalone)
+- **`electron`** - Desktop app (UI packaged with Electron)
+
+**Tag prefixes** identify which module is being released:
+- `electron-v*` - Electron desktop app releases (this module)
+- `payments-v*` - Backend API releases (future)
+- `ui-v*` - Standalone UI releases (future)
+
+This prevents version conflicts and makes it clear which part of the system is being released.
 
 ### Stable vs Beta Releases
 
@@ -52,13 +68,13 @@ lazy val ui_base_version = "0.9.0"  // Change 0 → 1
 - Incompatible with previous versions
 - User data migration required
 
-**Example:** `v0.9.0-b6-staging` → `v1.0.0-b1-staging`
+**Example:** `electron-v0.9.0-b6-staging` → `electron-v1.0.0-b1-staging`
 
 **Development process:**
 1. Implement breaking changes in code
 2. Update `build.sbt` version
 3. Commit code changes
-4. Push to staging: `git tag v1.0.0-b1-staging`
+4. Push to staging: `git tag electron-v1.0.0-b1-staging`
 
 ---
 
@@ -76,13 +92,13 @@ lazy val ui_base_version = "0.9.0"  // Change 9 → 10
 - New UI components
 - New calculation methods
 
-**Example:** `v0.9.0-b6-staging` → `v0.10.0-b1-staging`
+**Example:** `electron-v0.9.0-b6-staging` → `electron-v0.10.0-b1-staging`
 
 **Development process:**
 1. Implement new features in code
 2. Update `build.sbt` version
 3. Commit code changes
-4. Push to staging: `git tag v0.10.0-b1-staging`
+4. Push to staging: `git tag electron-v0.10.0-b1-staging`
 
 ---
 
@@ -101,13 +117,13 @@ lazy val ui_base_version = "0.9.0"  // Change 0 → 1
 - Security patches
 - NO new features
 
-**Example:** `v0.9.0-b6-staging` → `v0.9.1-b6-staging`
+**Example:** `electron-v0.9.0-b6-staging` → `electron-v0.9.1-b6-staging`
 
 **Development process:**
 1. Fix bugs in code
 2. Update `build.sbt` version
 3. Commit code changes
-4. Push to staging: `git tag v0.9.1-b6-staging`
+4. Push to staging: `git tag electron-v0.9.1-b6-staging`
 
 ---
 
@@ -132,22 +148,22 @@ lazy val ui_base_version = "0.9.0-b6"  // Change b6 → b7
 - All features complete and tested
 - `v0.9.0-b6` → `v0.9.0` (final stable)
 
-**Example:** `v0.9.0-b6-staging` → `v0.9.0-b7-staging`
+**Example:** `electron-v0.9.0-b6-staging` → `electron-v0.9.0-b7-staging`
 
 **Development lifecycle:**
 ```
-v0.9.0-b1 → v0.9.0-b2 → ... → v0.9.0-b6 → v0.9.0 (stable)
-                                            ↓
-                                         v0.9.1-b1 → v0.9.1 (if patch needed)
-                                            ↓
-                                         v0.10.0-b1 → ... → v0.10.0 (next minor)
+electron-v0.9.0-b1 → -b2 → ... → -b6 → electron-v0.9.0 (stable)
+                                         ↓
+                                      electron-v0.9.1-b1 → -v0.9.1 (patch)
+                                         ↓
+                                      electron-v0.10.0-b1 → ... → -v0.10.0 (next minor)
 ```
 
 **Development process:**
 1. Make changes for next beta iteration
 2. Update `build.sbt` beta number (b6 → b7)
 3. Commit code changes
-4. Push to staging: `git tag v0.9.0-b7-staging`
+4. Push to staging: `git tag electron-v0.9.0-b7-staging`
 
 ---
 
@@ -166,61 +182,61 @@ v0.9.0-b1 → v0.9.0-b2 → ... → v0.9.0-b6 → v0.9.0 (stable)
 
 **Key characteristic:** The actual **source code remains unchanged** from the previous release.
 
-**Example:** `v0.9.0-b6-staging` → `v0.9.0-b6-staging.1`
+**Example:** `electron-v0.9.0-b6-staging` → `electron-v0.9.0-b6-staging.1`
 
 **Process:**
 1. **NO code changes** (or only build/config changes)
 2. **NO build.sbt changes**
 3. Fix GitHub Actions workflow or packaging config
 4. Commit only the workflow/config changes
-5. Delete old tag: `git push --delete origin v0.9.0-b6-staging`
-6. Create new tag: `git tag v0.9.0-b6-staging.1`
-7. Push new tag: `git push origin v0.9.0-b6-staging.1`
+5. Delete old tag: `git push --delete origin electron-v0.9.0-b6-staging`
+6. Create new tag: `git tag electron-v0.9.0-b6-staging.1`
+7. Push new tag: `git push origin electron-v0.9.0-b6-staging.1`
 
 ### Common Use Cases for Release Iteration (.Y)
 
 #### Scenario 1: GitHub Actions Workflow Broken
 ```bash
 # First release attempt
-git tag v0.9.0-b6-staging
-git push origin v0.9.0-b6-staging
+git tag electron-v0.9.0-b6-staging
+git push origin electron-v0.9.0-b6-staging
 # → Build fails due to missing npm cache step
 
 # Fix the workflow
 git commit -m "fix: add npm cache to CI workflow"
 
 # Retry with iteration
-git push --delete origin v0.9.0-b6-staging
-git tag v0.9.0-b6-staging.1
-git push origin v0.9.0-b6-staging.1
+git push --delete origin electron-v0.9.0-b6-staging
+git tag electron-v0.9.0-b6-staging.1
+git push origin electron-v0.9.0-b6-staging.1
 ```
 
 #### Scenario 2: Wrong Backend URL in electron-builder.yml
 ```bash
 # First release - wrong API URL
-git tag v0.9.0-b6-staging
-git push origin v0.9.0-b6-staging
+git tag electron-v0.9.0-b6-staging
+git push origin electron-v0.9.0-b6-staging
 
 # Fix electron-builder.yml config
 git commit -m "fix: correct staging API URL"
 
 # Retry with iteration
-git tag v0.9.0-b6-staging.1
-git push origin v0.9.0-b6-staging.1
+git tag electron-v0.9.0-b6-staging.1
+git push origin electron-v0.9.0-b6-staging.1
 ```
 
 #### Scenario 3: Missing Icon in Package
 ```bash
 # First release - icon not included
-git tag v0.9.0-b6-staging
-git push origin v0.9.0-b6-staging
+git tag electron-v0.9.0-b6-staging
+git push origin electron-v0.9.0-b6-staging
 
 # Add icon to build resources
 git commit -m "fix: add missing app icon"
 
 # Retry with iteration
-git tag v0.9.0-b6-staging.2
-git push origin v0.9.0-b6-staging.2
+git tag electron-v0.9.0-b6-staging.2
+git push origin electron-v0.9.0-b6-staging.2
 ```
 
 ## Decision Tree
@@ -257,26 +273,26 @@ Do you need to change the compiled code?
 ```bash
 # Update build.sbt: b6 → b7 (next beta iteration)
 git commit -am "feat: add new chimney type calculation"
-git tag v0.9.0-b7-staging
-git push origin v0.9.0-b7-staging
+git tag electron-v0.9.0-b7-staging
+git push origin electron-v0.9.0-b7-staging
 ```
 
-**Result:** `v0.9.0-b6-staging` → `v0.9.0-b7-staging`
+**Result:** `electron-v0.9.0-b6-staging` → `electron-v0.9.0-b7-staging`
 
 ### Example 1b: Adding a New Feature (After Stable Release)
 
 **Changes:**
-- Add new chimney type calculation (after v0.9.0 stable is released)
+- Add new chimney type calculation (after electron-v0.9.0 stable is released)
 
 **Version strategy (new minor version):**
 ```bash
 # Update build.sbt: 0.9.0 → 0.10.0-b1 (new minor, start with beta)
 git commit -am "feat: add new chimney type calculation"
-git tag v0.10.0-b1-staging
-git push origin v0.10.0-b1-staging
+git tag electron-v0.10.0-b1-staging
+git push origin electron-v0.10.0-b1-staging
 ```
 
-**Result:** `v0.9.0` (stable) → `v0.10.0-b1-staging`
+**Result:** `electron-v0.9.0` (stable) → `electron-v0.10.0-b1-staging`
 
 ---
 
@@ -290,30 +306,30 @@ git push origin v0.10.0-b1-staging
 ```bash
 # Update build.sbt: b6 → b7 (continue beta cycle)
 git commit -am "fix: correct pressure loss calculation"
-git tag v0.9.0-b7-staging
-git push origin v0.9.0-b7-staging
+git tag electron-v0.9.0-b7-staging
+git push origin electron-v0.9.0-b7-staging
 ```
 
-**Result:** `v0.9.0-b6-staging` → `v0.9.0-b7-staging`
+**Result:** `electron-v0.9.0-b6-staging` → `electron-v0.9.0-b7-staging`
 
 ### Example 2b: Fixing a Bug (After Stable Release)
 
 **Changes:**
-- Critical bug in stable v0.9.0 release
+- Critical bug in stable electron-v0.9.0 release
 
 **Version strategy (patch the stable release):**
 ```bash
 # Update build.sbt: 0.9.0 → 0.9.1-b1 (patch with beta)
 git commit -am "fix: correct pressure loss calculation"
-git tag v0.9.1-b1-staging
-git push origin v0.9.1-b1-staging
+git tag electron-v0.9.1-b1-staging
+git push origin electron-v0.9.1-b1-staging
 
 # After testing, release stable patch
-git tag v0.9.1
-git push origin v0.9.1
+git tag electron-v0.9.1
+git push origin electron-v0.9.1
 ```
 
-**Result:** `v0.9.0` (stable) → `v0.9.1-b1-staging` → `v0.9.1` (stable)
+**Result:** `electron-v0.9.0` (stable) → `electron-v0.9.1-b1-staging` → `electron-v0.9.1` (stable)
 
 ---
 
@@ -328,11 +344,11 @@ git push origin v0.9.1
 ```bash
 # NO build.sbt changes
 git commit -am "fix: correct GitHub Actions syntax and CSP policy"
-git tag v0.9.0-b6-staging.1
-git push origin v0.9.0-b6-staging.1
+git tag electron-v0.9.0-b6-staging.1
+git push origin electron-v0.9.0-b6-staging.1
 ```
 
-**Result:** `v0.9.0-b6-staging` → `v0.9.0-b6-staging.1`
+**Result:** `electron-v0.9.0-b6-staging` → `electron-v0.9.0-b6-staging.1`
 
 ---
 
@@ -340,28 +356,28 @@ git push origin v0.9.0-b6-staging.1
 
 **Day 1:**
 ```bash
-git tag v0.9.0-b6-staging
-git push origin v0.9.0-b6-staging
+git tag electron-v0.9.0-b6-staging
+git push origin electron-v0.9.0-b6-staging
 # Build fails - missing dependency
 ```
 
 **Day 1 - Fix 1:**
 ```bash
 git commit -am "fix: add missing electron-builder dependency"
-git tag v0.9.0-b6-staging.1
-git push origin v0.9.0-b6-staging.1
+git tag electron-v0.9.0-b6-staging.1
+git push origin electron-v0.9.0-b6-staging.1
 # Build succeeds but icon is wrong
 ```
 
 **Day 2 - Fix 2:**
 ```bash
 git commit -am "fix: update app icon with correct branding"
-git tag v0.9.0-b6-staging.2
-git push origin v0.9.0-b6-staging.2
+git tag electron-v0.9.0-b6-staging.2
+git push origin electron-v0.9.0-b6-staging.2
 # Build succeeds, ready for testing
 ```
 
-**Result:** `v0.9.0-b6-staging` → `v0.9.0-b6-staging.1` → `v0.9.0-b6-staging.2`
+**Result:** `electron-v0.9.0-b6-staging` → `-staging.1` → `-staging.2`
 
 ## Environment Suffixes
 
@@ -371,7 +387,7 @@ git push origin v0.9.0-b6-staging.2
 
 **Backend:** `https://api.staging.firecalc.afpma.pro`
 
-**Tag format:** `v*-staging*`
+**Tag format:** `electron-v*-staging*`
 
 **Release type:** Draft (private)
 
@@ -382,10 +398,10 @@ git push origin v0.9.0-b6-staging.2
 - Internal team testing
 
 **Example tags:**
-- `v0.9.0-b6-staging` (beta 6 for v0.9.0)
-- `v0.9.0-b6-staging.1` (beta 6, packaging fix)
-- `v0.9.0-b7-staging` (beta 7 for v0.9.0)
-- `v0.9.0-staging` (stable release candidate for v0.9.0)
+- `electron-v0.9.0-b6-staging` (beta 6 for Electron app v0.9.0)
+- `electron-v0.9.0-b6-staging.1` (beta 6, packaging fix)
+- `electron-v0.9.0-b7-staging` (beta 7 for Electron app v0.9.0)
+- `electron-v0.9.0-staging` (stable release candidate for Electron app v0.9.0)
 
 ---
 
@@ -395,7 +411,7 @@ git push origin v0.9.0-b6-staging.2
 
 **Backend:** `https://api.firecalc.afpma.pro`
 
-**Tag format:** `v*` (without `-staging`)
+**Tag format:** `electron-v*` (without `-staging`)
 
 **Release type:** Public
 
@@ -405,10 +421,10 @@ git push origin v0.9.0-b6-staging.2
 - Fully validated features
 
 **Example tags:**
-- `v1.0.0` (stable, no beta)
-- `v1.0.1` (stable patch)
-- `v1.1.0` (stable minor)
-- `v1.0.0-b1` (beta for v1.0.0, if needed)
+- `electron-v1.0.0` (stable Electron app, no beta)
+- `electron-v1.0.1` (stable patch)
+- `electron-v1.1.0` (stable minor)
+- `electron-v1.0.0-b1` (beta for Electron app v1.0.0, if needed)
 
 ## Best Practices
 
@@ -425,7 +441,7 @@ git push origin v0.9.0-b6-staging.2
    - Users understand the impact
 
 3. **Test in staging before production**
-   - `v0.9.0-b6-staging` → test → `v0.9.0` (production)
+   - `electron-v0.9.0-b6-staging` → test → `electron-v0.9.0` (production)
 
 4. **Document release notes**
    - Explain what changed
@@ -435,8 +451,8 @@ git push origin v0.9.0-b6-staging.2
 ### DON'T ❌
 
 1. **Don't increment patch version for packaging fixes**
-   - ❌ `v0.9.0` → `v0.9.1` (just for workflow fix)
-   - ✅ `v0.9.0-staging` → `v0.9.0-staging.1`
+   - ❌ `electron-v0.9.0` → `electron-v0.9.1` (just for workflow fix)
+   - ✅ `electron-v0.9.0-staging` → `electron-v0.9.0-staging.1`
 
 2. **Don't skip staging**
    - ❌ Directly tag production without staging test
@@ -454,6 +470,7 @@ git push origin v0.9.0-b6-staging.2
 
 | Component | Location | Requires Code Change | Use Case | Example |
 |-----------|----------|---------------------|----------|---------|
+| Module prefix | Git tag only | N/A | Identify module | `electron-` (desktop app) |
 | Major (A) | build.sbt | ✅ Yes | Breaking changes | `v0.9.0` → `v1.0.0` |
 | Minor (B) | build.sbt | ✅ Yes | New features | `v0.9.0` → `v0.10.0` |
 | Patch (X) | build.sbt | ✅ Yes | Bug fixes | `v0.9.0` → `v0.9.1` |
