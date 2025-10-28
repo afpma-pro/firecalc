@@ -277,7 +277,7 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
     version := engine_version,
     scalacOptions ++= Seq(
         "-Xmax-inlines:48",
-        "-explain-cyclic",
+        // "-explain-cyclic",
     ),
     libraryDependencies ++= Seq(
         "io.scalaland"      %%% "chimney"           % "1.8.2",
@@ -658,7 +658,7 @@ lazy val ui = (project in file("modules/ui"))
   .settings(
     commonSettings,
     scalacOptions ++= Seq(
-      "-Xmax-inlines:64", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
+      "-Xmax-inlines:32", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
     //   "--explain-cyclic",
     ),
   )
