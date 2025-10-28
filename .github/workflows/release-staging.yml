@@ -20,6 +20,7 @@ env:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    continue-on-error: true
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_id: ${{ steps.create_release.outputs.id }}
@@ -58,6 +59,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     strategy:
+      fail-fast: false
+      max-parallel: 1
       matrix:
         include:
           - os: ubuntu-latest
