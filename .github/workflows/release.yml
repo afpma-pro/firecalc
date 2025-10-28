@@ -60,10 +60,18 @@ jobs:
           curl -fL https://github.com/sbt/sbt/releases/download/v1.9.7/sbt-1.9.7.tgz | tar xzf -
           echo "$GITHUB_WORKSPACE/sbt/bin" >> $GITHUB_PATH
           
+      - name: Configure JVM for CI (reduce memory usage)
+        if: runner.os != 'Windows'
+        run: cp .jvmopts.ci .jvmopts
+          
       - name: Setup sbt (Windows)
         if: runner.os == 'Windows'
         run: |
           choco install sbt
+          
+      - name: Configure JVM for CI (reduce memory usage)
+        if: runner.os == 'Windows'
+        run: Copy-Item .jvmopts.ci .jvmopts
           
       - name: Build Scala/ScalaJS UI module
         run: sbt "ui/fullLinkJS"
