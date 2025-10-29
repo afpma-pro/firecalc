@@ -67,16 +67,16 @@ org.portable-scala:sbt-crossproject_2.12_1.0:1.3.2
 - Using cs.exe to fetch org.scala-lang:scala3-compiler_3:3.7.3 into the isolated cache early.
 - Implemented in [`release-staging.yml`](.github/workflows/release-staging.yml).
 
-6) Disable the ScalablyTyped reflective Zinc hack in CI
+5) Disable the ScalablyTyped reflective Zinc hack in CI
 - The “hackScalablyTypedRemoveSourceFuture” reflection tweak can influence timing/resolution phases.
 - We added an opt-out: set FIRECALC_CI_NO_ST_HACK=1 in CI.
 - Implemented in [`build.sbt`](build.sbt).
 
-7) Keep Coursier for plugin resolution (avoid Ivy plugin error)
+6) Keep Coursier for plugin resolution (avoid Ivy plugin error)
 - We initially added an Ivy fallback (FIRECALC_CI_FORCE_IVY=1) but observed the sbt-crossproject POM mismatch on Windows when Ivy is used for plugins.
 - Decision: keep Coursier enabled on Windows; use serialization + isolated caches to prevent locks instead of forcing Ivy.
 
-8) Make sbt plugin/maven resolvers explicit
+7) Make sbt plugin/maven resolvers explicit
 - Added explicit resolvers to stabilize plugin resolution on Windows.
 - Implemented in [`project/plugins.sbt`](project/plugins.sbt).
 
@@ -90,9 +90,9 @@ org.portable-scala:sbt-crossproject_2.12_1.0:1.3.2
 - [` .github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
   - Isolated caches: COURSIER_CACHE, SBT_OPTS with custom dirs
   - actions/cache for .coursier/.ivy2/.sbt-boot/.sbt-global
-  - Pre-warm step `sbt "update; ui/update"` (relies on SBT_OPTS, no direct -D flags to avoid PowerShell parsing issues)
   - cs.exe prefetch scala3-compiler_3:3.7.3
   - FIRECALC_CI_NO_ST_HACK=1
+  - Note: Pre-warm step removed because ScalablyTyped triggers on any sbt invocation (including `update`), causing Scala 3 compatibility errors
 
 - [`build.sbt`](build.sbt)
   - Optional env feature flag to disable the ST reflective hack
@@ -119,15 +119,11 @@ echo "SBT_OPTS=-Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 `
 -Dsbt.ivy.home=$env:GITHUB_WORKSPACE\.ivy2" >> $env:GITHUB_ENV
 ```
 
-Pre-warm and prefetch:
+Prefetch:
 
 ```pwsh
-# Prefetch Scala 3 compiler
+# Prefetch Scala 3 compiler only (no sbt pre-warm due to ScalablyTyped issues)
 & cs.exe fetch org.scala-lang:scala3-compiler_3:3.7.3 --cache "$env:GITHUB_WORKSPACE\.coursier"
-
-# Pre-warm sbt (rely on SBT_OPTS, avoid direct -D flags in PowerShell)
-# Note: ui/update excluded to avoid ScalablyTyped Scala 3 compatibility issues
-sbt "update"
 ```
 
 Disable ST reflective hack in CI only:
@@ -160,8 +156,8 @@ resolvers ++= Seq(
 - Set JVM properties via `SBT_OPTS` environment variable in PowerShell steps; avoid passing `-D` flags directly to sbt command due to PowerShell parsing issues.
 - Always run heavy UI link tasks in a single sbt session.
 - Use isolated caches under workspace and cache them via actions/cache.
-- Pre-warm root dependencies with `update` (exclude `ui/update` to avoid ScalablyTyped Scala 3 compatibility issues during pre-warm phase).
-- Prefetch heavy artifacts (scala3-compiler) before building.
+- Do not run sbt pre-warm steps before the actual build; ScalablyTyped triggers on any sbt invocation and causes Scala 3 compatibility errors.
+- Prefetch heavy artifacts (scala3-compiler) using Coursier CLI before building.
 - Only consider Ivy fallback as last resort; expect sbt plugin resolution issues on Windows.
 
 ## Rollback plan
@@ -187,8 +183,8 @@ A: Ivy struggled with cross-axes POM naming for sbt-crossproject; Coursier suppo
 Q: Why can't we pass -D flags directly to sbt in PowerShell?
 A: PowerShell misparses `-Dsbt.coursier=true` as command parameters rather than JVM properties. Use `SBT_OPTS` environment variable instead, which sbt reads automatically.
 
-Q: Why is `ui/update` excluded from the pre-warm step?
-A: ScalablyTyped generates Scala code during `ui/update` that uses `implicit class` syntax, which is not compatible with Scala 3. This causes compilation failures during the pre-warm phase. The actual UI build handles this correctly later in the pipeline.
+Q: Why is there no sbt pre-warm step?
+A: ScalablyTyped triggers on any sbt invocation (even just `sbt "update"`) because sbt runs update for all aggregated projects including the UI project. ScalablyTyped then generates Scala code with `implicit class` syntax that's incompatible with Scala 3, causing compilation failures. The actual build works because it handles ScalablyTyped in the full build context.
 
 ## Related files
 

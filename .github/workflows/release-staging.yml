@@ -157,12 +157,6 @@ jobs:
         
       - name: Install Electron dependencies
         run: make electron-setup
-
-      - name: Pre-warm SBT/Coursier (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          sbt "update"
       
       - name: Sync build configuration
         run: make sync-build-config
