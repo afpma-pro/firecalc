@@ -36,9 +36,18 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
             external: [],
             output: {
-                assetFileNames: 'assets/[name].[ext]' // Keep consistent asset paths
-            }
-        }
+                assetFileNames: 'assets/[name].[ext]', // Keep consistent asset paths
+                // Optimize for large chunks (fullLinkJS output can be large)
+                manualChunks: undefined,
+                inlineDynamicImports: true,
+            },
+            // Increase memory limit for rollup when processing large Scala.js bundles
+            maxParallelFileOps: 20,
+        },
+        // Disable minification terser optimizations that consume too much memory
+        minify: 'esbuild',
+        // Increase chunk size warning limit (fullLinkJS can produce large files)
+        chunkSizeWarningLimit: 10000,
     },
     optimizeDeps: {
         // Prevent Vite dep-scan from trying to resolve the virtual Scala.js entry

@@ -19,9 +19,9 @@
         "dev": "vite --mode development",
         "dev:staging": "vite --mode staging",
         "dev:production": "vite --mode production",
-        "build": "vite build --mode development --emptyOutDir",
-        "build:staging": "vite build --mode staging --emptyOutDir",
-        "build:production": "vite build --mode production --emptyOutDir",
+        "build": "NODE_OPTIONS='--max-old-space-size=4096' vite build --mode development --emptyOutDir",
+        "build:staging": "NODE_OPTIONS='--max-old-space-size=4096' vite build --mode staging --emptyOutDir",
+        "build:production": "NODE_OPTIONS='--max-old-space-size=4096' vite build --mode production --emptyOutDir",
         "serve": "vite preview",
         "clean": "rm -rf node_modules"
     },
