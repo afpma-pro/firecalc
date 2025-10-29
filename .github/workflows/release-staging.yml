@@ -117,16 +117,15 @@ jobs:
         run: |
           echo "COURSIER_CACHE=${{ github.workspace }}\.coursier" >> $env:GITHUB_ENV
           echo "COURSIER_MAX_THREADS=1" >> $env:GITHUB_ENV
-          echo "SBT_OPTS=-Dsbt.coursier.parallel-downloads=1 -Dsbt.global.base=${{ github.workspace }}\.sbt-global -Dsbt.boot.directory=${{ github.workspace }}\.sbt-boot -Dsbt.ivy.home=${{ github.workspace }}\.ivy2" >> $env:GITHUB_ENV
+          echo "SBT_OPTS=-Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.global.base=${{ github.workspace }}\.sbt-global -Dsbt.boot.directory=${{ github.workspace }}\.sbt-boot -Dsbt.ivy.home=${{ github.workspace }}\.ivy2" >> $env:GITHUB_ENV
 
-      - name: Force Ivy and disable ST hack (Windows)
+      - name: Disable ST Zinc hack only (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          echo "FIRECALC_CI_FORCE_IVY=1" >> $env:GITHUB_ENV
           echo "FIRECALC_CI_NO_ST_HACK=1" >> $env:GITHUB_ENV
-          # ensure sbt reads these flags even when invoked from Makefile
-          echo "SBT_OPTS=$env:SBT_OPTS -Dsbt.coursier.parallel-downloads=1 -Dsbt.coursier=false -Dsbt.log.noformat=true -Dsbt.supershell=false" >> $env:GITHUB_ENV
+          # keep Coursier enabled; serialization flags already set above
+          echo "SBT_OPTS=$env:SBT_OPTS -Dsbt.log.noformat=true" >> $env:GITHUB_ENV
       
       - name: Cache Coursier/Ivy/SBT (Windows)
         if: runner.os == 'Windows'
@@ -156,7 +155,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          sbt -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update"
+          sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update"
 
       - name: Install UI dependencies
         run: make ui-setup
