@@ -105,6 +105,13 @@ ThisBuild / startYear           := Some(2025)
 ThisBuild / licenses            := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage            := Some(url("https://www.afpma.pro"))
 
+// Windows CI workaround: allow switching to Ivy (to avoid Coursier file-lock issues)
+// Set FIRECALC_CI_FORCE_IVY=1 in CI (Windows) to disable Coursier resolution.
+ThisBuild / useCoursier := {
+  val isWin = System.getProperty("os.name", "").toLowerCase.contains("win")
+  if (isWin && sys.env.get("FIRECALC_CI_FORCE_IVY").nonEmpty) false else true
+}
+
 lazy val engine_version         = "0.3.0-b6"
 lazy val reports_base_version   = "0.9.0-b6"
 lazy val payments_base_version  = "0.9.0-b6"
@@ -464,6 +471,12 @@ val hackScalablyTypedRemoveSourceFuture: Seq[Setting[_]] = {
   )
 }
 
+// In CI on Windows, disable the reflective hack that touches ScalablyTyped's internal Zinc compiler,
+// as it might contribute to timing/locking issues on some runners.
+val maybeHackScalablyTypedRemoveSourceFuture: Seq[Setting[_]] =
+  if (sys.env.get("FIRECALC_CI_NO_ST_HACK").nonEmpty) Def.settings()
+  else hackScalablyTypedRemoveSourceFuture
+
 // lazy val jsSourceMapSettings = Def.settings(
 //     scalacOptions += {
 //         val baseDirectory = (ThisBuild / baseDirectory).value.getAbsolutePath
@@ -491,7 +504,7 @@ lazy val ui = (project in file("modules/ui"))
     name := "firecalc-ui",
     version := ui_version,
     stIgnore += "@tailwindcss/vite",
-    hackScalablyTypedRemoveSourceFuture,
+    maybeHackScalablyTypedRemoveSourceFuture,
     
     // Generate .env.electron file with repository and version information
     TaskKey[Unit]("generateEnvVars") := {

@@ -110,7 +110,54 @@ jobs:
       - name: Configure JVM for CI (reduce memory usage)
         if: runner.os == 'Windows'
         run: Copy-Item .jvmopts.ci .jvmopts
+
+      - name: Workaround Windows Coursier file-locks
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "COURSIER_CACHE=${{ github.workspace }}\.coursier" >> $env:GITHUB_ENV
+          echo "COURSIER_MAX_THREADS=1" >> $env:GITHUB_ENV
+          echo "SBT_OPTS=-Dsbt.coursier.parallel-downloads=1 -Dsbt.global.base=${{ github.workspace }}\.sbt-global -Dsbt.boot.directory=${{ github.workspace }}\.sbt-boot -Dsbt.ivy.home=${{ github.workspace }}\.ivy2" >> $env:GITHUB_ENV
+
+      - name: Force Ivy and disable ST hack (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "FIRECALC_CI_FORCE_IVY=1" >> $env:GITHUB_ENV
+          echo "FIRECALC_CI_NO_ST_HACK=1" >> $env:GITHUB_ENV
+          # ensure sbt reads these flags even when invoked from Makefile
+          echo "SBT_OPTS=$env:SBT_OPTS -Dsbt.coursier.parallel-downloads=1 -Dsbt.coursier=false -Dsbt.log.noformat=true -Dsbt.supershell=false" >> $env:GITHUB_ENV
       
+      - name: Cache Coursier/Ivy/SBT (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}\.coursier
+            ${{ github.workspace }}\.ivy2
+            ${{ github.workspace }}\.sbt-boot
+            ${{ github.workspace }}\.sbt-global
+          key: windows-coursier-${{ hashFiles('**/build.sbt', 'project/**', 'project/*.sbt', 'project/**/*.sbt', 'project/build.properties', 'project/plugins.sbt') }}
+          restore-keys: |
+            windows-coursier-
+
+      - name: Install coursier CLI and prefetch Scala compiler (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $url = "https://github.com/coursier/launchers/raw/master/cs-x86_64-pc-win32.exe"
+          $cs = Join-Path $env:RUNNER_TEMP "cs.exe"
+          Invoke-WebRequest -Uri $url -OutFile $cs
+          # Prefetch scala3-compiler into our isolated cache to avoid lock contention during sbt/plugin resolve
+          & $cs fetch org.scala-lang:scala3-compiler_3:3.7.3 --cache "$env:GITHUB_WORKSPACE\.coursier"
+
+      - name: Pre-warm SBT/Coursier (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          sbt -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update"
+
       - name: Install UI dependencies
         run: make ui-setup
         
