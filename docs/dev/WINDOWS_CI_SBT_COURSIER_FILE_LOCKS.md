@@ -125,8 +125,9 @@ Pre-warm and prefetch:
 # Prefetch Scala 3 compiler
 & cs.exe fetch org.scala-lang:scala3-compiler_3:3.7.3 --cache "$env:GITHUB_WORKSPACE\.coursier"
 
-# Pre-warm sbt and ui (rely on SBT_OPTS, avoid direct -D flags in PowerShell)
-sbt "update; ui/update"
+# Pre-warm sbt (rely on SBT_OPTS, avoid direct -D flags in PowerShell)
+# Note: ui/update excluded to avoid ScalablyTyped Scala 3 compatibility issues
+sbt "update"
 ```
 
 Disable ST reflective hack in CI only:
@@ -159,7 +160,8 @@ resolvers ++= Seq(
 - Set JVM properties via `SBT_OPTS` environment variable in PowerShell steps; avoid passing `-D` flags directly to sbt command due to PowerShell parsing issues.
 - Always run heavy UI link tasks in a single sbt session.
 - Use isolated caches under workspace and cache them via actions/cache.
-- Pre-warm `update; ui/update` and prefetch heavy artifacts (scala3-compiler) before linking.
+- Pre-warm root dependencies with `update` (exclude `ui/update` to avoid ScalablyTyped Scala 3 compatibility issues during pre-warm phase).
+- Prefetch heavy artifacts (scala3-compiler) before building.
 - Only consider Ivy fallback as last resort; expect sbt plugin resolution issues on Windows.
 
 ## Rollback plan
@@ -184,6 +186,9 @@ A: Ivy struggled with cross-axes POM naming for sbt-crossproject; Coursier suppo
 
 Q: Why can't we pass -D flags directly to sbt in PowerShell?
 A: PowerShell misparses `-Dsbt.coursier=true` as command parameters rather than JVM properties. Use `SBT_OPTS` environment variable instead, which sbt reads automatically.
+
+Q: Why is `ui/update` excluded from the pre-warm step?
+A: ScalablyTyped generates Scala code during `ui/update` that uses `implicit class` syntax, which is not compatible with Scala 3. This causes compilation failures during the pre-warm phase. The actual UI build handles this correctly later in the pipeline.
 
 ## Related files
 

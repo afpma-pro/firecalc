@@ -162,7 +162,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          sbt "update; ui/update"
+          sbt "update"
       
       - name: Sync build configuration
         run: make sync-build-config
