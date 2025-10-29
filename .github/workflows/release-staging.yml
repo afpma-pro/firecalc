@@ -29,18 +29,18 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }} (Staging - Electron Desktop App)
+          name: Release ${{ github.ref_name }} [staging] - Electron Desktop App
           draft: true  # Private until manually published
           prerelease: true  # Mark as pre-release
           generate_release_notes: true
           body: |
-            ## Electron Desktop App - Staging Release
+            ## Electron Desktop App - [staging]
             
-            This is a staging release for the **Electron desktop application** module.
+            This is a 'staging' release for the **Electron desktop application** module.
             
             **Module**: Electron Desktop App
             **Version**: ${{ github.ref_name }}
-            **Environment**: Staging
+            **Environment**: staging
             **Status**: Draft (Private)
             
             ### Platform Builds
@@ -52,7 +52,7 @@ jobs:
             Download the appropriate artifact for your platform to test before publishing.
             
             ---
-            *This release is part of the FireCalc monorepo. For other modules, see tags with different prefixes (e.g., `payments-v*`, `ui-v*`).*
+            *This release is part of the FireCalc monorepo.*
 
   build:
     needs: create-release
