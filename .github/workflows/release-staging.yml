@@ -152,17 +152,17 @@ jobs:
           # Prefetch scala3-compiler into our isolated cache to avoid lock contention during sbt/plugin resolve
           & $cs fetch org.scala-lang:scala3-compiler_3:3.7.3 --cache "$env:GITHUB_WORKSPACE\.coursier"
 
-      - name: Pre-warm SBT/Coursier (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          sbt "update; ui/update"
-
       - name: Install UI dependencies
         run: make ui-setup
         
       - name: Install Electron dependencies
         run: make electron-setup
+
+      - name: Pre-warm SBT/Coursier (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          sbt "update; ui/update"
       
       - name: Sync build configuration
         run: make sync-build-config
