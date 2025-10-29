@@ -7,6 +7,7 @@
     "devDependencies": {
         "@scala-js/vite-plugin-scalajs": "^1.1.0",
         "@tailwindcss/typography": "^0.5.19",
+        "cross-env": "^7.0.3",
         "tailwindcss": "^4.1.13",
         "typescript": "^5.9.2",
         "vite": "^7.1.7",
@@ -19,9 +20,9 @@
         "dev": "vite --mode development",
         "dev:staging": "vite --mode staging",
         "dev:production": "vite --mode production",
-        "build": "NODE_OPTIONS='--max-old-space-size=4096' vite build --mode development --emptyOutDir",
-        "build:staging": "NODE_OPTIONS='--max-old-space-size=4096' vite build --mode staging --emptyOutDir",
-        "build:production": "NODE_OPTIONS='--max-old-space-size=4096' vite build --mode production --emptyOutDir",
+        "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode development --emptyOutDir",
+        "build:staging": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode staging --emptyOutDir",
+        "build:production": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode production --emptyOutDir",
         "serve": "vite preview",
         "clean": "rm -rf node_modules"
     },
