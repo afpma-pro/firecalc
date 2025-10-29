@@ -63,15 +63,16 @@ jobs:
       max-parallel: 1
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux
-            make_target: staging-electron-package-linux
           - os: windows-latest
             platform: windows
             make_target: staging-electron-package-win
-          - os: macos-latest
-            platform: mac
-            make_target: staging-electron-package-mac
+          # TODO: Re-enable Linux and macOS once Windows build is stable
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   make_target: staging-electron-package-linux
+          # - os: macos-latest
+          #   platform: mac
+          #   make_target: staging-electron-package-mac
         
     steps:
       - name: Checkout code
@@ -166,17 +167,9 @@ jobs:
       - name: Sync build configuration
         run: make sync-build-config
       
-      - name: Build Electron App (Linux)
-        if: matrix.platform == 'linux'
-        run: make staging-electron-package-linux
-        
       - name: Build Electron App (Windows)
         if: matrix.platform == 'windows'
         run: make staging-electron-package-win
-        
-      - name: Build Electron App (macOS)
-        if: matrix.platform == 'mac'
-        run: make staging-electron-package-mac
         
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v2
