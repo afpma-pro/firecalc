@@ -82,11 +82,9 @@ dmg:
       type: link
       path: /Applications
 
-publish:
-  provider: github
-  owner: ${env.GITHUB_REPO_OWNER}
-  repo: ${env.GITHUB_REPO_NAME}
-  releaseType: release
+# Publishing is handled by GitHub Actions workflow
+# Do not auto-publish from electron-builder to avoid conflicts
+publish: null
 
 # Configuration for unsigned builds
 afterSign: null
