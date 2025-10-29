@@ -12,7 +12,7 @@ This document is a standalone reference explaining the Windows-specific packagin
 
 ## Symptoms
 
-Two distinct failures were observed on windows-latest:
+Multiple distinct failures were observed on windows-latest:
 
 1) Coursier/Ivy cache locking during Scala.js build (ScalablyTyped path)
 
@@ -29,11 +29,34 @@ inconsistent module descriptor ... expected='sbt-crossproject_2.12_1.0' found='s
 org.portable-scala:sbt-crossproject_2.12_1.0:1.3.2
 ```
 
+3) PowerShell command-line parsing error
+
+```
+Error:  Not a valid command: true (similar: lastGrep)
+Error:  Not a valid project ID: true (similar: ui)
+```
+
+4) ScalablyTyped Scala 3 compatibility errors
+
+```
+Error: `implicit` classes are no longer supported. They can usually be replaced by extension methods.
+D:/a/firecalc/firecalc/modules/ui/target/streams/_global/stImport/_global/streams/sources/d/daisyui/src/main/scala/typings/daisyui/themeObjectMod.scala:142:24
+```
+
+5) Windows-specific NODE_OPTIONS shell syntax error
+
+```
+'NODE_OPTIONS' is not recognized as an internal or external command
+```
+
 ## Root causes (Windows specifics)
 
 - Windows applies strict file locks. Sequential sbt invocations can still race with background cleanup or sub-processes touching the cache (especially ST’s internal Zinc compiler). Result: OverlappingFileLockException in the Coursier/Ivy caches.
 - The ScalablyTyped Converter runs an internal Zinc compiler that may trigger dependency resolution at a different phase than top-level sbt, increasing lock contention windows.
-- For sbt plugins, Ivy can choke on cross-axes POM naming (sbt-crossproject); Coursier handles this correctly. Forcing Ivy on Windows led to the “bad module name” plugin error.
+- For sbt plugins, Ivy can choke on cross-axes POM naming (sbt-crossproject); Coursier handles this correctly. Forcing Ivy on Windows led to the "bad module name" plugin error.
+- PowerShell misparses JVM properties like `-Dsbt.coursier=true` when passed directly to sbt command, interpreting them as PowerShell command parameters instead.
+- ScalablyTyped generates Scala 2-style code with `implicit class` when the `-source:future` flag is present, which is incompatible with Scala 3.
+- Unix shell syntax for environment variables (e.g., `NODE_OPTIONS='value'`) doesn't work on Windows cmd.exe/PowerShell.
 
 ## Changes we introduced
 
@@ -82,6 +105,11 @@ org.portable-scala:sbt-crossproject_2.12_1.0:1.3.2
 - Added explicit resolvers to stabilize plugin resolution on Windows.
 - Implemented in [`project/plugins.sbt`](project/plugins.sbt).
 
+8) Use cross-env for cross-platform NODE_OPTIONS
+- Replace Unix-style `NODE_OPTIONS='value'` with `cross-env NODE_OPTIONS=value` in npm scripts
+- Ensures compatibility with Windows cmd.exe/PowerShell
+- Implemented in [`modules/ui/package.json`](modules/ui/package.json)
+
 ## Diff overview (what changed and where)
 
 - [`Makefile`](Makefile)
@@ -89,15 +117,22 @@ org.portable-scala:sbt-crossproject_2.12_1.0:1.3.2
   - Add `-Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false`
   - Pre-resolve via `update; ui/update` before linking
 
-- [` .github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
+- [`.github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
   - Isolated caches: COURSIER_CACHE, SBT_OPTS with custom dirs
   - actions/cache for .coursier/.ivy2/.sbt-boot/.sbt-global
   - cs.exe prefetch scala3-compiler_3:3.7.3
   - ScalablyTyped hack ENABLED (no FIRECALC_CI_NO_ST_HACK) for Scala 3 compatibility
-  - Note: Pre-warm step removed to avoid early ScalablyTyped compilation
+  - Windows-only matrix builds for faster iteration
+  - No pre-warm step (removed to avoid early ScalablyTyped compilation)
+  - npm dependency installation before sbt operations
 
 - [`build.sbt`](build.sbt)
-  - Optional env feature flag to disable the ST reflective hack
+  - ScalablyTyped Scala 3 compatibility hack (lines 414-478)
+  - Removed unused FIRECALC_CI_FORCE_IVY code
+
+- [`modules/ui/package.json`](modules/ui/package.json)
+  - Added cross-env package for Windows-compatible environment variables
+  - Updated npm scripts to use cross-env for NODE_OPTIONS
 
 - [`project/plugins.sbt`](project/plugins.sbt)
   - Added explicit plugin + maven resolvers
@@ -147,10 +182,13 @@ resolvers ++= Seq(
 
 ## Decision log
 
-- Attempt A: Merge sbt invocations → reduced frequency of locks but not sufficient by itself on Windows when ST’s Zinc kicks in.
+- Attempt A: Merge sbt invocations → reduced frequency of locks but not sufficient by itself on Windows when ST's Zinc kicks in.
 - Attempt B: Force Ivy (FIRECALC_CI_FORCE_IVY=1) → fixed locks but broke plugin resolution (sbt-crossproject POM mismatch). Reverted.
-- Attempt C: Keep Coursier, serialize downloads, disable supershell, isolate caches, pre-warm, prefetch compiler → stable.
-- Attempt D: Disable ST reflective hack in CI → further stabilizes timing-sensitive phases.
+- Attempt C: Keep Coursier, serialize downloads, disable supershell, isolate caches, pre-warm, prefetch compiler → pre-warm caused ScalablyTyped issues.
+- Attempt D: Disable ST reflective hack in CI (FIRECALC_CI_NO_ST_HACK=1) → caused "implicit classes are no longer supported" errors. Reverted.
+- Attempt E: Fix PowerShell flag parsing (use SBT_OPTS) → fixed "Not a valid command: true" error.
+- Attempt F: Remove pre-warm step → avoided early ScalablyTyped compilation.
+- Attempt G: Re-enable ST hack + add cross-env → **STABLE** - ScalablyTyped compilation succeeded, build progressing.
 
 ## Recommendations
 
@@ -158,16 +196,19 @@ resolvers ++= Seq(
 - Set JVM properties via `SBT_OPTS` environment variable in PowerShell steps; avoid passing `-D` flags directly to sbt command due to PowerShell parsing issues.
 - Always run heavy UI link tasks in a single sbt session.
 - Use isolated caches under workspace and cache them via actions/cache.
-- Do not run sbt pre-warm steps before the actual build; ScalablyTyped triggers on any sbt invocation and causes Scala 3 compatibility errors.
+- Do not run sbt pre-warm steps before the actual build; ScalablyTyped triggers on any sbt invocation.
 - Prefetch heavy artifacts (scala3-compiler) using Coursier CLI before building.
+- Keep the ScalablyTyped Scala 3 compatibility hack ENABLED at all times (never set FIRECALC_CI_NO_ST_HACK).
+- Use cross-env package for cross-platform environment variable setting in npm scripts.
 - Only consider Ivy fallback as last resort; expect sbt plugin resolution issues on Windows.
 
 ## Rollback plan
 
 If a future change reintroduces errors:
 
-- Remove prefetch step first (least risky).
-- Re-enable ST hack if needed for local dev; keep the CI flag separation.
+- Verify ScalablyTyped hack is enabled (no FIRECALC_CI_NO_ST_HACK environment variable).
+- Verify npm dependencies are installed before sbt operations.
+- Remove prefetch step if needed (least risky).
 - If locks reappear, increase serialization (set COURSIER_MAX_THREADS=1).
 - Avoid forcing Ivy on Windows unless plugin resolvers are proven stable for your sbt versions.
 
@@ -197,5 +238,6 @@ A: The hack (lines 414-478 in build.sbt) patches ScalablyTyped's Zinc compiler t
 - [`build.sbt`](build.sbt)
 - [`.github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
 - [`project/plugins.sbt`](project/plugins.sbt)
+- [`modules/ui/package.json`](modules/ui/package.json)
 
 End.
