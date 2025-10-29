@@ -314,9 +314,8 @@ if (shouldRelaunchForDebianGnomeWayland()) {
     mainWindow.once('ready-to-show', () => {
       mainWindow.maximize();
       mainWindow.show();
-      if (isDev) {
-        mainWindow.webContents.openDevTools();
-      }
+      // DevTools are available via Developer menu (View → Developer → Toggle DevTools)
+      // or F12 shortcut, but do not auto-open on startup
     });
 
     createMenu();
@@ -422,7 +421,10 @@ if (shouldRelaunchForDebianGnomeWayland()) {
       template.push({
         label: 'Developer',
         submenu: [
-          { role: 'toggleDevTools' },
+          {
+            role: 'toggleDevTools',
+            accelerator: 'F12'
+          },
           { type: 'separator' },
           {
             label: 'Reload',
