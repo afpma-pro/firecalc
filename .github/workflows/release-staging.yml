@@ -120,12 +120,12 @@ jobs:
           echo "COURSIER_MAX_THREADS=1" >> $env:GITHUB_ENV
           echo "SBT_OPTS=-Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.global.base=${{ github.workspace }}\.sbt-global -Dsbt.boot.directory=${{ github.workspace }}\.sbt-boot -Dsbt.ivy.home=${{ github.workspace }}\.ivy2" >> $env:GITHUB_ENV
 
-      - name: Disable ST Zinc hack only (Windows)
+      - name: Configure SBT logging (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          echo "FIRECALC_CI_NO_ST_HACK=1" >> $env:GITHUB_ENV
-          # keep Coursier enabled; serialization flags already set above
+          # Keep Coursier enabled; serialization flags already set above
+          # Re-enable ST hack to help with Scala 3 compatibility
           echo "SBT_OPTS=$env:SBT_OPTS -Dsbt.log.noformat=true" >> $env:GITHUB_ENV
       
       - name: Cache Coursier/Ivy/SBT (Windows)

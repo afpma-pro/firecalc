@@ -67,10 +67,12 @@ org.portable-scala:sbt-crossproject_2.12_1.0:1.3.2
 - Using cs.exe to fetch org.scala-lang:scala3-compiler_3:3.7.3 into the isolated cache early.
 - Implemented in [`release-staging.yml`](.github/workflows/release-staging.yml).
 
-5) Disable the ScalablyTyped reflective Zinc hack in CI
-- The “hackScalablyTypedRemoveSourceFuture” reflection tweak can influence timing/resolution phases.
-- We added an opt-out: set FIRECALC_CI_NO_ST_HACK=1 in CI.
-- Implemented in [`build.sbt`](build.sbt).
+5) Keep the ScalablyTyped Scala 3 compatibility hack enabled
+- The "hackScalablyTypedRemoveSourceFuture" removes `-source:future` flag from ScalablyTyped's Zinc compiler
+- This hack is REQUIRED for Scala 3 compatibility to prevent `implicit class` generation errors
+- Originally considered disabling it (FIRECALC_CI_NO_ST_HACK=1) but this caused Scala 3 compilation failures
+- Decision: Keep hack enabled on all platforms including Windows CI
+- Implemented in [`build.sbt`](build.sbt) lines 414-478
 
 6) Keep Coursier for plugin resolution (avoid Ivy plugin error)
 - We initially added an Ivy fallback (FIRECALC_CI_FORCE_IVY=1) but observed the sbt-crossproject POM mismatch on Windows when Ivy is used for plugins.
@@ -91,8 +93,8 @@ org.portable-scala:sbt-crossproject_2.12_1.0:1.3.2
   - Isolated caches: COURSIER_CACHE, SBT_OPTS with custom dirs
   - actions/cache for .coursier/.ivy2/.sbt-boot/.sbt-global
   - cs.exe prefetch scala3-compiler_3:3.7.3
-  - FIRECALC_CI_NO_ST_HACK=1
-  - Note: Pre-warm step removed because ScalablyTyped triggers on any sbt invocation (including `update`), causing Scala 3 compatibility errors
+  - ScalablyTyped hack ENABLED (no FIRECALC_CI_NO_ST_HACK) for Scala 3 compatibility
+  - Note: Pre-warm step removed to avoid early ScalablyTyped compilation
 
 - [`build.sbt`](build.sbt)
   - Optional env feature flag to disable the ST reflective hack
@@ -184,7 +186,10 @@ Q: Why can't we pass -D flags directly to sbt in PowerShell?
 A: PowerShell misparses `-Dsbt.coursier=true` as command parameters rather than JVM properties. Use `SBT_OPTS` environment variable instead, which sbt reads automatically.
 
 Q: Why is there no sbt pre-warm step?
-A: ScalablyTyped triggers on any sbt invocation (even just `sbt "update"`) because sbt runs update for all aggregated projects including the UI project. ScalablyTyped then generates Scala code with `implicit class` syntax that's incompatible with Scala 3, causing compilation failures. The actual build works because it handles ScalablyTyped in the full build context.
+A: ScalablyTyped triggers on any sbt invocation (even just `sbt "update"`) because sbt runs update for all aggregated projects including the UI project. This triggers ScalablyTyped compilation too early in the build process. The actual build (Makefile targets) works because it runs in the full build context with all dependencies and build phases properly ordered.
+
+Q: What is the ScalablyTyped hack and why is it needed?
+A: The hack (lines 414-478 in build.sbt) patches ScalablyTyped's Zinc compiler to remove the `-source:future` flag, preventing it from generating Scala 2-style `implicit class` syntax that's incompatible with Scala 3. This hack must remain enabled on all platforms, including Windows CI. Disabling it causes "implicit classes are no longer supported" errors.
 
 ## Related files
 
