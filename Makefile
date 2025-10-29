@@ -349,23 +349,20 @@ prod-env-test:
 
 # Shared target for fast development builds
 dev-electron-ui-build:
-	@sbt ui/syncBuildConfig
 	$(call generate_ui_version,dev)
-	@sbt ui/fastLinkJS
+	@sbt "ui/syncBuildConfig; ui/fastLinkJS"
 	@cd modules/ui && npm run build
 
 # Shared target for optimized staging builds
 staging-electron-ui-build:
-	@sbt ui/syncBuildConfig
 	$(call generate_ui_version,staging)
-	@sbt ui/fullLinkJS
+	@sbt "ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:staging
 
 # Shared target for optimized production builds
 prod-electron-ui-build:
-	@sbt ui/syncBuildConfig
 	$(call generate_ui_version,)
-	@sbt ui/fullLinkJS
+	@sbt "ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:production
 
 ## ================================
