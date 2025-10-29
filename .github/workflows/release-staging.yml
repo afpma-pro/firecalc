@@ -155,7 +155,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update"
+          sbt "update; ui/update"
 
       - name: Install UI dependencies
         run: make ui-setup
