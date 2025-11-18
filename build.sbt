@@ -49,10 +49,10 @@ def i18nSourceGenerator(moduleName: String, packagePath: Seq[String]): Def.Initi
     streams.value.cacheDirectory / "i18n"
   ) { (in: Set[File]) =>
     
-    // Read all language files
+    // Read all language files with explicit UTF-8 encoding
     val langContents = SUPPORTED_LANGUAGES_IDS.map { lang =>
       val langFile = in.find(_.getName == s"$lang.conf").get
-      lang -> Source.fromFile(langFile).getLines().mkString("\n")
+      lang -> Source.fromFile(langFile, "UTF-8").getLines().mkString("\n")
     }.toMap
     
     System.err.println(s"[info] => Importing HOCON files:")
