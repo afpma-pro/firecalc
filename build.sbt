@@ -105,10 +105,10 @@ ThisBuild / startYear           := Some(2025)
 ThisBuild / licenses            := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage            := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version         = "0.3.0-b6"
-lazy val reports_base_version   = "0.9.0-b6"
-lazy val payments_base_version  = "0.9.0-b6"
-lazy val ui_base_version        = "0.9.0-b6"
+lazy val engine_version         = "0.3.0-b7-SNAPSHOT"
+lazy val reports_base_version   = "0.9.0-b7-SNAPSHOT"
+lazy val payments_base_version  = "0.9.0-b7-SNAPSHOT"
+lazy val ui_base_version        = "0.9.0-b7-SNAPSHOT"
 
 // Repository information (single source of truth)
 lazy val githubOwner            = "afpma-pro"
