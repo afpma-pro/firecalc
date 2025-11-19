@@ -59,7 +59,7 @@ object AppState:
         local_conditions                = ExampleProject_15544.localConditions,
         stove_params                    = ExampleProject_15544.stoveParams,
         air_intake_descr                = ExampleProject_15544.conduit_air_descr,
-        firebox                         = ExampleProject_15544.foyer_descr.transformInto[Firebox.EcoLabeled](using From_CalculPdM_V_0_2_32.transformer_inv_EcoLabeled),
+        firebox                         = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional](using From_CalculPdM_V_0_2_32.transformer_inv_TraditionalFirebox_Standard),
         flue_pipe_descr                 = ExampleProject_15544.accumulateur_descr,
         connector_pipe_descr            = ExampleProject_15544.conduit_raccordement_descr,
         chimney_pipe_descr              = ExampleProject_15544.conduit_fumees_descr,

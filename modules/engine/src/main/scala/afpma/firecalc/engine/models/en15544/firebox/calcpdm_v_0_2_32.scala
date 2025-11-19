@@ -77,6 +77,19 @@ object From_CalculPdM_V_0_2_32:
         .withFieldRenamed(_.glass_width,                           _.h71_largeurVitre)
         .withFieldRenamed(_.glass_height,                          _.h72_hauteurVitre)
         .buildTransformer
+
+    given transformer_inv_TraditionalFirebox_Standard: Transformer[firebox.calcpdm_v_0_2_32.TraditionalFirebox, Firebox.Traditional] = 
+        Transformer.define[firebox.calcpdm_v_0_2_32.TraditionalFirebox, Firebox.Traditional]
+        .enableDefaultValues
+        .withFieldRenamed(_.pn_reduced,                       _.heat_output_reduced)
+        .withFieldRenamed(_.h11_profondeurDuFoyer,            _.firebox_depth)
+        .withFieldRenamed(_.h12_largeurDuFoyer,               _.firebox_width)
+        .withFieldRenamed(_.h13_hauteurDuFoyer,               _.firebox_height)
+        .withFieldRenamed(_.h66_coeffPerteDeChargePorte,      _.pressure_loss_coefficient_from_door)
+        .withFieldRenamed(_.h67_sectionCumuleeEntreeAirPorte, _.total_air_intake_surface_area_on_door)
+        .withFieldRenamed(_.h71_largeurVitre,                 _.glass_width)
+        .withFieldRenamed(_.h72_hauteurVitre,                 _.glass_height)
+        .buildTransformer
     
     given transformer_EcoLabeled_EcoLabeled: Transformer[Firebox.EcoLabeled, firebox.calcpdm_v_0_2_32.EcoLabeled] = e =>
         import e.* 

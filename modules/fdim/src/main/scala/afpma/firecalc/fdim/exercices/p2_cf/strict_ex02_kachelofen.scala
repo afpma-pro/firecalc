@@ -32,7 +32,7 @@ object strict_ex02_kachelofen
     val localConditions = LocalConditions(
         altitude                    = 128.meters,
         coastal_region              = false,
-        chimney_termination    = ChimneyTermination.Classic,
+        chimney_termination         = ChimneyTermination.Classic,
     )
 
     val stoveParams = StoveParams.fromMaxLoadAndStoragePeriod(
@@ -70,17 +70,17 @@ object strict_ex02_kachelofen
             innerShape(rectangle(25.1.cm, 22.cm)),
             addSectionVertical("descente", -81.cm),
 
-            addSharpAngle_90deg("virage avant avant banc"),
+            addSharpAngle_90deg("virage avant banc avant"),
             
             innerShape(rectangle(22.cm, 24.cm)),
-            addSectionHorizontal("avant banc", 1.79.meters),
+            addSectionHorizontal("banc avant", 1.79.meters),
 
             addSharpAngle_90deg("virage avant bout du banc"),
             
             innerShape(rectangle(20.cm, 24.cm)),
             addSectionHorizontal("bout du banc", 44.cm),
 
-            addSharpAngle_90deg("virage avant arrière banc"),
+            addSharpAngle_90deg("virage avant banc arrière"),
 
             innerShape(rectangle(19.cm, 24.cm)),
             addSectionHorizontal("arrière banc", 2.07.meters),

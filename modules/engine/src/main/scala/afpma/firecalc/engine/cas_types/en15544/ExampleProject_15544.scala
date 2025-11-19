@@ -17,12 +17,16 @@ import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
 import io.taig.babel.Languages
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
 
 object ExampleProject_15544
     extends v2024_10_Alg
     with v0_2024_10.Firebox_15544_Strict_OneOff_Alg
     with v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg:
     self =>
+
+    import afpma.firecalc.engine.models.en15544.std.*
+    import gtypedefs.ζ
 
     import std.*
     import gtypedefs.ζ
@@ -38,66 +42,33 @@ object ExampleProject_15544
     )
 
     val localConditions = LocalConditions(
-        altitude            = 1500.meters,
-        coastal_region      = false,
-        chimney_termination = ChimneyTermination.Classic,
+        altitude                    = 128.meters,
+        coastal_region              = false,
+        chimney_termination         = ChimneyTermination.Classic,
     )
 
     val stoveParams = StoveParams.fromMaxLoadAndStoragePeriod(
-        maximum_load      = 24.kg,
-        heating_cycle     = 12.hours,
-        min_efficiency    = 78.percent,
-        facing_type       = FacingType.WithoutAirGap
+        maximum_load    = 18.46.kg,
+        heating_cycle   = 12.hours,
+        min_efficiency  = 78.percent,
+        facing_type     = FacingType.WithoutAirGap
     )
 
-    val conduit_air_descr = 
-        import AirIntakePipe_Module.*
-        Seq(
-            addFlowResistance("1. grille", 0.61.unitless: ζ, hydraulic_diameter = 20.cm),
-
-            roughness(2.mm),
-            pipeLocation(PipeLocation.OutsideOrExterior),
-
-            innerShape(circle(20.cm)),
-
-            layer(
-                e = 2.mm, // ???
-                tr = SquareMeterKelvinPerWatt(0.0) // ???
-            ), 
-
-            addSectionHorizontal("Car. 2", 253.cm),
-
-            addAngleSpecifique("3. angle 90° (ζ=0.9)", 90.degrees, zeta = 0.9),
-
-            innerShape(circle(20.cm)), // why ???
-            addSectionHorizontal("Car. 4", 40.cm),
-
-            addFlowResistance("5. clapet", 0.25.unitless: ζ, hydraulic_diameter = 20.cm),
-        )
+    val conduit_air_descr = Seq()
 
     val airIntakePipe = 
         import AirIntakePipe_Module.*
         define(conduit_air_descr*).toFullDescr().extractPipe
 
-    val foyer_descr = EcoLabeled_V1(
+    val foyer_descr = TraditionalFirebox(
         pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
-        h11_profondeurDuFoyer                               = 54.cm,
-        h12_largeurDuFoyer                                  = 54.cm,
-        h13_hauteurDuFoyer                                  = 75.cm,
-        h70_largeurPorteDansMaconnerie                      = 52.cm,
-        // hauteurporte = 42 ???
-        h71_largeurVitre                                    = 50.cm,
-        h72_hauteurVitre                                    = 40.cm,
-        h74_hauteur_de_cendrier_AF                          = 8.cm,
-        h75_hauteurArriveeConduitAir_DessousSoleFoyer_W     = 11.cm,
-        h76_epaisseurSole                                   = 8.cm,
-        h77_epaisseurParoiInterneFoyer_D1                   = 6.cm,
-        epaisseurParoiExterneFoyer_D2                       = 6.cm,
-        h78_largeurEspaceInterparoisDuFoyer_S               = 3.5.cm,
-        h79_largeurRenfortMedianLateraux                    = 4.5.cm, // prop 10% ???
-        h80_largeurRenfortMedianArriere                     = 4.5.cm, // prop 10% ???
-        h81_debordDesRenfortsDansLesAngles                  = 4.5.cm, // prop 10% ???
-        h82_hauteurDesInjecteurs_Z                          = 0.6.cm,
+        h11_profondeurDuFoyer                               = 44.cm,
+        h12_largeurDuFoyer                                  = 42.cm,
+        h13_hauteurDuFoyer                                  = 78.cm,
+        h66_coeffPerteDeChargePorte                         = 0.3.unitless,
+        h67_sectionCumuleeEntreeAirPorte                    = 170.cm2,
+        h71_largeurVitre                                    = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        h72_hauteurVitre                                    = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
     )
 
     val firebox = foyer_descr
@@ -107,47 +78,38 @@ object ExampleProject_15544
         Seq(
             roughness(3.mm),
 
-            innerShape(rectangle(36.cm, 40.cm)),
+            innerShape(rectangle(25.1.cm, 23.cm)),
+            addSectionHorizontal("sortie foyer", 32.cm),
 
-            addSectionHorizontal("Car. 1",  34.8.cm),
-            addSharpAngle_90deg("virage 90° 1-2"),
+            addSharpAngle_90deg("virage avant descente"),
 
-            addSectionVertical("Car. 2",  -109.cm),
-            addSectionVertical("Car. 3",  -244.cm),
+            innerShape(rectangle(25.1.cm, 22.cm)),
+            addSectionVertical("descente", -81.cm),
 
-            addSharpAngle_90deg("virage 90° 3-4", angleN2 = 0.degrees.some),
+            addSharpAngle_90deg("virage avant banc avant"),
 
-            innerShape(rectangle(27.cm, 40.cm)),
-            addSectionHorizontal("Car. 4",  50.cm),
+            innerShape(rectangle(22.cm, 24.cm)),
+            addSectionHorizontal("banc avant", 1.79.meters),
 
-            addSharpAngle_90deg("virage 90° 4-5", angleN2 = 90.degrees.some),
+            addSharpAngle_90deg("virage avant bout du banc"),
 
-            innerShape(rectangle(27.cm, 27.cm)),
-            addSectionHorizontal("Car. 5",  5.cm),
+            innerShape(rectangle(20.cm, 24.cm)),
+            addSectionHorizontal("bout du banc", 44.cm),
 
-            addSharpAngle_90deg("virage 90° 5-6", angleN2 = 0.degrees.some),
+            addSharpAngle_90deg("virage avant banc arrière"),
 
-            addSectionHorizontal("Car. 6",  50.cm),
+            innerShape(rectangle(19.cm, 24.cm)),
+            addSectionHorizontal("arrière banc", 2.07.meters),
 
-            addSharpAngle_90deg("virage 90° 6-7", angleN2 = 0.degrees.some),
+            addSharpAngle_90deg("virage avant vers remontée"),
 
-            addSectionHorizontal("Car. 7",  34.cm),
+            innerShape(rectangle(21.cm, 24.cm)),
+            addSectionHorizontal("vers remontée", 44.cm),
 
-            addSharpAngle_45deg("virage 45° 7-8", angleN2 = 135.degrees.some),
+            addSharpAngle_90deg("virage avant remontée"),
 
-            addSectionHorizontal("Car. 8",  14.1.cm),
-
-            addSharpAngle_45deg("virage 45° 8-9", angleN2 = 90.degrees.some),
-
-            addSectionHorizontal("Car. 9",  100.cm),
-
-            addSharpAngle_90deg("virage 90° 9-10", angleN2 = 90.degrees.some),
-
-            innerShape(rectangle(21.cm, 32.cm)),
-
-            addSectionVertical("Car. 10", 244.cm),
-
-            addSectionVertical("Car. 11", 128.cm),
+            innerShape(rectangle(21.cm, 22.cm)),
+            addSectionVertical("remontée", 98.cm),
         )
 
     val fluePipe = 
@@ -158,10 +120,19 @@ object ExampleProject_15544
         import ConnectorPipe_Module.*
         Seq(
             roughness(Material_13384.WeldedSteel),
-            innerShape(circle(25.cm)),
-            layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
+            innerShape(circle(200.mm)),
+            layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
             pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("Car. 12", 5.cm),
+
+            addSectionVertical("conduit simple peau 1 ", 39.cm),
+
+            addSharpAngle_30deg("coude angle vif 30°"),
+
+            addSectionSlopped("conduit simple peau 2", 58.cm, elevation_gain = 48.8.cm),
+
+            addSharpAngle_30deg_unsafe("coude angle vif 30°"),
+
+            addSectionVertical("conduit simple peau 2", 26.cm)
         )
     
     val connectorPipe = 
@@ -171,20 +142,20 @@ object ExampleProject_15544
     val conduit_fumees_descr = 
         import ChimneyPipe_Module.*
         Seq(
-            roughness(1.mm),
-            innerShape(circle(250.mm)),
-            layer(e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
+            roughness(Material_13384.WeldedSteel),
+            innerShape(circle(200.mm)),
+            layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440)),
 
             pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("chauff.", 7.5.m),
+            addSectionVertical("intérieur", 50.cm),
 
-            pipeLocation(PipeLocation.UnheatedInside),
-            addSectionVertical("non-chauff", 30.cm),
+            pipeLocation(PipeLocation.OutsideOrExterior), // plutot NON CHAUFFEE car combles ???
+            addSectionVertical("combles", 90.cm), // deviation from `strict_ex02_kachelofen` (90 cm instead of 50 cm) to get proper pressure equilibrium
 
-            pipeLocation(PipeLocation.OutsideOrExterior),
-            addSectionVertical("ext.", 150.cm),
+            pipeLocation(PipeLocation.OutsideOrExterior), // plutot NON CHAUFFEE car combles ???
+            addSectionVertical("extérieur", 1.10.m),
 
-            addFlowResistance("element terminal", 1.48.unitless: ζ) // cf fichier .k10
+            addFlowResistance("element terminal", 0.6.unitless: ζ)
         )
 
     val chimneyPipe = 
