@@ -78,38 +78,38 @@ object ExampleProject_15544
         Seq(
             roughness(3.mm),
 
-            innerShape(rectangle(25.1.cm, 23.cm)),
-            addSectionHorizontal("sortie foyer", 32.cm),
+            innerShape(rectangle(251.mm, 230.mm)),
+            addSectionHorizontal("sortie foyer", 317.mm),
 
             addSharpAngle_90deg("virage avant descente"),
 
-            innerShape(rectangle(25.1.cm, 22.cm)),
-            addSectionVertical("descente", -81.cm),
+            innerShape(rectangle(251.mm, 220.mm)),
+            addSectionVertical("descente", -815.mm),
 
             addSharpAngle_90deg("virage avant banc avant"),
 
-            innerShape(rectangle(22.cm, 24.cm)),
-            addSectionHorizontal("banc avant", 1.79.meters),
+            innerShape(rectangle(220.mm, 240.mm)),
+            addSectionHorizontal("banc avant", 1792.mm),
 
             addSharpAngle_90deg("virage avant bout du banc"),
 
-            innerShape(rectangle(20.cm, 24.cm)),
-            addSectionHorizontal("bout du banc", 44.cm),
+            innerShape(rectangle(200.mm, 240.mm)),
+            addSectionHorizontal("bout du banc", 437.mm),
 
             addSharpAngle_90deg("virage avant banc arrière"),
 
-            innerShape(rectangle(19.cm, 24.cm)),
-            addSectionHorizontal("arrière banc", 2.07.meters),
+            innerShape(rectangle(190.mm, 240.mm)),
+            addSectionHorizontal("arrière banc", 2073.mm),
 
             addSharpAngle_90deg("virage avant vers remontée"),
 
-            innerShape(rectangle(21.cm, 24.cm)),
-            addSectionHorizontal("vers remontée", 44.cm),
+            innerShape(rectangle(210.mm, 240.mm)),
+            addSectionHorizontal("vers remontée", 437.mm),
 
             addSharpAngle_90deg("virage avant remontée"),
 
-            innerShape(rectangle(21.cm, 22.cm)),
-            addSectionVertical("remontée", 98.cm),
+            innerShape(rectangle(210.mm, 220.mm)),
+            addSectionVertical("remontée", 980.mm),
         )
 
     val fluePipe = 
@@ -124,15 +124,15 @@ object ExampleProject_15544
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
             pipeLocation(PipeLocation.HeatedArea),
 
-            addSectionVertical("conduit simple peau 1 ", 39.cm),
+            addSectionVertical("conduit simple peau 1 ", 409.mm),
 
             addSharpAngle_30deg("coude angle vif 30°"),
 
-            addSectionSlopped("conduit simple peau 2", 58.cm, elevation_gain = 48.8.cm),
+            addSectionSlopped("conduit simple peau 2", 707.mm, elevation_gain = 500.mm),
 
             addSharpAngle_30deg_unsafe("coude angle vif 30°"),
 
-            addSectionVertical("conduit simple peau 2", 26.cm)
+            addSectionVertical("conduit simple peau 2", 241.mm)
         )
     
     val connectorPipe = 
@@ -147,13 +147,16 @@ object ExampleProject_15544
             layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440)),
 
             pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("intérieur", 50.cm),
+            addSectionVertical("intérieur", 550.mm),
 
             pipeLocation(PipeLocation.OutsideOrExterior), // plutot NON CHAUFFEE car combles ???
-            addSectionVertical("combles", 90.cm), // deviation from `strict_ex02_kachelofen` (90 cm instead of 50 cm) to get proper pressure equilibrium
+            addSectionVertical("combles", 560.mm),
 
-            pipeLocation(PipeLocation.OutsideOrExterior), // plutot NON CHAUFFEE car combles ???
-            addSectionVertical("extérieur", 1.10.m),
+            pipeLocation(PipeLocation.OutsideOrExterior),
+            addSectionVertical("extérieur", 990.mm),
+
+            pipeLocation(PipeLocation.OutsideOrExterior),
+            addSectionVertical("extérieur (ajout)", 400.mm), // deviation from `formation V5 ex02_kachelofen` (40 cm added) to get proper pressure equilibrium
 
             addFlowResistance("element terminal", 0.6.unitless: ζ)
         )
