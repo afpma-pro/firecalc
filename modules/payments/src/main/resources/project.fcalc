@@ -1,0 +1,353 @@
+version: 1
+locale: "fr"
+display_units: "SI"
+standard_or_computation_method: "EN 15544:2023"
+project_description: 
+  reference: "PROJET EXEMPLE 15544"
+  date: "01/01/2025"
+  country: "France"
+local_conditions: 
+  altitude: 
+    value: "128"
+    unit: "meter"
+  coastal_region: false
+  chimney_termination: 
+    chimney_location_on_roof: 
+      chimney_height_above_ridgeline: "MoreThan40cm"
+      horizontal_distance_between_chimney_and_ridgeline: !!null
+      slope: !!null
+      outside_air_intake_and_chimney_locations: !!null
+      horizontal_distance_between_chimney_and_ridgeline_bis: !!null
+    adjacent_buildings: 
+      horizontal_distance_between_chimney_and_adjacent_buildings: "MoreThan15m"
+      horizontal_angle_between_chimney_and_adjacent_buildings: !!null
+      vertical_angle_between_chimney_and_adjacent_buildings: !!null
+stove_params: 
+  sizing_method: "MaxLoad"
+  maximum_load: 
+    value: "18.46"
+    unit: "kilogram"
+  nominal_heat_output: !!null
+  heating_cycle: 
+    value: "12"
+    unit: "hour"
+  min_efficiency: 
+    value: "78"
+    unit: "percent"
+  facing_type: "WithoutAirGap"
+  inner_construction_material: "WithinSpecs"
+air_intake_descr: 
+firebox: 
+  Traditional: 
+    heat_output_reduced: !!null
+    firebox_depth: 
+      value: "0.44"
+      unit: "meter"
+    firebox_width: 
+      value: "0.42"
+      unit: "meter"
+    firebox_height: 
+      value: "0.78"
+      unit: "meter"
+    pressure_loss_coefficient_from_door: 
+      value: "0.3"
+      unit: "1"
+    total_air_intake_surface_area_on_door: 
+      value: "0.017"
+      unit: "meter^2"
+    glass_width: 
+      value: "0.15"
+      unit: "meter"
+    glass_height: 
+      value: "0.2"
+      unit: "meter"
+flue_pipe_descr: 
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.003"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.251"
+            unit: "meter"
+          b: 
+            value: "0.23"
+            unit: "meter"
+  - 
+    AddSectionHorizontal: 
+      name: "sortie foyer"
+      horizontal_length: 
+        value: "0.317"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "virage avant descente"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.251"
+            unit: "meter"
+          b: 
+            value: "0.22"
+            unit: "meter"
+  - 
+    AddSectionVertical: 
+      name: "descente"
+      elevation_gain: 
+        value: "-0.8150000000000001"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "virage avant banc avant"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.22"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionHorizontal: 
+      name: "banc avant"
+      horizontal_length: 
+        value: "1.792"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "virage avant bout du banc"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.2"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionHorizontal: 
+      name: "bout du banc"
+      horizontal_length: 
+        value: "0.437"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "virage avant banc arrière"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.19"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionHorizontal: 
+      name: "arrière banc"
+      horizontal_length: 
+        value: "2.073"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "virage avant vers remontée"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.21"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionHorizontal: 
+      name: "vers remontée"
+      horizontal_length: 
+        value: "0.437"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "virage avant remontée"
+      angle: 
+        value: "90"
+        unit: "degree"
+      angle_to_original_direction: !!null
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.21"
+            unit: "meter"
+          b: 
+            value: "0.22"
+            unit: "meter"
+  - 
+    AddSectionVertical: 
+      name: "remontée"
+      elevation_gain: 
+        value: "0.98"
+        unit: "meter"
+connector_pipe_descr: 
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.001"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.2"
+            unit: "meter"
+  - 
+    SetLayers: 
+      layers: 
+        - 
+          FromThermalResistanceUsingThickness: 
+            thickness: 
+              value: "0.002"
+              unit: "meter"
+            thermal_resistance: 
+              value: "0.001"
+              unit: "(meter^2 Kelvin)/watt"
+  - 
+    SetPipeLocation: 
+      pipe_location: "HeatedArea"
+  - 
+    AddSectionVertical: 
+      name: "conduit simple peau 1 "
+      elevation_gain: 
+        value: "0.4090000000000001"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_90: 
+      name: "coude angle vif 30°"
+      angle: 
+        value: "30"
+        unit: "degree"
+  - 
+    AddSectionSlopped: 
+      name: "conduit simple peau 2"
+      length: 
+        value: "0.707"
+        unit: "meter"
+      elevation_gain: 
+        value: "0.5"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_90_Unsafe: 
+      name: "coude angle vif 30°"
+      angle: 
+        value: "30"
+        unit: "degree"
+  - 
+    AddSectionVertical: 
+      name: "conduit simple peau 2"
+      elevation_gain: 
+        value: "0.241"
+        unit: "meter"
+chimney_pipe_descr: 
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.001"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.2"
+            unit: "meter"
+  - 
+    SetLayers: 
+      layers: 
+        - 
+          FromThermalResistanceUsingThickness: 
+            thickness: 
+              value: "0.025"
+              unit: "meter"
+            thermal_resistance: 
+              value: "0.44"
+              unit: "(meter^2 Kelvin)/watt"
+  - 
+    SetPipeLocation: 
+      pipe_location: "HeatedArea"
+  - 
+    AddSectionVertical: 
+      name: "intérieur"
+      elevation_gain: 
+        value: "0.55"
+        unit: "meter"
+  - 
+    SetPipeLocation: 
+      pipe_location: "OutsideOrExterior"
+  - 
+    AddSectionVertical: 
+      name: "combles"
+      elevation_gain: 
+        value: "0.56"
+        unit: "meter"
+  - 
+    SetPipeLocation: 
+      pipe_location: "OutsideOrExterior"
+  - 
+    AddSectionVertical: 
+      name: "extérieur"
+      elevation_gain: 
+        value: "0.99"
+        unit: "meter"
+  - 
+    SetPipeLocation: 
+      pipe_location: "OutsideOrExterior"
+  - 
+    AddSectionVertical: 
+      name: "extérieur (ajout)"
+      elevation_gain: 
+        value: "0.4"
+        unit: "meter"
+  - 
+    AddFlowResistance: 
+      name: "element terminal"
+      zeta: 
+        value: "0.6"
+        unit: "1"
+      cross_section: 
+        type: "option_of_either"
+        none_or_left_or_right: "none"
+        value: !!null

@@ -23,9 +23,9 @@ object PdfReportGenerationTest extends TestSuite {
 
   // Read the base64 encoded YAML content from resources
   def readBase64Content(): String = {
-    val stream = getClass.getResourceAsStream("/project.firecalc.yaml.base64")
+    val stream = getClass.getResourceAsStream("/project.fcalc.base64")
     if (stream == null) {
-      throw new RuntimeException("Resource /project.firecalc.yaml.base64 not found")
+      throw new RuntimeException("Resource /project.fcalc.base64 not found")
     }
     val content = Source.fromInputStream(stream).mkString
     stream.close()

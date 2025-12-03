@@ -343,7 +343,7 @@ if (shouldRelaunchForDebianGnomeWayland()) {
               const result = await dialog.showOpenDialog(mainWindow, {
                 properties: ['openFile'],
                 filters: [
-                  { name: 'FireCalc Project', extensions: ['yaml', 'firecalc.yaml'] },
+                  { name: 'FireCalc Project', extensions: ['fcalc', 'firecalc.yaml', 'yaml'] },
                   { name: 'All Files', extensions: ['*'] }
                 ]
               });
@@ -357,9 +357,9 @@ if (shouldRelaunchForDebianGnomeWayland()) {
             accelerator: 'CmdOrCtrl+S',
             click: async () => {
               const result = await dialog.showSaveDialog(mainWindow, {
-                defaultPath: 'project.firecalc.yaml',
+                defaultPath: 'project.fcalc',
                 filters: [
-                  { name: 'FireCalc Project', extensions: ['yaml', 'firecalc.yaml'] },
+                  { name: 'FireCalc Project', extensions: ['fcalc'] },
                   { name: 'All Files', extensions: ['*'] }
                 ]
               });
@@ -583,7 +583,7 @@ if (shouldRelaunchForDebianGnomeWayland()) {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters: [
-        { name: 'FireCalc Project', extensions: ['yaml', 'firecalc.yaml'] },
+        { name: 'FireCalc Project', extensions: ['fcalc', 'firecalc.yaml', 'yaml'] },
         { name: 'All Files', extensions: ['*'] }
       ]
     });
@@ -592,9 +592,9 @@ if (shouldRelaunchForDebianGnomeWayland()) {
   });
   ipcMain.handle('save-file-dialog', async (event, defaultFileName) => {
     const result = await dialog.showSaveDialog(mainWindow, {
-      defaultPath: defaultFileName || 'project.firecalc.yaml',
+      defaultPath: defaultFileName || 'project.fcalc',
       filters: [
-        { name: 'FireCalc Project', extensions: ['yaml', 'firecalc.yaml'] },
+        { name: 'FireCalc Project', extensions: ['fcalc'] },
         { name: 'All Files', extensions: ['*'] }
       ]
     });

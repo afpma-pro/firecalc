@@ -37,13 +37,13 @@ else
 - User downloads file to their Downloads folder
 
 **In Electron:**
-- Opens native "Save As" dialog with `.firecalc.yaml` filter
+- Opens native "Save As" dialog with `.fcalc` filter
 - Writes file directly to chosen location
 - Provides better UX with file type filtering
 
 ```scala
 // Both environments work with the same call
-FileSystemService.saveFile("project.firecalc.yaml", yamlContent)
+FileSystemService.saveFile("project.fcalc", yamlContent)
 ```
 
 ### Opening Files
@@ -54,7 +54,7 @@ FileSystemService.saveFile("project.firecalc.yaml", yamlContent)
 - Reads file using `FileReader` API
 
 **In Electron:**
-- Opens native "Open File" dialog with `.firecalc.yaml` filter
+- Opens native "Open File" dialog with `.fcalc` filter (also accepts legacy `.firecalc.yaml`)
 - Reads file directly from file system via IPC
 - Provides better UX with file type filtering
 
@@ -81,7 +81,7 @@ case class BackupComponent()(using Locale) extends Component:
 ```
 
 **Behavior:**
-- **Browser**: Downloads `.firecalc.yaml` file
+- **Browser**: Downloads `.fcalc` file
 - **Electron**: Opens native save dialog, writes to selected location
 
 ### UploadComponent (Open Project)
@@ -184,28 +184,28 @@ The Electron app filters files by extension in dialogs:
 **Open Dialog:**
 ```javascript
 filters: [
-  { name: 'FireCalc Project', extensions: ['yaml', 'firecalc.yaml'] },
+  { name: 'FireCalc Project', extensions: ['fcalc', 'firecalc.yaml', 'yaml'] },
   { name: 'All Files', extensions: ['*'] }
 ]
 ```
 
 **Save Dialog:**
 ```javascript
-defaultPath: 'project.firecalc.yaml',
+defaultPath: 'project.fcalc',
 filters: [
-  { name: 'FireCalc Project', extensions: ['yaml', 'firecalc.yaml'] },
+  { name: 'FireCalc Project', extensions: ['fcalc'] },
   { name: 'All Files', extensions: ['*'] }
 ]
 ```
 
 ### Browser Configuration
 
-The browser file input accepts `.firecalc.yaml` files:
+The browser file input accepts `.fcalc` files (and legacy `.firecalc.yaml` for backward compatibility):
 
 ```scala
 input(
   typ := "file",
-  accept := ".firecalc.yaml"
+  accept := ".fcalc,.firecalc.yaml,.yaml"
 )
 ```
 
@@ -268,10 +268,10 @@ All file operations go through the secure IPC channel defined in [`preload.js`](
 
 ### Verification Checklist
 
-- [ ] Browser: Can download `.firecalc.yaml` files
-- [ ] Browser: Can upload and parse `.firecalc.yaml` files
+- [ ] Browser: Can download `.fcalc` files
+- [ ] Browser: Can upload and parse `.fcalc` and legacy `.firecalc.yaml` files
 - [ ] Electron: Native save dialog shows file type filter
-- [ ] Electron: Native open dialog shows file type filter
+- [ ] Electron: Native open dialog shows file type filter (accepts `.fcalc`, `.firecalc.yaml`, `.yaml`)
 - [ ] Electron: Can save files to any location
 - [ ] Electron: Can open files from any location
 - [ ] Error messages display correctly in both environments
@@ -279,7 +279,7 @@ All file operations go through the secure IPC channel defined in [`preload.js`](
 
 ## File Format
 
-Projects are saved as YAML files with `.firecalc.yaml` extension:
+Projects are saved as YAML files with `.fcalc` extension (previously `.firecalc.yaml`):
 
 ```yaml
 ---
@@ -309,5 +309,5 @@ Potential improvements:
 1. **Recent Files**: Track recently opened files (Electron only)
 2. **Auto-save**: Periodic auto-save in Electron
 3. **File Watchers**: Reload on external file changes (Electron only)
-4. **Drag & Drop**: Drag `.firecalc.yaml` files onto window
+4. **Drag & Drop**: Drag `.fcalc` files onto window
 5. **Multiple File Formats**: Support import/export in different formats

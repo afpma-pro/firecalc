@@ -9,7 +9,7 @@ import scala.util.Failure
 import scala.util.Success
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
-import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
+import afpma.firecalc.payments.shared.Constants.{FIRECALC_FILE_EXTENSION, LEGACY_FIRECALC_FILE_EXTENSION}
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.daisyui.DaisyUITooltip
@@ -202,7 +202,7 @@ object FireCalcProjet:
             // Hidden file input for browser mode only
             val hiddenFileInput = input(
                 typ := "file",
-                accept := FIRECALC_FILE_EXTENSION,
+                accept := s"$FIRECALC_FILE_EXTENSION,$LEGACY_FIRECALC_FILE_EXTENSION,.yaml",
                 cls := "hidden",
                 inContext { thisNode =>
                     onChange --> { _ =>
