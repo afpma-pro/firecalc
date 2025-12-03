@@ -395,9 +395,9 @@ def makeQuadrionSubtotalForFirebox(
                             ph =
                                 (cc_intlair_pres.ph + cc_firebox_pres.ph).value.some,
                             pr =
-                                (cc_intlair_pres.pR + cc_firebox_pres.pR).value.some,
+                                (-1.0 * (cc_intlair_pres.pR + cc_firebox_pres.pR).value).some,
                             pu = (cc_intlair_pres.pu, cc_firebox_pres.pu)
-                                .mapN((l, r) => (l + r).value)
+                                .mapN((l, r) => -1.0 * (l + r).value)
                                 .toOption,
                             sigma = (
                                 cc_intlair_pres.`ph-(pR+pu)`,
