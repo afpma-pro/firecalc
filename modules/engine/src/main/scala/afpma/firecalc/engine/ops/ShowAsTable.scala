@@ -119,7 +119,7 @@ class ShowAsTableInstances(using Locale):
     
     given ShowAsTable[ProjectDescr] =
         ShowAsTable.mkLightFor(I18N.headers.project_description): pr =>
-            (I18N.project_description.reference :: pr.reference :: Nil) ::
+            (I18N.project_description.reference_and_filename :: pr.reference :: Nil) ::
             (I18N.project_description.date :: pr.date :: Nil) ::
             (I18N.project_description.country :: pr.country.show :: Nil) ::
             Nil

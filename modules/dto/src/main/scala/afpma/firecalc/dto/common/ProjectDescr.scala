@@ -15,7 +15,7 @@ import magnolia1.Transl
 
 @Transl(I(_.headers.project_description))
 final case class ProjectDescr(
-    @Transl(I(_.project_description.reference))
+    @Transl(I(_.project_description.reference_and_filename))
     reference: String,
     @Transl(I(_.project_description.date))
     date: String,

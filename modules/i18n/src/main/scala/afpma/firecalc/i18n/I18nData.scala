@@ -626,7 +626,7 @@ object I18nData:
     )
 
     case class ProjectDescription(
-        reference: String,
+        reference_and_filename: String,
         date: String,
         country: String
     )
