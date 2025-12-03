@@ -80,14 +80,14 @@ final case class DaisyUIVerticalAccordionAndJoin(
             idx = 0,
             title = Title.WithTitleOnly(
                 I18N.panels.client_project,
-                xtra_sig = project_descr_var.signal.map: prj =>
+                xtra_sig = project_descr_var.signal.combineWith(filename_var.signal).map: (prj, fname) =>
                     div(cls := "flex flex-row max-w-3/4",
                         div(cls := "flex-auto w-60",
                             text <-- clientProjectDataVar.signal.map { cpd =>
                                 s"${cpd.customer.first_name} ${cpd.customer.last_name}"
                             },
                         ),
-                        div(cls := "flex-auto w-60", prj.reference),
+                        div(cls := "flex-auto w-60", fname),
                         div(cls := "flex-none w-42", prj.date),
                     ).some
             ),
