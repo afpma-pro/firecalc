@@ -302,7 +302,8 @@ object DaisyUIVerticalAccordionAndJoin:
                             cls := "text-base-content/50 text-end",
                             mods,
                             valueString
-                        )
+                        ),
+                        ttPosition = "tooltip-bottom",
                     )
                 )
     end Title
