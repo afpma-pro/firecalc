@@ -24,7 +24,10 @@ import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.utils.*
 
+import io.taig.babel.{Locale, Locales}
 import afpma.firecalc.i18n.I
+import afpma.firecalc.i18n.I18nData
+import afpma.firecalc.i18n.implicits.{given, *}
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
@@ -41,6 +44,9 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
 
     import AddElement_15544.*
     import SetProp_15544.*
+    
+    // I18N with English locale for validation messages
+    private val i18n_en: I18nData = I18Ns(Locales.en)
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] = afpma.firecalc.engine.models.en15544.pipedescr.hasInnerShapeAtPos
     override given hasLength: HasLength[PipeElDescr] = afpma.firecalc.engine.models.en15544.pipedescr.hasLength
@@ -163,8 +169,8 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
     object ElementFactory extends ElementFactoryModule {
 
         val mkStraightSection2: MakeFor[AddSectionSlopped | AddSectionHorizontal | AddSectionVertical, StraightSection] = { op =>
-            val vg = ctxState.getValidated(_.geometry, s"geometry should be set ('${op.name}')")
-            val vr = ctxState.getValidated(_.roughness, s"roughness should be set ('${op.name}')")
+            val vg = ctxState.getValidated(_.geometry, i18n_en.incremental_validation.property_must_be_set.geometry(op.name))
+            val vr = ctxState.getValidated(_.roughness, i18n_en.incremental_validation.property_must_be_set.roughness(op.name))
 
             val (len, elev_gain) = op match
                 case AddSectionSlopped(_, len, elev_gain)    => (len        , elev_gain)
@@ -187,7 +193,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
             @nowarn nextSectionLength: Option[Length]
         ): MakeFor[AddDirectionChange, DirectionChange] = 
             op =>
-                ctxState.getValidated(_.geometry.map(_.dh), "section geometry should be defined before adding a change in direction")
+                ctxState.getValidated(_.geometry.map(_.dh), i18n_en.incremental_validation.prerequisites.direction_change_requires_section_geometry)
                     .map: _ =>
                         op match
                             case AddSharpeAngle_0_to_180(_, angle, angleN2) => 
@@ -207,9 +213,9 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                 }
 
                 if (sectionGeometryChanged)
-                    "you can not 'set' a specific section geometry, right before defining a specific 'change' in geometry".invalid.toValidatedNel
+                    i18n_en.incremental_validation.conflicts.cannot_set_geometry_before_change.invalid.toValidatedNel
                 else
-                    ctxState.getValidated(_.geometry, "section geometry should be defined")
+                    ctxState.getValidated(_.geometry, i18n_en.incremental_validation.property_must_be_defined.section_geometry)
                         .map: fromGeom =>
                             SectionGeometryChange(
                                 from = fromGeom,
@@ -220,8 +226,8 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
             op => op match
                 case AddFlowResistance(name, zeta, NoneOfEither) =>
                     ctxState
-                        .getValidated(_.geometry, 
-                            s"geometry unknown: can not define singular flow resistance '${op.name}' unless cross section area is defined manually: use 'addFlowResistance(name, zeta, crossSectionArea)'")
+                        .getValidated(_.geometry,
+                            i18n_en.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op.name))
                         .andThen: geom =>
                             SingularFlowResistance(zeta, crossSectionO = Some(geom.area)).validNel
                 case AddFlowResistance(name, zeta, SomeLeft(area)) =>

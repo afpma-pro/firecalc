@@ -8,6 +8,7 @@ package afpma.firecalc.i18n
 import afpma.firecalc.i18n.I18nData.*
 
 import io.taig.babel.*
+import io.taig.babel.{StringFormat1, StringFormat2, StringFormat3, StringFormat4}
 
 trait LocalizedAlg:
     val language: Language
@@ -66,7 +67,8 @@ final case class I18nData(
     area_name: String,
     area_heating_status: AreaHeatingStatus,
     reports: Reports,
-    warnings: Warnings
+    warnings: Warnings,
+    incremental_validation: IncrementalValidation
 )
 
 object I18nData:
@@ -767,3 +769,42 @@ object I18nData:
     case class Warnings(
         firebox_afpma_prse_not_validated: String
     )
+
+    case class IncrementalValidation(
+        _self: String,
+        property_must_be_set: IncrementalValidation.PropertyMustBeSet,
+        property_must_be_defined: IncrementalValidation.PropertyMustBeDefined,
+        prerequisites: IncrementalValidation.Prerequisites,
+        conflicts: IncrementalValidation.Conflicts
+    )
+    
+    object IncrementalValidation:
+        case class PropertyMustBeSet(
+            inner_geometry: StringFormat1,
+            outer_geometry: StringFormat1,
+            geometry: StringFormat1,
+            roughness: StringFormat1,
+            layers: StringFormat1,
+            air_space_after_layers: StringFormat1,
+            pipe_location: StringFormat1,
+            duct_type: StringFormat1
+        )
+        
+        case class PropertyMustBeDefined(
+            section_geometry: String,
+            next_section_length: String
+        )
+        
+        case class Prerequisites(
+            thickness_requires_inner_geometry: String,
+            layer_requires_section_geometry: String,
+            layers_require_inner_shape: String,
+            direction_change_requires_section_geometry: String
+        )
+        
+        case class Conflicts(
+            cannot_set_geometry_before_change: String,
+            section_change_requires_circle: StringFormat1,
+            flow_resistance_requires_geometry: StringFormat1,
+            flow_resistance_requires_geometry_15544: StringFormat1
+        )

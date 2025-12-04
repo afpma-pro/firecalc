@@ -64,6 +64,12 @@ object implicits {
     given Decoder[I18nData.Reports]                         = deriveDecoder[I18nData.Reports]
     given Decoder[I18nData.Warnings]                        = deriveDecoder[I18nData.Warnings]
     
+    given Decoder[I18nData.IncrementalValidation.PropertyMustBeSet]     = deriveDecoder[I18nData.IncrementalValidation.PropertyMustBeSet]
+    given Decoder[I18nData.IncrementalValidation.PropertyMustBeDefined] = deriveDecoder[I18nData.IncrementalValidation.PropertyMustBeDefined]
+    given Decoder[I18nData.IncrementalValidation.Prerequisites]         = deriveDecoder[I18nData.IncrementalValidation.Prerequisites]
+    given Decoder[I18nData.IncrementalValidation.Conflicts]             = deriveDecoder[I18nData.IncrementalValidation.Conflicts]
+    given Decoder[I18nData.IncrementalValidation]                       = deriveDecoder[I18nData.IncrementalValidation]
+    
     given Decoder[I18nData]                                 = deriveDecoder[I18nData]
 
     given I18N: (loc: Locale) => I18nData = I18Ns(loc)
