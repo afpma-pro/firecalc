@@ -26,21 +26,18 @@ case class DaisyUITooltip(
 ) extends Component:
 
     private val isVisible = Var(false)
-    private val rectVar   = Var(Option.empty[dom.DOMRect])
-
-    // Portal state
-    private var portalRoot: Option[RootNode]  = None
-    private val portalContainer: dom.html.Div = dom.document.createElement("div").asInstanceOf[dom.html.Div]
 
     lazy val node =
         span(
             cls := "relative inline-block",
-            onMountCallback { ctx =>
-                val owner     = ctx.owner
+            onMouseEnter --> { _ => isVisible.set(true) },
+            onMouseLeave --> { _ => isVisible.set(false) },
+            onMountBind { ctx =>
                 val triggerEl = ctx.thisNode.ref
+                val rectVar   = Var(Option.empty[dom.DOMRect])
+                val container = dom.document.createElement("div").asInstanceOf[dom.html.Div]
+                var root      = Option.empty[RootNode]
 
-                // The portal content mimics the trigger element's position but lives in body
-                // We apply the tooltip classes here so DaisyUI styles render correctly
                 val tooltipProxy = div(
                     cls := s"tooltip tooltip-open $ttStyle $ttPosition",
                     styleAttr <-- rectVar.signal.map {
@@ -54,31 +51,25 @@ case class DaisyUITooltip(
                     )
                 )
 
-                isVisible.signal.distinct.foreach { visible =>
+                val cleanup = () =>
+                    root.foreach(_.unmount())
+                    root = None
+                    if dom.document.body.contains(container) then dom.document.body.removeChild(container)
+
+                // Register cleanup with the owner
+                val _ = new com.raquo.airstream.ownership.Subscription(ctx.owner, cleanup)
+
+                isVisible.signal.distinct --> { visible =>
                     if visible then
-                        // Update position when showing
                         rectVar.set(Some(triggerEl.getBoundingClientRect()))
-
-                        if !dom.document.body.contains(portalContainer) then
-                            dom.document.body.appendChild(portalContainer)
-
-                        if portalRoot.isEmpty then
-                            portalRoot = Some(render(portalContainer, tooltipProxy))
+                        if !dom.document.body.contains(container) then dom.document.body.appendChild(container)
+                        if root.isEmpty then root = Some(render(container, tooltipProxy))
                     else
                         rectVar.set(None)
-                        portalRoot.foreach(_.unmount())
-                        portalRoot = None
-                        if dom.document.body.contains(portalContainer) then
-                            dom.document.body.removeChild(portalContainer)
-                }(using owner)
+                        root.foreach(_.unmount())
+                        root = None
+                        if dom.document.body.contains(container) then dom.document.body.removeChild(container)
+                }
             },
-            onUnmountCallback { _ =>
-                portalRoot.foreach(_.unmount())
-                portalRoot = None
-                if dom.document.body.contains(portalContainer) then
-                    dom.document.body.removeChild(portalContainer)
-            },
-            onMouseEnter --> { _ => isVisible.set(true) },
-            onMouseLeave --> { _ => isVisible.set(false) },
             element
         )
