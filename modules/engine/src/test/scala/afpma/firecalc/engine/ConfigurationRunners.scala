@@ -32,8 +32,12 @@ import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_Alg
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_MCE_Alg
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Labo_Alg
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+import io.taig.babel.Locale
+import io.taig.babel.Locales
 
 trait ConfigurationRunners extends AnyFreeSpec with Matchers {
+
+    given Locale = Locales.en // acceptable to force Locale in tests
 
     private def showForMCEComparisonWithLabData[_Inputs <: Inputs[?]](ex: StoveProjectDescr_Alg, _en15544: EN15544_V_2023_Common_Application[_Inputs])(using p: _en15544.Params_15544) = 
 
@@ -146,7 +150,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
                 given _strict.Params_15544 = (pReq, nominal)
                 showDetailedNoteAsText(ex_15544_strict, _strict)
             out.fold(
-                nel => nel.toList.foreach(e => fail(e)), 
+                nel => nel.toList.foreach(e => fail(e.show)), 
                 _ => ()
             )
     end run_exercice_15544_strict
@@ -180,7 +184,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
             showDetailedNoteAsText(ex_15544_labo, mce_labo)
 
         out.fold(
-            nel => nel.toList.foreach(e => fail(e)), 
+            nel => nel.toList.foreach(e => fail(e.show)), 
             _ => ()
         )
     end run_15544_labo
@@ -194,7 +198,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
             given mce_labo.Params_15544 = (DraftCondition.DraftMaxOrPositivePressureMin, LoadQty.Nominal)  // tirage max ?
             showForMCEComparisonWithLabData(ex_15544_labo, mce_labo)
         out.fold(
-            nel => nel.toList.foreach(e => fail(e)), 
+            nel => nel.toList.foreach(e => fail(e.show)), 
             _ => ()
         )
     end run_15544_mce_for_lab_comparison

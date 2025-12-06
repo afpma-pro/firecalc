@@ -14,8 +14,7 @@ import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.gtypedefs.ζ
-import afpma.firecalc.engine.standard.FlueGasVelocityError
-import afpma.firecalc.engine.standard.FluePipeError
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 
 import afpma.firecalc.i18n.implicits.I18N
@@ -53,7 +52,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     type Elem = In
 
     lazy val titleString: String
-    lazy val vnel_signal: Signal[VNelString[Out]]
+    lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Out]]
     lazy val elems_v: Var[Seq[In]]
 
     type PipeIdsMapping
@@ -62,8 +61,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     override type XtraInputs  = (Option[PipeIdsMapping], Seq[PipeSectionResult[?]])
     override type XtraOutputs = Option[PipeSectionResult[?]]
 
-    lazy val pipeMappings_vnel_signal: Signal[VNelString[PipeIdsMapping]]
-    lazy val pipeResult_vnel_signal: Signal[VNelString[PipeResult]]
+    lazy val pipeMappings_vnel_signal: Signal[VNelMcalcErr[PipeIdsMapping]]
+    lazy val pipeResult_vnel_signal: Signal[VNelMcalcErr[PipeResult]]
 
     override lazy val xtras_input_sig: Signal[(Option[PipeIdsMapping], Seq[PipeSectionResult[?]])] = 
         pipeMappings_vnel_signal
@@ -166,13 +165,13 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     protected def renderIncrDescr(title: String, el: HtmlElement): HtmlElement = wrapLine(title, el)
 
     def statusIcon = vnel_signal.map:
-        case VNelString.Errors(errs) =>
+        case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
             DaisyUITooltip(
                 ttContent = 
                     ul(cls := "list",
                         li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
-                        errs.map: err =>
-                            li(cls := "list-row text-xs", err)
+                        errs.toList.map: err =>
+                            li(cls := "list-row text-xs", err.show)
                     ),
                 element = span(cls := "text-error", lucide.`circle-x`),
                 ttStyle = "tooltip-error",
@@ -258,17 +257,11 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             maxVel.showP_orImpUnits[Inch / Second],
         )
 
-    protected def filterAndMapFluePipeErrors(onlyFor: PipeType)(vnel: ValidatedNel[FluePipeError, Unit]): VNelString[Unit] = 
+    protected def filterAndMapFluePipeErrors(onlyFor: PipeType)(vnel: ValidatedNel[FluePipeError, Unit]): ValidatedNel[FluePipeError, Unit] = 
         vnel match
             case v @ Validated.Valid(_) => v
             case Validated.Invalid(nel) =>
-                val errorsLeft = nel
-                    .filter(_.sectionTyp == onlyFor)
-                    .map:
-                        // reformat errors here because we have access to display units
-                        case err: FlueGasVelocityError => showFlueGasVelocityError(err)
-                        // no need to reformat other kind of errors, no specfic units
-                        case err: FluePipeError => err.show
+                val errorsLeft = nel.filter(_.sectionTyp == onlyFor)
                 if (errorsLeft.nonEmpty) 
                     NonEmptyList.fromListUnsafe(errorsLeft).invalid
                 else

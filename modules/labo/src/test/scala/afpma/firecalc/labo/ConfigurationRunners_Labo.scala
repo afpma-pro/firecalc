@@ -350,7 +350,7 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
             given mce_labo.Params_15544 = (DraftCondition.DraftMaxOrPositivePressureMin, LoadQty.Nominal)  // tirage max ?
             showForMCEComparisonWithLabData(ex_15544_labo, mce_labo)
         out.fold(
-            nel => nel.toList.foreach(e => fail(e)), 
+            nel => nel.toList.foreach(e => fail(e.show)), 
             _ => ()
         )
     end run_15544_mce_for_lab_comparison

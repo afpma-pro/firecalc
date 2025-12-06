@@ -6,6 +6,8 @@
 package afpma.firecalc.engine.cas_types
 
 
+import cats.implicits.toShow
+
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
@@ -17,8 +19,12 @@ import afpma.firecalc.engine.models.en15544.std.Inputs
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.engine.api.v0_2024_10
+import io.taig.babel.Locale
+import io.taig.babel.Locales
 
 trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
+
+    given Locale = Locales.en // acceptable to force Locale in tests
 
     private def showDebug[_Inputs <: Inputs[?]](
         cas_type: v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg, 
@@ -141,7 +147,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
             given _strict.Params_15544 = (pReq, nominal)
             showDebug(cas_type, _strict)
         out.fold(
-            nel => nel.toList.foreach(e => fail(e)), 
+            nel => nel.toList.foreach(e => fail(e.show)), 
             _ => ()
         )
     end run_cas_type_15544_strict

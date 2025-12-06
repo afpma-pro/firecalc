@@ -21,8 +21,11 @@ import io.taig.babel.{Locale, Locales}
 import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
 import cats.data.NonEmptyList
 import afpma.firecalc.engine.models.TermConstraintError
+import cats.data.ValidatedNel
 
 object standard {
+
+    type VNelMcalcErr[X] = ValidatedNel[MCalc_Error, X]
 
     sealed trait MCalc_Error
 

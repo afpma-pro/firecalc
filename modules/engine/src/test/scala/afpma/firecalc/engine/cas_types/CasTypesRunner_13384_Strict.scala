@@ -12,6 +12,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.alg.en13384.Params_13384
@@ -25,6 +26,8 @@ import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.impl.en13384.EN13384_Strict_Application
 import cats.Show
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import io.taig.babel.Locale
+import io.taig.babel.Locales
 
 case class CasType13384_Results(
     results: List[CasType13384_Result]
@@ -112,6 +115,8 @@ object CasType13384_Result:
 
 trait CasTypesRunner_13384 extends AnyFreeSpec with Matchers:
 
+    given Locale = Locales.en // acceptable to force Locale in tests
+
     def compute_and_show_results(
         ex: v2024_10_Alg & v0_2024_10.StoveProjectDescr_EN13384_Strict_Alg,
         compareTo: CasType13384_Result,
@@ -139,7 +144,7 @@ trait CasTypesRunner_13384 extends AnyFreeSpec with Matchers:
             println(results.showAsCliTable)
             
         out.fold(
-            nel => nel.toList.foreach(e => fail(e)), 
+            nel => nel.toList.foreach(e => fail(e.show)), 
             _ => ()
         )
 
@@ -260,7 +265,7 @@ trait CasTypesRunner_13384 extends AnyFreeSpec with Matchers:
             seperate_tables
 
         out.fold(
-            nel => nel.toList.foreach(e => fail(e)), 
+            nel => nel.toList.foreach(e => fail(e.show)), 
             _ => ()
         )
 end CasTypesRunner_13384

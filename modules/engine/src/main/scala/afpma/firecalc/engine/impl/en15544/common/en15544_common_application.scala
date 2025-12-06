@@ -51,7 +51,7 @@ import coulomb.ops.standard.all.{*, given}
 import coulomb.ops.algebra.all.{*, given}
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.standard.MecaFlu_Error
-import afpma.firecalc.engine.models.en15544.typedefs.CitedConstraints.checkAndReturnVNelString
+import afpma.firecalc.engine.models.en15544.typedefs.CitedConstraints.checkAndReturnVNelInvalidConstraint
 import io.taig.babel.Locales
 
 

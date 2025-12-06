@@ -38,13 +38,10 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     val channel_pipe_vnel2_signal = results_en15544_strict_sig.map: strict => 
         import cats.syntax.show.*
-        strict.andThen(_
-            .validateFluePipeShape()
-            .leftMap(_.map(_.show))
-        )
+        strict.andThen(_.validateFluePipeShape())
 
     val channel_pipe_vnel3_signal = results_en15544_channel_pipe.map: p_vnel =>
-        p_vnel.andThen(p => p.`ph-(pR+pu)`.asVNelString)
+        p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
     val channel_pipe_vnel4_signal = results_en15544_strict_sig.map: strict => 
         val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)

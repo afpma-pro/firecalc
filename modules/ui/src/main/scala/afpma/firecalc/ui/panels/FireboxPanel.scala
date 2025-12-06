@@ -8,6 +8,7 @@ package afpma.firecalc.ui.panels
 import cats.data.*
 import cats.implicits.toShow
 import cats.syntax.option.catsSyntaxOptionId
+import cats.syntax.show.*
 
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.OneOff
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Tested
@@ -37,7 +38,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
         val mB = strict.m_B
         strict.inputs.design.firebox match
             case _: Tested => ().validNel
-            case oo: OneOff => oo.validate(mB).leftMap(_.map(_.show))
+            case oo: OneOff => oo.validate(mB)
     ))
 
     lazy val vnel_signal = 
@@ -66,7 +67,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                     .combineWith(citedConstraintsValidation_sig)
                     .combineWith(vnel_signal)
                     .map: (cc, citedCons, vnel) =>
-                        val statusCons = citedCons.andThen(_.checkAndReturnVNelString) match
+                        val statusCons = citedCons.andThen(_.checkAndReturnVNelInvalidConstraint) match
                             case Validated.Valid(_)      => div(lucide.`circle-check`)
                             case Validated.Invalid(errs) => 
                                 DaisyUITooltip(
@@ -74,7 +75,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                         ul(cls := "list",
                                             li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
                                             errs.toList.toSeq.map: err =>
-                                                li(cls := "list-row text-xs", err)
+                                                li(cls := "list-row text-xs", err.show)
                                         ),
                                     element = span(cls := "text-error", lucide.`circle-x`),
                                     ttStyle = "tooltip-error",
@@ -88,7 +89,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                         ul(cls := "list",
                                             li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
                                             errs.toList.toSeq.map: err =>
-                                                li(cls := "list-row text-xs", err)
+                                                li(cls := "list-row text-xs", err.show)
                                         ),
                                     element = span(cls := "text-error", lucide.`circle-x`),
                                     ttStyle = "tooltip-error",

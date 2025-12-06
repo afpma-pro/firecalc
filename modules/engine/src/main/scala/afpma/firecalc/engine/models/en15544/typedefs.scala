@@ -40,6 +40,8 @@ import io.taig.babel.Locale
 import magnolia1.Transl
 import cats.data.ValidatedNel
 import afpma.firecalc.engine.models.TermConstraintError
+import afpma.firecalc.engine.models.TermConstraint.ValidatedResult
+import afpma.firecalc.engine.standard.MecaFlu_Error.InvalidConstraint
 
 object typedefs:
 
@@ -504,18 +506,20 @@ object typedefs:
                 ).flatten.map(_.toList).flatten
                 if (outputs.size > 0) NonEmptyList.fromListUnsafe(outputs).invalid else ().validNel
             
-            def checkAndReturnVNelString: Locale ?=> VNelString[Unit] = 
+            def checkAndReturnVNelInvalidConstraint: Locale ?=> ValidatedNel[InvalidConstraint, Unit] = 
                 import cats.implicits.catsSyntaxValidatedId
+                import cats.syntax.all.*
+                import afpma.firecalc.engine.models.TermConstraint.ValidatedResult.foldToErr
                 val outputs = List(
-                    cc.t_n.vresultOption                         .flatMap(_.showIfInvalid),
-                    cc.m_B.vresultOption                         .flatMap(_.showIfInvalid),
-                    cc.m_B_min.vresultOption                     .flatMap(_.showIfInvalid),
-                    cc.glass_area.vresultOption                  .flatMap(_.showIfInvalid),
-                    cc.fireboxDimensions_Base.vresultOption      .flatMap(_.showIfInvalid),
-                    cc.h_br.vresultOption                        .flatMap(_.showIfInvalid),
-                    cc.λ.vresultOption                           .flatMap(_.showIfInvalid),
-                    cc.η.vresultOption                           .flatMap(_.showIfInvalid),
-                ).flatten
+                    cc.t_n.vresultOption                         .flatMap(_.foldToErr),
+                    cc.m_B.vresultOption                         .flatMap(_.foldToErr),
+                    cc.m_B_min.vresultOption                     .flatMap(_.foldToErr),
+                    cc.glass_area.vresultOption                  .flatMap(_.foldToErr),
+                    cc.fireboxDimensions_Base.vresultOption      .flatMap(_.foldToErr),
+                    cc.h_br.vresultOption                        .flatMap(_.foldToErr),
+                    cc.λ.vresultOption                           .flatMap(_.foldToErr),
+                    cc.η.vresultOption                           .flatMap(_.foldToErr),
+                ).flatten.flatten
                 if (outputs.size > 0) NonEmptyList.fromListUnsafe(outputs).invalid else ().validNel
                 
 

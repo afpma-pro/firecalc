@@ -26,13 +26,13 @@ final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePa
     lazy val titleString = I18N.panels.connector_pipe
 
     val connector_pipe_vnel2_signal = results_en15544_connector_pipe.map: p_vnel =>
-        p_vnel.andThen(p => p.`ph-(pR+pu)`.asVNelString)
+        p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
     val connector_pipe_vnel3_signal = results_en15544_strict_sig.map: strict => 
         val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
         strict.andThen(s =>
             val vnel = s.validateVelocitiesInConnectorPipe()(using p)
-            filterAndMapFluePipeErrors(onlyFor = ConnectorPipeT)(vnel).asVNelString
+            filterAndMapFluePipeErrors(onlyFor = ConnectorPipeT)(vnel)
         )
 
     lazy val vnel_signal = 

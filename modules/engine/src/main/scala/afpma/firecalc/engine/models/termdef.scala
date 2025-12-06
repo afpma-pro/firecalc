@@ -20,6 +20,8 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.units.coulombutils.showP
 import io.taig.babel.Locale
+import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.MecaFlu_Error.InvalidConstraint
 
 // TermDef
 
@@ -147,6 +149,13 @@ object TermConstraint:
 
         extension [O](vr: ValidatedResult[O])
             def unwrap: ValidatedNel[TermConstraintError[O], O] = vr
+            
+            def foldToErr: Option[List[InvalidConstraint]] = 
+                if (vr.isInvalid) 
+                    Some(vr.swap.toOption.get.map(InvalidConstraint(_)).toList)
+                else 
+                    None
+
             def showInvalidConstraintErrors: Option[List[TermConstraintError[O]]] = 
                 if (vr.isInvalid) 
                     Some(vr.swap.toOption.get.toList)

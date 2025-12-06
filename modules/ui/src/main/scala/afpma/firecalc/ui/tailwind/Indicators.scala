@@ -38,24 +38,24 @@ final case class Indicators()(using Locale, DisplayUnits)
 
             Indicator(
                 Seq(
-                    (IndicatorConfig.green, pc_sig.mapAndFoldVNel(_.isInValidRange, false)),
-                    (IndicatorConfig.sky,   pc_sig.mapAndFoldVNel(_.isTooMuchDraft, false)),
-                    (IndicatorConfig.rose,  pc_sig.mapAndFoldVNel(_.isTooMuchResistance, false))
+                    (IndicatorConfig.green, pc_sig.mapAndFoldVNelE(_.isInValidRange, false)),
+                    (IndicatorConfig.sky,   pc_sig.mapAndFoldVNelE(_.isTooMuchDraft, false)),
+                    (IndicatorConfig.rose,  pc_sig.mapAndFoldVNelE(_.isTooMuchResistance, false))
                 )
                 ,
                 title = p(I18N_UI.indicators.equilibrium),
-                subtitle_sig = pc_sig.mapAndFoldVNel(x => 
+                subtitle_sig = pc_sig.mapAndFoldVNelE(x => 
                     s"${x.`current-min`.showP} / ${x.`current-max`.showP}", 
                     "- / -"
                 )
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-54",
-                    span(cls := "pr-2", text <-- pc_sig.mapAndFoldVNel(_.min.showP, "-")),
+                    span(cls := "pr-2", text <-- pc_sig.mapAndFoldVNelE(_.min.showP, "-")),
                     span("<"),
-                    span(cls := "px-2", text <-- pc_sig.mapAndFoldVNel(_.current.showP, "-")),
+                    span(cls := "px-2", text <-- pc_sig.mapAndFoldVNelE(_.current.showP, "-")),
                     span("<"),
-                    span(cls := "pl-2", text <-- pc_sig.mapAndFoldVNel(_.max.showP, "-"))
+                    span(cls := "pl-2", text <-- pc_sig.mapAndFoldVNelE(_.max.showP, "-"))
                 )
             ),
 
@@ -72,7 +72,7 @@ final case class Indicators()(using Locale, DisplayUnits)
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-24",
-                    text <-- eff_and_min_eff.map((vn, _) => vn).mapAndFoldVNel(_.showP, "-")
+                    text <-- eff_and_min_eff.map((vn, _) => vn).mapAndFoldVNelE(_.showP, "-")
                 )
             ),
 
@@ -86,7 +86,7 @@ final case class Indicators()(using Locale, DisplayUnits)
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-32",
-                    text <-- results_en15544_estimated_output_temperatures.mapAndFoldVNel(
+                    text <-- results_en15544_estimated_output_temperatures.mapAndFoldVNelE[String](
                         _.t_stove_out.showP_orImpUnitsTemp[Fahrenheit], 
                         "-"
                     )
@@ -107,7 +107,7 @@ final case class Indicators()(using Locale, DisplayUnits)
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-48",
-                    text <-- results_en15544_estimated_output_temperatures.mapAndFoldVNel(_.t_chimney_wall_top_out.showP_orImpUnitsTemp[Fahrenheit], "-")
+                    text <-- results_en15544_estimated_output_temperatures.mapAndFoldVNelE(_.t_chimney_wall_top_out.showP_orImpUnitsTemp[Fahrenheit], "-")
                 )
             )
         )

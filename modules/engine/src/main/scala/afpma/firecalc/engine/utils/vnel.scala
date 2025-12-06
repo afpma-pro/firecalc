@@ -12,6 +12,7 @@ import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.*
 
+
 extension [E, A](e: Either[E, A])
     def toValidatedNel: ValidatedNel[E, A] =
         e.fold(_.invalidNel[A], _.validNel[E])

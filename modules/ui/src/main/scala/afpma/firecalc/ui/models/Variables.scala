@@ -11,6 +11,7 @@ import cats.implicits.catsSyntaxOptionId
 import cats.implicits.toShow
 
 import cats.data.Validated.Valid
+import cats.data.ValidatedNel
 import cats.implicits.catsSyntaxTuple2Semigroupal
 
 import afpma.firecalc.units.coulombutils.{*, given}
@@ -31,6 +32,7 @@ import com.raquo.airstream.web.WebStorageVar
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.LoadQty
+import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.utils.*
@@ -229,7 +231,7 @@ def run_en15544_strict[X](using
     run(using p)
 
 lazy val results_en15544_strict_sig
-    : Signal[VNelString[EN15544_Strict_Application]] =
+    : Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =
     appStateHelperVar.signal
         // emits at most once during interval (prevent too much computing)
         // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
@@ -238,28 +240,28 @@ lazy val results_en15544_strict_sig
 
 lazy val en15544_strict_validate_results: Signal[Boolean] =
     results_en15544_strict_sig
-        .mapAndFoldVNel(
+        .mapAndFoldVNelE(
             _.validateResults.fold(nel => false, _ => true),
             default = false
         )
 
 lazy val results_en13384_sig
-    : Signal[VNelString[EN13384_1_A1_2019_Common_Application]] =
+    : Signal[VNelMcalcErr[EN13384_1_A1_2019_Common_Application]] =
     results_en15544_strict_sig.signal.map: strict_15544 =>
         strict_15544.map(_.en13384_application)
 
 lazy val results_en15544_pressure_requirements
-    : Signal[VNelString[PressureRequirement]] =
-    results_en15544_strict_sig.flatMapVNelString(strict =>
+    : Signal[VNelMcalcErr[PressureRequirement]] =
+    results_en15544_strict_sig.flatMapVNelE(strict =>
         val p = (
             DraftCondition.DraftMinOrPositivePressureMax,
             LoadQty.givens.nominal
         )
-        strict.pressureRequirement_EN15544(using p).asVNelString
+        strict.pressureRequirement_EN15544(using p)
     )
 
-lazy val results_en15544_outputs: Signal[VNelString[Outputs]] =
-    results_en15544_strict_sig.mapVNelString(strict =>
+lazy val results_en15544_outputs: Signal[VNelMcalcErr[Outputs]] =
+    results_en15544_strict_sig.mapVNelE(strict =>
         val p = (
             DraftCondition.DraftMinOrPositivePressureMax,
             LoadQty.givens.nominal
@@ -267,31 +269,31 @@ lazy val results_en15544_outputs: Signal[VNelString[Outputs]] =
         strict.outputs(using p)
     )
 
-lazy val results_en15544_air_intake_pipe: Signal[VNelString[PipeResult]] =
+lazy val results_en15544_air_intake_pipe: Signal[VNelMcalcErr[PipeResult]] =
     results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.airIntake).asVNelString)
+        outputs.andThen(_.pipesResult_15544.map(_.airIntake))
 
-lazy val results_en15544_combustion_air_pipe: Signal[VNelString[PipeResult]] =
+lazy val results_en15544_combustion_air_pipe: Signal[VNelMcalcErr[PipeResult]] =
     results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.combustionAir).asVNelString)
+        outputs.andThen(_.pipesResult_15544.map(_.combustionAir))
 
-lazy val results_en15544_firebox_pipe: Signal[VNelString[PipeResult]] =
+lazy val results_en15544_firebox_pipe: Signal[VNelMcalcErr[PipeResult]] =
     results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.firebox).asVNelString)
+        outputs.andThen(_.pipesResult_15544.map(_.firebox))
 
-lazy val results_en15544_channel_pipe: Signal[VNelString[PipeResult]]   =
+lazy val results_en15544_channel_pipe: Signal[VNelMcalcErr[PipeResult]]   =
     results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.flue).asVNelString)
-lazy val results_en15544_connector_pipe: Signal[VNelString[PipeResult]] =
+        outputs.andThen(_.pipesResult_15544.map(_.flue))
+lazy val results_en15544_connector_pipe: Signal[VNelMcalcErr[PipeResult]] =
     results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.connector).asVNelString)
-lazy val results_en15544_chimney_pipe: Signal[VNelString[PipeResult]]   =
+        outputs.andThen(_.pipesResult_15544.map(_.connector))
+lazy val results_en15544_chimney_pipe: Signal[VNelMcalcErr[PipeResult]]   =
     results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.chimney).asVNelString)
+        outputs.andThen(_.pipesResult_15544.map(_.chimney))
 
 lazy val results_en15544_estimated_output_temperatures
-    : Signal[VNelString[EstimatedOutputTemperatures]] =
-    results_en15544_strict_sig.mapVNelString(strict =>
+    : Signal[VNelMcalcErr[EstimatedOutputTemperatures]] =
+    results_en15544_strict_sig.mapVNelE(strict =>
         val p = (
             DraftCondition.DraftMinOrPositivePressureMax,
             LoadQty.givens.nominal
@@ -301,20 +303,19 @@ lazy val results_en15544_estimated_output_temperatures
 
 // TODO: retrieve 45°C from standard / engine. Do not hardcode it here. UI should not have knowledge of this.
 lazy val tChimneyWallToOutAbove45_sig: Signal[Boolean] =
-    results_en15544_strict_sig.flatMapAndFoldVNel(
+    results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
             val p = strict.runValidationAtParams
             strict
                 .validateChimneyWallTempIsAbove45DegreesCelsius()(using p)
                 .map(_ => true)
-                .asVNelString
         ,
         default = false
     )
 
 lazy val results_en15544_t_chimney_wall_top
-    : Signal[VNelString[t_chimney_wall_top]] =
-    results_en15544_strict_sig.mapVNelString(strict =>
+    : Signal[VNelMcalcErr[t_chimney_wall_top]] =
+    results_en15544_strict_sig.mapVNelE(strict =>
         val p = (
             DraftCondition.DraftMinOrPositivePressureMax,
             LoadQty.givens.nominal
@@ -322,8 +323,8 @@ lazy val results_en15544_t_chimney_wall_top
         strict.t_chimney_wall_top(using p)
     )
 
-lazy val results_en15544_efficiency: Signal[VNelString[η]] =
-    results_en15544_strict_sig.mapVNelString(strict =>
+lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
+    results_en15544_strict_sig.mapVNelE(strict =>
         val p = (
             DraftCondition.DraftMinOrPositivePressureMax,
             LoadQty.givens.nominal
@@ -332,29 +333,28 @@ lazy val results_en15544_efficiency: Signal[VNelString[η]] =
     )
 
 lazy val eff_and_min_eff
-    : Signal[(VNelString[Percentage], VNelString[Option[Percentage]])] =
+    : Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[Percentage]])] =
     results_en15544_efficiency
         .combineWith(results_en15544_emissions_and_efficiency_values)
         .map((eff, eev) => (eff, eev.map(_.min_efficiency_full_stove_nominal)))
 
 lazy val effInRange_sig: Signal[Boolean] =
-    results_en15544_strict_sig.flatMapAndFoldVNel(
+    results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
             val p = strict.runValidationAtParams
             strict
                 .validateEfficiencyIsAboveMinEfficiency()(using p)
                 .map(_ => true)
-                .asVNelString
         ,
         false
     )
 
 lazy val results_en15544_emissions_and_efficiency_values
-    : Signal[VNelString[EmissionsAndEfficiencyValues]] =
-    results_en15544_strict_sig.mapVNelString(_.emissions_and_efficiency_values)
+    : Signal[VNelMcalcErr[EmissionsAndEfficiencyValues]] =
+    results_en15544_strict_sig.mapVNelE(_.emissions_and_efficiency_values)
 
 def makeQuadrionSubtotalForSingle(
-    outputsSig: Signal[VNelString[Outputs]]
+    outputsSig: Signal[VNelMcalcErr[Outputs]]
 )(
     toPipeResult: PipesResult_15544 => PipeResult
 )(using Locale): Signal[Option[QuadrionSubtotal]] =
@@ -375,7 +375,7 @@ def makeQuadrionSubtotalForSingle(
         case _                        => None
 
 def makeQuadrionSubtotalForFirebox(
-    outputsSig: Signal[VNelString[Outputs]]
+    outputsSig: Signal[VNelMcalcErr[Outputs]]
 )(
     to_cc_intlair_pres: PipesResult_15544 => PipeResult,
     to_cc_firebox_pres: PipesResult_15544 => PipeResult
@@ -420,12 +420,12 @@ val expertModeOff = expertModeOn.map(!_)
 
 // contraints / error validation for firebox
 
-val citedConstraintsValidation_sig: Signal[VNelString[CitedConstraints]] =
-    results_en15544_strict_sig.mapVNelString(_.citedConstraints)
+val citedConstraintsValidation_sig: Signal[VNelMcalcErr[CitedConstraints]] =
+    results_en15544_strict_sig.mapVNelE(_.citedConstraints)
 
 // pour récupérer les erreurs de type AngleN2 missing etc...
 val air_intake_pipe_vnel2_signal = results_en15544_air_intake_pipe.map:
-    p_vnel => p_vnel.andThen(p => p.`ph-(pR+pu)`.asVNelString)
+    p_vnel => p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
 // pressure final calc ok ?
 val firebox_vnel2_signal =
@@ -441,11 +441,11 @@ val firebox_vnel3_signal = results_en15544_strict_sig.map(_.andThen(strict =>
     given Locale = localeVar.now()
     given p: strict.Params_15544 = strict.Params_15544.DraftMin_LoadNominal
     strict.validate_injectors_air_velocity.toOption
-        .map(f => f.leftMap(_.map(_.show)))
+        .map(f => f)
         .getOrElse(().validNel)
 ))
 
-val en13384_P_L_sig: Signal[VNelString[P_L]] =
+val en13384_P_L_sig: Signal[VNelMcalcErr[P_L]] =
     results_en13384_sig.map(_.map(_.P_L))
 
 // Build a Signal saying when all conditions / constraints are met
