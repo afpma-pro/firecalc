@@ -23,11 +23,7 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.utils.*
-
-import io.taig.babel.{Locale, Locales}
-import afpma.firecalc.i18n.I
-import afpma.firecalc.i18n.I18nData
-import afpma.firecalc.i18n.implicits.{given, *}
+import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
@@ -44,9 +40,6 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
 
     import AddElement_15544.*
     import SetProp_15544.*
-    
-    // I18N with English locale for validation messages
-    private val i18n_en: I18nData = I18Ns(Locales.en)
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] = afpma.firecalc.engine.models.en15544.pipedescr.hasInnerShapeAtPos
     override given hasLength: HasLength[PipeElDescr] = afpma.firecalc.engine.models.en15544.pipedescr.hasLength
@@ -111,9 +104,9 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
         val (idIncr, addElementOp) = id_addElementOp
         val elIdx = PipeIdx(prevs.elems.size)
-        extension (vnelEl: VNelString[PipeElDescr]) def asNonEmptyList = vnelEl.map(el => NonEmptyList.one((elIdx, None, el)))
+        extension (vnelEl: ValidatedNel[IncrementalValidation_Error, PipeElDescr]) def asNonEmptyList = vnelEl.map(el => NonEmptyList.one((elIdx, None, el)))
         val prevInnerGeomO = prevs.lastInnerGeom
-        val vels: VNelString[NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] = addElementOp match
+        val vels: ValidatedNel[IncrementalValidation_Error, NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] = addElementOp match
             case op: (AddSectionSlopped | AddSectionHorizontal | AddSectionVertical) =>                 
                 ElementFactory.mkStraightSection2(op).andThen: s =>
                     prevInnerGeomO match
@@ -121,7 +114,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                         case Some(prevInnerGeom) if (prevInnerGeom == s.geometry) => NonEmptyList.one((elIdx, None, s)).validNel
                         case Some(prevInnerGeom) => 
                             val sectGeomCh = SectionGeometryChange(from = prevInnerGeom, to = s.geometry)
-                            NonEmptyList((elIdx, Some("sect° geom change"), sectGeomCh), (elIdx.incr(1), None, s) :: Nil).validNel[String]
+                            NonEmptyList((elIdx, Some("sect° geom change"), sectGeomCh), (elIdx.incr(1), None, s) :: Nil).validNel[IncrementalValidation_Error]
             case op: AddDirectionChange => 
                 ElementFactory.mkDirectionChange(convStep.nextSectionLengthOpt)(op).asNonEmptyList
             case op: AddSectionShapeChange =>
@@ -169,8 +162,8 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
     object ElementFactory extends ElementFactoryModule {
 
         val mkStraightSection2: MakeFor[AddSectionSlopped | AddSectionHorizontal | AddSectionVertical, StraightSection] = { op =>
-            val vg = ctxState.getValidated(_.geometry, i18n_en.incremental_validation.property_must_be_set.geometry(op.name))
-            val vr = ctxState.getValidated(_.roughness, i18n_en.incremental_validation.property_must_be_set.roughness(op.name))
+            val vg = ctxState.getValidated(_.geometry, GeometryMustBeSet(op.name))
+            val vr = ctxState.getValidated(_.roughness, RoughnessMustBeSet(op.name))
 
             val (len, elev_gain) = op match
                 case AddSectionSlopped(_, len, elev_gain)    => (len        , elev_gain)
@@ -193,7 +186,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
             @nowarn nextSectionLength: Option[Length]
         ): MakeFor[AddDirectionChange, DirectionChange] = 
             op =>
-                ctxState.getValidated(_.geometry.map(_.dh), i18n_en.incremental_validation.prerequisites.direction_change_requires_section_geometry)
+                ctxState.getValidated(_.geometry.map(_.dh), DirectionChangeRequiresSectionGeometry)
                     .map: _ =>
                         op match
                             case AddSharpeAngle_0_to_180(_, angle, angleN2) => 
@@ -213,9 +206,9 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                 }
 
                 if (sectionGeometryChanged)
-                    i18n_en.incremental_validation.conflicts.cannot_set_geometry_before_change.invalid.toValidatedNel
+                    CannotSetGeometryBeforeChange.invalidNel
                 else
-                    ctxState.getValidated(_.geometry, i18n_en.incremental_validation.property_must_be_defined.section_geometry)
+                    ctxState.getValidated(_.geometry, SectionGeometryMustBeDefined)
                         .map: fromGeom =>
                             SectionGeometryChange(
                                 from = fromGeom,
@@ -227,7 +220,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                 case AddFlowResistance(name, zeta, NoneOfEither) =>
                     ctxState
                         .getValidated(_.geometry,
-                            i18n_en.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op.name))
+                            FlowResistanceRequiresGeometry(op.name, "EN15544"))
                         .andThen: geom =>
                             SingularFlowResistance(zeta, crossSectionO = Some(geom.area)).validNel
                 case AddFlowResistance(name, zeta, SomeLeft(area)) =>

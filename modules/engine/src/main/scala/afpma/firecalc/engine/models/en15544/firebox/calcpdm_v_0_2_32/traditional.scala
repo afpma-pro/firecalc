@@ -70,7 +70,7 @@ object TraditionalFirebox_Module extends From_CalculPdM_V_0_2_32_Module:
     type FB = TraditionalFirebox
     
     extension (firebox: TraditionalFirebox) 
-        def toCombustionAirPipe_EN15544: ValidatedNel[String, CombustionAirPipe_Module_EN15544.FullDescr] = 
+        def toCombustionAirPipe_EN15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN15544.FullDescr] = 
             import CombustionAirPipe_Module_EN15544.*
             import firebox.*
             CombustionAirPipe_Module_EN15544.incremental
@@ -81,7 +81,7 @@ object TraditionalFirebox_Module extends From_CalculPdM_V_0_2_32_Module:
             )
             .toFullDescr().extractPipe
 
-        def toCombustionAirPipe_EN13384: ValidatedNel[String, CombustionAirPipe_Module_EN13384.FullDescr] = 
+        def toCombustionAirPipe_EN13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN13384.FullDescr] = 
             import CombustionAirPipe_Module_EN13384.*
             import firebox.*
             CombustionAirPipe_Module_EN13384.incremental

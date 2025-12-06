@@ -41,6 +41,11 @@ import afpma.firecalc.units.coulombutils.*
 import io.taig.babel.Language
 import io.taig.babel.Languages
 import afpma.firecalc.dto.FireCalcYAML
+import cats.data.ValidatedNel
+import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType
+import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType
 
 object v0_2024_10:
 
@@ -77,7 +82,7 @@ object v0_2024_10:
 
     sealed trait FluePipe_Alg:
         type FluePipeType <: FluePipe_EN15544 | FluePipe_EN13384
-        def fluePipe: VNelString[FluePipeType]
+        def fluePipe: ValidatedNel[IncrementalValidation_Error, FluePipeType]
 
     trait FluePipe_EN15544_Alg extends FluePipe_Alg:
         type FluePipeType = FluePipe_EN15544
@@ -91,8 +96,8 @@ object v0_2024_10:
         type CombustionAirPipe
         type FireboxPipe
 
-        def combustionAirPipe: VNelString[CombustionAirPipe]
-        def fireboxPipe: VNelString[FireboxPipe]
+        def combustionAirPipe: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe]
+        def fireboxPipe: ValidatedNel[IncrementalValidation_Error, FireboxPipe]
 
     trait Firebox_EN15544_Strict_Alg extends Firebox_15544_Alg:
         type CombustionAirPipe  = CombustionAirPipe_Module_EN15544.FullDescr
@@ -184,13 +189,13 @@ object v0_2024_10:
         def en13384NationalAcceptedData: NationalAcceptedData = 
             NationalAcceptedData.noOverride
 
-        def airIntakePipe: VNelString[AirIntakePipe]
+        def airIntakePipe: ValidatedNel[IncrementalValidation_Error, AirIntakePipe]
 
-        def connectorPipe: VNelString[ConnectorPipe]
+        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]
 
-        def chimneyPipe: VNelString[ChimneyPipe]
+        def chimneyPipe: ValidatedNel[IncrementalValidation_Error, ChimneyPipe]
 
-        def en13384_pipesVNel: VNelString[Pipes_EN13384] = 
+        def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_EN13384] = 
             (
                 airIntakePipe,
                 connectorPipe,
@@ -203,7 +208,7 @@ object v0_2024_10:
                 )
             }
 
-        def heatingAppliance            : VNelString[HeatingAppliance]
+        def heatingAppliance: ValidatedNel[MCalc_Error, HeatingAppliance]
 
     trait StoveProjectDescr_EN13384_Strict_Alg
         extends StoveProjectDescr_EN13384_Alg:
@@ -212,16 +217,16 @@ object v0_2024_10:
         def fuelType: FuelType
         def flueGasCondition: FlueGasCondition
 
-        def inputsVNel: VNelString[Inputs] =
+        def inputsVNel: ValidatedNel[MCalc_Error, Inputs] =
             // ensure type of appliance matches with fuel type
-            val checkApplianceAndFuel =
+            val checkApplianceAndFuel: ValidatedNel[MCalc_Error, Unit] =
                 (typeOfAppliance, fuelType) match
                     case (TypeOfAppliance.Pellets, FuelType.Pellets) => 
                         ().validNel // OK
-                    case (TypeOfAppliance.Pellets, ft) => 
-                        s"${TypeOfAppliance.Pellets} can not match ${ft.show}".invalidNel
+                    case (TypeOfAppliance.Pellets, ft @ FuelType.WoodLog30pHumidity) => 
+                        InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType.invalidNel
                     case (TypeOfAppliance.WoodLogs, FuelType.Pellets) =>
-                        s"${TypeOfAppliance.WoodLogs} can not match ${FuelType.Pellets.show}".invalidNel
+                        InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType.invalidNel
                     case (TypeOfAppliance.WoodLogs, _ ) =>
                         ().validNel // OK
             (
@@ -236,7 +241,7 @@ object v0_2024_10:
                     flueGasCondition
                 )
 
-        lazy val en13384_appl: VNelString[EN13384_Strict_Application] = inputsVNel.map: i =>
+        lazy val en13384_appl: ValidatedNel[MCalc_Error, EN13384_Strict_Application] = inputsVNel.map: i =>
             val f = new EN13384_1_A1_2019_Formulas
             new EN13384_Strict_Application(f, i):
                 final override lazy val computeAt = ComputeAt.Mean
@@ -257,15 +262,15 @@ object v0_2024_10:
 
         type PipesType <: Pipes_EN15544_Strict | Pipes_EN15544_MCE
         
-        def pipesVNel: VNelString[PipesType]
+        def pipesVNel: ValidatedNel[MCalc_Error, PipesType]
 
         def design: Design
 
         type EN15544_Alg_Type <: EN15544_V_2023_Common_Application[?]
 
-        lazy val en15544_Alg: VNelString[EN15544_Alg_Type]
+        lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Alg_Type]
 
-        override lazy val heatingAppliance: VNelString[HeatingAppliance] = 
+        override lazy val heatingAppliance: ValidatedNel[MCalc_Error, HeatingAppliance] = 
             en15544_Alg.andThen: en15544_Alg =>
                 en15544_Alg.en13384_heatingAppliance_pressures
                     .map: hap =>
@@ -279,7 +284,6 @@ object v0_2024_10:
                             en15544_Alg.en13384_heatingAppliance_massFlows,
                             hap,
                         )
-                    .asVNelString
 
     trait StoveProjectDescr_EN15544_Strict_Alg 
         extends StoveProjectDescr_EN15544_Alg
@@ -288,7 +292,7 @@ object v0_2024_10:
 
         val kindOfWood = KindOfWood.HardWood
 
-        def inputsVNel: VNelString[std.Inputs_EN15544_Strict] = 
+        def inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_EN15544_Strict] = 
             pipesVNel.map: pipes =>
                 std.Inputs_EN15544_Strict(
                     localConditions,
@@ -321,7 +325,7 @@ object v0_2024_10:
 
         type EN15544_Alg_Type = EN15544_Strict_Application
 
-        override lazy val en15544_Alg: VNelString[EN15544_Strict_Application] = inputsVNel.map: i =>
+        override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Strict_Application] = inputsVNel.map: i =>
             EN15544_Strict_Application.make(EN15544_Strict_Formulas.make)(i)
 
     trait StoveProjectDescr_EN15544_MCE_Alg 
@@ -388,7 +392,7 @@ object v0_2024_10:
                 )
             }
 
-        def inputsVNel: VNelString[std.Inputs_EN15544_MCE] = 
+        def inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_EN15544_MCE] = 
             pipesVNel.map: pipes =>
                 std.Inputs_EN15544_MCE(
                     localConditions,
@@ -426,7 +430,7 @@ object v0_2024_10:
             pci.PCI_sur_brut(net_calorific_value_of_dry_wood, wood.humidity)
 
         // TODO: rename to en15544_appl
-        override lazy val en15544_Alg: VNelString[EN15544_MCE_Application] = inputsVNel.map: i =>
+        override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_MCE_Application] = inputsVNel.map: i =>
             val bs845 = new BS845_Impl {}
             val en15544_mce_formulas = EN15544_MCE_Formulas.make(
                 net_calorific_value_of_wet_wood = net_calorific_value_of_wet_wood,
@@ -441,7 +445,7 @@ object v0_2024_10:
 
         val kindOfWood = KindOfWood.HardWood
 
-        override lazy val en15544_Alg: VNelString[EN15544_Labo_Application] = inputsVNel.map: i =>
+        override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Labo_Application] = inputsVNel.map: i =>
             val bs845 = new BS845_Impl {}
             val f = new EN15544_Labo_Formulas(
                 net_calorific_value_of_wet_wood = net_calorific_value_of_wet_wood,

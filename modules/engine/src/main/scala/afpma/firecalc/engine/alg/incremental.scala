@@ -8,11 +8,13 @@ package afpma.firecalc.engine.alg
 import scala.annotation.tailrec
 import scala.reflect.*
 
+import cats.Show
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.standard.{IncrementalValidation_Error, InvalidOperationSequence, given}
 
 trait IncrementalBuilderAlg extends PipeDescrAlg:
 
@@ -61,18 +63,18 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     type PT <: PipeType
     def pt: PT
 
-    type ValidatedResult[A] = ValidatedNel[String, A]
-    type CtxValidatedResult[A] = PropsState ?=> ValidatedNel[String, A]
+    type ValidatedResult[A] = ValidatedNel[IncrementalValidation_Error, A]
+    type CtxValidatedResult[A] = PropsState ?=> ValidatedNel[IncrementalValidation_Error, A]
 
     extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr]
-        def toFullDescr(): ValidatedNel[String, (IdsMapping, PipeFullDescr)] =
+        def toFullDescr(): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr)] =
             val iPropsState     = mkInitPropsState(piDescr)
             val iPipeFullDescr  = mkInitPipeFullDescr(piDescr)
             val iIdsMapping     = IdsMapping.empty
             val iListIncrDescr  = piDescr.listIncrDescr()
             buildIncrDescr(
-                iPipeFullDescr, 
+                iPipeFullDescr,
                 iIdsMapping,
                 iPropsState,
                 opsDone = Vector.empty,
@@ -98,20 +100,20 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
 
         def getValidated[A](
             get: PropsState => Option[A],
-            msgIfNone: String
+            error: IncrementalValidation_Error
         ): ValidatedResult[A] =
             Validated
-                .fromOption(get(propsState), ifNone = msgIfNone)
+                .fromOption(get(propsState), ifNone = error)
                 .toValidatedNel
 
         def checkNotSet[A](
             get: PropsState => Option[A],
-            msgIfSet: String
+            error: IncrementalValidation_Error
         ): ValidatedResult[Unit] =
             Validated.fromEither:
                 get(propsState) match
                     case None => Right(())
-                    case Some(_) => Left(NonEmptyList.one(msgIfSet))
+                    case Some(_) => Left(NonEmptyList.one(error))
 
             
     }
@@ -175,10 +177,11 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         propsState: PropsState,
         convStep: ConversionStep
     ): ValidatedResult[(IdsMapping, PipeFullDescr)] =
-        val nextGeomOp = convStep.findNextAddElement 
+        val nextGeomOp = convStep.findNextAddElement
         nextGeomOp match
             case None =>
-                "invalid operation sequence, expecting some 'add geometry' operation but none found".invalidNel
+                // This is a programming error - should never happen in normal operation
+                InvalidOperationSequence.invalidNel
             case Some(gop) =>
                 mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel => 
                     nel.foldLeft((inIdsMapping, inPipe)):
@@ -247,6 +250,6 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         given mkCtx: (ps: PropsState) => Ctx = Ctx(ps)
 
         type MakeFor[
-            In <: IncrDescr, 
+            In <: IncrDescr,
             El <: PipeElDescr
-        ] = Ctx ?=> In => ValidatedNel[String, El]
+        ] = Ctx ?=> In => ValidatedNel[IncrementalValidation_Error, El]

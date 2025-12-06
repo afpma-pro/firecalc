@@ -35,6 +35,8 @@ import afpma.firecalc.dto.FireCalcYAML
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
+import afpma.firecalc.engine.standard.*
+import cats.data.ValidatedNel
 
 case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     self =>
@@ -52,10 +54,10 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     val connectorPipeResult    = ConnectorPipe_Module    .mkPipeFromIncrDescr(fcProj.connector_pipe_descr)
     val chimneyPipeResult      = ChimneyPipe_Module      .mkPipeFromIncrDescr(fcProj.chimney_pipe_descr)
 
-    val airIntakePipe  : VNelString[AirIntakePipe]      = airIntakePipeResult.extractPipe
-    val fluePipe       : VNelString[FluePipe_EN15544]   = fluePipeResult.extractPipe
-    val connectorPipe  : VNelString[ConnectorPipe]      = connectorPipeResult.extractPipe
-    val chimneyPipe    : VNelString[ChimneyPipe]        = chimneyPipeResult.extractPipe
+    val airIntakePipe  : ValidatedNel[IncrementalValidation_Error, AirIntakePipe]      = airIntakePipeResult.extractPipe
+    val fluePipe       : ValidatedNel[IncrementalValidation_Error, FluePipe_EN15544]   = fluePipeResult.extractPipe
+    val connectorPipe  : ValidatedNel[IncrementalValidation_Error, ConnectorPipe]      = connectorPipeResult.extractPipe
+    val chimneyPipe    : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]        = chimneyPipeResult.extractPipe
 
     val airIntakePipeMappings  = airIntakePipeResult.extractIdsMapping
     val fluePipeMappings       = fluePipeResult.extractIdsMapping
@@ -78,16 +80,16 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             override val airIntakePipe   = self.airIntakePipe
             override val firebox         = fcProj.firebox.into[en15544.firebox.From_CalculPdM_V_0_2_32].transform
             override val fluePipe        = self.fluePipe match
-                case v @ Valid(fp)  =>  if (fp.elems.size == 0) "flue pipe not defined yet".invalidNel else v
+                case v @ Valid(fp)  => if (fp.elems.size == 0) FluePipeNotDefinedYet.invalidNel else v
                 case i @ Invalid(e) => i
 
             override val connectorPipe   = self.connectorPipe
             override val chimneyPipe     = self.chimneyPipe match
-                case v @ Valid(p)  =>  if (p.elems.size == 0) "chimney pipe not defined yet".invalidNel else v
+                case v @ Valid(p)  =>  if (p.elems.size == 0) ChimneyPipeNotDefinedYet.invalidNel else v
                 case i @ Invalid(e) => i
         }
 
-    def make_en15544_Strict_Application: VNelString[EN15544_Strict_Application] = 
+    def make_en15544_Strict_Application: ValidatedNel[MCalc_Error, EN15544_Strict_Application] = 
         stoveProjectDescr_EN15544_Strict.en15544_Alg
 
 end FireCalcYAML_Loader

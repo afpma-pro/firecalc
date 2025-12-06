@@ -28,6 +28,7 @@ import coulomb.ops.algebra.all.{*, given}
 
 import io.scalaland.chimney.*
 import io.scalaland.chimney.dsl.*
+import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 trait From_CalculPdM_V_0_2_32 extends OneOff:
     def h11_profondeurDuFoyer: QtyD[Meter]
@@ -214,7 +215,7 @@ trait From_CalculPdM_V_0_2_32_Module
     // import pipeDescr.*
 
     extension (firebox: FB)
-        def toFireboxPipe_EN15544: ValidatedNel[String, FireboxPipe_Module_EN15544.FullDescr] = 
+        def toFireboxPipe_EN15544: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_EN15544.FullDescr] = 
             import FireboxPipe_Module_EN15544.*
             FireboxPipe_Module_EN15544.incremental.define(
                 innerShape(rectangle(firebox.h12_largeurDuFoyer, firebox.h11_profondeurDuFoyer)),
@@ -226,7 +227,7 @@ trait From_CalculPdM_V_0_2_32_Module
                     firebox.h13_hauteurDuFoyer))
             .toFullDescr().extractPipe
 
-        def toFireboxPipe_EN13384: ValidatedNel[String, FireboxPipe_Module_EN13384.FullDescr] = 
+        def toFireboxPipe_EN13384: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_EN13384.FullDescr] = 
             import FireboxPipe_Module_EN13384.*
             FireboxPipe_Module_EN13384.incremental.define(
                 pipeLocation(PipeLocation.HeatedArea), // added for EN13384

@@ -94,7 +94,7 @@ object AFPMA_PRSE_Module extends From_CalculPdM_V_0_2_32_Module:
 
 
     extension (firebox: AFPMA_PRSE)
-        def toCombustionAirPipe_EN15544: ValidatedNel[String, CombustionAirPipe_Module_EN15544.FullDescr] = 
+        def toCombustionAirPipe_EN15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN15544.FullDescr] = 
             import CombustionAirPipe_Module_EN15544.*
             import firebox.*
 
@@ -162,7 +162,7 @@ object AFPMA_PRSE_Module extends From_CalculPdM_V_0_2_32_Module:
                     .toFullDescr().extractPipe
         end toCombustionAirPipe_EN15544
 
-        def toCombustionAirPipe_EN13384: ValidatedNel[String, CombustionAirPipe_Module_EN13384.FullDescr] = 
+        def toCombustionAirPipe_EN13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN13384.FullDescr] = 
             import CombustionAirPipe_Module_EN13384.*
             import firebox.*
 

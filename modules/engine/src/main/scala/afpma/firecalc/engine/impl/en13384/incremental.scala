@@ -8,6 +8,7 @@ package afpma.firecalc.engine.impl.en13384
 import scala.annotation.targetName
 import scala.reflect.*
 
+import cats.Show
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.*
@@ -20,10 +21,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
-
-import io.taig.babel.{Locale, Locales}
-import afpma.firecalc.i18n.*
-import afpma.firecalc.i18n.implicits.{given, *}
+import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
@@ -45,9 +43,6 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
 
     import AddElement_13384.*
     import SetProp_13384.*
-    
-    // I18N with English locale for validation messages
-    private val i18n_en: I18nData = I18Ns(Locales.en)
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] = afpma.firecalc.engine.models.en13384.pipedescr.hasInnerShapeAtPos
     override given hasLength: HasLength[PipeElDescr] = afpma.firecalc.engine.models.en13384.pipedescr.hasLength
@@ -171,7 +166,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                     case SetThickness(t) =>
                         vState andThen: v =>
                             v.innerShape match
-                                case None     => i18n_en.incremental_validation.prerequisites.thickness_requires_inner_geometry.invalidNel
+                                case None     => ThicknessRequiresInnerGeometry.invalidNel
                                 case Some(ig) => v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
                     case SetRoughness(r) =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
@@ -181,7 +176,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                         val vGeom = vState.andThen(_
                             .getValidated(
                                 _.innerShape,
-                                i18n_en.incremental_validation.prerequisites.layer_requires_section_geometry))
+                                LayerRequiresSectionGeometry))
                         vGeom.andThen: geom =>
                             vState.map(_
                                 .modify(_.layers)
@@ -193,7 +188,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                         val vGeom = vState.andThen(_
                             .getValidated(
                                 _.innerShape,
-                                i18n_en.incremental_validation.prerequisites.layers_require_inner_shape))
+                                LayersRequireInnerShape))
 
                         vGeom andThen: geom =>
                             vState.map(_
@@ -214,13 +209,13 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
     object ElementFactory extends ElementFactoryModule {
 
         val mkStraightSection: MakeFor[AddSectionSlopped | AddSectionHorizontal | AddSectionVertical, StraightSection] = { op =>
-            val vig = ctxState.getValidated(_.innerShape, i18n_en.incremental_validation.property_must_be_set.inner_geometry(op.name))
-            val vog = ctxState.getValidated(_.outer_shape, i18n_en.incremental_validation.property_must_be_set.outer_geometry(op.name))
-            val vr = ctxState.getValidated(_.roughness, i18n_en.incremental_validation.property_must_be_set.roughness(op.name))
-            val vlayers = ctxState.getValidated(_.layers, i18n_en.incremental_validation.property_must_be_set.layers(op.name))
-            val vasp = ctxState.getValidated(_.airSpace_afterLayers, i18n_en.incremental_validation.property_must_be_set.air_space_after_layers(op.name))
-            val vpl = ctxState.getValidated(_.pipeLoc, i18n_en.incremental_validation.property_must_be_set.pipe_location(op.name))
-            val vduct = ctxState.getValidated(_.ductType, i18n_en.incremental_validation.property_must_be_set.duct_type(op.name))
+            val vig = ctxState.getValidated(_.innerShape, InnerGeometryMustBeSet(op.name))
+            val vog = ctxState.getValidated(_.outer_shape, OuterGeometryMustBeSet(op.name))
+            val vr = ctxState.getValidated(_.roughness, RoughnessMustBeSet(op.name))
+            val vlayers = ctxState.getValidated(_.layers, LayersMustBeSet(op.name))
+            val vasp = ctxState.getValidated(_.airSpace_afterLayers, AirSpaceAfterLayersMustBeSet(op.name))
+            val vpl = ctxState.getValidated(_.pipeLoc, PipeLocationMustBeSet(op.name))
+            val vduct = ctxState.getValidated(_.ductType, DuctTypeMustBeSet(op.name))
 
             val (len, elev_gain) = op match
                 case AddSectionSlopped(_, len, elev_gain)    => (len, elev_gain)
@@ -247,8 +242,9 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
 
         def mkDirectionChange(nextSectionLength: Option[QtyD[Meter]]): MakeFor[AddDirectionChange, DirectionChange] =
             op =>
-                val vDh = ctxState.getValidated(_.innerShape.map(_.dh), i18n_en.incremental_validation.property_must_be_defined.section_geometry)
-                val vLd = Validated.fromOption(nextSectionLength, ifNone = NonEmptyList.one(i18n_en.incremental_validation.property_must_be_defined.next_section_length))
+                val vDh = ctxState.getValidated(_.innerShape.map(_.dh), SectionGeometryMustBeDefined)
+                val vLd = Validated.fromOption(nextSectionLength, ifNone = NonEmptyList.one(NextSectionLengthMustBeDefined))
+                
                 (vDh, vLd).mapN: (dh, ld) =>
                     op match
                         case _ @ AddAngleAdjustable(name, angle, zeta)  => AngleSpecifique(angle, zeta)
@@ -272,9 +268,9 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                 }
 
                 if (sectionGeometryChanged)
-                    i18n_en.incremental_validation.conflicts.cannot_set_geometry_before_change.invalid.toValidatedNel
+                    CannotSetGeometryBeforeChange.invalidNel
                 else
-                    ctxState.getValidated(_.innerShape, i18n_en.incremental_validation.property_must_be_defined.section_geometry)
+                    ctxState.getValidated(_.innerShape, SectionGeometryMustBeDefined)
                         .andThen:
                             case fromCircleGeom: PipeShape.Circle => 
                                 val sec = op match
@@ -286,7 +282,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                                     //     SectionDecreaseProgressive(fromD1 = fromCircleGeom.diameter, toD2 = diam, ɣ = ɣ)
                                 sec.validNel
                             case notACircleGeom: PipeShape =>
-                                i18n_en.incremental_validation.conflicts.section_change_requires_circle(notACircleGeom.toString).invalid.toValidatedNel
+                                SectionChangeRequiresCircle(notACircleGeom.toString).invalidNel
 
 
         val mkSingularFlowResistance: MakeFor[AddFlowResistance, SingularFlowResistance] =
@@ -294,7 +290,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                 case AddFlowResistance(name, zeta, NoneOfEither) =>
                     ctxState
                         .getValidated(_.innerShape,
-                            i18n_en.incremental_validation.conflicts.flow_resistance_requires_geometry(op.name))
+                            FlowResistanceRequiresGeometry(op.name, "EN13384"))
                         .andThen: geom =>
                             SingularFlowResistance(zeta, crossSectionO = Some(geom.area)).validNel
                 case AddFlowResistance(name, zeta, SomeLeft(area)) =>

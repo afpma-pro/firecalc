@@ -22,6 +22,7 @@ import afpma.firecalc.units.coulombutils.*
 import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
+import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 opaque type PipeIdx = Int
 object PipeIdx:
@@ -49,7 +50,7 @@ object AirIntakePipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
     val gas = CombustionAir
 
     def mkPipeFromIncrDescr(incrSeq: Seq[IncrDescr]): FullDescrResult = 
-        if (incrSeq.isEmpty) (IdsMapping.empty, NoVentilationOpenings).validNel[String]
+        if (incrSeq.isEmpty) (IdsMapping.empty, NoVentilationOpenings).validNel[IncrementalValidation_Error]
         else incremental.define(incrSeq*).toFullDescr()
 
     type PipeCanBe = FullDescr | NoVentilationOpenings
@@ -102,7 +103,7 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
 
     def mkPipeFromIncrDescr(incrSeq: Seq[IncrDescr_13384]): FullDescrResult = 
         // import incremental.*
-        if (incrSeq.isEmpty) (IdsMapping.empty, Without).validNel[String]
+        if (incrSeq.isEmpty) (IdsMapping.empty, Without).validNel[IncrementalValidation_Error]
         else incremental.define(incrSeq*).toFullDescr()
 
     type PipeCanBe = FullDescr | Without

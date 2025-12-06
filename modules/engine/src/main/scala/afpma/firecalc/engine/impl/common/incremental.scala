@@ -12,6 +12,8 @@ import afpma.firecalc.engine.models.Gas
 import afpma.firecalc.engine.models.GasInPipeEl
 import afpma.firecalc.engine.ops.HasLength
 import afpma.firecalc.engine.utils.VNelString
+import cats.data.ValidatedNel
+import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 trait IncrementalPipeDefModule_Common[PipeType]:
     
@@ -31,12 +33,14 @@ trait IncrementalPipeDefModule_Common[PipeType]:
     type FullDescr          = incremental.PipeFullDescr
     type IdsMapping         = incremental.IdsMapping
 
-    opaque type FullDescrResult = VNelString[(IdsMapping, PipeCanBe)]
+    type VNelE[X]              = ValidatedNel[IncrementalValidation_Error, X]
+
+    opaque type FullDescrResult = VNelE[(IdsMapping, PipeCanBe)]
     object FullDescrResult:
-        given Conversion[VNelString[(IdsMapping, PipeCanBe)], FullDescrResult] = identity
+        given Conversion[VNelE[(IdsMapping, PipeCanBe)], FullDescrResult] = identity
         extension (fdr: FullDescrResult)
-            def extractPipe: VNelString[PipeCanBe] = fdr.map(_._2)
-            def extractIdsMapping: VNelString[IdsMapping] = fdr.map(_._1)
+            def extractPipe: VNelE[PipeCanBe] = fdr.map(_._2)
+            def extractIdsMapping: VNelE[IdsMapping] = fdr.map(_._1)
     
     type PipeCanBe
 

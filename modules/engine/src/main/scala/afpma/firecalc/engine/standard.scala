@@ -12,13 +12,12 @@ import cats.syntax.show.*
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.gtypedefs.v
 
-import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.{ShowUsingLocale, showUsingLocale}
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
-import io.taig.babel.Locale
+import io.taig.babel.{Locale, Locales}
 import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
 import cats.data.NonEmptyList
 import afpma.firecalc.engine.models.TermConstraintError
@@ -28,9 +27,26 @@ object standard {
     sealed trait MCalc_Error
 
     given ShowUsingLocale[MCalc_Error] = showUsingLocale:
-        case e: EN15544_Error           => Show[EN15544_Error].show(e)
-        case e: EN13384_Error           => Show[EN13384_Error].show(e)
-        case e: MecaFlu_Error           => Show[MecaFlu_Error].show(e)
+        case e: Inputs_Error                => Show[Inputs_Error].show(e)
+        case e: EN15544_Error               => Show[EN15544_Error].show(e)
+        case e: EN13384_Error               => Show[EN13384_Error].show(e)
+        case e: MecaFlu_Error               => Show[MecaFlu_Error].show(e)
+        case e: IncrementalValidation_Error => Show[IncrementalValidation_Error].show(e)
+
+    // Inputs_Error
+
+    sealed trait Inputs_Error extends MCalc_Error
+
+    case object InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType extends Inputs_Error
+    case object InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType extends Inputs_Error
+
+    object Inputs_Error:
+        given ShowUsingLocale[Inputs_Error] = showUsingLocale:
+            case e: InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType.type =>
+                I18N.inputs_error.invald_type_of_appliance.pellets_incompatible_with_wood_log_fuel_type
+            case e: InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType.type =>
+                I18N.inputs_error.invald_type_of_appliance.wood_logs_incompatible_with_pellets_fuel_type
+
 
     // EN 15544
 
@@ -322,5 +338,102 @@ object standard {
                 case InvalidConstraint(error)                 => s"InvalidConstraint: ${error.toString}"
                 case UnexpectedThrowable(e)                   => s"UnexpectedThrowable: ${e.getMessage()} \n ${e.getStackTrace().toList.mkString("\n")}"
                 case x: MecaFlu_Error                         => s"MecaFlu_Error: ${x.msg}"
+    
+    // Incremental Builder Validation Errors
+    
+    sealed trait IncrementalValidation_Error extends MCalc_Error
+    
+    given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
+        case e: NotDefinedYet           => Show[NotDefinedYet].show(e)
+        case e: PropertyMustBeSet       => Show[PropertyMustBeSet].show(e)
+        case e: PropertyMustBeDefined   => Show[PropertyMustBeDefined].show(e)
+        case e: PrerequisiteNotMet      => Show[PrerequisiteNotMet].show(e)
+        case e: ConflictDetected        => Show[ConflictDetected].show(e)
+        case InvalidOperationSequence   => Show[InvalidOperationSequence.type].show(InvalidOperationSequence)
+    
+    // Pipe undefined
+    sealed trait NotDefinedYet extends IncrementalValidation_Error
+
+    case object FluePipeNotDefinedYet extends NotDefinedYet
+    case object ChimneyPipeNotDefinedYet extends NotDefinedYet
+
+    object NotDefinedYet:
+        given ShowUsingLocale[NotDefinedYet] = showUsingLocale: e =>
+            e match
+                case FluePipeNotDefinedYet    => I18N.incremental_validation.not_defined_yet.flue_pipe
+                case ChimneyPipeNotDefinedYet => I18N.incremental_validation.not_defined_yet.flue_pipe
+            
+    
+    // Property must be set errors (with operation name)
+    sealed trait PropertyMustBeSet extends IncrementalValidation_Error:
+        def operationName: String
+    
+    case class InnerGeometryMustBeSet(operationName: String) extends PropertyMustBeSet
+    case class OuterGeometryMustBeSet(operationName: String) extends PropertyMustBeSet
+    case class GeometryMustBeSet(operationName: String) extends PropertyMustBeSet
+    case class RoughnessMustBeSet(operationName: String) extends PropertyMustBeSet
+    case class LayersMustBeSet(operationName: String) extends PropertyMustBeSet
+    case class AirSpaceAfterLayersMustBeSet(operationName: String) extends PropertyMustBeSet
+    case class PipeLocationMustBeSet(operationName: String) extends PropertyMustBeSet
+    case class DuctTypeMustBeSet(operationName: String) extends PropertyMustBeSet
+    
+    object PropertyMustBeSet:
+        given ShowUsingLocale[PropertyMustBeSet] = showUsingLocale: e =>
+            e match
+                case InnerGeometryMustBeSet(op)         => I18N.incremental_validation.property_must_be_set.inner_geometry(op)
+                case OuterGeometryMustBeSet(op)         => I18N.incremental_validation.property_must_be_set.outer_geometry(op)
+                case GeometryMustBeSet(op)              => I18N.incremental_validation.property_must_be_set.geometry(op)
+                case RoughnessMustBeSet(op)             => I18N.incremental_validation.property_must_be_set.roughness(op)
+                case LayersMustBeSet(op)                => I18N.incremental_validation.property_must_be_set.layers(op)
+                case AirSpaceAfterLayersMustBeSet(op)   => I18N.incremental_validation.property_must_be_set.air_space_after_layers(op)
+                case PipeLocationMustBeSet(op)          => I18N.incremental_validation.property_must_be_set.pipe_location(op)
+                case DuctTypeMustBeSet(op)              => I18N.incremental_validation.property_must_be_set.duct_type(op)
+    
+    // Property must be defined errors (without operation name)
+    sealed trait PropertyMustBeDefined extends IncrementalValidation_Error
+    
+    case object SectionGeometryMustBeDefined extends PropertyMustBeDefined
+    case object NextSectionLengthMustBeDefined extends PropertyMustBeDefined
+    
+    object PropertyMustBeDefined:
+        given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
+            case SectionGeometryMustBeDefined       => I18N.incremental_validation.property_must_be_defined.section_geometry
+            case NextSectionLengthMustBeDefined     => I18N.incremental_validation.property_must_be_defined.next_section_length
+    
+    // Prerequisite errors
+    sealed trait PrerequisiteNotMet extends IncrementalValidation_Error
+    
+    case object ThicknessRequiresInnerGeometry extends PrerequisiteNotMet
+    case object LayerRequiresSectionGeometry extends PrerequisiteNotMet
+    case object LayersRequireInnerShape extends PrerequisiteNotMet
+    case object DirectionChangeRequiresSectionGeometry extends PrerequisiteNotMet
+    
+    object PrerequisiteNotMet:
+        given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
+            case ThicknessRequiresInnerGeometry             => I18N.incremental_validation.prerequisites.thickness_requires_inner_geometry
+            case LayerRequiresSectionGeometry               => I18N.incremental_validation.prerequisites.layer_requires_section_geometry
+            case LayersRequireInnerShape                    => I18N.incremental_validation.prerequisites.layers_require_inner_shape
+            case DirectionChangeRequiresSectionGeometry     => I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
+    
+    // Conflict errors
+    sealed trait ConflictDetected extends IncrementalValidation_Error
+    
+    case object CannotSetGeometryBeforeChange extends ConflictDetected
+    case class SectionChangeRequiresCircle(foundShape: String) extends ConflictDetected
+    case class FlowResistanceRequiresGeometry(operationName: String, standard: String) extends ConflictDetected
+    
+    // Programming errors (should never happen)
+    case object InvalidOperationSequence extends IncrementalValidation_Error
+    
+    object ConflictDetected:
+        given ShowUsingLocale[ConflictDetected] = showUsingLocale:
+            case CannotSetGeometryBeforeChange              => I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
+            case SectionChangeRequiresCircle(shape)         => I18N.incremental_validation.conflicts.section_change_requires_circle(shape)
+            case FlowResistanceRequiresGeometry(op, "EN13384") => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
+            case FlowResistanceRequiresGeometry(op, "EN15544") => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
+            case FlowResistanceRequiresGeometry(op, _)         => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
+    
+    given ShowUsingLocale[InvalidOperationSequence.type] = showUsingLocale:
+        case InvalidOperationSequence => "Invalid operation sequence: expecting some 'add geometry' operation but none found"
             
 }

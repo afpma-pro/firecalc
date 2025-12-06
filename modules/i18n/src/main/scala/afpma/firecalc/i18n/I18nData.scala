@@ -43,7 +43,9 @@ final case class I18nData(
     facing_type: FacingType,
     headers: Headers,
     heating_appliance: HeatingAppliance,
+    incremental_validation: IncrementalValidation,
     inputs_data: String,
+    inputs_error: Inputs_Error,
     local_conditions: LocalConditions,
     local_regulations: LocalRegulations,
     no: String,
@@ -68,7 +70,6 @@ final case class I18nData(
     area_heating_status: AreaHeatingStatus,
     reports: Reports,
     warnings: Warnings,
-    incremental_validation: IncrementalValidation
 )
 
 object I18nData:
@@ -503,6 +504,16 @@ object I18nData:
             combustion_air_volume_flow_reduced: String,
         )
 
+    case class Inputs_Error(
+        invald_type_of_appliance: Inputs_Error.InvalidTypeOfAppliance
+    )
+
+    object Inputs_Error:
+        case class InvalidTypeOfAppliance(
+            pellets_incompatible_with_wood_log_fuel_type: String,
+            wood_logs_incompatible_with_pellets_fuel_type: String
+        )
+
     case class LocalConditions(
         altitude: String,
         coastal_region: String,
@@ -772,6 +783,7 @@ object I18nData:
 
     case class IncrementalValidation(
         _self: String,
+        not_defined_yet: IncrementalValidation.NotDefinedYet,
         property_must_be_set: IncrementalValidation.PropertyMustBeSet,
         property_must_be_defined: IncrementalValidation.PropertyMustBeDefined,
         prerequisites: IncrementalValidation.Prerequisites,
@@ -779,6 +791,11 @@ object I18nData:
     )
     
     object IncrementalValidation:
+
+        case class NotDefinedYet(
+            flue_pipe: String,
+            chimney_pipe: String,
+        )
         case class PropertyMustBeSet(
             inner_geometry: StringFormat1,
             outer_geometry: StringFormat1,
