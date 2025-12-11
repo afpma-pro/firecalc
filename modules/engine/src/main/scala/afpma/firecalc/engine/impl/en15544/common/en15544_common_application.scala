@@ -332,6 +332,8 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
 
     def O_BR: O_BR = formulas.O_BR_calc(m_B)
 
+    // Section "4.3.1.3", "Firebox base"
+
     def U_BR: OneOffOrNotApplicable[U_BR] =
         firebox.whenOneOff(_.dimensions.base.perimeter)
 
@@ -346,6 +348,22 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
     // A_BR
     def A_BR: OneOffOrNotApplicable[A_BR] = 
         firebox.whenOneOff(_.dimensions.base.area)
+
+    // Check constraint that A_BR_min <= A_BR <= A_BR_max
+    firebox.ifOneOff_ { oneOffDesign =>
+        A_BR_max.toOption match
+            case None => Left(UnexpectedDevError("A_BR_max should be defined here if firebox is a one-off design"))
+            case Some(a_br_max) =>
+                constraintsFor[Dimensions.Base].append(
+                    TermConstraint.GenericTyped(
+                        value = oneOffDesign.dimensions.base,
+                        isValid = base =>
+                            if (base.area < A_BR_min) Left(FireboxBaseSurfaceNotInRange(base.area.showP, A_BR_min.showP, a_br_max.showP))
+                            else if (base.area > a_br_max) Left(FireboxBaseSurfaceNotInRange(base.area.showP, A_BR_min.showP, a_br_max.showP))
+                            else Right(base)
+                    )
+                )
+    }
 
     firebox.ifOneOff_ { oneOffDesign =>
 

@@ -30,11 +30,15 @@ object standard {
     sealed trait MCalc_Error
 
     given ShowUsingLocale[MCalc_Error] = showUsingLocale:
+        case e: UnexpectedDevError          => s"DEV_ERROR: ${e.msg}"
         case e: Inputs_Error                => Show[Inputs_Error].show(e)
         case e: EN15544_Error               => Show[EN15544_Error].show(e)
         case e: EN13384_Error               => Show[EN13384_Error].show(e)
         case e: MecaFlu_Error               => Show[MecaFlu_Error].show(e)
         case e: IncrementalValidation_Error => Show[IncrementalValidation_Error].show(e)
+
+    // Unexpected Error
+    case class UnexpectedDevError(msg: String) extends MCalc_Error
 
     // Inputs_Error
 
@@ -65,6 +69,7 @@ object standard {
     
     given ShowUsingLocale[FireboxError] = showUsingLocale:
         case e: InvalidTermValue[?]             => show_InvalidTermValue(using e.showT).show(e)
+        case e: FireboxBaseSurfaceNotInRange    => Show[FireboxBaseSurfaceNotInRange].show(e)
         case e: FireboxBaseRatioInvalid         => Show[FireboxBaseRatioInvalid].show(e)
         case e: FireboxBaseMinWidthInvalid      => Show[FireboxBaseMinWidthInvalid].show(e)
         case e: GlassAreaTooLarge               => Show[GlassAreaTooLarge].show(e)
@@ -75,6 +80,11 @@ object standard {
 
     final class FireboxErrorCustom(val reason: Locale ?=> String) extends FireboxError
     
+    case class FireboxBaseSurfaceNotInRange(actual: String, min: String, max: String) extends FireboxError
+    object FireboxBaseSurfaceNotInRange:
+        given ShowUsingLocale[FireboxBaseSurfaceNotInRange] = showUsingLocale: e =>
+            I18N.errors.firebox_base_surface_not_in_range(e.actual, e.min, e.max)
+
     case class FireboxBaseRatioInvalid(ratio: String, depth: String, width: String) extends FireboxError
     object FireboxBaseRatioInvalid:
         given ShowUsingLocale[FireboxBaseRatioInvalid] = showUsingLocale: e =>

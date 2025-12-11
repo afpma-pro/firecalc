@@ -426,6 +426,7 @@ object I18nData:
         term_constraint_max_error: StringFormat2,
         glass_area_too_large: StringFormat2,
         firebox_height_out_of_range: StringFormat3,
+        firebox_base_surface_not_in_range: StringFormat3,
         firebox_base_ratio_invalid: StringFormat3,
         firebox_base_min_width: StringFormat2,
         co2_calculation_only_for_wood_boilers: String,
