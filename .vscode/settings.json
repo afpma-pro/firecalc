@@ -12,11 +12,11 @@
         "-Xmx16g",
         "-XX:MaxInlineLevel=32"
     ],
-    "metals.enableIndentOnPaste": true,
+    "metals.enableIndentOnPaste": false,
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.4+24-16c7648b-SNAPSHOT",
+    "metals.serverVersion": "1.6.4+39-b17c5ebc-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 37277,
     "metals.suggestLatestUpgrade": "on",
