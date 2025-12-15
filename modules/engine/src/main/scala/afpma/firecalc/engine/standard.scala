@@ -23,6 +23,9 @@ import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
 import cats.data.NonEmptyList
 import afpma.firecalc.engine.models.TermConstraintError
 import cats.data.ValidatedNel
+import afpma.firecalc.engine.standard.ThermalResistance_Error.SideRatioTooHighForRectangularForm
+import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
+import afpma.firecalc.engine.standard.ThermalResistance_Error.CouldNotComputeThermalResistance
 
 object standard {
 
@@ -278,43 +281,64 @@ object standard {
     case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError derives Show
     
     // EN 13384
-    sealed trait EN13384_Error extends standard.MCalc_Error derives Show:
+    sealed trait EN13384_Error extends standard.MCalc_Error:
         def msg: String
 
+    object EN13384_Error:
+        given Show[EN13384_Error] = Show.show: e =>
+            e match
+                case e @ SideRatioTooHighForRectangularForm(outer_shape, sectionTyp) => Show[SideRatioTooHighForRectangularForm].show(e)
+                case e @ CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(sectionTyp) => Show[CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing].show(e)
+                case e @ CouldNotComputeThermalResistance(msg, sectionTyp) => Show[CouldNotComputeThermalResistance].show(e)
+                case e @ EN13384_ErrorMessage(msg) => Show[EN13384_ErrorMessage].show(e)
+                case e @ DuctTypeError(msg, sectionTyp) => Show[DuctTypeError].show(e)
+                case e @ NoOutsideSurfaceFound(msg, sectionTyp) => Show[NoOutsideSurfaceFound].show(e)
+                case e @ ZeroLengthPipe(pname, sectionTyp) => Show[ZeroLengthPipe].show(e)
+                case e @ ReIsAbove10million(R_e, sectionTyp) => Show[ReIsAbove10million].show(e)
+                case e @ PsiRatioIsGreaterThan3(ratio, sectionTyp) => Show[PsiRatioIsGreaterThan3].show(e)
+                case e @ PrandtlTooSmall(P_r, sectionTyp) => Show[PrandtlTooSmall].show(e)
+                case e @ PrandtlTooBig(P_r, sectionTyp) => Show[PrandtlTooBig].show(e)
+            
+            
+
     // ThermalResistance
-    sealed abstract class ThermalResistance_Error(override val msg: String) 
-        extends EN13384_Error derives Show
+    sealed abstract class ThermalResistance_Error(override val msg: String, override val sectionTyp: PipeType) 
+        extends EN13384_Error with HasSectionTypError derives Show
     object ThermalResistance_Error:
-        case class SideRatioTooHighForRectangularForm(outer_shape: PipeShape) extends ThermalResistance_Error(s"side ratio above 1:1.5 (got ${outer_shape.show}), can not compute coefficient of form")
-        case object CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing extends ThermalResistance_Error(s"can not end layer description on a dead air space : outer layer is missing")
-        case class CouldNotComputeThermalResistance(override val msg: String) extends ThermalResistance_Error(s"could not compute thermal resistance: $msg")
+        case class SideRatioTooHighForRectangularForm(outer_shape: PipeShape, override val sectionTyp: PipeType) 
+            extends ThermalResistance_Error(s"side ratio above 1:1.5 (got ${outer_shape.show}), can not compute coefficient of form", sectionTyp)
+
+        case class CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(override val sectionTyp: PipeType) 
+            extends ThermalResistance_Error(s"can not end layer description on a dead air space : outer layer is missing", sectionTyp)
+        case class CouldNotComputeThermalResistance(override val msg: String, override val sectionTyp: PipeType) 
+            extends ThermalResistance_Error(s"could not compute thermal resistance: $msg", sectionTyp)
     
     case class EN13384_ErrorMessage(msg: String) extends EN13384_Error derives Show
-    case class DuctTypeError(override val msg: String) extends EN13384_Error derives Show
-    case class NoOutsideSurfaceFound(override val msg: String) extends EN13384_Error derives Show
+    case class DuctTypeError(override val msg: String, override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError derives Show
+    case class NoOutsideSurfaceFound(override val msg: String, override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError derives Show
     
-    sealed abstract class NuCalcError(override val msg: String)
-        extends EN13384_Error
-    case class ZeroLengthPipe(pname: String) extends NuCalcError(s"pipe with name '$pname' has length 0")
-    case class ReIsAbove10million(R_e: Double)
+    sealed abstract class NuCalcError(override val msg: String, override val sectionTyp: PipeType)
+        extends EN13384_Error with HasSectionTypError 
+    case class ZeroLengthPipe(pname: String, override val sectionTyp: PipeType) extends NuCalcError(s"pipe with name '$pname' has length 0", sectionTyp)
+    case class ReIsAbove10million(R_e: Double, override val sectionTyp: PipeType)
         extends NuCalcError(
-            s"R_e out of bound : R_e > 10 000 000 => got R_e = $R_e"
+            s"R_e out of bound : R_e > 10 000 000 => got R_e = $R_e", sectionTyp
         )
         derives Show
-    case class PsiRatioIsGreaterThan3(ratio: Double)
-        extends NuCalcError(s"Ψ / Ψ_smooth > 3 => got Ψ / Ψ_smooth = $ratio")
+    case class PsiRatioIsGreaterThan3(ratio: Double, override val sectionTyp: PipeType)
+        extends NuCalcError(s"Ψ / Ψ_smooth > 3 => got Ψ / Ψ_smooth = $ratio", sectionTyp)
         derives Show
-    sealed abstract class PrandtlOutOfBound(val P_r: Double, override val msg: String)
-        extends NuCalcError(msg) derives Show
-    case class PrandtlTooSmall(override val P_r: Double)
+    sealed abstract class PrandtlOutOfBound(val P_r: Double, override val msg: String, override val sectionTyp: PipeType)
+        extends NuCalcError(msg, sectionTyp) derives Show
+    case class PrandtlTooSmall(override val P_r: Double, override val sectionTyp: PipeType)
         extends PrandtlOutOfBound(
             P_r,
-            s"Prandtl too small, expecting 0.6 < Prandtl but got Prandtl = $P_r"
+            s"Prandtl too small, expecting 0.6 < Prandtl but got Prandtl = $P_r", sectionTyp
         ) derives Show
-    case class PrandtlTooBig(override val P_r: Double)
+    case class PrandtlTooBig(override val P_r: Double, override val sectionTyp: PipeType)
         extends PrandtlOutOfBound(
             P_r,
-            s"Prandtl too big, expecting Prandtl < 1.5 but got Prandtl = $P_r"
+            s"Prandtl too big, expecting Prandtl < 1.5 but got Prandtl = $P_r", sectionTyp
         ) derives Show
 
     sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError
@@ -411,7 +435,7 @@ object standard {
 
     // MecaFlu_Error
 
-    sealed class MecaFlu_Error(val msg: String, val sectionTyp: PipeType) extends MCalc_Error
+    sealed class MecaFlu_Error(val msg: String, override val sectionTyp: PipeType) extends MCalc_Error with HasSectionTypError 
 
     object MecaFlu_Error:
         case class UnexpectedFireboxType(override val msg: String) extends MecaFlu_Error(msg, FireboxPipeT)
@@ -441,8 +465,7 @@ object standard {
     
     // Incremental Builder Validation Errors
     
-    sealed trait IncrementalValidation_Error extends MCalc_Error:
-        def sectionTyp: PipeType
+    sealed trait IncrementalValidation_Error extends MCalc_Error with HasSectionTypError
     
     given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
         case e: NotDefinedYet           => Show[NotDefinedYet].show(e)
