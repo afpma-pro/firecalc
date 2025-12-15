@@ -23,6 +23,7 @@ import afpma.firecalc.units.coulombutils.*
 import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
+import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
 
 object dynamicfrictioncoeff:
 
@@ -78,12 +79,12 @@ object dynamicfrictioncoeff:
         // Individual Resistance
         given circularArc60: DynamicFrictionCoeffOp[en15544_pipedescr.DirectionChange.CircularArc60] =
             DynamicFrictionCoeffOp.fromFunction { _ =>
-                (0.7.unitless: ζ).validNel[GErr]
+                (0.7.unitless: ζ).validNel[SingularFlowResistanceCoeffError]
             }
 
         given straightSection: DynamicFrictionCoeffOp[en15544_pipedescr.StraightSection] =
             DynamicFrictionCoeffOp.fromFunction { _ =>
-                (0.0.unitless: ζ).validNel[GErr]
+                (0.0.unitless: ζ).validNel[SingularFlowResistanceCoeffError]
             }
 
     end regular
@@ -109,7 +110,7 @@ object dynamicfrictioncoeff:
         xHeader: String,
         xi: Double,
         xMinMax: (Double, Double),
-        yHeaderSelectFunc: Option[Double] => Either[GErr, String],
+        yHeaderSelectFunc: Option[Double] => Either[SingularFlowResistanceCoeffError, String],
         yCriteria: Option[Double]
     ): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelper[S](

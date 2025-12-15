@@ -131,7 +131,8 @@ object standard {
 
     // EN 15544
 
-    sealed trait EN15544_Error extends MCalc_Error
+    sealed trait EN15544_Error extends MCalc_Error:
+        def sectionTyp: PipeType
     
     given ShowUsingLocale[EN15544_Error] = showUsingLocale:
         case e: FireboxError            => Show[FireboxError].show(e)
@@ -139,7 +140,8 @@ object standard {
         case e: PressureLossCoeff_Error => Show[PressureLossCoeff_Error].show(e)
         case e: EN15544_ErrorMessage    => Show[EN15544_ErrorMessage].show(e)
     
-    sealed trait FireboxError extends EN15544_Error
+    sealed trait FireboxError extends EN15544_Error:
+        override final def sectionTyp: PipeType = FluePipeT
     
     given ShowUsingLocale[FireboxError] = showUsingLocale:
         case e: InvalidTermValue[?]             => show_InvalidTermValue(using e.showT).show(e)
@@ -252,8 +254,7 @@ object standard {
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
-    sealed trait FluePipeError extends EN15544_Error:
-        def sectionTyp: PipeType
+    sealed trait FluePipeError extends EN15544_Error
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
         case err: FlueGasVelocityError          => Show[FlueGasVelocityError].show(err)
@@ -271,7 +272,7 @@ object standard {
 
     class FluePipeErrorCustom(val sectionTyp: PipeType, val reason: Locale ?=> String) extends FluePipeError
 
-    case class EN15544_ErrorMessage(msg: String) extends EN15544_Error derives Show
+    case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType) extends EN15544_Error derives Show
     
     // EN 13384
     sealed trait EN13384_Error extends standard.MCalc_Error derives Show:
@@ -313,30 +314,31 @@ object standard {
             s"Prandtl too big, expecting Prandtl < 1.5 but got Prandtl = $P_r"
         ) derives Show
 
-    sealed abstract class PressureLossCoeff_Error(val msg: String) extends EN15544_Error
+    sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType) extends EN15544_Error
 
     // PressureLossCoeff_Error
 
-    case class LocalStructError(override val msg: String) extends PressureLossCoeff_Error(msg) derives Show
+    case class LocalStructError(msg: String)
+    object LocalStructError:
+        given Show[LocalStructError] = Show.show(x => s"LOCAL STRUCT ERROR: ${x.msg}")
 
-    case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String) extends PressureLossCoeff_Error(msg) derives Show
+    sealed class SingularFlowResistanceCoeffError(val msg: String)
 
-    sealed class SingularFlowResistanceCoeffError(override val msg: String)
-        extends PressureLossCoeff_Error(msg)
-        // derives Show
+    case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String) extends SingularFlowResistanceCoeffError(msg) derives Show
 
     given show_SingularFlowResistanceCoeffError: Show[SingularFlowResistanceCoeffError] = Show.show: s =>
         s"SingularFlowResistanceCoeffError(msg = ${s.msg})"
 
     given show_PressureLossCoeff_Error: Show[PressureLossCoeff_Error] = Show.show:
-        case l: LocalStructError                                            => 
-            Show[LocalStructError].show(l)
-        case m: MissingAlpha3AngleForShortFluePipeSection                   => 
-            Show[MissingAlpha3AngleForShortFluePipeSection].show(m)
-        case c: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?]   => 
-            SingularFlowResistanceCoeffError.show_UnexpectedRatio(using c.show_shape).show(c)
-        case s: SingularFlowResistanceCoeffError                            =>
-            show_SingularFlowResistanceCoeffError.show(s)
+        // case l: LocalStructError                                            => 
+        //     Show[LocalStructError].show(l)
+        // case m: MissingAlpha3AngleForShortFluePipeSection                   => 
+        //     Show[MissingAlpha3AngleForShortFluePipeSection].show(m)
+        // case c: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?]   => 
+        //     SingularFlowResistanceCoeffError.show_UnexpectedRatio(using c.show_shape).show(c)
+        // case s: SingularFlowResistanceCoeffError                            =>
+        //     show_SingularFlowResistanceCoeffError.show(s)
+        case p: PressureLossCoeff_Error => p.msg
 
     object SingularFlowResistanceCoeffError {
 
@@ -376,7 +378,7 @@ object standard {
 
         def CouldNotComputeIndividualCoefficientForShape[S: Show](
             shape: S,
-            m: String
+            m: String,
         ) =
             new SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > could not compute individual coefficient > $m"

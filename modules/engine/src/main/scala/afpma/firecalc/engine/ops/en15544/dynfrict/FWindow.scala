@@ -15,6 +15,7 @@ import afpma.firecalc.engine.models.en15544.pipedescr.*
 import afpma.firecalc.engine.models.en15544.shortsection.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortOrRegularOps.given
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.*
 import afpma.firecalc.engine.ops.en15544.dynamicfrictioncoeff
 
@@ -65,7 +66,7 @@ private[dynfrict] final case class FWindow(
     np1: Option[Named[S_or_DC]],  // n+1
     np2: Option[Named[S_or_DC]],  // n+2
     np3: Option[Named[S_or_DC]]   // n+3
-) {
+)(sectionTyp: PipeType) {
 
     def coeffs_curr(using alg: ShortSectionAlg): ValidatedNel[Err, ζ] = 
         // if (nm3 && nm1) or (nm1 && np1) or (np1 && np3) are "short" sections
@@ -116,7 +117,8 @@ private[dynfrict] final case class FWindow(
                     dc01            = nm2.map(_.t.asInstanceOf[DirectionChange]).get,
                     s1              = nm1.map(_.t.asInstanceOf[StraightSection]).get,
                     o_dc12          = curr.t.some,
-                    o_dc12_name     = curr.name.some
+                    o_dc12_name     = curr.name.some,
+                    sectionTyp
                 ))
                 val w_np1_opt = ζ_np2_level_n_opt.map(ζ_np2_level_n => ShortSection.PipeDescrWindow.from(
                     ζα1_prev        =  ζ_curr_level_n,
@@ -125,10 +127,11 @@ private[dynfrict] final case class FWindow(
                     s1              = np1.map(_.t.asInstanceOf[StraightSection]).get,
                     o_dc12          = np2.map(_.t.asInstanceOf[DirectionChange]),
                     o_dc12_name     = np2.map(_.name),
+                    sectionTyp
                 ))
 
-                val r_nm1_v_opt = w_nm1_opt.map(_ andThen alg.resultFromWindow)
-                val r_np1_v_opt = w_np1_opt.map(_ andThen alg.resultFromWindow)
+                val r_nm1_v_opt = w_nm1_opt.map(x => x.andThen(y => alg.resultFromWindow(y)))
+                val r_np1_v_opt = w_np1_opt.map(_.andThen(y => alg.resultFromWindow(y)))
 
 
                 (r_nm1_v_opt, r_np1_v_opt) match
@@ -237,6 +240,6 @@ private[dynfrict] object FWindow:
         np1: Option[Named[S_or_DC]],  // n+1
         np2: Option[Named[S_or_DC]],  // n+2
         np3: Option[Named[S_or_DC]]   // n+3
-    ): Either[IllegalStateException, FWindow] = 
-        FWindow(nm3, nm2, nm1, curr, np1, np2, np3).makeChecks
+    )(sectionTyp: PipeType): Either[IllegalStateException, FWindow] = 
+        FWindow(nm3, nm2, nm1, curr, np1, np2, np3)(sectionTyp).makeChecks
 

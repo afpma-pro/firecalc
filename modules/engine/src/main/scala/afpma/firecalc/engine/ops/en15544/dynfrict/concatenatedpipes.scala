@@ -20,6 +20,9 @@ import afpma.firecalc.engine.ops.en15544.dynfrict.*
 import afpma.firecalc.engine.standard.*
 
 import coulomb.ops.standard.all.given
+import afpma.firecalc.engine.models.gtypedefs.ζ
+import cats.data.Validated.Valid
+import cats.data.Validated.Valid
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]]
@@ -29,7 +32,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     // and keep only direction change + straight section elements
     // also keeps original source index so that the computed coefficient for an element in src
     // can be easily computed using this struct
-    private val vcompressed: ValidatedNel[PressureLossCoeff_Error, Vector[(CmprssdIdx, R)]] = 
+    private val vcompressed: ValidatedNel[LocalStructError, Vector[(CmprssdIdx, R)]] = 
     {
         val filtered = 
             pipesConcat
@@ -42,8 +45,8 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                                 Some(NamedPipeElDescrG(idx, typ, nel.name, el, nf))
                         case _ => None
         val vreduced = 
-            val zero: ValidatedNel[PressureLossCoeff_Error, Vector[R]] = Vector.empty[R].validNel
-            filtered.foldLeft[ValidatedNel[PressureLossCoeff_Error, Vector[R]]](zero): (vacc, nel) =>
+            val zero: ValidatedNel[LocalStructError, Vector[R]] = Vector.empty[R].validNel
+            filtered.foldLeft[ValidatedNel[LocalStructError, Vector[R]]](zero): (vacc, nel) =>
                 vacc match 
                     case i @ Validated.Invalid(_) => i
                     case Validated.Valid(acc) =>
@@ -121,7 +124,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
 
     private def findLocalCmprssdIdx(
         ndc: NamedPipeElDescrG[DirectionChange]
-    ): ValidatedNel[PressureLossCoeff_Error, Option[CmprssdIdx]] = 
+    ): ValidatedNel[LocalStructError, Option[CmprssdIdx]] = 
         vcompressed.map: compressed =>
             compressed
                 .find: (_, rdc) => 
@@ -132,17 +135,19 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                 .map(_._1)
 
     private def computeCoeffForDirectionChange(ndc: NamedPipeElDescrG[DirectionChange]): DynamicFrictionCoeffOp.Result = 
-        findLocalCmprssdIdx(ndc).andThen:
-            case None       => LocalStructError(s"${ndc.name} not found in local struct").invalidNel
-            case Some(ridx) => localComputeCoeff(ridx)
+        findLocalCmprssdIdx(ndc) match
+            case Valid(Some(ridx)) => localComputeCoeff(ridx)
+            case Valid(None) => throw new IllegalStateException(s"DEV ERROR: ${ndc.name} not found in local struct")
+            case Invalid(nel) => throw new IllegalStateException(nel.head.show)
     
     extension (a: NamedPipeElDescrG[DirectionChange]) def dynamicFrictionCoeff: Result = 
         computeCoeffForDirectionChange(a)
 
     private def getFWindow(
         cmprssdIdx: CmprssdIdx
-    ): ValidatedNel[PressureLossCoeff_Error, FWindow] = 
+    ): ValidatedNel[LocalStructError, FWindow] = 
         val cidx = cmprssdIdx.unwrap
+        
         def extractNeeded(r: R): Named[S_or_DC] = r.el match
             case ss: StraightSection => Named(r.name, ss)
             case dc: DirectionChange => Named(r.name, dc)
@@ -151,29 +156,36 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
         .andThen: compressed =>
 
             val vcenter = compressed
-                .get(cidx    ).map(_._2)
-                .map(extractNeeded) match
-                    case None                                       => LocalStructError("dev error : missing in index in local struct").invalidNel
-                    case Some(Named(_, _: StraightSection))         => LocalStructError("getFWindow can only be called on a DirectionChange").invalidNel
-                    case Some(ndc @ Named(_, dc: DirectionChange))  => ndc.copy(t = dc).validNel
+                .get(cidx    )
+                .map(_._2)
+                .map: r => 
+                    (r.typ, extractNeeded(r)) match
+                        case ( sectionTyp, Named(_, _: StraightSection)        )  => LocalStructError("getFWindow can only be called on a DirectionChange").invalidNel
+                        case ( sectionTyp, ndc @ Named(_, dc: DirectionChange) )  => (sectionTyp, ndc.copy(t = dc)).validNel
+                .getOrElse(throw new IllegalStateException("dev error : missing in index in local struct"))
                 
-            vcenter.andThen: center =>
-                FWindow.make(
-                    compressed.get(cidx - 3).map(_._2).map(extractNeeded),
-                    compressed.get(cidx - 2).map(_._2).map(extractNeeded),
-                    compressed.get(cidx - 1).map(_._2).map(extractNeeded),
-                    center,
-                    compressed.get(cidx + 1).map(_._2).map(extractNeeded),
-                    compressed.get(cidx + 2).map(_._2).map(extractNeeded),
-                    compressed.get(cidx + 3).map(_._2).map(extractNeeded)
-                ).fold(
-                    err => LocalStructError(err.getMessage()).invalidNel,
-                    _.validNel
-                )
+            vcenter
+            .andThen: 
+                case (sectionTyp, center) =>
+                    FWindow.make(
+                        compressed.get(cidx - 3).map(_._2).map(extractNeeded),
+                        compressed.get(cidx - 2).map(_._2).map(extractNeeded),
+                        compressed.get(cidx - 1).map(_._2).map(extractNeeded),
+                        center,
+                        compressed.get(cidx + 1).map(_._2).map(extractNeeded),
+                        compressed.get(cidx + 2).map(_._2).map(extractNeeded),
+                        compressed.get(cidx + 3).map(_._2).map(extractNeeded)
+                    )(sectionTyp)
+                    .fold(
+                        err => LocalStructError(err.getMessage()).invalidNel,
+                        _.validNel
+                    )
         
 
     private def localComputeCoeff(cmprssdIdx: CmprssdIdx): DynamicFrictionCoeffOp.Result = 
-        getFWindow(cmprssdIdx).andThen(_.coeffs_curr)
+        getFWindow(cmprssdIdx) match
+            case Valid(fw) => fw.coeffs_curr
+            case Invalid(nel) => throw new IllegalStateException(nel.head.show)
 
             // case FWindow(o_nm2, Some(nm1 @ Named(_, _: StraightSection)), curr, Some(np1 @ Named(_, _: StraightSection)), o_np2) => 
 

@@ -88,8 +88,8 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
     extension [A](a: A)
         def validNelE: ValidatedNel[ErrorGen, A] = a.validNel[ErrorGen]
     extension [A](vnelsa: ValidatedNel[String, A])
-        def validNelE: ValidatedNel[ErrorGen, A] = 
-            vnelsa.leftMap(nels => nels.map(EN15544_ErrorMessage.apply))
+        def validNelE(sectionTyp: PipeType): ValidatedNel[ErrorGen, A] = 
+            vnelsa.leftMap(nels => nels.map(EN15544_ErrorMessage.apply(_, sectionTyp)))
 
 
     // Section "1", "Scope"
@@ -503,7 +503,8 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
                 // interpolation failed
                 firebox.whenOneOff(_ =>
                     EN15544_ErrorMessage(
-                        "interpolation failed: could not retrieve 'a' or 'b' factor in 'Table 1'"
+                        "interpolation failed: could not retrieve 'a' or 'b' factor in 'Table 1'",
+                        FireboxPipeT
                     ).invalidNel)
 
 

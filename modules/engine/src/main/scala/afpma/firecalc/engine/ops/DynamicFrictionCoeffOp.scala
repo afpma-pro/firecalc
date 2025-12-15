@@ -28,12 +28,12 @@ object DynamicFrictionCoeffOp:
     //         DynamicFrictionCoeffOp.apply[S].ζ(s)
 
     // ERROR TYPES
-    export afpma.firecalc.engine.standard.PressureLossCoeff_Error
+    // export afpma.firecalc.engine.standard.PressureLossCoeff_Error
     export afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
 
     // according to EN 13384-1:2015+A1:2019
 
-    type Err = afpma.firecalc.engine.standard.PressureLossCoeff_Error
+    type Err = afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
     type Result = ValidatedNel[Err, ζ]
 
     extension (res: Result)

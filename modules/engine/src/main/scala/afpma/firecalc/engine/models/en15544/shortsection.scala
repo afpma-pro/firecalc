@@ -14,6 +14,7 @@ import algebra.instances.all.given
 import afpma.firecalc.engine.models.en15544.pipedescr.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortOrRegular.*
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.units.coulombutils.*
@@ -47,7 +48,7 @@ trait ShortSectionAlg:
 
 object ShortSection:
 
-    type VNel[A] = ValidatedNel[PressureLossCoeff_Error, A]
+    type VNel[A] = ValidatedNel[SingularFlowResistanceCoeffError, A]
     
     case class Result private[shortsection] (ζ1: ζ, ζ2: ζ)
     case class IntermediateValues(
@@ -70,8 +71,9 @@ object ShortSection:
             dc01: DirectionChange,
             s1: StraightSection,
             o_dc12: Option[DirectionChange],
-            o_dc12_name: Option[String]
-        ): ValidatedNel[PressureLossCoeff_Error, PipeDescrWindow] = 
+            o_dc12_name: Option[String],
+            sectionTyp: PipeType
+        ): ValidatedNel[SingularFlowResistanceCoeffError, PipeDescrWindow] = 
             if (o_dc12.isDefined && o_dc12.get.angleN2.isEmpty) new MissingAlpha3AngleForShortFluePipeSection(s"angleN2 should be defined for '${o_dc12_name.get}'").invalidNel
             else PipeDescrWindow(ζα1_prev, ζα2_prev, dc01, s1, o_dc12).validNel
 
