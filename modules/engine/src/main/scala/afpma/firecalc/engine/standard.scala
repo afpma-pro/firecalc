@@ -102,6 +102,8 @@ object standard {
                     f
 
     sealed trait MCalc_Error
+    trait HasSectionTypError:
+        def sectionTyp: PipeType
 
     given ShowUsingLocale[MCalc_Error] = showUsingLocale:
         case e: UnexpectedDevError          => s"DEV_ERROR: ${e.msg}"
@@ -128,19 +130,20 @@ object standard {
             case e: InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType.type =>
                 I18N.inputs_error.invald_type_of_appliance.wood_logs_incompatible_with_pellets_fuel_type
 
-
     // EN 15544
 
-    sealed trait EN15544_Error extends MCalc_Error:
-        def sectionTyp: PipeType
+    sealed trait EN15544_Error extends MCalc_Error
     
     given ShowUsingLocale[EN15544_Error] = showUsingLocale:
-        case e: FireboxError            => Show[FireboxError].show(e)
-        case e: FluePipeError           => Show[FluePipeError].show(e)
-        case e: PressureLossCoeff_Error => Show[PressureLossCoeff_Error].show(e)
-        case e: EN15544_ErrorMessage    => Show[EN15544_ErrorMessage].show(e)
+        case e: FireboxError                => Show[FireboxError].show(e)
+        case e: FluePipeError               => Show[FluePipeError].show(e)
+        case e: PressureLossCoeff_Error     => Show[PressureLossCoeff_Error].show(e)
+        case e: InvalidPressureRequirement  => Show[InvalidPressureRequirement].show(e)
+        case e: EfficiencyIsTooLow          => Show[EfficiencyIsTooLow].show(e)
+        case e: InvalidConstraint           => Show[InvalidConstraint].show(e)
+        case e: EN15544_ErrorMessage        => Show[EN15544_ErrorMessage].show(e)
     
-    sealed trait FireboxError extends EN15544_Error:
+    sealed trait FireboxError extends EN15544_Error with HasSectionTypError:
         override final def sectionTyp: PipeType = FluePipeT
     
     given ShowUsingLocale[FireboxError] = showUsingLocale:
@@ -254,7 +257,7 @@ object standard {
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
-    sealed trait FluePipeError extends EN15544_Error
+    sealed trait FluePipeError extends EN15544_Error with HasSectionTypError
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
         case err: FlueGasVelocityError          => Show[FlueGasVelocityError].show(err)
@@ -272,7 +275,7 @@ object standard {
 
     class FluePipeErrorCustom(val sectionTyp: PipeType, val reason: Locale ?=> String) extends FluePipeError
 
-    case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType) extends EN15544_Error derives Show
+    case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError derives Show
     
     // EN 13384
     sealed trait EN13384_Error extends standard.MCalc_Error derives Show:
@@ -314,7 +317,7 @@ object standard {
             s"Prandtl too big, expecting Prandtl < 1.5 but got Prandtl = $P_r"
         ) derives Show
 
-    sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType) extends EN15544_Error
+    sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError
 
     // PressureLossCoeff_Error
 
@@ -385,47 +388,56 @@ object standard {
             )
     }
 
+    // InvalidPressureRequirement
+
+    case class InvalidPressureRequirement(preq: PressureRequirement) extends EN15544_Error
+    object InvalidPressureRequirement:
+        given Show[InvalidPressureRequirement] = Show.show: e =>
+            s"InvalidPressureRequirement: ${e.preq}"
+
+    
+    // EfficiencyIsTooLow
+    
+    case class EfficiencyIsTooLow(eff: QtyD[Percent], min_eff: QtyD[Percent]) extends EN15544_Error
+    object EfficiencyIsTooLow:
+        given Show[EfficiencyIsTooLow] = Show.show: e =>
+            s"EfficiencyIsTooLow: η = ${e.eff} and η_min = ${e.min_eff}"
+
+    case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error
+    object InvalidConstraint:
+        given Show[InvalidConstraint] = Show.show: e =>
+            s"InvalidConstraint: ${e.error}"
+    
+
     // MecaFlu_Error
 
-    sealed class MecaFlu_Error(val msg: String) extends MCalc_Error
+    sealed class MecaFlu_Error(val msg: String, val sectionTyp: PipeType) extends MCalc_Error
 
     object MecaFlu_Error:
-        case class UnexpectedFireboxType(override val msg: String) extends MecaFlu_Error(msg)
-        case class UnexpectedPipeType(override val msg: String) extends MecaFlu_Error(msg)
-        case class CouldNotDetermineCrossSectionArea(override val msg: String) extends MecaFlu_Error(msg)
-        case class CouldNotDetermineAirSpaceDetailed(override val msg: String) extends MecaFlu_Error(msg)
+        case class UnexpectedFireboxType(override val msg: String) extends MecaFlu_Error(msg, FireboxPipeT)
+        case class UnexpectedPipeType(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
+        case class CouldNotDetermineCrossSectionArea(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
+        case class CouldNotDetermineAirSpaceDetailed(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
 
-        case class UseUnsafeToSkipRatioValidationError(override val msg: String) extends MecaFlu_Error(msg)
+        case class UseUnsafeToSkipRatioValidationError(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
 
-        case class DynamicFrictionError(override val msg: String) extends MecaFlu_Error(msg)
-
-        case class InvalidPressureRequirement(preq: PressureRequirement) 
-            extends MecaFlu_Error(s"InvalidPressureRequirement: $preq")
+        case class DynamicFrictionError(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
 
         case class InvalidChimneyWallTemperature(temp: TempD[Celsius]) 
-            extends MecaFlu_Error(s"InvalidChimneyWallTemperature: ${temp}")
+            extends MecaFlu_Error(s"InvalidChimneyWallTemperature: ${temp}", ChimneyPipeT)
 
-        case class EfficiencyIsTooLow(eff: QtyD[Percent], min_eff: QtyD[Percent])
-            extends MecaFlu_Error(s"EfficiencyIsTooLow: η = ${eff} and η_min = ${min_eff}")
-
-        case class InvalidConstraint(error: TermConstraintError[?])
-            extends MecaFlu_Error(s"InvalidConstraint: ${error}")
-
-        case class UnexpectedThrowable(e: Throwable) extends MecaFlu_Error(s"MecaFlu_Error Throwable: ${e.getMessage()}")
+        case class UnexpectedThrowable(e: Throwable, override val sectionTyp: PipeType) extends MecaFlu_Error(s"MecaFlu_Error Throwable: ${e.getMessage()}", sectionTyp)
 
         given ShowUsingLocale[MecaFlu_Error] = showUsingLocale: 
-            case UnexpectedFireboxType(msg)               => s"UnexpectedFireboxType: ${msg}"
-            case UnexpectedPipeType(msg)                  => s"UnexpectedPipeType: ${msg}"
-            case CouldNotDetermineCrossSectionArea(msg)   => s"CouldNotDetermineCrossSectionArea: ${msg}"
-            case CouldNotDetermineAirSpaceDetailed(msg)   => s"CouldNotDetermineAirSpaceDetailed: ${msg}"
-            case UseUnsafeToSkipRatioValidationError(msg) => s"UseUnsafeToSkipRatioValidationError: ${msg}"
-            case DynamicFrictionError(msg)                => s"DynamicFrictionError: ${msg}"
-            case InvalidPressureRequirement(preq)         => s"InvalidPressureRequirement: preq=${preq}"
-            case InvalidChimneyWallTemperature(temp)      => s"InvalidChimneyWallTemperature: temp=${temp}"
-            case EfficiencyIsTooLow(eff, min_eff)         => s"EfficiencyIsTooLow: eff=${eff} min_eff=${min_eff}"
-            case InvalidConstraint(error)                 => s"InvalidConstraint: ${error.failMsg}"
-            case UnexpectedThrowable(e)                   => s"UnexpectedThrowable: ${e.getMessage()} \n ${e.getStackTrace().toList.mkString("\n")}"
-            case x: MecaFlu_Error                         => s"MecaFlu_Error: ${x.msg}"
+            case UnexpectedFireboxType(msg)                           => s"UnexpectedFireboxType: ${msg}"
+            case UnexpectedPipeType(msg, sectionTyp)                  => s"UnexpectedPipeType: ${msg}"
+            case CouldNotDetermineCrossSectionArea(msg, sectionTyp)   => s"CouldNotDetermineCrossSectionArea: ${msg}"
+            case CouldNotDetermineAirSpaceDetailed(msg, sectionTyp)   => s"CouldNotDetermineAirSpaceDetailed: ${msg}"
+            case UseUnsafeToSkipRatioValidationError(msg, sectionTyp) => s"UseUnsafeToSkipRatioValidationError: ${msg}"
+            case DynamicFrictionError(msg, sectionTyp)                => s"DynamicFrictionError: ${msg}"
+            case InvalidChimneyWallTemperature(temp)                  => s"InvalidChimneyWallTemperature: temp=${temp}"
+            case UnexpectedThrowable(e, sectionTyp)                   => s"UnexpectedThrowable: ${e.getMessage()} \n ${e.getStackTrace().toList.mkString("\n")}"
+            case x: MecaFlu_Error                                     => s"MecaFlu_Error: ${x.msg}"
     
     // Incremental Builder Validation Errors
     

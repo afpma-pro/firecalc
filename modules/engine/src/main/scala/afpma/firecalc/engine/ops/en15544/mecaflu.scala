@@ -150,7 +150,7 @@ object MecaFlu_EN15544_Strict:
         catch
             case e => 
                 // println(e.printStackTrace())
-                Left(MecaFlu_Error.UnexpectedThrowable(e))
+                Left(MecaFlu_Error.UnexpectedThrowable(e, fd.pipeType))
 
 private abstract trait MecaFlu_EN15544_Strict_PipeSectionResult_Impl(
     gip: GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, DraftCondition],
@@ -296,7 +296,7 @@ private abstract trait MecaFlu_EN15544_Strict_PipeSectionResult_Impl(
                     case el: (SectionGeometryChange | SingularFlowResistance) =>
                         dynamicfrictioncoeff.whenRegularFor(gip.pipeEl.copy(el = el).el)
                 zeta_vnel
-                .leftMap(_.map(err => MecaFlu_Error.DynamicFrictionError(err.msg)))
+                .leftMap(_.map(err => MecaFlu_Error.DynamicFrictionError(err.msg, curr.typ)))
                 .map: zeta => 
                     // See RQ_001
                     // (Some(zeta), en15544.formulas.p_u_calc(zeta, curr_pd))

@@ -116,7 +116,7 @@ object MecaFlu_EN13384:
         catch
             case e =>
                 e.printStackTrace()
-                Left(MecaFlu_Error.UnexpectedThrowable(e))
+                Left(MecaFlu_Error.UnexpectedThrowable(e, fd.pipeType))
 
 private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     gp: GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
@@ -293,7 +293,9 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     val airSpaceDetailedE = Either.fromOption(
         getAirSpaceDetailed(curr.el)(last_AirSpaceDetailed),
         MecaFlu_Error.CouldNotDetermineAirSpaceDetailed(
-            s"${curr.fullRef}: could not determine 'air space type'")
+            s"${curr.fullRef}: could not determine 'air space type'",
+            gp.pipeEl.typ
+        )
     )
 
     val innerShape: PositionOp[PipeShape] = 
@@ -315,7 +317,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     QtyDAtPosition.constantAtStartEnd(last_CrossSectionArea).asRight.map(_.atPos)
                 case None =>
                     MecaFlu_Error.CouldNotDetermineCrossSectionArea(
-                        s"${curr.fullRef}: could not determine 'cross section area'").asLeft
+                        s"${curr.fullRef}: could not determine 'cross section area'", curr.typ).asLeft
 
     val crossSectionArea: PositionOpX[Start | End, Area] = 
         crossSectionAreaE.fold(e => throw new Exception(e.msg), identity)
@@ -417,7 +419,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
             ifFlueGas = curr.el match
                 case s: StraightSection => en13384.formulas.thermal_resistance_for_layers_calc(t_emitting_layer, innerShape(using Start), s.layers)
                 case _ => ThermalResistance_Error.CouldNotComputeThermalResistance(s"only 'StraightSection' are expected to have a thermal resistance [${curr.fullRef}]").asLeft
-        ).leftMap(trError => MecaFlu_Error(trError.msg))
+        ).leftMap(trError => MecaFlu_Error(trError.msg, curr.typ))
 
     val en13384_tr_approx = compute_thermal_resistance(temp_mean)
     
@@ -600,9 +602,14 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                             .headOption
                         urOpt match
                             case Some(u @ UnexpectedRatio_Ld_Dh(_, _)) => 
-                                MecaFlu_Error.UseUnsafeToSkipRatioValidationError(s"${curr.fullRef}:\n\t ${u.msg}\n\t => try to use '_unsafe' suffix: it should skip ratio validation").invalidNel
+                                MecaFlu_Error.UseUnsafeToSkipRatioValidationError(
+                                    s"${curr.fullRef}:\n\t ${u.msg}\n\t => try to use '_unsafe' suffix: it should skip ratio validation",
+                                    curr.typ
+                                ).invalidNel
                             case None | Some(_) => 
-                                NonEmptyList.fromListUnsafe(nel.toList.map(x => MecaFlu_Error.DynamicFrictionError(x.msg))).invalid
+                                NonEmptyList.fromListUnsafe(
+                                    nel.toList.map(x => MecaFlu_Error.DynamicFrictionError(x.msg, curr.typ))
+                                ).invalid
     
     private def temperature_i_o_b_calc = temperature_i_x_b_calc(section_length, to)
         
@@ -658,15 +665,15 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                             tiob
                         } match
                             case _ @ Valid(x) => x.asRight
-                            case Invalid(nel) => MecaFlu_Error(nel.toList.mkString("\n", "\n", "\n")).asLeft
+                            case Invalid(nel) => MecaFlu_Error(nel.toList.mkString("\n", "\n", "\n"), curr.typ).asLeft
 
                     case Left(models.en13384.pipedescr.Error.OnlyAStraightSectionCanBeConvertedToPipeWithGasFlow) =>
                         prevO match
                             case Some(prev) => prev.temperature_iob(_1_Λ_o)
-                            case None => MecaFlu_Error(s"no straight section defined for chimney pipe ? last attempt is ${curr.el}").asLeft
+                            case None => MecaFlu_Error(s"no straight section defined for chimney pipe ? last attempt is ${curr.el}", curr.typ).asLeft
             case pt => 
                 MecaFlu_Error.UnexpectedPipeType(
-                    s"Tiob can only be computed for connector pipe or chimney pipe, not '$pt'").asLeft
+                    s"Tiob can only be computed for connector pipe or chimney pipe, not '$pt'", pt).asLeft
 
     def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt): Either[MecaFlu_Error, TCelsius] =
         curr.el match
@@ -680,7 +687,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
             case _ => 
                 prevO match
                     case Some(prev) => prev.temperature_iob(_1_Λ_o)
-                    case None => MecaFlu_Error(s"no straight section defined for chimney pipe ? last attempt is ${curr.el}").asLeft
+                    case None => MecaFlu_Error(s"no straight section defined for chimney pipe ? last attempt is ${curr.el}", curr.typ).asLeft
 
     val section_id              = curr.idx
     val section_name            = curr.name

@@ -699,7 +699,7 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
         pressureRequirement_EN15544.andThen: preq =>
             preq.isInValidRange match
                 case true => ().validNel
-                case false => MecaFlu_Error.InvalidPressureRequirement(preq).invalidNel
+                case false => InvalidPressureRequirement(preq).invalidNel
 
     def validateChimneyWallTempIsAbove45DegreesCelsius(): WithParams_15544[ValidatedNel[MCalc_Error, Unit]] =
         estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>
@@ -715,12 +715,12 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
                     if (eff.value >= min_eff.value)
                         ().validNel
                     else
-                        MecaFlu_Error.EfficiencyIsTooLow(eff, min_eff).invalidNel
+                        EfficiencyIsTooLow(eff, min_eff).invalidNel
                 case None =>
                     ().validNel
 
-    def validateCitedConstraints(): WithParams_15544[ValidatedNel[MecaFlu_Error, Unit]] = 
-        citedConstraints.checkAndReturnVNelError.leftMap(_.map(MecaFlu_Error.InvalidConstraint.apply))
+    def validateCitedConstraints(): WithParams_15544[ValidatedNel[MCalc_Error, Unit]] = 
+        citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
 
     def validateFireboxType(): WithParams_15544[ValidatedNel[FireboxError, Unit]] = 
         inputs.design.firebox match

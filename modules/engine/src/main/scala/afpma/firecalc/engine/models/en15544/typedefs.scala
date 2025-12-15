@@ -42,7 +42,6 @@ import magnolia1.Transl
 import cats.data.ValidatedNel
 import afpma.firecalc.engine.models.TermConstraintError
 import afpma.firecalc.engine.models.TermConstraint.ValidatedResult
-import afpma.firecalc.engine.standard.MecaFlu_Error.InvalidConstraint
 
 object typedefs:
 

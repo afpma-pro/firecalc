@@ -13,6 +13,7 @@ import cats.data.Validated.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.models.TermConstraint.*
+import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.i18n.Localized
 import afpma.firecalc.i18n.ShowUsingLocale
@@ -20,8 +21,6 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.units.coulombutils.showP
 import io.taig.babel.Locale
-import afpma.firecalc.engine.standard.MCalc_Error
-import afpma.firecalc.engine.standard.MecaFlu_Error.InvalidConstraint
 
 // TermDef
 
