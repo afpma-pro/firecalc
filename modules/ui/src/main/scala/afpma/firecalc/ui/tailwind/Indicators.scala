@@ -86,10 +86,12 @@ final case class Indicators()(using Locale, DisplayUnits)
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-32",
-                    text <-- results_en15544_estimated_output_temperatures.mapAndFoldVNelE[String](
-                        _.t_stove_out.showP_orImpUnitsTemp[Fahrenheit], 
-                        "-"
-                    )
+                    text <-- results_en15544_estimated_output_temperatures
+                        .flatMapVNelE(_.t_stove_out)
+                        .mapAndFoldVNelE[String](
+                            _.showP_orImpUnitsTemp[Fahrenheit],
+                            "-"
+                        )
                 )
             ),
 
@@ -107,7 +109,12 @@ final case class Indicators()(using Locale, DisplayUnits)
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-48",
-                    text <-- results_en15544_estimated_output_temperatures.mapAndFoldVNelE(_.t_chimney_wall_top_out.showP_orImpUnitsTemp[Fahrenheit], "-")
+                    text <-- results_en15544_estimated_output_temperatures
+                        .flatMapVNelE(_.t_chimney_wall_top_out)
+                        .mapAndFoldVNelE(
+                            _.showP_orImpUnitsTemp[Fahrenheit], 
+                            "-"
+                        )
                 )
             )
         )

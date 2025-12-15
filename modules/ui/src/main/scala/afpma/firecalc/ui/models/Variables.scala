@@ -315,7 +315,7 @@ lazy val tChimneyWallToOutAbove45_sig: Signal[Boolean] =
 
 lazy val results_en15544_t_chimney_wall_top
     : Signal[VNelMcalcErr[t_chimney_wall_top]] =
-    results_en15544_strict_sig.mapVNelE(strict =>
+    results_en15544_strict_sig.flatMapVNelE(strict =>
         val p = (
             DraftCondition.DraftMinOrPositivePressureMax,
             LoadQty.givens.nominal
@@ -324,7 +324,7 @@ lazy val results_en15544_t_chimney_wall_top
     )
 
 lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
-    results_en15544_strict_sig.mapVNelE(strict =>
+    results_en15544_strict_sig.flatMapVNelE(strict =>
         val p = (
             DraftCondition.DraftMinOrPositivePressureMax,
             LoadQty.givens.nominal
@@ -334,9 +334,10 @@ lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
 
 lazy val eff_and_min_eff
     : Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[Percentage]])] =
-    results_en15544_efficiency
-        .combineWith(results_en15544_emissions_and_efficiency_values)
-        .map((eff, eev) => (eff, eev.map(_.min_efficiency_full_stove_nominal)))
+    results_en15544_efficiency.combineWith(
+        results_en15544_emissions_and_efficiency_values
+        .map(_.andThen(_.min_efficiency_full_stove_nominal))
+    )
 
 lazy val effInRange_sig: Signal[Boolean] =
     results_en15544_strict_sig.flatMapAndFoldVNelE(
