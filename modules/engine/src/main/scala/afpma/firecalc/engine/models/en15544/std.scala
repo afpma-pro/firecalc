@@ -19,7 +19,7 @@ import afpma.firecalc.engine.models.en15544.firebox.FireboxHelper_15544
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
-import afpma.firecalc.engine.standard.FireboxError
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.ShowAsTable
 import afpma.firecalc.engine.utils.VNelString
 
@@ -40,6 +40,7 @@ import coulomb.ops.algebra.all.{*, given}
 
 import io.taig.babel.Locale
 import afpma.firecalc.engine.standard.MecaFlu_Error
+import afpma.firecalc.engine.standard.MCalc_Error
 
 object std:
 
@@ -213,7 +214,7 @@ object std:
     
     case class Outputs(
         technicalSpecs: TechnicalSpecficiations,
-        pipesResult_15544: ValidatedNel[MecaFlu_Error, PipesResult_15544],
+        pipesResult_15544: VNelMcalcErr[PipesResult_15544],
         reference_temperatures: ReferenceTemperatures,
         efficiencies_values: EfficienciesValues,
         // pressureRequirement_EN15544: VNelString[PressureRequirement],

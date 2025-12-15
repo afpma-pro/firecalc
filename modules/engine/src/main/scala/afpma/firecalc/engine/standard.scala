@@ -8,6 +8,7 @@ package afpma.firecalc.engine
 import cats.Show
 import cats.derived.*
 import cats.syntax.show.*
+import cats.syntax.all.*
 
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.gtypedefs.v
@@ -25,7 +26,80 @@ import cats.data.ValidatedNel
 
 object standard {
 
-    type VNelMcalcErr[X] = ValidatedNel[MCalc_Error, X]
+    type VNelMcalcErr[+X] = ValidatedNel[MCalc_Error, X]
+
+    extension [X1, X2, O](vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2]))
+        def mapN_andThen_impl(f: X1 ?=> X2 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
+            (
+                vmcex_tup._1,
+                vmcex_tup._2,
+            )
+                .mapN:
+                    case (x1, x2) => (x1, x2)
+                .andThen: (x1, x2) =>
+                    given X1 = x1
+                    given X2 = x2
+                    f
+        
+        def mapN_andThen(f: (X1, X2) => VNelMcalcErr[O]): VNelMcalcErr[O] =
+            (
+                vmcex_tup._1,
+                vmcex_tup._2,
+            )
+                .mapN:
+                    case (x1, x2) => (x1, x2)
+                .andThen: (x1, x2) =>
+                    f(x1, x2)
+
+    extension [X1, X2, X3, O](vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2], VNelMcalcErr[X3]))
+        def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
+            (
+                vmcex_tup._1,
+                vmcex_tup._2,
+                vmcex_tup._3,
+            )
+                .mapN:
+                    case (x1, x2, x3) => (x1, x2, x3)
+                .andThen: (x1, x2, x3) =>
+                    given X1 = x1
+                    given X2 = x2
+                    given X3 = x3
+                    f
+
+    extension [X1, X2, X3, X4, O](vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2], VNelMcalcErr[X3], VNelMcalcErr[X4]))
+        def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> X4 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
+            (
+                vmcex_tup._1,
+                vmcex_tup._2,
+                vmcex_tup._3,
+                vmcex_tup._4,
+            )
+                .mapN:
+                    case (x1, x2, x3, x4) => (x1, x2, x3, x4)
+                .andThen: (x1, x2, x3, x4) =>
+                    given X1 = x1
+                    given X2 = x2
+                    given X3 = x3
+                    given X4 = x4
+                    f
+    extension [X1, X2, X3, X4, X5, O](vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2], VNelMcalcErr[X3], VNelMcalcErr[X4], VNelMcalcErr[X5]))
+        def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> X4 ?=> X4 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
+            (
+                vmcex_tup._1,
+                vmcex_tup._2,
+                vmcex_tup._3,
+                vmcex_tup._4,
+                vmcex_tup._5,
+           )
+                .mapN:
+                    case (x1, x2, x3, x4, x5) => (x1, x2, x3, x4, x5)
+                .andThen: (x1, x2, x3, x4, x5) =>
+                    given X1 = x1
+                    given X2 = x2
+                    given X3 = x3
+                    given X4 = x4
+                    given X5 = x5
+                    f
 
     sealed trait MCalc_Error
 
@@ -337,20 +411,19 @@ object standard {
 
         case class UnexpectedThrowable(e: Throwable) extends MecaFlu_Error(s"MecaFlu_Error Throwable: ${e.getMessage()}")
 
-        given Show[MecaFlu_Error] = Show.show: err =>
-            err match
-                case UnexpectedFireboxType(msg)               => s"UnexpectedFireboxType: ${msg}"
-                case UnexpectedPipeType(msg)                  => s"UnexpectedPipeType: ${msg}"
-                case CouldNotDetermineCrossSectionArea(msg)   => s"CouldNotDetermineCrossSectionArea: ${msg}"
-                case CouldNotDetermineAirSpaceDetailed(msg)   => s"CouldNotDetermineAirSpaceDetailed: ${msg}"
-                case UseUnsafeToSkipRatioValidationError(msg) => s"UseUnsafeToSkipRatioValidationError: ${msg}"
-                case DynamicFrictionError(msg)                => s"DynamicFrictionError: ${msg}"
-                case InvalidPressureRequirement(preq)         => s"InvalidPressureRequirement: preq=${preq}"
-                case InvalidChimneyWallTemperature(temp)      => s"InvalidChimneyWallTemperature: temp=${temp}"
-                case EfficiencyIsTooLow(eff, min_eff)         => s"EfficiencyIsTooLow: eff=${eff} min_eff=${min_eff}"
-                case InvalidConstraint(error)                 => s"InvalidConstraint: ${error.toString}"
-                case UnexpectedThrowable(e)                   => s"UnexpectedThrowable: ${e.getMessage()} \n ${e.getStackTrace().toList.mkString("\n")}"
-                case x: MecaFlu_Error                         => s"MecaFlu_Error: ${x.msg}"
+        given ShowUsingLocale[MecaFlu_Error] = showUsingLocale: 
+            case UnexpectedFireboxType(msg)               => s"UnexpectedFireboxType: ${msg}"
+            case UnexpectedPipeType(msg)                  => s"UnexpectedPipeType: ${msg}"
+            case CouldNotDetermineCrossSectionArea(msg)   => s"CouldNotDetermineCrossSectionArea: ${msg}"
+            case CouldNotDetermineAirSpaceDetailed(msg)   => s"CouldNotDetermineAirSpaceDetailed: ${msg}"
+            case UseUnsafeToSkipRatioValidationError(msg) => s"UseUnsafeToSkipRatioValidationError: ${msg}"
+            case DynamicFrictionError(msg)                => s"DynamicFrictionError: ${msg}"
+            case InvalidPressureRequirement(preq)         => s"InvalidPressureRequirement: preq=${preq}"
+            case InvalidChimneyWallTemperature(temp)      => s"InvalidChimneyWallTemperature: temp=${temp}"
+            case EfficiencyIsTooLow(eff, min_eff)         => s"EfficiencyIsTooLow: eff=${eff} min_eff=${min_eff}"
+            case InvalidConstraint(error)                 => s"InvalidConstraint: ${error.failMsg}"
+            case UnexpectedThrowable(e)                   => s"UnexpectedThrowable: ${e.getMessage()} \n ${e.getStackTrace().toList.mkString("\n")}"
+            case x: MecaFlu_Error                         => s"MecaFlu_Error: ${x.msg}"
     
     // Incremental Builder Validation Errors
     

@@ -46,6 +46,7 @@ import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType
 import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType
+import afpma.firecalc.engine.standard.VNelMcalcErr
 
 object v0_2024_10:
 
@@ -217,9 +218,9 @@ object v0_2024_10:
         def fuelType: FuelType
         def flueGasCondition: FlueGasCondition
 
-        def inputsVNel: ValidatedNel[MCalc_Error, Inputs] =
+        def inputsVNel: VNelMcalcErr[Inputs] =
             // ensure type of appliance matches with fuel type
-            val checkApplianceAndFuel: ValidatedNel[MCalc_Error, Unit] =
+            val checkApplianceAndFuel: VNelMcalcErr[Unit] =
                 (typeOfAppliance, fuelType) match
                     case (TypeOfAppliance.Pellets, FuelType.Pellets) => 
                         ().validNel // OK
@@ -241,7 +242,7 @@ object v0_2024_10:
                     flueGasCondition
                 )
 
-        lazy val en13384_appl: ValidatedNel[MCalc_Error, EN13384_Strict_Application] = inputsVNel.map: i =>
+        lazy val en13384_appl: VNelMcalcErr[EN13384_Strict_Application] = inputsVNel.map: i =>
             val f = new EN13384_1_A1_2019_Formulas
             new EN13384_Strict_Application(f, i):
                 final override lazy val computeAt = ComputeAt.Mean
@@ -262,25 +263,30 @@ object v0_2024_10:
 
         type PipesType <: Pipes_EN15544_Strict | Pipes_EN15544_MCE
         
-        def pipesVNel: ValidatedNel[MCalc_Error, PipesType]
+        def pipesVNel: VNelMcalcErr[PipesType]
 
         def design: Design
 
         type EN15544_Alg_Type <: EN15544_V_2023_Common_Application[?]
 
-        lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Alg_Type]
+        lazy val en15544_Alg: VNelMcalcErr[EN15544_Alg_Type]
 
-        override lazy val heatingAppliance: ValidatedNel[MCalc_Error, HeatingAppliance] = 
+        override lazy val heatingAppliance: VNelMcalcErr[HeatingAppliance] = 
             en15544_Alg.andThen: en15544_Alg =>
-                en15544_Alg.en13384_heatingAppliance_pressures
-                    .map: hap =>
+                (
+                    en15544_Alg.en13384_heatingAppliance_pressures,
+                    en15544_Alg.en13384_heatingAppliance_temperatures,
+                    en15544_Alg.en13384_heatingAppliance_efficiency,
+                    en15544_Alg.en13384_heatingAppliance_powers,
+                )
+                    .mapN: (hap, hat, hae, hapowers) =>
                         HeatingAppliance(
                             design.firebox.reference,
                             design.firebox.type_of_appliance,
-                            en15544_Alg.en13384_heatingAppliance_efficiency,
+                            hae,
                             en15544_Alg.en13384_heatingAppliance_fluegas,
-                            en15544_Alg.en13384_heatingAppliance_powers,
-                            en15544_Alg.en13384_heatingAppliance_temperatures,
+                            hapowers,
+                            hat,
                             en15544_Alg.en13384_heatingAppliance_massFlows,
                             hap,
                         )

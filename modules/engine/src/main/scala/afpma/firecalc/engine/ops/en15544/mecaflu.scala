@@ -33,6 +33,7 @@ import com.softwaremill.quicklens.*
 import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
+import afpma.firecalc.engine.standard.UnexpectedDevError
 
 trait MecaFlu_EN15544_Strict:
     
@@ -220,12 +221,18 @@ private abstract trait MecaFlu_EN15544_Strict_PipeSectionResult_Impl(
         en15544.formulas.v_calc(volumeFlow, crossSectionArea)
 
     val massFlow: MassFlow = gas match
-        case _: CombustionAir   => 
-            en15544.m_L.getOrElse(throw new Exception(s"could not compute m_L (load_qty=${given_Option_LoadQty})"))
+        case _: CombustionAir => 
+            val en15544_m_L_value = en15544.getOrThrow_forLoadOp(en15544.m_L, 
+                ifNone = UnexpectedDevError(s"could not compute m_L (load_qty=${given_Option_LoadQty})")
+            )
+            en15544_m_L_value
             / 
             curr.nf.asQty
         case _: FlueGas         => 
-            en15544.m_G.getOrElse(throw new Exception(s"could not compute m_G (load_qty=${given_Option_LoadQty})"))
+            val en15544_m_G_value = en15544.getOrThrow_forLoadOp(en15544.m_G, 
+                ifNone = UnexpectedDevError(s"could not compute m_G (load_qty=${given_Option_LoadQty})")
+            )
+            en15544_m_G_value
             / 
             curr.nf.asQty
 

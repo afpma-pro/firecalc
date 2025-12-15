@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.TermDef
 import afpma.firecalc.engine.models.TermDefDetails
 import afpma.firecalc.engine.models.gtypedefs
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 
 import afpma.firecalc.i18n.I
@@ -468,9 +469,9 @@ object typedefs:
     case class EstimatedOutputTemperatures(
         t_firebox: TCelsius,
         t_firebox_outlet: TCelsius,
-        t_stove_out: TCelsius,
-        t_chimney_out: TCelsius,
-        t_chimney_wall_top_out: TCelsius,
+        t_stove_out: ValidatedNel[MCalc_Error, TCelsius],
+        t_chimney_out: ValidatedNel[MCalc_Error, TCelsius],
+        t_chimney_wall_top_out: ValidatedNel[MCalc_Error, TCelsius],
     )
 
     case class CitedConstraints(
@@ -478,7 +479,7 @@ object typedefs:
         m_B                         : CheckableConstraint[m_B],
         m_B_min                     : CheckableConstraint[m_B_min],
         glass_area                  : CheckableConstraint[GlassArea],
-        fireboxDimensions_Base  : CheckableConstraint[std.Firebox_15544.Dimensions.Base],
+        fireboxDimensions_Base      : CheckableConstraint[std.Firebox_15544.Dimensions.Base],
         h_br                        : CheckableConstraint[H_BR],
         λ                           : CheckableConstraint[λ],
         η                           : CheckableConstraint[η]

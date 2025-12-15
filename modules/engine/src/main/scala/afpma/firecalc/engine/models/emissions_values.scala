@@ -8,11 +8,12 @@ import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.*
 import coulomb.ops.standard.all.given
+import afpma.firecalc.engine.standard.VNelMcalcErr
 
 case class EfficienciesValues(
-    n_nominal: Percentage,
-    n_lowest: Option[Percentage],
-    ns: Percentage,
+    n_nominal: VNelMcalcErr[Percentage],
+    n_lowest: VNelMcalcErr[Option[Percentage]],
+    ns: VNelMcalcErr[Percentage],
 )
 
 case class EmissionsAndEfficiencyValues(
@@ -20,10 +21,10 @@ case class EmissionsAndEfficiencyValues(
     accredited_or_notified_body: String,
     test_reports: List[TestReport],
     min_efficiency_firebox_nominal: Option[Percentage],
-    min_efficiency_full_stove_nominal: Option[Percentage],
+    min_efficiency_full_stove_nominal: VNelMcalcErr[Option[Percentage]],
     min_efficiency_firebox_reduced: Option[Percentage],
-    min_efficiency_full_stove_reduced: Option[Percentage],
-    min_seasonal_efficiency_full_stove: Option[Percentage],
+    min_efficiency_full_stove_reduced: VNelMcalcErr[Option[Percentage]],
+    min_seasonal_efficiency_full_stove: VNelMcalcErr[Option[Percentage]],
     emissions_values: EmissionValues,
 )
 

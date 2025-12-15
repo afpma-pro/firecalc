@@ -55,10 +55,16 @@ class ShowAsTableInstances(using Locale):
         ShowAsTable.mkLightFor(I18N.headers.efficiencies_values) { x =>
             val _I = I18N.emissions_and_efficiency_values
             val status_min_eff_fs_nominal = lreg.min_efficiency match
-                case Some(lreg_min_eff) => if (x.n_nominal >= lreg_min_eff) "OK" else "NOT OK"
+                case Some(lreg_min_eff) => 
+                    x.n_nominal
+                    .map(n_nominal => if (n_nominal >= lreg_min_eff) "OK" else "NOT OK")
+                    .getOrElse("NOT OK")
                 case None               => ""
             val status_min_eff_fs_lowest = lreg.min_efficiency match
-                case Some(lreg_min_eff) => x.n_lowest.fold("")(n_lowest => if (n_lowest >= lreg_min_eff) "OK" else "NOT OK")
+                case Some(lreg_min_eff) => 
+                    x.n_lowest
+                    .map(_.fold("")(n_lowest => if (n_lowest >= lreg_min_eff) "OK" else "NOT OK"))
+                    .getOrElse("NOT OK")
                 case None               => ""
             val status_min_seasonal_eff_fs = lreg.min_seasonal_efficiency match
                 case Some(_) => 
@@ -66,9 +72,9 @@ class ShowAsTableInstances(using Locale):
                     "n.a."
                     // if (x.ns >= lreg_min_seasonal_eff) "OK" else "NOT OK"
                 case None               => ""
-            (_I.min_efficiency_full_stove_nominal   :: s">= ${x.n_nominal.showP}"           :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_nominal  :: Nil) ::
-            (_I.min_efficiency_full_stove_reduced    :: s">= ${x.n_lowest.showOrElse("")}"   :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_lowest   :: Nil) ::
-            (I18N.en16510.η_s                       :: s">= ${x.ns.showP}"                  :: lreg.min_seasonal_efficiency .map(x => s">= ${x.showP}").getOrElse("") :: status_min_seasonal_eff_fs :: Nil) ::
+            (_I.min_efficiency_full_stove_nominal   :: s">= ${x.n_nominal.showP}"                                 :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_nominal  :: Nil) ::
+            (_I.min_efficiency_full_stove_reduced   :: s">= ${x.n_lowest.map(_.showOrElse("")).getOrElse("ERR")}" :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_lowest   :: Nil) ::
+            (I18N.en16510.η_s                       :: s">= ${x.ns.showP}"                                        :: lreg.min_seasonal_efficiency .map(x => s">= ${x.showP}").getOrElse("") :: status_min_seasonal_eff_fs :: Nil) ::
             // (I18N.heating_appliance.efficiency   :: "η"      :: x.n.show :: Nil) ::
             // (I18N.en16510.η_s                    :: "η_s"    :: x.ns.show   :: Nil) ::
             Nil
@@ -99,9 +105,9 @@ class ShowAsTableInstances(using Locale):
                     else
                         List(Nil)
                 val effValues = EfficienciesValues(
-                    n_nominal = x.min_efficiency_full_stove_nominal.get, 
+                    n_nominal = x.min_efficiency_full_stove_nominal.map(_.get),
                     n_lowest  = x.min_efficiency_full_stove_reduced, 
-                    ns        = x.min_seasonal_efficiency_full_stove.get
+                    ns        = x.min_seasonal_efficiency_full_stove.map(_.get)
                 )
                 (_I.firebox_name     :: x.firebox_name                            :: "" :: "" :: Nil) ::
                 effValues.showOnlyRows.toList  :::

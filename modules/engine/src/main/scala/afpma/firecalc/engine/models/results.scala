@@ -10,7 +10,7 @@ import cats.data.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.models.gtypedefs.ζ
-import afpma.firecalc.engine.standard.MecaFlu_Error
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils
 import afpma.firecalc.engine.utils.*
 
@@ -313,31 +313,31 @@ case class PipesResult_13384_VNelString(
 }
 
 case class PipesResult_15544_VNelString(
-    airIntake     : PipeResultE,
-    combustionAir : PipeResultE,
-    firebox       : PipeResultE,
-    flue          : PipeResultE,
-    connector     : PipeResultE,
-    chimney       : PipeResultE,
+    airIntake     : VNelMcalcErr[PipeResult],
+    combustionAir : VNelMcalcErr[PipeResult],
+    firebox       : VNelMcalcErr[PipeResult],
+    flue          : VNelMcalcErr[PipeResult],
+    connector     : VNelMcalcErr[PipeResult],
+    chimney       : VNelMcalcErr[PipeResult],
 ) {
     def isValid: Boolean = 
         List(
+            airIntake        ,
+            combustionAir    ,
+            firebox          ,
+            flue             ,
+            connector        ,
+            chimney          ,
+        ).forall(_.isValid)
+
+    def accumulateErrors: VNelMcalcErr[PipesResult_15544] = 
+        (
             airIntake,
             combustionAir,
             firebox,
             flue,
             connector,
             chimney,
-        ).forall(_.isRight)
-
-    def accumulateErrors: ValidatedNel[MecaFlu_Error, PipesResult_15544] = 
-        (
-            Validated.fromEither(airIntake)     .toValidatedNel,
-            Validated.fromEither(combustionAir) .toValidatedNel,
-            Validated.fromEither(firebox)       .toValidatedNel,
-            Validated.fromEither(flue)          .toValidatedNel,
-            Validated.fromEither(connector)     .toValidatedNel,
-            Validated.fromEither(chimney)       .toValidatedNel,
         ).mapN: (
             airIntake,
             combustionAir,
@@ -354,32 +354,6 @@ case class PipesResult_15544_VNelString(
                 connector,
                 chimney,
         )
-
-    def accumulateErrorsAsVNelString: VNelString[PipesResult_15544] = 
-        (
-            Validated.fromEither(airIntake)     .leftMap(_.msg).toValidatedNel,
-            Validated.fromEither(combustionAir) .leftMap(_.msg).toValidatedNel,
-            Validated.fromEither(firebox)       .leftMap(_.msg).toValidatedNel,
-            Validated.fromEither(flue)          .leftMap(_.msg).toValidatedNel,
-            Validated.fromEither(connector)     .leftMap(_.msg).toValidatedNel,
-            Validated.fromEither(chimney)       .leftMap(_.msg).toValidatedNel,
-        ).mapN: (
-            airIntake,
-            combustionAir,
-            firebox,
-            flue,
-            connector,
-            chimney,
-        ) =>
-            PipesResult_15544(
-                airIntake,
-                combustionAir,
-                firebox,
-                flue,
-                connector,
-                chimney,
-        )
-
 }
 
 case class PipesResult_13384(

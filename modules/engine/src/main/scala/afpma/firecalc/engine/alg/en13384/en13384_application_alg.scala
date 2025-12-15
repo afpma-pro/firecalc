@@ -100,7 +100,7 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard:
     lazy val last_known_density_before_connector_pipe     : WithParams_13384[Option[Density]]
     lazy val last_known_velocity_before_connector_pipe    : WithParams_13384[Option[FlowVelocity]]
 
-    def connector_PipeResult   : PipeResultOp[WithParams_13384[PipeResultE]]
+    def connector_PipeResult    : PipeResultOp[WithParams_13384[PipeResultE]]
     def chimney_PipeResult      : PipeResultOp[WithParams_13384[PipeResultE]]
     def pipesResult_13384_VNelS : PipeResultOp[WithParams_13384[PipesResult_13384_VNelString]]
     def pipesResult_13384       : PipeResultOp[WithParams_13384[VNelString[PipesResult_13384]]]

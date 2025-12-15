@@ -6,6 +6,7 @@
 package afpma.firecalc.engine.impl.en15544.mce
 
 import cats.*
+import cats.data.Validated
 import cats.syntax.all.*
 
 
@@ -19,6 +20,7 @@ import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.units.coulombutils.*
 import algebra.instances.all.given
 import coulomb.policy.standard.given
@@ -75,13 +77,18 @@ open class EN15544_MCE_Application(
             co2_dry_perc    = fluegas_co2_dry
         )
 
-    lazy val en13384_η_WN: Percentage = inputs.design.firebox match
-        case _: OneOff  => en13384_η_W_calc(inputs.fluegas_co2_dry_nominal)
-        case tstd: Tested => tstd.efficiency_nominal
+    lazy val en13384_η_WN: VNelMcalcErr[Percentage] = 
+        Validated.validNel:
+            inputs.design.firebox match
+                case _: OneOff  => en13384_η_W_calc(inputs.fluegas_co2_dry_nominal)
+                case tstd: Tested => tstd.efficiency_nominal
 
-    lazy val en13384_η_Wmin: Option[Percentage] = inputs.design.firebox match
-        case _: OneOff  => inputs.fluegas_co2_dry_lowest.map(en13384_η_W_calc)
-        case tstd: Tested => tstd.efficiency_reduced
+    lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] = 
+        (
+            inputs.design.firebox match
+                case _: OneOff    => inputs.fluegas_co2_dry_lowest.map(en13384_η_W_calc)
+                case tstd: Tested => tstd.efficiency_reduced
+        ).map(Validated.validNel)
 
     lazy val energy_in_nominal_load = energy_in_wet_wood(m_B)
     lazy val energy_in_minimal_load = m_B_min.map(mb_min => energy_in_wet_wood(mb_min))
@@ -101,10 +108,11 @@ open class EN15544_MCE_Application(
 
     lazy val en13384_heatingAppliance_massFlows = inputs.massFlows_override
 
-    lazy val en13384_heatingAppliance_temperatures = HeatingAppliance.Temperatures(
-        flue_gas_temp_nominal = t_fluepipe_end(using runValidationAtParams),
-        flue_gas_temp_reduced  = None,
-    )
+    lazy val en13384_heatingAppliance_temperatures = t_fluepipe_end(using runValidationAtParams).map: t =>
+        HeatingAppliance.Temperatures(
+            flue_gas_temp_nominal = t,
+            flue_gas_temp_reduced = None,
+        )
 
     override lazy val en13384_T_L_override = 
         // user can override T_L if MCE by using inputs.nationalAccepetedData
@@ -198,83 +206,120 @@ open class EN15544_MCE_Application(
 
     override def m_G = 
         LoadQty.summonOpt match
-            case Some(LoadQty.Nominal) => (en13384_application.m_dot: m_G).some
-            case Some(LoadQty.Reduced)  => (en13384_application.m_dot_min: m_G).some
-            case None                  => None
+            case None => None
+            case Some(lq) =>
+                (
+                    en13384_heatingAppliance_powers,
+                    en13384_heatingAppliance_efficiency
+                )
+                .mapN_andThen_impl:
+                    given HeatingAppliance.MassFlows = en13384_heatingAppliance_massFlows
+                    (
+                        lq match
+                            case LoadQty.Nominal  => (en13384_application.m_dot: m_G)
+                            case LoadQty.Reduced  => (en13384_application.m_dot_min: m_G)
+                    ).validNel
+                .some
 
     override def m_L = 
         LoadQty.summonOpt match
-            case Some(LoadQty.Nominal) => (en13384_application.mB_dot: m_L).some
-            case Some(LoadQty.Reduced)  => (en13384_application.mB_dot_min: m_L).some
-            case None                  => None
+            case None => None
+            case Some(lq) =>
+                (
+                    en13384_heatingAppliance_powers,
+                    en13384_heatingAppliance_efficiency
+                )
+                .mapN_andThen_impl:
+                    given HeatingAppliance.MassFlows = en13384_heatingAppliance_massFlows
+                    (
+                        lq match
+                                case LoadQty.Nominal  => (en13384_application.mB_dot: m_L)
+                                case LoadQty.Reduced  => (en13384_application.mB_dot_min: m_L)
+                    ).validNel
+                .some
 
     override def combustionAir_PipeResult =
-        airIntake_PipeResult.flatMap: asp =>
-            ops_en13384.MecaFlu_EN13384.makePipeResult(
-                fd                          = CombustionAirPipe_Module_EN13384.unwrap(inputs.pipes.combustionAir),
-                hafg                        = en13384_heatingAppliance_fluegas,
-                hamf                        = en13384_heatingAppliance_massFlows,
-                hapwr                       = en13384_heatingAppliance_powers,
-                haeff                       = en13384_heatingAppliance_efficiency,
-                temp_start                  = asp.gas_temp_end,
-                last_pipe_density           = en13384_application.computeAt match
-                    case ComputeAt.Mean         => asp.last_density_mean
-                    case ComputeAt.Middle       => asp.last_density_middle
-                ,
-                last_pipe_velocity          = en13384_application.computeAt match
-                    case ComputeAt.Mean         => asp.last_velocity_mean
-                    case ComputeAt.Middle       => asp.last_velocity_middle
-                ,
-                gas                         = CombustionAir,
+        airIntake_PipeResult.andThen: asp =>
+            (
+                en13384_heatingAppliance_powers,
+                en13384_heatingAppliance_efficiency,
             )
+            .mapN_andThen: (ha_pow, ha_eff) =>
+                ops_en13384.MecaFlu_EN13384.makePipeResult(
+                    fd                          = CombustionAirPipe_Module_EN13384.unwrap(inputs.pipes.combustionAir),
+                    hafg                        = en13384_heatingAppliance_fluegas,
+                    hamf                        = en13384_heatingAppliance_massFlows,
+                    hapwr                       = ha_pow,
+                    haeff                       = ha_eff,
+                    temp_start                  = asp.gas_temp_end,
+                    last_pipe_density           = en13384_application.computeAt match
+                        case ComputeAt.Mean         => asp.last_density_mean
+                        case ComputeAt.Middle       => asp.last_density_middle
+                    ,
+                    last_pipe_velocity          = en13384_application.computeAt match
+                        case ComputeAt.Mean         => asp.last_velocity_mean
+                        case ComputeAt.Middle       => asp.last_velocity_middle
+                    ,
+                    gas                         = CombustionAir,
+                ).toValidatedNel
 
     override def firebox_PipeResult = 
-        combustionAir_PipeResult.flatMap: cci =>
-            ops_en13384.MecaFlu_EN13384.makePipeResult(
-                fd                          = FireboxPipe_Module_EN13384.unwrap(inputs.pipes.firebox),
-                hafg                        = en13384_heatingAppliance_fluegas,
-                hamf                        = en13384_heatingAppliance_massFlows,
-                hapwr                       = en13384_heatingAppliance_powers,
-                haeff                       = en13384_heatingAppliance_efficiency,
-                temp_start                  = t_BR,
-                last_pipe_density           = en13384_application.computeAt match
-                    case ComputeAt.Mean         => cci.last_density_mean
-                    case ComputeAt.Middle       => cci.last_density_middle
-                ,
-                last_pipe_velocity          = en13384_application.computeAt match
-                    case ComputeAt.Mean         => cci.last_velocity_mean
-                    case ComputeAt.Middle       => cci.last_velocity_middle
-                ,
-                gas                         = FlueGas,
+        combustionAir_PipeResult.andThen: cci =>
+            (
+                en13384_heatingAppliance_powers,
+                en13384_heatingAppliance_efficiency,
             )
+            .mapN_andThen: (ha_pow, ha_eff) =>
+                ops_en13384.MecaFlu_EN13384.makePipeResult(
+                    fd                          = FireboxPipe_Module_EN13384.unwrap(inputs.pipes.firebox),
+                    hafg                        = en13384_heatingAppliance_fluegas,
+                    hamf                        = en13384_heatingAppliance_massFlows,
+                    hapwr                       = ha_pow,
+                    haeff                       = ha_eff,
+                    temp_start                  = t_BR,
+                    last_pipe_density           = en13384_application.computeAt match
+                        case ComputeAt.Mean         => cci.last_density_mean
+                        case ComputeAt.Middle       => cci.last_density_middle
+                    ,
+                    last_pipe_velocity          = en13384_application.computeAt match
+                        case ComputeAt.Mean         => cci.last_velocity_mean
+                        case ComputeAt.Middle       => cci.last_velocity_middle
+                    ,
+                    gas                         = FlueGas,
+                ).toValidatedNel
 
     override def flue_PipeResult = 
-        firebox_PipeResult.flatMap: cc =>
-            ops_en13384.MecaFlu_EN13384.makePipeResult(
-                fd                          = FluePipe_Module_EN13384.unwrap(inputs.pipes.flue),
-                hafg                        = en13384_heatingAppliance_fluegas,
-                hamf                        = en13384_heatingAppliance_massFlows,
-                hapwr                       = en13384_heatingAppliance_powers,
-                haeff                       = en13384_heatingAppliance_efficiency,
-                temp_start                  = t_burnout,
-                last_pipe_density           = en13384_application.computeAt match
-                    case ComputeAt.Mean         => cc.last_density_mean
-                    case ComputeAt.Middle       => cc.last_density_middle
-                ,
-                last_pipe_velocity          = en13384_application.computeAt match
-                    case ComputeAt.Mean         => cc.last_velocity_mean
-                    case ComputeAt.Middle       => cc.last_velocity_middle
-                ,
-                gas                         = FlueGas,
+        firebox_PipeResult.andThen: cc =>
+            (
+                en13384_heatingAppliance_powers,
+                en13384_heatingAppliance_efficiency,
             )
+            .mapN_andThen: (ha_pow, ha_eff) =>
+                ops_en13384.MecaFlu_EN13384.makePipeResult(
+                    fd                          = FluePipe_Module_EN13384.unwrap(inputs.pipes.flue),
+                    hafg                        = en13384_heatingAppliance_fluegas,
+                    hamf                        = en13384_heatingAppliance_massFlows,
+                    hapwr                       = ha_pow,
+                    haeff                       = ha_eff,
+                    temp_start                  = t_burnout,
+                    last_pipe_density           = en13384_application.computeAt match
+                        case ComputeAt.Mean         => cc.last_density_mean
+                        case ComputeAt.Middle       => cc.last_density_middle
+                    ,
+                    last_pipe_velocity          = en13384_application.computeAt match
+                        case ComputeAt.Mean         => cc.last_velocity_mean
+                        case ComputeAt.Middle       => cc.last_velocity_middle
+                    ,
+                    gas                         = FlueGas,
+                ).toValidatedNel
 
     override final def pipesResult_15544_VNelS = PipesResult_15544_VNelString(
-        airIntake               = airIntake_PipeResult,
-        combustionAir  = combustionAir_PipeResult,
-        firebox             = firebox_PipeResult,
-        flue                    = flue_PipeResult,
-        connector              = connector_PipeResult,
-        chimney                 = chimney_PipeResult,
+        airIntake     = airIntake_PipeResult,
+        combustionAir = combustionAir_PipeResult,
+        firebox       = firebox_PipeResult,
+        flue          = flue_PipeResult,
+        connector     = connector_PipeResult,
+        chimney       = chimney_PipeResult,
     )
 
     override final def outputs =
