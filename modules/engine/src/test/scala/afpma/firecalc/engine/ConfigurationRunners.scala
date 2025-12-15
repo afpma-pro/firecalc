@@ -75,7 +75,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         println(pipesResult_15544.showAsCliTable)
 
         println(_en15544.pressureRequirement_EN15544.toOption.map(_.showAsCliTable).getOrElse("ERROR (pressure requirement)"))
-        println(_en15544.t_chimney_wall_top.showAsCliTable)
+        println(_en15544.t_chimney_wall_top.getOrThrow.showAsCliTable)
 
         println(_en15544.efficiencies_values.showAsCliTable)
         println(_en15544.flue_gas_triple_of_variates.toOption.map(_.showAsCliTable).getOrElse("ERROR (flue gas triple of variates)"))
@@ -129,7 +129,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         println(pipesResult_15544.showAsCliTable)
 
         println(_en15544.pressureRequirement_EN15544.toOption.map(_.showAsCliTable).getOrElse("ERROR (pressure requirement)"))
-        println(_en15544.t_chimney_wall_top.showAsCliTable)
+        println(_en15544.t_chimney_wall_top.getOrThrow.showAsCliTable)
 
         println(_en15544.efficiencies_values.showAsCliTable)
         println(_en15544.flue_gas_triple_of_variates.toOption.map(_.showAsCliTable).getOrElse("ERROR (flue gas triple of variates)"))

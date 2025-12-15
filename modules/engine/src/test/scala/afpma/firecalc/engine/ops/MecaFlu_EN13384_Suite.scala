@@ -94,17 +94,23 @@ class MecaFlu_EN13384_Suite extends AnyFreeSpec with Matchers {
                 val en15544 = new EN15544_Strict_Application(f)(inputs)
                 val chimney_elems = CasType_15544_C2.chimneyPipe.toOption.get
                 val p = Params_13384.DraftMin_LoadNominal
-                val r = MecaFlu_EN13384.makePipeResult(
-                    chimney_elems.unwrap,
-                    en15544.en13384_heatingAppliance_fluegas,
-                    en15544.en13384_heatingAppliance_massFlows,
-                    en15544.en13384_heatingAppliance_powers,
-                    en15544.en13384_heatingAppliance_efficiency,
-                    201.degreesCelsius,
-                    1.kg_per_m3.some,
-                    3.1.m_per_s.some,
-                    FlueGas
-                )(using p, en15544.en13384_application)
+                val r = 
+                    (
+                        en15544.en13384_heatingAppliance_powers,
+                        en15544.en13384_heatingAppliance_efficiency,
+                    )
+                    .mapN_andThen: (ha_pow, ha_eff) =>
+                        MecaFlu_EN13384.makePipeResult(
+                            chimney_elems.unwrap,
+                            en15544.en13384_heatingAppliance_fluegas,
+                            en15544.en13384_heatingAppliance_massFlows,
+                            ha_pow,
+                            ha_eff,
+                            201.degreesCelsius,
+                            1.kg_per_m3.some,
+                            3.1.m_per_s.some,
+                            FlueGas
+                        )(using p, en15544.en13384_application).toValidatedNel
                 println(r.toOption.get.show)
             }
         }

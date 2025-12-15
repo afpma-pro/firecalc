@@ -27,8 +27,12 @@ import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.units.coulombutils.conversions.*
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.engine.ops.PositionOp
+import io.taig.babel.Locale
+import io.taig.babel.Locales
 
 class MecaFlu_EN15544_Suite extends AnyFreeSpec with Matchers {
+
+    given Locale = Locales.en
 
     val channel_pipe_full_descr = strict_ex01_colonne_ascendante.fluePipe.toOption.get
     val channel_pipe_elems = channel_pipe_full_descr

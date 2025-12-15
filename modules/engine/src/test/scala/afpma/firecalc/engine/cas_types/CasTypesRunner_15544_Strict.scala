@@ -98,7 +98,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         seperate_tables
 
         println(_en15544.estimated_output_temperatures.showAsCliTable)
-        println(_en15544.t_chimney_wall_top.showAsCliTable)
+        println(_en15544.t_chimney_wall_top.getOrThrow.showAsCliTable)
 
         seperate_tables
 
@@ -133,7 +133,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         seperate_tables
 
-        println(_en15544.temperatureRequirements_EN13384.showAsCliTable)
+        println(_en15544.temperatureRequirements_EN13384.getOrThrow.showAsCliTable)
 
         seperate_tables
 

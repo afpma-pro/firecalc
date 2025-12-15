@@ -229,7 +229,7 @@ trait TypstReportFactory_15544[
         en15544_app.pressureRequirement_EN15544.getOrThrow.typ
 
     def en15544_t_chimney_wall_top: String = 
-        en15544_app.t_chimney_wall_top.typ
+        en15544_app.t_chimney_wall_top.getOrThrow.typ
 
     def en15544_emissions_and_efficiency_values: String = 
         given LocalRegulations = stove_proj_15544_strict.localRegulations
@@ -266,7 +266,7 @@ trait TypstReportFactory_15544[
         en15544_app.en13384_application.P_L.typ
 
     def en13384_temperatureRequirements: String = 
-        en15544_app.temperatureRequirements_EN13384.typ
+        en15544_app.temperatureRequirements_EN13384.getOrThrow.typ
 
     def en13384_pressureRequirements: String = 
         en15544_app.pressureRequirements_EN13384.getOrThrow.typ

@@ -271,8 +271,8 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         println(vecsec.pressureDiffAtStartOf("P09").showHeaderAsQuotedCSVRow(";"))
         // valeurs :
         // débits massiques
-        println(SimplePreview.forQty("input_air_mass_rate", "input_air_mass_rate", _en15544.m_L.map(d => "%.5f".format(d.value)).getOrElse(""), "kg/s").showValuesAsQuotedCSVRow(";"))
-        println(SimplePreview.forQty("flue_gas_mass_rate" , "flue_gas_mass_rate" , _en15544.m_G.map(d => "%.5f".format(d.value)).getOrElse(""), "kg/s").showValuesAsQuotedCSVRow(";"))
+        println(SimplePreview.forQty("input_air_mass_rate", "input_air_mass_rate", _en15544.m_L.map(d => "%.5f".format(d.getOrThrow.value)).getOrElse(""), "kg/s").showValuesAsQuotedCSVRow(";"))
+        println(SimplePreview.forQty("flue_gas_mass_rate" , "flue_gas_mass_rate" , _en15544.m_G.map(d => "%.5f".format(d.getOrThrow.value)).getOrElse(""), "kg/s").showValuesAsQuotedCSVRow(";"))
         // différences de pression
         println(vecsec.pressureDiffAtStartOf("P01").showValuesAsQuotedCSVRow(";"))
         println(vecsec.pressureDiffAtStartOf("P02").showValuesAsQuotedCSVRow(";"))
