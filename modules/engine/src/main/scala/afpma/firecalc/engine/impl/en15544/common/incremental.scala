@@ -162,8 +162,8 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
     object ElementFactory extends ElementFactoryModule {
 
         val mkStraightSection2: MakeFor[AddSectionSlopped | AddSectionHorizontal | AddSectionVertical, StraightSection] = { op =>
-            val vg = ctxState.getValidated(_.geometry, GeometryMustBeSet(op.name))
-            val vr = ctxState.getValidated(_.roughness, RoughnessMustBeSet(op.name))
+            val vg = ctxState.getValidated(_.geometry, GeometryMustBeSet(op.name, pt))
+            val vr = ctxState.getValidated(_.roughness, RoughnessMustBeSet(op.name, pt))
 
             val (len, elev_gain) = op match
                 case AddSectionSlopped(_, len, elev_gain)    => (len        , elev_gain)
@@ -186,7 +186,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
             @nowarn nextSectionLength: Option[Length]
         ): MakeFor[AddDirectionChange, DirectionChange] = 
             op =>
-                ctxState.getValidated(_.geometry.map(_.dh), DirectionChangeRequiresSectionGeometry)
+                ctxState.getValidated(_.geometry.map(_.dh), DirectionChangeRequiresSectionGeometry(pt))
                     .map: _ =>
                         op match
                             case AddSharpeAngle_0_to_180(_, angle, angleN2) => 
@@ -206,9 +206,9 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                 }
 
                 if (sectionGeometryChanged)
-                    CannotSetGeometryBeforeChange.invalidNel
+                    CannotSetGeometryBeforeChange(pt).invalidNel
                 else
-                    ctxState.getValidated(_.geometry, SectionGeometryMustBeDefined)
+                    ctxState.getValidated(_.geometry, SectionGeometryMustBeDefined(pt))
                         .map: fromGeom =>
                             SectionGeometryChange(
                                 from = fromGeom,
@@ -220,7 +220,7 @@ trait IncrementalBuilder extends IncrementalBuilderAlg:
                 case AddFlowResistance(name, zeta, NoneOfEither) =>
                     ctxState
                         .getValidated(_.geometry,
-                            FlowResistanceRequiresGeometry(op.name, "EN15544"))
+                            FlowResistanceRequiresGeometry(op.name, "EN15544", pt))
                         .andThen: geom =>
                             SingularFlowResistance(zeta, crossSectionO = Some(geom.area)).validNel
                 case AddFlowResistance(name, zeta, SomeLeft(area)) =>

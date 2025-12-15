@@ -181,7 +181,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         nextGeomOp match
             case None =>
                 // This is a programming error - should never happen in normal operation
-                InvalidOperationSequence.invalidNel
+                InvalidOperationSequence(pt).invalidNel
             case Some(gop) =>
                 mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel => 
                     nel.foldLeft((inIdsMapping, inPipe)):
