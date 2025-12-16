@@ -34,10 +34,7 @@ final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePane
 
     val chimney_pipe_vnel3_signal: Signal[VNelMcalcErr[Unit]] = results_en15544_strict_sig.map: strict => 
         val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(s =>
-            val vnel = s.validateVelocitiesInChimneyPipe()(using p)
-            filterAndMapFluePipeErrors(onlyFor = ChimneyPipeT)(vnel)
-        )
+        strict.andThen(_.validateVelocitiesInChimneyPipe()(using p))
 
     lazy val vnel_signal = chimney_pipe_vnel_signal
         .combineWith(chimney_pipe_vnel2_signal)

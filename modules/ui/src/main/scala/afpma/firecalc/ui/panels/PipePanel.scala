@@ -262,22 +262,3 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             minVel.showP_orImpUnits[Inch / Second],
             maxVel.showP_orImpUnits[Inch / Second],
         )
-
-    protected def filterAndMapFluePipeErrors(onlyFor: PipeType)(vnel: ValidatedNel[MCalc_Error, Unit]): ValidatedNel[FluePipeError, Unit] = 
-        import cats.implicits.toFunctorFilterOps
-        vnel match
-            case v @ Validated.Valid(_) => v
-            case Validated.Invalid(nel) =>
-                val errorsLeft = nel
-                    .toList
-                    .mapFilter[FluePipeError]:
-                        case e: FluePipeError => Some(e)
-                        case _ => None
-                    .filter(_.sectionTyp == onlyFor)
-                if (errorsLeft.nonEmpty) 
-                    NonEmptyList.fromListUnsafe(errorsLeft).invalid
-                else
-                    ().validNel
-                
-
-        

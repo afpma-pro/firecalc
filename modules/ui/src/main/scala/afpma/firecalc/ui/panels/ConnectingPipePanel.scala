@@ -32,10 +32,7 @@ final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePa
 
     val connector_pipe_vnel3_signal = results_en15544_strict_sig.map: strict => 
         val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(s =>
-            val vnel = s.validateVelocitiesInConnectorPipe()(using p)
-            filterAndMapFluePipeErrors(onlyFor = ConnectorPipeT)(vnel)
-        )
+        strict.andThen(_.validateVelocitiesInConnectorPipe()(using p))
 
     lazy val vnel_signal = 
         connector_pipe_vnel_signal

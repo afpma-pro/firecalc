@@ -47,10 +47,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     val channel_pipe_vnel4_signal = results_en15544_strict_sig.map: strict => 
         val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(s =>
-            val vnel = s.validateVelocitiesInFluePipe()(using p)
-            filterAndMapFluePipeErrors(onlyFor = FluePipeT)(vnel)
-        )
+        strict.andThen(_.validateVelocitiesInFluePipe()(using p))
 
     lazy val vnel_signal = 
         fluepipe_vnel_signal

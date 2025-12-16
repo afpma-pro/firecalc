@@ -680,13 +680,13 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
             ().validNel[FlueGasVelocityError]
 
     def validateVelocitiesInFluePipe(): WithParams_15544[VNelMcalcErr[Unit]] =
-        flue_PipeResult.map(validateVelocitiesIn)
+        flue_PipeResult.andThen(validateVelocitiesIn)
 
     def validateVelocitiesInConnectorPipe(): WithParams_15544[VNelMcalcErr[Unit]] =
-        connector_PipeResult.map(validateVelocitiesIn)
+        connector_PipeResult.andThen(validateVelocitiesIn)
 
     def validateVelocitiesInChimneyPipe(): WithParams_15544[VNelMcalcErr[Unit]] =
-        chimney_PipeResult.map(validateVelocitiesIn)
+        chimney_PipeResult.andThen(validateVelocitiesIn)
 
     def validateVelocitiesInPipes(): WithParams_15544[VNelMcalcErr[Unit]] =
         List(
@@ -742,8 +742,10 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
                     .sequence[[x] =>> ValidatedNel[FlueGasVelocityError, x], Unit]
                     .map(_ => ())
                     // remove duplicates (if start and end of section are both outside flow velocity admissible range)
-                    .leftMap(errs => NonEmptyList.fromList(errs.toList.distinctBy(e =>
-                        (e.sectionId, e.sectionTyp, e.sectionName))).get
+                    .leftMap(errs => 
+                        // errs.toList.foreach(e => scala.scalajs.js.Dynamic.global.console.log(e.toString))
+                        NonEmptyList.fromList(errs.toList.distinctBy(e =>
+                            (e.sectionId, e.sectionTyp, e.sectionName))).get
                     ) 
             case _: PipeResult.WithoutSections => ().validNel
 
