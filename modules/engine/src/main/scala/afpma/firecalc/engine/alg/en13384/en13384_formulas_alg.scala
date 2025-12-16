@@ -1272,7 +1272,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
         t_emittingSurfaceTemp: TCelsius,
         dn_airSpaceWidth: Length,
         innerShape: PipeShape,
-    ): Either[EN13384_FormulaError.ThermalResistanceComputationFailed, SquareMeterKelvinPerWatt]
+    ): Either[EN13384_FormulaError, SquareMeterKelvinPerWatt]
 
 end EN13384_1_A1_2019_Formulas_Alg
 

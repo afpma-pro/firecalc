@@ -417,13 +417,18 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     // compute tr_approx using gas temp mean first
     // then compute tiob_approx 
     // then compute tr with t_i_middle_b_approx as t_emitting_layer (should be outside temperature of layer, but using inner surface temp for now)
-    def compute_thermal_resistance(t_emitting_layer: TCelsius) =
+    def compute_thermal_resistance(t_emitting_layer: TCelsius): Either[MecaFlu_Error, SquareMeterKelvinPerWatt] =
         whenGasType(
-            ifCombustionAir = EN13384_FormulaError.ThermalResistanceComputationFailed(s"not applicable for 'combustion air' pipe").asLeft,
+            ifCombustionAir = MecaFlu_Error.ThermalResistanceNotApplicableForCombustionAir(curr.typ).asLeft,
             ifFlueGas = curr.el match
-                case s: StraightSection => en13384.formulas.thermal_resistance_for_layers_calc(t_emitting_layer, innerShape(using Start), s.layers)
-                case _ => EN13384_FormulaError.ThermalResistanceComputationFailed(s"only 'StraightSection' are expected to have a thermal resistance [${curr.fullRef}]").asLeft
-        ).leftMap(formulaError => MecaFlu_Error(formulaError.msg, curr.typ))
+                case s: StraightSection =>
+                    en13384.formulas.thermal_resistance_for_layers_calc(t_emitting_layer, innerShape(using Start), s.layers)
+                        .leftMap(formulaError => MecaFlu_Error.ThermalResistanceCalculationErrors(
+                            cats.data.NonEmptyList.one(formulaError.withSectionTyp(curr.typ)),
+                            curr.typ
+                        ))
+                case _ => MecaFlu_Error.ThermalResistanceRequiresStraightSection(curr.fullRef, curr.typ).asLeft
+        )
 
     val en13384_tr_approx = compute_thermal_resistance(temp_mean)
     
@@ -631,8 +636,9 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                 mkPipeWithGasFlowWithLength(temp_mean, massFlow, exteriorAir, custom_section_length) match // te, temp_mean, to ???
 
                     case Right(pgf) =>
-                        val v_k_ob = pgf.k_ob(_1_Λ, _1_Λ_o).leftMap(_.map(_.msg))
-                        val v_αi   = pgf.α_i.leftMap(_.map(_.msg))
+                        // Convert EN13384_FormulaError to EN13384_Error using withSectionTyp
+                        val v_k_ob = EN13384_FormulaError.withSectionTyp(pgf.k_ob(_1_Λ, _1_Λ_o))(curr.typ)
+                        val v_αi   = EN13384_FormulaError.withSectionTyp(pgf.α_i)(curr.typ)
                         (v_k_ob, v_αi) mapN { (kob, αi) =>
                             
                             val tuo = en13384.T_uo_calc(
@@ -669,7 +675,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                             tiob
                         } match
                             case _ @ Valid(x) => x.asRight
-                            case Invalid(nel) => MecaFlu_Error(nel.toList.mkString("\n", "\n", "\n"), curr.typ).asLeft
+                            case Invalid(nel) => MecaFlu_Error.HeatTransferCoefficientErrors(nel, curr.typ).asLeft
 
                     case Left(models.en13384.pipedescr.Error.OnlyAStraightSectionCanBeConvertedToPipeWithGasFlow) =>
                         prevO match

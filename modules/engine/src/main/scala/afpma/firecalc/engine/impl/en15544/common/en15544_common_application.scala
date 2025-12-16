@@ -53,6 +53,7 @@ import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.models.en15544.typedefs.CitedConstraints.checkAndReturnVNelInvalidConstraint
 import io.taig.babel.Locales
+import io.taig.babel.Locale
 
 
 // import standard.dsl.CalculationF.compute
@@ -579,7 +580,9 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
     override lazy val t_combustion_air: EpOp[t_combustion_air] = 
         en13384_application.T_mB match
             case Valid(tmb) => tmb.unwrap.toUnit[Celsius]
-            case Invalid(errs) => throw new Exception(errs.head.msg)
+            case Invalid(errs) => 
+                given Locale = Locales.en
+                throw new Exception(errs.head.show)
 
     // Section "4.8.2", "Mean firebox temperature"
 

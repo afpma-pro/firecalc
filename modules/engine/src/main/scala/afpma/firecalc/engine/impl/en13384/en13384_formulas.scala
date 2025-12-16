@@ -464,7 +464,7 @@ open class `EN13384_1_A1_2019_Formulas`
         val A_tot = A_ub + A_uh + A_uu + A_ul + T_u_custom_area.map(_ => A_u_custom_area).getOrElse(0.m2)
 
         if (A_tot == 0.0)
-            Left(EN13384_FormulaError.NoOutsideSurface("T_u (ambiant air) calculation : could not compute 'T_u' if no external surface found"))
+            Left(EN13384_FormulaError.NoOutsideSurface())
         else
             Right((num / A_tot).withTemperature[Kelvin])
 
@@ -1630,7 +1630,7 @@ open class `EN13384_1_A1_2019_Formulas`
                 (tL: T_mB).validNel
             case _                                                =>
                 // not implemented yet (non urgent or even useful ?)
-                EN13384_FormulaError.InvalidDuctType("only non concentric ducts with high thermal resistance (> 0.65 m2.K/W) are implemented").invalidNel
+                EN13384_FormulaError.InvalidDuctType().invalidNel
 
     // Section "7.8.4", "Températures moyennes pour le calcul des pressions"
 
@@ -2043,7 +2043,7 @@ open class `EN13384_1_A1_2019_Formulas`
         t_emittingSurfaceTemp: TCelsius,
         dn_airSpaceWidth: Length,
         innerShape: PipeShape,
-    ): Either[EN13384_FormulaError.ThermalResistanceComputationFailed, SquareMeterKelvinPerWatt] =
+    ): Either[EN13384_FormulaError, SquareMeterKelvinPerWatt] =
         // __INTERPRETATION__
         val t_interpol =
             if (t_emittingSurfaceTemp < 40.degreesCelsius) 40.degreesCelsius
@@ -2089,7 +2089,6 @@ open class `EN13384_1_A1_2019_Formulas`
                 val dhn = innerShape.dh
                 
                 coefficient_of_form(innerShape)
-                    .leftMap(sideRatioTooHigh => EN13384_FormulaError.ThermalResistanceComputationFailed(sideRatioTooHigh.msg))
                     .map: y =>
                         val rth = thermalResistanceFromConductivity_forCylindricalLayers(
                             y,

@@ -8,6 +8,12 @@ package afpma.firecalc.engine.models.en13384
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
+import io.taig.babel.Locales
+
+
+import afpma.firecalc.i18n.ShowUsingLocale.given
+import afpma.firecalc.engine.standard.EN13384_FormulaError.given
+
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import algebra.instances.all.given
@@ -29,6 +35,7 @@ import afpma.firecalc.engine.models.en13384.std.ThermalResistance.CoefficientOfF
 class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
 
     val en13384 = new EN13384_1_A1_2019_Formulas {}
+    given io.taig.babel.Locale = Locales.en
 
     "ThermalResistance" - {
 

@@ -48,6 +48,7 @@ final case class I18nData(
     inputs_error: Inputs_Error,
     local_conditions: LocalConditions,
     local_regulations: LocalRegulations,
+    mecaflu: MecaFlu,
     no: String,
     panels: Panels,
     pipe_location: PipeLocation,
@@ -355,6 +356,8 @@ object I18nData:
         psi_ratio_is_greater_than_3: StringFormat1,
         prandtl_too_small: StringFormat1,
         prandtl_too_big: StringFormat1,
+        no_outside_surface_for_tu_calculation: String,
+        invalid_duct_type_only_non_concentric_high_resistance: String,
     )
 
     case class EN15544(
@@ -842,3 +845,15 @@ object I18nData:
             flow_resistance_requires_geometry: StringFormat1,
             flow_resistance_requires_geometry_15544: StringFormat1
         )
+
+    case class MecaFlu(
+        errors: MecaFlu_Errors
+    )
+
+    case class MecaFlu_Errors(
+        thermal_resistance_not_applicable_for_combustion_air: String,
+        thermal_resistance_requires_straight_section: StringFormat1,
+        thermal_resistance_calculation_errors: StringFormat1,
+        heat_transfer_coefficient_errors: StringFormat1,
+        no_straight_section_for_temperature_calc: StringFormat1
+    )
