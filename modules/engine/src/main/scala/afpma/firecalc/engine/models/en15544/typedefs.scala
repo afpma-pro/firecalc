@@ -408,8 +408,8 @@ object typedefs:
     }
 
     object PressureRequirement:
-        given Show[PressureRequirement] = Show.show: p =>
-            s"current=${p.current.show}, min=${p.min.show}, max=${p.max.show}"
+        given ShowUsingLocale[PressureRequirement] = showUsingLocale: p =>
+            I18N.en15544_errors.pressure_requirement_display(p.current.show, p.min.show, p.max.show)
 
     // Section "4.10.3", "Efficiency of the combustion (η)"
 

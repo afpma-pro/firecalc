@@ -897,6 +897,7 @@ object I18nData:
         invalid_shape_parameter: StringFormat2,
         value_out_of_bound: StringFormat5,
         could_not_compute_individual_coeff: StringFormat2,
+        pressure_requirement_display: StringFormat3,
     )
 
     case class BuilderErrors(
