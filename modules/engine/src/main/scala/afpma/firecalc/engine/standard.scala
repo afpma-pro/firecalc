@@ -115,7 +115,7 @@ object standard {
         case e: EN13384_Error               => e.show  // Uses ShowUsingLocale[EN13384_Error]
         case e: MecaFlu_Error               => e.show  // Uses ShowUsingLocale[MecaFlu_Error]
         case e: IncrementalValidation_Error => e.show  // Uses ShowUsingLocale[IncrementalValidation_Error]
-        case e: ErrorsInOtherSectionType    => Show[ErrorsInOtherSectionType].show(e)
+        case e: ErrorsInOtherSectionType    => e.show  // Uses ShowUsingLocale[ErrorsInOtherSectionType]
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
@@ -142,8 +142,8 @@ object standard {
         case e: FireboxError                => Show[FireboxError].show(e)
         case e: FluePipeError               => Show[FluePipeError].show(e)
         case e: PressureLossCoeff_Error     => Show[PressureLossCoeff_Error].show(e)
-        case e: InvalidPressureRequirement  => Show[InvalidPressureRequirement].show(e)
-        case e: EfficiencyIsTooLow          => Show[EfficiencyIsTooLow].show(e)
+        case e: InvalidPressureRequirement  => e.show  // Uses ShowUsingLocale[InvalidPressureRequirement]
+        case e: EfficiencyIsTooLow          => e.show  // Uses ShowUsingLocale[EfficiencyIsTooLow]
         case e: InvalidConstraint           => Show[InvalidConstraint].show(e)
         case e: EN15544_ErrorMessage        => Show[EN15544_ErrorMessage].show(e)
     
@@ -342,9 +342,11 @@ object standard {
     case class NoOutsideSurfaceFound(override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError
     
     object DuctTypeError:
-        given Show[DuctTypeError] = Show.show(e => s"DuctTypeError(sectionTyp=${e.sectionTyp})")
+        given ShowUsingLocale[DuctTypeError] = showUsingLocale: _ =>
+            I18N.en13384.errors.invalid_duct_type_only_non_concentric_high_resistance
     object NoOutsideSurfaceFound:
-        given Show[NoOutsideSurfaceFound] = Show.show(e => s"NoOutsideSurfaceFound(sectionTyp=${e.sectionTyp})")
+        given ShowUsingLocale[NoOutsideSurfaceFound] = showUsingLocale: _ =>
+            I18N.en13384.errors.no_outside_surface_for_tu_calculation
     
     // NuCalcError - no 'msg' parameter, all messages via I18N
     sealed abstract class NuCalcError(override val sectionTyp: PipeType)
@@ -505,16 +507,16 @@ object standard {
 
     case class InvalidPressureRequirement(preq: PressureRequirement) extends EN15544_Error
     object InvalidPressureRequirement:
-        given Show[InvalidPressureRequirement] = Show.show: e =>
-            s"InvalidPressureRequirement: ${e.preq}"
+        given ShowUsingLocale[InvalidPressureRequirement] = showUsingLocale: e =>
+            I18N.en15544_errors.invalid_pressure_requirement(e.preq.show)
 
     
     // EfficiencyIsTooLow
     
     case class EfficiencyIsTooLow(eff: QtyD[Percent], min_eff: QtyD[Percent]) extends EN15544_Error
     object EfficiencyIsTooLow:
-        given Show[EfficiencyIsTooLow] = Show.show: e =>
-            s"EfficiencyIsTooLow: η = ${e.eff} and η_min = ${e.min_eff}"
+        given ShowUsingLocale[EfficiencyIsTooLow] = showUsingLocale: e =>
+            I18N.en15544_errors.efficiency_is_too_low(e.eff.show, e.min_eff.show)
 
     case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error
     object InvalidConstraint:
@@ -682,14 +684,13 @@ object standard {
             case FlowResistanceRequiresGeometry(op, _, _)         => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
     
     given ShowUsingLocale[InvalidOperationSequence.type] = showUsingLocale:
-        case InvalidOperationSequence => "Invalid operation sequence: expecting some 'add geometry' operation but none found"
+        case InvalidOperationSequence => I18N.builder_errors.invalid_operation_sequence
 
 
     // ErrorsInOtherSectionType
     case object ErrorsInOtherSectionType extends MCalc_Error
     type ErrorsInOtherSectionType = ErrorsInOtherSectionType.type
 
-    // given ShowUsingLocale[ErrorsInOtherSectionType] = showUsingLocale:
-    //     case ErrorsInOtherSectionType => "Waiting for other errors to be resolved."
-    given Show[ErrorsInOtherSectionType] = Show.show(_ => "Waiting for other errors to be resolved.")
+    given ShowUsingLocale[ErrorsInOtherSectionType] = showUsingLocale:
+        case ErrorsInOtherSectionType => I18N.builder_errors.errors_in_other_section_type
 }

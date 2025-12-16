@@ -30,6 +30,7 @@ final case class I18nData(
     add_element: AddElement,
     address: Address,
     append_layer_descr: AppendLayerDescr,
+    builder_errors: BuilderErrors,
     customer: Customer,
     firebox: Firebox_15544,
     firebox_names: FireboxNames,
@@ -38,6 +39,7 @@ final case class I18nData(
     emissions_and_efficiency_values: EmissionsAndEfficiencyValues,
     en13384: EN13384,
     en15544: EN15544,
+    en15544_errors: EN15544_Errors,
     en16510: EN16510,
     errors: Errors,
     facing_type: FacingType,
@@ -881,4 +883,23 @@ object I18nData:
         
         // Exception errors
         unexpected_throwable: StringFormat1
+    )
+
+    case class EN15544_Errors(
+        invalid_pressure_requirement: StringFormat1,
+        efficiency_is_too_low: StringFormat2,
+        local_struct_error: StringFormat1,
+        singular_flow_resistance_coeff_error: StringFormat1,
+        missing_alpha3_angle_for_short_flue_pipe_section: StringFormat1,
+        could_not_select_coeff_for_interpolation: StringFormat2,
+        unexpected_ratio_ld_dh: StringFormat1,
+        no_given_ratio_ld_dh: String,
+        invalid_shape_parameter: StringFormat2,
+        value_out_of_bound: StringFormat5,
+        could_not_compute_individual_coeff: StringFormat2,
+    )
+
+    case class BuilderErrors(
+        invalid_operation_sequence: String,
+        errors_in_other_section_type: String,
     )

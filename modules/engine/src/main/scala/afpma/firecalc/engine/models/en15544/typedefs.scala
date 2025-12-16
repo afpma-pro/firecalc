@@ -5,8 +5,10 @@
 
 package afpma.firecalc.engine.models.en15544
 
+import cats.Show
 import cats.data.NonEmptyList
 import cats.data.ValidatedNel
+import cats.syntax.show.*
 
 import algebra.instances.all.given
 
@@ -398,12 +400,16 @@ object typedefs:
         val `current-min` = current - min
         val `current-max` = current - max
         
-        val isInValidRange: Boolean = 
+        val isInValidRange: Boolean =
             if (min <= current && current <= max) true else false
 
         val isTooMuchDraft = if (current > max) true else false
         val isTooMuchResistance = if (min > current) true else false
     }
+
+    object PressureRequirement:
+        given Show[PressureRequirement] = Show.show: p =>
+            s"current=${p.current.show}, min=${p.min.show}, max=${p.max.show}"
 
     // Section "4.10.3", "Efficiency of the combustion (η)"
 

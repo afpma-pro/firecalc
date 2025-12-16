@@ -357,7 +357,7 @@ lazy val i18n = crossProject(JVMPlatform, JSPlatform)
     name := "firecalc-i18n",
     version := engine_version,
     scalacOptions ++= Seq(
-        "-Xmax-inlines:48",
+        "-Xmax-inlines:64",
     ),
 
     // i18n
