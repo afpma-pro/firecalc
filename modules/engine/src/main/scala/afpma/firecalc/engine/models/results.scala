@@ -14,6 +14,10 @@ import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils
 import afpma.firecalc.engine.utils.*
 
+import io.taig.babel.{Locale, Locales}
+
+import afpma.firecalc.engine.standard.MecaFlu_Error.given  // ShowUsingLocale[MecaFlu_Error]
+
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.{*, given}
@@ -262,8 +266,8 @@ object PipeResult:
         final val last_density_middle       = elements.last.density_middle
         final val last_velocity_mean        = elements.last.v_mean
         final val last_velocity_middle      = elements.last.v_middle
-        final def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt): TCelsius = 
-            elements.last.temperature_iob(_1_Λ_o).fold(e => throw new Exception(e.msg), identity)
+        final def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt): TCelsius =
+            elements.last.temperature_iob(_1_Λ_o).fold(e => { given Locale = Locales.en; throw new Exception(e.show) }, identity)
 
     given Show[PipeResult] = Show.show: res =>
         import res.*
@@ -294,11 +298,12 @@ case class PipesResult_13384_VNelString(
             chimney,
         ).forall(_.isRight)
 
-    def accumulateErrors: VNelString[PipesResult_13384] = 
+    def accumulateErrors: VNelString[PipesResult_13384] =
+        given Locale = Locales.en  // Use English for dev/internal error aggregation
         (
-            Validated.fromEither(airIntake)               .leftMap(_.msg).toValidatedNel,
-            Validated.fromEither(connector)              .leftMap(_.msg).toValidatedNel,
-            Validated.fromEither(chimney)                 .leftMap(_.msg).toValidatedNel,
+            Validated.fromEither(airIntake)               .leftMap(_.show).toValidatedNel,
+            Validated.fromEither(connector)              .leftMap(_.show).toValidatedNel,
+            Validated.fromEither(chimney)                 .leftMap(_.show).toValidatedNel,
         ).mapN: (
             airIntake,
             connector,

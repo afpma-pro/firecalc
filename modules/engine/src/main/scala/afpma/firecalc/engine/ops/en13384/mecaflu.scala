@@ -30,6 +30,7 @@ import afpma.firecalc.engine.standard.EN13384_FormulaError
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.units.coulombutils.{*, given}
+import afpma.firecalc.engine.standard.MecaFlu_Error.given  // ShowUsingLocale[MecaFlu_Error]
 
 import coulomb.*
 import coulomb.syntax.*
@@ -322,15 +323,21 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     MecaFlu_Error.CouldNotDetermineCrossSectionArea(
                         s"${curr.fullRef}: could not determine 'cross section area'", curr.typ).asLeft
 
-    val crossSectionArea: PositionOpX[Start | End, Area] = 
-        crossSectionAreaE.fold(e => throw new Exception(e.msg), identity)
+    val crossSectionArea: PositionOpX[Start | End, Area] =
+        crossSectionAreaE.fold(e => {
+            given Locale = Locales.en
+            throw new Exception(e.show)
+        }, identity)
     
     // ambiant air
     val tu: Option[TKelvin] = airSpaceDetailedE match
-        case Left(err) => 
+        case Left(err) =>
             if (section_length == 0.meters) None
-            else throw new Exception(err.msg)
-        case Right(asd) => 
+            else {
+                given Locale = Locales.en;
+                throw new Exception(err.show)
+            }
+        case Right(asd) =>
             T_u(using asd).toOption
         
     given PipeType = gp.pipeEl.typ
@@ -680,8 +687,8 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     case Left(models.en13384.pipedescr.Error.OnlyAStraightSectionCanBeConvertedToPipeWithGasFlow) =>
                         prevO match
                             case Some(prev) => prev.temperature_iob(_1_Λ_o)
-                            case None => MecaFlu_Error(s"no straight section defined for chimney pipe ? last attempt is ${curr.el}", curr.typ).asLeft
-            case pt => 
+                            case None => MecaFlu_Error.NoStraightSectionDefinedForTemperatureCalc(s"last attempt is ${curr.el}", curr.typ).asLeft
+            case pt =>
                 MecaFlu_Error.UnexpectedPipeType(
                     s"Tiob can only be computed for connector pipe or chimney pipe, not '$pt'", pt).asLeft
 
@@ -694,10 +701,10 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     tiob   <- temperature_i_o_b_calc(tr, _1_Λ_o)
                 yield
                     tiob
-            case _ => 
+            case _ =>
                 prevO match
                     case Some(prev) => prev.temperature_iob(_1_Λ_o)
-                    case None => MecaFlu_Error(s"no straight section defined for chimney pipe ? last attempt is ${curr.el}", curr.typ).asLeft
+                    case None => MecaFlu_Error.NoStraightSectionDefinedForTemperatureCalc(s"last attempt is ${curr.el}", curr.typ).asLeft
 
     val section_id              = curr.idx
     val section_name            = curr.name

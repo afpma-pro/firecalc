@@ -27,6 +27,8 @@ import coulomb.policy.standard.given
 import io.taig.babel.Locale
 import io.taig.babel.Locales
 
+import afpma.firecalc.engine.standard.MecaFlu_Error.given  // ShowUsingLocale[MecaFlu_Error]
+
 object EN13384_1_A1_2019_Common_Application:
     enum ComputeAt:
         case Middle, Mean
@@ -160,10 +162,10 @@ abstract class EN13384_1_A1_2019_Common_Application(
     final override def pipesResult_13384 = 
         pipesResult_13384_VNelS.accumulateErrors
 
-    def t_chimney_out       = chimney_PipeResult.fold(e => throw new Exception(e.msg), _.gas_temp_end)
-    def t_chimney_wall_top  = 
+    def t_chimney_out       = chimney_PipeResult.fold(e => { given Locale = Locales.en; throw new Exception(e.show) }, _.gas_temp_end)
+    def t_chimney_wall_top  =
         chimney_PipeResult.fold(
-            e => throw new Exception(e.msg), 
+            e => { given Locale = Locales.en; throw new Exception(e.show) },
             _.temperature_iob(_1_Λ_o = SquareMeterKelvinPerWatt(0.0)))
         
     // Specific sections

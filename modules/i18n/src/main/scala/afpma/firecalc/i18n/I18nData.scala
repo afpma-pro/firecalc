@@ -851,9 +851,34 @@ object I18nData:
     )
 
     case class MecaFlu_Errors(
+        // Thermal resistance errors (already using I18N)
         thermal_resistance_not_applicable_for_combustion_air: String,
         thermal_resistance_requires_straight_section: StringFormat1,
         thermal_resistance_calculation_errors: StringFormat1,
         heat_transfer_coefficient_errors: StringFormat1,
-        no_straight_section_for_temperature_calc: StringFormat1
+        no_straight_section_for_temperature_calc: StringFormat1,
+        
+        // Firebox type errors
+        unexpected_firebox_type: StringFormat1,
+        
+        // Pipe type errors
+        unexpected_pipe_type: StringFormat1,
+        
+        // Cross section errors
+        could_not_determine_cross_section_area: StringFormat1,
+        
+        // Air space errors
+        could_not_determine_air_space_detailed: StringFormat1,
+        
+        // Ratio validation errors
+        use_unsafe_to_skip_ratio_validation: StringFormat1,
+        
+        // Dynamic friction errors
+        dynamic_friction_error: StringFormat1,
+        
+        // Temperature errors
+        invalid_chimney_wall_temperature: StringFormat1,
+        
+        // Exception errors
+        unexpected_throwable: StringFormat1
     )

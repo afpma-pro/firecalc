@@ -110,11 +110,11 @@ object standard {
 
     given ShowUsingLocale[MCalc_Error] = showUsingLocale:
         case e: UnexpectedDevError          => s"DEV_ERROR: ${e.msg}"
-        case e: Inputs_Error                => Show[Inputs_Error].show(e)
-        case e: EN15544_Error               => Show[EN15544_Error].show(e)
-        case e: EN13384_Error               => e.msg
-        case e: MecaFlu_Error               => Show[MecaFlu_Error].show(e)
-        case e: IncrementalValidation_Error => Show[IncrementalValidation_Error].show(e)
+        case e: Inputs_Error                => e.show  // Uses ShowUsingLocale[Inputs_Error]
+        case e: EN15544_Error               => e.show  // Uses ShowUsingLocale[EN15544_Error]
+        case e: EN13384_Error               => e.show  // Uses ShowUsingLocale[EN13384_Error]
+        case e: MecaFlu_Error               => e.show  // Uses ShowUsingLocale[MecaFlu_Error]
+        case e: IncrementalValidation_Error => e.show  // Uses ShowUsingLocale[IncrementalValidation_Error]
         case e: ErrorsInOtherSectionType    => Show[ErrorsInOtherSectionType].show(e)
 
     // Unexpected Error
@@ -291,8 +291,8 @@ object standard {
     case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError derives Show
     
     // EN 13384
-    sealed trait EN13384_Error extends standard.MCalc_Error:
-        def msg: String
+    // NOTE: No 'def msg: String' - all error messages are provided via I18N translations through ShowUsingLocale
+    sealed trait EN13384_Error extends standard.MCalc_Error
 
     object EN13384_Error:
         given ShowUsingLocale[EN13384_Error] = showUsingLocale:
@@ -301,8 +301,9 @@ object standard {
             case _: CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing =>
                 I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
             case e: CouldNotComputeThermalResistance =>
-                I18N.en13384.errors.could_not_compute_thermal_resistance(e.msg)
+                I18N.en13384.errors.could_not_compute_thermal_resistance(e.reason)
             case e: EN13384_ErrorMessage =>
+                // EN13384_ErrorMessage.msg is intentional user-provided data, keep it
                 I18N.en13384.errors.en13384_error_message(e.msg)
             case _: DuctTypeError =>
                 I18N.en13384.errors.invalid_duct_type_only_non_concentric_high_resistance
@@ -322,53 +323,38 @@ object standard {
             
 
     // ThermalResistance
-    sealed abstract class ThermalResistance_Error(override val msg: String, override val sectionTyp: PipeType) 
-        extends EN13384_Error with HasSectionTypError derives Show
+    // NOTE: No 'msg' parameter - all messages are provided via I18N translations through ShowUsingLocale[EN13384_Error]
+    sealed abstract class ThermalResistance_Error(override val sectionTyp: PipeType)
+        extends EN13384_Error with HasSectionTypError
     object ThermalResistance_Error:
-        case class SideRatioTooHighForRectangularForm(outer_shape: PipeShape, override val sectionTyp: PipeType) 
-            extends ThermalResistance_Error(s"side ratio above 1:1.5 (got ${outer_shape.show}), can not compute coefficient of form", sectionTyp)
+        case class SideRatioTooHighForRectangularForm(outer_shape: PipeShape, override val sectionTyp: PipeType)
+            extends ThermalResistance_Error(sectionTyp)
 
-        case class CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(override val sectionTyp: PipeType) 
-            extends ThermalResistance_Error(s"can not end layer description on a dead air space : outer layer is missing", sectionTyp)
-        case class CouldNotComputeThermalResistance(override val msg: String, override val sectionTyp: PipeType) 
-            extends ThermalResistance_Error(s"could not compute thermal resistance: $msg", sectionTyp)
+        case class CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(override val sectionTyp: PipeType)
+            extends ThermalResistance_Error(sectionTyp)
+        // Note: 'reason' is data (e.g. from ReadTableError), not a pre-formatted message
+        case class CouldNotComputeThermalResistance(reason: String, override val sectionTyp: PipeType)
+            extends ThermalResistance_Error(sectionTyp)
     
-    case class EN13384_ErrorMessage(msg: String) extends EN13384_Error derives Show
-    case class DuctTypeError(override val sectionTyp: PipeType)(
-        val msg: String = "only non concentric ducts with high thermal resistance are allowed"
-    ) extends EN13384_Error with HasSectionTypError
-    case class NoOutsideSurfaceFound(override val sectionTyp: PipeType)(
-        val msg: String = "T_u (ambient air) calculation: could not compute 'T_u' if no external surface found"
-    ) extends EN13384_Error with HasSectionTypError
+    // EN13384_ErrorMessage keeps 'msg' as it's intentional user-provided data
+    case class EN13384_ErrorMessage(msg: String) extends EN13384_Error
+    case class DuctTypeError(override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError
+    case class NoOutsideSurfaceFound(override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError
     
     object DuctTypeError:
-        given Show[DuctTypeError] = Show.show(e => s"DuctTypeError(sectionTyp=${e.sectionTyp}, msg=${e.msg})")
+        given Show[DuctTypeError] = Show.show(e => s"DuctTypeError(sectionTyp=${e.sectionTyp})")
     object NoOutsideSurfaceFound:
-        given Show[NoOutsideSurfaceFound] = Show.show(e => s"NoOutsideSurfaceFound(sectionTyp=${e.sectionTyp}, msg=${e.msg})")
+        given Show[NoOutsideSurfaceFound] = Show.show(e => s"NoOutsideSurfaceFound(sectionTyp=${e.sectionTyp})")
     
-    sealed abstract class NuCalcError(override val msg: String, override val sectionTyp: PipeType)
-        extends EN13384_Error with HasSectionTypError 
-    case class ZeroLengthPipe(pname: String, override val sectionTyp: PipeType) extends NuCalcError(s"pipe with name '$pname' has length 0", sectionTyp)
-    case class ReIsAbove10million(R_e: Double, override val sectionTyp: PipeType)
-        extends NuCalcError(
-            s"R_e out of bound : R_e > 10 000 000 => got R_e = $R_e", sectionTyp
-        )
-        derives Show
-    case class PsiRatioIsGreaterThan3(ratio: Double, override val sectionTyp: PipeType)
-        extends NuCalcError(s"Ψ / Ψ_smooth > 3 => got Ψ / Ψ_smooth = $ratio", sectionTyp)
-        derives Show
-    sealed abstract class PrandtlOutOfBound(val P_r: Double, override val msg: String, override val sectionTyp: PipeType)
-        extends NuCalcError(msg, sectionTyp) derives Show
-    case class PrandtlTooSmall(override val P_r: Double, override val sectionTyp: PipeType)
-        extends PrandtlOutOfBound(
-            P_r,
-            s"Prandtl too small, expecting 0.6 < Prandtl but got Prandtl = $P_r", sectionTyp
-        ) derives Show
-    case class PrandtlTooBig(override val P_r: Double, override val sectionTyp: PipeType)
-        extends PrandtlOutOfBound(
-            P_r,
-            s"Prandtl too big, expecting Prandtl < 1.5 but got Prandtl = $P_r", sectionTyp
-        ) derives Show
+    // NuCalcError - no 'msg' parameter, all messages via I18N
+    sealed abstract class NuCalcError(override val sectionTyp: PipeType)
+        extends EN13384_Error with HasSectionTypError
+    case class ZeroLengthPipe(pname: String, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
+    case class ReIsAbove10million(R_e: Double, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
+    case class PsiRatioIsGreaterThan3(ratio: Double, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
+    sealed abstract class PrandtlOutOfBound(val P_r: Double, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
+    case class PrandtlTooSmall(override val P_r: Double, override val sectionTyp: PipeType) extends PrandtlOutOfBound(P_r, sectionTyp)
+    case class PrandtlTooBig(override val P_r: Double, override val sectionTyp: PipeType) extends PrandtlOutOfBound(P_r, sectionTyp)
 
     // ============================================================================
     // CONTEXT-FREE ERRORS (Formula Layer)
@@ -417,10 +403,10 @@ object standard {
 
         // Other Formula Errors
         case class NoOutsideSurface() extends EN13384_FormulaError:
-            override def withSectionTyp(st: PipeType): EN13384_Error = NoOutsideSurfaceFound(st)()
+            override def withSectionTyp(st: PipeType): EN13384_Error = NoOutsideSurfaceFound(st)
 
         case class InvalidDuctType() extends EN13384_FormulaError:
-            override def withSectionTyp(st: PipeType): EN13384_Error = DuctTypeError(st)()
+            override def withSectionTyp(st: PipeType): EN13384_Error = DuctTypeError(st)
 
         // ShowUsingLocale for formula errors (delegates to i18n)
         given ShowUsingLocale[EN13384_FormulaError] = showUsingLocale:
@@ -536,57 +522,67 @@ object standard {
     
 
     // MecaFlu_Error
+    // NOTE: No 'msg: String' field - all error messages are provided via I18N translations through ShowUsingLocale
 
-    sealed class MecaFlu_Error(val msg: String, override val sectionTyp: PipeType) extends MCalc_Error with HasSectionTypError
+    sealed trait MecaFlu_Error extends MCalc_Error with HasSectionTypError
 
     object MecaFlu_Error:
-        case class UnexpectedFireboxType(override val msg: String) extends MecaFlu_Error(msg, FireboxPipeT)
-        case class UnexpectedPipeType(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
-        case class CouldNotDetermineCrossSectionArea(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
-        case class CouldNotDetermineAirSpaceDetailed(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
+        // Firebox type errors
+        case class UnexpectedFireboxType(reason: String) extends MecaFlu_Error:
+            override def sectionTyp: PipeType = FireboxPipeT
+        
+        // Pipe type errors
+        case class UnexpectedPipeType(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+        
+        // Cross section errors
+        case class CouldNotDetermineCrossSectionArea(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+        
+        // Air space errors
+        case class CouldNotDetermineAirSpaceDetailed(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+        given ShowUsingLocale[CouldNotDetermineAirSpaceDetailed] = showUsingLocale: x =>
+            I18N.mecaflu.errors.could_not_determine_air_space_detailed(x.sectionRef)
 
-        case class UseUnsafeToSkipRatioValidationError(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
+        // Ratio validation errors
+        case class UseUnsafeToSkipRatioValidationError(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
 
-        case class DynamicFrictionError(override val msg: String, override val sectionTyp: PipeType) extends MecaFlu_Error(msg, sectionTyp)
+        // Dynamic friction errors
+        case class DynamicFrictionError(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
 
-        case class InvalidChimneyWallTemperature(temp: TempD[Celsius])
-            extends MecaFlu_Error(s"InvalidChimneyWallTemperature: ${temp}", ChimneyPipeT)
+        // Temperature errors
+        case class InvalidChimneyWallTemperature(temp: TempD[Celsius]) extends MecaFlu_Error:
+            override def sectionTyp: PipeType = ChimneyPipeT
 
-        case class UnexpectedThrowable(e: Throwable, override val sectionTyp: PipeType) extends MecaFlu_Error(s"MecaFlu_Error Throwable: ${e.getMessage()}", sectionTyp)
+        // Exception errors
+        case class UnexpectedThrowable(e: Throwable, override val sectionTyp: PipeType) extends MecaFlu_Error
 
         // Thermal resistance computation errors (context-aware)
-        case class ThermalResistanceNotApplicableForCombustionAir(override val sectionTyp: PipeType)
-            extends MecaFlu_Error("Thermal resistance is not applicable for combustion air pipe", sectionTyp)
+        case class ThermalResistanceNotApplicableForCombustionAir(override val sectionTyp: PipeType) extends MecaFlu_Error
         
-        case class ThermalResistanceRequiresStraightSection(sectionRef: String, override val sectionTyp: PipeType)
-            extends MecaFlu_Error(s"Only 'StraightSection' elements have a thermal resistance [$sectionRef]", sectionTyp)
+        case class ThermalResistanceRequiresStraightSection(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
         
-        case class ThermalResistanceCalculationErrors(errors: cats.data.NonEmptyList[EN13384_Error], override val sectionTyp: PipeType)
-            extends MecaFlu_Error(s"Thermal resistance calculation failed: ${errors.toList.map(_.msg).mkString(", ")}", sectionTyp)
+        case class ThermalResistanceCalculationErrors(errors: cats.data.NonEmptyList[EN13384_Error], override val sectionTyp: PipeType) extends MecaFlu_Error
         
         // Heat transfer coefficient calculation errors (context-aware)
-        case class HeatTransferCoefficientErrors(errors: cats.data.NonEmptyList[EN13384_Error], override val sectionTyp: PipeType)
-            extends MecaFlu_Error(s"Heat transfer coefficient calculation failed: ${errors.toList.map(_.msg).mkString(", ")}", sectionTyp)
+        case class HeatTransferCoefficientErrors(errors: cats.data.NonEmptyList[EN13384_Error], override val sectionTyp: PipeType) extends MecaFlu_Error
         
         // Temperature calculation errors (context-aware)
-        case class NoStraightSectionDefinedForTemperatureCalc(sectionRef: String, override val sectionTyp: PipeType)
-            extends MecaFlu_Error(s"No straight section defined for temperature calculation [$sectionRef]", sectionTyp)
+        case class NoStraightSectionDefinedForTemperatureCalc(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
 
+        // All error messages are provided via I18N translations
         given ShowUsingLocale[MecaFlu_Error] = showUsingLocale:
-            case UnexpectedFireboxType(msg)                                => s"UnexpectedFireboxType: ${msg}"
-            case UnexpectedPipeType(msg, _)                                => s"UnexpectedPipeType: ${msg}"
-            case CouldNotDetermineCrossSectionArea(msg, _)                 => s"CouldNotDetermineCrossSectionArea: ${msg}"
-            case CouldNotDetermineAirSpaceDetailed(msg, _)                 => s"CouldNotDetermineAirSpaceDetailed: ${msg}"
-            case UseUnsafeToSkipRatioValidationError(msg, _)               => s"UseUnsafeToSkipRatioValidationError: ${msg}"
-            case DynamicFrictionError(msg, _)                              => s"DynamicFrictionError: ${msg}"
-            case InvalidChimneyWallTemperature(temp)                       => s"InvalidChimneyWallTemperature: temp=${temp}"
-            case UnexpectedThrowable(e, _)                                 => s"UnexpectedThrowable: ${e.getMessage()} \n ${e.getStackTrace().toList.mkString("\n")}"
+            case UnexpectedFireboxType(reason)                             => I18N.mecaflu.errors.unexpected_firebox_type(reason)
+            case UnexpectedPipeType(reason, _)                             => I18N.mecaflu.errors.unexpected_pipe_type(reason)
+            case CouldNotDetermineCrossSectionArea(ref, _)                 => I18N.mecaflu.errors.could_not_determine_cross_section_area(ref)
+            case x: CouldNotDetermineAirSpaceDetailed                      => x.show
+            case UseUnsafeToSkipRatioValidationError(reason, _)            => I18N.mecaflu.errors.use_unsafe_to_skip_ratio_validation(reason)
+            case DynamicFrictionError(reason, _)                           => I18N.mecaflu.errors.dynamic_friction_error(reason)
+            case InvalidChimneyWallTemperature(temp)                       => I18N.mecaflu.errors.invalid_chimney_wall_temperature(temp.show)
+            case UnexpectedThrowable(e, _)                                 => I18N.mecaflu.errors.unexpected_throwable(s"${e.getMessage()}\n${e.getStackTrace().take(10).toList.mkString("\n")}")
             case ThermalResistanceNotApplicableForCombustionAir(_)         => I18N.mecaflu.errors.thermal_resistance_not_applicable_for_combustion_air
             case ThermalResistanceRequiresStraightSection(ref, _)          => I18N.mecaflu.errors.thermal_resistance_requires_straight_section(ref)
-            case ThermalResistanceCalculationErrors(errs, _)               => I18N.mecaflu.errors.thermal_resistance_calculation_errors(errs.toList.map(_.msg).mkString(", "))
-            case HeatTransferCoefficientErrors(errs, _)                    => I18N.mecaflu.errors.heat_transfer_coefficient_errors(errs.toList.map(_.msg).mkString(", "))
+            case ThermalResistanceCalculationErrors(errs, _)               => I18N.mecaflu.errors.thermal_resistance_calculation_errors(errs.toList.map(_.show).mkString(", "))
+            case HeatTransferCoefficientErrors(errs, _)                    => I18N.mecaflu.errors.heat_transfer_coefficient_errors(errs.toList.map(_.show).mkString(", "))
             case NoStraightSectionDefinedForTemperatureCalc(ref, _)        => I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
-            case x: MecaFlu_Error                                          => s"MecaFlu_Error: ${x.msg}"
     
     // Incremental Builder Validation Errors
     

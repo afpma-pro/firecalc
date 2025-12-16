@@ -288,7 +288,7 @@ object Preview:
                 // velocity_end        .show,
                 // dynamicPressure     .map(_.show).getOrElse("-"),
                 zeta                .map(_.showP).getOrElse("-"),
-                dynamicFriction     .map(_.showP_IfNonZero).fold(errs => errs.head.msg, identity),
+                dynamicFriction     .map(_.showP_IfNonZero).fold(errs => errs.head.show, identity),
                 roughness           .map(_.show).getOrElse("-"),
                 staticFriction      .showP_IfNonZero,
                 vChangeFriction     .showP_IfNonZero,
