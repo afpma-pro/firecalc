@@ -38,6 +38,8 @@ import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
 import coulomb.ops.standard.all.{given}
+import io.taig.babel.Locales
+import io.taig.babel.Locale
 
 trait MecaFlu_Helpers:
 
@@ -386,6 +388,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     val tc = tk.to_degC
                     (tc, tc, tc)
                 case Invalid(e) => 
+                    given Locale = Locales.en
                     throw new Exception(s"${curr.fullRef}: could not determine T_mB : ${e.map(_.show).toList.mkString(", ")}")
         else if (tu.isDefined && tu.get.to_degC == te.to_degC)
             (te, te, te)

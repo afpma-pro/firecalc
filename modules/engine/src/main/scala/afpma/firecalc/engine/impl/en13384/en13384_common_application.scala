@@ -24,6 +24,8 @@ import afpma.firecalc.units.coulombutils.*
 import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
+import io.taig.babel.Locale
+import io.taig.babel.Locales
 
 object EN13384_1_A1_2019_Common_Application:
     enum ComputeAt:
@@ -80,7 +82,9 @@ abstract class EN13384_1_A1_2019_Common_Application(
         )
 
     override def airIntake_PipeResult = 
-        val t_comb_air = T_mB.getOrThrow
+        val t_comb_air = 
+            given Locale = Locales.en
+            T_mB.getOrThrow
         inputs.pipes.airIntake match
             case AirIntakePipe_Module.NoVentilationOpenings =>
                 PipeResult.useless(

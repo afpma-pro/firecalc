@@ -112,7 +112,7 @@ object standard {
         case e: UnexpectedDevError          => s"DEV_ERROR: ${e.msg}"
         case e: Inputs_Error                => Show[Inputs_Error].show(e)
         case e: EN15544_Error               => Show[EN15544_Error].show(e)
-        case e: EN13384_Error               => Show[EN13384_Error].show(e)
+        case e: EN13384_Error               => e.show
         case e: MecaFlu_Error               => Show[MecaFlu_Error].show(e)
         case e: IncrementalValidation_Error => Show[IncrementalValidation_Error].show(e)
         case e: ErrorsInOtherSectionType    => Show[ErrorsInOtherSectionType].show(e)
@@ -297,33 +297,32 @@ object standard {
     object EN13384_Error:
         // Fallback Show instance that uses the msg field directly (for use cases like getOrThrow)
         // This doesn't require a Locale context
-        given Show[EN13384_Error] = Show.show(_.msg)
+        // given Show[EN13384_Error] = Show.show(_.msg)
 
         // Locale-aware Show instance for proper i18n display
-        given given_Show_EN13384_Error(using Locale): Show[EN13384_Error] = Show.show: e =>
-            e match
-                case e: SideRatioTooHighForRectangularForm =>
-                    I18N.en13384.errors.side_ratio_too_high_for_rectangular_form(e.outer_shape.show)
-                case e: CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing =>
-                    I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
-                case e: CouldNotComputeThermalResistance =>
-                    I18N.en13384.errors.could_not_compute_thermal_resistance(e.msg)
-                case e: EN13384_ErrorMessage =>
-                    I18N.en13384.errors.en13384_error_message(e.msg)
-                case e: DuctTypeError =>
-                    I18N.en13384.errors.duct_type_error(e.msg)
-                case e: NoOutsideSurfaceFound =>
-                    I18N.en13384.errors.no_outside_surface_found(e.msg)
-                case e: ZeroLengthPipe =>
-                    I18N.en13384.errors.zero_length_pipe(e.pname)
-                case e: ReIsAbove10million =>
-                    I18N.en13384.errors.re_is_above_10million(e.`R_e`.show)
-                case e: PsiRatioIsGreaterThan3 =>
-                    I18N.en13384.errors.psi_ratio_is_greater_than_3(e.ratio.show)
-                case e: PrandtlTooSmall =>
-                    I18N.en13384.errors.prandtl_too_small(e.`P_r`.show)
-                case e: PrandtlTooBig =>
-                    I18N.en13384.errors.prandtl_too_big(e.`P_r`.show)
+        given ShowUsingLocale[EN13384_Error] = showUsingLocale: 
+            case e: SideRatioTooHighForRectangularForm =>
+                I18N.en13384.errors.side_ratio_too_high_for_rectangular_form(e.outer_shape.show)
+            case e: CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing =>
+                I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
+            case e: CouldNotComputeThermalResistance =>
+                I18N.en13384.errors.could_not_compute_thermal_resistance(e.msg)
+            case e: EN13384_ErrorMessage =>
+                I18N.en13384.errors.en13384_error_message(e.msg)
+            case e: DuctTypeError =>
+                I18N.en13384.errors.duct_type_error(e.msg)
+            case e: NoOutsideSurfaceFound =>
+                I18N.en13384.errors.no_outside_surface_found(e.msg)
+            case e: ZeroLengthPipe =>
+                I18N.en13384.errors.zero_length_pipe(e.pname)
+            case e: ReIsAbove10million =>
+                I18N.en13384.errors.re_is_above_10million(e.`R_e`.show)
+            case e: PsiRatioIsGreaterThan3 =>
+                I18N.en13384.errors.psi_ratio_is_greater_than_3(e.ratio.show)
+            case e: PrandtlTooSmall =>
+                I18N.en13384.errors.prandtl_too_small(e.`P_r`.show)
+            case e: PrandtlTooBig =>
+                I18N.en13384.errors.prandtl_too_big(e.`P_r`.show)
             
             
 
