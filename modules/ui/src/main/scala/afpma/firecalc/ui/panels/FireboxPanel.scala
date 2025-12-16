@@ -27,6 +27,10 @@ import afpma.firecalc.dto.all.*
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
+import afpma.firecalc.engine.standard.HasSectionTypError
+import afpma.firecalc.engine.models.FireboxPipeT
+import afpma.firecalc.engine.models.CombustionAirPipeT
+import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
 
 final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
 
@@ -67,34 +71,42 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                     .combineWith(citedConstraintsValidation_sig)
                     .combineWith(vnel_signal)
                     .map: (cc, citedCons, vnel) =>
-                        val statusCons = citedCons.andThen(_.checkAndReturnVNelInvalidConstraint) match
-                            case Validated.Valid(_)      => div(lucide.`circle-check`)
-                            case Validated.Invalid(errs) => 
-                                DaisyUITooltip(
-                                    ttContent = 
-                                        ul(cls := "list",
-                                            li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
-                                            errs.toList.toSeq.map: err =>
-                                                li(cls := "list-row text-xs", err.show)
-                                        ),
-                                    element = span(cls := "text-error", lucide.`circle-x`),
-                                    ttStyle = "tooltip-error",
-                                    ttPosition = "tooltip-bottom",
-                                ).node
-                        val statusOther = vnel match
-                            case Validated.Valid(_)      => div(lucide.`circle-check`)
-                            case Validated.Invalid(errs) => 
-                                DaisyUITooltip(
-                                    ttContent = 
-                                        ul(cls := "list",
-                                            li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
-                                            errs.toList.toSeq.map: err =>
-                                                li(cls := "list-row text-xs", err.show)
-                                        ),
-                                    element = span(cls := "text-error", lucide.`circle-x`),
-                                    ttStyle = "tooltip-error",
-                                    ttPosition = "tooltip-bottom",
-                                ).node                       
+                        val statusCons = 
+                            PanelStatusHelper
+                            .keepGlobalErrorsOrErrorsSpecificToSectionTyp(
+                                st => (st == FireboxPipeT) || (st == CombustionAirPipeT)
+                            )(citedCons.andThen(_.checkAndReturnVNelInvalidConstraint)) match
+                                case Validated.Valid(_)      => div(lucide.`circle-check`)
+                                case Validated.Invalid(errs) => 
+                                    DaisyUITooltip(
+                                        ttContent = 
+                                            ul(cls := "list",
+                                                li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
+                                                errs.toList.toSeq.map: err =>
+                                                    li(cls := "list-row text-xs", err.show)
+                                            ),
+                                        element = span(cls := PanelStatusHelper.textClsNameFoErrors(errs), lucide.`circle-x`),
+                                        ttStyle = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
+                                        ttPosition = "tooltip-bottom",
+                                    ).node
+                        val statusOther = 
+                            PanelStatusHelper
+                            .keepGlobalErrorsOrErrorsSpecificToSectionTyp(
+                                st => (st == FireboxPipeT) || (st == CombustionAirPipeT)
+                            )(vnel) match
+                                case Validated.Valid(_)      => div(lucide.`circle-check`)
+                                case Validated.Invalid(errs) => 
+                                    DaisyUITooltip(
+                                        ttContent = 
+                                            ul(cls := "list",
+                                                li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
+                                                errs.toList.toSeq.map: err =>
+                                                    li(cls := "list-row text-xs", err.show)
+                                            ),
+                                        element = span(cls := PanelStatusHelper.textClsNameFoErrors(errs), lucide.`circle-x`),
+                                        ttStyle = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
+                                        ttPosition = "tooltip-bottom",
+                                    ).node                       
                         span(cls := "flex flex-row gap-x-2",
                             statusCons,
                             statusOther,

@@ -14,10 +14,13 @@ import afpma.firecalc.ui.models.*
 import afpma.firecalc.dto.all.*
 import com.raquo.airstream.state.Var
 import io.taig.babel.Locale
+import afpma.firecalc.engine.models.AirIntakePipeT
 
 final case class AirIntakePipePanel()(using Locale, DisplayUnits) extends PipePanel_13384:
     
     type Out = AirIntakePipe
+    type PT = AirIntakePipeT
+    lazy val sectionType = AirIntakePipeT
 
     lazy val titleString = I18N.panels.air_intake
 

@@ -24,6 +24,8 @@ import io.taig.babel.Locale
 final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384:
 
     type Out = ChimneyPipe
+    type PT = ChimneyPipeT
+    lazy val sectionType = ChimneyPipeT
 
     lazy val titleString = I18N.panels.chimney_pipe
 

@@ -22,6 +22,8 @@ import afpma.firecalc.engine.utils.asVNelString
 final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384:
 
     type Out = ConnectorPipe
+    type PT = ConnectorPipeT
+    lazy val sectionType = ConnectorPipeT
 
     lazy val titleString = I18N.panels.connector_pipe
 

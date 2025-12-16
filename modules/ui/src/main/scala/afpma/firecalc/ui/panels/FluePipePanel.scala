@@ -33,6 +33,8 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     type In = IncrDescr_15544
     type Out = FluePipe_EN15544
+    type PT = FluePipeT
+    lazy val sectionType = FluePipeT
     
     lazy val titleString = I18N.panels.channel_pipe
 

@@ -48,6 +48,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     type In
     type Out
+    type PT <: PipeType
+    lazy val sectionType: PT
 
     type Elem = In
 
@@ -164,20 +166,24 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     protected def renderIncrDescr(title: String, el: HtmlElement): HtmlElement = wrapLine(title, el)
 
-    def statusIcon = vnel_signal.map:
-        case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
-            DaisyUITooltip(
-                ttContent = 
-                    ul(cls := "list",
-                        li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
-                        errs.toList.map: err =>
-                            li(cls := "list-row text-xs", err.show)
-                    ),
-                element = span(cls := "text-error", lucide.`circle-x`),
-                ttStyle = "tooltip-error",
-                ttPosition = "tooltip-bottom",
-            ).node
-        case _ => span(cls := "", lucide.`circle-check`)
+    def statusIcon = 
+        vnel_signal
+        .map: vnel =>
+            PanelStatusHelper
+            .keepGlobalErrorsOrErrorsSpecificToSectionTyp(_ == sectionType)(vnel) match
+                case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
+                    DaisyUITooltip(
+                        ttContent = 
+                            ul(cls := "list",
+                                li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
+                                errs.toList.map: err =>
+                                    li(cls := "list-row text-xs", err.show)
+                            ),
+                        element = span(cls := PanelStatusHelper.textClsNameFoErrors(errs), lucide.`circle-x`),
+                        ttStyle = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
+                        ttPosition = "tooltip-bottom",
+                    ).node
+                case _ => span(cls := "", lucide.`circle-check`)
 
     type DF[x] = DaisyUIHorizontalForm[x]
 

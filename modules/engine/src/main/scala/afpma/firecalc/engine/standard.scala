@@ -115,6 +115,7 @@ object standard {
         case e: EN13384_Error               => Show[EN13384_Error].show(e)
         case e: MecaFlu_Error               => Show[MecaFlu_Error].show(e)
         case e: IncrementalValidation_Error => Show[IncrementalValidation_Error].show(e)
+        case e: ErrorsInOtherSectionType    => Show[ErrorsInOtherSectionType].show(e)
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
@@ -664,5 +665,13 @@ object standard {
     
     given ShowUsingLocale[InvalidOperationSequence.type] = showUsingLocale:
         case InvalidOperationSequence => "Invalid operation sequence: expecting some 'add geometry' operation but none found"
-            
+
+
+    // ErrorsInOtherSectionType
+    case object ErrorsInOtherSectionType extends MCalc_Error
+    type ErrorsInOtherSectionType = ErrorsInOtherSectionType.type
+
+    // given ShowUsingLocale[ErrorsInOtherSectionType] = showUsingLocale:
+    //     case ErrorsInOtherSectionType => "Waiting for other errors to be resolved."
+    given Show[ErrorsInOtherSectionType] = Show.show(_ => "Waiting for other errors to be resolved.")
 }
