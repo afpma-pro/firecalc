@@ -17,6 +17,9 @@ import io.taig.babel.generic.semiauto.deriveDecoder
 inline def I(f: I18nData => String) = macros.tPath[I18nData](f)
 
 type ShowUsingLocale[A] = Locale ?=> Show[A]
+object ShowUsingLocale:
+    def apply[A](using ev: ShowUsingLocale[A]): ShowUsingLocale[A] = ev
+
 def showUsingLocale[A](f: Locale ?=> A => String): ShowUsingLocale[A] = 
     Show.show[A](a => f(a))
 

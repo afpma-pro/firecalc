@@ -8,7 +8,7 @@ package afpma.firecalc.i18n
 import afpma.firecalc.i18n.I18nData.*
 
 import io.taig.babel.*
-import io.taig.babel.{StringFormat1, StringFormat2, StringFormat3, StringFormat4}
+import io.taig.babel.{StringFormat1, StringFormat2, StringFormat3, StringFormat4, StringFormat5}
 
 trait LocalizedAlg:
     val language: Language
@@ -447,6 +447,7 @@ object I18nData:
         co2_calculation_only_for_wood_boilers: String,
         injector_velocity_below_minimum: StringFormat2,
         injector_velocity_above_maximum: StringFormat2,
+        flue_gas_velocity_error: StringFormat5,
     )
 
     case class Headers(

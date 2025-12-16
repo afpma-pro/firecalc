@@ -264,11 +264,20 @@ object standard {
     sealed trait FluePipeError extends EN15544_Error with HasSectionTypError
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
-        case err: FlueGasVelocityError          => Show[FlueGasVelocityError].show(err)
+        case err: FlueGasVelocityError          => err.show
         case err: FluePipeInvalidGeometryRatio  => err.show
         case err: FluePipeErrorCustom           => err.reason
 
-    case class FlueGasVelocityError(sectionId: Int, sectionTyp: PipeType, sectionName: String, gasVelocity: v, minVel: v, maxVel: v) extends FluePipeError derives Show
+    case class FlueGasVelocityError(sectionId: Int, sectionTyp: PipeType, sectionName: String, gasVelocity: v, minVel: v, maxVel: v) extends FluePipeError
+    object FlueGasVelocityError:
+        given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
+            I18N.errors.flue_gas_velocity_error(
+                err.sectionId.toString,
+                err.sectionName,
+                err.gasVelocity.show,
+                err.minVel.show,
+                err.maxVel.show
+            )
     case class FluePipeInvalidGeometryRatio(sectionId: Int, sectionTyp: PipeType, sectionName: String, ratio: QtyD[1], minRatio: QtyD[1], maxRatio: QtyD[1]) extends FluePipeError
     object FluePipeInvalidGeometryRatio:
         given ShowUsingLocale[FluePipeInvalidGeometryRatio] = showUsingLocale:
