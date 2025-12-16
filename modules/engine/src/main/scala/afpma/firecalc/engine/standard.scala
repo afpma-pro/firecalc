@@ -532,8 +532,7 @@ object standard {
 
     case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error
     object InvalidConstraint:
-        given Show[InvalidConstraint] = Show.show: e =>
-            s"InvalidConstraint: ${e.error}"
+        given ShowUsingLocale[InvalidConstraint] = showUsingLocale(_.error.failMsg)
     
 
     // MecaFlu_Error
