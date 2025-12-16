@@ -285,19 +285,35 @@ object standard {
         def msg: String
 
     object EN13384_Error:
-        given Show[EN13384_Error] = Show.show: e =>
+        // Fallback Show instance that uses the msg field directly (for use cases like getOrThrow)
+        // This doesn't require a Locale context
+        given Show[EN13384_Error] = Show.show(_.msg)
+
+        // Locale-aware Show instance for proper i18n display
+        given given_Show_EN13384_Error(using Locale): Show[EN13384_Error] = Show.show: e =>
             e match
-                case e @ SideRatioTooHighForRectangularForm(outer_shape, sectionTyp) => Show[SideRatioTooHighForRectangularForm].show(e)
-                case e @ CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(sectionTyp) => Show[CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing].show(e)
-                case e @ CouldNotComputeThermalResistance(msg, sectionTyp) => Show[CouldNotComputeThermalResistance].show(e)
-                case e @ EN13384_ErrorMessage(msg) => Show[EN13384_ErrorMessage].show(e)
-                case e @ DuctTypeError(msg, sectionTyp) => Show[DuctTypeError].show(e)
-                case e @ NoOutsideSurfaceFound(msg, sectionTyp) => Show[NoOutsideSurfaceFound].show(e)
-                case e @ ZeroLengthPipe(pname, sectionTyp) => Show[ZeroLengthPipe].show(e)
-                case e @ ReIsAbove10million(R_e, sectionTyp) => Show[ReIsAbove10million].show(e)
-                case e @ PsiRatioIsGreaterThan3(ratio, sectionTyp) => Show[PsiRatioIsGreaterThan3].show(e)
-                case e @ PrandtlTooSmall(P_r, sectionTyp) => Show[PrandtlTooSmall].show(e)
-                case e @ PrandtlTooBig(P_r, sectionTyp) => Show[PrandtlTooBig].show(e)
+                case e: SideRatioTooHighForRectangularForm =>
+                    I18N.en13384.errors.side_ratio_too_high_for_rectangular_form(e.outer_shape.show)
+                case e: CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing =>
+                    I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
+                case e: CouldNotComputeThermalResistance =>
+                    I18N.en13384.errors.could_not_compute_thermal_resistance(e.msg)
+                case e: EN13384_ErrorMessage =>
+                    I18N.en13384.errors.en13384_error_message(e.msg)
+                case e: DuctTypeError =>
+                    I18N.en13384.errors.duct_type_error(e.msg)
+                case e: NoOutsideSurfaceFound =>
+                    I18N.en13384.errors.no_outside_surface_found(e.msg)
+                case e: ZeroLengthPipe =>
+                    I18N.en13384.errors.zero_length_pipe(e.pname)
+                case e: ReIsAbove10million =>
+                    I18N.en13384.errors.re_is_above_10million(e.`R_e`.show)
+                case e: PsiRatioIsGreaterThan3 =>
+                    I18N.en13384.errors.psi_ratio_is_greater_than_3(e.ratio.show)
+                case e: PrandtlTooSmall =>
+                    I18N.en13384.errors.prandtl_too_small(e.`P_r`.show)
+                case e: PrandtlTooBig =>
+                    I18N.en13384.errors.prandtl_too_big(e.`P_r`.show)
             
             
 
@@ -340,6 +356,92 @@ object standard {
             P_r,
             s"Prandtl too big, expecting Prandtl < 1.5 but got Prandtl = $P_r", sectionTyp
         ) derives Show
+
+    // ============================================================================
+    // CONTEXT-FREE ERRORS (Formula Layer)
+    // These errors are created in pure mathematical formulas that have no knowledge
+    // of which pipe section they're calculating for. Use withSectionTyp() to convert
+    // them to context-aware EN13384_Error at the ops layer boundary.
+    // ============================================================================
+
+    sealed trait EN13384_FormulaError:
+        def msg: String
+        def withSectionTyp(sectionTyp: PipeType): EN13384_Error
+
+    object EN13384_FormulaError:
+        // Type alias for ValidatedNel operations
+        type FormulaOp[A] = cats.data.ValidatedNel[EN13384_FormulaError, A]
+
+        // Extension for easy conversion at ops layer
+        extension [A](vnel: cats.data.ValidatedNel[EN13384_FormulaError, A])
+            def withSectionTyp(st: PipeType): cats.data.ValidatedNel[EN13384_Error, A] =
+                vnel.leftMap(_.map(_.withSectionTyp(st)))
+
+        // Thermal Resistance Errors (formula layer)
+        case class SideRatioTooHigh(outer_shape: PipeShape) extends EN13384_FormulaError:
+            override def msg: String = s"side ratio above 1:1.5 (got ${outer_shape.show}), can not compute coefficient of form"
+            override def withSectionTyp(st: PipeType): EN13384_Error =
+                ThermalResistance_Error.SideRatioTooHighForRectangularForm(outer_shape, st)
+
+        case class MissingOuterLayer() extends EN13384_FormulaError:
+            override def msg: String = "can not end layer description on a dead air space : outer layer is missing"
+            override def withSectionTyp(st: PipeType): EN13384_Error =
+                ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(st)
+
+        case class ThermalResistanceComputationFailed(override val msg: String) extends EN13384_FormulaError:
+            override def withSectionTyp(st: PipeType): EN13384_Error =
+                ThermalResistance_Error.CouldNotComputeThermalResistance(msg, st)
+
+        // Nusselt Number Errors (formula layer)
+        case class ReynoldsTooHigh(R_e: Double) extends EN13384_FormulaError:
+            override def msg: String = s"R_e out of bound : R_e > 10 000 000 => got R_e = $R_e"
+            override def withSectionTyp(st: PipeType): EN13384_Error = ReIsAbove10million(R_e, st)
+
+        case class PsiRatioTooHigh(ratio: Double) extends EN13384_FormulaError:
+            override def msg: String = s"Ψ / Ψ_smooth > 3 => got Ψ / Ψ_smooth = $ratio"
+            override def withSectionTyp(st: PipeType): EN13384_Error = PsiRatioIsGreaterThan3(ratio, st)
+
+        case class PrandtlTooLow(P_r: Double) extends EN13384_FormulaError:
+            override def msg: String = s"Prandtl too small, expecting 0.6 < Prandtl but got Prandtl = $P_r"
+            override def withSectionTyp(st: PipeType): EN13384_Error = PrandtlTooSmall(P_r, st)
+
+        case class PrandtlTooHigh(P_r: Double) extends EN13384_FormulaError:
+            override def msg: String = s"Prandtl too big, expecting Prandtl < 1.5 but got Prandtl = $P_r"
+            override def withSectionTyp(st: PipeType): EN13384_Error = PrandtlTooBig(P_r, st)
+
+        // Other Formula Errors
+        case class NoOutsideSurface(override val msg: String) extends EN13384_FormulaError:
+            override def withSectionTyp(st: PipeType): EN13384_Error = NoOutsideSurfaceFound(msg, st)
+
+        case class InvalidDuctType(override val msg: String) extends EN13384_FormulaError:
+            override def withSectionTyp(st: PipeType): EN13384_Error = DuctTypeError(msg, st)
+
+        // Fallback Show instance that uses the msg field directly (for use cases like getOrThrow in tests)
+        // This doesn't require a Locale context
+        given Show[EN13384_FormulaError] = Show.show(_.msg)
+
+        // ShowUsingLocale for formula errors (delegates to i18n)
+        given showUsingLocaleFormulaError: ShowUsingLocale[EN13384_FormulaError] = showUsingLocale: e =>
+            e match
+                case e: SideRatioTooHigh =>
+                    I18N.en13384.errors.side_ratio_too_high_for_rectangular_form(e.outer_shape.show)
+                case _: MissingOuterLayer =>
+                    I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
+                case e: ThermalResistanceComputationFailed =>
+                    I18N.en13384.errors.could_not_compute_thermal_resistance(e.msg)
+                case e: ReynoldsTooHigh =>
+                    I18N.en13384.errors.re_is_above_10million(e.R_e.show)
+                case e: PsiRatioTooHigh =>
+                    I18N.en13384.errors.psi_ratio_is_greater_than_3(e.ratio.show)
+                case e: PrandtlTooLow =>
+                    I18N.en13384.errors.prandtl_too_small(e.P_r.show)
+                case e: PrandtlTooHigh =>
+                    I18N.en13384.errors.prandtl_too_big(e.P_r.show)
+                case e: NoOutsideSurface =>
+                    I18N.en13384.errors.no_outside_surface_found(e.msg)
+                case e: InvalidDuctType =>
+                    I18N.en13384.errors.duct_type_error(e.msg)
+    end EN13384_FormulaError
 
     sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError
 

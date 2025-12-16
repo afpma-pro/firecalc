@@ -12,7 +12,7 @@ import afpma.firecalc.engine.models.PipeWithGasFlow
 import afpma.firecalc.engine.ops.ExteriorAirOps
 import afpma.firecalc.engine.ops.GasOps
 import afpma.firecalc.engine.ops.PipeWithGasFlowOps
-import afpma.firecalc.engine.standard.EN13384_Error
+import afpma.firecalc.engine.standard.EN13384_FormulaError
 import afpma.firecalc.engine.utils.*
 
 import afpma.firecalc.units.coulombutils.*
@@ -23,7 +23,7 @@ import coulomb.policy.standard.given
 
 private[ops] trait PipeWithGasFlowOpsUsingEN13384(using
     _en13384: EN13384_1_A1_2019_Formulas_Alg,
-) extends PipeWithGasFlowOps[EN13384_Error]:
+) extends PipeWithGasFlowOps[EN13384_FormulaError]:
 
     override val gasOps: GasOps = GasOps.mkUsingEN13384(_en13384)
     import gasOps.*

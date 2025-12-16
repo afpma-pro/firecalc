@@ -10,6 +10,7 @@ import cats.data.*
 import algebra.instances.all.given
 
 import afpma.firecalc.engine.alg.Standard
+import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.ThermalResistance.CoefficientOfForm
 import afpma.firecalc.engine.models.gtypedefs.ThermalConductivity
 import afpma.firecalc.engine.standard.*
@@ -210,10 +211,10 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     ): SquareMeterKelvinPerWatt
 
     def thermal_resistance_for_layers_calc(
-        mean_gas_temp: TCelsius, 
-        startGeom: PipeShape, 
-        layers: List[AppendLayerDescr]
-    ): Either[ThermalResistance_Error, SquareMeterKelvinPerWatt]
+        mean_gas_temp: TCelsius,
+        startGeom: PipeShape,
+        layers: List[AppendLayerDescr],
+    ): Either[EN13384_FormulaError, SquareMeterKelvinPerWatt]
 
     // Section "5.7.1.2", "Température de l'air extérieur (T_L)"
 
@@ -263,7 +264,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
         A_uu: QtyD[(Meter ^ 2)],
         A_ul: QtyD[(Meter ^ 2)],
         A_u_custom_area: QtyD[(Meter ^ 2)],
-    ): Either[NoOutsideSurfaceFound, TempD[Kelvin]]
+    ): Either[EN13384_FormulaError.NoOutsideSurface, TempD[Kelvin]]
 
     def T_u_temp_helper(
         T_L: T_L,
@@ -620,7 +621,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
         R_e: Dimensionless,
         Ψ: Dimensionless,
         Ψ_smooth: Dimensionless
-    ): Op[Dimensionless]
+    ): FormulaOp[Dimensionless]
 
     /**
      * Calcule le nombre de Prandtl
@@ -1013,7 +1014,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // Section "7.8.1","Détermination des températures"
 
     /** mean temperature of the combustion air (in K) */
-    def T_mB_calc(ductType: DuctType, tL: T_L): Op[T_mB]
+    def T_mB_calc(ductType: DuctType, tL: T_L): FormulaOp[T_mB]
 
     // Section "7.8.4", "Températures moyennes pour le calcul des pressions"
     
@@ -1147,7 +1148,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
 
     val COEFFICIENT_OF_FORM_MAX_SIDES_RATIO: Double
 
-    def coefficient_of_form(forShape: PipeShape): Either[ThermalResistance_Error.SideRatioTooHighForRectangularForm, CoefficientOfForm]
+    def coefficient_of_form(forShape: PipeShape): Either[EN13384_FormulaError.SideRatioTooHigh, CoefficientOfForm]
 
     // def Λinverse(
     //     layers: ThermalResistance.Layers
@@ -1268,16 +1269,17 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     ): SquareMeterKelvinPerWatt
 
     def deadAirSpaceThermalResistance(
-        t_emittingSurfaceTemp: TCelsius, 
+        t_emittingSurfaceTemp: TCelsius,
         dn_airSpaceWidth: Length,
         innerShape: PipeShape,
-    ): Either[ThermalResistance_Error.CouldNotComputeThermalResistance, SquareMeterKelvinPerWatt]
+    ): Either[EN13384_FormulaError.ThermalResistanceComputationFailed, SquareMeterKelvinPerWatt]
 
 end EN13384_1_A1_2019_Formulas_Alg
 
 object EN13384_1_A1_2019_Formulas_Alg:
 
     export afpma.firecalc.engine.standard.{EN13384_Error as Error}
+    export afpma.firecalc.engine.standard.{EN13384_FormulaError}
     export afpma.firecalc.engine.standard.{NuCalcError}
     export afpma.firecalc.engine.standard.{
         ReIsAbove10million,
@@ -1287,4 +1289,8 @@ object EN13384_1_A1_2019_Formulas_Alg:
         PrandtlTooBig
     }
 
+    /** Context-aware error operations (legacy, for ops layer) */
     type Op[A] = ValidatedNel[Error, A]
+    
+    /** Context-free formula error operations (for pure formula layer) */
+    type FormulaOp[A] = ValidatedNel[EN13384_FormulaError, A]

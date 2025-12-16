@@ -52,6 +52,7 @@ open class `EN13384_1_A1_2019_Formulas`
     )
 
     import EN13384_1_A1_2019_Formulas.*
+    import EN13384_1_A1_2019_Formulas_Alg.FormulaOp
 
     // type definitions
     import afpma.firecalc.engine.models.en13384.typedefs.*
@@ -276,12 +277,12 @@ open class `EN13384_1_A1_2019_Formulas`
         )
 
     def thermal_resistance_for_layers_calc(
-        mean_gas_temp: TCelsius, 
-        startGeom: PipeShape, 
+        mean_gas_temp: TCelsius,
+        startGeom: PipeShape,
         layers: List[AppendLayerDescr]
-    ): Either[ThermalResistance_Error, SquareMeterKelvinPerWatt] =
+    ): Either[EN13384_FormulaError, SquareMeterKelvinPerWatt] =
         import AppendLayerDescr.*
-        import ThermalResistance_Error as TRError
+        import EN13384_FormulaError as FError
         
         enum Status:
             case Ok
@@ -292,27 +293,27 @@ open class `EN13384_1_A1_2019_Formulas`
         def debug(msg: String): Unit = if (DEBUG) println(msg) else ()
 
         def computeTR(
-            dhi: D_h, 
+            dhi: D_h,
             outer_shape: PipeShape, // __INTERPRETATION__: outer_shape or inner_shape or mean of outer + inner ?
             lambda: ThermalConductivity
-        ): Either[TRError.SideRatioTooHighForRectangularForm, SquareMeterKelvinPerWatt] =
+        ): Either[FError.SideRatioTooHigh, SquareMeterKelvinPerWatt] =
             coefficient_of_form(outer_shape) match
-                case Left(e @ TRError.SideRatioTooHighForRectangularForm(_)) => e.asLeft
+                case Left(e) => e.asLeft
                 case Right(cof) => thermal_resistance_for_layer_calc(cof, dhi, outer_shape.dh, lambda).asRight
 
         // acc = (current layer inner geom, sum (tr / dhi), status)
         val tr_dh_sum_zero = 0.0.withUnit[(Meter ^ 2) * Kelvin / Watt / Meter]
-        val z: Either[ThermalResistance_Error, (PipeShape, QtyD[(Meter ^ 2) * Kelvin / Watt / Meter], Status)] =
-            (startGeom, tr_dh_sum_zero, Status.Ok).asRight[ThermalResistance_Error]
+        val z: Either[EN13384_FormulaError, (PipeShape, QtyD[(Meter ^ 2) * Kelvin / Watt / Meter], Status)] =
+            (startGeom, tr_dh_sum_zero, Status.Ok).asRight[EN13384_FormulaError]
 
-        val finalAcc: Either[ThermalResistance_Error, (PipeShape, QtyD[(Meter ^ 2) * Kelvin / Watt / Meter], Status)] = 
+        val finalAcc: Either[EN13384_FormulaError, (PipeShape, QtyD[(Meter ^ 2) * Kelvin / Watt / Meter], Status)] =
             layers.foldLeft(z): (acc, l) =>
                 acc.flatMap:
                     case (ig, _, _) if coefficient_of_form(ig).isLeft =>
-                        Left(ThermalResistance_Error.SideRatioTooHighForRectangularForm(ig))
+                        Left(FError.SideRatioTooHigh(ig))
                     case (ig, trdhsum, Ok | Error_MissingLayerAfterAirSpace) =>
                         val dhi = ig.dh
-                        l match                            
+                        l match
                             case AppendLayerDescr.FromLambda(og, lambda) =>
                                 computeTR(dhi, og, lambda).map: tr =>
                                     debug(s"Rth = ${tr.show} (${dhi.show}, ${og.show}, ${lambda.show}) [ig = ${ig.show} & og = ${og.show}]")
@@ -342,8 +343,8 @@ open class `EN13384_1_A1_2019_Formulas`
                                     debug(s"Rth = ${tr.show} (air space: ${mean_gas_temp.show}, ${e.show}) [ig = ${ig.show} & osh = ${osh.show}]")
                                     (osh, trdhsum + tr / dhi, Status.Error_MissingLayerAfterAirSpace)
         finalAcc.map(_._3).flatMap:
-            case Error_MissingLayerAfterAirSpace => Left(TRError.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing)
-            case Ok => 
+            case Error_MissingLayerAfterAirSpace => Left(FError.MissingOuterLayer())
+            case Ok =>
                 val dh = startGeom.dh
                 finalAcc.map(_._2).map(dh * _)
             
@@ -413,7 +414,7 @@ open class `EN13384_1_A1_2019_Formulas`
         A_uu: QtyD[(Meter ^ 2)],
         A_ul: QtyD[(Meter ^ 2)],
         A_u_custom_area: QtyD[(Meter ^ 2)],
-    ): Either[NoOutsideSurfaceFound, TempD[Kelvin]] =
+    ): Either[EN13384_FormulaError.NoOutsideSurface, TempD[Kelvin]] =
         def helper(ploc: PipeLocation) = 
             val tt = ploc match
                 case BoilerRoom         => T_ux_defaults.boilerRoom
@@ -462,8 +463,8 @@ open class `EN13384_1_A1_2019_Formulas`
             (T_ub * A_ub) + (T_uh * A_uh) + (T_uu * A_uu) + (T_ul * A_ul) + (T_u_custom_area.getOrElse(0.degreesKelvin) * A_u_custom_area)
         val A_tot = A_ub + A_uh + A_uu + A_ul + T_u_custom_area.map(_ => A_u_custom_area).getOrElse(0.m2)
 
-        if (A_tot == 0.0) 
-            Left(NoOutsideSurfaceFound("T_u (ambiant air) calculation : could not compute 'T_u' if no external surface found"))
+        if (A_tot == 0.0)
+            Left(EN13384_FormulaError.NoOutsideSurface("T_u (ambiant air) calculation : could not compute 'T_u' if no external surface found"))
         else
             Right((num / A_tot).withTemperature[Kelvin])
 
@@ -1061,23 +1062,24 @@ open class `EN13384_1_A1_2019_Formulas`
         R_e: Dimensionless,
         Ψ: Dimensionless,
         Ψ_smooth: Dimensionless
-    ): Op[Dimensionless] =
+    ): FormulaOp[Dimensionless] =
         import cats.syntax.all.*
+        import EN13384_FormulaError as FError
 
-        val R_e_corrected: Op[Double] = R_e.value match
-            case re if re >= 10e6 => ReIsAbove10million(re).invalidNel
+        val R_e_corrected: FormulaOp[Double] = R_e.value match
+            case re if re >= 10e6 => FError.ReynoldsTooHigh(re).invalidNel
             case re if re < 2300  => (2300.0).validNel
             case re               => re.toDouble.validNel
 
-        val Ψratio_checked: Op[Double] = Ψ.value / Ψ_smooth.value match
+        val Ψratio_checked: FormulaOp[Double] = Ψ.value / Ψ_smooth.value match
             case r if r < 3 => r.validNel
-            case r          => 
+            case r          =>
                 // r.validNel
-                PsiRatioIsGreaterThan3(r).invalidNel[Double]
+                FError.PsiRatioTooHigh(r).invalidNel[Double]
 
-        val P_r_checked: Op[Double] = P_r.value match
-            case pr if pr <= 0.6 => PrandtlTooSmall(pr).invalidNel
-            case pr if pr >= 1.5 => PrandtlTooBig(pr).invalidNel
+        val P_r_checked: FormulaOp[Double] = P_r.value match
+            case pr if pr <= 0.6 => FError.PrandtlTooLow(pr).invalidNel
+            case pr if pr >= 1.5 => FError.PrandtlTooHigh(pr).invalidNel
             case pr              => pr.toDouble.validNel
 
         (R_e_corrected, Ψratio_checked, P_r_checked)
@@ -1622,13 +1624,13 @@ open class `EN13384_1_A1_2019_Formulas`
     // Section "7.8.1","Détermination des températures"
 
     /** mean temperature of the combustion air (in K) */
-    def T_mB_calc(ductType: DuctType, tL: T_L): Op[T_mB] =
+    def T_mB_calc(ductType: DuctType, tL: T_L): FormulaOp[T_mB] =
         ductType match
-            case DuctType.NonConcentricDuctsHighThermalResistance => 
+            case DuctType.NonConcentricDuctsHighThermalResistance =>
                 (tL: T_mB).validNel
-            case _                                                => 
+            case _                                                =>
                 // not implemented yet (non urgent or even useful ?)
-                DuctTypeError("only non concentric ducts with high thermal resistance (> 0.65 m2.K/W) are implemented").invalidNel
+                EN13384_FormulaError.InvalidDuctType("only non concentric ducts with high thermal resistance (> 0.65 m2.K/W) are implemented").invalidNel
 
     // Section "7.8.4", "Températures moyennes pour le calcul des pressions"
 
@@ -1842,15 +1844,15 @@ open class `EN13384_1_A1_2019_Formulas`
 
     val COEFFICIENT_OF_FORM_MAX_SIDES_RATIO = 1.5
 
-    def coefficient_of_form(forShape: PipeShape): Either[ThermalResistance_Error.SideRatioTooHighForRectangularForm, CoefficientOfForm] = 
+    def coefficient_of_form(forShape: PipeShape): Either[EN13384_FormulaError.SideRatioTooHigh, CoefficientOfForm] =
         import cats.syntax.either.catsSyntaxEitherId
         forShape match
             case PipeShape.Circle(_)          => CoefficientOfForm.wrap(1.0).asRight
             case PipeShape.Square(_)          => CoefficientOfForm.wrap(1.10).asRight
-            case rect @ PipeShape.Rectangle(a, b)    => 
+            case rect @ PipeShape.Rectangle(a, b)    =>
                 val ratio = if (a >= b) (a/b) else (b/a)
                 if (ratio <= COEFFICIENT_OF_FORM_MAX_SIDES_RATIO) CoefficientOfForm.wrap(1.10).asRight
-                else ThermalResistance_Error.SideRatioTooHighForRectangularForm(rect).asLeft
+                else EN13384_FormulaError.SideRatioTooHigh(rect).asLeft
 
     // def Λinverse(
     //     layers: ThermalResistance.Layers
@@ -2038,12 +2040,12 @@ open class `EN13384_1_A1_2019_Formulas`
         y.unwrap * D_hn / ( 2.0 * λ_n) * math.log( ( (D_hn + 2.0 * dn) / D_hn).value )
 
     override def deadAirSpaceThermalResistance(
-        t_emittingSurfaceTemp: TCelsius, 
+        t_emittingSurfaceTemp: TCelsius,
         dn_airSpaceWidth: Length,
         innerShape: PipeShape,
-    ): Either[ThermalResistance_Error.CouldNotComputeThermalResistance, SquareMeterKelvinPerWatt] = 
+    ): Either[EN13384_FormulaError.ThermalResistanceComputationFailed, SquareMeterKelvinPerWatt] =
         // __INTERPRETATION__
-        val t_interpol = 
+        val t_interpol =
             if (t_emittingSurfaceTemp < 40.degreesCelsius) 40.degreesCelsius
             else if (t_emittingSurfaceTemp > 200.degreesCelsius) 200.degreesCelsius
             else t_emittingSurfaceTemp
@@ -2054,7 +2056,7 @@ open class `EN13384_1_A1_2019_Formulas`
             resName = "EN 13384 // Table B.6",
             tsvTableRawString = EN13384_1_2015_A1_2019_table_B6,
             xHeader = "temp",
-            yHeader = "dn", 
+            yHeader = "dn",
             zHeader = "rth",
             xi = t_interpol.to_degC.value,
             yi = dn_in_meters.value,
@@ -2063,11 +2065,11 @@ open class `EN13384_1_A1_2019_Formulas`
         )
 
         ei match
-            case Left(err: ReadTableError) => 
-                ThermalResistance_Error.CouldNotComputeThermalResistance(
+            case Left(err: ReadTableError) =>
+                EN13384_FormulaError.ThermalResistanceComputationFailed(
                     err.msg
                 ).asLeft
-            case Right(rth) => 
+            case Right(rth) =>
 
                 // __INTERPRETATION__ (?)
                 
@@ -2087,7 +2089,7 @@ open class `EN13384_1_A1_2019_Formulas`
                 val dhn = innerShape.dh
                 
                 coefficient_of_form(innerShape)
-                    .leftMap(sideRatioTooHigh => ThermalResistance_Error.CouldNotComputeThermalResistance(sideRatioTooHigh.msg))
+                    .leftMap(sideRatioTooHigh => EN13384_FormulaError.ThermalResistanceComputationFailed(sideRatioTooHigh.msg))
                     .map: y =>
                         val rth = thermalResistanceFromConductivity_forCylindricalLayers(
                             y,
@@ -2118,6 +2120,7 @@ end EN13384_1_A1_2019_Formulas
 object EN13384_1_A1_2019_Formulas:
 
     export afpma.firecalc.engine.standard.{EN13384_Error as Error}
+    export afpma.firecalc.engine.standard.{EN13384_FormulaError}
     export afpma.firecalc.engine.standard.{NuCalcError}
     export afpma.firecalc.engine.standard.{
         ReIsAbove10million,
@@ -2127,7 +2130,11 @@ object EN13384_1_A1_2019_Formulas:
         PrandtlTooBig
     }
 
+    /** Context-aware error operations (legacy, for ops layer) */
     type Op[A] = ValidatedNel[Error, A]
+    
+    /** Context-free formula error operations (for pure formula layer) */
+    type FormulaOp[A] = ValidatedNel[EN13384_FormulaError, A]
 
     val make = new EN13384_1_A1_2019_Formulas {}
 

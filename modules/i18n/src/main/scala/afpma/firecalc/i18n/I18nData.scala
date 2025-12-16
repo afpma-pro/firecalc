@@ -269,6 +269,7 @@ object I18nData:
         reuse_tuo: String,
         terms: EN13384_Terms,
         unheated_area_height: String,
+        errors: EN13384_Errors,
     )
 
     object EN13384:
@@ -340,6 +341,20 @@ object I18nData:
         T_ob: String,
         T_iob: String,
         T_sp: String,
+    )
+
+    case class EN13384_Errors(
+        side_ratio_too_high_for_rectangular_form: StringFormat1,
+        cannot_end_layers_description_on_dead_air_space: String,
+        could_not_compute_thermal_resistance: StringFormat1,
+        en13384_error_message: StringFormat1,
+        duct_type_error: StringFormat1,
+        no_outside_surface_found: StringFormat1,
+        zero_length_pipe: StringFormat1,
+        re_is_above_10million: StringFormat1,
+        psi_ratio_is_greater_than_3: StringFormat1,
+        prandtl_too_small: StringFormat1,
+        prandtl_too_big: StringFormat1,
     )
 
     case class EN15544(

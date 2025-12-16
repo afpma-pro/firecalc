@@ -782,9 +782,9 @@ abstract class EN13384_1_A1_2019_Common_Application(
     // Températures moyennes pour le calcul de pression
 
     /** température moyenne de l'air de combustion sur la longueur du conduit d'air comburant, en K */
-    def T_mB: EpOp[VNel[T_mB]] = 
+    def T_mB: EpOp[VNel[T_mB]] =
         import AirIntakePipe_Module.*
-        formulas.T_mB_calc(inputs.pipes.airIntake.ductType, T_L)
+        formulas.T_mB_calc(inputs.pipes.airIntake.ductType, T_L).withSectionTyp(AirIntakePipeT)
 
     // Tableau B.1
 

@@ -44,7 +44,12 @@ end PipeWithGasFlowOps
 
 object PipeWithGasFlowOps:
 
-    type Error = afpma.firecalc.engine.standard.EN13384_Error
+    /**
+     * Error type for PipeWithGasFlowOps is EN13384_FormulaError (context-free).
+     * Callers must enrich with sectionTyp using .withSectionTyp(sectionTyp)
+     * to get context-aware EN13384_Error at the ops layer boundary.
+     */
+    type Error = afpma.firecalc.engine.standard.EN13384_FormulaError
 
     def mkforEN13384(
         en13384: EN13384_1_A1_2019_Formulas_Alg,

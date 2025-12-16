@@ -26,6 +26,7 @@ import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.NoOutsideSurfaceFound
 import afpma.firecalc.engine.standard.ThermalResistance_Error
+import afpma.firecalc.engine.standard.EN13384_FormulaError
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.units.coulombutils.{*, given}
@@ -175,7 +176,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         )
             
     /** ambiant air temperature */
-    private def T_u(using asd: AirSpaceDetailed): Either[NoOutsideSurfaceFound, TempD[Kelvin]] = 
+    private def T_u(using asd: AirSpaceDetailed): Either[EN13384_FormulaError.NoOutsideSurface, TempD[Kelvin]] =
         import PipeLocation.*
 
         val el = gp.pipeEl.el
@@ -413,13 +414,13 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     // compute tr_approx using gas temp mean first
     // then compute tiob_approx 
     // then compute tr with t_i_middle_b_approx as t_emitting_layer (should be outside temperature of layer, but using inner surface temp for now)
-    def compute_thermal_resistance(t_emitting_layer: TCelsius) = 
+    def compute_thermal_resistance(t_emitting_layer: TCelsius) =
         whenGasType(
-            ifCombustionAir = ThermalResistance_Error.CouldNotComputeThermalResistance(s"not applicable for 'combustion air' pipe").asLeft,
+            ifCombustionAir = EN13384_FormulaError.ThermalResistanceComputationFailed(s"not applicable for 'combustion air' pipe").asLeft,
             ifFlueGas = curr.el match
                 case s: StraightSection => en13384.formulas.thermal_resistance_for_layers_calc(t_emitting_layer, innerShape(using Start), s.layers)
-                case _ => ThermalResistance_Error.CouldNotComputeThermalResistance(s"only 'StraightSection' are expected to have a thermal resistance [${curr.fullRef}]").asLeft
-        ).leftMap(trError => MecaFlu_Error(trError.msg, curr.typ))
+                case _ => EN13384_FormulaError.ThermalResistanceComputationFailed(s"only 'StraightSection' are expected to have a thermal resistance [${curr.fullRef}]").asLeft
+        ).leftMap(formulaError => MecaFlu_Error(formulaError.msg, curr.typ))
 
     val en13384_tr_approx = compute_thermal_resistance(temp_mean)
     
@@ -626,9 +627,9 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
             case ConnectorPipeT | ChimneyPipeT => 
                 mkPipeWithGasFlowWithLength(temp_mean, massFlow, exteriorAir, custom_section_length) match // te, temp_mean, to ???
 
-                    case Right(pgf) => 
-                        val v_k_ob = pgf.k_ob(_1_Λ, _1_Λ_o).leftMap(_.map(_.show))
-                        val v_αi   = pgf.α_i.leftMap(_.map(_.show))
+                    case Right(pgf) =>
+                        val v_k_ob = pgf.k_ob(_1_Λ, _1_Λ_o).leftMap(_.map(_.msg))
+                        val v_αi   = pgf.α_i.leftMap(_.map(_.msg))
                         (v_k_ob, v_αi) mapN { (kob, αi) =>
                             
                             val tuo = en13384.T_uo_calc(

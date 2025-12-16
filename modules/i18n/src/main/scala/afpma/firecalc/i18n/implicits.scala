@@ -35,6 +35,7 @@ object implicits {
     given Decoder[I18nData.EmissionsAndEfficiencyValues]    = deriveDecoder[I18nData.EmissionsAndEfficiencyValues]
     given Decoder[I18nData.EN13384]                         = deriveDecoder[I18nData.EN13384]
     given Decoder[I18nData.EN13384_Terms]                   = deriveDecoder[I18nData.EN13384_Terms]
+    given Decoder[I18nData.EN13384_Errors]                  = deriveDecoder[I18nData.EN13384_Errors]
     given Decoder[I18nData.EN15544]                         = deriveDecoder[I18nData.EN15544]
     given Decoder[I18nData.EN15544_TermDef]                 = deriveDecoder[I18nData.EN15544_TermDef]
     given Decoder[I18nData.EN15544_Terms]                   = deriveDecoder[I18nData.EN15544_Terms]
