@@ -4,6 +4,7 @@
     },
     "metals.enableSemanticHighlighting": true,
     "editor.semanticHighlighting.enabled": true,
+    // "editor.formatOnSave": true,
     "editor.detectIndentation": false,
     "metals.serverProperties": [
         "-Dmetals.enable-best-effort=true",

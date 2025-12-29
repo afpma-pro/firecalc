@@ -22,6 +22,8 @@ addSbtPlugin("org.scalamolecule"            % "sbt-molecule"             % "1.20
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.3.1")
 
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.6")
+
 // addSbtPlugin("org.scalameta" % "sbt-metals" % "1.6.2")
 
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always

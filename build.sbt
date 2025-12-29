@@ -9,6 +9,7 @@ import sbtassembly.MergeStrategy
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / scalafixOnCompile := false
+ThisBuild / scalafmtOnCompile := false
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
