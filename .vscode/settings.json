@@ -17,7 +17,7 @@
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.4+40-0a5f5204-SNAPSHOT",
+    "metals.serverVersion": "1.6.4+60-a63f9e5c-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 37277,
     "metals.suggestLatestUpgrade": "on",
@@ -72,8 +72,14 @@
         ]
     },
     "psi-header.variables": [
-        ["copyrightholder", "Association Française du Poêle Maçonné Artisanal"],
-        ["company", "Association Française du Poêle Maçonné Artisanal"]
+        [
+            "copyrightholder",
+            "Association Française du Poêle Maçonné Artisanal"
+        ],
+        [
+            "company",
+            "Association Française du Poêle Maçonné Artisanal"
+        ]
     ],
     "psi-header.templates": [
         {
@@ -90,14 +96,26 @@
             "begin": "#", // compact mode: single-line comments
             "prefix": "# ",
             "end": "#",
-            "beforeHeader": [" "],
+            "beforeHeader": [
+                " "
+            ],
             "forceToTop": false,
             "ignoreLines": [ // prevents duplicate detection issues
                 "#!"
             ]
         },
-        { "language": "scala", "ignoreLines": ["package"] },
-        { "language": "hocon", "begin": "#", "prefix": "# ", "end": "#" },
+        {
+            "language": "scala",
+            "ignoreLines": [
+                "package"
+            ]
+        },
+        {
+            "language": "hocon",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
         {
             "language": ".template",
             "begin": "#",
@@ -110,9 +128,24 @@
             "prefix": "# ",
             "end": "#"
         },
-        { "language": "properties", "begin": "#", "prefix": "# ", "end": "#" },
-        { "language": "makefile", "begin": "#", "prefix": "# ", "end": "#" },
-        { "language": ".yaml", "begin": "#", "prefix": "# ", "end": "#"},
+        {
+            "language": "properties",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
+        {
+            "language": "makefile",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
+        {
+            "language": ".yaml",
+            "begin": "#",
+            "prefix": "# ",
+            "end": "#"
+        },
         {
             "language": ".typ",
             "begin": "//",
@@ -132,6 +165,9 @@
             "end": "#"
         },
     ],
+    "[scala]": {
+        "editor.defaultFormatter": "scalameta.metals"
+    },
     "[hocon]": {
         "files.trimTrailingWhitespace": true,
         "editor.insertSpaces": true,
