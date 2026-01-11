@@ -58,7 +58,7 @@ object ExampleProject_15544
 
     val airIntakePipe = 
         import AirIntakePipe_Module.*
-        define(conduit_air_descr*).toFullDescr().extractPipe
+        mkPipeFromIncrDescr(conduit_air_descr).extractPipe
 
     val foyer_descr = TraditionalFirebox(
         pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
