@@ -10,7 +10,8 @@ resolvers ++= Seq(
   Resolver.sbtPluginRepo("releases"),
   "sbt-plugin-snapshots" at "https://repo.scala-sbt.org/scalasbt/sbt-plugin-snapshots",
   Resolver.mavenCentral,
-  Resolver.sonatypeRepo("releases")
+//   Resolver.sonatypeRepo("releases") // deprecated
+  Resolver.sonatypeCentralSnapshots
 )
 
 addSbtPlugin("io.spray"                     % "sbt-revolver"             % "0.10.0")
