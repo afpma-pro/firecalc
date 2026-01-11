@@ -144,6 +144,7 @@ object I18nData:
         ecolabeled: Firebox_15544.EcoLabeled,
         tested: Firebox_15544.Tested,
         traditional: Firebox_15544.Traditional,
+        firebox_glass_surface_ratio_below_one_fifth: String
     )
 
     object Firebox_15544:
@@ -173,6 +174,7 @@ object I18nData:
             door_opening_width: String,
             glass_width: String,
             glass_height: String,
+            
             ash_pit_height_AF: String,
             air_manifold_height_W: String,
             firebox_floor_thickness: String,
@@ -442,9 +444,10 @@ object I18nData:
         term_should_be_less_or_eq_than: StringFormat2,
         term_should_be_less_than: StringFormat2,
         term_should_be_between_inclusive: StringFormat4,
-        term_constraint_min_error: StringFormat2,
-        term_constraint_max_error: StringFormat2,
+        term_constraint_min_error: StringFormat3,
+        term_constraint_max_error: StringFormat3,
         glass_area_too_large: StringFormat2,
+        glass_surface_ratio_not_confirmed: String,
         firebox_height_out_of_range: StringFormat3,
         firebox_base_surface_not_in_range: StringFormat3,
         firebox_base_ratio_invalid: StringFormat3,

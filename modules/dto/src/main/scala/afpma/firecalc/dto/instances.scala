@@ -107,34 +107,7 @@ object instances:
     // FacingType
 
     given Decoder[FacingType] = deriveDecoderForEnum[FacingType](FacingType.valueOf)
-    given Encoder[FacingType] = deriveEncoderForEnum[FacingType]
-
-    // Firebox
-    
-    given Decoder[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom] = Decoder.decodeString.emap(s => 
-        if (s == Firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom.toString) Right(Firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom)         
-        else Left(s"$s could not be decoded as 'AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom'")
-    )
-
-    given Decoder[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater] = 
-        import cats.implicits.toFunctorOps
-        List[Decoder[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater]](
-            Decoder[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom].widen,
-        ).reduceLeft(_ or _)
-
-    given Encoder[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom] = 
-        Encoder.encodeString.contramap(_.toString)
-
-    given Encoder[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater] = 
-        Encoder.instance {
-            case x: Firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom => Encoder[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom].apply(x)
-        }
-
-    // Firebox
-
-    given Decoder[Firebox] = semiauto.deriveDecoder[Firebox]
-    given Encoder[Firebox] = semiauto.deriveEncoder[Firebox]
-    
+    given Encoder[FacingType] = deriveEncoderForEnum[FacingType]  
 
     // HorizontalAngleBetweenChimneyAndAdjacentBuildings
 
@@ -204,6 +177,27 @@ object instances:
 
     given Decoder[OutsideAirIntakeAndChimneyLocations] = deriveDecoderForEnum[OutsideAirIntakeAndChimneyLocations](OutsideAirIntakeAndChimneyLocations.valueOf)
     given Encoder[OutsideAirIntakeAndChimneyLocations] = deriveEncoderForEnum[OutsideAirIntakeAndChimneyLocations]
+
+    // OutsideAirLocationInHeater.FromBottom
+
+    given Decoder[OutsideAirLocationInHeater.FromBottom] = Decoder.decodeString.emap(s => 
+        if (s == OutsideAirLocationInHeater.FromBottom.toString) Right(OutsideAirLocationInHeater.FromBottom)         
+        else Left(s"$s could not be decoded as 'OutsideAirLocationInHeater.FromBottom'")
+    )
+
+    given Decoder[OutsideAirLocationInHeater] = 
+        import cats.implicits.toFunctorOps
+        List[Decoder[OutsideAirLocationInHeater]](
+            Decoder[OutsideAirLocationInHeater.FromBottom].widen,
+        ).reduceLeft(_ or _)
+
+    given Encoder[OutsideAirLocationInHeater.FromBottom] = 
+        Encoder.encodeString.contramap(_.toString)
+
+    given Encoder[OutsideAirLocationInHeater] = 
+        Encoder.instance {
+            case x: OutsideAirLocationInHeater.FromBottom => Encoder[OutsideAirLocationInHeater.FromBottom].apply(x)
+        }
 
     // PipeLocation
 
@@ -358,7 +352,7 @@ object instances:
                 ("value", Json.fromString(iq.value.toString)),
                 ("unit", Json.fromString(SUnit[U].showUnitFull))
             )
-    
+
     given decoder_QtyD_meter: Decoder[QtyD[Meter]] = decoder_QtyD[Meter]
     given encoder_QtyD_meter: Encoder[QtyD[Meter]] = encoder_QtyD[Meter]
 

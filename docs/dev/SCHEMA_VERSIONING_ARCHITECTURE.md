@@ -39,18 +39,34 @@ FireCalc implements a **unified versioned schema architecture** for managing app
 
 ## Architecture Principles
 
-### 1. Independent Versioning
+### 1. Composite Versioning (Option B - Recommended)
 
-Each component maintains its own version number and evolution path:
+**The container schema version MUST be incremented when any of its component versions change.**
+
+This provides:
+- ✅ **Clear migration path** when reading localStorage
+- ✅ **Compile-time guarantee** that `AppStateSchema_V2` contains `FireCalcYAML_V2`
+- ✅ **Explicit type safety** - no ambiguity about which versions are contained
 
 ```scala
+// V1: All components at V1
 AppStateSchema_V1 {
     version: AppStateSchema_Version = 1
     engine_state: FireCalcYAML_V1 { version: FireCalc_Version = 1 }
     sensitive_data: ClientProjectData_V1 { version: ClientProjectData_Version = 1 }
     billing_data: BillingInfo_V1 { version: BillingInfo_Version = 1 }
 }
+
+// V2: engine_state upgraded to V2 → AppStateSchema version also incremented to V2
+AppStateSchema_V2 {
+    version: AppStateSchema_Version = 2
+    engine_state: FireCalcYAML_V2 { version: FireCalc_Version = 2 }  // ← upgraded
+    sensitive_data: ClientProjectData_V1 { version: ClientProjectData_Version = 1 }
+    billing_data: BillingInfo_V1 { version: BillingInfo_Version = 1 }
+}
 ```
+
+> ⚠️ **Important**: When upgrading `FireCalcYAML_V1` → `FireCalcYAML_V2`, you MUST also create `AppStateSchema_V2`. The container version acts as a composite version of its components.
 
 ### 2. Opaque Types for Version Safety
 

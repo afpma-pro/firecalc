@@ -87,7 +87,7 @@ class JsonEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
         )
 
         encodingAndDecodingToJsonShouldWork("AppState.init")(
-            x = AppState.init, 
+            x = EngineState.init, 
             jsonStringExp = """{"customer":{"first_name":"","last_name":"","phone_no":"","email":"","address":"","city":"","postal_code":""},"localConditions":{"z_geodetical_height":{"value":"100","unit":"meter"},"coastal_region":false,"chimney_termination":{"chimney_location_on_roof":{"h":"MoreThan40cm","d":null,"rs":null,"o":null,"s":null},"adjacent_buildings":{"l":"MoreThan15m","alpha":null,"beta":null}}}}""",
         )
     }

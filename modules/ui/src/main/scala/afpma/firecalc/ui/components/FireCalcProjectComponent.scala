@@ -23,7 +23,7 @@ import org.scalajs.dom
 
 object FireCalcProjet:
 
-    case class HardCodedAppStateComponent(nextAppState: AppState, buttonTitle: String)(using Locale) extends Component:
+    case class HardCodedEngineStateComponent(nextEngineState: EngineState, buttonTitle: String)(using Locale) extends Component:
         lazy val node = 
             div( 
                 cls := "h-5",
@@ -38,7 +38,7 @@ object FireCalcProjet:
                                 // p( cls := "text-sm", buttonTitle),
                             ),
                             onClick --> { _ => 
-                                appStateVar.set(nextAppState)
+                                engineStateVar.set(nextEngineState)
                             }
                         ),
                     ttPosition = "tooltip-bottom"
@@ -57,7 +57,7 @@ object FireCalcProjet:
                             cls := "w-4 h-4 cursor-pointer",
                             lucide.`file`(stroke_width = 1),
                             onClick --> { _ => 
-                                appStateVar.set(AppState.init)
+                                engineStateVar.set(EngineState.init)
                             }
                         ),
                     ttPosition = "tooltip-bottom"
@@ -71,14 +71,15 @@ object FireCalcProjet:
         val isProcessingVar = Var(false)
         val errorVar = Var[Option[String]](None)
 
-        def saveYaml(state: AppState): Unit =
+        def saveYaml(engineState: EngineState): Unit =
             import scala.concurrent.ExecutionContext.Implicits.global
+            import afpma.firecalc.dto.FireCalcYAMLMigrations
             
             isProcessingVar.set(true)
             errorVar.set(None)
 
-            // Convert state to YAML
-            AppState.encodeToYaml(state) match
+            // Convert state to YAML using dto module
+            FireCalcYAMLMigrations.encodeToYamlTry(engineState) match
                 case Failure(ex) =>
                     errorVar.set(Some(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage)))
                     isProcessingVar.set(false)
@@ -106,7 +107,7 @@ object FireCalcProjet:
                                 disabled <-- isProcessingVar,
                                 lucide.`file-down`(stroke_width = 1),
                                 onClick --> { _ =>
-                                    saveYaml(appStateVar.now())
+                                    saveYaml(engineStateVar.now())
                                 }
                             ),
                         ttPosition = "tooltip-bottom"
@@ -141,21 +142,24 @@ object FireCalcProjet:
          * Load project from file content
          */
         def loadFromContent(yamlContent: String, fileName: String): Unit =
+            import afpma.firecalc.dto.FireCalcYAMLMigrations
+            
             scala.scalajs.js.Dynamic.global.console.log(s"Loading file: $fileName")
             fileNameVar.set(Some(fileName))
             isLoadingVar.set(true)
             errorVar.set(None)
             
-            AppState.decodeFromYaml(yamlContent) match
+            // Use migration-aware decoder that handles V1→V2 upgrades automatically
+            FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
                 case Failure(e) =>
                     scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project")
                     scala.scalajs.js.Dynamic.global.console.log(e.getMessage())
                     errorVar.set(Some(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage)))
                     isLoadingVar.set(false)
                     
-                case Success(nextAppState) =>
+                case Success(nextEngineState) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
-                    appStateVar.set(nextAppState)
+                    engineStateVar.set(nextEngineState)
                     isLoadingVar.set(false)
 
         /**

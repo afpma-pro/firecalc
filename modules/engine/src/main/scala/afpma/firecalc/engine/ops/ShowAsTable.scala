@@ -136,7 +136,7 @@ class ShowAsTableInstances(using Locale):
         cc =>
             import cc.{*, given}
             val tconstraints = alltc.getAll
-            val ovResults = alltc.checkAllOpt(using value)
+            val ovResults = alltc.checkAllOpt(value)
             (tconstraints zip ovResults)
                 .map: (_, ovr) =>
                     (

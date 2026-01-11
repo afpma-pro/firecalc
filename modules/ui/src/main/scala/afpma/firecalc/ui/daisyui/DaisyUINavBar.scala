@@ -57,8 +57,8 @@ object DaisyUINavBar:
                 FireCalcProjet.NewBlankComponent(),
                 FireCalcProjet.UploadComponent(),
                 FireCalcProjet.BackupComponent(),
-                FireCalcProjet.HardCodedAppStateComponent(
-                    nextAppState = AppState.example_projet_15544,
+                FireCalcProjet.HardCodedEngineStateComponent(
+                    nextEngineState = EngineState.example_projet_15544,
                     buttonTitle = I18N_UI.buttons.load_example_project_15544
                 ),
             ),

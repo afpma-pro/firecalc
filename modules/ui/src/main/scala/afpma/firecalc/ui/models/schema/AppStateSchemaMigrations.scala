@@ -5,11 +5,14 @@
 
 package afpma.firecalc.ui.models.schema
 
+import afpma.firecalc.dto.FireCalcYAMLMigrations.given
 import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
+import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2
 import afpma.firecalc.ui.models.schema.common.AppStateSchema_Version
 import afpma.firecalc.ui.models.AppStateSchemaHelper
 import io.circe.yaml.scalayaml.parser as yamlParser
 import io.circe.{Decoder, Json}
+import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import org.scalajs.dom
 import scala.util.{Try, Success, Failure}
@@ -20,8 +23,19 @@ import scala.util.{Try, Success, Failure}
  * Handles version detection and migration of persisted YAML data to the latest schema version.
  * Uses manual JSON navigation for version detection and Chimney transformers for migrations.
  *
+ * ## Versioning Rule (Option B - Composite Versioning)
+ *
+ * **The container schema version MUST be incremented when any component version changes.**
+ *
+ * When upgrading `FireCalcYAML_V1` → `FireCalcYAML_V2`, you MUST also create `AppStateSchema_V2`.
+ * This ensures:
+ * - Clear migration path when reading localStorage
+ * - Compile-time guarantee about contained component versions
+ * - No runtime ambiguity
+ *
  * ## Version History
- * - V1 (current): Initial unified schema with engine_state, sensitive_data, and billing_data
+ * - V1: Initial unified schema with engine_state (FireCalcYAML_V1), sensitive_data, and billing_data
+ * - V2 (current): engine_state upgraded to FireCalcYAML_V2 (adds height_of_first_row_of_air_injectors)
  *
  * ## Migration Strategy
  * 1. Parse YAML to JSON using circe-yaml
@@ -31,17 +45,32 @@ import scala.util.{Try, Success, Failure}
  *
  * ## Usage
  * {{{
- *   val maybeSchema = SchemaMigrations.migrateToLatest(rawYaml)
+ *   val maybeSchema = AppStateSchemaMigrations.migrateToLatest(rawYaml)
  *   maybeSchema match {
  *     case Some(schema) => // Use migrated schema
  *     case None => // Handle invalid/missing data
  *   }
  * }}}
+ *
+ * @see docs/dev/SCHEMA_VERSIONING_ARCHITECTURE.md for full versioning documentation
  */
-object SchemaMigrations:
+object AppStateSchemaMigrations:
 
     /** Current schema version - increment when adding new schema versions */
-    val CURRENT_SCHEMA_VERSION = 1
+    val CURRENT_SCHEMA_VERSION = 2
+
+    /**
+     * Chimney transformer from AppStateSchema_V1 to AppStateSchema_V2.
+     * Uses the FireCalcYAML_V1 -> FireCalcYAML_V2 transformer from dto module.
+     *
+     * NOTE: We must explicitly transform engine_state using the imported transformer
+     * to ensure the FireCalcYAML version is also upgraded from 1 to 2.
+     */
+    given Transformer[AppStateSchema_V1, AppStateSchema_V2] =
+        Transformer.define[AppStateSchema_V1, AppStateSchema_V2]
+            .withFieldConst(_.version, AppStateSchema_Version(2))
+            .withFieldComputed(_.engine_state, v1 => v1.engine_state.transformInto[afpma.firecalc.dto.v2.FireCalcYAML_V2])
+            .buildTransformer
 
     /**
      * Migrate raw YAML data to the latest schema version.
@@ -52,7 +81,7 @@ object SchemaMigrations:
      * @param rawData YAML string from localStorage
      * @return Some(schema) if migration succeeds, None otherwise
      */
-    def migrateToLatest(rawData: String): Option[AppStateSchema_V1] =
+    def migrateToLatest(rawData: String): Option[AppStateSchema] =
         if rawData.trim.isEmpty then
             dom.console.log("Empty data provided, returning None")
             return None
@@ -63,17 +92,16 @@ object SchemaMigrations:
                 None
 
             case Some(1) =>
+                // V1 - decode and migrate to V2
+                decodeV1(rawData).flatMap(migrateFromV1ToV2) match
+                    case Success(v2) => Some(v2)
+                    case Failure(e) =>
+                        dom.console.error(s"Failed to migrate V1 to V2: ${e.getMessage()}")
+                        None
+
+            case Some(2) =>
                 // Current version - decode directly
                 AppStateSchemaHelper.decodeFromYaml(rawData).toOption
-
-            // Future migrations will be added here
-            // case Some(2) =>
-            //     // Decode V1, migrate to V2
-            //     decodeV1(rawData).flatMap(migrateFromV1ToV2).toOption
-            //
-            // case Some(3) =>
-            //     // Decode V2, migrate to V3
-            //     decodeV2(rawData).flatMap(migrateFromV2ToV3).toOption
 
             case Some(version) =>
                 dom.console.log(s"Unknown schema version: $version")
@@ -107,26 +135,29 @@ object SchemaMigrations:
                 dom.console.log(s"Failed to parse YAML: ${parseError.getMessage()}")
                 None
 
-    // Future migration functions using Chimney transformers
-    //
-    // /**
-    //  * Migrate from V1 to V2 schema.
-    //  *
-    //  * Example migration adding a new field with a default value:
-    //  * {{{
-    //  *   schema
-    //  *     .into[AppStateSchema_V2]
-    //  *     .withFieldConst(_.newField, defaultValue)
-    //  *     .transform
-    //  * }}}
-    //  */
-    // private def migrateFromV1ToV2(schema: AppStateSchema_V1): Try[AppStateSchema_V2] =
-    //     Try {
-    //         schema
-    //             .into[AppStateSchema_V2]
-    //             .withFieldConst(_.version, AppStateSchema_Version(2))
-    //             .transform
-    //     }
+    /**
+     * Decode V1 schema from YAML string.
+     */
+    private def decodeV1(yaml: String): Try[AppStateSchema_V1] =
+        import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1.given
+        yamlParser.parse(yaml) match
+            case Right(json) =>
+                json.as[AppStateSchema_V1] match
+                    case Right(schema) => Success(schema)
+                    case Left(err) => Failure(new RuntimeException(s"Failed to decode V1: ${err.getMessage()}"))
+            case Left(err) => Failure(new RuntimeException(s"Failed to parse V1 YAML: ${err.getMessage()}"))
+
+    /**
+     * Migrate from V1 to V2 schema.
+     *
+     * Uses Chimney transformer to convert engine_state from FireCalcYAML_V1 to FireCalcYAML_V2.
+     * The FireCalcYAML migration adds height_of_first_row_of_air_injectors with default value.
+     */
+    private def migrateFromV1ToV2(schema: AppStateSchema_V1): Try[AppStateSchema_V2] =
+        Try {
+            dom.console.log("Migrating AppStateSchema from V1 to V2")
+            schema.transformInto[AppStateSchema_V2]
+        }
 
     /**
      * Clear invalid data from localStorage.
@@ -147,7 +178,7 @@ object SchemaMigrations:
      * @param schema Schema to validate
      * @return true if validation succeeds, false otherwise
      */
-    def validateSchema(schema: AppStateSchema_V1): Boolean =
+    def validateSchema(schema: AppStateSchema): Boolean =
         AppStateSchemaHelper.encodeToYaml(schema) match
             case Success(yaml) =>
                 AppStateSchemaHelper.decodeFromYaml(yaml) match

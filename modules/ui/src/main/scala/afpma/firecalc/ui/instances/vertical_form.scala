@@ -257,6 +257,7 @@ object vertical_form:
         given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
             horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
         given DF[Int] = int_emptyAsDefault_alwaysValid
+        given DF[Boolean] = boolean_trueAsDefault_alwaysValid
         given DF[PipeShape] = horizontal_form.horizontal_form_PipeShape
             .toVerticalForm
             .hideFieldName
@@ -266,11 +267,11 @@ object vertical_form:
             ))
 
         given DF[Length] = vertical_form_Length_cm
-        given DF[Firebox.AFPMA_PRSE.OutsideAirLocationInHeater] = DaisyUIVerticalForm.mk_AlwaysValid: (va, _) =>
+        given DF[OutsideAirLocationInHeater] = DaisyUIVerticalForm.mk_AlwaysValid: (va, _) =>
             FieldsetLabelAndContent(
                 label = I18N.firebox.afpma_prse.outside_air_location_in_heater,
                 SelectAndOptionsOnly.single(
-                    va.now(), 
+                    va.now(),
                     asDisabled = false,
                 )
             )

@@ -57,24 +57,26 @@ object defaultable:
 
     val firebox_traditional_empty: Defaultable[Firebox] = Defaultable:
         Firebox.Traditional(
-            heat_output_reduced                         = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
-            firebox_depth                         = 0.cm,
-            firebox_width                         = 0.cm,
-            firebox_height                        = 0.cm,
-            pressure_loss_coefficient_from_door                  = 0.3.unitless,
+            heat_output_reduced                    = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
+            firebox_depth                          = 0.cm,
+            firebox_width                          = 0.cm,
+            firebox_height                         = 0.cm,
+            height_of_first_row_of_air_injectors   = 5.cm,
+            pressure_loss_coefficient_from_door    = 0.3.unitless,
             total_air_intake_surface_area_on_door  = 0.cm2,
-            glass_width                           = 0.cm,
-            glass_height                          = 0.cm,
+            glass_width                            = 0.cm,
+            glass_height                           = 0.cm,
         )
 
     val firebox_traditional_minimal: Defaultable[Firebox.Traditional] = Defaultable:
         Firebox.Traditional(
-            heat_output_reduced                         = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
+            heat_output_reduced                   = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
             firebox_depth                         = 33.2.cm,
             firebox_width                         = 33.2.cm,
             firebox_height                        = 52.cm,
-            pressure_loss_coefficient_from_door                  = 0.3.unitless,
-            total_air_intake_surface_area_on_door  = 100.cm2,
+            height_of_first_row_of_air_injectors  = 5.cm,
+            pressure_loss_coefficient_from_door   = 0.3.unitless,
+            total_air_intake_surface_area_on_door = 100.cm2,
             glass_width                           = 30.cm,
             glass_height                          = 30.cm,
         )
@@ -87,6 +89,7 @@ object defaultable:
             firebox_depth = 33.cm, 
             firebox_width = 33.cm, 
             firebox_height = 50.cm, 
+            height_of_first_row_of_air_injectors   = 5.cm,
             door_opening_width = 30.cm, 
             glass_width = 25.cm, 
             glass_height = 25.cm, 

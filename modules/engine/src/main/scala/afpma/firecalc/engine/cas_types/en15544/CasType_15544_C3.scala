@@ -98,6 +98,7 @@ object CasType_15544_C3
         h80_largeurRenfortMedianArriere                     = 4.5.cm, // prop 10% ???
         h81_debordDesRenfortsDansLesAngles                  = 4.5.cm, // prop 10% ???
         h82_hauteurDesInjecteurs_Z                          = 0.8.cm,
+        h83_hauteurEntreLaSoleEtLe1erInjecteur              = 10.cm,
     )
 
     val firebox = foyer_descr

@@ -7,6 +7,7 @@ package afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32
 
 import cats.data.ValidatedNel
 import cats.syntax.validated.catsSyntaxValidatedId
+import cats.syntax.option.catsSyntaxOptionId
 
 import afpma.firecalc.engine.biblio.kov.firebox_emissions.*
 import afpma.firecalc.engine.models.*
@@ -37,7 +38,8 @@ case class TraditionalFirebox(
     h67_sectionCumuleeEntreeAirPorte: QtyD[(Meter ^ 2)],
     h71_largeurVitre: Length,
     h72_hauteurVitre: Length,
-) extends From_CalculPdM_V_0_2_32 
+    height_of_first_row_of_air_injectors: Length = 5.cm,
+) extends From_CalculPdM_V_0_2_32
 {
     override val reference = LocalizedString.from(I18N.firebox_names.traditional)
     override val type_of_appliance = TypeOfAppliance.WoodLogs
@@ -48,19 +50,36 @@ case class TraditionalFirebox(
     def air_injector_surface_area = h67_sectionCumuleeEntreeAirPorte
 
     def validate(m_B: m_B): Locale ?=> ValidatedNel[FireboxError, Unit] = ().validNel
+
+    override def t_n_constraints = Seq.empty
+    override def m_B_constraints = Seq(
+        TermConstraint.Min[m_B](10.kg).some,
+        TermConstraint.Max[m_B](40.kg).some
+    )
+    override def m_B_min_constraints = Seq.empty
+    override def glassArea_constraints = Seq.empty
+    override def h_br_constraints = Seq.empty
+    override def λ_constraints = Seq.empty
+    override def η_constraints = Seq.empty
+    override def height_of_lowest_opening_constraints = Seq.empty
+    override def fireboxDimensions_Base_constraints = Seq.empty
 }
 
 object TraditionalFirebox:
     given showAsTable: Locale => ShowAsTable[TraditionalFirebox] = 
         ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
             import x.*
-            (I18N.firebox.typ                           :: ""    :: I18N.firebox_names.traditional                   :: Nil) ::
-            (I18N.type_of_appliance.descr                           :: ""    :: type_of_appliance.showP                                     :: Nil) ::
+            (I18N.firebox.typ                            :: ""    :: I18N.firebox_names.traditional                              :: Nil) ::
+            (I18N.type_of_appliance.descr                :: ""    :: type_of_appliance.showP                                     :: Nil) ::
             (I18N.firebox.traditional.depth              :: "h11" :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
             (I18N.firebox.traditional.width              :: "h12" :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
             (I18N.firebox.traditional.height             :: "h13" :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
-            (I18N.firebox.traditional.pressure_loss_coefficient_from_door       :: "h66" :: h66_coeffPerteDeChargePorte.showP                           :: Nil) ::
-            (I18N.firebox.traditional.total_air_intake_surface_area_on_door       :: "h67" :: h67_sectionCumuleeEntreeAirPorte.to_cm2.showP               :: Nil) ::
+            (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name
+                                                         :: "X"   :: height_of_first_row_of_air_injectors.to_cm.showP :: Nil)            ::
+            (I18N.firebox.traditional.pressure_loss_coefficient_from_door       
+                                                         :: "h66" :: h66_coeffPerteDeChargePorte.showP                           :: Nil) ::
+            (I18N.firebox.traditional.total_air_intake_surface_area_on_door       
+                                                         :: "h67" :: h67_sectionCumuleeEntreeAirPorte.to_cm2.showP               :: Nil) ::
             (I18N.firebox.traditional.glass_width        :: "h71" :: h71_largeurVitre.to_cm.showP                                :: Nil) ::
             (I18N.firebox.traditional.glass_height       :: "h72" :: h72_hauteurVitre.to_cm.showP                                :: Nil) ::
             Nil

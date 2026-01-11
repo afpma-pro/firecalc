@@ -23,7 +23,7 @@ final case class FireCalcYAML_V1(
     local_conditions: LocalConditions,
     stove_params: StoveParams,
     air_intake_descr: Seq[IncrDescr_13384],
-    firebox: Firebox,
+    firebox: Firebox_V1,
     flue_pipe_descr: Seq[IncrDescr_15544],
     connector_pipe_descr: Seq[IncrDescr_13384],
     chimney_pipe_descr: Seq[IncrDescr_13384],

@@ -12,7 +12,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.gtypedefs.*
 
-import afpma.firecalc.ui.models.AppState
+import afpma.firecalc.ui.models.EngineState
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.NbOfFlows
@@ -30,7 +30,7 @@ import io.circe.generic.semiauto
 
 import cats.implicits.toContravariantOps
 
-import afpma.firecalc.dto.v1.FireCalcYAML_V1
+import afpma.firecalc.dto.v2.FireCalcYAML_V2
 
 import afpma.firecalc.payments.shared.*
 import afpma.firecalc.dto.CustomYAMLEncoderDecoder

@@ -93,6 +93,7 @@ object CasPratique_15544_FDIM_EX_03
         h80_largeurRenfortMedianArriere                     = 6.cm,
         h81_debordDesRenfortsDansLesAngles                  = 3.cm,
         h82_hauteurDesInjecteurs_Z                          = 0.5.cm,
+        h83_hauteurEntreLaSoleEtLe1erInjecteur              = 10.cm,
     )
 
     val firebox = foyer_descr

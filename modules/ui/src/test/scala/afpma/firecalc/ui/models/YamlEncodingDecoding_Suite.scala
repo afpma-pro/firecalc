@@ -119,7 +119,7 @@ class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
         )
     
         encodingAndDecodingToYamlShouldWork("AppState.init")(
-            x = AppState.init, 
+            x = EngineState.init, 
             yamlStringExp = """|customer: 
                             |  first_name: ""
                             |  last_name: ""

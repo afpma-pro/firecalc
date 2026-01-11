@@ -24,30 +24,23 @@ import afpma.firecalc.ui.instances.circe.given
 import afpma.firecalc.ui.instances.defaultable
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.units.coulombutils.*
-import io.circe.*
-import io.circe.parser.*
-import io.circe.syntax.*
-import io.circe.yaml.scalayaml.parser as yamlParser
-import io.circe.yaml.scalayaml.printer as yamlPrinter
+
 import io.scalaland.chimney.dsl.*
 import io.taig.babel.Languages
 import io.taig.babel.Locale
-import afpma.firecalc.dto.FireCalcYAML
-
-import io.scalaland.chimney.Transformer
-import io.scalaland.chimney.dsl.*
-import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 
-type AppState = FireCalcYAML
+type EngineState = FireCalcYAML
 
-object AppState:
+object EngineState:
 
-    // given Decoder[AppState] = FireCalcYAML_V1.decoder
-    // given Encoder[AppState] = FireCalcYAML_V1.encoder
+    // given Decoder[AppState] = FireCalcYAML.decoder
+    // given Encoder[AppState] = FireCalcYAML.encoder
 
-    val example_projet_15544 = FireCalcYAML_V1(
+    val example_projet_15544: EngineState = FireCalcYAML_V2(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -66,7 +59,7 @@ object AppState:
     )
         
 
-    val init_as_CasType_15544_C3 = FireCalcYAML_V1(
+    val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V2(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -84,7 +77,7 @@ object AppState:
         chimney_pipe_descr              = CasType_15544_C3.conduit_fumees_descr,
     )
 
-    val init_as_CasPratique_15544_FDIM_EX_03 = FireCalcYAML_V1(
+    val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V2(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -102,7 +95,7 @@ object AppState:
         chimney_pipe_descr              = CasPratique_15544_FDIM_EX_03.conduit_fumees_descr,
     )
 
-    val empty = FireCalcYAML_V1(
+    val empty: EngineState = FireCalcYAML_V2(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -116,7 +109,7 @@ object AppState:
         chimney_pipe_descr              = Seq.empty,
     )
 
-    val minimal = FireCalcYAML_V1(
+    val minimal: EngineState = FireCalcYAML_V2(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -160,61 +153,4 @@ object AppState:
     
     val init = minimal
 
-    // Circe encoding / decoding
-
-    @deprecated("TODO: encode using dto module")
-    def encodeToYaml(x: AppState): Try[String] = 
-        val jsonEncodedTry = try {
-            val xj = x.asJson 
-            Success(xj)
-        } catch
-            case e => 
-                scala.scalajs.js.Dynamic.global.console.log(s"json encoding failure for ${x}")
-                scala.scalajs.js.Dynamic.global.console.log(s"error :")
-                scala.scalajs.js.Dynamic.global.console.log(e.getMessage())
-                scala.scalajs.js.Dynamic.global.console.log(e.getStackTrace().mkString("\n"))
-                // Json.fromJsonObject(JsonObject(("failure", Json.True)))
-                Failure(e)
-
-        val yamlEncodedTry = jsonEncodedTry.map(yamlPrinter.print)
-        yamlEncodedTry match
-            case Success(y_out) =>
-                // scala.scalajs.js.Dynamic.global.console.log(s"yaml output = \n${y_out}")
-                ()
-            case _ =>
-                ()
-        yamlEncodedTry
-
-    @deprecated("TODO: decode using dto module")
-    def decodeFromYaml(y: String): Try[AppState] = 
-        yamlParser.parse(y) match
-            case Left(pf) => 
-                scala.scalajs.js.Dynamic.global.console.log(s"failed to decode yaml :\n$y")
-                scala.scalajs.js.Dynamic.global.console.log(s"returning default 'AppState' = ${AppState.init}")
-                scala.scalajs.js.Dynamic.global.console.log(s"error details: ${pf.getMessage()}\n${pf.toString()}")
-                Success(AppState.init) // TODO: add popup info to notify user ?
-                // Failure(pf)
-            case Right(parsedYaml) =>
-                val j = parsedYaml.noSpaces
-                // scala.scalajs.js.Dynamic.global.console.log(s"parsedYaml =")
-                // scala.scalajs.js.Dynamic.global.console.log(j)
-                try
-                    decode[AppState](j) match
-                        case Left(err) => 
-                            scala.scalajs.js.Dynamic.global.console.log(s"failed to decode json :\n$j")
-                            scala.scalajs.js.Dynamic.global.console.log(s"returning default 'AppState' = ${AppState.init}")
-                            scala.scalajs.js.Dynamic.global.console.log(s"error details: ${err.getMessage()}\n${err.toString()}")
-                            // Failure(err)
-                            Success(AppState.init) // TODO: add popup info to notify user ?
-                        case Right(value) => 
-                            // scala.scalajs.js.Dynamic.global.console.log(s"decoding ok found :\n$value")
-                            Success(value)
-                catch
-                    case e =>
-                        scala.scalajs.js.Dynamic.global.console.log(s"unexpected failure when decoding json :\n$j")
-                        scala.scalajs.js.Dynamic.global.console.log(s"returning default 'AppState' = ${AppState.init}")
-                        scala.scalajs.js.Dynamic.global.console.log(s"uncaught error :\n${e.getMessage()}\n${e.toString()}")
-                        // Success(AppState.init)
-                        // throw e
-                        Failure(e)
-end AppState
+end EngineState

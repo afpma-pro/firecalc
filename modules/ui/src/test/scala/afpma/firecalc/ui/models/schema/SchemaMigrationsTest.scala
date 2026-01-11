@@ -30,7 +30,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val rawData = ""
 
     // When
-    val result = SchemaMigrations.migrateToLatest(rawData)
+    val result = AppStateSchemaMigrations.migrateToLatest(rawData)
 
     // Then
     result shouldBe None
@@ -41,7 +41,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val rawData = "   \n  \t  \n   "
 
     // When
-    val result = SchemaMigrations.migrateToLatest(rawData)
+    val result = AppStateSchemaMigrations.migrateToLatest(rawData)
 
     // Then
     result.shouldBe(None)
@@ -53,7 +53,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val yaml = AppStateSchemaHelper.encodeToYaml(originalSchema).get
 
     // When
-    val result = SchemaMigrations.migrateToLatest(yaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(yaml)
 
     // Then
     result.shouldBe(defined)
@@ -72,7 +72,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val result = SchemaMigrations.migrateToLatest(legacyYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(legacyYaml)
 
     // Then
     // Should return None because detectVersion returns None for missing version
@@ -88,7 +88,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val result = SchemaMigrations.migrateToLatest(futureYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(futureYaml)
 
     // Then
     // Should return None as version 999 is not supported
@@ -100,7 +100,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val malformedYaml = "{ invalid: yaml: structure: [[[[ }}"
 
     // When
-    val result = SchemaMigrations.migrateToLatest(malformedYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(malformedYaml)
 
     // Then
     result.shouldBe(None)
@@ -115,7 +115,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val result = SchemaMigrations.migrateToLatest(incompleteYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(incompleteYaml)
 
     // Then
     // AppStateSchemaHelper.decodeFromYaml is fault-tolerant and returns default schema
@@ -132,7 +132,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val schema = AppStateSchemaHelper.createInitialSchema()
 
     // When
-    val isValid = SchemaMigrations.validateSchema(schema)
+    val isValid = AppStateSchemaMigrations.validateSchema(schema)
 
     // Then
     isValid.shouldBe(true)
@@ -167,7 +167,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val emptyString = ""
 
     // When
-    val result = SchemaMigrations.migrateToLatest(emptyString)
+    val result = AppStateSchemaMigrations.migrateToLatest(emptyString)
 
     // Then
     result.shouldBe(None)
@@ -178,7 +178,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val whitespaceYaml = "    \n    \n    "
 
     // When
-    val result = SchemaMigrations.migrateToLatest(whitespaceYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(whitespaceYaml)
 
     // Then
     result.shouldBe(None)
@@ -192,7 +192,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val result = SchemaMigrations.migrateToLatest(nullYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(nullYaml)
 
     // Then
     result.shouldBe(None)
@@ -207,7 +207,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val result = SchemaMigrations.migrateToLatest(stringVersionYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(stringVersionYaml)
 
     // Then
     // detectVersion will fail (returns None), but decodeFromYaml is fault-tolerant
@@ -226,7 +226,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val result = SchemaMigrations.migrateToLatest(floatVersionYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(floatVersionYaml)
 
     // Then
     // Should return None as version must be an integer, not a float
@@ -242,7 +242,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val migrationResult = SchemaMigrations.migrateToLatest(negativeVersionYaml)
+    val migrationResult = AppStateSchemaMigrations.migrateToLatest(negativeVersionYaml)
 
     // Then
     // migrateToLatest will return None as -1 is not a valid version
@@ -258,7 +258,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |""".stripMargin
 
     // When
-    val migrationResult = SchemaMigrations.migrateToLatest(zeroVersionYaml)
+    val migrationResult = AppStateSchemaMigrations.migrateToLatest(zeroVersionYaml)
 
     // Then
     // migrateToLatest will return None as 0 is not a supported version
@@ -271,7 +271,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val largeYaml = AppStateSchemaHelper.encodeToYaml(schema).get
 
     // When
-    val result = SchemaMigrations.migrateToLatest(largeYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(largeYaml)
 
     // Then
     result.shouldBe(defined)
@@ -291,7 +291,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val specialCharsYaml = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
 
     // When
-    val result = SchemaMigrations.migrateToLatest(specialCharsYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(specialCharsYaml)
 
     // Then - migration should work with special characters
     result.shouldBe(defined)
@@ -311,7 +311,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     val unicodeYaml = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
 
     // When
-    val result = SchemaMigrations.migrateToLatest(unicodeYaml)
+    val result = AppStateSchemaMigrations.migrateToLatest(unicodeYaml)
 
     // Then - migration should work with Unicode
     result.shouldBe(defined)
@@ -331,7 +331,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     yamlTry.shouldBe(a[Success[?]])
 
     // When - validate the schema
-    val isValid = SchemaMigrations.validateSchema(schema)
+    val isValid = AppStateSchemaMigrations.validateSchema(schema)
 
     // Then
     isValid.shouldBe(true)

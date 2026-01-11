@@ -54,10 +54,12 @@ import afpma.firecalc.engine.models.en15544.typedefs.CitedConstraints
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.models.en13384.typedefs.P_L
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
+import afpma.firecalc.dto.FireCalcYAMLMigrations
+import afpma.firecalc.dto.common.FireCalc_Version.{<, given}
 import afpma.firecalc.payments.shared.*
 import afpma.firecalc.ui.instances.custom_yaml
-import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
-import afpma.firecalc.ui.models.schema.SchemaMigrations
+import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2
+import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
 import afpma.firecalc.ui.models.schema.LocalStorageKeys
 import io.scalaland.chimney.dsl.*
 
@@ -69,7 +71,7 @@ import io.scalaland.chimney.dsl.*
  * Unified application state schema stored in localStorage as a single atomic unit.
  * Contains: engine_state (sent to backend), sensitive_data (client-only), billing_data (client-only)
  */
-val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema_V1] =
+val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
     WebStorageVar
         .localStorage(key = LocalStorageKeys.APP_STATE_SCHEMA, syncOwner = None)
         .withCodec(
@@ -77,14 +79,14 @@ val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema_V1] =
                 AppStateSchemaHelper.encodeToYaml(_).toOption.getOrElse(""),
             decode = (raw: String) => {
                 // NEW: Attempt migration before decode
-                SchemaMigrations.migrateToLatest(raw) match {
+                AppStateSchemaMigrations.migrateToLatest(raw) match {
                     case Some(schema) =>
                         // Migration successful
                         Success(schema)
                     
                     case None =>
                         // Migration failed - clear storage and use defaults
-                        SchemaMigrations.clearInvalidData()
+                        AppStateSchemaMigrations.clearInvalidData()
                         Success(AppStateSchemaHelper.createInitialSchema())
                 }
             },
@@ -93,7 +95,7 @@ val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema_V1] =
         )
 
 val appStateSchemaVar =
-    Var[AppStateSchema_V1](appStateSchemaWebStorageVar.now())
+    Var[AppStateSchema](appStateSchemaWebStorageVar.now())
 
 // ============================================================================
 // ZOOMED VARS FROM UNIFIED SCHEMA
@@ -103,10 +105,18 @@ import SchemaTransformers.given
 import cats.data.Validated.Invalid
 import afpma.firecalc.engine.models.CombustionAirPipe_EN15544
 import afpma.firecalc.engine.models.en15544.pipedescr
+import afpma.firecalc.ui.models.schema.AppStateSchema
+import afpma.firecalc.dto.FireCalcYAML
 
 // Engine state (sent to backend for PDF generation)
-val appStateVar = appStateSchemaVar.zoomLazy(_.engine_state)((schema, engine) =>
-    schema.copy(engine_state = engine)
+val engineStateVar = appStateSchemaVar.zoomLazy(_.engine_state)((schema, engine) =>
+    // Migrate engine state to latest version if needed
+    val migratedEngine =
+        if engine.version < FireCalcYAML.LATEST_VERSION then
+            FireCalcYAMLMigrations.upgradeToCurrent(engine).getOrElse(engine)
+        else
+            engine
+    schema.copy(engine_state = migratedEngine)
 )
 
 // Sensitive data (NEVER sent to backend) - direct zoom (already ClientProjectData_V1)
@@ -121,11 +131,11 @@ val billingInfoVar =
         schema.copy(billing_data = billing)
     )
 
-val localeVar       = appStateVar.zoomLazy(_.locale)((g, x) => g.copy(locale = x))
+val localeVar       = engineStateVar.zoomLazy(_.locale)((g, x) => g.copy(locale = x))
 val displayUnitsVar =
-    appStateVar.zoomLazy(_.display_units)((g, x) => g.copy(display_units = x))
+    engineStateVar.zoomLazy(_.display_units)((g, x) => g.copy(display_units = x))
 
-val project_descr_var = appStateVar.zoomLazy(_.project_description)((ast, x) =>
+val project_descr_var = engineStateVar.zoomLazy(_.project_description)((ast, x) =>
     ast.copy(project_description = x)
 )
 
@@ -146,7 +156,7 @@ val filename_var = project_descr_var.zoomLazy(prj =>
 
 // local conditions
 
-val local_conditions_var = appStateVar.zoomLazy(_.local_conditions)((ast, x) =>
+val local_conditions_var = engineStateVar.zoomLazy(_.local_conditions)((ast, x) =>
     ast.copy(local_conditions = x)
 )
 
@@ -167,59 +177,59 @@ val adjacent_buildings_var =
 
 // stove params
 val stove_params_var =
-    appStateVar.zoomLazy(_.stove_params)((ast, x) => ast.copy(stove_params = x))
+    engineStateVar.zoomLazy(_.stove_params)((ast, x) => ast.copy(stove_params = x))
 
 val air_intake_incrdescr_var =
-    appStateVar.zoomLazy(_.air_intake_descr)((g, x) =>
+    engineStateVar.zoomLazy(_.air_intake_descr)((g, x) =>
         g.copy(air_intake_descr = x)
     )
 
-// AppStateHelper
+// EngineStateHelper
 
-val appStateHelperVar =
-    appStateVar.zoomLazy(FireCalcYAML_Loader.apply)((appState, _) => appState)
+val engineStateHelperVar =
+    engineStateVar.zoomLazy(FireCalcYAML_Loader.apply)((engineState, _) => engineState)
 
-val air_intake_vnel_signal          = appStateHelperVar.signal.map(_.airIntakePipe)
+val air_intake_vnel_signal          = engineStateHelperVar.signal.map(_.airIntakePipe)
 val air_intake_mappings_vnel_signal =
-    appStateHelperVar.signal.map(_.airIntakePipeMappings)
+    engineStateHelperVar.signal.map(_.airIntakePipeMappings)
 
 // Firebox
 
 val firebox_var =
-    appStateVar.zoomLazy(_.firebox)((ast, x) => ast.copy(firebox = x))
+    engineStateVar.zoomLazy(_.firebox)((ast, x) => ast.copy(firebox = x))
 
 // FluePipe
 
-val fluepipe_incrdescr_var = appStateVar.zoomLazy(_.flue_pipe_descr)((g, x) =>
+val fluepipe_incrdescr_var = engineStateVar.zoomLazy(_.flue_pipe_descr)((g, x) =>
     g.copy(flue_pipe_descr = x)
 )
 
-val fluepipe_vnel_signal = appStateHelperVar.signal.map(_.fluePipe)
+val fluepipe_vnel_signal = engineStateHelperVar.signal.map(_.fluePipe)
 
 val fluepipe_mappings_vnel_signal =
-    appStateHelperVar.signal.map(_.fluePipeMappings)
+    engineStateHelperVar.signal.map(_.fluePipeMappings)
 
 // Connecting Pipe
 
 val connector_pipe_incrdescr_var =
-    appStateVar.zoomLazy(_.connector_pipe_descr)((g, x) =>
+    engineStateVar.zoomLazy(_.connector_pipe_descr)((g, x) =>
         g.copy(connector_pipe_descr = x)
     )
 
-val connector_pipe_vnel_signal          = appStateHelperVar.signal.map(_.connectorPipe)
+val connector_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.connectorPipe)
 val connector_pipe_mappings_vnel_signal =
-    appStateHelperVar.signal.map(_.connectorPipeMappings)
+    engineStateHelperVar.signal.map(_.connectorPipeMappings)
 
 // Chimney Pipe
 
 val chimney_pipe_incrdescr_var =
-    appStateVar.zoomLazy(_.chimney_pipe_descr)((g, x) =>
+    engineStateVar.zoomLazy(_.chimney_pipe_descr)((g, x) =>
         g.copy(chimney_pipe_descr = x)
     )
 
-val chimney_pipe_vnel_signal          = appStateHelperVar.signal.map(_.chimneyPipe)
+val chimney_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.chimneyPipe)
 val chimney_pipe_mappings_vnel_signal =
-    appStateHelperVar.signal.map(_.chimneyPipeMappings)
+    engineStateHelperVar.signal.map(_.chimneyPipeMappings)
 
 // Results for EN15544 Strict
 
@@ -232,7 +242,7 @@ def run_en15544_strict[X](using
 
 lazy val results_en15544_strict_sig
     : Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =
-    appStateHelperVar.signal
+    engineStateHelperVar.signal
         // emits at most once during interval (prevent too much computing)
         // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))

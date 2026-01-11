@@ -148,18 +148,19 @@ object standard {
         case e: EN15544_ErrorMessage        => Show[EN15544_ErrorMessage].show(e)
     
     sealed trait FireboxError extends EN15544_Error with HasSectionTypError:
-        override final def sectionTyp: PipeType = FluePipeT
+        override final def sectionTyp: PipeType = FireboxPipeT
     
     given ShowUsingLocale[FireboxError] = showUsingLocale:
-        case e: InvalidTermValue[?]             => show_InvalidTermValue(using e.showT).show(e)
-        case e: FireboxBaseSurfaceNotInRange    => Show[FireboxBaseSurfaceNotInRange].show(e)
-        case e: FireboxBaseRatioInvalid         => Show[FireboxBaseRatioInvalid].show(e)
-        case e: FireboxBaseMinWidthInvalid      => Show[FireboxBaseMinWidthInvalid].show(e)
-        case e: GlassAreaTooLarge               => Show[GlassAreaTooLarge].show(e)
-        case e: FireboxHeightOutOfRange         => Show[FireboxHeightOutOfRange].show(e)
-        case e: InjectorVelocityBelowMinimum    => Show[InjectorVelocityBelowMinimum].show(e)
-        case e: InjectorVelocityAboveMaximum    => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: FireboxErrorCustom              => e.reason
+        case e: InvalidTermValue[?]                     => show_InvalidTermValue(using e.showT).show(e)
+        case e: FireboxBaseSurfaceNotInRange            => Show[FireboxBaseSurfaceNotInRange].show(e)
+        case e: FireboxBaseRatioInvalid                 => Show[FireboxBaseRatioInvalid].show(e)
+        case e: FireboxBaseMinWidthInvalid              => Show[FireboxBaseMinWidthInvalid].show(e)
+        case e: GlassAreaTooLarge                       => Show[GlassAreaTooLarge].show(e)
+        case e: GlassSurfaceRatioNotConfirmed           => Show[GlassSurfaceRatioNotConfirmed].show(e)
+        case e: FireboxHeightOutOfRange                 => Show[FireboxHeightOutOfRange].show(e)
+        case e: InjectorVelocityBelowMinimum            => Show[InjectorVelocityBelowMinimum].show(e)
+        case e: InjectorVelocityAboveMaximum            => Show[InjectorVelocityAboveMaximum].show(e)
+        case e: FireboxErrorCustom                      => e.reason
 
     final class FireboxErrorCustom(val reason: Locale ?=> String) extends FireboxError
     
@@ -182,6 +183,11 @@ object standard {
     object GlassAreaTooLarge:
         given ShowUsingLocale[GlassAreaTooLarge] = showUsingLocale: e =>
             I18N.errors.glass_area_too_large(e.glassArea, e.maxAllowed)
+    
+    case class GlassSurfaceRatioNotConfirmed() extends FireboxError
+    object GlassSurfaceRatioNotConfirmed:
+        given ShowUsingLocale[GlassSurfaceRatioNotConfirmed] = showUsingLocale: (e: GlassSurfaceRatioNotConfirmed) =>
+                I18N.errors.glass_surface_ratio_not_confirmed
     
     case class FireboxHeightOutOfRange(min: String, max: String, entered: String) extends FireboxError
     object FireboxHeightOutOfRange:

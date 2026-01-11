@@ -18,7 +18,8 @@ import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en15544.firebox.FireboxHelper_15544
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
-import afpma.firecalc.engine.models.gtypedefs.KindOfWood
+import afpma.firecalc.engine.models.gtypedefs.{KindOfWood, λ}
+import afpma.firecalc.engine.models.gtypedefs
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.ShowAsTable
 import afpma.firecalc.engine.utils.VNelString
@@ -100,6 +101,17 @@ object std:
         def reference: LocalizedString
         def type_of_appliance: TypeOfAppliance
         def emissions_values: EmissionsAndEfficiencyValues
+        
+        def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]]
+        def t_n_constraints: Seq[Option[TermConstraint[t_n]]]
+        def m_B_constraints: Seq[Option[TermConstraint[m_B]]]
+        def m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]]
+        def glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]]
+        def h_br_constraints: Seq[Option[TermConstraint[H_BR]]]
+        def λ_constraints: Seq[Option[TermConstraint[λ]]]
+        def η_constraints: Seq[Option[TermConstraint[η]]]
+        def height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]]
+        def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]]
 
     object Firebox_15544 extends FireboxHelper_15544:
 
@@ -154,8 +166,31 @@ object std:
             co2_dry_lowest: Option[Percentage],
             emissions_values: EmissionsAndEfficiencyValues,
             meanFireboxTemperature: Option[TCelsius],
-            tBurnout: TCelsius
-        ) extends Firebox_15544
+            tBurnout: TCelsius,
+            height_of_first_row_of_air_injectors: Option[Length] = None,
+            is_glass_surface_ratio_below_one_fifth: Boolean = true,
+        ) extends Firebox_15544:
+            override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] =
+                import afpma.firecalc.engine.models.en15544.typedefs.{given_TermDef_Unit, given_TermDefDetails_Unit}
+                Some(TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed](
+                    value = (),
+                    isValid = _ =>
+                        if is_glass_surface_ratio_below_one_fifth then Right(())
+                        else Left(GlassSurfaceRatioNotConfirmed())
+                ))
+            
+            override def t_n_constraints = Seq.empty
+            override def m_B_constraints = Seq(
+                minimumFuelMass.map(TermConstraint.Min.apply),
+                TermConstraint.Max[m_B](maximumFuelMass).some,
+            )
+            override def m_B_min_constraints = Seq.empty
+            override def glassArea_constraints = Seq.empty
+            override def h_br_constraints = Seq.empty
+            override def λ_constraints = Seq.empty
+            override def η_constraints = Seq.empty
+            override def height_of_lowest_opening_constraints = Seq.empty
+            override def fireboxDimensions_Base_constraints = Seq.empty
 
         object Tested:
             given showAsTable: Locale => ShowAsTable[Tested] = 
@@ -184,6 +219,7 @@ object std:
             def dimensions: Dimensions
             def glass_area: GlassArea
             def air_injector_surface_area: Area
+            def height_of_first_row_of_air_injectors: Length
             def validate(mB: m_B): Locale ?=> ValidatedNel[FireboxError, Unit]
 
         object OneOff:
@@ -195,8 +231,21 @@ object std:
                 dimensions: Dimensions,
                 glass_area: GlassArea,
                 air_injector_surface_area: Area,
+                height_of_first_row_of_air_injectors: Length = 5.cm,
             ) extends OneOff {
                 def validate(m_B: m_B): Locale ?=> ValidatedNel[FireboxError, Unit] = ().validNel
+                
+                override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] = None
+                
+                override def t_n_constraints = Seq.empty
+                override def m_B_constraints = Seq.empty
+                override def m_B_min_constraints = Seq.empty
+                override def glassArea_constraints = Seq.empty
+                override def h_br_constraints = Seq.empty
+                override def λ_constraints = Seq.empty
+                override def η_constraints = Seq.empty
+                override def height_of_lowest_opening_constraints = Seq.empty
+                override def fireboxDimensions_Base_constraints = Seq.empty
             }
 
             object CustomForLab:
@@ -204,11 +253,12 @@ object std:
                     ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
                         import x.*
                         
-                        (I18N.firebox.typ                       :: ""  :: I18N.firebox_names.custom_lab_tested :: Nil) ::
-                        (I18N.firebox.traditional.firebox_floor_shape :: ""  :: dimensions.base.showP                        :: Nil) ::
-                        (I18N.firebox.traditional.height        :: ""  :: dimensions.height.to_cm.showP                :: Nil) ::
-                        (I18N.firebox.traditional.glass_surface_area    :: ""  :: glass_area.showP                             :: Nil) ::
-                        (I18N.firebox.traditional.air_injector_surface_area:: ""  :: air_injector_surface_area.showP                         :: Nil) ::
+                        (I18N.firebox.typ                                          :: ""  :: I18N.firebox_names.custom_lab_tested                    :: Nil) ::
+                        (I18N.firebox.traditional.firebox_floor_shape              :: ""  :: dimensions.base.showP                                   :: Nil) ::
+                        (I18N.firebox.traditional.height                           :: ""  :: dimensions.height.to_cm.showP                           :: Nil) ::
+                        (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: ""  :: height_of_first_row_of_air_injectors.to_cm.showP        :: Nil) ::
+                        (I18N.firebox.traditional.glass_surface_area               :: ""  :: glass_area.showP                                        :: Nil) ::
+                        (I18N.firebox.traditional.air_injector_surface_area        :: ""  :: air_injector_surface_area.showP                         :: Nil) ::
                         Nil
     end Firebox_15544
     

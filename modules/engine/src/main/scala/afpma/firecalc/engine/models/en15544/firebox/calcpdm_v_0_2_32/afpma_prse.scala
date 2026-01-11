@@ -56,9 +56,10 @@ case class AFPMA_PRSE(
     h96_nbColonnesAirFoyer: Int,
     h97_nbColonnesAirPorte: Int,
 ) extends From_CalculPdM_V_0_2_32 {
+    def height_of_first_row_of_air_injectors: Length = h83_hauteurEntreSoleEt1erInjecteur_X
     override val reference           = LocalizedString.from(I18N.firebox_names.afpma_prse)
     override val type_of_appliance   = TypeOfAppliance.WoodLogs
-    def heightOfLowestOpening: Length = h83_hauteurEntreSoleEt1erInjecteur_X
+    def heightOfLowestOpening: Length = height_of_first_row_of_air_injectors // DEPRECATED: use height_of_first_row_of_air_injectors
     val area_calc_method = AreaCalcMethod.AutoIfCubic
     val largeurVitre = h88_largeurVitre
     val hauteurVitre = h89_hauteurVitre
@@ -80,6 +81,16 @@ case class AFPMA_PRSE(
         new FireboxErrorCustom(
             I18N.warnings.firebox_afpma_prse_not_validated
         ).invalidNel
+
+    override def t_n_constraints = Seq.empty
+    override def m_B_constraints = Seq.empty
+    override def m_B_min_constraints = Seq.empty
+    override def glassArea_constraints = Seq.empty
+    override def h_br_constraints = Seq.empty
+    override def λ_constraints = Seq.empty
+    override def η_constraints = Seq.empty
+    override def height_of_lowest_opening_constraints = Seq.empty
+    override def fireboxDimensions_Base_constraints = Seq.empty
 }
 
 object AFPMA_PRSE:

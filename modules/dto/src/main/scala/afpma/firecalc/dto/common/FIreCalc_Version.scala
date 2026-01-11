@@ -13,8 +13,11 @@ object FireCalc_Version:
 
     given Encoder[FireCalc_Version] = Encoder.encodeInt
     given Decoder[FireCalc_Version] = Decoder.decodeInt
+    given Ordering[FireCalc_Version] = Ordering.Int
     
     def apply(i: Int): FireCalc_Version = i
     
     extension (v: FireCalc_Version)
         def unwrap: Int = v
+        def < (other: FireCalc_Version): Boolean = v < (other: Int)
+        def > (other: FireCalc_Version): Boolean = v > (other: Int)

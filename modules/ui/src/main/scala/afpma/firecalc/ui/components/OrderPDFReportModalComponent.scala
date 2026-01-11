@@ -134,8 +134,9 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
       * that are outside the Latin1 range, which standard btoa() cannot handle.
       */
     private def convertProjectToBase64(fireCalcYaml: FireCalcYAML): Try[String] =
-        // Use CustomYAMLEncoderDecoder to convert to YAML string
-        AppState.encodeToYaml(fireCalcYaml).flatMap { yamlString =>
+        import afpma.firecalc.dto.FireCalcYAMLMigrations
+        // Use dto migrations module to convert to YAML string
+        FireCalcYAMLMigrations.encodeToYamlTry(fireCalcYaml).flatMap { yamlString =>
             Try {
                 // Use TextEncoder to convert UTF-8 string to bytes
                 val textEncoder = js.Dynamic.newInstance(js.Dynamic.global.TextEncoder)()
@@ -173,7 +174,7 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
         val customerInfo: CustomerInfo = billingInfoWithLanguage.transformInto[CustomerInfo]
         
         // Convert current project state to base64-encoded YAML
-        val currentProject = appStateVar.now()
+        val currentProject = engineStateVar.now()
         val productMetadataResult: Either[String, FileDescriptionWithContent] = convertProjectToBase64(currentProject) match
             case Success(base64Content) =>
                 Right(FileDescriptionWithContent(

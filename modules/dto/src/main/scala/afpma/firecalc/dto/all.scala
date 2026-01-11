@@ -26,7 +26,7 @@ object all:
     export afpma.firecalc.dto.common.DisplayUnits.{SI, Imperial}
     export afpma.firecalc.dto.common.DuctType
     export afpma.firecalc.dto.common.FacingType
-    export afpma.firecalc.dto.common.Firebox
+
     export afpma.firecalc.dto.common.FireCalc_Version
     export afpma.firecalc.dto.common.IncrDescr_13384
     export afpma.firecalc.dto.common.IncrDescr_15544
@@ -47,6 +47,8 @@ object all:
     export afpma.firecalc.dto.common.Material_15544
     export afpma.firecalc.dto.common.NbOfFlows
     export afpma.firecalc.dto.common.NbOfFlows.*
+
+    export afpma.firecalc.dto.common.OutsideAirLocationInHeater
 
     export afpma.firecalc.utils.OptionOfEither
     export afpma.firecalc.utils.NoneOfEither
@@ -78,3 +80,13 @@ object all:
     export afpma.firecalc.dto.common.StoveParams.SizingMethod
     export afpma.firecalc.dto.common.AmbiantAirTemperatureSet
     export afpma.firecalc.dto.common.AmbiantAirTemperatureSet.UseTuoOverride
+
+
+    // VERSIONNING
+
+    // Firebox
+    
+    export afpma.firecalc.dto.v2.{Firebox_V2 => Firebox}
+
+    export afpma.firecalc.dto.v2.Firebox_V2
+    export afpma.firecalc.dto.v1.Firebox_V1

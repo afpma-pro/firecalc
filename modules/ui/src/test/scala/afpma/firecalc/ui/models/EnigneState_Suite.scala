@@ -13,14 +13,14 @@ import org.scalatest.matchers.should.*
 
 import afpma.firecalc.ui.instances.circe.given
 
-class AppState_Suite extends AnyFreeSpec with Matchers:
+class EnigneState_Suite extends AnyFreeSpec with Matchers:
 
-    "AppState" - {
+    "EngineState" - {
 
         "encoding to JSON" - {
 
             "should work" in {
-                val a = AppState.init
+                val a = EngineState.init
                 val exp = """|bla""".stripMargin
                 a.asJson `shouldEqual` exp
             }

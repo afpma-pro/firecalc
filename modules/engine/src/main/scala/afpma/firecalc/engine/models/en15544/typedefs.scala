@@ -47,6 +47,13 @@ import afpma.firecalc.engine.models.TermConstraint.ValidatedResult
 
 object typedefs:
 
+    // Unit instances for constraint validation
+    given TermDef[Unit] = TermDef[Unit]("")
+    given TermDefDetails[Unit] = TermDefDetails[Unit](
+        name = "",
+        description = ""
+    )
+
     // Section "1"
 
     type GlassArea = GlassArea.Type
@@ -487,7 +494,9 @@ object typedefs:
         fireboxDimensions_Base      : CheckableConstraint[std.Firebox_15544.Dimensions.Base],
         h_br                        : CheckableConstraint[H_BR],
         λ                           : CheckableConstraint[λ],
-        η                           : CheckableConstraint[η]
+        η                           : CheckableConstraint[η],
+        height_of_lowest_opening    : CheckableConstraint[height_of_lowest_opening],
+        firebox_glass_surface_ratio : CheckableConstraint[Unit]
     )
 
     object CitedConstraints:
@@ -509,6 +518,8 @@ object typedefs:
                     cc.h_br.vresultOption                        .flatMap(_.showInvalidConstraintErrors),
                     cc.λ.vresultOption                           .flatMap(_.showInvalidConstraintErrors),
                     cc.η.vresultOption                           .flatMap(_.showInvalidConstraintErrors),
+                    cc.height_of_lowest_opening.vresultOption    .flatMap(_.showInvalidConstraintErrors),
+                    cc.firebox_glass_surface_ratio.vresultOption .flatMap(_.showInvalidConstraintErrors),
                 ).flatten.map(_.toList).flatten
                 if (outputs.size > 0) NonEmptyList.fromListUnsafe(outputs).invalid else ().validNel
             
@@ -525,6 +536,8 @@ object typedefs:
                     cc.h_br.vresultOption                        .flatMap(_.foldToErr),
                     cc.λ.vresultOption                           .flatMap(_.foldToErr),
                     cc.η.vresultOption                           .flatMap(_.foldToErr),
+                    cc.height_of_lowest_opening.vresultOption    .flatMap(_.foldToErr),
+                    cc.firebox_glass_surface_ratio.vresultOption .flatMap(_.foldToErr),
                 ).flatten.flatten
                 if (outputs.size > 0) NonEmptyList.fromListUnsafe(outputs).invalid else ().validNel
                 

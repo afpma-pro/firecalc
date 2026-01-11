@@ -72,7 +72,9 @@ object FireCalcReportFactory_15544_Strict:
         override def loadYAMLString(
             yamlString: String
         ): Op[FireCalcReportFactory_15544_Strict] =
-            FireCalcYAML.decodeFromYaml(yamlString) match
+            import afpma.firecalc.dto.FireCalcYAMLMigrations
+            // Use migration-aware decoder to handle V1→V2 upgrades automatically
+            FireCalcYAMLMigrations.decodeAndMigrateTry(yamlString) match
                 case Success(fc) =>
                     val stoveProj = StoveProjectDescr.makeFor_EN15544_Strict(fc)
                     loadAndValidateFireCalcProject(stoveProj)

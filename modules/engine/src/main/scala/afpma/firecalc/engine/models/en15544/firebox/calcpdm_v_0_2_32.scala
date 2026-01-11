@@ -29,6 +29,9 @@ import coulomb.ops.algebra.all.{*, given}
 import io.scalaland.chimney.*
 import io.scalaland.chimney.dsl.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions.Base
+import afpma.firecalc.engine.standard.FireboxBaseRatioInvalid
+import afpma.firecalc.engine.standard.GlassSurfaceRatioNotConfirmed
 
 trait From_CalculPdM_V_0_2_32 extends OneOff:
     def h11_profondeurDuFoyer: QtyD[Meter]
@@ -47,6 +50,26 @@ trait From_CalculPdM_V_0_2_32 extends OneOff:
         height = h13_hauteurDuFoyer,
     )
 
+    lazy val fireboxDimensions_Base_constraint_ratioWhenSquared: TermConstraint[Base] =
+        TermConstraint.GenericTyped(
+            value = dimensions.base,
+            isValid =
+                case sqBase: Base.Squared =>
+                    val (l, w) = (sqBase.depth, sqBase.width)
+                    val ratio: Dimensionless = l / w
+                    ratio.value match
+                        case r if r < 0.5 || r > 2 =>
+                            Left(
+                                FireboxBaseRatioInvalid(r.showP, l.showP, w.showP)
+                            )
+                        case _ =>
+                            Right(sqBase)
+        )
+
+    override def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] = Seq(
+        Some(fireboxDimensions_Base_constraint_ratioWhenSquared)
+    )
+
     def area_calc_method: AreaCalcMethod
     /** See EN 15544 - Section 4.3.1.2 */
     def area_O_BR: Area = area_calc_method match
@@ -57,6 +80,18 @@ trait From_CalculPdM_V_0_2_32 extends OneOff:
             2 * (base_or_ceiling + left_or_right + front_or_back)
         case AreaCalcMethod.Manual(v) => v
 
+    def firebox_glass_surface_ratio_below_one_fifth: Boolean = 
+        (glass_area / area_O_BR) <= (1.0 / 5.0)
+
+    override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] =
+        import afpma.firecalc.engine.models.en15544.typedefs.{given_TermDef_Unit, given_TermDefDetails_Unit}
+        Some(TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed](
+            value = (),
+            isValid = _ =>
+                if firebox_glass_surface_ratio_below_one_fifth then Right(())
+                else Left(GlassSurfaceRatioNotConfirmed())
+        ))
+
 object From_CalculPdM_V_0_2_32:
 
     given transformer_Firebox_From_CalculPdM_V_0_2_32: Transformer[Firebox, From_CalculPdM_V_0_2_32] = { ccui => ccui match
@@ -66,7 +101,7 @@ object From_CalculPdM_V_0_2_32:
     }
 
     // mappings to engine model
-    given transformer_Standard_TraditionalFirebox: Transformer[Firebox.Traditional, firebox.calcpdm_v_0_2_32.TraditionalFirebox] = 
+    given transformer_Standard_TraditionalFirebox: Transformer[Firebox.Traditional, firebox.calcpdm_v_0_2_32.TraditionalFirebox] =
         Transformer.define[Firebox.Traditional, firebox.calcpdm_v_0_2_32.TraditionalFirebox]
         .enableDefaultValues
         .withFieldRenamed(_.heat_output_reduced,                   _.pn_reduced)
@@ -113,6 +148,7 @@ object From_CalculPdM_V_0_2_32:
                 h80_largeurRenfortMedianArriere                  = width_between_two_air_columns_rear,
                 h81_debordDesRenfortsDansLesAngles               = reinforcement_bars_offset_in_corners,
                 h82_hauteurDesInjecteurs_Z                       = injector_height,
+                h83_hauteurEntreLaSoleEtLe1erInjecteur           = height_of_first_row_of_air_injectors,
             )
             case Right("Version 2") => firebox.calcpdm_v_0_2_32.EcoLabeled_V2(
                 pn_reduced                                       = heat_output_reduced,
@@ -133,6 +169,7 @@ object From_CalculPdM_V_0_2_32:
                 h80_largeurRenfortMedianArriere                  = width_between_two_air_columns_rear,
                 h81_debordDesRenfortsDansLesAngles               = reinforcement_bars_offset_in_corners,
                 h82_hauteurDesInjecteurs_Z                       = injector_height,
+                h83_hauteurEntreLaSoleEtLe1erInjecteur           = height_of_first_row_of_air_injectors,
             )
 
     given transformer_inv_EcoLabeled: Transformer[firebox.calcpdm_v_0_2_32.EcoLabeled, Firebox.EcoLabeled] = e =>
@@ -158,6 +195,7 @@ object From_CalculPdM_V_0_2_32:
                 width_between_two_air_columns_rear     =  h80_largeurRenfortMedianArriere,
                 reinforcement_bars_offset_in_corners   =  h81_debordDesRenfortsDansLesAngles,
                 injector_height                        =  h82_hauteurDesInjecteurs_Z,
+                height_of_first_row_of_air_injectors   =  h83_hauteurEntreLaSoleEtLe1erInjecteur 
             )
             case _: firebox.calcpdm_v_0_2_32.EcoLabeled_V2 => Firebox.EcoLabeled(
                 heat_output_reduced                    =  pn_reduced,
@@ -179,9 +217,15 @@ object From_CalculPdM_V_0_2_32:
                 width_between_two_air_columns_rear     =  h80_largeurRenfortMedianArriere,
                 reinforcement_bars_offset_in_corners   =  h81_debordDesRenfortsDansLesAngles,
                 injector_height                        =  h82_hauteurDesInjecteurs_Z,
+                height_of_first_row_of_air_injectors   =  h83_hauteurEntreLaSoleEtLe1erInjecteur
             )
             case _ => throw new Exception("not implemented")
     
+    given Transformer[OutsideAirLocationInHeater, firebox.calcpdm_v_0_2_32.AFPMA_PRSE.OutsideAirLocationInHeater] = 
+        x =>
+            x match
+                case OutsideAirLocationInHeater.FromBottom => firebox.calcpdm_v_0_2_32.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom
+            
     given transformer_AFPMA_PRSE: Transformer[Firebox.AFPMA_PRSE, firebox.calcpdm_v_0_2_32.AFPMA_PRSE] = 
         Transformer.define[Firebox.AFPMA_PRSE, firebox.calcpdm_v_0_2_32.AFPMA_PRSE]
         .enableDefaultValues
