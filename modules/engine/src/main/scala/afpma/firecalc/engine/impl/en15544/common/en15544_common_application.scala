@@ -33,6 +33,7 @@ import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
+import afpma.firecalc.engine.models.en15544.ConstraintSlots
 import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
@@ -268,24 +269,22 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
             case Right(pn)  => pn
 
 
-    def t_n: t_n = 
+    def t_n: t_n =
         inputs.stoveParams.heating_cycle
 
-    // define constraints
-    override def t_n_constraints = Seq(
-        t_n_constraint_min_duration.some,
-        t_n_constraint_max_duration.some
+    lazy val default_t_n_constraintSlots: ConstraintSlots.T_n = ConstraintSlots.T_n(
+        minDuration = t_n_constraint_min_duration.some,
+        maxDuration = t_n_constraint_max_duration.some
     )
 
     // NOTE 2
     import StoragePeriod.given
     lazy val t_n_constraint_min_duration: TermConstraint[t_n] = TermConstraint.Min(8.hours)
     lazy val t_n_constraint_max_duration: TermConstraint[t_n] = TermConstraint.Max(24.hours)
-
-    // define constraints
-    override def m_B_constraints = Seq(
-        m_B_constraint_min.some,
-        m_B_constraint_max.some,
+    
+    lazy val default_m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
+        min = m_B_constraint_min.some,
+        max = m_B_constraint_max.some
     )
 
     lazy val m_B_constraint_min: TermConstraint[m_B] = firebox match
@@ -310,10 +309,10 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
 
     // Section "4.2.2", "Minimum Load"
 
-    // define constraints
-    override def m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]] = Seq(
-        m_B_min_constraint_min
+    lazy val default_m_B_min_constraintSlots: ConstraintSlots.M_B_Min = ConstraintSlots.M_B_Min(
+        min = m_B_min_constraint_min
     )
+
 
     lazy val m_B_min_constraint_min: Option[TermConstraint[m_B_min]] =
         firebox.ifOneOff(orElse = None)(_ => Some(TermConstraint.Min(5.kg)))
@@ -341,25 +340,24 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
 
     // Section "4.3.1.1", "General"
 
-    // define constraints for height_of_lowest_opening
-    override def height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] = Seq(
-        height_of_lowest_opening_constraint_min
+    lazy val default_height_of_lowest_opening_constraintSlots: ConstraintSlots.HeightOfLowestOpening = ConstraintSlots.HeightOfLowestOpening(
+        min = height_of_lowest_opening_constraint_min
     )
 
     // Clause 4.3.1 does not apply to tested fireboxs
     // The height of the lowest opening shall be at least 5 cm above the floor of the firebox.
     private lazy val height_of_lowest_opening_min_value: height_of_lowest_opening = 5.0.cm
-    
+
     lazy val height_of_lowest_opening_constraint_min: Option[TermConstraint[height_of_lowest_opening]] =
         firebox.ifNotTested(orElse = None)(
             Some(TermConstraint.Min(height_of_lowest_opening_min_value))
         )
 
     // define constraints for GlassArea
-    override def glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]] = Seq(
-        glassArea_constraint_maxRatio
+    lazy val default_glassArea_constraintSlots: ConstraintSlots.GlassAreaSlots = ConstraintSlots.GlassAreaSlots(
+        maxRatio = glassArea_constraint_maxRatio
     )
-
+    
     lazy val glassArea_constraint_maxRatio: Option[TermConstraint[GlassArea]] =
         firebox.ifOneOff(orElse = None) { oneOffDesign =>
             Some(TermConstraint.GenericTyped(
@@ -389,13 +387,13 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
         firebox.whenOneOff(_.dimensions.base.area)
 
     // define constraints for Dimensions.Base
-    override def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] = Seq(
-        fireboxDimensions_Base_constraint_surfaceInRange,
-        fireboxDimensions_Base_constraint_ratioWhenSquared,
-        fireboxDimensions_Base_constraint_minWidthWhenSquared
-    )
-
-    // Check constraint that A_BR_min <= A_BR <= A_BR_max
+    lazy val default_fireboxDimensionsBase_constraintSlots: ConstraintSlots.FireboxDimensionsBase =
+        ConstraintSlots.FireboxDimensionsBase(
+            surfaceInRange = fireboxDimensions_Base_constraint_surfaceInRange,
+            ratioWhenSquared = fireboxDimensions_Base_constraint_ratioWhenSquared,
+            minWidthWhenSquared = fireboxDimensions_Base_constraint_minWidthWhenSquared
+        )
+    
     lazy val fireboxDimensions_Base_constraint_surfaceInRange: Option[TermConstraint[Dimensions.Base]] =
         firebox.ifOneOff(orElse = None) { oneOffDesign =>
             A_BR_max.toOption.map { a_br_max =>
@@ -467,11 +465,11 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
     // height from Formula (7) but shall meet the requirement from Formula (6).
 
     // define constraints for H_BR
-    override def h_br_constraints: Seq[Option[TermConstraint[H_BR]]] = Seq(
-        h_br_constraint_max5pDev,
-        h_br_constraint_min.some
+    lazy val default_h_br_constraintSlots: ConstraintSlots.H_BR = ConstraintSlots.H_BR(
+        max5pDev = h_br_constraint_max5pDev,
+        min = h_br_constraint_min.some
     )
-
+    
     lazy val h_br_constraint_max5pDev: Option[TermConstraint[H_BR]] =
         val constraint = firebox.whenOneOff { oneOffDesign =>
             for calculatedHeight <- H_BR
@@ -547,11 +545,11 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
     val λ: λ = formulas.λ_calc
 
     // define constraints for λ
-    override def λ_constraints: Seq[Option[TermConstraint[λ]]] = Seq(
-        λ_constraint_min.some,
-        λ_constraint_max.some
+    lazy val default_λ_constraintSlots: ConstraintSlots.Lambda = ConstraintSlots.Lambda(
+        min = λ_constraint_min.some,
+        max = λ_constraint_max.some
     )
-
+    
     lazy val λ_constraint_min: TermConstraint[λ] = TermConstraint.Min(1.95.unitless)
     lazy val λ_constraint_max: TermConstraint[λ] = TermConstraint.Max(3.95.unitless)
 
@@ -819,10 +817,8 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
     // Section "4.10.3", "Efficiency of the combustion (η)"
     // TODO: mauvaise traduction allemande ?
     // TODO: Lors du calcul du rendement de la combustion, les hypothèses suivantes sont retenues : XXX
-
-    // define constraints for η
-    override def η_constraints: Seq[Option[TermConstraint[η]]] = Seq(
-        η_constraint_min.some
+    lazy val default_η_constraintSlots: ConstraintSlots.Eta = ConstraintSlots.Eta(
+        min = η_constraint_min.some
     )
 
     lazy val η_constraint_min: TermConstraint[η] = TermConstraint.Min(n_min)
@@ -1018,46 +1014,76 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
             en13384_application.temperatureRequirements.validNel
 
     // VALIDATIONS
+
+    // Resolved: firebox overrides take precedence
+    
+    lazy val resolved_t_n_constraints: Seq[Option[TermConstraint[t_n]]] =
+        default_t_n_constraintSlots.mergeWith(firebox.t_n_constraintSlots).toSeq
+
+    lazy val resolved_m_B_constraints: Seq[Option[TermConstraint[m_B]]] =
+        default_m_B_constraintSlots.mergeWith(firebox.m_B_constraintSlots).toSeq
+
+    lazy val resolved_m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]] =
+        default_m_B_min_constraintSlots.mergeWith(firebox.m_B_min_constraintSlots).toSeq
+
+    lazy val resolved_glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]] =
+        default_glassArea_constraintSlots.mergeWith(firebox.glassArea_constraintSlots).toSeq
+
+    lazy val resolved_fireboxDimensionsBase_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] =
+        default_fireboxDimensionsBase_constraintSlots.mergeWith(firebox.fireboxDimensions_Base_constraintSlots).toSeq
+
+    lazy val resolved_h_br_constraints: Seq[Option[TermConstraint[H_BR]]] =
+        default_h_br_constraintSlots.mergeWith(firebox.h_br_constraintSlots).toSeq
+
+    lazy val resolved_λ_constraints: Seq[Option[TermConstraint[λ]]] =
+        default_λ_constraintSlots.mergeWith(firebox.λ_constraintSlots).toSeq
+
+    lazy val resolved_η_constraints: Seq[Option[TermConstraint[η]]] =
+        default_η_constraintSlots.mergeWith(firebox.η_constraintSlots).toSeq
+
+    lazy val resolved_height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] =
+        default_height_of_lowest_opening_constraintSlots.mergeWith(firebox.height_of_lowest_opening_constraintSlots).toSeq
+
     def citedConstraints: CitedConstraints =
         import en15544_typedefs.{given_TermDef_Unit, given_TermDefDetails_Unit}
         CitedConstraints(
             t_n = CheckableConstraint.make(
                 t_n,
-                t_n_constraints ++ firebox.t_n_constraints
+                resolved_t_n_constraints
             ),
             m_B = CheckableConstraint.make(
                 m_B,
-                m_B_constraints ++ firebox.m_B_constraints
+                resolved_m_B_constraints
             ),
             m_B_min = CheckableConstraint.makeOption(
                 m_B_min,
-                m_B_min_constraints ++ firebox.m_B_min_constraints
+                resolved_m_B_min_constraints
             ),
             glass_area = CheckableConstraint.makeOption(
                 firebox.ifOneOff(orElse = None)(_.glass_area.some),
-                glassArea_constraints ++ firebox.glassArea_constraints
+                resolved_glassArea_constraints
             ),
             fireboxDimensions_Base = CheckableConstraint.makeOption(
                 firebox.ifOneOff(orElse = None)(_.dimensions.base.some),
-                fireboxDimensions_Base_constraints ++ firebox.fireboxDimensions_Base_constraints
+                resolved_fireboxDimensionsBase_constraints
             ),
             h_br = CheckableConstraint.makeOption(
                 firebox.ifOneOff(orElse = None)(_.dimensions.height.some),
-                h_br_constraints ++ firebox.h_br_constraints
+                resolved_h_br_constraints
             ),
             λ = CheckableConstraint.make(
                 λ,
-                λ_constraints ++ firebox.λ_constraints
+                resolved_λ_constraints
             ),
             η = CheckableConstraint.makeOption(
                 // efficiency at tirage min or tirage max is not strictly equals
                 // only compute value at tirage min
                 η(using Params_15544.DraftMin_LoadNominal).toOption,
-                η_constraints ++ firebox.η_constraints
+                resolved_η_constraints
             ),
             height_of_lowest_opening = CheckableConstraint.makeOption(
                 firebox.ifOneOff(orElse = None)(fb => Some(fb.height_of_first_row_of_air_injectors: height_of_lowest_opening)),
-                height_of_lowest_opening_constraints ++ firebox.height_of_lowest_opening_constraints
+                resolved_height_of_lowest_opening_constraints
             ),
             firebox_glass_surface_ratio = CheckableConstraint.makeOption(
                 firebox.firebox_glass_surface_ratio_below_one_fifth_constraint.map(_ => ()),

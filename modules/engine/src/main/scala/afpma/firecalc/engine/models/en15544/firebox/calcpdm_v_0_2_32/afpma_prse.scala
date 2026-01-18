@@ -16,6 +16,7 @@ import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
+import afpma.firecalc.engine.models.en15544.ConstraintSlots
 import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.i18n.LocalizedString
@@ -81,16 +82,6 @@ case class AFPMA_PRSE(
         new FireboxErrorCustom(
             I18N.warnings.firebox_afpma_prse_not_validated
         ).invalidNel
-
-    override def t_n_constraints = Seq.empty
-    override def m_B_constraints = Seq.empty
-    override def m_B_min_constraints = Seq.empty
-    override def glassArea_constraints = Seq.empty
-    override def h_br_constraints = Seq.empty
-    override def λ_constraints = Seq.empty
-    override def η_constraints = Seq.empty
-    override def height_of_lowest_opening_constraints = Seq.empty
-    override def fireboxDimensions_Base_constraints = Seq.empty
 }
 
 object AFPMA_PRSE:

@@ -101,17 +101,28 @@ object std:
         def reference: LocalizedString
         def type_of_appliance: TypeOfAppliance
         def emissions_values: EmissionsAndEfficiencyValues
-        
+
         def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]]
-        def t_n_constraints: Seq[Option[TermConstraint[t_n]]]
-        def m_B_constraints: Seq[Option[TermConstraint[m_B]]]
-        def m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]]
-        def glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]]
-        def h_br_constraints: Seq[Option[TermConstraint[H_BR]]]
-        def λ_constraints: Seq[Option[TermConstraint[λ]]]
-        def η_constraints: Seq[Option[TermConstraint[η]]]
-        def height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]]
-        def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]]
+
+        def t_n_constraintSlots: ConstraintSlots.T_n = ConstraintSlots.T_n()
+        def m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B()
+        def m_B_min_constraintSlots: ConstraintSlots.M_B_Min = ConstraintSlots.M_B_Min()
+        def glassArea_constraintSlots: ConstraintSlots.GlassAreaSlots = ConstraintSlots.GlassAreaSlots()
+        def fireboxDimensions_Base_constraintSlots: ConstraintSlots.FireboxDimensionsBase = ConstraintSlots.FireboxDimensionsBase()
+        def h_br_constraintSlots: ConstraintSlots.H_BR = ConstraintSlots.H_BR()
+        def λ_constraintSlots: ConstraintSlots.Lambda = ConstraintSlots.Lambda()
+        def η_constraintSlots: ConstraintSlots.Eta = ConstraintSlots.Eta()
+        def height_of_lowest_opening_constraintSlots: ConstraintSlots.HeightOfLowestOpening = ConstraintSlots.HeightOfLowestOpening()
+
+        def t_n_constraints: Seq[Option[TermConstraint[t_n]]] = t_n_constraintSlots.toSeq
+        def m_B_constraints: Seq[Option[TermConstraint[m_B]]] = m_B_constraintSlots.toSeq
+        def m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]] = m_B_min_constraintSlots.toSeq
+        def glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]] = glassArea_constraintSlots.toSeq
+        def h_br_constraints: Seq[Option[TermConstraint[H_BR]]] = h_br_constraintSlots.toSeq
+        def λ_constraints: Seq[Option[TermConstraint[λ]]] = λ_constraintSlots.toSeq
+        def η_constraints: Seq[Option[TermConstraint[η]]] = η_constraintSlots.toSeq
+        def height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] = height_of_lowest_opening_constraintSlots.toSeq
+        def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] = fireboxDimensions_Base_constraintSlots.toSeq
 
     object Firebox_15544 extends FireboxHelper_15544:
 
@@ -178,19 +189,11 @@ object std:
                         if is_glass_surface_ratio_below_one_fifth then Right(())
                         else Left(GlassSurfaceRatioNotConfirmed())
                 ))
-            
-            override def t_n_constraints = Seq.empty
-            override def m_B_constraints = Seq(
-                minimumFuelMass.map(TermConstraint.Min.apply),
-                TermConstraint.Max[m_B](maximumFuelMass).some,
+
+            override def m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
+                min = minimumFuelMass.map(TermConstraint.Min.apply),
+                max = TermConstraint.Max[m_B](maximumFuelMass).some
             )
-            override def m_B_min_constraints = Seq.empty
-            override def glassArea_constraints = Seq.empty
-            override def h_br_constraints = Seq.empty
-            override def λ_constraints = Seq.empty
-            override def η_constraints = Seq.empty
-            override def height_of_lowest_opening_constraints = Seq.empty
-            override def fireboxDimensions_Base_constraints = Seq.empty
 
         object Tested:
             given showAsTable: Locale => ShowAsTable[Tested] = 
@@ -234,18 +237,8 @@ object std:
                 height_of_first_row_of_air_injectors: Length = 5.cm,
             ) extends OneOff {
                 def validate(m_B: m_B): Locale ?=> ValidatedNel[FireboxError, Unit] = ().validNel
-                
+
                 override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] = None
-                
-                override def t_n_constraints = Seq.empty
-                override def m_B_constraints = Seq.empty
-                override def m_B_min_constraints = Seq.empty
-                override def glassArea_constraints = Seq.empty
-                override def h_br_constraints = Seq.empty
-                override def λ_constraints = Seq.empty
-                override def η_constraints = Seq.empty
-                override def height_of_lowest_opening_constraints = Seq.empty
-                override def fireboxDimensions_Base_constraints = Seq.empty
             }
 
             object CustomForLab:

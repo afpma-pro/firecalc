@@ -9,6 +9,7 @@ import cats.data.ValidatedNel
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox
+import afpma.firecalc.engine.models.en15544.ConstraintSlots
 import afpma.firecalc.engine.models.en15544.FireboxModule_EN15544_MCE
 import afpma.firecalc.engine.models.en15544.FireboxModule_EN15544_Strict
 import afpma.firecalc.engine.models.en15544.std.*
@@ -66,9 +67,10 @@ trait From_CalculPdM_V_0_2_32 extends OneOff:
                             Right(sqBase)
         )
 
-    override def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] = Seq(
-        Some(fireboxDimensions_Base_constraint_ratioWhenSquared)
-    )
+    override def fireboxDimensions_Base_constraintSlots: ConstraintSlots.FireboxDimensionsBase =
+        ConstraintSlots.FireboxDimensionsBase(
+            ratioWhenSquared = Some(fireboxDimensions_Base_constraint_ratioWhenSquared)
+        )
 
     def area_calc_method: AreaCalcMethod
     /** See EN 15544 - Section 4.3.1.2 */

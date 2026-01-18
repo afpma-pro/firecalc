@@ -19,6 +19,7 @@ import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
+import afpma.firecalc.engine.models.en15544.ConstraintSlots
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.ShowAsTable
 
@@ -187,23 +188,14 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
         if (errors.size > 0) NonEmptyList.fromListUnsafe(errors).invalid else ().validNel
     end validate
 
-    override def t_n_constraints = Seq.empty
-
-    override def m_B_constraints = Seq(
-        TermConstraint.Min[m_B](6.kg).some,
-        TermConstraint.Max[m_B](40.kg).some,
+    override def m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
+        min = TermConstraint.Min[m_B](6.kg).some,
+        max = TermConstraint.Max[m_B](40.kg).some
     )
 
-    override def m_B_min_constraints = Seq(
-        TermConstraint.Min[m_B_min](6.kg).some
+    override def m_B_min_constraintSlots: ConstraintSlots.M_B_Min = ConstraintSlots.M_B_Min(
+        min = TermConstraint.Min[m_B_min](6.kg).some
     )
-    
-    override def glassArea_constraints = Seq.empty
-    override def h_br_constraints = Seq.empty
-    override def λ_constraints = Seq.empty
-    override def η_constraints = Seq.empty
-    override def height_of_lowest_opening_constraints = Seq.empty
-    override def fireboxDimensions_Base_constraints = Seq.empty
         
 end EcoLabeled
 

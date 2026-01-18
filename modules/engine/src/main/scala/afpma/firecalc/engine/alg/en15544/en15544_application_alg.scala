@@ -95,20 +95,7 @@ trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
     def en13384_heatingAppliance_final: VNelMcalcErr[HeatingAppliance]
 
     def m_B: m_B
-    def m_B_constraints: Seq[Option[TermConstraint[m_B]]]
-
     def m_B_min: Option[m_B_min]
-    def m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]]
-
-    def glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]]
-
-    def h_br_constraints: Seq[Option[TermConstraint[H_BR]]]
-
-    def λ_constraints: Seq[Option[TermConstraint[λ]]]
-    
-    def η_constraints: Seq[Option[TermConstraint[η]]]
-    
-    def height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]]
 
     //type K_V <: Dimensionless
     // def K_V_calc: (c_P, PipeSection, Temperature, Temperature, m_G, σ_CO2) => K_V
@@ -125,9 +112,6 @@ trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
     def P_n: P_n // input
     def t_n: t_n // input
 
-    def t_n_constraints: Seq[Option[TermConstraint[t_n]]]
-
-
     // Section "1", "Scope"
     def injectors_air_velocity: OneOffOrNotApplicable[WithParams_15544[Velocity]]
     def validate_injectors_air_velocity: OneOffOrNotApplicable[WithParams_15544[ValidatedNel[FireboxError, Unit]]]
@@ -141,7 +125,6 @@ trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
     def A_BR_min: A_BR
     def A_BR_max: OneOffOrNotApplicable[A_BR]
     def A_BR: OneOffOrNotApplicable[A_BR]
-    def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]]
 
     // Section "4.3.1.4", "Firebox height"
     def H_BR: OneOffOrNotApplicable[H_BR]
