@@ -439,10 +439,10 @@ object I18nData:
     )
 
     case class Errors(
-        term_should_be_greater_or_eq_than: StringFormat2,
-        term_should_be_greater_than: StringFormat2,
-        term_should_be_less_or_eq_than: StringFormat2,
-        term_should_be_less_than: StringFormat2,
+        term_should_be_greater_or_eq_than: StringFormat3,
+        term_should_be_greater_than: StringFormat3,
+        term_should_be_less_or_eq_than: StringFormat3,
+        term_should_be_less_than: StringFormat3,
         term_should_be_between_inclusive: StringFormat4,
         term_constraint_min_error: StringFormat3,
         term_constraint_max_error: StringFormat3,

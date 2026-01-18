@@ -211,15 +211,15 @@ object standard {
 
     given show_InvalidTermValue: [T: Show] => ShowUsingLocale[InvalidTermValue[T]] = showUsingLocale:
         case x: TermValueShouldBeGreaterOrEqThan[?] => 
-            I18N.errors.term_should_be_greater_or_eq_than(x.termName, x.termValue.show)
+            I18N.errors.term_should_be_greater_or_eq_than(x.termName, x.minValue.show, x.termValue.show)
         case x: TermValueShouldBeGreaterThan[?] => 
-            I18N.errors.term_should_be_greater_than(x.termName, x.termValue.show)
+            I18N.errors.term_should_be_greater_than(x.termName, x.minValue.show, x.termValue.show)
         case x: TermValueShouldBeLessOrEqThan[?] => 
-            I18N.errors.term_should_be_less_or_eq_than(x.termName, x.termValue.show)
+            I18N.errors.term_should_be_less_or_eq_than(x.termName, x.maxValue.show, x.termValue.show)
         case x: TermValueShouldBeLessThan[?] => 
-            I18N.errors.term_should_be_less_than(x.termName, x.termValue.show)
+            I18N.errors.term_should_be_less_than(x.termName, x.maxValue.show, x.termValue.show)
         case x: TermValueShouldBeBetweenInclusive[?] =>
-            I18N.errors.term_should_be_less_than(x.termName, x.termValue.show)
+            I18N.errors.term_should_be_between_inclusive(x.termName, x.minValue.show, x.maxValue.show, x.termValue.show)
         case x: TermValueCustom[?] =>
             x.message
     
