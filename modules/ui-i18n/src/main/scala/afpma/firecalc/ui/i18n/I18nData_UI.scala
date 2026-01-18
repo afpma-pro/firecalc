@@ -107,44 +107,58 @@ object I18nData_UI:
     final case class Modal(
         button_cancel: String,
         title: String,
-        
-        // Report description
-        report_compliant_with_standard: String,
-        report_will_be_sent_to_email: String,
-        report_price: String,
-        
-        // Order steps
-        order_steps_title: String,
-        order_step_1: String,
-        order_step_2: String,
-        order_step_3: String,
-        order_step_4: String,
-        
-        // Terms and conditions
+        report: Modal.Report,
+        order_steps: Modal.OrderSteps,
         accept_terms_and_conditions: String,
-        
-        // Connection status
-        no_connection_attempt: String,
-        internet_check_disabled: String,
-        internet_checking: String,
-        internet_disconnected: String,
-        internet_ok_backend_checking: String,
-        internet_ok_backend_error: StringFormat1,
-        internet_ok_backend_ok: String,
-        
-        // Validation code
-        validation_code_sent_to: StringFormat1,
-        send_validation_code_to: StringFormat1,
-        invalid_email: StringFormat1,
-        six_digit_code_label: String,
-        validate_button: String,
-        error_prefix: StringFormat1,
-        email_validated: String,
-        
-        // Payment
-        go_to_payment_page: String,
-        confirmation_notice: String,
+        connection: Modal.Connection,
+        validation: Modal.Validation,
+        payment: Modal.Payment,
     )
+
+    object Modal {
+      final case class Report(
+          compliant_with_standard: String,
+          will_be_sent_to_email: String,
+          price: String,
+      )
+
+      final case class OrderSteps(
+          title: String,
+          step_1: String,
+          step_2: String,
+          step_3: String,
+          step_4: String,
+      )
+
+      final case class Connection(
+          no_connection_attempt: String,
+          internet_check_disabled: String,
+          internet_checking: String,
+          internet_disconnected: String,
+          internet_ok_backend_checking: String,
+          internet_ok_backend_error: StringFormat1,
+          internet_ok_backend_ok: String,
+      )
+
+      final case class Validation(
+          code_sent_to: StringFormat1,
+          send_code_to: StringFormat1,
+          invalid_email: StringFormat1,
+          six_digit_code_label: String,
+          validate_button: String,
+          error_prefix: StringFormat1,
+          email_validated: String,
+      )
+
+      final case class Payment(
+          required_title: String,
+          instruction: String,
+          go_to_payment_page: String,
+          confirmation_notice: String,
+          close_window_hint: String,
+          button_close: String,
+      )
+    }
   }
 
   case class Tooltips(

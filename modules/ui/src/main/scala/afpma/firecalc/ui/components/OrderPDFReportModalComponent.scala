@@ -34,6 +34,7 @@ import afpma.firecalc.payments.shared.api.*
 case class OrderPDFReportModalComponent()(using Locale) extends Component:
 
     private val modal_id = "order_pdf_modal"
+    private val payment_success_modal_id = "payment_success_modal"
 
     protected final case class PDFReportOrderingState(
         cgv_accepted: Boolean = false,
@@ -322,10 +323,20 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
             case Right(response) =>
                 // Store the response in the state on success
                 verify_and_process_response_var.set(Some(Right(response)))
-                // dom.console.log(s"Verification successful. Payment URL: ${response.paymentUrl}")
+                // Store payment_link - this acts as both data and transition flag
+                // Its presence tells the order modal close handler not to reset state
+                pdf_report_ordering_var.update(_.copy(payment_link = Some(response.paymentUrl)))
+                // Close the order modal and open the payment success modal
+                dom.document
+                    .getElementById(modal_id)
+                    .asInstanceOf[HTMLDialogElement]
+                    .close()
+                dom.document
+                    .getElementById(payment_success_modal_id)
+                    .asInstanceOf[HTMLDialogElement]
+                    .showModal()
             case Left(errorMessage) =>
                 // Log error and store in state for display
-                // dom.console.error(s"Verification failed: $errorMessage")
                 verify_and_process_response_var.set(Some(Left(errorMessage)))
         }
 
@@ -376,9 +387,13 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                     mount = ctx => {
                         val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
                         val closeHandler: js.Function1[dom.Event, Unit] = _ => {
-                            pdf_report_ordering_var.set(PDFReportOrderingState.init)
-                            create_purchase_intent_response_var.set(None)
-                            verify_and_process_response_var.set(None)
+                            // Only reset state if payment_link is empty (user cancelled)
+                            // If payment_link is set, we're transitioning to the success modal
+                            if (pdf_report_ordering_var.now().payment_link.isEmpty) {
+                                pdf_report_ordering_var.set(PDFReportOrderingState.init)
+                                create_purchase_intent_response_var.set(None)
+                                verify_and_process_response_var.set(None)
+                            }
                         }
                         dialog.addEventListener("close", closeHandler)
                         closeHandler
@@ -398,21 +413,21 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                     ),
                     div(
                         cls := "py-4",
-                        p(I18N_UI.pdf_ordering.modal.report_compliant_with_standard + " ", b("EN 15544:2023")),
+                        p(I18N_UI.pdf_ordering.modal.report.compliant_with_standard + " ", b("EN 15544:2023")),
                         br(),
-                        p(I18N_UI.pdf_ordering.modal.report_will_be_sent_to_email),
+                        p(I18N_UI.pdf_ordering.modal.report.will_be_sent_to_email),
                         br(),
-                        p(b(I18N_UI.pdf_ordering.modal.report_price)),
+                        p(b(I18N_UI.pdf_ordering.modal.report.price)),
                         br(),
                         ul(
-                            I18N_UI.pdf_ordering.modal.order_steps_title,
+                            I18N_UI.pdf_ordering.modal.order_steps.title,
                             li(
                                 cls := "mt-4",
-                                I18N_UI.pdf_ordering.modal.order_step_1
+                                I18N_UI.pdf_ordering.modal.order_steps.step_1
                             ),
-                            li(I18N_UI.pdf_ordering.modal.order_step_2),
-                            li(I18N_UI.pdf_ordering.modal.order_step_3),
-                            li(I18N_UI.pdf_ordering.modal.order_step_4)
+                            li(I18N_UI.pdf_ordering.modal.order_steps.step_2),
+                            li(I18N_UI.pdf_ordering.modal.order_steps.step_3),
+                            li(I18N_UI.pdf_ordering.modal.order_steps.step_4)
                         ),
                         div(cls := "divider"),
                         BillingInfoUI()._form,
@@ -466,21 +481,21 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                                         cls := "text-xl",
                                         child <-- backend_polling_active_sig.combineWith(connectivity_details_sig).map:
                                             case (false, _) =>
-                                                p(I18N_UI.pdf_ordering.modal.no_connection_attempt)
+                                                p(I18N_UI.pdf_ordering.modal.connection.no_connection_attempt)
                                             case (true, PaymentsBackendApiConnectivity.CheckDisabled) =>
-                                                p(I18N_UI.pdf_ordering.modal.internet_check_disabled)
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_check_disabled)
                                             case (true, PaymentsBackendApiConnectivity.InternetCheckInProgress(_)) =>
-                                                p(I18N_UI.pdf_ordering.modal.internet_checking, span(cls := "ml-4 loading loading-dots loading-lg"))
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_checking, span(cls := "ml-4 loading loading-dots loading-lg"))
                                             case (true, PaymentsBackendApiConnectivity.InternetOnly(_)) =>
-                                                p(I18N_UI.pdf_ordering.modal.internet_disconnected, span(cls := "ml-4 loading loading-dots loading-lg"))
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_disconnected, span(cls := "ml-4 loading loading-dots loading-lg"))
                                             case (true, PaymentsBackendApiConnectivity.BackendCheckInProgress(_, _)) =>
-                                                p(I18N_UI.pdf_ordering.modal.internet_ok_backend_checking, span(cls := "ml-4 loading loading-dots loading-lg"))
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_checking, span(cls := "ml-4 loading loading-dots loading-lg"))
                                             case (true, PaymentsBackendApiConnectivity.PartialConnection(_, PaymentsBackendApiConnectivity.BackendDisconnected(PaymentsBackendApiConnectivity.JsonValidationError(msg)))) =>
-                                                p(I18N_UI.pdf_ordering.modal.internet_ok_backend_error.apply(msg))
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_error.apply(msg))
                                             case (true, PaymentsBackendApiConnectivity.PartialConnection(_, PaymentsBackendApiConnectivity.BackendDisconnected(PaymentsBackendApiConnectivity.NetworkError(msg)))) =>
-                                                p(I18N_UI.pdf_ordering.modal.internet_ok_backend_error.apply(msg))
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_error.apply(msg))
                                             case (true, PaymentsBackendApiConnectivity.FullConnection(_, _)) =>
-                                                p(I18N_UI.pdf_ordering.modal.internet_ok_backend_ok)
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_ok)
                                     )
                                 ),
                                 div(cls := "flex-1", ""),
@@ -517,14 +532,14 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                                         .map: (response, code_sent, btn_active, billing_email) =>
                                             response match
                                                 case Some(Left(errorMsg)) =>
-                                                    p(cls := "text-xl", I18N_UI.pdf_ordering.modal.error_prefix.apply(errorMsg))
+                                                    p(cls := "text-xl", I18N_UI.pdf_ordering.modal.validation.error_prefix.apply(errorMsg))
                                                 case _ =>
                                                     p(
                                                         cls := "text-xl",
                                                         (code_sent, btn_active) match
-                                                            case (true, _)      => I18N_UI.pdf_ordering.modal.validation_code_sent_to.apply(billing_email)
-                                                            case (false, true)  => I18N_UI.pdf_ordering.modal.send_validation_code_to.apply(billing_email)
-                                                            case (false, false) => I18N_UI.pdf_ordering.modal.invalid_email.apply(billing_email)
+                                                            case (true, _)      => I18N_UI.pdf_ordering.modal.validation.code_sent_to.apply(billing_email)
+                                                            case (false, true)  => I18N_UI.pdf_ordering.modal.validation.send_code_to.apply(billing_email)
+                                                            case (false, false) => I18N_UI.pdf_ordering.modal.validation.invalid_email.apply(billing_email)
                                                     )
                                 ),
                                 div(cls := "flex-1", ""),
@@ -557,82 +572,18 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                                             DaisyUIInputs.SixDigitCodeInputWithPrefixAndButton(
                                                 six_digits_code_var,
                                                 inputId = "six_digit_validation_code",
-                                                prefix = I18N_UI.pdf_ordering.modal.six_digit_code_label,
-                                                buttonTxt = I18N_UI.pdf_ordering.modal.validate_button,
+                                                prefix = I18N_UI.pdf_ordering.modal.validation.six_digit_code_label,
+                                                buttonTxt = I18N_UI.pdf_ordering.modal.validation.validate_button,
                                                 buttonClickedObs = send_validation_code_btn_clicked_bus.writer,
                                             )
                                         case Some(Left(msg)) =>
-                                            p(cls := "text-xl", I18N_UI.pdf_ordering.modal.error_prefix.apply(msg))
+                                            p(cls := "text-xl", I18N_UI.pdf_ordering.modal.validation.error_prefix.apply(msg))
                                         case Some(Right(vap_resp)) =>
-                                            p(cls := "text-xl", I18N_UI.pdf_ordering.modal.email_validated)
+                                            p(cls := "text-xl", I18N_UI.pdf_ordering.modal.validation.email_validated)
                                 ),
                                 div(cls := "flex-1", ""),
                             )
                         ),
-
-                        // GO TO PAYMENT URL
-
-                        button(
-                            cls := "btn btn-block h-24 mt-6",
-                            cls <-- hiddenUnless(verify_and_process_response_var.signal.map:
-                                case Some(Right(_)) => true
-                                case _ => false
-                            ),
-                            div(
-                                cls := "flex flex-row items-center w-full gap-3",
-                                div(cls := "flex-none w-14", ""),
-                                div(cls := "flex-none w-14", 
-                                    lucide.square(w = 32, h = 32, stroke_width = 2)
-                                ),
-                                div(
-                                    cls := "flex flex-initial", 
-                                    child <-- 
-                                        verify_and_process_response_var.signal
-                                        .map:
-                                            case Some(Right(vap_resp)) => 
-                                                a(
-                                                    cls := "btn btn-xl btn-outline btn-accent",
-                                                    href := s"${vap_resp.paymentUrl}",
-                                                    target := "blank",
-                                                    I18N_UI.pdf_ordering.modal.go_to_payment_page
-                                                )
-                                            case _ =>
-                                                p("hidden")
-                                ),
-                                div(cls := "flex-1", ""),
-                            )
-                        ),
-
-                        // CONFIRMATION NOTICE
-
-                        button(
-                            cls := "btn btn-block h-24 mt-6",
-                            cls <-- hiddenUnless(verify_and_process_response_var.signal.map:
-                                case Some(Right(_)) => true
-                                case _ => false
-                            ),
-                            div(
-                                cls := "flex flex-row items-center w-full gap-3",
-                                div(cls := "flex-none w-14", ""),
-                                div(cls := "flex-none w-14", 
-                                    lucide.square(w = 32, h = 32, stroke_width = 2)
-                                ),
-                                div(
-                                    cls := "flex flex-initial", 
-                                    child <-- 
-                                        verify_and_process_response_var.signal
-                                        .map:
-                                            case Some(Right(vap_resp)) => 
-                                                p(
-                                                    cls := "text-xl text-left",
-                                                    I18N_UI.pdf_ordering.modal.confirmation_notice
-                                                )
-                                            case _ =>
-                                                p("hidden")
-                                ),
-                                div(cls := "flex-1", ""),
-                            )
-                        ),  
                     ),
                     div(
                         cls := "modal-action",
@@ -645,6 +596,92 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                         ),
                     )
 
+                )
+            ),
+            // Payment Success Modal - shown after 6-digit code validation
+            dialogTag(
+                idAttr := payment_success_modal_id,
+                cls := "modal",
+                onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]](
+                    mount = ctx => {
+                        val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
+                        val closeHandler: js.Function1[dom.Event, Unit] = _ => {
+                            // Reset all state when success modal is closed
+                            pdf_report_ordering_var.set(PDFReportOrderingState.init)
+                            create_purchase_intent_response_var.set(None)
+                            verify_and_process_response_var.set(None)
+                        }
+                        dialog.addEventListener("close", closeHandler)
+                        closeHandler
+                    },
+                    unmount = (thisNode, maybeHandler) => {
+                        maybeHandler.foreach { handler =>
+                            val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
+                            dialog.removeEventListener("close", handler)
+                        }
+                    }
+                ),
+                div(
+                    cls := "modal-box w-8/12 max-w-2xl",
+                    h3(
+                        cls := "text-lg font-bold",
+                        I18N_UI.pdf_ordering.modal.payment.required_title
+                    ),
+                    div(
+                        cls := "py-4",
+                        // Payment instruction text
+                        p(
+                            cls := "text-center text-xl mt-4",
+                            I18N_UI.pdf_ordering.modal.payment.instruction
+                        ),
+                        // Payment link button - styled like other modal buttons
+                        button(
+                            cls := "btn btn-block h-24 mt-6",
+                            div(
+                                cls := "flex flex-row items-center w-full gap-3",
+                                div(cls := "flex-none w-14", ""),
+                                div(
+                                    cls := "flex-none w-14",
+                                    lucide.square(w = 32, h = 32, stroke_width = 2)
+                                ),
+                                div(
+                                    cls := "flex flex-initial",
+                                    // Read from payment_link (single source of truth)
+                                    child <-- pdf_report_ordering_var.signal.map(_.payment_link).map:
+                                        case Some(paymentUrl) =>
+                                            a(
+                                                cls := "btn btn-xl btn-outline btn-accent",
+                                                href := paymentUrl,
+                                                target := "blank",
+                                                I18N_UI.pdf_ordering.modal.payment.go_to_payment_page
+                                            )
+                                        case None =>
+                                            emptyNode
+                                ),
+                                div(cls := "flex-1", ""),
+                            )
+                        ),
+                        // Confirmation notice
+                        p(
+                            cls := "text-center mt-6",
+                            I18N_UI.pdf_ordering.modal.payment.confirmation_notice
+                        ),
+                        // Close window hint
+                        p(
+                            cls := "text-center mt-4",
+                            I18N_UI.pdf_ordering.modal.payment.close_window_hint
+                        )
+                    ),
+                    div(
+                        cls := "modal-action",
+                        form(
+                            method := "dialog",
+                            button(
+                                cls := "btn btn-outline",
+                                I18N_UI.pdf_ordering.modal.payment.button_close
+                            )
+                        )
+                    )
                 )
             )
         )
