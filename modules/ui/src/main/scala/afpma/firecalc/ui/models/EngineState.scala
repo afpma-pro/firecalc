@@ -10,7 +10,7 @@ import scala.util.*
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 import afpma.firecalc.dto.all.*
@@ -119,7 +119,7 @@ object EngineState:
         air_intake_descr                = Seq.empty,
         firebox                         = defaultable.firebox_traditional_minimal.default,
         flue_pipe_descr                 = 
-            import FluePipe_Module_EN15544.*
+            import FluePipe_Module_15544.*
             Seq(
                 roughness(3.mm),
                 innerShape(rectangle(18.cm, 18.cm)),

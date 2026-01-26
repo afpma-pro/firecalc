@@ -14,12 +14,12 @@ import io.taig.babel.Locale
 sealed trait PipeType
 object PipeType:
     given showLocalized: Locale => Show[PipeType] = Show.show:
-        case AirIntakePipeT                    => I18N.pipe_type.air_intake
+        case AirIntakePipeT     => I18N.pipe_type.air_intake
         case CombustionAirPipeT => I18N.pipe_type.combustion_air
-        case FireboxPipeT            => I18N.pipe_type.firebox
-        case FluePipeT                         => I18N.pipe_type.connector
-        case ConnectorPipeT                   => I18N.pipe_type.channel
-        case ChimneyPipeT                      => I18N.pipe_type.chimney
+        case FireboxPipeT       => I18N.pipe_type.firebox
+        case FluePipeT          => I18N.pipe_type.connector
+        case ConnectorPipeT     => I18N.pipe_type.channel
+        case ChimneyPipeT       => I18N.pipe_type.chimney
 
 case object AirIntakePipeT extends PipeType
 type AirIntakePipeT = AirIntakePipeT.type

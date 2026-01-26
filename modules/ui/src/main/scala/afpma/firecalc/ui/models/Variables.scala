@@ -103,8 +103,8 @@ val appStateSchemaVar =
 
 import SchemaTransformers.given
 import cats.data.Validated.Invalid
-import afpma.firecalc.engine.models.CombustionAirPipe_EN15544
-import afpma.firecalc.engine.models.en15544.pipedescr
+import afpma.firecalc.engine.models.CombustionAirPipe_15544
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
 import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.dto.FireCalcYAML
 

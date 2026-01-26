@@ -7,7 +7,7 @@ package afpma.firecalc.engine.ops
 
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
 import afpma.firecalc.engine.models.GasProps
-import afpma.firecalc.engine.ops.en13384.GasOpsUsingEN13384
+import afpma.firecalc.engine.ops.en13384.GasOps_13384
 
 import afpma.firecalc.units.coulombutils.*
 
@@ -23,4 +23,4 @@ end GasOps
 object GasOps:
 
     def mkUsingEN13384(en13384: EN13384_1_A1_2019_Formulas_Alg): GasOps = 
-        new GasOpsUsingEN13384(using en13384) {}
+        new GasOps_13384(using en13384) {}

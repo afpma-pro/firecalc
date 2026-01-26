@@ -12,7 +12,7 @@ import cats.syntax.all.*
 import algebra.instances.all.given
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.pipedescr.*
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.Result

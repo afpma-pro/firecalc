@@ -34,7 +34,7 @@ import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
 import afpma.firecalc.engine.api.v0_2024_10
 
 object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1` 
-    extends v0_2024_10.SimpleStoveProjectDescrFr_EN15544_Labo_Alg:
+    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Labo_Alg:
     self =>
 
     import std.*
@@ -136,7 +136,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
         .toFullDescr().extractPipe
 
     val combustionAirPipe = 
-        import CombustionAirPipe_Module_EN13384.*
+        import CombustionAirPipe_Module_13384.*
         define(
             // addPressureDiff("dispositif de réglage d'air", 3.2.unitless: ζ), // ???
 
@@ -179,7 +179,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
     val firebox_mean_temp = 750.degreesCelsius
 
     val fireboxPipe = 
-        import FireboxPipe_Module_EN13384.*
+        import FireboxPipe_Module_13384.*
         define(
             pipeLocation(Area.Foyer),
             roughness(Refractory_Bricks),
@@ -192,8 +192,8 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
     val firebox_output_temp = 785.degreesCelsius
 
     val fluePipe = 
-        import FluePipe_Module_EN13384.*
-        FluePipe_Module_EN13384
+        import FluePipe_Module_13384.*
+        FluePipe_Module_13384
         .incremental
         .define(
             pipeLocation(Area.Accumulateur),

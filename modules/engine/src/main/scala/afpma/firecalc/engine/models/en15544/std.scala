@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en15544.firebox.FireboxHelper_15544
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
+import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.gtypedefs.{KindOfWood, λ}
 import afpma.firecalc.engine.models.gtypedefs
 import afpma.firecalc.engine.standard.*
@@ -42,6 +43,8 @@ import coulomb.ops.algebra.all.{*, given}
 import io.taig.babel.Locale
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
+import afpma.firecalc.engine.impl.en15544.mce.HasTypeMembers_15544_MCE
 
 object std:
 
@@ -58,29 +61,38 @@ object std:
 
     end PressureLossCoeff
 
-    sealed trait Inputs[Pipes <: Pipes_EN15544_Strict | Pipes_EN15544_MCE]:
+    sealed trait Inputs_15544_Alg extends HasPipeModules_15544Only_Alg:
+        self =>
+
+        type Pipes_15544 <: Pipes_15544_Alg {
+            type CombustionAirPipe_Module_T = self.CombustionAirPipe_Module_T
+            type FireboxPipe_Module_T       = self.FireboxPipe_Module_T
+            type FluePipe_Module_T          = self.FluePipe_Module_T
+        }
+                
         val localConditions: LocalConditions
         val en13384NationalAcceptedData: NationalAcceptedData
         val stoveParams: StoveParams
         val design: Design
-        val pipes: Pipes
+        val pipes: Pipes_15544
         final val flueGasCondition: FlueGasCondition.Dry_NonCondensing.type = FlueGasCondition.Dry_NonCondensing // force dry conditions for 15544
 
-    case class Inputs_EN15544_Strict(
+    case class Inputs_15544_Strict(
         localConditions: LocalConditions,
         en13384NationalAcceptedData: NationalAcceptedData,
         stoveParams: StoveParams,
         design: Design,
-        pipes: Pipes_EN15544_Strict,
+        pipes: Pipes_15544_Strict,
         // wood: Wood,
-    ) extends Inputs[Pipes_EN15544_Strict]
+    ) extends Inputs_15544_Alg with HasPipeModules_15544Only_Strict:
+        override type Pipes_15544                = Pipes_15544_Strict
 
-    case class Inputs_EN15544_MCE(
+    case class Inputs_15544_MCE(
         localConditions: LocalConditions,
         en13384NationalAcceptedData: NationalAcceptedData,
         stoveParams: StoveParams,
         design: Design,
-        pipes: Pipes_EN15544_MCE,
+        pipes: Pipes_15544_MCE,
         wood: Wood,
         kindOfWood: KindOfWood,
         computeWoodCalorificValueUsingComposition: "Yes" | "No",
@@ -91,7 +103,8 @@ object std:
         fluegas_h2o_perc_vol_lowest: Option[Percentage],
         massFlows_override: HeatingAppliance.MassFlows,
         ext_air_rel_hum_default: Percentage,
-    ) extends Inputs[Pipes_EN15544_MCE]
+    ) extends Inputs_15544_Alg with HasPipeModules_15544Only_MCE:
+        override type Pipes_15544              = Pipes_15544_MCE
 
     case class Design(
         firebox: Firebox_15544

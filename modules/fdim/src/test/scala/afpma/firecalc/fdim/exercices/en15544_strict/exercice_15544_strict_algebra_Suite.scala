@@ -8,12 +8,13 @@ package afpma.firecalc.fdim.exercices.en15544_strict
 import cats.data.*
 import cats.data.Validated.Valid
 
-import afpma.firecalc.engine.models.CombustionAirPipe_EN15544
+import afpma.firecalc.engine.models.CombustionAirPipe_15544
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.*
-import afpma.firecalc.engine.models.{FluePipe_EN15544, ChimneyPipe, ConnectorPipe, FireboxPipe_EN15544, AirIntakePipe_Module}
+import afpma.firecalc.engine.models.{FluePipe_15544, ChimneyPipe, ConnectorPipe, FireboxPipe_15544, ThermalAirIntakePipe_Module}
+import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384
 
 
 class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
@@ -27,7 +28,7 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
             "// CONDUIT ARRIVEE AIR" - {
     
                 "n'est pas présent" in {
-                    strict_ex01_colonne_ascendante.airIntakePipe.toOption.get shouldBe a [AirIntakePipe_Module.NoVentilationOpenings]
+                    strict_ex01_colonne_ascendante.airIntakePipe.toOption.get shouldBe a [FlowOnlyAirIntakePipe_Module_13384.NoVentilationOpenings]
                 }
     
             }
@@ -38,13 +39,13 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
         
                     "firebox pipe" in {
                         val ccPipe = strict_ex01_colonne_ascendante.fireboxPipe
-                        ccPipe shouldBe a [Valid[FireboxPipe_EN15544]]
+                        ccPipe shouldBe a [Valid[FireboxPipe_15544]]
                         // println(ccPipe.toOption.get.show)
                     }
         
                     "combustion air pipe" in {
                         val combustionAirPipe = strict_ex01_colonne_ascendante.combustionAirPipe
-                        combustionAirPipe shouldBe a [Valid[CombustionAirPipe_EN15544]]
+                        combustionAirPipe shouldBe a [Valid[CombustionAirPipe_15544]]
                         // println(combustionAirPipe.toOption.get.show)
                     }
                 }
@@ -56,7 +57,7 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
                 "can be converted to FluePipe" in {
     
                     val fluePipe = strict_ex01_colonne_ascendante.fluePipe
-                    fluePipe shouldBe a [Valid[FluePipe_EN15544]]
+                    fluePipe shouldBe a [Valid[FluePipe_15544]]
                     // println(fluePipe.toOption.get.showAsCliTable)
                 }
     

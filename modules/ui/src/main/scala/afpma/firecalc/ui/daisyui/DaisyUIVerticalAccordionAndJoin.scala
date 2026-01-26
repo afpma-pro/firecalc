@@ -136,7 +136,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
             ),
             content = localConditionsUI
         ),
-        AirIntakePipePanel(),
+        FlowOnlyAirIntakePipePanel(),
         FireboxPanel(),
         FluePipePanel(),
         ConnectorPipePanel(),

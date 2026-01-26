@@ -22,7 +22,7 @@ import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.Traditional
 object ExampleProject_15544
     extends v2024_10_Alg
     with v0_2024_10.Firebox_15544_Strict_OneOff_Alg
-    with v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg:
+    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
     self =>
 
     import afpma.firecalc.engine.models.en15544.std.*
@@ -74,7 +74,7 @@ object ExampleProject_15544
     val firebox = foyer_descr
 
     val accumulateur_descr = 
-        import FluePipe_Module_EN15544.*
+        import FluePipe_Module_15544.*
         Seq(
             roughness(3.mm),
 
@@ -113,7 +113,7 @@ object ExampleProject_15544
         )
 
     val fluePipe = 
-        import FluePipe_Module_EN15544.*
+        import FluePipe_Module_15544.*
         define(accumulateur_descr*).toFullDescr().extractPipe
 
     val conduit_raccordement_descr =

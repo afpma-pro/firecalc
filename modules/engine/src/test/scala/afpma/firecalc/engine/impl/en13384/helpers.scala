@@ -7,14 +7,14 @@ package afpma.firecalc.engine.impl.en13384
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.models.en13384.std.*
-import afpma.firecalc.engine.models.en13384.pipedescr.StraightSection as en13384_StraightSection
+import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection as en13384_StraightSection
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
-import afpma.firecalc.engine.models.en13384.pipedescr.PipeElDescr
+import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.PipeElDescr
 
-trait IncrementalHelper_EN13384:
+trait IncrementalHelper_13384:
     self: AnyFreeSpec & Matchers =>
 
     def equivalent_StraightSections(x: PipeElDescr, y: PipeElDescr) = 

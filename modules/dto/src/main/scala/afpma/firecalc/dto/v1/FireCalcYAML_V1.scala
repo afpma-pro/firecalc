@@ -22,11 +22,11 @@ final case class FireCalcYAML_V1(
     project_description: ProjectDescr,
     local_conditions: LocalConditions,
     stove_params: StoveParams,
-    air_intake_descr: Seq[IncrDescr_13384],
+    air_intake_descr: Seq[ThermalPipeDescr_13384],
     firebox: Firebox_V1,
-    flue_pipe_descr: Seq[IncrDescr_15544],
-    connector_pipe_descr: Seq[IncrDescr_13384],
-    chimney_pipe_descr: Seq[IncrDescr_13384],
+    flue_pipe_descr: Seq[FlowOnlyPipeDescr_15544],
+    connector_pipe_descr: Seq[ThermalPipeDescr_13384],
+    chimney_pipe_descr: Seq[ThermalPipeDescr_13384],
 ) extends FireCalcYAML_Format
 
 trait FireCalcYAML_V1_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V1]:

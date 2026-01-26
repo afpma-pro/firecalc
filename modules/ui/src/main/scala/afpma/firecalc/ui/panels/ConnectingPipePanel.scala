@@ -19,7 +19,7 @@ import com.raquo.airstream.state.Var
 import io.taig.babel.Locale
 import afpma.firecalc.engine.utils.asVNelString
 
-final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384:
+final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384_Thermal:
 
     type Out = ConnectorPipe
     type PT = ConnectorPipeT
@@ -45,7 +45,7 @@ final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePa
             .andThen(_ => v1)
         )
 
-    lazy val elems_v: Var[Seq[IncrDescr_13384]] = connector_pipe_incrdescr_var
+    lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] = connector_pipe_incrdescr_var
 
     type PipeIdsMapping = afpma.firecalc.engine.models.ConnectorPipe_Module.IdsMapping
 

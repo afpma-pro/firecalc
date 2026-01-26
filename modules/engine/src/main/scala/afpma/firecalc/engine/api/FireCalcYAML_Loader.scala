@@ -10,7 +10,7 @@ import scala.util.*
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 import afpma.firecalc.dto.all.*
@@ -44,22 +44,22 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     // DO BETTER
     require(fcProj.standard_or_computation_method == StandardOrComputationMethod.EN_15544_2023, s"Only '${StandardOrComputationMethod.EN_15544_2023.reference}' is allowed for now.")
 
-    import AirIntakePipe_Module.*
-    import FluePipe_Module_EN15544.*
+    import ThermalAirIntakePipe_Module_13384.*
+    import FluePipe_Module_15544.*
     import ConnectorPipe_Module.*
     import ChimneyPipe_Module.*
 
-    val airIntakePipeResult    = AirIntakePipe_Module    .mkPipeFromIncrDescr(fcProj.air_intake_descr)
-    val fluePipeResult         = FluePipe_Module_EN15544 .mkPipeFromIncrDescr(fcProj.flue_pipe_descr)
-    val connectorPipeResult    = ConnectorPipe_Module    .mkPipeFromIncrDescr(fcProj.connector_pipe_descr)
-    val chimneyPipeResult      = ChimneyPipe_Module      .mkPipeFromIncrDescr(fcProj.chimney_pipe_descr)
+    val airIntakePipeResult    = FlowOnlyAirIntakePipe_Module_13384    .mkPipeFromIncrDescr(fcProj.air_intake_descr)
+    val fluePipeResult         = FluePipe_Module_15544                 .mkPipeFromIncrDescr(fcProj.flue_pipe_descr)
+    val connectorPipeResult    = ConnectorPipe_Module                    .mkPipeFromIncrDescr(fcProj.connector_pipe_descr)
+    val chimneyPipeResult      = ChimneyPipe_Module                      .mkPipeFromIncrDescr(fcProj.chimney_pipe_descr)
 
-    val airIntakePipe  : ValidatedNel[IncrementalValidation_Error, AirIntakePipe]      = airIntakePipeResult.extractPipe
-    val fluePipe       : ValidatedNel[IncrementalValidation_Error, FluePipe_EN15544]   = fluePipeResult.extractPipe
-    val connectorPipe  : ValidatedNel[IncrementalValidation_Error, ConnectorPipe]      = connectorPipeResult.extractPipe
-    val chimneyPipe    : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]        = chimneyPipeResult.extractPipe
+    val airIntakePipe  : ValidatedNel[IncrementalValidation_Error, FlowOnlyAirIntakePipe_13384]   = FlowOnlyAirIntakePipe_Module_13384.extractPipe(airIntakePipeResult)
+    val fluePipe       : ValidatedNel[IncrementalValidation_Error, FluePipe_15544]                = fluePipeResult.extractPipe
+    val connectorPipe  : ValidatedNel[IncrementalValidation_Error, ConnectorPipe]                   = connectorPipeResult.extractPipe
+    val chimneyPipe    : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]                     = chimneyPipeResult.extractPipe
 
-    val airIntakePipeMappings  = airIntakePipeResult.extractIdsMapping
+    val airIntakePipeMappings  = FlowOnlyAirIntakePipe_Module_13384.extractIdsMapping(airIntakePipeResult)
     val fluePipeMappings       = fluePipeResult.extractIdsMapping
     val connectorPipeMappings  = connectorPipeResult.extractIdsMapping
     val chimneyPipeMappings    = chimneyPipeResult.extractIdsMapping
@@ -69,9 +69,9 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     import afpma.firecalc.engine.api.v0_2024_10
     import cats.implicits.catsSyntaxValidatedId
 
-    val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_EN15544_Strict_Alg = 
+    val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg = 
         new v0_2024_10.Firebox_15544_Strict_OneOff_Alg
-        with v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+        with v0_2024_10.StoveProjectDescr_15544_Strict_Alg
         {
             override val language        = fcProj.locale.language
             override val project         = fcProj.project_description

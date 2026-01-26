@@ -10,8 +10,8 @@ import cats.data.ValidatedNel
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox
 import afpma.firecalc.engine.models.en15544.ConstraintSlots
-import afpma.firecalc.engine.models.en15544.FireboxModule_EN15544_MCE
-import afpma.firecalc.engine.models.en15544.FireboxModule_EN15544_Strict
+import afpma.firecalc.engine.models.en15544.FireboxModule_15544_MCE
+import afpma.firecalc.engine.models.en15544.FireboxModule_15544_Strict
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.*
 import afpma.firecalc.engine.models.en15544.typedefs.GlassArea
@@ -251,8 +251,8 @@ object From_CalculPdM_V_0_2_32:
 
 
 trait From_CalculPdM_V_0_2_32_Module 
-    extends FireboxModule_EN15544_Strict
-    with FireboxModule_EN15544_MCE:
+    extends FireboxModule_15544_Strict
+    with FireboxModule_15544_MCE:
 
     type FB <: From_CalculPdM_V_0_2_32
 
@@ -261,9 +261,9 @@ trait From_CalculPdM_V_0_2_32_Module
     // import pipeDescr.*
 
     extension (firebox: FB)
-        def toFireboxPipe_EN15544: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_EN15544.FullDescr] = 
-            import FireboxPipe_Module_EN15544.*
-            FireboxPipe_Module_EN15544.incremental.define(
+        def toFireboxPipe_15544: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_15544.FullDescr] = 
+            import FireboxPipe_Module_15544.*
+            FireboxPipe_Module_15544.incremental.define(
                 innerShape(rectangle(firebox.h12_largeurDuFoyer, firebox.h11_profondeurDuFoyer)),
                 roughness(2.mm), // TOFIX: 3mm or 2mm ???
                 addSectionVertical(
@@ -273,9 +273,9 @@ trait From_CalculPdM_V_0_2_32_Module
                     firebox.h13_hauteurDuFoyer))
             .toFullDescr().extractPipe
 
-        def toFireboxPipe_EN13384: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_EN13384.FullDescr] = 
-            import FireboxPipe_Module_EN13384.*
-            FireboxPipe_Module_EN13384.incremental.define(
+        def toFireboxPipe_13384: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_13384.FullDescr] = 
+            import FireboxPipe_Module_13384.*
+            FireboxPipe_Module_13384.incremental.define(
                 pipeLocation(PipeLocation.HeatedArea), // added for EN13384
                 innerShape(rectangle(firebox.h12_largeurDuFoyer, firebox.h11_profondeurDuFoyer)),
                 roughness(2.mm), // TOFIX: 3mm or 2mm ???

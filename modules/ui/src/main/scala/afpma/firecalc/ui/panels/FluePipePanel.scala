@@ -6,8 +6,8 @@
 package afpma.firecalc.ui.panels
 
 import afpma.firecalc.dto.all.*
-import AddElement_15544.*
-import SetProp_15544.*
+import AddFlowOnlyPipeElement_15544.*
+import SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 
@@ -31,8 +31,8 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     import hastranslations.given
     import horizontal_form_15544.given
 
-    type In = IncrDescr_15544
-    type Out = FluePipe_EN15544
+    type In = FlowOnlyPipeDescr_15544
+    type Out = FluePipe_15544
     type PT = FluePipeT
     lazy val sectionType = FluePipeT
     
@@ -64,7 +64,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
             
     lazy val elems_v = fluepipe_incrdescr_var
 
-    type PipeIdsMapping = afpma.firecalc.engine.models.FluePipe_Module_EN15544.IdsMapping
+    type PipeIdsMapping = afpma.firecalc.engine.models.FluePipe_Module_15544.IdsMapping
 
     override lazy val pipeMappings_vnel_signal = fluepipe_mappings_vnel_signal
     override lazy val pipeResult_vnel_signal = results_en15544_channel_pipe
@@ -79,18 +79,18 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] = 
         welem_xtraoutput_sig
             .splitMatchSeq(_._1)
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, SetInnerShape           , XtraOutputs), HtmlElement] { case (i, incr: SetInnerShape            , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetInnerShape]           (iix._1, I18N.set_prop.SetInnerShape             , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, SetRoughness            , XtraOutputs), HtmlElement] { case (i, incr: SetRoughness             , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetRoughness]            (iix._1, I18N.set_prop.SetRoughness              , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, SetMaterial             , XtraOutputs), HtmlElement] { case (i, incr: SetMaterial              , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetMaterial]             (iix._1, I18N.set_prop.SetMaterial               , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, SetNumberOfFlows        , XtraOutputs), HtmlElement] { case (i, incr: SetNumberOfFlows         , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetNumberOfFlows]        (iix._1, I18N.set_prop.SetNumberOfFlows          , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddSectionSlopped       , XtraOutputs), HtmlElement] { case (i, incr: AddSectionSlopped        , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionSlopped]       (iix._1, I18N.add_element.AddSectionSlopped      , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddSectionHorizontal    , XtraOutputs), HtmlElement] { case (i, incr: AddSectionHorizontal     , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionHorizontal]    (iix._1, I18N.add_element.AddSectionHorizontal   , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddSectionVertical      , XtraOutputs), HtmlElement] { case (i, incr: AddSectionVertical       , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionVertical]      (iix._1, I18N.add_element.AddSectionVertical     , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddSharpeAngle_0_to_180 , XtraOutputs), HtmlElement] { case (i, incr: AddSharpeAngle_0_to_180  , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSharpeAngle_0_to_180] (iix._1, I18N.add_element.AddSharpeAngle_0_to_180, iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddCircularArc_60       , XtraOutputs), HtmlElement] { case (i, incr: AddCircularArc_60        , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddCircularArc_60]       (iix._1, I18N.add_element.AddCircularArc_60      , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddSectionShapeChange   , XtraOutputs), HtmlElement] { case (i, incr: AddSectionShapeChange    , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionShapeChange]   (iix._1, I18N.add_element.AddSectionShapeChange  , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddFlowResistance       , XtraOutputs), HtmlElement] { case (i, incr: AddFlowResistance        , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddFlowResistance]       (iix._1, I18N.add_element.AddFlowResistance      , iix._2, sig) }
-            .handleCase[(Int, IncrDescr_15544, XtraOutputs), (Int, AddPressureDiff         , XtraOutputs), HtmlElement] { case (i, incr: AddPressureDiff          , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddPressureDiff]         (iix._1, I18N.add_element.AddPressureDiff        , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInnerShape           , XtraOutputs), HtmlElement] { case (i, incr: SetInnerShape            , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetInnerShape]           (iix._1, I18N.set_prop.SetInnerShape             , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetRoughness            , XtraOutputs), HtmlElement] { case (i, incr: SetRoughness             , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetRoughness]            (iix._1, I18N.set_prop.SetRoughness              , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetMaterial             , XtraOutputs), HtmlElement] { case (i, incr: SetMaterial              , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetMaterial]             (iix._1, I18N.set_prop.SetMaterial               , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetNumberOfFlows        , XtraOutputs), HtmlElement] { case (i, incr: SetNumberOfFlows         , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[SetNumberOfFlows]        (iix._1, I18N.set_prop.SetNumberOfFlows          , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionSlopped       , XtraOutputs), HtmlElement] { case (i, incr: AddSectionSlopped        , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionSlopped]       (iix._1, I18N.add_element.AddSectionSlopped      , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionHorizontal    , XtraOutputs), HtmlElement] { case (i, incr: AddSectionHorizontal     , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionHorizontal]    (iix._1, I18N.add_element.AddSectionHorizontal   , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionVertical      , XtraOutputs), HtmlElement] { case (i, incr: AddSectionVertical       , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionVertical]      (iix._1, I18N.add_element.AddSectionVertical     , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSharpeAngle_0_to_180 , XtraOutputs), HtmlElement] { case (i, incr: AddSharpeAngle_0_to_180  , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSharpeAngle_0_to_180] (iix._1, I18N.add_element.AddSharpeAngle_0_to_180, iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddCircularArc_60       , XtraOutputs), HtmlElement] { case (i, incr: AddCircularArc_60        , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddCircularArc_60]       (iix._1, I18N.add_element.AddCircularArc_60      , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionShapeChange   , XtraOutputs), HtmlElement] { case (i, incr: AddSectionShapeChange    , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddSectionShapeChange]   (iix._1, I18N.add_element.AddSectionShapeChange  , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddFlowResistance       , XtraOutputs), HtmlElement] { case (i, incr: AddFlowResistance        , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddFlowResistance]       (iix._1, I18N.add_element.AddFlowResistance      , iix._2, sig) }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddPressureDiff         , XtraOutputs), HtmlElement] { case (i, incr: AddPressureDiff          , x) =>  (i, incr, x) } { (iix, sig) => renderElemTyped[AddPressureDiff]         (iix._1, I18N.add_element.AddPressureDiff        , iix._2, sig) }
             .toSignal
 
     import defaultable_15544.incr_descr_en15544.given
@@ -151,7 +151,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
         next = List(
             TagTreeMenu.Leaf[SetMaterial],
             TagTreeMenu.Leaf[SetRoughness],
-            TagTreeMenu.Leaf[SetInnerShape],
+            TagTreeMenu.Leaf[SetInnerShape]
         )
     )
 

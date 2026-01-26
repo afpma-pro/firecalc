@@ -13,12 +13,14 @@ import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en13384.std.Inputs_13384_Alg
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.models.en13384.std.Inputs as en13384_Inputs
 import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_EN13384
+import afpma.firecalc.engine.models.en13384.typedefs.FuelType
+import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
+import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
@@ -26,21 +28,24 @@ import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 
+import afpma.firecalc.dto.common.DuctType
+
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
 object EN15544_V_2023_Application_Alg:
     type ErrorGen = MCalc_Error    
 
-trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
+trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_Alg:
+    self =>
 
-    val inputs: _Inputs
+    lazy val inputs: Inputs_15544
 
     export EN15544_V_2023_Application_Alg.{ErrorGen}
 
     type VNel[A] = ValidatedNel[ErrorGen, A]
 
-    type PSect = afpma.firecalc.engine.models.en13384.pipedescr.PipeElDescr | afpma.firecalc.engine.models.en15544.pipedescr.PipeElDescr
+    type PSect = afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.PipeElDescr | afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.PipeElDescr
 
     val formulas: EN15544_V_2023_Formulas_Alg
     // export formulas.*
@@ -49,15 +54,26 @@ trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
     lazy val en13384_formulas: EN13384_1_A1_2019_Formulas_Alg
     given EN13384_1_A1_2019_Formulas_Alg = en13384_formulas
 
-    abstract class EN13384_For15544_Application(
+    def en13384_inputs_pipes: Pipes_13384
+
+    def en13384_inputs_fuelType: FuelType = FuelType.WoodLog30pHumidity
+
+    def en13384_inputs_flueGasCondition: FlueGasCondition = FlueGasCondition.Dry_NonCondensing
+
+    abstract class EN13384_For_15544_Application(
         override val formulas: EN13384_1_A1_2019_Formulas_Alg,
-        override val inputs: en13384_Inputs,
     )
-        extends EN13384_1_A1_2019_Common_Application (
-            formulas,
-            inputs
-        )
+        extends EN13384_1_A1_2019_Common_Application(formulas)
     {
+        override type AirIntakePipe_Module_T  = self.AirIntakePipe_Module_T
+        override val AirIntakePipe_Module     = self.AirIntakePipe_Module
+
+        override type Pipes_13384 = self.Pipes_13384
+
+        override type Inputs_13384 = self.Inputs_13384
+
+        override lazy val inputs = en13384_inputs
+
         override lazy val last_known_density_before_connector_pipe = 
             computeAt match
                 case ComputeAt.Mean         => flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_density_mean)
@@ -67,9 +83,23 @@ trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
             computeAt match
                 case ComputeAt.Mean         => flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_mean)
                 case ComputeAt.Middle       => flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_middle)
+
+        // 7.8.4
+        // Températures moyennes pour le calcul de pression
+
+        /** température moyenne de l'air de combustion sur la longueur du conduit d'air comburant, en K */
+        override def T_mB =
+            // flow only pipes are necessarily considered non concentric
+            // otherwise we would have to compute thermal variations
+            val dt = DuctType.NonConcentricDuctsHighThermalResistance 
+            val tl: afpma.firecalc.engine.models.en13384.typedefs.T_L = T_L
+            // val debug = s"T_L = $tl (ep = ${DraftCondition.summon})"
+            // scala.scalajs.js.Dynamic.global.console.log(debug)
+            // println(debug)
+            formulas.T_mB_calc(dt, tl).withSectionTyp(AirIntakePipeT)
     }
 
-    lazy val en13384_application: EN13384_For15544_Application
+    lazy val en13384_application: EN13384_For_15544_Application
 
     lazy val en13384_fluegas_σ_CO2_dry_nominal: Percentage
     lazy val en13384_fluegas_σ_CO2_dry_lowest: Option[Percentage]
@@ -79,15 +109,14 @@ trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
     /** flue gas percentages (if specified by constructor) */
     lazy val en13384_heatingAppliance_fluegas = HeatingAppliance.FlueGas(
         co2_dry_perc_nominal    = en13384_fluegas_σ_CO2_dry_nominal,
-        co2_dry_perc_reduced     = en13384_fluegas_σ_CO2_dry_lowest,
+        co2_dry_perc_reduced    = en13384_fluegas_σ_CO2_dry_lowest,
         h2o_perc_nominal        = en13384_fluegas_σ_H2O_nominal,
-        h2o_perc_reduced         = en13384_fluegas_σ_H2O_lowest 
+        h2o_perc_reduced        = en13384_fluegas_σ_H2O_lowest 
     )
 
     /** inputs for underlying EN 13384 Application (parts in relation to EN 15544)*/
-    lazy val en13384_inputs: en13384_Inputs
+    lazy val en13384_inputs: Inputs_13384
 
-    
     /** heating appliance as given as input to EN13384  */
     def en13384_heatingAppliance_input: VNelMcalcErr[HeatingAppliance]
 
@@ -247,7 +276,7 @@ trait EN15544_V_2023_Application_Alg[+_Inputs <: Inputs[?]] extends Standard:
 
     // TODO: P_Z, P_Zmax, P_Ze, P_Zemax, P_W, P_W_max, P_B
     def pressureRequirements_EN13384: WithParams_13384[VNelMcalcErr[PressureRequirements_13384]]
-    def temperatureRequirements_EN13384: WithParams_13384[VNelMcalcErr[TemperatureRequirements_EN13384]]
+    def temperatureRequirements_EN13384: WithParams_13384[VNelMcalcErr[TemperatureRequirements_13384]]
 
     // VALIDATIONS
     def citedConstraints: CitedConstraints

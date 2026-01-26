@@ -370,11 +370,11 @@ object EcoLabeled_Module extends From_CalculPdM_V_0_2_32_Module:
     type FB = EcoLabeled
 
     extension (firebox: EcoLabeled)
-        def toCombustionAirPipe_EN15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN15544.FullDescr] = 
-            import CombustionAirPipe_Module_EN15544.*
+        def toCombustionAirPipe_15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_15544.FullDescr] = 
+            import CombustionAirPipe_Module_15544.*
             import firebox.*
 
-            CombustionAirPipe_Module_EN15544.incremental
+            CombustionAirPipe_Module_15544.incremental
             .define(
                 innerShape(rectangle(
                     a = h12_largeurDuFoyer - 6.cm, 
@@ -428,13 +428,13 @@ object EcoLabeled_Module extends From_CalculPdM_V_0_2_32_Module:
                     c10_epaisseurParoiInterneDuFoyer + c11_largeurEspaceInterParoisFoyer_S / 2.0)
             )
             .toFullDescr().extractPipe
-        end toCombustionAirPipe_EN15544
+        end toCombustionAirPipe_15544
 
-        def toCombustionAirPipe_EN13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN13384.FullDescr] = 
-            import CombustionAirPipe_Module_EN13384.*
+        def toCombustionAirPipe_13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_13384.FullDescr] = 
+            import CombustionAirPipe_Module_13384.*
             import firebox.*
 
-            CombustionAirPipe_Module_EN13384.incremental
+            CombustionAirPipe_Module_13384.incremental
             .define(
                 roughness(3.mm),
                 pipeLocation(PipeLocation.HeatedArea), // added for EN13384
@@ -490,7 +490,7 @@ object EcoLabeled_Module extends From_CalculPdM_V_0_2_32_Module:
                     c10_epaisseurParoiInterneDuFoyer + c11_largeurEspaceInterParoisFoyer_S / 2.0)
             )
             .toFullDescr().extractPipe
-        end toCombustionAirPipe_EN13384
+        end toCombustionAirPipe_13384
 
 
 end EcoLabeled_Module

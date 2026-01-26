@@ -96,13 +96,13 @@ object AFPMA_PRSE_Module extends From_CalculPdM_V_0_2_32_Module:
 
 
     extension (firebox: AFPMA_PRSE)
-        def toCombustionAirPipe_EN15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN15544.FullDescr] = 
-            import CombustionAirPipe_Module_EN15544.*
+        def toCombustionAirPipe_15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_15544.FullDescr] = 
+            import CombustionAirPipe_Module_15544.*
             import firebox.*
 
             firebox.origineArriveeAir match
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom => 
-                    CombustionAirPipe_Module_EN15544.incremental
+                    CombustionAirPipe_Module_15544.incremental
                     .define(
                         innerShape(arriveeAirGeometry),
                         roughness(3.mm),
@@ -162,20 +162,20 @@ object AFPMA_PRSE_Module extends From_CalculPdM_V_0_2_32_Module:
                             1.5.cm)
                     )
                     .toFullDescr().extractPipe
-        end toCombustionAirPipe_EN15544
+        end toCombustionAirPipe_15544
 
-        def toCombustionAirPipe_EN13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN13384.FullDescr] = 
-            import CombustionAirPipe_Module_EN13384.*
+        def toCombustionAirPipe_13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_13384.FullDescr] = 
+            import CombustionAirPipe_Module_13384.*
             import firebox.*
 
             firebox.origineArriveeAir match
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom => 
-                    CombustionAirPipe_Module_EN13384.incremental
+                    CombustionAirPipe_Module_13384.incremental
                     .define(
                         pipeLocation(PipeLocation.HeatedArea), // added for EN13384
                         innerShape(arriveeAirGeometry),
                         layer(e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
-                        // following is copy/pasted (!) from toCombustionAirPipe_EN15544
+                        // following is copy/pasted (!) from toCombustionAirPipe_15544
                         addSectionVertical(
                             "remontée dans chambre de détente", 
                             (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U) / 2.0),

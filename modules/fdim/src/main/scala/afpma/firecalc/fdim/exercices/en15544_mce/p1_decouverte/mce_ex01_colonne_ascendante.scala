@@ -32,7 +32,7 @@ import afpma.firecalc.engine.models.en13384.typedefs
 import afpma.firecalc.engine.api.v0_2024_10
 
 object mce_ex01_colonne_ascendante 
-    extends v0_2024_10.SimpleStoveProjectDescrFr_EN15544_MCE_Alg
+    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_MCE_Alg
     with v0_2024_10.Firebox_15544_MCE_OneOff_Alg:
     self =>
 
@@ -88,8 +88,8 @@ object mce_ex01_colonne_ascendante
     )
 
     val fluePipe = 
-        import FluePipe_Module_EN13384.*
-        FluePipe_Module_EN13384
+        import FluePipe_Module_13384.*
+        FluePipe_Module_13384
         .incremental
         .define(
             pipeLocation(PipeLocation.HeatedArea), // added for EN13384

@@ -23,7 +23,7 @@
 // import standard.global.pipes.*
 // import firecalc.api.alg.en13384.models
 
-// class Pipes_EN13384_TypedBuilder extends AnyFreeSpec with Matchers {
+// class Pipes_13384_TypedBuilder extends AnyFreeSpec with Matchers {
 
 //     import firecalc.api.pipes.en13384.*
 //     import firecalc.api.sections

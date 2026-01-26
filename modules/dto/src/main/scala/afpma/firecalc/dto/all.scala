@@ -7,8 +7,9 @@ package afpma.firecalc.dto
 
 object all:
     export afpma.firecalc.dto.common.Address
-    export afpma.firecalc.dto.common.AddElement_13384
-    export afpma.firecalc.dto.common.AddElement_15544
+    export afpma.firecalc.dto.common.AddThermalPipeElement_13384
+    export afpma.firecalc.dto.common.AddFlowOnlyPipeElement_13384
+    export afpma.firecalc.dto.common.AddFlowOnlyPipeElement_15544
     export afpma.firecalc.dto.common.AirSpaceDetailed
     export afpma.firecalc.dto.common.AirSpaceDetailed.VentilDirection
     export afpma.firecalc.dto.common.AirSpaceDetailed.VentilOpenings
@@ -28,8 +29,9 @@ object all:
     export afpma.firecalc.dto.common.FacingType
 
     export afpma.firecalc.dto.common.FireCalc_Version
-    export afpma.firecalc.dto.common.IncrDescr_13384
-    export afpma.firecalc.dto.common.IncrDescr_15544
+    export afpma.firecalc.dto.common.ThermalPipeDescr_13384
+    export afpma.firecalc.dto.common.FlowOnlyPipeDescr_13384
+    export afpma.firecalc.dto.common.FlowOnlyPipeDescr_15544
     export afpma.firecalc.dto.common.InnerConstructionMaterial
     export afpma.firecalc.dto.common.LocalConditions
     export afpma.firecalc.dto.common.LocalConditions.ChimneyTermination
@@ -73,8 +75,9 @@ object all:
     export afpma.firecalc.dto.common.PipeShape.rectangle
     export afpma.firecalc.dto.common.HeatOutputReduced
     export afpma.firecalc.dto.common.ProjectDescr
-    export afpma.firecalc.dto.common.SetProp_13384
-    export afpma.firecalc.dto.common.SetProp_15544
+    export afpma.firecalc.dto.common.SetThermalPipeProp_13384
+    export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_13384
+    export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_15544
     export afpma.firecalc.dto.common.StandardOrComputationMethod
     export afpma.firecalc.dto.common.StoveParams
     export afpma.firecalc.dto.common.StoveParams.SizingMethod

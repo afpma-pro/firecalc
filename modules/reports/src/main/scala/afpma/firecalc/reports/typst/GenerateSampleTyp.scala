@@ -8,10 +8,10 @@ package afpma.firecalc.reports.typst
 import io.taig.babel.Locales
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
-import afpma.firecalc.engine.models.en15544.std.Inputs
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
-import afpma.firecalc.engine.models.Pipes_EN15544_Strict
+import afpma.firecalc.engine.models.Pipes_15544_Strict
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.LoadQty
 import io.taig.babel.Locale

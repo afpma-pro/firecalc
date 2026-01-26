@@ -6,21 +6,20 @@
 package afpma.firecalc.engine.impl.en13384
 
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.engine.models.en13384.pipedescr.StraightSection
+import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 
-class Pipes_EN13384_IncrementalBuilder extends AnyFreeSpec with Matchers with IncrementalHelper_EN13384 {
+class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with IncrementalHelper_13384 {
 
     import afpma.firecalc.dto.all.* 
     import afpma.firecalc.engine.models.*
     
     // import pipedescr.*
-    val builder = AirIntakePipe_Module.incremental
+    val builder = ChimneyPipe_Module.incremental
     import builder.*
-
-    val chimneyBuilder = ChimneyPipe_Module.incremental
 
     "pipes.en13384" - {
 
@@ -47,8 +46,6 @@ class Pipes_EN13384_IncrementalBuilder extends AnyFreeSpec with Matchers with In
                         builder.define(
                             innerShape(square(d0)),
                             roughness(2.mm),
-                            layer(e0, λ0),
-                            pipeLocation(PipeLocation.HeatedArea),
                             addSectionHorizontal("first", 2.meters)
                         )
                     
@@ -57,9 +54,9 @@ class Pipes_EN13384_IncrementalBuilder extends AnyFreeSpec with Matchers with In
                     val expected = PipeFullDescr(
                         elements = Vector(NamedPipeElDescr(
                             idx = PipeIdx(0),
-                            typ = AirIntakePipeT,
+                            typ = ChimneyPipeT,
                             name = "first",
-                            el = StraightSection(
+                            el = ThermalPipeDescr_13384.StraightSection(
                                 length = 2.meters,
                                 innerShape = PipeShape.Square(d0),
                                 outer_shape = PipeShape.Square(104.mm),
@@ -71,7 +68,7 @@ class Pipes_EN13384_IncrementalBuilder extends AnyFreeSpec with Matchers with In
                                 ductType = DuctType.NonConcentricDuctsHighThermalResistance,
                             )
                         )),
-                        pipeType = AirIntakePipeT
+                        pipeType = ChimneyPipeT
                     )
                     
                     vRepr.isValid.shouldBe(true)

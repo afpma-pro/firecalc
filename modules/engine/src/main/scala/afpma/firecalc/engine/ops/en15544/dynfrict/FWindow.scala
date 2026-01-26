@@ -10,14 +10,14 @@ import cats.data.Validated.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.pipedescr
-import afpma.firecalc.engine.models.en15544.pipedescr.*
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortOrRegularOps.given
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.*
-import afpma.firecalc.engine.ops.en15544.dynamicfrictioncoeff
+import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 
 private[dynfrict] opaque type SrcIdx = Int
 private[dynfrict] object SrcIdx:
@@ -93,7 +93,7 @@ private[dynfrict] final case class FWindow(
 
     def coeffs_level0_nm2_curr_np2: ValidatedNel[Err, (Option[ζ], ζ, Option[ζ])] = 
         val ζ_nm2_vo  = nm2.ζ_level_0
-        val ζ_curr_v = dynamicfrictioncoeff.whenRegularFor(curr.t)
+        val ζ_curr_v = FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor(curr.t)
         val ζ_np2_vo  = np2.ζ_level_0
 
         (ζ_nm2_vo, ζ_curr_v, ζ_np2_vo).mapN: (ζ_nm2, ζ_curr, ζ_np2) =>
@@ -175,7 +175,7 @@ private[dynfrict] final case class FWindow(
 
     extension (n_sdc: Option[Named[S_or_DC]])
         def ζ_level_0: ValidatedNel[Err, Option[ζ]] =
-            n_sdc.map(_.t).map(dynamicfrictioncoeff.whenRegularFor) match
+            n_sdc.map(_.t).map(FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor) match
                 case Some(Valid(c))       => Some(c).validNel
                 case Some(i @ Invalid(_)) => i
                 case None                 => None.validNel

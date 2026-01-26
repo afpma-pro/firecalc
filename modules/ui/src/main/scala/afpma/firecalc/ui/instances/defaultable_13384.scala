@@ -11,8 +11,8 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.formgen.Defaultable
 
 import afpma.firecalc.dto.all.*
-import AddElement_13384.*
-import SetProp_13384.*
+import AddThermalPipeElement_13384.*
+import SetThermalPipeProp_13384.*
 import afpma.firecalc.units.coulombutils.*
 import io.taig.babel.Locale
 

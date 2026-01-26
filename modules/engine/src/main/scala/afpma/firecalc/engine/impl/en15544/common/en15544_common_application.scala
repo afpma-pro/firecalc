@@ -26,7 +26,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.AllTermConstraints.*
 import afpma.firecalc.engine.models.LoadQty.withLoad
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.models.en13384.std.Inputs as en13384_Inputs // scalafix:ok
+import afpma.firecalc.engine.models.en13384.std.Inputs_13384_Alg
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en13384.typedefs
 import afpma.firecalc.engine.models.en13384.typedefs.*
@@ -37,7 +37,7 @@ import afpma.firecalc.engine.models.en15544.ConstraintSlots
 import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
-import afpma.firecalc.engine.ops.en13384.Pressures_EN13384.given
+import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.dto.all.*
@@ -64,10 +64,8 @@ object EN15544_V_2023_Common_Application:
     type VNel[X] = ValidatedNel[Error, X]
 
 
-abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
-    override val inputs: _Inputs
-)
-    extends en15544.EN15544_V_2023_Application_Alg[_Inputs]
+abstract class EN15544_V_2023_Common_Application 
+    extends en15544.EN15544_V_2023_Application_Alg
     with FireboxOps
 {
     en15544 =>
@@ -214,27 +212,20 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
 
     lazy val en13384_T_L_override: T_L_override
 
-    val en13384NationalAcceptedData =
+    val en13384_inputs_nationalAcceptedData =
         NationalAcceptedData(
             T_uo_override = inputs.en13384NationalAcceptedData.T_uo_override,
             T_L_override  = en13384_T_L_override
         )
     
-    lazy val en13384_p_L_override: Option[Pressure]
+    /** this value will override `p_L_override` in EN13384 */
+    lazy val en13384_p_L_override: Option[Pressure] = None
 
     // given HeatingAppliance.Efficiency    = en13384_heatingAppliance_efficiency
     given HeatingAppliance.FlueGas       = en13384_heatingAppliance_fluegas
     // given HeatingAppliance.Powers        = en13384_heatingAppliance_powers
     // given HeatingAppliance.Temperatures  = ??? // en13384_heatingAppliance_temperatures
     given HeatingAppliance.MassFlows     = en13384_heatingAppliance_massFlows
-
-    override lazy val en13384_inputs = en13384_Inputs(
-        pipes                   = inputs.pipes,
-        nationalAcceptedData    = en13384NationalAcceptedData,
-        fuelType                = FuelType.WoodLog30pHumidity,
-        localConditions         = inputs.localConditions,
-        flueGasCondition        = inputs.flueGasCondition,
-    )
 
     // TOFIX : multiple imports & instances of en13384 definitions
 
@@ -676,7 +667,7 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
         val checks = 
             inputs.pipes.flue.elems.map: namedEl =>
                 namedEl.el match
-                    case el: afpma.firecalc.engine.models.en15544.pipedescr.StraightSection =>
+                    case el: afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.StraightSection =>
                         el.geometry match
                             case rect @ PipeShape.Rectangle(_, _) =>
                                 val (rmin, rmax) = (1.0, 4.0)
@@ -1005,7 +996,7 @@ abstract class EN15544_V_2023_Common_Application[_Inputs <: Inputs[?]](
         ).mapN_andThen_impl:
             en13384_application.pressureRequirements
 
-    override def temperatureRequirements_EN13384: WithParams_13384[VNelMcalcErr[TemperatureRequirements_EN13384]] =
+    override def temperatureRequirements_EN13384: WithParams_13384[VNelMcalcErr[TemperatureRequirements_13384]] =
         (
             en13384_heatingAppliance_powers,
             en13384_heatingAppliance_temperatures,

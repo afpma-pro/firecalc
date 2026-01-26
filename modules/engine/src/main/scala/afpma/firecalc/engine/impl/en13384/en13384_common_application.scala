@@ -10,6 +10,8 @@ import cats.syntax.all.*
 
 import algebra.instances.all.given
 
+import afpma.firecalc.dto.common.DuctType
+
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.models.*
@@ -36,7 +38,7 @@ object EN13384_1_A1_2019_Common_Application:
 
 abstract class EN13384_1_A1_2019_Common_Application(
     val formulas: EN13384_1_A1_2019_Formulas_Alg,
-    val inputs: Inputs,
+    
 ) extends EN13384_1_A1_2019_Application_Alg:
     en13384 =>
     
@@ -45,7 +47,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
 
     given given_en13384: EN13384_1_A1_2019_Application_Alg = en13384
 
-    lazy val computeAt: ComputeAt
+    lazy val computeAt: ComputeAt = ComputeAt.Mean
 
     def heatingAppliance_final(using ha_input: HeatingAppliance) = 
         // volume flows can only be computed using ha_input (efficiency, and other sub values)
@@ -83,29 +85,26 @@ abstract class EN13384_1_A1_2019_Common_Application(
             z   = inputs.localConditions.altitude
         )
 
-    override def airIntake_PipeResult = 
+    override def airIntake_PipeResult_withoutVentilationOpenings = 
         val t_comb_air = 
             given Locale = Locales.en
             T_mB.getOrThrow
+        PipeResult.useless(
+            pt                          = AirIntakePipeT,
+            pu                          = P_B_without_ventilation_openings,
+            gas_temp                    = t_comb_air,
+        ).asRight
+
+    override def airIntake_PipeResult = 
+        // import AirIntakePipe_Module.tt_FullDescr
+        // import AirIntakePipe_Module.tt_apNoVentilationOpenings
         inputs.pipes.airIntake match
-            case AirIntakePipe_Module.NoVentilationOpenings =>
-                PipeResult.useless(
-                    pt                          = AirIntakePipeT,
-                    pu                          = P_B_without_ventilation_openings,
-                    gas_temp                    = t_comb_air,
-                ).asRight
-            case fd: AirIntakePipe_Module.FullDescr =>
-                ops_en13384.MecaFlu_EN13384.makePipeResult(
-                    fd                          = AirIntakePipe_Module.unwrap(fd),
-                    hafg                        = HeatingAppliance.FlueGas.summon,
-                    hamf                        = HeatingAppliance.MassFlows.summon,
-                    hapwr                       = HeatingAppliance.Powers.summon,
-                    haeff                       = HeatingAppliance.Efficiency.summon,
-                    temp_start                  = T_L,
-                    last_pipe_density           = None,
-                    last_pipe_velocity          = None,
-                    gas                         = CombustionAir,
-                )
+            case _: AirIntakePipe_Module.NoVentilationOpenings => airIntake_PipeResult_withoutVentilationOpenings
+            case fd: AirIntakePipe_Module.FullDescr            => airIntake_PipeResult_withVentilationOpenings(fd)
+            case _ => throw new Exception("DEV ERROR: unproper match on inputs.pipes.airIntake")
+
+    lazy val last_known_density_before_connector_pipe     : WithParams_13384[Option[Density]]         = None
+    lazy val last_known_velocity_before_connector_pipe    : WithParams_13384[Option[FlowVelocity]]    = None
 
     override def connector_PipeResult = 
         val tw = LoadQty.summon match
@@ -114,7 +113,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
         inputs.pipes.connector match
             case ConnectorPipe_Module.Without  => PipeResult.useless(ConnectorPipeT, tw).asRight
             case fd: ConnectorPipe_Module.FullDescr =>
-                ops_en13384.MecaFlu_EN13384.makePipeResult(
+                ops_en13384.ThermalMecaFlu_13384.makePipeResult(
                     fd                          = ConnectorPipe_Module.unwrap(fd),
                     hafg                        = HeatingAppliance.FlueGas.summon,
                     hamf                        = HeatingAppliance.MassFlows.summon,
@@ -140,7 +139,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
                     case _: ConnectorPipe_Module.FullDescr => computeAt match
                         case ComputeAt.Mean         => cp.last_velocity_mean
                         case ComputeAt.Middle       => cp.last_velocity_middle
-            ops_en13384.MecaFlu_EN13384.makePipeResult(
+            ops_en13384.ThermalMecaFlu_13384.makePipeResult(
                 fd                          = ChimneyPipe_Module.unwrap(inputs.pipes.chimney),
                 hafg                        = HeatingAppliance.FlueGas.summon,
                 hamf                        = HeatingAppliance.MassFlows.summon,
@@ -190,7 +189,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
     // Pressure Requirements
 
     override def pressureRequirements =
-        import afpma.firecalc.engine.ops.en13384.Pressures_EN13384.given
+        import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
         val lq = LoadQty.summon
 
         def _px_tuple(using DraftCondition) =
@@ -398,14 +397,14 @@ abstract class EN13384_1_A1_2019_Common_Application(
         import DraftCondition.givens.given_draftMax
         inputs.flueGasCondition match
             case dry: FlueGasCondition.Dry_NonCondensing => 
-                TemperatureRequirements_EN13384.forDryOperatingConditions(
+                TemperatureRequirements_13384.forDryOperatingConditions(
                     tob     = t_chimney_out,
                     tig     = T_ig,
                     tiob    = t_chimney_wall_top,
                     tsp     = T_sp,
                 )(using LoadQty.summon, dry)
             case wet: FlueGasCondition.Wet_Condensing =>
-                TemperatureRequirements_EN13384.forWetOperatingConditions(
+                TemperatureRequirements_13384.forWetOperatingConditions(
                     tob     = t_chimney_out,
                     tig     = T_ig,
                     tiob    = t_chimney_wall_top,
@@ -630,7 +629,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
     /** pression de l'air extérieur */
 
     /** override this if you need to pass empirical value of p_L, instead of the calculated one according to the standard */
-    lazy val p_L_override: Option[Pressure]
+    lazy val p_L_override: Option[Pressure] = None
 
     final def p_L: EpOp[Pressure] = 
         p_L_override.getOrElse:
@@ -788,9 +787,9 @@ abstract class EN13384_1_A1_2019_Common_Application(
     // Températures moyennes pour le calcul de pression
 
     /** température moyenne de l'air de combustion sur la longueur du conduit d'air comburant, en K */
-    def T_mB: EpOp[VNel[T_mB]] =
-        import AirIntakePipe_Module.*
-        formulas.T_mB_calc(inputs.pipes.airIntake.ductType, T_L).withSectionTyp(AirIntakePipeT)
+    def T_mB =
+        val dt = DuctType.NonConcentricDuctsHighThermalResistance // other duct type not implemented yet
+        formulas.T_mB_calc(dt, T_L).withSectionTyp(AirIntakePipeT)
 
     // Tableau B.1
 

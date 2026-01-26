@@ -33,7 +33,7 @@ import io.taig.babel.Languages
 
 object CasType_13384_C16 
     extends v2024_10_Alg 
-    with v0_2024_10.StoveProjectDescr_EN13384_Strict_Alg:
+    with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg:
 
     val language = Languages.Fr
     
@@ -127,7 +127,7 @@ object CasType_13384_C16
         import AirIntakePipe_Module.*
         define(
             pipeLocation(PipeLocation.HeatedArea), // to check
-            
+
             roughness(5.mm), // ConduitFlexibleInox = 5mm
 
             addFlowResistance("grille (ζ = 1.7)", zeta = 1.7.unitless, hydraulic_diameter = 50.mm), // ajouté dans QC2 (cf hypothese général entrée d'air avec zeta = 1.7)

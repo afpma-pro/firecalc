@@ -13,12 +13,17 @@ import afpma.firecalc.engine.alg.en13384.WithLoadQty
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
+import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
+import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
+import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
@@ -38,23 +43,26 @@ import cats.data.Validated
 import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.engine.standard.EN13384_ErrorMessage
 import afpma.firecalc.engine.standard.UnexpectedDevError
+import afpma.firecalc.engine.ops.en13384 as ops_en13384
+import afpma.firecalc.engine.alg.en13384.WithParams_13384
 
 object EN15544_Strict_Application:
     def make(
         f: EN15544_V_2023_Formulas_Alg,
     )(
-        i: models.en15544.std.Inputs_EN15544_Strict,
-    ): EN15544_Strict_Application = new EN15544_Strict_Application(f)(i)
+        i: Inputs_15544_Strict,
+    ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
+        override lazy val inputs: Inputs_15544 = i
 
-sealed class EN15544_Strict_Application(
+    }
+
+sealed abstract class EN15544_Strict_Application(
     override val formulas: EN15544_V_2023_Formulas_Alg,
-)(
-    override val inputs: models.en15544.std.Inputs_EN15544_Strict
 ) 
-    extends impl.en15544.common.EN15544_V_2023_Common_Application[Inputs_EN15544_Strict](inputs)
+    extends impl.en15544.common.EN15544_V_2023_Common_Application
+    with HasTypeMembers_15544_Strict
 {
     en15544 =>
-
 
     override val doc: Document = Document(
         name = "15544:2023-02",
@@ -64,6 +72,17 @@ sealed class EN15544_Strict_Application(
         status = "Approved",
         author = "AFNOR"
     )
+
+    override lazy val en13384_inputs = Inputs_13384_WithFlowOnlyAirIntake(
+        en13384_inputs_pipes,
+        en13384_inputs_nationalAcceptedData,
+        en13384_inputs_fuelType,
+        inputs.localConditions,
+        en13384_inputs_flueGasCondition
+    )
+
+    override def en13384_inputs_pipes: Pipes_13384 = 
+        (inputs.pipes: Pipes_13384_WithFlowOnlyAirIntake)
 
     // algebra as given
     lazy val en13384_formulas: EN13384_1_A1_2019_Formulas = new EN13384_1_A1_2019_Formulas:
@@ -121,7 +140,6 @@ sealed class EN15544_Strict_Application(
         )
 
     override final lazy val en13384_T_L_override = en13384_T_L_override_default
-    override final lazy val en13384_p_L_override = None
 
     def fluegas_σ_CO2_dry: WithLoadQty[Option[σ_CO2]] = 
         val ei: Either[IllegalStateException, Option["OK"]] = inputs.design.firebox match
@@ -142,10 +160,28 @@ sealed class EN15544_Strict_Application(
 
     val wood_σ_H2O: σ_H2O = formulas.wood_σ_H2O_calc
 
-    lazy val en13384_application = new EN13384_For15544_Application(
-        formulas = en13384_formulas,
-        inputs   = en13384_inputs
+    lazy val en13384_application = new EN13384_For_15544_Application(
+        formulas = en13384_formulas
     ):
+        self =>
+        
+        override lazy val inputs = en13384_inputs
+
+        override def airIntake_PipeResult_withVentilationOpenings(fd: AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] = 
+            ops_en13384.FlowOnlyMecaFlu_13384.makePipeResult(
+                fd                          = 
+                    FlowOnlyAirIntakePipe_Module_13384.unwrap(fd),
+                    // self.inputs.pipes.AirIntakePipe_Module.unwrap(fd),
+                    // fd.unwrap,
+                hafg                        = HeatingAppliance.FlueGas.summon,
+                hamf                        = HeatingAppliance.MassFlows.summon,
+                hapwr                       = HeatingAppliance.Powers.summon,
+                haeff                       = HeatingAppliance.Efficiency.summon,
+                temp_start                  = T_L,
+                last_pipe_velocity          = None,
+                gas                         = CombustionAir,
+            )
+
         final override lazy val computeAt = ComputeAt.Middle
         final override lazy val p_L_override = en13384_p_L_override
         // overrides
@@ -205,11 +241,12 @@ sealed class EN15544_Strict_Application(
     
         // override lazy val last_known_velocity_before_connector_pipe = 
         //     flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_middle)
+    end en13384_application
 
     def combustionAir_PipeResult =
         airIntake_PipeResult.andThen: _ =>
-            ops_en15544.MecaFlu_EN15544_Strict.makePipeResult(
-                fd                  = CombustionAirPipe_Module_EN15544.unwrap(inputs.pipes.combustionAir),
+            ops_en15544.FlowOnlyMecaFlu_15544.makePipeResult(
+                fd                  = CombustionAirPipe_Module_15544.unwrap(inputs.pipes.combustionAir),
                 gas                 = CombustionAir,
                 loadQty             = LoadQty.summon,
                 z_geodetical_height = z_geodetical_height,
@@ -217,8 +254,8 @@ sealed class EN15544_Strict_Application(
             )(using en15544).toValidatedNel
 
     def firebox_PipeResult = 
-        ops_en15544.MecaFlu_EN15544_Strict.makePipeResult(
-            fd                  = FireboxPipe_Module_EN15544.unwrap(inputs.pipes.firebox),
+        ops_en15544.FlowOnlyMecaFlu_15544.makePipeResult(
+            fd                  = FireboxPipe_Module_15544.unwrap(inputs.pipes.firebox),
             gas                 = FlueGas,
             loadQty             = LoadQty.summon,
             z_geodetical_height = z_geodetical_height,
@@ -233,8 +270,8 @@ sealed class EN15544_Strict_Application(
     //         .fold(e => throw new Exception(e.msg), identity)
 
     def flue_PipeResult = 
-        ops_en15544.MecaFlu_EN15544_Strict.makePipeResult(
-            fd                  = FluePipe_Module_EN15544.unwrap(inputs.pipes.flue),
+        ops_en15544.FlowOnlyMecaFlu_15544.makePipeResult(
+            fd                  = FluePipe_Module_15544.unwrap(inputs.pipes.flue),
             gas                 = FlueGas,
             loadQty             = LoadQty.summon,
             z_geodetical_height = z_geodetical_height,

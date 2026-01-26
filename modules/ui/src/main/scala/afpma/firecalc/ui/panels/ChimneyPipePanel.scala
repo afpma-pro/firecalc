@@ -21,7 +21,7 @@ import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import io.taig.babel.Locale
 
-final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384:
+final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384_Thermal:
 
     type Out = ChimneyPipe
     type PT = ChimneyPipeT
@@ -47,7 +47,7 @@ final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePane
         )
     
 
-    lazy val elems_v: Var[Seq[IncrDescr_13384]] = chimney_pipe_incrdescr_var
+    lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] = chimney_pipe_incrdescr_var
 
     type PipeIdsMapping = afpma.firecalc.engine.models.ChimneyPipe_Module.IdsMapping
 

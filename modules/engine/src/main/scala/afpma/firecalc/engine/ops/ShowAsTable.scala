@@ -72,9 +72,9 @@ class ShowAsTableInstances(using Locale):
                     "n.a."
                     // if (x.ns >= lreg_min_seasonal_eff) "OK" else "NOT OK"
                 case None               => ""
-            (_I.min_efficiency_full_stove_nominal   :: s">= ${x.n_nominal.showP}"                                 :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_nominal  :: Nil) ::
+            (_I.min_efficiency_full_stove_nominal   :: s">= ${x.n_nominal.toOption.showOrElse("ERR")}" :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_nominal  :: Nil) ::
             (_I.min_efficiency_full_stove_reduced   :: s">= ${x.n_lowest.map(_.showOrElse("")).getOrElse("ERR")}" :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_lowest   :: Nil) ::
-            (I18N.en16510.η_s                       :: s">= ${x.ns.showP}"                                        :: lreg.min_seasonal_efficiency .map(x => s">= ${x.showP}").getOrElse("") :: status_min_seasonal_eff_fs :: Nil) ::
+            (I18N.en16510.η_s                       :: s">= ${x.ns       .toOption.showOrElse("ERR")}" :: lreg.min_seasonal_efficiency .map(x => s">= ${x.showP}").getOrElse("") :: status_min_seasonal_eff_fs :: Nil) ::
             // (I18N.heating_appliance.efficiency   :: "η"      :: x.n.show :: Nil) ::
             // (I18N.en16510.η_s                    :: "η_s"    :: x.ns.show   :: Nil) ::
             Nil

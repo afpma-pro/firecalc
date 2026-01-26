@@ -98,19 +98,21 @@ object Preview:
             sectionName         = section_name,
             sectionDefinition   = descr.toString,
             dhi                 = descr match
-                case el: afpma.firecalc.engine.models.en13384.pipedescr.StraightSection => 
+                case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection => 
+                    el.innerShape.dh.some
+                case el: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.StraightSection => 
                     el.innerShape.dh.some
                 case _ => None
             ,
             dhe                 = descr match
-                case el: afpma.firecalc.engine.models.en13384.pipedescr.StraightSection => 
+                case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection => 
                     el.outer_shape.dh.some
                 case _ => None
             ,
             asd                 = psr.air_space_detailed,
             tamb                = psr.temperature_amb,
             lambda              = descr match
-                case el: afpma.firecalc.engine.models.en13384.pipedescr.StraightSection => 
+                case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection => 
                     el.layers match
                         case Nil => None
                         case h :: Nil => h match
@@ -121,7 +123,7 @@ object Preview:
                 case _ => None
             ,
             thermalResistance   = descr match
-                case el: afpma.firecalc.engine.models.en13384.pipedescr.StraightSection => 
+                case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection => 
                     el.layers match
                         case Nil => None
                         case h :: Nil => h match
@@ -150,18 +152,20 @@ object Preview:
             vChangeFriction     = pRg,
             standingPressure    = ph,
             length              = section_length.some,
-            elev_gain               = descr match
-                case el: afpma.firecalc.engine.models.en13384.pipedescr.StraightSection => el.elevation_gain.some
-                case el: afpma.firecalc.engine.models.en15544.pipedescr.StraightSection => el.elevation_gain.some
+            elev_gain           = descr match
+                case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection  => el.elevation_gain.some
+                case el: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.StraightSection => el.elevation_gain.some
+                case el: afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.StraightSection => el.elevation_gain.some
                 case _ => None,
             angle               = descr match
-                case el: afpma.firecalc.engine.models.en13384.pipedescr.DirectionChange => el.angleN1.some
-                case el: afpma.firecalc.engine.models.en15544.pipedescr.DirectionChange => el.angleN1.some
+                case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.DirectionChange  => el.angleN1.some
+                case el: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.DirectionChange => el.angleN1.some
+                case el: afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange => el.angleN1.some
                 case _ => None,
             innerShape           = psr.innerShape_middle.some,
-            pipeLoc             = descr match
-                case el: afpma.firecalc.engine.models.en13384.pipedescr.StraightSection => el.pipeLoc.some
-                case _: afpma.firecalc.engine.models.en15544.pipedescr.PipeElDescr => PipeLocation.BoilerRoom.some
+            pipeLoc              = descr match
+                case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection => el.pipeLoc.some
+                case _: afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.PipeElDescr     => PipeLocation.BoilerRoom.some
                 case _ => None
         )
 
@@ -198,9 +202,9 @@ object Preview:
             vChangeFriction     = pRg,
             standingPressure    = ph,
             length              = None,
-            elev_gain               = None,
+            elev_gain           = None,
             angle               = None,
-            innerShape           = None,
+            innerShape          = None,
             pipeLoc             = None,
         )
 
@@ -265,8 +269,8 @@ object Preview:
                 sectionId,
                 sectionName,
                 length              .fold("-")(l => if (l == 0.cm) "-" else l.showP),
-                innerShape           .map(_.show).getOrElse("-"),
-                elev_gain               .map(h => if (h == 0.cm) "-" else h.showP).getOrElse("-"),
+                innerShape          .map(_.show).getOrElse("-"),
+                elev_gain           .map(h => if (h == 0.cm) "-" else h.showP).getOrElse("-"),
                 angle               .map(a => if (a == 0.degrees) "-" else a.showP).getOrElse("-"),
                 // sectionDefinition,
                 // dhi                 .map(_.show).getOrElse("-"),

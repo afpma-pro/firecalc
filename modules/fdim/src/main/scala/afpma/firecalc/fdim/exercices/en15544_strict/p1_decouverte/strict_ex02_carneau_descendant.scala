@@ -17,7 +17,7 @@ import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.Traditional
 import afpma.firecalc.engine.api.v0_2024_10
 
 object strict_ex02_carneau_descendant 
-    extends v0_2024_10.SimpleStoveProjectDescrFr_EN15544_Strict_Alg
+    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
     with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
     self =>
 
@@ -52,8 +52,8 @@ object strict_ex02_carneau_descendant
     )
 
     val fluePipe = 
-        import FluePipe_Module_EN15544.*
-        FluePipe_Module_EN15544
+        import FluePipe_Module_15544.*
+        FluePipe_Module_15544
         .incremental
         .define(
             roughness(3.mm),

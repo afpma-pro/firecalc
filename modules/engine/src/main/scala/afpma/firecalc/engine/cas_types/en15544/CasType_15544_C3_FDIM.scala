@@ -21,7 +21,7 @@ import io.taig.babel.Languages
 object CasPratique_15544_FDIM_EX_03
     extends v2024_10_Alg
     with v0_2024_10.Firebox_15544_Strict_OneOff_Alg
-    with v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg:
+    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
     self =>
 
     import std.*
@@ -56,14 +56,8 @@ object CasPratique_15544_FDIM_EX_03
             addFlowResistance("1. grille", 1.23.unitless: ζ, hydraulic_diameter = 154.mm),
 
             material(Material_13384.WeldedSteel),
-            pipeLocation(PipeLocation.UnheatedInside),
 
             innerShape(circle(154.mm)),
-
-            layer(
-                e = 2.mm, // ???
-                tr = SquareMeterKelvinPerWatt(0.0) // ???
-            ), 
 
             addSectionHorizontal("Car. 2", 253.cm),
             addSharpAngle_90deg_unsafe("vers remontée"),
@@ -99,7 +93,7 @@ object CasPratique_15544_FDIM_EX_03
     val firebox = foyer_descr
 
     val accumulateur_descr = 
-        import FluePipe_Module_EN15544.*
+        import FluePipe_Module_15544.*
         Seq(
             roughness(3.mm),
 
@@ -147,7 +141,7 @@ object CasPratique_15544_FDIM_EX_03
         )
 
     val fluePipe = 
-        import FluePipe_Module_EN15544.*
+        import FluePipe_Module_15544.*
         define(accumulateur_descr*).toFullDescr().extractPipe
 
     val conduit_raccordement_descr =

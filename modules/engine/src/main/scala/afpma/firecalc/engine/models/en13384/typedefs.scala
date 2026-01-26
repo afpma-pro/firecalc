@@ -38,7 +38,7 @@ object typedefs:
       * @param tiob inner wall temperature at the chimney outlet at temperature equilibrium
       * @param tsp condensing temperature (see 5.7.6)
       */
-    case class TemperatureRequirements_EN13384 private (
+    case class TemperatureRequirements_13384 private (
         atLoadQty: LoadQty,
         tob: TCelsius,
         tig: TCelsius,
@@ -46,10 +46,10 @@ object typedefs:
         tsp: Option[TCelsius],
     )
 
-    object TemperatureRequirements_EN13384:
+    object TemperatureRequirements_13384:
 
         /**
-          * Constructor method for TemperatureRequirements_EN13384 when operating under *dry* conditions
+          * Constructor method for TemperatureRequirements_13384 when operating under *dry* conditions
           *
           * @param tob temperature at the chimney outlet, in °C
           * @param tig temperature limit of the flue gas
@@ -58,7 +58,7 @@ object typedefs:
           * @return
           */
         def forDryOperatingConditions(tob: TCelsius, tig: TCelsius, tiob: TCelsius, tsp: TCelsius)(using lq: LoadQty, flueGasCond: FlueGasCondition.Dry_NonCondensing.type) =
-            TemperatureRequirements_EN13384(
+            TemperatureRequirements_13384(
                 atLoadQty   = lq,
                 tob         = tob,
                 tig         = tig,
@@ -67,7 +67,7 @@ object typedefs:
             )
 
         /**
-         * Constructor method for TemperatureRequirements_EN13384 when operating under *wet* conditions
+         * Constructor method for TemperatureRequirements_13384 when operating under *wet* conditions
          *
          * @param tob temperature at the chimney outlet, in °C
          * @param tig temperature limit of the flue gas
@@ -76,7 +76,7 @@ object typedefs:
          * @return
          */
         def forWetOperatingConditions(tob: TCelsius, tig: TCelsius, tiob: TCelsius, tsp: TCelsius)(using lq: LoadQty, flueGasCond: FlueGasCondition.Wet_Condensing.type) =
-            TemperatureRequirements_EN13384(
+            TemperatureRequirements_13384(
                 atLoadQty   = lq,
                 tob         = tob,
                 tig         = tig,

@@ -4,66 +4,51 @@
  */
 
 package afpma.firecalc.engine.models
+
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.impl.en13384.*
+import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_Alg
+import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_WithThermalAirIntake
+import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_Alg
+import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_Strict
+import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_MCE
+import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_WithFlowOnlyAirIntake
 
-sealed trait Pipes_EN13384_Alg:
-    val airIntake: AirIntakePipe
+sealed trait Pipes_13384_Alg extends HasPipeModules_13384_Alg:  
+    val airIntake: AirIntakePipe_Module.PipeCanBe
     val connector: ConnectorPipe
     val chimney: ChimneyPipe
 
-case class Pipes_EN13384(
-    val airIntake: AirIntakePipe,
-    val connector: ConnectorPipe,
-    val chimney: ChimneyPipe
-) extends Pipes_EN13384_Alg
+trait Pipes_13384_WithFlowOnlyAirIntake extends Pipes_13384_Alg with HasPipeModules_13384_WithFlowOnlyAirIntake
 
-sealed trait Pipes_EN15544_Alg extends Pipes_EN13384_Alg:
-    type CombustionAirPipe_Module_T <: CombustionAirPipe_Module_Generic[DraftCondition]
-    type FireboxPipe_Module_T            <: FireboxPipe_Module_Generic[DraftCondition]
-    type FluePipe_Module_T                         <: FluePipe_Module_Generic[DraftCondition]
-    
-    val CombustionAirPipe_Module: CombustionAirPipe_Module_T
-    val FireboxPipe_Module: FireboxPipe_Module_T
-    val FluePipe_Module: FluePipe_Module_T
+trait Pipes_13384_WithThermalAirIntake extends Pipes_13384_Alg with HasPipeModules_13384_WithThermalAirIntake
 
+sealed trait Pipes_15544_Alg extends Pipes_13384_Alg with HasPipeModules_15544Only_Alg:
     val combustionAir: CombustionAirPipe_Module.FullDescr
     val firebox: FireboxPipe_Module.FullDescr
     val flue: FluePipe_Module.FullDescr
 
-object Pipes_EN15544_Alg:
-    given Conversion[Pipes_EN15544_Alg, Pipes_EN13384] = p =>
-        Pipes_EN13384(p.airIntake, p.connector, p.chimney)
+// object Pipes_15544_Alg:
+//     given conv: Conversion[Pipes_15544_Alg, Pipes_13384_Alg] = 
+//         case s: Pipes_15544_Strict => s: Pipes_13384_For_EN15544_Strict
+//         case mce: Pipes_15544_MCE  => mce: Pipes_13384_For_EN15544_MCE
 
-case class Pipes_EN15544_Strict(
-    val airIntake: AirIntakePipe,
-    val combustionAir: CombustionAirPipe_Module_EN15544.FullDescr,
-    val firebox: FireboxPipe_Module_EN15544.FullDescr,
-    val flue: FluePipe_Module_EN15544.FullDescr,
+case class Pipes_15544_Strict(
+    val airIntake: FlowOnlyAirIntakePipe_13384,
+    val combustionAir: CombustionAirPipe_Module_15544.FullDescr,
+    val firebox: FireboxPipe_Module_15544.FullDescr,
+    val flue: FluePipe_Module_15544.FullDescr,
     val connector: ConnectorPipe,
     val chimney: ChimneyPipe
-) extends Pipes_EN15544_Alg:
+) extends Pipes_15544_Alg with HasPipeModules_15544Only_Strict with Pipes_13384_WithFlowOnlyAirIntake
 
-    type CombustionAirPipe_Module_T = CombustionAirPipe_Module_EN15544.type
-    type FireboxPipe_Module_T            = FireboxPipe_Module_EN15544.type
-    type FluePipe_Module_T                         = FluePipe_Module_EN15544.type
-
-    val CombustionAirPipe_Module = CombustionAirPipe_Module_EN15544
-    val FireboxPipe_Module            = FireboxPipe_Module_EN15544
-    val FluePipe_Module                         = FluePipe_Module_EN15544
-
-case class Pipes_EN15544_MCE(
-    val airIntake: AirIntakePipe,
-    val combustionAir: CombustionAirPipe_Module_EN13384.FullDescr,
-    val firebox: FireboxPipe_Module_EN13384.FullDescr,
-    val flue: FluePipe_Module_EN13384.FullDescr,
+case class Pipes_15544_MCE(
+    val airIntake: ThermalAirIntakePipe_13384,
+    val combustionAir: CombustionAirPipe_Module_13384.FullDescr,
+    val firebox: FireboxPipe_Module_13384.FullDescr,
+    val flue: FluePipe_Module_13384.FullDescr,
     val connector: ConnectorPipe,
     val chimney: ChimneyPipe
-) extends Pipes_EN15544_Alg:
-    type CombustionAirPipe_Module_T = CombustionAirPipe_Module_EN13384.type
-    type FireboxPipe_Module_T            = FireboxPipe_Module_EN13384.type
-    type FluePipe_Module_T                         = FluePipe_Module_EN13384.type
-
-    val CombustionAirPipe_Module = CombustionAirPipe_Module_EN13384
-    val FireboxPipe_Module            = FireboxPipe_Module_EN13384
-    val FluePipe_Module                         = FluePipe_Module_EN13384
+) extends Pipes_15544_Alg with HasPipeModules_15544Only_MCE with Pipes_13384_WithThermalAirIntake

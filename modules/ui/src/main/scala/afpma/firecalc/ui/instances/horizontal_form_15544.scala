@@ -8,8 +8,8 @@ import scala.annotation.nowarn
 import scala.deriving.Mirror
 
 import afpma.firecalc.dto.all.*
-import AddElement_15544.*
-import SetProp_15544.*
+import AddFlowOnlyPipeElement_15544.*
+import SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.implicits.I18N

@@ -9,7 +9,7 @@ import cats.data.*
 
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.ops.en13384.PipeWithGasFlowOpsUsingEN13384
+import afpma.firecalc.engine.ops.en13384.PipeWithGasFlowOps_13384
 
 import afpma.firecalc.units.coulombutils.*
 
@@ -53,4 +53,4 @@ object PipeWithGasFlowOps:
 
     def mkforEN13384(
         en13384: EN13384_1_A1_2019_Formulas_Alg,
-    ): PipeWithGasFlowOps[Error] = new PipeWithGasFlowOpsUsingEN13384(using en13384) {}
+    ): PipeWithGasFlowOps[Error] = new PipeWithGasFlowOps_13384(using en13384) {}

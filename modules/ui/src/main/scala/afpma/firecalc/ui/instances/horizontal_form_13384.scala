@@ -17,8 +17,6 @@ import afpma.firecalc.ui.daisyui.DaisyUIHorizontalForm.autoOverwriteFieldNames
 import afpma.firecalc.ui.formgen.*
 
 import afpma.firecalc.dto.all.*
-import AddElement_13384.*
-import SetProp_13384.*
 import afpma.firecalc.dto.common.NbOfFlows
 import afpma.firecalc.units.coulombutils.*
 
@@ -29,6 +27,9 @@ import io.taig.babel.Locale
 
 
 object horizontal_form_13384:
+
+    import AddThermalPipeElement_13384.*
+    import SetThermalPipeProp_13384.*
 
     type CtxDF[A] = DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[A]
     type LocDF[A] = Locale ?=> DaisyUIHorizontalForm[A]

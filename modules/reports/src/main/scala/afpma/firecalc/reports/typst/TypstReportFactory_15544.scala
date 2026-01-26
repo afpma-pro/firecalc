@@ -6,11 +6,11 @@
 package afpma.firecalc.reports.typst
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
-import afpma.firecalc.engine.models.en15544.std.Inputs
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
 import afpma.firecalc.engine.api.v0_2024_10
-import afpma.firecalc.engine.models.Pipes_EN15544_Alg
-import afpma.firecalc.engine.models.Pipes_EN15544_Strict
-import afpma.firecalc.engine.models.Pipes_EN15544_MCE
+import afpma.firecalc.engine.models.Pipes_15544_Alg
+import afpma.firecalc.engine.models.Pipes_15544_Strict
+import afpma.firecalc.engine.models.Pipes_15544_MCE
 import io.taig.babel.Locale
 import afpma.firecalc.dto.common.ProjectDescr
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
@@ -25,18 +25,33 @@ import io.taig.babel.Languages
 import io.taig.babel.Locales
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.utils.BuildInfo
+import afpma.firecalc.engine.models.AirIntakePipe_Module_Generic
+import afpma.firecalc.engine.models.CombustionAirPipe_Module_Generic
+import afpma.firecalc.engine.models.FireboxPipe_Module_Generic
+import afpma.firecalc.engine.models.FluePipe_Module_Generic
+import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
 
-trait TypstReportFactory_15544[
-    Pipes <: Pipes_EN15544_Strict | Pipes_EN15544_MCE
-](
-    val en15544_app: EN15544_V_2023_Application_Alg[Inputs[Pipes]],
+abstract class TypstReportFactory_15544(
     val isDraft: Boolean
-)(using Locale):
+)(using Locale)
+    extends HasTypeMembers_15544_Alg:
+    self =>
+
+    type EN15544_Application <: EN15544_V_2023_Application_Alg {
+        type AirIntakePipe_Module_T     = self.AirIntakePipe_Module_T
+        type CombustionAirPipe_Module_T = self.CombustionAirPipe_Module_T
+        type FireboxPipe_Module_T       = self.FireboxPipe_Module_T
+        type FluePipe_Module_T          = self.FluePipe_Module_T
+        type Pipes_15544 = self.Pipes_15544
+    }
+
+    val en15544_app: EN15544_Application
 
     val showAsTable_15544_instances =
-        new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances()
+        new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544()
     val showAsTable_13384_instances =
-        new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances()
+        new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384()
     val showAsTable_instances       =
         new afpma.firecalc.engine.ops.ShowAsTableInstances()
 
@@ -44,7 +59,7 @@ trait TypstReportFactory_15544[
     import showAsTable_13384_instances.given
     import showAsTable_instances.given
 
-    val stove_proj_15544_strict: v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+    val stove_proj_15544_strict: v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 
     // TODO: remove me => report should now when to use which draft and load condition
     given params: en15544_app.Params_15544

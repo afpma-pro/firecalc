@@ -129,11 +129,11 @@ final case class FireCalcYAML_V1(
     project_description: ProjectDescr,  // reference, date, country only
     local_conditions: LocalConditions,
     stove_params: StoveParams,
-    air_intake_descr: Seq[IncrDescr_13384],
+    air_intake_descr: Seq[ThermalPipeDescr_13384],
     firebox: Firebox,
-    flue_pipe_descr: Seq[IncrDescr_15544],
-    connector_pipe_descr: Seq[IncrDescr_13384],
-    chimney_pipe_descr: Seq[IncrDescr_13384],
+    flue_pipe_descr: Seq[FlowOnlyPipeDescr_15544],
+    connector_pipe_descr: Seq[ThermalPipeDescr_13384],
+    chimney_pipe_descr: Seq[ThermalPipeDescr_13384],
 )
 ```
 

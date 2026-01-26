@@ -15,7 +15,7 @@ import org.scalatest.matchers.should.*
 import afpma.firecalc.engine.models.*
 
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.en15544.std.Inputs
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import algebra.instances.all.given
@@ -29,9 +29,9 @@ import coulomb.ops.algebra.all.{*, given}
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_Alg
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_MCE_Alg
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Labo_Alg
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_MCE_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Labo_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import io.taig.babel.Locale
 import io.taig.babel.Locales
 
@@ -39,15 +39,18 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
 
     given Locale = Locales.en // acceptable to force Locale in tests
 
-    private def showForMCEComparisonWithLabData[_Inputs <: Inputs[?]](ex: StoveProjectDescr_Alg, _en15544: EN15544_V_2023_Common_Application[_Inputs])(using p: _en15544.Params_15544) = 
+    private def showForMCEComparisonWithLabData[I <: Inputs_15544_Alg](
+        ex: StoveProjectDescr_Alg, 
+        _en15544: EN15544_V_2023_Common_Application { type Inputs_15544 = I }
+    )(using p: _en15544.Params_15544) = 
 
         import ex.given_Locale
 
         given LocalRegulations = ex.localRegulations
 
         val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
-        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances
-        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances
+        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
+        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
 
         import showAsTableInstances.given
         import showAsTableInstances_EN15544.given
@@ -89,7 +92,10 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
                 nel.toList.map(_.show).foreach(println)
                 fail()
 
-    private def showDetailedNoteAsText[_Inputs <: Inputs[?]](ex: StoveProjectDescr_Alg, _en15544: EN15544_V_2023_Common_Application[_Inputs])(using p: _en15544.Params_15544) = 
+    private def showDetailedNoteAsText[I <: Inputs_15544_Alg](
+        ex: StoveProjectDescr_Alg, 
+        _en15544: EN15544_V_2023_Common_Application { type Inputs_15544 = I }
+    )(using p: _en15544.Params_15544) = 
 
         println("-------------------------------------------------")
         println(s"CONFIGURATION = ${ex.project.reference}")
@@ -100,8 +106,8 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         given LocalRegulations = ex.localRegulations
         
         val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
-        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances
-        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances
+        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
+        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
         
         import showAsTableInstances.given
         import showAsTableInstances_EN15544.given
@@ -143,7 +149,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
                 nel.toList.map(_.show).foreach(println)
                 fail()
 
-    def run_exercice_15544_strict(ex_15544_strict: StoveProjectDescr_EN15544_Strict_Alg) =
+    def run_exercice_15544_strict(ex_15544_strict: StoveProjectDescr_15544_Strict_Alg) =
             val out = ex_15544_strict.en15544_Alg.map: _strict =>
                 given pReq: DraftCondition = DraftCondition.DraftMinOrPositivePressureMax
                 import LoadQty.givens.nominal
@@ -155,7 +161,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
             )
     end run_exercice_15544_strict
 
-    def run_exercice_15544_mce(ex_15544_mce: StoveProjectDescr_EN15544_MCE_Alg) =
+    def run_exercice_15544_mce(ex_15544_mce: StoveProjectDescr_15544_MCE_Alg) =
         val out = ex_15544_mce.en15544_Alg.map: _mce =>
             given _mce.Params_15544 = (DraftCondition.DraftMaxOrPositivePressureMin, LoadQty.Nominal)  // draft max ?
             showDetailedNoteAsText(ex_15544_mce, _mce)
@@ -164,7 +170,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         )
     end run_exercice_15544_mce
 
-    def run_15544_labo(ex_15544_labo: StoveProjectDescr_EN15544_Labo_Alg) =
+    def run_15544_labo(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg) =
         import scala.language.adhocExtensions
 
         val config = ex_15544_labo
@@ -189,7 +195,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         )
     end run_15544_labo
 
-    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_EN15544_Labo_Alg) =
+    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg) =
         import scala.language.adhocExtensions
 
         val config = ex_15544_labo

@@ -61,8 +61,9 @@ object Params_13384:
         show_Params13384(using l).show(p)
 
 
-trait EN13384_1_A1_2019_Application_Alg extends Standard:
-    
+trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_13384_Alg:
+    self =>
+
     type VNel[A] = ValidatedNel[EN13384_Error, A]
     
     val formulas: EN13384_1_A1_2019_Formulas_Alg
@@ -72,7 +73,7 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard:
         *
     }
 
-    val inputs: Inputs
+    lazy val inputs: Inputs_13384
 
     def heatingAppliance_final(using ha_input: HeatingAppliance): HeatingAppliance
 
@@ -93,6 +94,8 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard:
     /** exterior air model */
     def exteriorAirModel: EpOp[ExteriorAir]
 
+    def airIntake_PipeResult_withoutVentilationOpenings: HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]]
+    def airIntake_PipeResult_withVentilationOpenings(fd: AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]]
     def airIntake_PipeResult: HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]]
 
     type PipeResultOp[X] = HeatingAppliance.CtxOp5_EFPoTM[X]
@@ -161,7 +164,7 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard:
     
     /** temperature limit */
     def T_ig(using HeatingAppliance.FlueGas): WithParams_13384[TKelvin]
-    def temperatureRequirements: PipeResultOp[WithLoadQty[TemperatureRequirements_EN13384]]
+    def temperatureRequirements: PipeResultOp[WithLoadQty[TemperatureRequirements_13384]]
 
     // Section "5.5.2"
 

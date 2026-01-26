@@ -11,7 +11,7 @@ import cats.syntax.all.*
 
 import algebra.instances.all.given
 
-import afpma.firecalc.engine.models.en15544.pipedescr.*
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortOrRegular.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.models.PipeType
@@ -86,7 +86,7 @@ object ShortSection:
         def intermediateValuesFromWindow(window: PipeDescrWindow): VNel[IntermediateValues] =
             import window.*
 
-            import afpma.firecalc.engine.ops.en15544.dynamicfrictioncoeff
+            import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 
             val ζα2 = 
                 o_dc12 match
@@ -102,7 +102,7 @@ object ShortSection:
                     case Some(dc12) => dc12.angleN2.getOrElse(throw new Exception("bad validation (TOFIX by @dev)")),
                 angleN2 = None
             ) 
-            val ζα3_v = dynamicfrictioncoeff.whenRegularFor(dc02)
+            val ζα3_v = FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor(dc02)
             val α1 = dc01.angleN1
             val α2 =
                 o_dc12 match

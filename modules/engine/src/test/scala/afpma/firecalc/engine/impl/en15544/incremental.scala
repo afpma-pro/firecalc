@@ -14,11 +14,11 @@ import afpma.firecalc.units.coulombutils.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
-class Pipes_EN15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
+class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
 
     import PipeShape.*
 
-    val builder = FluePipe_Module_EN15544.incremental
+    val builder = FluePipe_Module_15544.incremental
     import builder.*
 
     "pipes.en15544" - {

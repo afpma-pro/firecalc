@@ -129,15 +129,20 @@ object instances:
     given Decoder[HorizontalDistanceBetweenChimneyAndRidgeline] = deriveDecoderForEnum[HorizontalDistanceBetweenChimneyAndRidgeline](HorizontalDistanceBetweenChimneyAndRidgeline.valueOf)
     given Encoder[HorizontalDistanceBetweenChimneyAndRidgeline] = deriveEncoderForEnum[HorizontalDistanceBetweenChimneyAndRidgeline]
 
-    // IncrDescr_13384
+    // ThermalPipeDescr_13384
 
-    given Decoder[IncrDescr_13384] = semiauto.deriveDecoder[IncrDescr_13384]
-    given Encoder[IncrDescr_13384] = semiauto.deriveEncoder[IncrDescr_13384]
+    given Decoder[ThermalPipeDescr_13384] = semiauto.deriveDecoder[ThermalPipeDescr_13384]
+    given Encoder[ThermalPipeDescr_13384] = semiauto.deriveEncoder[ThermalPipeDescr_13384]
 
-    // IncrDescr_15544
+    // FlowOnlyPipeDescr_13384
 
-    given Decoder[IncrDescr_15544] = semiauto.deriveDecoder[IncrDescr_15544]
-    given Encoder[IncrDescr_15544] = semiauto.deriveEncoder[IncrDescr_15544]
+    given Decoder[FlowOnlyPipeDescr_13384] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384]
+    given Encoder[FlowOnlyPipeDescr_13384] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384]
+
+    // FlowOnlyPipeDescr_15544
+
+    given Decoder[FlowOnlyPipeDescr_15544] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544]
+    given Encoder[FlowOnlyPipeDescr_15544] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544]
 
     // InnerConstructionMaterial
 

@@ -10,7 +10,7 @@ import cats.syntax.all.*
 import afpma.firecalc.engine.impl.en15544.labo.EN15544_Labo_Application.LabConditions
 import afpma.firecalc.engine.impl.en15544.mce.*
 import afpma.firecalc.engine.models.en13384.typedefs.T_L_override
-import afpma.firecalc.engine.models.en15544.std.Inputs_EN15544_MCE
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_MCE
 import afpma.firecalc.engine.wood_combustion.WoodCombustionAlg
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Alg
 
@@ -31,6 +31,17 @@ class EN15544_Labo_Formulas(
     override lazy val t_burnout_default  = labConditions.firebox_output_temp
 
 object EN15544_Labo_Application:
+
+    def make(
+        f: EN15544_Labo_Formulas,
+        bs845: BS845_Alg,
+        wComb: WoodCombustionAlg,
+        labConditions: LabConditions
+    )(
+        i: Inputs_15544_MCE,
+    ): EN15544_Labo_Application = new EN15544_Labo_Application(f, bs845, wComb)(labConditions) {
+        override lazy val inputs = i
+    }
 
     case class AmbiantAir_Temperatures(
         EnterreExterieur    : TCelsius,
@@ -75,16 +86,14 @@ object EN15544_Labo_Application:
         val Refractory_Bricks: Roughness = 3.mm
         val Tube_PVC: Roughness = 1.5.mm
 
-class EN15544_Labo_Application(
+abstract class EN15544_Labo_Application(
     f: EN15544_Labo_Formulas,
     bs845: BS845_Alg,
     wComb: WoodCombustionAlg
 )(
-    inputs: Inputs_EN15544_MCE
-)(
     labConditions: LabConditions
 )
-    extends EN15544_MCE_Application(f, bs845, wComb)(inputs):
+    extends EN15544_MCE_Application(f, bs845, wComb):
 
     // TODO: facteur de correction de αi
     // TODO: constante de correction de αi
@@ -94,4 +103,3 @@ class EN15544_Labo_Application(
     override final lazy val en13384_T_L_override = T_L_override.forTCelsius(
         whenDraftMinOrDraftMax = labConditions.exterior_air_temperature
     )
-

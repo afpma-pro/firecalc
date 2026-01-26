@@ -10,7 +10,7 @@ import java.io.File
 
 import FireCalcReportFactory_15544_Strict.Op
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
-import afpma.firecalc.engine.models.en15544.std.Inputs_EN15544_Strict
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Strict
 import afpma.firecalc.dto.FireCalcYAML
 import scala.util.Failure
 import scala.util.Success
@@ -19,8 +19,9 @@ import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.reports.typst.TypstReportFactory_15544
-import afpma.firecalc.engine.models.Pipes_EN15544_Strict
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
+import afpma.firecalc.engine.models.Pipes_15544_Strict
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.LoadQty
 import io.taig.babel.Locale
@@ -32,7 +33,7 @@ trait FireCalcReportFactory_15544_Strict:
 
     def loadYAMLFile(yamlFile: File): Op[FireCalcReportFactory_15544_Strict]
     def loadYAMLString(yamlString: String): Op[FireCalcReportFactory_15544_Strict]
-    def loadAndValidateFireCalcProject(fcProj: StoveProjectDescr_EN15544_Strict_Alg): Op[FireCalcReportFactory_15544_Strict]
+    def loadAndValidateFireCalcProject(fcProj: StoveProjectDescr_15544_Strict_Alg): Op[FireCalcReportFactory_15544_Strict]
 
     def makeTypstString(isDraft: Boolean): Op[String]
     def makePDFBuffer(isDraft: Boolean): Op[Array[Byte]]
@@ -51,7 +52,7 @@ object FireCalcReportFactory_15544_Strict:
         
         given Locale = compiletime.deferred
         protected var appl: Option[EN15544_Strict_Application] = None
-        protected var fcProj: Option[StoveProjectDescr_EN15544_Strict_Alg] = None
+        protected var fcProj: Option[StoveProjectDescr_15544_Strict_Alg] = None
         protected var typString: Option[String] = None
 
         override def loadYAMLFile(
@@ -85,7 +86,7 @@ object FireCalcReportFactory_15544_Strict:
                         cause = Some(e)
                     ))
         
-        override def loadAndValidateFireCalcProject(fireCalcProj: StoveProjectDescr_EN15544_Strict_Alg) =
+        override def loadAndValidateFireCalcProject(fireCalcProj: StoveProjectDescr_15544_Strict_Alg) =
             fireCalcProj.en15544_Alg match
                 case Valid(en15544_appl) =>
                     en15544_appl.validateResults match
@@ -105,7 +106,8 @@ object FireCalcReportFactory_15544_Strict:
         private def compileAndRenderTypString(isDraft: Boolean): Op[Unit] =
             (appl, fcProj) match
                 case (Some(strict_appl), Some(fcProj)) =>
-                    val typstReportFactory = new TypstReportFactory_15544[Pipes_EN15544_Strict](strict_appl, isDraft) {
+                    val typstReportFactory = new TypstReportFactory_15544_Strict(isDraft) {
+                        override val en15544_app: EN15544_Application = strict_appl
                         override val stove_proj_15544_strict = fcProj
                         given params: en15544_app.Params_15544 =
                             given pReq: DraftCondition = DraftCondition.DraftMinOrPositivePressureMax

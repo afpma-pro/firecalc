@@ -15,20 +15,21 @@ import afpma.firecalc.engine.models.*
 
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 
-import afpma.firecalc.engine.models.en15544.std.Inputs
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.engine.api.v0_2024_10
 import io.taig.babel.Locale
 import io.taig.babel.Locales
+import afpma.firecalc.engine.alg.en13384.Params_13384
 
 trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
     given Locale = Locales.en // acceptable to force Locale in tests
 
-    private def showDebug[_Inputs <: Inputs[?]](
-        cas_type: v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg, 
-        _en15544: EN15544_V_2023_Common_Application[_Inputs]
+    private def showDebug[I <: Inputs_15544_Alg](
+        cas_type: v0_2024_10.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg, 
+        _en15544: EN15544_V_2023_Common_Application { type Inputs_15544 = I }
     )(using p: _en15544.Params_15544) = 
 
         import cas_type.given_Locale
@@ -36,12 +37,12 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         given LocalRegulations = cas_type.localRegulations
         
         val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
-        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances
-        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances
+        val showAsTableInstances_15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
+        val showAsTableInstances_13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
         
         import showAsTableInstances.given
-        import showAsTableInstances_EN15544.given
-        import showAsTableInstances_EN13384.given
+        import showAsTableInstances_15544.given
+        import showAsTableInstances_13384.given
 
         def seperate_tables = println("\n".repeat(3))
 
@@ -78,6 +79,8 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         seperate_tables
 
         import afpma.firecalc.engine.standard.MecaFlu_Error.given
+
+        println(s""" Calcul avec Params = ${p}""")
 
         _en15544.airIntake_PipeResult.toValidatedNel.getOrThrow
         _en15544.combustionAir_PipeResult.toValidatedNel.getOrThrow
@@ -140,7 +143,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         println(_en15544.pressureRequirements_EN13384.getOrThrow.showAsCliTable)
     end showDebug        
 
-    def run_cas_type_15544_strict(cas_type: v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg) =
+    def run_cas_type_15544_strict(cas_type: v0_2024_10.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg) =
         val out = cas_type.en15544_Alg.map: _strict =>
             given pReq: DraftCondition = DraftCondition.DraftMinOrPositivePressureMax
             import LoadQty.givens.nominal

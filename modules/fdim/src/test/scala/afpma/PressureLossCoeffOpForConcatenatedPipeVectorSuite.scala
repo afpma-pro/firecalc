@@ -12,7 +12,7 @@ import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSection
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
-import afpma.firecalc.engine.ops.en15544.dynamicfrictioncoeff
+import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.fdim.exercices.en15544_strict.*
@@ -22,18 +22,18 @@ import org.scalatest.matchers.should.*
 import org.scalatest.prop.TableFor2
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.{strict_ex02_carneau_descendant, strict_ex01_colonne_ascendante}
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_EN15544_Strict_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 
 class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec with Matchers {
     
     import afpma.firecalc.engine.matchers.CustomCatsMatchers.*
     import org.scalatest.prop.TableDrivenPropertyChecks.*
 
-    import FluePipe_Module_EN15544.*
+    import FluePipe_Module_15544.*
 
     // sharing test / testing a behavior
     def accuFromExerciceHasDCCoefficients(
-        ex: StoveProjectDescr_EN15544_Strict_Alg
+        ex: StoveProjectDescr_15544_Strict_Alg
     )(tableOfDirectionChanges: TableFor2[String, Double]) = {
 
         given en15544Impl: EN15544_V_2023_Formulas_Alg = EN15544_Strict_Formulas.make
@@ -43,11 +43,11 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
             ex.fluePipe match
                 case Invalid(nel)   => throw new Exception(s"ERRORS: bad accumulateur definition : $nel")
                 case Valid(accu)    => accu match
-                    case accu: FluePipe_Module_EN15544.FullDescr => accu
+                    case accu: FluePipe_Module_15544.FullDescr => accu
 
         val els = pipeConcat.elems
         
-        val inst = dynamicfrictioncoeff.mkInstanceForNamedPipesConcat(els)
+        val inst = FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(els)
         
         forAll(tableOfDirectionChanges) { (dcName, dcCoeff) => 
 

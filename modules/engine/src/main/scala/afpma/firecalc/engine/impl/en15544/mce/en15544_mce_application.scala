@@ -9,6 +9,11 @@ import cats.*
 import cats.data.Validated
 import cats.syntax.all.*
 
+import algebra.instances.all.given
+import afpma.firecalc.units.coulombutils.*
+import coulomb.*
+import coulomb.syntax.*
+import coulomb.policy.standard.given
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
@@ -16,15 +21,13 @@ import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.std.*
+import afpma.firecalc.engine.models.en13384.*
+import afpma.firecalc.engine.models.en13384.std.{Wood => _, *}
+import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.standard.*
-import afpma.firecalc.units.coulombutils.*
-import algebra.instances.all.given
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{given}
+
 import afpma.firecalc.engine.wood_combustion.*
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Alg
 
@@ -34,17 +37,18 @@ object EN15544_MCE_Application:
         bs845: BS845_Alg,
         wComb: WoodCombustionAlg,
     )(
-        i: models.en15544.std.Inputs_EN15544_MCE,
-    ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb)(i)
+        i: models.en15544.std.Inputs_15544_MCE,
+    ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb) {
+        override lazy val inputs = i
+    }
 
-open class EN15544_MCE_Application(
+abstract class EN15544_MCE_Application(
     override val formulas: EN15544_MCE_Formulas,
     val bs845: BS845_Alg,
     val wComb: WoodCombustionAlg,
-)(
-    override val inputs: models.en15544.std.Inputs_EN15544_MCE
 ) 
-    extends impl.en15544.common.EN15544_V_2023_Common_Application[Inputs_EN15544_MCE](inputs)
+    extends impl.en15544.common.EN15544_V_2023_Common_Application
+    with HasTypeMembers_15544_MCE
 {
     en15544_mce =>
     
@@ -58,6 +62,17 @@ open class EN15544_MCE_Application(
         status = "Draft",
         author = "AFPMA"
     )
+
+    override lazy val en13384_inputs = Inputs_13384_WithThermalAirIntake(
+        en13384_inputs_pipes,
+        en13384_inputs_nationalAcceptedData,
+        en13384_inputs_fuelType,
+        inputs.localConditions,
+        en13384_inputs_flueGasCondition
+    )
+
+    override def en13384_inputs_pipes: Pipes_13384 = 
+        inputs.pipes
 
     // algebra as given
     lazy val en13384_formulas: EN13384_1_A1_2019_Formulas = new EN13384_1_A1_2019_Formulas:
@@ -119,15 +134,13 @@ open class EN15544_MCE_Application(
         inputs.en13384NationalAcceptedData.T_L_override
             .opaqueGetOrElse(en13384_T_L_override_default)
     
-    override lazy val en13384_p_L_override = None
-
-    lazy val en13384_application = new EN13384_For15544_Application(
-        formulas = en13384_formulas,
-        inputs   = en13384_inputs,
+    lazy val en13384_application = new EN13384_For_15544_Application(
+        formulas = en13384_formulas
     ) {
         self =>
+
+        override lazy val inputs = en13384_inputs
         
-        final override lazy val computeAt = ComputeAt.Mean
         final override lazy val p_L_override = en13384_p_L_override
 
         private lazy val rh_L = en15544_mce.inputs.ext_air_rel_hum_default
@@ -195,6 +208,32 @@ open class EN15544_MCE_Application(
     
         // override lazy val last_known_velocity_before_connector_pipe = 
         //     flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_mean)
+
+        override def airIntake_PipeResult_withVentilationOpenings(fd: en15544_mce.AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] = 
+            ops_en13384.ThermalMecaFlu_13384.makePipeResult(
+                fd                          = 
+                    ThermalAirIntakePipe_Module_13384.unwrap(fd),
+                    // fd.unwrap,
+                    // AirIntakePipeDefModule.unwrap(fd),
+                hafg                        = HeatingAppliance.FlueGas.summon,
+                hamf                        = HeatingAppliance.MassFlows.summon,
+                hapwr                       = HeatingAppliance.Powers.summon,
+                haeff                       = HeatingAppliance.Efficiency.summon,
+                temp_start                  = T_L,
+                last_pipe_density           = None,
+                last_pipe_velocity          = None,
+                gas                         = CombustionAir,
+            )
+
+        // 7.8.4
+        // Températures moyennes pour le calcul de pression
+
+        /** température moyenne de l'air de combustion sur la longueur du conduit d'air comburant, en K */
+        override def T_mB =
+            inputs.pipes.airIntake match
+                case p: ThermalAirIntakePipe_13384 =>
+                    import ThermalAirIntakePipe_Module_13384.*
+                    self.formulas.T_mB_calc(p.ductType, T_L).withSectionTyp(AirIntakePipeT)
     }
 
     given EN13384_1_A1_2019_Application_Alg = en13384_application
@@ -245,8 +284,8 @@ open class EN15544_MCE_Application(
                 en13384_heatingAppliance_efficiency,
             )
             .mapN_andThen: (ha_pow, ha_eff) =>
-                ops_en13384.MecaFlu_EN13384.makePipeResult(
-                    fd                          = CombustionAirPipe_Module_EN13384.unwrap(inputs.pipes.combustionAir),
+                ops_en13384.ThermalMecaFlu_13384.makePipeResult(
+                    fd                          = CombustionAirPipe_Module_13384.unwrap(inputs.pipes.combustionAir),
                     hafg                        = en13384_heatingAppliance_fluegas,
                     hamf                        = en13384_heatingAppliance_massFlows,
                     hapwr                       = ha_pow,
@@ -270,8 +309,8 @@ open class EN15544_MCE_Application(
                 en13384_heatingAppliance_efficiency,
             )
             .mapN_andThen: (ha_pow, ha_eff) =>
-                ops_en13384.MecaFlu_EN13384.makePipeResult(
-                    fd                          = FireboxPipe_Module_EN13384.unwrap(inputs.pipes.firebox),
+                ops_en13384.ThermalMecaFlu_13384.makePipeResult(
+                    fd                          = FireboxPipe_Module_13384.unwrap(inputs.pipes.firebox),
                     hafg                        = en13384_heatingAppliance_fluegas,
                     hamf                        = en13384_heatingAppliance_massFlows,
                     hapwr                       = ha_pow,
@@ -295,8 +334,8 @@ open class EN15544_MCE_Application(
                 en13384_heatingAppliance_efficiency,
             )
             .mapN_andThen: (ha_pow, ha_eff) =>
-                ops_en13384.MecaFlu_EN13384.makePipeResult(
-                    fd                          = FluePipe_Module_EN13384.unwrap(inputs.pipes.flue),
+                ops_en13384.ThermalMecaFlu_13384.makePipeResult(
+                    fd                          = FluePipe_Module_13384.unwrap(inputs.pipes.flue),
                     hafg                        = en13384_heatingAppliance_fluegas,
                     hamf                        = en13384_heatingAppliance_massFlows,
                     hapwr                       = ha_pow,

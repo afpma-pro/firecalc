@@ -7,7 +7,7 @@ package afpma.firecalc.engine.ops
 
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
 import afpma.firecalc.engine.models.ExteriorAir
-import afpma.firecalc.engine.ops.en13384.ExteriorAirOpsUsingEN13384
+import afpma.firecalc.engine.ops.en13384.ExteriorAirOps_13384
 
 import afpma.firecalc.units.coulombutils.*
 
@@ -22,4 +22,4 @@ end ExteriorAirOps
 object ExteriorAirOps:
 
     def mkUsingEN13384(en13384: EN13384_1_A1_2019_Formulas_Alg): ExteriorAirOps = 
-        new ExteriorAirOpsUsingEN13384(using en13384) {}
+        new ExteriorAirOps_13384(using en13384) {}

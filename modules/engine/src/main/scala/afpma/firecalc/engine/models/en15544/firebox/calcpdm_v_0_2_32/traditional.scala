@@ -82,10 +82,10 @@ object TraditionalFirebox_Module extends From_CalculPdM_V_0_2_32_Module:
     type FB = TraditionalFirebox
     
     extension (firebox: TraditionalFirebox) 
-        def toCombustionAirPipe_EN15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN15544.FullDescr] = 
-            import CombustionAirPipe_Module_EN15544.*
+        def toCombustionAirPipe_15544: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_15544.FullDescr] = 
+            import CombustionAirPipe_Module_15544.*
             import firebox.*
-            CombustionAirPipe_Module_EN15544.incremental
+            CombustionAirPipe_Module_15544.incremental
             .define(
                 innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
                 roughness(3.mm), // TOFIX: 3mm or 2mm ???
@@ -93,10 +93,10 @@ object TraditionalFirebox_Module extends From_CalculPdM_V_0_2_32_Module:
             )
             .toFullDescr().extractPipe
 
-        def toCombustionAirPipe_EN13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_EN13384.FullDescr] = 
-            import CombustionAirPipe_Module_EN13384.*
+        def toCombustionAirPipe_13384: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_13384.FullDescr] = 
+            import CombustionAirPipe_Module_13384.*
             import firebox.*
-            CombustionAirPipe_Module_EN13384.incremental
+            CombustionAirPipe_Module_13384.incremental
             .define(
                 pipeLocation(PipeLocation.HeatedArea), // added for EN13384
                 innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
