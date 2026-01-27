@@ -53,7 +53,7 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 
         "on FluePipe" - {
 
-            "computing result on section should work" - {
+            "computing result on section should work" in {
                 val first = channel_pipe_elems.elems.head    
                 val gip = GasInPipeEl[NamedPipeElDescrG[FluePipe_Module_15544.El], Gas, DraftCondition](FlueGas, first, p)       
                 val gas_temp: PositionOp[TCelsius] = QtyDAtPosition.from(
@@ -67,7 +67,7 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
                 println(r.show)
             }
 
-            "computing result on pipe should work" - {
+            "computing result on pipe should work" in {
                 val pr = FlowOnlyMecaFlu_15544.makePipeResult(
                     channel_pipe_full_descr.unwrap, FlueGas, nominal, en15544.z_geodetical_height, p)(using en15544, en15544.ssalg)
                 println(pr.map(_.show).toValidatedNel.getOrThrow)

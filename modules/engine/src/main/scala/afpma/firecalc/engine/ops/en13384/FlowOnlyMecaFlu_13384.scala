@@ -32,6 +32,7 @@ import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.engine.standard.MecaFlu_Error.given  // ShowUsingLocale[MecaFlu_Error]
+import afpma.firecalc.engine.ops.MecaFluOps
 
 import coulomb.*
 import coulomb.syntax.*
@@ -43,16 +44,8 @@ import coulomb.ops.standard.all.{given}
 import io.taig.babel.Locales
 import io.taig.babel.Locale
 
-import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.*
-
-trait FlowOnlyMecaFlu_Helpers:
-
-    protected def whenGasType[A](using pt: PipeType)(ifCombustionAir: A, ifFlueGas: A): A = 
-        pt match
-            case _: (AirIntakePipeT | CombustionAirPipeT) => 
-                ifCombustionAir
-            case _: (FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT)  =>
-                ifFlueGas
+import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
+import FlowOnlyPipeDescr_13384.*
 
 object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_WithFlowOnlyAirIntake:
 
@@ -133,7 +126,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     last_CrossSectionArea: Option[Area],
     last_InnerGeom: Option[PipeShape],
     prevO: Option[PipeSectionResult[PipeElDescr]],
-) extends PipeSectionResult[PipeElDescr] with FlowOnlyMecaFlu_Helpers:
+) extends PipeSectionResult[PipeElDescr]:
 
     given en13384: EN13384_1_A1_2019_Application_Alg = scala.compiletime.deferred
     given pgfOps: PipeWithGasFlowOps[PipeWithGasFlowOps.Error] =
@@ -162,7 +155,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
         params: DraftCondition, 
     ): Density =
         given DraftCondition = params
-        whenGasType(using pt)(
+        MecaFluOps.whenGasType(pt)(
             ifCombustionAir = en13384.ρ_B(gas_temp_mean),
             ifFlueGas       = en13384.ρ_m(gas_temp_mean)(using hafg)
         )
@@ -178,22 +171,19 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
         curr.el.innerShape(oPrevGeom = last_InnerGeom)
             .getOrElse(throw new Exception(s"${curr.fullRef}: could not determine inner geometry"))
 
-    val crossSectionAreaE: Either[MecaFlu_Error, PositionOpX[Start | End, Area]] = curr.el match
-        case s: StraightSection => 
-            QtyDAtPosition.constantAtStartEnd(s.innerShape.area).asRight.map(_.atPos)
-        case s: SectionDecrease => 
-            QtyDAtPosition.from(start = s.from.area, end = s.to.area).asRight.map(_.atPos)
-        case s: SectionIncrease => 
-            QtyDAtPosition.from(start = s.from.area, end = s.to.area).asRight.map(_.atPos)
-        case _ @ SingularFlowResistance(_, Some(crossSection)) => 
-            QtyDAtPosition.constantAtStartEnd(crossSection).asRight.map(_.atPos)
-        case _: ( SingularFlowResistance | PressureDiff | DirectionChange ) => 
-            last_CrossSectionArea match
-                case Some(last_CrossSectionArea) =>
-                    QtyDAtPosition.constantAtStartEnd(last_CrossSectionArea).asRight.map(_.atPos)
-                case None =>
-                    MecaFlu_Error.CouldNotDetermineCrossSectionArea(
-                        s"${curr.fullRef}: could not determine 'cross section area'", curr.typ).asLeft
+    val crossSectionAreaE: Either[MecaFlu_Error, PositionOpX[Start | End, Area]] = 
+        MecaFluOps.computeCrossSectionArea(last_CrossSectionArea, curr.fullRef, curr.typ)(
+            getStraightArea = curr.el match { case s: StraightSection => Some(s.innerShape.area); case _ => None },
+            getSectionChangeAreas = curr.el match {
+                case s: SectionDecrease => Some((s.from.area, s.to.area))
+                case s: SectionIncrease => Some((s.from.area, s.to.area))
+                case _ => None
+            },
+            getSingularCrossSection = curr.el match {
+                case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
+                case _ => None
+            }
+        )
 
     val crossSectionArea: PositionOpX[Start | End, Area] =
         crossSectionAreaE.fold(e => {
@@ -206,7 +196,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     val exteriorAir = en13384.exteriorAirModel
 
     val massFlow: MassFlow =
-        whenGasType[MassFlow](
+        MecaFluOps.whenGasType(gp.pipeEl.typ)(
             ifCombustionAir = LoadQty.summon match
                 case LoadQty.Nominal => en13384.mB_dot
                 case LoadQty.Reduced  => en13384.mB_dot_min
@@ -247,7 +237,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     val Te = temperature(using Start)
 
     val density: PositionOp[Density] =             
-        whenGasType[Density](
+        MecaFluOps.whenGasType(gp.pipeEl.typ)(
             ifCombustionAir = en13384.ρ_B(temperature),
             ifFlueGas       = en13384.ρ_m(temperature)
         )
@@ -283,7 +273,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     val velocity_for_pr_pu_pd: FlowVelocity = en13384_flowVelocity_mean
     val density_for_pr_pu_pd: Density       = d_mean
 
-    val standingPressure: Pressure = whenGasType[Pressure](
+    val standingPressure: Pressure = MecaFluOps.whenGasType(gp.pipeEl.typ)(
         ifCombustionAir = 0.pascals,
         ifFlueGas       = en13384.P_H(elevation_gain, temperature_for_pr_pu_pd)
     )
@@ -299,7 +289,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
 
     val staticFriction: Pressure = curr.el match
         case el: StraightSection => 
-            whenGasType[Pressure](
+            MecaFluOps.whenGasType(gp.pipeEl.typ)(
                 ifCombustionAir = en13384.P_B_staticFriction(
                     el.length, 
                     el.innerShape.dh, 
@@ -326,13 +316,13 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
             case _ => throw new Exception(s"Invalid pipe type : only 'AirIntakePipeT' is expected here (en13384_pg)")
 
     val vChangeFriction: Pressure = 
-        whenGasType(
+        MecaFluOps.whenGasType(gp.pipeEl.typ)(
             ifCombustionAir = 0.0.pascals, 
             ifFlueGas       = en13384.P_R_velocityChange(en13384_pg)
         )
 
     val v_zetaO_dynamicFriction: ValidatedNel[MecaFlu_Error, (Option[ζ], Pressure)] = 
-        import FlowOnlyDynamicFrictionCoeff_13384.given
+        import DynamicFrictionCoeff_13384.given
         import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.*
         gp.pipeEl.el match
             case _: StraightSection => 
@@ -342,7 +332,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                     density_for_pr_pu_pd,
                     velocity_for_pr_pu_pd,
                 )
-                val se = whenGasType[Dimensionless](
+                val se = MecaFluOps.whenGasType(gp.pipeEl.typ)(
                     ifCombustionAir = en13384.S_EB_calc(pReq),
                     ifFlueGas = en13384.S_E_calc(pReq)
                 )
@@ -353,7 +343,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                 import SingularFlowResistanceCoeffError.*
                 el.dynamicFrictionCoeff match
                     case Valid(zeta) => 
-                        val pu = whenGasType[Pressure](
+                        val pu = MecaFluOps.whenGasType(gp.pipeEl.typ)(
                             ifCombustionAir = en13384.P_B_dynamicFriction(
                                 zeta,
                                 density_for_pr_pu_pd,
@@ -422,7 +412,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
     last_pipe_velocity: Option[FlowVelocity],
     gas: Gas,
     params: Params_13384,
-) extends PipeResult.WithSections with FlowOnlyMecaFlu_Helpers:
+) extends PipeResult.WithSections:
     import FlowOnlyMecaFlu_13384_PipeResult_Impl.MapState
 
     given en13384: EN13384_1_A1_2019_Application_Alg = scala.compiletime.deferred

@@ -15,7 +15,7 @@ import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.models.en15544.std.PressureLossCoeff.*
 import afpma.firecalc.engine.models.gtypedefs.*
-import afpma.firecalc.engine.ops.en13384.ThermalDynamicFrictionCoeff_13384 as dynamicfrictioncoeff_13384
+import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384 as dynamicfrictioncoeff_13384
 import afpma.firecalc.engine.ops.resistance.*
 
 import afpma.firecalc.units.coulombutils.*
@@ -33,7 +33,7 @@ object FlowOnlyDynamicFrictionCoeff_15544:
             case x: en15544_pipedescr.SingularFlowResistance  => x.dynamicFrictionCoeff
             case en15544_pipedescr.SectionGeometryChange(from, to)   => 
                 // See RQ_002
-                dynamicfrictioncoeff_13384.sectionGeometryChange.dynamicFrictionCoeff(
+                dynamicfrictioncoeff_13384.thermalSectionGeometryChange.dynamicFrictionCoeff(
                     SectionGeometryChange_13384.make(from.area, to.area)
                 )
             case x: en15544_pipedescr.DirectionChange         => x.dynamicFrictionCoeff

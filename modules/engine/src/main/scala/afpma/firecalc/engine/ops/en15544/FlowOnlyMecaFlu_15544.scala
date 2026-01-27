@@ -28,6 +28,7 @@ import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
+import afpma.firecalc.engine.ops.MecaFluOps
 import afpma.firecalc.engine.utils
 import afpma.firecalc.engine.utils.VNelString
 
@@ -71,19 +72,21 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
         
         val ft: PositionOp[f_t] = en15544.formulas.f_t_calc(gas_temp)
         
-        val density: PositionOp[Density] = gip.gas match
-            case _: CombustionAir  => en15544.formulas.ρ_L_calc(ft, fs)
-            case _: FlueGas        => en15544.formulas.ρ_G_calc(ft, fs)
+        val density: PositionOp[Density] = MecaFluOps.whenGasType(curr.typ)(
+            ifCombustionAir = en15544.formulas.ρ_L_calc(ft, fs),
+            ifFlueGas       = en15544.formulas.ρ_G_calc(ft, fs)
+        )
 
-        val volumeFlow: PositionOp[VolumeFlow] = gip.gas match
-            case _: CombustionAir  => 
+        val volumeFlow: PositionOp[VolumeFlow] = MecaFluOps.whenGasType(curr.typ)(
+            ifCombustionAir = 
                 en15544.V_L.getOrElse(throw new Exception(s"could not compute V_L (draft_cond=${DraftCondition.summon}, load_qty=${given_Option_LoadQty})"))
                 / 
-                curr.nf.asQty
-            case _: FlueGas        => 
+                curr.nf.asQty,
+            ifFlueGas       = 
                 en15544.V_G(gas_temp).getOrElse(throw new Exception(s"could not compute V_G (gas_temp=${gas_temp: TCelsius}, position=${Position.summon}), load_qty=${given_Option_LoadQty}"))
                 / 
                 curr.nf.asQty
+        )
 
         val crossSectionArea: PositionOp[Area] = 
             QtyDAtPosition.constant(curr.el.geometry.area).atPos
@@ -171,35 +174,38 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
 
     val ft: PositionOp[f_t] = en15544.formulas.f_t_calc(temperature)
 
-    val density: PositionOp[Density] = gas match
-        case _: CombustionAir  => en15544.formulas.ρ_L_calc(ft, fs)
-        case _: FlueGas        => en15544.formulas.ρ_G_calc(ft, fs)
+    val density: PositionOp[Density] = MecaFluOps.whenGasType(curr.typ)(
+        ifCombustionAir = en15544.formulas.ρ_L_calc(ft, fs),
+        ifFlueGas       = en15544.formulas.ρ_G_calc(ft, fs)
+    )
 
-    val volumeFlow: PositionOp[VolumeFlow] = gas match
-        case _: CombustionAir  => 
+    val volumeFlow: PositionOp[VolumeFlow] = MecaFluOps.whenGasType(curr.typ)(
+        ifCombustionAir = 
             en15544.V_L.getOrElse(throw new Exception(s"could not compute V_L (draft_cond=${DraftCondition.summon}, load_qty=${given_Option_LoadQty})"))
             / 
-            curr.nf.asQty
-        case _: FlueGas        => 
+            curr.nf.asQty,
+        ifFlueGas        = 
             en15544.V_G(temperature).getOrElse(throw new Exception(s"could not compute V_G (gas_temp=${gas_temp: TCelsius}, position=${Position.summon}), load_qty=${given_Option_LoadQty}"))
             / 
             curr.nf.asQty
+    )
 
     val innerShape: PositionOp[PipeShape] = 
         curr.el.innerShape(oPrevGeom = last_InnerGeom)
             .getOrElse(throw new Exception(s"${curr.fullRef}: could not determine inner geometry"))
 
-    private val _crossSectionArea: PositionOpX[Start | End, Area] = curr.el match
-        case s: StraightSection =>
-            QtyDAtPosition.constantAtStartEnd(s.geometry.area).atPos
-        case s: SectionGeometryChange =>
-            QtyDAtPosition.from(start = s.from.area, end = s.to.area).atPos
-        case SingularFlowResistance(_, Some(crossSection)) => 
-            QtyDAtPosition.constantAtStartEnd(crossSection).atPos
-        case _: ( SingularFlowResistance | PressureDiff | DirectionChange ) => 
-            last_CrossSectionArea match
-                case Some(last_CrossSectionArea) => QtyDAtPosition.constantAtStartEnd(last_CrossSectionArea).atPos
-                case None => throw new Exception(s"${curr.fullRef}: could not determine 'cross section area'")
+    private val _crossSectionArea: PositionOpX[Start | End, Area] = 
+        MecaFluOps.computeCrossSectionArea(last_CrossSectionArea, curr.fullRef, curr.typ)(
+            getStraightArea = curr.el match { case s: StraightSection => Some(s.geometry.area); case _ => None },
+            getSectionChangeAreas = curr.el match {
+                case s: SectionGeometryChange => Some((s.from.area, s.to.area))
+                case _ => None
+            },
+            getSingularCrossSection = curr.el match {
+                case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
+                case _ => None
+            }
+        ).fold(e => throw new Exception(e.toString), identity)
 
     val crossSectionArea: PositionOp[Area] = 
         QtyDAtPosition.from(
@@ -211,21 +217,22 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
     val flowVelocity: PositionOp[FlowVelocity] =
         en15544.formulas.v_calc(volumeFlow, crossSectionArea)
 
-    val massFlow: MassFlow = gas match
-        case _: CombustionAir => 
+    val massFlow: MassFlow = MecaFluOps.whenGasType(curr.typ)(
+        ifCombustionAir = 
             val en15544_m_L_value = en15544.getOrThrow_forLoadOp(en15544.m_L, 
                 ifNone = UnexpectedDevError(s"could not compute m_L (load_qty=${given_Option_LoadQty})")
             )
             en15544_m_L_value
             / 
-            curr.nf.asQty
-        case _: FlueGas         => 
+            curr.nf.asQty,
+        ifFlueGas         = 
             val en15544_m_G_value = en15544.getOrThrow_forLoadOp(en15544.m_G, 
                 ifNone = UnexpectedDevError(s"could not compute m_G (load_qty=${given_Option_LoadQty})")
             )
             en15544_m_G_value
             / 
             curr.nf.asQty
+    )
 
     val elevation_gain = curr.el.verticalElev
     val effective_height = elevation_gain
@@ -333,9 +340,10 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
     val density_mean            = 
         gas_temp_mean.map: gt_mean =>
             val ft_mean = en15544.formulas.f_t_calc(gt_mean)
-            gas match
-                case _: CombustionAir  => en15544.formulas.ρ_L_calc(ft_mean, fs)
-                case _: FlueGas        => en15544.formulas.ρ_G_calc(ft_mean, fs)
+            MecaFluOps.whenGasType(curr.typ)(
+                ifCombustionAir = en15544.formulas.ρ_L_calc(ft_mean, fs),
+                ifFlueGas       = en15544.formulas.ρ_G_calc(ft_mean, fs)
+            )
     
 
 private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
