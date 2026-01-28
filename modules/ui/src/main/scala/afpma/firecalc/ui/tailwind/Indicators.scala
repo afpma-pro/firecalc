@@ -29,35 +29,12 @@ final case class Indicators()(using Locale, DisplayUnits)
     extends Component:
 
     given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
-
-    private val pc_sig = results_en15544_pressure_requirements
        
     lazy val node =
         div(
             cls := "top-8 relative flex justify-end",
 
-            Indicator(
-                Seq(
-                    (IndicatorConfig.green, pc_sig.mapAndFoldVNelE(_.isInValidRange, false)),
-                    (IndicatorConfig.sky,   pc_sig.mapAndFoldVNelE(_.isTooMuchDraft, false)),
-                    (IndicatorConfig.rose,  pc_sig.mapAndFoldVNelE(_.isTooMuchResistance, false))
-                )
-                ,
-                title = p(I18N_UI.indicators.equilibrium),
-                subtitle_sig = pc_sig.mapAndFoldVNelE(x => 
-                    s"${x.`current-min`.showP} / ${x.`current-max`.showP}", 
-                    "- / -"
-                )
-            )(
-                p(
-                    cls := "flex-1 mx-6 py-2 text-center font-semibold w-54",
-                    span(cls := "pr-2", text <-- pc_sig.mapAndFoldVNelE(_.min.showP, "-")),
-                    span("<"),
-                    span(cls := "px-2", text <-- pc_sig.mapAndFoldVNelE(_.current.showP, "-")),
-                    span("<"),
-                    span(cls := "pl-2", text <-- pc_sig.mapAndFoldVNelE(_.max.showP, "-"))
-                )
-            ),
+            EquilibriumIndicator(),
 
             Indicator(
                 Seq(

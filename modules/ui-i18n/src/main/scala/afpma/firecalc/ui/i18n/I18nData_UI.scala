@@ -90,7 +90,9 @@ object I18nData_UI:
     efficiency: String,
     flue_gas_temp: String,
     chimney_wall_out_temp_line1: String,
-    chimney_wall_out_temp_line2: String
+    chimney_wall_out_temp_line2: String,
+    too_much_draft: String,
+    too_much_resistance: String,
   )
 
   final case class LocalConditions(

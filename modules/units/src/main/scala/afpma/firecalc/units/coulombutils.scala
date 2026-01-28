@@ -447,6 +447,14 @@ object coulombutils:
                 val prettyVU = prettyFmt.format(qu.value)
                 s"${prettyVU} ${ShowUnit[U].showUnit}"
 
+        def mkShowPrettyNoUnitForQtyD[U, PrettyU: ShowUnit](
+            prettyFmt: String = "%.2f"
+        )(using conv: UnitConversion[Double, U, PrettyU]): Show[QtyD[U]] =
+            Show.show: qu =>
+                val qpu = qu.toUnit[PrettyU]
+                val prettyVU = prettyFmt.format(qpu.value)
+                s"${prettyVU}"
+
         def mkShowPrettyForQtyD[U, PrettyU: ShowUnit](
             prettyFmt: String = "%.2f"
         )(using conv: UnitConversion[Double, U, PrettyU]): Show[QtyD[U]] =
@@ -544,6 +552,8 @@ object coulombutils:
                 mkShowPrettyForQtyD[Pascal, Pascal]("%.2f")
             val show_Pascals_1: Show[QtyD[Pascal]] = 
                 mkShowPrettyForQtyD[Pascal, Pascal]("%.1f")
+            val show_Pascals_1_noUnit: Show[QtyD[Pascal]] = 
+                mkShowPrettyNoUnitForQtyD[Pascal, Pascal]("%.1f")
             val show_Pascals_0: Show[QtyD[Pascal]] = 
                 mkShowPrettyForQtyD[Pascal, Pascal]("%.0f")
             val show_Percent_0: Show[QtyD[Percent]] = 

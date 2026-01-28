@@ -25,7 +25,7 @@ final case class IndicatorWithErrorTooltip(
     errorSignal: Signal[Boolean],
     tooltipContent: HtmlElement,
     ttStyle: String = "tooltip-error",
-    ttPosition: String = "tooltip-top",
+    ttPosition: String = "tooltip-bottom",
 ) extends Component:
 
     lazy val node: HtmlElement =
