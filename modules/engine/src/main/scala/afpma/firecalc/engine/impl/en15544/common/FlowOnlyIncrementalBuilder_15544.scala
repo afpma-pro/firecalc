@@ -17,6 +17,15 @@ import algebra.instances.all.given
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
+import afpma.firecalc.engine.impl.common.typeclasses.*
+import afpma.firecalc.engine.impl.common.instances.SectionDSL_15544_Instances.given
+import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_15544_Instances.given
+import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_15544_Instances.given
+import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_15544_Instances.given
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.FlowOnlyPropsState_15544
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.given
+import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.*
+import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.given
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.typedefs.*
@@ -64,26 +73,22 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         val iiVec = iDescrs.toVector.mapWithIndex((x, i) => (IdIncr(i), x))
         PipeIncrDescrG[Id_IncrDescr](pt, iiVec)
     
-    override case class PropsState(
-        geometry: Option[PipeShape] = None,
-        roughness: Option[Roughness] = None,
-        nFlows: Option[NbOfFlows] = Some(1.flow)
-    )
+    // ========== PropsState via Typeclass ==========
+    
+    override protected type PropsState = FlowOnlyPropsState_15544
+    private val stateOps = summon[PropsStateOps[PropsState]]
 
-    given nbOfFlowsFromPropsState: (ps: PropsState) => NbOfFlows = ps.nFlows.get
+    given nbOfFlowsFromPropsState: Function1[PropsState, NbOfFlows] = stateOps.getNFlows
 
     extension (propsState: PropsState)
-        override def isValid: Boolean = 
-            val t = Tuple.fromProductTyped(propsState)
-            t.toList.forall(_.isDefined)
-        def nf: NbOfFlows = 
-            propsState.nFlows.get
+        override def isValid: Boolean = stateOps.isValid(propsState)
+        def nf: NbOfFlows = stateOps.getNFlows(propsState)
     
     extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState = 
-        PropsState()
+        FlowOnlyPropsState_15544()
 
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr = 
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
@@ -102,28 +107,58 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     )(
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
+        given NbOfFlows = summon[PropsState].nf
         val (idIncr, addElementOp) = id_addElementOp
+        val st = summon[PropsState]
         val elIdx = PipeIdx(prevs.elems.size)
-        extension (vnelEl: ValidatedNel[IncrementalValidation_Error, PipeElDescr]) def asNonEmptyList = vnelEl.map(el => NonEmptyList.one((elIdx, None, el)))
+        extension (vnelEl: ValidatedNel[IncrementalValidation_Error, PipeElDescr]) 
+            def asNonEmptyList = vnelEl.map(el => NonEmptyList.one((elIdx, None, el)))
         val prevInnerGeomO = prevs.lastInnerGeom
-        val vels: ValidatedNel[IncrementalValidation_Error, NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] = addElementOp match
-            case op: (AddSectionSlopped | AddSectionHorizontal | AddSectionVertical) =>                 
-                ElementFactory.mkStraightSection2(op).andThen: s =>
-                    prevInnerGeomO match
-                        case None                                                 => NonEmptyList.one((elIdx, None, s)).validNel
-                        case Some(prevInnerGeom) if (prevInnerGeom == s.geometry) => NonEmptyList.one((elIdx, None, s)).validNel
-                        case Some(prevInnerGeom) => 
-                            val sectGeomCh = SectionGeometryChange(from = prevInnerGeom, to = s.geometry)
-                            NonEmptyList((elIdx, Some("sect° geom change"), sectGeomCh), (elIdx.incr(1), None, s) :: Nil).validNel[IncrementalValidation_Error]
-            case op: AddDirectionChange => 
-                ElementFactory.mkDirectionChange(convStep.nextSectionLengthOpt)(op).asNonEmptyList
-            case op: AddSectionShapeChange =>
-                val setPropsUntilNextGeom = convStep.allSetPropsUntilNextAddElement.toList
-                ElementFactory.mkSectionGeometryChange(setPropsUntilNextGeom)(op).asNonEmptyList
-            case op: AddFlowResistance =>
-                ElementFactory.mkSingularFlowResistance(op).asNonEmptyList
-            case op: AddPressureDiff =>
-                ElementFactory.mkPressureDiff(op).asNonEmptyList
+        
+        val vels: ValidatedNel[IncrementalValidation_Error, NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] = 
+            addElementOp match
+                case op @ (_: AddSectionSlopped | _: AddSectionHorizontal | _: AddSectionVertical) =>
+                    given FlowOnlyStraightSectionCtx_15544 = 
+                        FlowOnlyStraightSectionCtx_15544(
+                            stateOps.getInnerShape(st),
+                            stateOps.getRoughness(st),
+                            pt
+                        )
+                    flowOnlyStraightSection15544.make(op).andThen { s =>
+                        prevInnerGeomO match
+                            case None                                                 => NonEmptyList.one((elIdx, None, s)).validNel
+                            case Some(prevInnerGeom) if (prevInnerGeom == s.geometry) => NonEmptyList.one((elIdx, None, s)).validNel
+                            case Some(prevInnerGeom) => 
+                                val sectGeomCh = SectionGeometryChange(from = prevInnerGeom, to = s.geometry)
+                                NonEmptyList((elIdx, Some("sect° geom change"), sectGeomCh), (elIdx.incr(1), None, s) :: Nil).validNel[IncrementalValidation_Error]
+                    }
+                    
+                case op: AddDirectionChange =>
+                    given DirectionChangeCtx_15544 = 
+                        DirectionChangeCtx_15544(stateOps.getInnerShape(st), pt)
+                    directionChange15544.make(op).asNonEmptyList
+                    
+                case op: AddSectionShapeChange =>
+                    given SectionGeometryChangeCtx_15544 = 
+                        SectionGeometryChangeCtx_15544(
+                            stateOps.getInnerShape(st),
+                            convStep.allSetPropsUntilNextAddElement.exists {
+                                case (_, _: SetInnerShape) => true
+                                case _ => false
+                            },
+                            pt
+                        )
+                    sectionGeometryChange15544.make(op).asNonEmptyList
+                    
+                case op: AddFlowResistance =>
+                    given FlowResistanceCtx_15544 = 
+                        FlowResistanceCtx_15544(stateOps.getInnerShape(st), pt)
+                    flowResistance15544.make(op).asNonEmptyList
+                    
+                case op: AddPressureDiff =>
+                    given Unit = ()
+                    pressureDiff15544.make(op).asNonEmptyList
+                    
         vels.map(_.map: (idx, newNameO, el) =>
             (idIncr, el.named(idx, pt, newNameO.getOrElse(addElementOp.name))))
         
@@ -159,79 +194,8 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
             }
 
-    object ElementFactory extends ElementFactoryModule {
-
-        val mkStraightSection2: MakeFor[AddSectionSlopped | AddSectionHorizontal | AddSectionVertical, StraightSection] = { op =>
-            val vg = ctxState.getValidated(_.geometry, GeometryMustBeSet(op.name, pt))
-            val vr = ctxState.getValidated(_.roughness, RoughnessMustBeSet(op.name, pt))
-
-            val (len, elev_gain) = op match
-                case AddSectionSlopped(_, len, elev_gain)    => (len        , elev_gain)
-                case AddSectionHorizontal(_, len) => (len        , 0.0.meters)
-                case AddSectionVertical(_, elev_gain) => 
-                    val len = if (elev_gain < 0.meters) -elev_gain else elev_gain
-                    (len, elev_gain)
-
-            (vg, vr).mapN { (g, r) =>
-                StraightSection(
-                    length = len,
-                    geometry = g,
-                    roughness = r,
-                    elevation_gain = elev_gain,
-                )
-            }
-        }
-
-        def mkDirectionChange(
-            @nowarn nextSectionLength: Option[Length]
-        ): MakeFor[AddDirectionChange, DirectionChange] = 
-            op =>
-                ctxState.getValidated(_.geometry.map(_.dh), DirectionChangeRequiresSectionGeometry(pt))
-                    .map: _ =>
-                        op match
-                            case AddSharpeAngle_0_to_180(_, angle, angleN2) => 
-                                DirectionChange.AngleVifDe0A180(angle, angleN2)
-                            case AddCircularArc_60(_) => 
-                                DirectionChange.CircularArc60
-            
-        def mkSectionGeometryChange(
-            setProps: List[(Int, SetProp)]
-        ): MakeFor[AddSectionShapeChange, SectionGeometryChange] = 
-            op =>
-                // make sure we don't have some geometry change in atomic modifiers
-                // otherwise it means we have two ways to change geometry that was specified by user
-                val sectionGeometryChanged = setProps.exists {
-                    case (_, _: SetInnerShape) => true
-                    case (_, _) => false
-                }
-
-                if (sectionGeometryChanged)
-                    CannotSetGeometryBeforeChange(pt).invalidNel
-                else
-                    ctxState.getValidated(_.geometry, SectionGeometryMustBeDefined(pt))
-                        .map: fromGeom =>
-                            SectionGeometryChange(
-                                from = fromGeom,
-                                to = op.to_shape
-                            )
-                        
-        val mkSingularFlowResistance: MakeFor[AddFlowResistance, SingularFlowResistance] = 
-            op => op match
-                case AddFlowResistance(name, zeta, NoneOfEither) =>
-                    ctxState
-                        .getValidated(_.geometry,
-                            FlowResistanceRequiresGeometry(op.name, "EN15544", pt))
-                        .andThen: geom =>
-                            SingularFlowResistance(zeta, crossSectionO = Some(geom.area)).validNel
-                case AddFlowResistance(name, zeta, SomeLeft(area)) =>
-                    SingularFlowResistance(zeta, Some(area.toUnit[Meter ^ 2])).validNel
-                case AddFlowResistance(name, zeta, SomeRight(geom)) =>
-                    SingularFlowResistance(zeta, Some(geom.area)).validNel
-
-        val mkPressureDiff: MakeFor[AddPressureDiff, PressureDiff] = 
-            op => PressureDiff(pa = op.pressure_difference).validNel
-    }
-
+    // Minimal ElementFactory object required by trait - delegates to typeclass instances
+    object ElementFactory extends ElementFactoryModule
 
     // builder methods for Atomic modifiers
 
@@ -243,56 +207,74 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     def material(material: Material_15544) =
         SetMaterial(material)
 
+    // Delegate to ChannelsDSL typeclass
     def channelsSplit(n: Int) = 
-        SetNumberOfFlows(n.flows)
+        summon[ChannelsDSL[FlowOnlyPipeDescr_15544]].channelsSplit(n)
 
     def channelsJoin() =
-        SetNumberOfFlows(1.flow)
+        summon[ChannelsDSL[FlowOnlyPipeDescr_15544]].channelsJoin()
 
-    // builder methods for obj modifiers
+    // builder methods for obj modifiers - Delegate to DirectionChangeDSL_15544 typeclass
 
-    def addSharpAngle_0_to_180deg(name: String, angle: Angle, angleN2: Option[Angle] = None) = AddSharpeAngle_0_to_180(name, angle, angleN2)
-    def addSharpAngle_30deg(name: String, angleN2: Option[Angle] = None) = AddSharpeAngle_0_to_180(name, 30.degrees, angleN2)
-    def addSharpAngle_45deg(name: String, angleN2: Option[Angle] = None) = AddSharpeAngle_0_to_180(name, 45.degrees, angleN2)
-    def addSharpAngle_60deg(name: String, angleN2: Option[Angle] = None) = AddSharpeAngle_0_to_180(name, 60.degrees, angleN2)
-    def addSharpAngle_90deg(name: String, angleN2: Option[Angle] = None) = AddSharpeAngle_0_to_180(name, 90.degrees, angleN2)
+    given directionDSL: DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544] = 
+        summon[DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544]]
 
-    def addCircularArc60(name: String)          = AddCircularArc_60(name)
+    def addSharpAngle_0_to_180deg(name: String, angle: Angle, angleN2: Option[Angle] = None) = 
+        directionDSL.addSharpAngle_0_to_180deg(name, angle, angleN2)
+    def addSharpAngle_30deg(name: String, angleN2: Option[Angle] = None) = 
+        directionDSL.addSharpAngle_30deg(name, angleN2)
+    def addSharpAngle_45deg(name: String, angleN2: Option[Angle] = None) = 
+        directionDSL.addSharpAngle_45deg(name, angleN2)
+    def addSharpAngle_60deg(name: String, angleN2: Option[Angle] = None) = 
+        directionDSL.addSharpAngle_60deg(name, angleN2)
+    def addSharpAngle_90deg(name: String, angleN2: Option[Angle] = None) = 
+        directionDSL.addSharpAngle_90deg(name, angleN2)
+
+    def addCircularArc60(name: String) = 
+        directionDSL.addCircularArc60(name)
 
     def addSectionShapeChange(
         name: String,
         to_shape: PipeShape
     ) = AddSectionShapeChange(name, to_shape)
 
+    // Delegate to SectionDSL typeclass
+    given sectionDSL: SectionDSL[FlowOnlyPipeDescr_15544] = 
+        summon[SectionDSL[FlowOnlyPipeDescr_15544]]
+
     def addSectionSlopped(
         name: String,
         length: Length,
         elevation_gain: Length
-    ) = AddSectionSlopped(name, length, elevation_gain)
+    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
 
     def addSectionHorizontal(
         name: String,
         horizontal_length: Length
-    ) = AddSectionHorizontal(name, horizontal_length)
+    ) = sectionDSL.addSectionHorizontal(name, horizontal_length)
 
     def addSectionVertical(
         name: String,
         elevation_gain: Length
-    ) = AddSectionVertical(name, elevation_gain)
+    ) = sectionDSL.addSectionVertical(name, elevation_gain)
+
+    // Delegate to FlowResistanceDSL typeclass
+    given flowResistanceDSL: FlowResistanceDSL[FlowOnlyPipeDescr_15544] = 
+        summon[FlowResistanceDSL[FlowOnlyPipeDescr_15544]]
 
     def addPressureDiff(name: String, pressure_difference: Pressure) =
-        AddPressureDiff(name, pressure_difference)
+        flowResistanceDSL.addPressureDiff(name, pressure_difference)
 
     def addFlowResistance(name: String, zeta: ζ) =
-        AddFlowResistance(name, zeta, cross_section = None)
+        flowResistanceDSL.addFlowResistance(name, zeta)
 
     @targetName("addFlowResistance_crossSection")
     def addFlowResistance(name: String, zeta: ζ, cross_section: AreaInCm2) =
-        AddFlowResistance(name, zeta, cross_section = cross_section.asLeft.some)
+        flowResistanceDSL.addFlowResistance_crossSection(name, zeta, cross_section)
 
     @targetName("addFlowResistance_dh")
     def addFlowResistance(name: String, zeta: ζ, hydraulic_diameter: Length) =
-        AddFlowResistance(name, zeta, PipeShape.circle(hydraulic_diameter).asRight.some)
+        flowResistanceDSL.addFlowResistance_dh(name, zeta, hydraulic_diameter)
 
 object FlowOnlyIncrementalBuilder_15544:
 

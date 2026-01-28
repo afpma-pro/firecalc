@@ -17,6 +17,15 @@ import algebra.instances.all.given
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
+import afpma.firecalc.engine.impl.common.typeclasses.*
+import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
+import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
+import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_13384_Instances.given
+import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_Instance.ThermalPropsState_13384
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_Instance.given
+import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.*
+import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.given
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -68,25 +77,16 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         val iiVec = iDescrs.toVector.mapWithIndex((x, i) => (IdIncr(i), x))
         PipeIncrDescrG[Id_IncrDescr](pt, iiVec)
 
-    override protected case class PropsState(
-        innerShape           : Option[PipeShape] = None,
-        outer_shape          : Option[PipeShape] = None,
-        roughness            : Option[Roughness] = None,
-        layers               : Option[List[AppendLayerDescr]] = None,
-        airSpace_afterLayers : Option[AirSpaceDetailed] = Some(AirSpaceDetailed.WithoutAirSpace),
-        pipeLoc              : Option[PipeLocation] = None,
-        ductType             : Option[DuctType] = None,
-        nFlows               : Option[NbOfFlows] = Some(1.flow)
-    )
+    // ========== PropsState via Typeclass ==========
+    
+    override protected type PropsState = ThermalPropsState_13384
+    private val stateOps = summon[ThermalPropsStateOps[PropsState]]
 
-    given nbOfFlowsFromPropsState: (ps: PropsState) => NbOfFlows = ps.nFlows.get
+    given nbOfFlowsFromPropsState: Function1[PropsState, NbOfFlows] = stateOps.getNFlows
 
     extension (propsState: PropsState)
-        override def isValid: Boolean = 
-            val t = Tuple.fromProductTyped(propsState)
-            t.toList.forall(_.isDefined)
-        def nf: NbOfFlows = 
-            propsState.nFlows.get
+        override def isValid: Boolean = stateOps.isValid(propsState)
+        def nf: NbOfFlows = stateOps.getNFlows(propsState)
 
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[QtyD[Meter]] = 
@@ -108,8 +108,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState = 
-        PropsState(
-            // by default, use non concentrict air ducts (see EN 13384 7.8.1)
+        ThermalPropsState_13384(
+            // by default, use non concentric air ducts (see EN 13384 7.8.1)
             ductType = Some(DuctType.NonConcentricDuctsHighThermalResistance)
         )
 
@@ -122,19 +122,54 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     )(
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
+        given NbOfFlows = summon[PropsState].nf
         val (idIncr, addElementOp) = id_addElementOp
+        val st = summon[PropsState]
+        
         val el = addElementOp match
-            case op: (AddSectionSlopped | AddSectionHorizontal | AddSectionVertical) => 
-                ElementFactory.mkStraightSection(op)
+            case op @ (_: AddSectionSlopped | _: AddSectionHorizontal | _: AddSectionVertical) =>
+                given ThermalStraightSectionCtx_13384 = 
+                    ThermalStraightSectionCtx_13384(
+                        stateOps.getInnerShape(st),
+                        stateOps.getOuterShape(st),
+                        stateOps.getRoughness(st),
+                        stateOps.getLayers(st),
+                        stateOps.getAirSpace(st),
+                        stateOps.getPipeLoc(st),
+                        stateOps.getDuctType(st),
+                        pt
+                    )
+                thermalStraightSection13384.make(op)
+                
             case op: AddDirectionChange =>
-                ElementFactory.mkDirectionChange(convStep.nextSectionLengthOpt)(op)
+                given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
+                    stateOps.getInnerShape(st),
+                    convStep.nextSectionLengthOpt,
+                    pt
+                )
+                thermalDirectionChange13384.make(op)
+                
             case op: AddSectionChange =>
-                val setPropsUntilNextGeom = convStep.allSetPropsUntilNextAddElement.toList
-                ElementFactory.mkSectionGeometryChange(setPropsUntilNextGeom)(op)
+                given SectionGeometryChangeCtx_13384 = 
+                    SectionGeometryChangeCtx_13384(
+                        stateOps.getInnerShape(st),
+                        convStep.allSetPropsUntilNextAddElement.exists {
+                            case (_, _: SetInnerShape) => true
+                            case _ => false
+                        },
+                        pt
+                    )
+                thermalSectionGeometryChange13384.make(op)
+                
             case op: AddFlowResistance =>
-                ElementFactory.mkSingularFlowResistance(op)
+                given FlowResistanceCtx_13384 = 
+                    FlowResistanceCtx_13384(stateOps.getInnerShape(st), pt)
+                thermalFlowResistance13384.make(op)
+                
             case op: AddPressureDiff =>
-                ElementFactory.mkPressureDiff(op)
+                given Unit = ()
+                thermalPressureDiff13384.make(op)
+        
         val elIdx = PipeIdx(prevs.elems.size)
         el.map(el => NonEmptyList.one((idIncr, el.named(elIdx, pt, addElementOp.name))))
 
@@ -208,102 +243,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     case SetNumberOfFlows(nf) =>
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
             }
-    object ElementFactory extends ElementFactoryModule {
 
-        val mkStraightSection: MakeFor[AddSectionSlopped | AddSectionHorizontal | AddSectionVertical, StraightSection] = { op =>
-            val vig = ctxState.getValidated(_.innerShape, InnerGeometryMustBeSet(op.name, pt))
-            val vog = ctxState.getValidated(_.outer_shape, OuterGeometryMustBeSet(op.name, pt))
-            val vr = ctxState.getValidated(_.roughness, RoughnessMustBeSet(op.name, pt))
-            val vlayers = ctxState.getValidated(_.layers, LayersMustBeSet(op.name, pt))
-            val vasp = ctxState.getValidated(_.airSpace_afterLayers, AirSpaceAfterLayersMustBeSet(op.name, pt))
-            val vpl = ctxState.getValidated(_.pipeLoc, PipeLocationMustBeSet(op.name, pt))
-            val vduct = ctxState.getValidated(_.ductType, DuctTypeMustBeSet(op.name, pt))
-
-            val (len, elev_gain) = op match
-                case AddSectionSlopped(_, len, elev_gain)    => (len, elev_gain)
-                case AddSectionHorizontal(_, len) => (len, 0.0.m)
-                case AddSectionVertical(_, elev_gain) => 
-                    val len = if (elev_gain < 0.meters) -elev_gain else elev_gain
-                    (len, elev_gain)
-
-            (vig, vog, vr, vlayers, vasp, vpl, vduct)
-                .mapN { (ig, og, r, layers, asp, pl, duct) =>
-                    StraightSection(
-                        length = len,
-                        innerShape = ig,
-                        outer_shape = og,
-                        roughness = r,
-                        layers = layers,
-                        elevation_gain = elev_gain,
-                        airSpaceDetailed = asp,
-                        pipeLoc = pl,
-                        ductType = duct
-                    )
-            }
-        }
-
-        def mkDirectionChange(nextSectionLength: Option[QtyD[Meter]]): MakeFor[AddDirectionChange, DirectionChange] =
-            op =>
-                val vDh = ctxState.getValidated(_.innerShape.map(_.dh), SectionGeometryMustBeDefined(pt))
-                val vLd = Validated.fromOption(nextSectionLength, ifNone = NonEmptyList.one(NextSectionLengthMustBeDefined(pt)))
-                
-                (vDh, vLd).mapN: (dh, ld) =>
-                    op match
-                        case _ @ AddAngleAdjustable(name, angle, zeta)  => AngleSpecifique(angle, zeta)
-                        case _ @ AddSharpeAngle_0_to_90(name, angle)         => AngleVifDe0A90(angle, Ld = ld, Dh = dh)
-                        case _ @ AddSharpeAngle_0_to_90_Unsafe(name, angle)  => AngleVifDe0A90_Unsafe(angle, Ld = ld, Dh = dh)
-                        case _ @ AddSmoothCurve_90(name, r)              => CoudeCourbe90(r, Ld = ld, Dh = dh)             
-                        case _ @ AddSmoothCurve_90_Unsafe(name, r)       => CoudeCourbe90_Unsafe(r, Ld = ld, Dh = dh)             
-                        case _ @ AddSmoothCurve_60(name, r)              => CoudeCourbe60(r, Ld = ld, Dh = dh)             
-                        case _ @ AddSmoothCurve_60_Unsafe(name, r)       => CoudeCourbe60_Unsafe(r, Ld = ld, Dh = dh)             
-                        case _ @ AddElbows_2x45(name, r)    => CoudeASegment90Avec2A45(r, Dh = dh)   
-                        case _ @ AddElbows_3x30(name, r)    => CoudeASegment90Avec3A30(r, Dh = dh)   
-                        case _ @ AddElbows_4x22p5(name, r)  => CoudeASegment90Avec4A22p5(r, Dh = dh) 
-
-        def mkSectionGeometryChange(setProps: List[(Int, SetProp)]): MakeFor[AddSectionChange, SectionGeometryChange] = 
-            op =>
-                // make sure we don't have some geometry change in atomic modifiers
-                // otherwise it means we have two ways to change geometry that was specified by user
-                val sectionGeometryChanged = setProps.exists {
-                    case (_, _: SetInnerShape) => true
-                    case (_, _) => false
-                }
-
-                if (sectionGeometryChanged)
-                    CannotSetGeometryBeforeChange(pt).invalidNel
-                else
-                    ctxState.getValidated(_.innerShape, SectionGeometryMustBeDefined(pt))
-                        .andThen:
-                            case fromCircleGeom: PipeShape.Circle => 
-                                val sec = op match
-                                    case AddSectionDecrease(_, diam) => 
-                                        SectionDecrease.mkFromDiameters(fromD1 = fromCircleGeom.diameter, toD2 = diam)
-                                    case AddSectionIncrease(_, diam) => 
-                                        SectionIncrease.mkFromDiameters(fromD1 = fromCircleGeom.diameter, toD2 = diam)
-                                    // case AddSectionDecreaseProgressive(_, diam, ɣ) => 
-                                    //     SectionDecreaseProgressive(fromD1 = fromCircleGeom.diameter, toD2 = diam, ɣ = ɣ)
-                                sec.validNel
-                            case notACircleGeom: PipeShape =>
-                                SectionChangeRequiresCircle(notACircleGeom.toString, pt).invalidNel
-
-
-        val mkSingularFlowResistance: MakeFor[AddFlowResistance, SingularFlowResistance] =
-            op => op match
-                case AddFlowResistance(name, zeta, NoneOfEither) =>
-                    ctxState
-                        .getValidated(_.innerShape,
-                            FlowResistanceRequiresGeometry(op.name, "EN13384", pt))
-                        .andThen: geom =>
-                            SingularFlowResistance(zeta, crossSectionO = Some(geom.area)).validNel
-                case AddFlowResistance(name, zeta, SomeLeft(area)) =>
-                    SingularFlowResistance(zeta, Some(area.toUnit[Meter ^ 2])).validNel
-                case AddFlowResistance(name, zeta, SomeRight(geom)) =>
-                    SingularFlowResistance(zeta, Some(geom.area)).validNel
-
-        val mkPressureDiff: MakeFor[AddPressureDiff, PressureDiff] =
-            op => PressureDiff(pa = op.pressure_difference).validNel
-    }
-
+    // Minimal ElementFactory object required by trait - delegates to typeclass instances
+    object ElementFactory extends ElementFactoryModule
 
     // builder methods for Atomic modifiers
 
@@ -337,39 +279,60 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def ductType(duct: DuctType) = 
         SetDuctType(duct)
 
+    // Delegate to ChannelsDSL typeclass
     def channelsSplit(n: Int) = 
-        SetNumberOfFlows(n.flows)
+        summon[ChannelsDSL[ThermalPipeDescr_13384]].channelsSplit(n)
     def channelsJoin() =
-        SetNumberOfFlows(1.flow)
+        summon[ChannelsDSL[ThermalPipeDescr_13384]].channelsJoin()
 
-    // builder methods for obj modifiers
+    // builder methods for obj modifiers - Delegate to DirectionChangeDSL_13384 typeclass
 
-    def addAngleVifDe0A90(name: String, angle: QtyD[Degree]) = AddSharpeAngle_0_to_90(name, angle)
-    def addSharpAngle_30deg(name: String) = addAngleVifDe0A90(name, 30.degrees)
-    def addSharpAngle_45deg(name: String) = addAngleVifDe0A90(name, 45.degrees)
-    def addSharpAngle_60deg(name: String) = addAngleVifDe0A90(name, 60.degrees)
-    def addSharpAngle_90deg(name: String) = addAngleVifDe0A90(name, 90.degrees)
+    given directionDSL: DirectionChangeDSL_13384[ThermalPipeDescr_13384] = 
+        summon[DirectionChangeDSL_13384[ThermalPipeDescr_13384]]
 
-    // __INTERPRETATION__
-    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree]) = AddSharpeAngle_0_to_90_Unsafe(name, angle)
-    def addSharpAngle_30deg_unsafe(name: String) = addAngleVifDe0A90_unsafe(name, 30.degrees)
-    def addSharpAngle_45deg_unsafe(name: String) = addAngleVifDe0A90_unsafe(name, 45.degrees)
-    def addSharpAngle_60deg_unsafe(name: String) = addAngleVifDe0A90_unsafe(name, 60.degrees)
-    def addSharpAngle_90deg_unsafe(name: String) = addAngleVifDe0A90_unsafe(name, 90.degrees)
-
-
-    def addCoudeCourbe90(name: String, R: QtyD[Meter])          = AddSmoothCurve_90(name, R)
-    def addCoudeCourbe60(name: String, R: QtyD[Meter])          = AddSmoothCurve_60(name, R)
+    def addAngleVifDe0A90(name: String, angle: QtyD[Degree]) = 
+        directionDSL.addAngleVifDe0A90(name, angle)
+    def addSharpAngle_30deg(name: String) = 
+        directionDSL.addSharpAngle_30deg(name)
+    def addSharpAngle_45deg(name: String) = 
+        directionDSL.addSharpAngle_45deg(name)
+    def addSharpAngle_60deg(name: String) = 
+        directionDSL.addSharpAngle_60deg(name)
+    def addSharpAngle_90deg(name: String) = 
+        directionDSL.addSharpAngle_90deg(name)
 
     // __INTERPRETATION__
-    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter])   = AddSmoothCurve_90_Unsafe(name, R)
-    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter])   = AddSmoothCurve_60_Unsafe(name, R)
+    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree]) = 
+        directionDSL.addAngleVifDe0A90_unsafe(name, angle)
+    def addSharpAngle_30deg_unsafe(name: String) = 
+        directionDSL.addSharpAngle_30deg_unsafe(name)
+    def addSharpAngle_45deg_unsafe(name: String) = 
+        directionDSL.addSharpAngle_45deg_unsafe(name)
+    def addSharpAngle_60deg_unsafe(name: String) = 
+        directionDSL.addSharpAngle_60deg_unsafe(name)
+    def addSharpAngle_90deg_unsafe(name: String) = 
+        directionDSL.addSharpAngle_90deg_unsafe(name)
 
-    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter])    = AddElbows_2x45(name, R)
-    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter])    = AddElbows_3x30(name, R)
-    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter])  =  AddElbows_4x22p5(name, R)
+    def addCoudeCourbe90(name: String, R: QtyD[Meter]) = 
+        directionDSL.addCoudeCourbe90(name, R)
+    def addCoudeCourbe60(name: String, R: QtyD[Meter]) = 
+        directionDSL.addCoudeCourbe60(name, R)
 
-    def addAngleSpecifique(name: String, angle: Angle, zeta: Double)     = AddAngleAdjustable(name, angle, zeta.unitless)
+    // __INTERPRETATION__
+    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter]) = 
+        directionDSL.addCoudeCourbe90_unsafe(name, R)
+    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter]) = 
+        directionDSL.addCoudeCourbe60_unsafe(name, R)
+
+    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter]) = 
+        directionDSL.addCoudeASegment90Avec2A45(name, R)
+    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter]) = 
+        directionDSL.addCoudeASegment90Avec3A30(name, R)
+    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter]) = 
+        directionDSL.addCoudeASegment90Avec4A22p5(name, R)
+
+    def addAngleSpecifique(name: String, angle: Angle, zeta: Double) = 
+        directionDSL.addAngleSpecifique(name, angle, zeta)
 
     // def addSectionChange(
     //     name: String,
@@ -381,43 +344,51 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     //     AddSectionDecreaseProgressive(name, toDiameter, ɣ)
 
 
+    // Delegate to SectionDSL typeclass
+    given sectionDSL: SectionDSL[ThermalPipeDescr_13384] = 
+        summon[SectionDSL[ThermalPipeDescr_13384]]
+
     def addSectionSlopped(
         name: String,
         length: QtyD[Meter],
         elevation_gain: QtyD[Meter]
-    ) = AddSectionSlopped(name, length, elevation_gain)
+    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
 
     def addSectionHorizontal(
         name: String,
         horizontal_length: QtyD[Meter]
-    ) = AddSectionHorizontal(name, horizontal_length)
+    ) = sectionDSL.addSectionHorizontal(name, horizontal_length)
 
     def addSectionVertical(
         name: String,
         elevation_gain: QtyD[Meter]
-    ) = AddSectionVertical(name, elevation_gain)
+    ) = sectionDSL.addSectionVertical(name, elevation_gain)
+
+    // Delegate to FlowResistanceDSL typeclass
+    given flowResistanceDSL: FlowResistanceDSL[ThermalPipeDescr_13384] = 
+        summon[FlowResistanceDSL[ThermalPipeDescr_13384]]
 
     def addPressureDiff(name: String, pressure_difference: Pressure) =
-        AddPressureDiff(name, pressure_difference)
+        flowResistanceDSL.addPressureDiff(name, pressure_difference)
 
     def addFlowResistance(name: String, zeta: QtyD[1]) =
-        AddFlowResistance(name, zeta, cross_section = None)
+        flowResistanceDSL.addFlowResistance(name, zeta)
 
     @targetName("addFlowResistance_crossSection")
     def addFlowResistance_crossSection(name: String, zeta: QtyD[1], cross_section: AreaInCm2) =
-        AddFlowResistance(name, zeta, cross_section = cross_section.asLeft.some)
+        flowResistanceDSL.addFlowResistance_crossSection(name, zeta, cross_section)
     
     @targetName("addFlowResistance_dh")
     def addFlowResistance(name: String, zeta: QtyD[1], hydraulic_diameter: Length) =
-        AddFlowResistance(name, zeta, PipeShape.circle(hydraulic_diameter).asRight.some)
+        flowResistanceDSL.addFlowResistance_dh(name, zeta, hydraulic_diameter)
 
     /** add rain cap with H / Dh = 1.0 (meaning ζ = 1.0) according to Table B.8 */
     def addRainCapEN13384_withHeightEqualsDiameter(name: String) = 
-        addFlowResistance(name, 1.0.unitless: ζ)
+        flowResistanceDSL.addRainCapEN13384_withHeightEqualsDiameter(name)
 
     /** add rain cap with H / Dh = 0.5 (meaning ζ = 1.5) according to Table B.8 */
     def addRainCapEN13384_withHeightEquals2Diameter(name: String) = 
-        addFlowResistance(name, 1.5.unitless: ζ)
+        flowResistanceDSL.addRainCapEN13384_withHeightEquals2Diameter(name)
 
 object ThermalIncrementalBuilder_13384:
 

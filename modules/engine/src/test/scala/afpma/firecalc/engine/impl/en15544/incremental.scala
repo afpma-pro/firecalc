@@ -48,7 +48,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal("first", 2.meters)
                             )
                         
-                        val vRepr = p.toFullDescr()
+                        val vRepr = p.toFullDescr().map(_._2)
     
                         val expected = PipeFullDescr(
                             elements = Vector(NamedPipeElDescr(
@@ -83,7 +83,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal("second", 1.meters)
                             )
     
-                        val vRepr = p.toFullDescr()
+                        val vRepr = p.toFullDescr().map(_._2)
     
                         val expected = PipeFullDescr(
                             elements = Vector(
@@ -194,7 +194,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                             pipeType = FluePipeT
                         )
 
-                        vRepr.shouldBe(Valid(expected))
+                        vRepr.map(_._2).shouldBe(Valid(expected))
                         // then check for short section / pressures / etc...
                         val repr = vRepr.toOption.get._2
                         val shortOpt = repr.elems.find(_.name == ("straight-1-short": PipeName))

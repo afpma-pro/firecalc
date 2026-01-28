@@ -45,7 +45,9 @@ class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with Incr
                     val p = 
                         builder.define(
                             innerShape(square(d0)),
+                            layer(e0, λ0),
                             roughness(2.mm),
+                            pipeLocation(HeatedArea),
                             addSectionHorizontal("first", 2.meters)
                         )
                     
@@ -70,6 +72,8 @@ class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with Incr
                         )),
                         pipeType = ChimneyPipeT
                     )
+
+                    println(vRepr)
                     
                     vRepr.isValid.shouldBe(true)
                     
