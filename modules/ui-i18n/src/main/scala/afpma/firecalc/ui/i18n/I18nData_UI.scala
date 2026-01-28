@@ -94,6 +94,7 @@ object I18nData_UI:
     chimney_wall_out_temp_line2: String,
     too_much_draft: String,
     too_much_resistance: String,
+    risk_of_condensation_at_flue_outlet: StringFormat1,
   )
 
   final case class LocalConditions(

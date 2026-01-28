@@ -57,28 +57,7 @@ final case class Indicators()(using Locale, DisplayUnits)
             //     )
             // ),
 
-            Indicator(
-                Seq(
-                    (IndicatorConfig.green, tChimneyWallToOutAbove45_sig),
-                    (IndicatorConfig.rose, tChimneyWallToOutAbove45_sig.map(!_))
-                ),
-                title = p(
-                    I18N_UI.indicators.chimney_wall_out_temp_line1,
-                    br(),
-                    I18N_UI.indicators.chimney_wall_out_temp_line2
-                ),
-                subtitle_sig = Var(s"> ${45.degreesCelsius.showP_orImpUnitsTemp[Fahrenheit]}").signal
-            )(
-                p(
-                    cls := "flex-1 mx-6 py-2 text-center font-semibold w-48",
-                    text <-- results_en15544_estimated_output_temperatures
-                        .flatMapVNelE(_.t_chimney_wall_top_out)
-                        .mapAndFoldVNelE(
-                            _.showP_orImpUnitsTemp[Fahrenheit], 
-                            "-"
-                        )
-                )
-            )
+            ChimneyWallOutputTempIndicator()
         )
 
 end Indicators
