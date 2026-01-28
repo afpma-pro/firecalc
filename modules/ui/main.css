@@ -1,13 +1,13 @@
-/**
+/*
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
  */
 
 @import "tailwindcss";
 @import "./style.css";
 
 /* @source "./src/main/scala/"; */
-@source "./target/scala-3.7.3/firecalc-ui-fastopt"; 
+@source "./target/scala-3.8.1/firecalc-ui-fastopt"; 
 
 @plugin "@tailwindcss/typography";
 

@@ -243,7 +243,7 @@ volumes:
 #
 # 4. Pre-deployment Checklist:
 #    - Build the application JAR: make package or sbt assembly
-#    - Verify JAR exists at modules/payments/target/scala-3.7.3/firecalc-payments-assembly.jar
+#    - Verify JAR exists at modules/payments/target/scala-3.8.1/firecalc-payments-assembly.jar
 #    - Create configs/ directory with necessary YAML/CONF files
 #    - Ensure databases/ directory exists (will be created if missing)
 #    - Review and update .env file with production values

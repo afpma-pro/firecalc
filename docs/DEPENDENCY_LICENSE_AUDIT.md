@@ -48,7 +48,7 @@ The project primarily uses permissive licenses (MIT, Apache 2.0, BSD) which are 
 
 | Dependency | Version | License | Status | Notes |
 |---|---|---|---|---|
-| **Scala Standard Library** | 3.7.3 | Apache 2.0 | ✅ Compatible | Core language |
+| **Scala Standard Library** | 3.8.1 | Apache 2.0 | ✅ Compatible | Core language |
 | **Cats Core** | 2.13.0 | MIT | ✅ Compatible | Functional programming |
 | **Cats Effect** | 3.6.1 | Apache 2.0 | ✅ Compatible | Effect system |
 | **Circe** (core, generic, parser) | 0.14.13 | Apache 2.0 | ✅ Compatible | JSON library |

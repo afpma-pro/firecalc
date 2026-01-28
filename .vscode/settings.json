@@ -68,7 +68,8 @@
             "**/.vscode/settings.json",
             "**/web/electron-app/resources/fontconfig/**",
             "**/.gitignore",
-            "**/.jvmopts.ci"
+            "**/.jvmopts.ci",
+            "**/Dockerfile"
         ]
     },
     "psi-header.variables": [

@@ -15,7 +15,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
 // Global / watchForceTriggerOnAnyChange := true
 
-val scala_version = "3.7.3"
+val scala_version = "3.8.1"
 
 // =========
 // Shared i18n Configuration

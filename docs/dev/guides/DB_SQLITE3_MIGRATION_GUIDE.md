@@ -151,7 +151,7 @@ After modifying the domain model, you must regenerate the SQL schema file. Run t
 sbt payments/moleculeGen
 ```
 
-This command updates the target schema file located at `modules/payments/target/scala-3.7.3/resource_managed/main/moleculeGen/MoleculeDomain/MoleculeDomain_Schema_sqlite.sql`.
+This command updates the target schema file located at `modules/payments/target/scala-3.8.1/resource_managed/main/moleculeGen/MoleculeDomain/MoleculeDomain_Schema_sqlite.sql`.
 
 ### Step 3: Determine the Schema Difference
 
@@ -160,7 +160,7 @@ To create a migration, you need to know exactly what changed between the old sch
 For example, you can use `git diff` on the generated file to see the changes:
 
 ```bash
-git diff modules/payments/target/scala-3.7.3/resource_managed/main/moleculeGen/MoleculeDomain/MoleculeDomain_Schema_sqlite.sql
+git diff modules/payments/target/scala-3.8.1/resource_managed/main/moleculeGen/MoleculeDomain/MoleculeDomain_Schema_sqlite.sql
 ```
 
 This will show you the exact `CREATE TABLE` or other changes Molecule has generated.
