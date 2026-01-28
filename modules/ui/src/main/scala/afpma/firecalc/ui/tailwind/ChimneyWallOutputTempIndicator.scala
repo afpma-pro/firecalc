@@ -33,15 +33,12 @@ final case class ChimneyWallOutputTempIndicator()(using Locale, DisplayUnits)
 
     given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
 
-    private val t_chimney_wall_top_out_sig = 
-        results_en15544_estimated_output_temperatures
-            .flatMapVNelE(_.t_chimney_wall_top_out)
-
     private val hasError = tChimneyWallToOutAbove45_sig.map(!_)
 
     private val tooltipMessage: Signal[HtmlElement] =
-        t_chimney_wall_top_out_sig.mapAndFoldVNelE(
-            t => p(I18N_UI.indicators.risk_of_condensation_at_flue_outlet(45.degreesCelsius.showP_orImpUnitsTemp[Fahrenheit])),
+        results_en15544_t_chimney_wall_top_min
+        .mapAndFoldVNelE(
+            tmin => p(I18N_UI.indicators.risk_of_condensation_at_flue_outlet(tmin.showP_orImpUnitsTemp[Fahrenheit])),
             p("-")
         )
 
@@ -57,7 +54,7 @@ final case class ChimneyWallOutputTempIndicator()(using Locale, DisplayUnits)
                     br(),
                     I18N_UI.indicators.chimney_wall_out_temp_line2
                 ),
-                subtitle_sig = Var(s"min. ${45.degreesCelsius.showP_orImpUnitsTemp[Fahrenheit]}").signal
+                subtitle_sig = results_en15544_t_chimney_wall_top_min.mapAndFoldVNelE(tmin => s"min. ${tmin.showP_orImpUnitsTemp[Fahrenheit]}", "-")
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-48",

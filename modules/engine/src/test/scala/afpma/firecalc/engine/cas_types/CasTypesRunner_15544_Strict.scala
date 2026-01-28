@@ -22,6 +22,7 @@ import afpma.firecalc.engine.api.v0_2024_10
 import io.taig.babel.Locale
 import io.taig.babel.Locales
 import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 
 trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
@@ -35,6 +36,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         import cas_type.given_Locale
 
         given LocalRegulations = cas_type.localRegulations
+        given EN15544_V_2023_Formulas_Alg = _en15544.formulas
         
         val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
         val showAsTableInstances_15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544

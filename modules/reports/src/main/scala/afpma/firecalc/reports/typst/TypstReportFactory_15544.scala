@@ -31,6 +31,7 @@ import afpma.firecalc.engine.models.FireboxPipe_Module_Generic
 import afpma.firecalc.engine.models.FluePipe_Module_Generic
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
+import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 
 abstract class TypstReportFactory_15544(
     val isDraft: Boolean
@@ -244,6 +245,7 @@ abstract class TypstReportFactory_15544(
         en15544_app.pressureRequirement_EN15544.getOrThrow.typ
 
     def en15544_t_chimney_wall_top: String = 
+        given EN15544_V_2023_Formulas_Alg = en15544_app.formulas
         en15544_app.t_chimney_wall_top.getOrThrow.typ
 
     def en15544_emissions_and_efficiency_values: String = 

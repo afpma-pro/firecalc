@@ -315,6 +315,9 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
 
     // Section "4.10.1", "Pressure requirement"
 
+    // Section "4.10.2", "Pressure requirement"
+    override val t_chimney_wall_top_min: t_chimney_wall_top_min = 45.degreesCelsius
+
     // Section "4.10.3", "Efficiency of the combustion (η)"
     // TODO: mauvaise traduction allemande ?
     // TODO: Lors du calcul du rendement de la combustion, les hypothèses suivantes sont retenues : XXX

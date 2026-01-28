@@ -37,6 +37,8 @@ import coulomb.ops.standard.all.{*, given}
 import coulomb.ops.algebra.all.{*, given}
 
 import io.taig.babel.Locale
+import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import cats.Show
 
 class ShowAsTableInstances_15544(using Locale):
 
@@ -104,9 +106,15 @@ class ShowAsTableInstances_15544(using Locale):
             Nil
         }
 
-    given showAsTable_t_chimney_wall_top_en15544: ShowAsTable[t_chimney_wall_top] =
+    given showAsTable_t_chimney_wall_top_en15544: EN15544_V_2023_Formulas_Alg => ShowAsTable[t_chimney_wall_top] =
         ShowAsTable.mkLightFor(I18N.headers.temperature_requirements_15544) { tchw =>
-            val status = if (tchw >= 45.degreesCelsius) "OK (>= 45°C)" else "NOT OK (< 45°C)"
+            val t_chimney_out_min = summon[EN15544_V_2023_Formulas_Alg].t_chimney_wall_top_min
+            val t_min_pretty = t_chimney_out_min.showP
+            val status = 
+                if (tchw >= t_chimney_out_min) 
+                    s"OK (>= $t_min_pretty)" 
+                else 
+                    s"NOT OK (< $t_min_pretty)"
             (I18N.en15544.terms_xtra.t_chimney_wall_top_out.name :: tchw.unwrap.show :: status :: Nil) ::
             Nil
         }

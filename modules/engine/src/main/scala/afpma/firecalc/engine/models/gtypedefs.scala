@@ -367,4 +367,15 @@ object gtypedefs:
             "temperature of the chimney wall at the top of the chimney (in °C)",
         )
 
+    type t_chimney_wall_top_min = FlueGasTemperatureChimneyWallTopMin.Type
+    object FlueGasTemperatureChimneyWallTopMin extends OTypedTempD[Celsius]:
+        def termDef = TermDef(
+            "t_chimney_wall_top_min",
+            "global definitions"
+        )
+        def termDefDetails = TermDefDetails(
+            "min. temperature of the chimney wall at the top of the chimney (in °C)",
+            "min. temperature of the chimney wall at the top of the chimney (in °C)",
+        )
+
 end gtypedefs

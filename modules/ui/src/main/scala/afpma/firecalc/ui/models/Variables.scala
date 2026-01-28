@@ -43,6 +43,7 @@ import afpma.firecalc.engine.models.en15544.typedefs.EstimatedOutputTemperatures
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
 import afpma.firecalc.engine.models.en15544.typedefs.η
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top
+import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top_min
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.engine.models.PipeResult
 import cats.data.Validated
@@ -332,6 +333,10 @@ lazy val results_en15544_t_chimney_wall_top
         )
         strict.t_chimney_wall_top(using p)
     )
+
+lazy val results_en15544_t_chimney_wall_top_min
+    : Signal[VNelMcalcErr[t_chimney_wall_top_min]] =
+        results_en15544_strict_sig.mapVNelE(_.formulas.t_chimney_wall_top_min)
 
 lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
     results_en15544_strict_sig.flatMapVNelE(strict =>

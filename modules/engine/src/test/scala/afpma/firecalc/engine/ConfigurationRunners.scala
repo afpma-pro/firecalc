@@ -34,6 +34,7 @@ import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Labo_Alg
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import io.taig.babel.Locale
 import io.taig.babel.Locales
+import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 
 trait ConfigurationRunners extends AnyFreeSpec with Matchers {
 
@@ -47,6 +48,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         import ex.given_Locale
 
         given LocalRegulations = ex.localRegulations
+        given EN15544_V_2023_Formulas_Alg = _en15544.formulas
 
         val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
         val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
@@ -104,6 +106,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         import ex.given_Locale
 
         given LocalRegulations = ex.localRegulations
+        given EN15544_V_2023_Formulas_Alg = _en15544.formulas
         
         val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
         val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544

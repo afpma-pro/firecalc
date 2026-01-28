@@ -721,7 +721,7 @@ abstract class EN15544_V_2023_Common_Application
 
     def validateChimneyWallTempIsAbove45DegreesCelsius(): WithParams_15544[ValidatedNel[MCalc_Error, Unit]] =
         estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>
-            if (t >= 45.degreesCelsius) 
+            if (t >= formulas.t_chimney_wall_top_min)
                 ().validNel[MecaFlu_Error] 
             else 
                 MecaFlu_Error.InvalidChimneyWallTemperature(t).invalidNel
