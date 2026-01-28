@@ -52,3 +52,6 @@ modules/payments/src/main/resources/moleculeGen
 # Development tools
 gc
 astformatter
+
+# SBT watch mode logs
+.logs/
