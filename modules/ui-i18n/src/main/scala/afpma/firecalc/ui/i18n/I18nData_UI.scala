@@ -88,6 +88,7 @@ object I18nData_UI:
   final case class Indicators(
     equilibrium: String,
     efficiency: String,
+    efficiency_too_low: StringFormat1,
     flue_gas_temp: String,
     chimney_wall_out_temp_line1: String,
     chimney_wall_out_temp_line2: String,

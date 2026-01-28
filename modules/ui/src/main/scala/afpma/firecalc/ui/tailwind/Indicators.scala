@@ -36,41 +36,26 @@ final case class Indicators()(using Locale, DisplayUnits)
 
             EquilibriumIndicator(),
 
-            Indicator(
-                Seq(
-                    (IndicatorConfig.green, effInRange_sig),
-                    (IndicatorConfig.rose, effInRange_sig.map(!_))
-                ),
-                title = p(I18N_UI.indicators.efficiency),
-                subtitle_sig = 
-                    Var("").signal
-                    // results_en15544_emissions_and_efficiency_values
-                    //     .mapAndFoldVNel(_.min_efficiency_full_stove_nominal.map(_.showP).getOrElse("-"), "")
-            )(
-                p(
-                    cls := "flex-1 mx-6 py-2 text-center font-semibold w-24",
-                    text <-- eff_and_min_eff.map((vn, _) => vn).mapAndFoldVNelE(_.showP, "-")
-                )
-            ),
+            EfficiencyIndicator(),
 
-            Indicator(
-                Seq(
-                    (IndicatorConfig.green, tChimneyWallToOutAbove45_sig),
-                    (IndicatorConfig.rose, tChimneyWallToOutAbove45_sig.map(!_))
-                ),
-                title = p(I18N_UI.indicators.flue_gas_temp),
-                subtitle_sig = Var("").signal,
-            )(
-                p(
-                    cls := "flex-1 mx-6 py-2 text-center font-semibold w-32",
-                    text <-- results_en15544_estimated_output_temperatures
-                        .flatMapVNelE(_.t_stove_out)
-                        .mapAndFoldVNelE[String](
-                            _.showP_orImpUnitsTemp[Fahrenheit],
-                            "-"
-                        )
-                )
-            ),
+            // Indicator(
+            //     Seq(
+            //         (IndicatorConfig.green, tChimneyWallToOutAbove45_sig),
+            //         (IndicatorConfig.rose, tChimneyWallToOutAbove45_sig.map(!_))
+            //     ),
+            //     title = p(I18N_UI.indicators.flue_gas_temp),
+            //     subtitle_sig = Var("").signal,
+            // )(
+            //     p(
+            //         cls := "flex-1 mx-6 py-2 text-center font-semibold w-32",
+            //         text <-- results_en15544_estimated_output_temperatures
+            //             .flatMapVNelE(_.t_stove_out)
+            //             .mapAndFoldVNelE[String](
+            //                 _.showP_orImpUnitsTemp[Fahrenheit],
+            //                 "-"
+            //             )
+            //     )
+            // ),
 
             Indicator(
                 Seq(
