@@ -82,6 +82,17 @@ sealed trait AirIntakePipe_Common_Module extends IncrementalPipeDefModule_Common
             //         case 0 => Left(s"[dev-error-bis]: duct type should be defined // ${fd.toString}")
             //         case 1 => uniqDucts.head.asRight
             //         case n => s"unexpected error : multiple duct types are defined ($n) : ${uniqDucts.map(_.show).mkString(", ")}".asLeft
+
+    /**
+     * Safely fold over PipeCanBe without exposing abstract type matching
+     */
+    def foldPipeCanBe[A](pipe: PipeCanBe)(
+        onNoVentilation: => A,
+        onFullDescr: FullDescr => A
+    ): A =
+        pipe match
+            case NoVentilationOpenings => onNoVentilation
+            case fd: FullDescr         => onFullDescr(fd)
     
     case object NoVentilationOpenings
     type NoVentilationOpenings = NoVentilationOpenings.type
@@ -130,6 +141,17 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
         else incremental.define(incrSeq*).toFullDescr()
 
     type PipeCanBe = FullDescr | Without
+
+    /**
+     * Safely fold over PipeCanBe without exposing abstract type matching
+     */
+    def foldPipeCanBe[A](pipe: PipeCanBe)(
+        onWithout: => A,
+        onFullDescr: FullDescr => A
+    ): A =
+        pipe match
+            case Without       => onWithout
+            case fd: FullDescr => onFullDescr(fd)
 
     case object Without
     type Without = Without.type

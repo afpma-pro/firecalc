@@ -36,7 +36,7 @@ abstract class EN13384_WithFlowOnlyAirIntake_Application(
 {
     import Params_13384.given
 
-    override def airIntake_PipeResult_withVentilationOpenings(fd: AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] = 
+    override def airIntake_PipeResult_withVentilationOpenings(fd: AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] =
         ops_en13384.FlowOnlyMecaFlu_13384.makePipeResult(
             fd                          = FlowOnlyAirIntakePipe_Module_13384.unwrap(fd),
             hafg                        = HeatingAppliance.FlueGas.summon,
@@ -46,6 +46,12 @@ abstract class EN13384_WithFlowOnlyAirIntake_Application(
             temp_start                  = T_L,
             last_pipe_velocity          = None,
             gas                         = CombustionAir,
+        )
+
+    override def airIntake_PipeResult =
+        FlowOnlyAirIntakePipe_Module_13384.foldPipeCanBe(inputs.pipes.airIntake)(
+            onNoVentilation = airIntake_PipeResult_withoutVentilationOpenings,
+            onFullDescr     = fd => airIntake_PipeResult_withVentilationOpenings(fd)
         )
 }
 

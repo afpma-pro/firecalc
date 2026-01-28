@@ -95,24 +95,22 @@ abstract class EN13384_1_A1_2019_Common_Application(
             gas_temp                    = t_comb_air,
         ).asRight
 
-    override def airIntake_PipeResult = 
-        // import AirIntakePipe_Module.tt_FullDescr
-        // import AirIntakePipe_Module.tt_apNoVentilationOpenings
-        inputs.pipes.airIntake match
-            case _: AirIntakePipe_Module.NoVentilationOpenings => airIntake_PipeResult_withoutVentilationOpenings
-            case fd: AirIntakePipe_Module.FullDescr            => airIntake_PipeResult_withVentilationOpenings(fd)
-            case _ => throw new Exception("DEV ERROR: unproper match on inputs.pipes.airIntake")
+    // airIntake_PipeResult is implemented in concrete subclasses to avoid
+    // pattern matching on abstract types. See:
+    // - EN13384_WithFlowOnlyAirIntake_Application
+    // - EN13384_WithThermalAirIntake_Application
+    // - EN13384_For_15544_Application
 
     lazy val last_known_density_before_connector_pipe     : WithParams_13384[Option[Density]]         = None
     lazy val last_known_velocity_before_connector_pipe    : WithParams_13384[Option[FlowVelocity]]    = None
 
-    override def connector_PipeResult = 
+    override def connector_PipeResult =
         val tw = LoadQty.summon match
             case LoadQty.Nominal => T_WN
             case LoadQty.Reduced => T_Wmin
-        inputs.pipes.connector match
-            case ConnectorPipe_Module.Without  => PipeResult.useless(ConnectorPipeT, tw).asRight
-            case fd: ConnectorPipe_Module.FullDescr =>
+        ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)(
+            onWithout   = PipeResult.useless(ConnectorPipeT, tw).asRight,
+            onFullDescr = fd =>
                 ops_en13384.ThermalMecaFlu_13384.makePipeResult(
                     fd                          = ConnectorPipe_Module.unwrap(fd),
                     hafg                        = HeatingAppliance.FlueGas.summon,
@@ -124,21 +122,24 @@ abstract class EN13384_1_A1_2019_Common_Application(
                     last_pipe_velocity          = last_known_velocity_before_connector_pipe,
                     gas                         = FlueGas,
                 )
+        )
 
     override def chimney_PipeResult =
         connector_PipeResult.flatMap: cp =>
-            val last_pipe_density = 
-                inputs.pipes.connector match
-                    case ConnectorPipe_Module.Without      => last_known_density_before_connector_pipe
-                    case _: ConnectorPipe_Module.FullDescr => computeAt match
-                        case ComputeAt.Mean         => cp.last_density_mean
-                        case ComputeAt.Middle       => cp.last_density_middle
-            val last_pipe_velocity = 
-                inputs.pipes.connector match
-                    case ConnectorPipe_Module.Without      => last_known_velocity_before_connector_pipe
-                    case _: ConnectorPipe_Module.FullDescr => computeAt match
-                        case ComputeAt.Mean         => cp.last_velocity_mean
-                        case ComputeAt.Middle       => cp.last_velocity_middle
+            val last_pipe_density =
+                ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)(
+                    onWithout   = last_known_density_before_connector_pipe,
+                    onFullDescr = _ => computeAt match
+                        case ComputeAt.Mean   => cp.last_density_mean
+                        case ComputeAt.Middle => cp.last_density_middle
+                )
+            val last_pipe_velocity =
+                ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)(
+                    onWithout   = last_known_velocity_before_connector_pipe,
+                    onFullDescr = _ => computeAt match
+                        case ComputeAt.Mean   => cp.last_velocity_mean
+                        case ComputeAt.Middle => cp.last_velocity_middle
+                )
             ops_en13384.ThermalMecaFlu_13384.makePipeResult(
                 fd                          = ChimneyPipe_Module.unwrap(inputs.pipes.chimney),
                 hafg                        = HeatingAppliance.FlueGas.summon,

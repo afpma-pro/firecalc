@@ -182,6 +182,12 @@ sealed abstract class EN15544_Strict_Application(
                 gas                         = CombustionAir,
             )
 
+        override def airIntake_PipeResult =
+            FlowOnlyAirIntakePipe_Module_13384.foldPipeCanBe(inputs.pipes.airIntake)(
+                onNoVentilation = airIntake_PipeResult_withoutVentilationOpenings,
+                onFullDescr     = fd => airIntake_PipeResult_withVentilationOpenings(fd)
+            )
+
         final override lazy val computeAt = ComputeAt.Middle
         final override lazy val p_L_override = en13384_p_L_override
         // overrides

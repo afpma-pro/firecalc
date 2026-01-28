@@ -209,9 +209,9 @@ abstract class EN15544_MCE_Application(
         // override lazy val last_known_velocity_before_connector_pipe = 
         //     flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_mean)
 
-        override def airIntake_PipeResult_withVentilationOpenings(fd: en15544_mce.AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] = 
+        override def airIntake_PipeResult_withVentilationOpenings(fd: en15544_mce.AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] =
             ops_en13384.ThermalMecaFlu_13384.makePipeResult(
-                fd                          = 
+                fd                          =
                     ThermalAirIntakePipe_Module_13384.unwrap(fd),
                     // fd.unwrap,
                     // AirIntakePipeDefModule.unwrap(fd),
@@ -223,6 +223,12 @@ abstract class EN15544_MCE_Application(
                 last_pipe_density           = None,
                 last_pipe_velocity          = None,
                 gas                         = CombustionAir,
+            )
+
+        override def airIntake_PipeResult =
+            ThermalAirIntakePipe_Module_13384.foldPipeCanBe(inputs.pipes.airIntake)(
+                onNoVentilation = airIntake_PipeResult_withoutVentilationOpenings,
+                onFullDescr     = fd => airIntake_PipeResult_withVentilationOpenings(fd)
             )
 
         // 7.8.4
