@@ -74,13 +74,14 @@ class ShowAsTableInstances(using Locale):
                 case None               => ""
             (_I.min_efficiency_full_stove_nominal   :: s">= ${x.n_nominal.toOption.showOrElse("ERR")}" :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_nominal  :: Nil) ::
             (_I.min_efficiency_full_stove_reduced   :: s">= ${x.n_lowest.map(_.showOrElse("")).getOrElse("ERR")}" :: lreg.min_efficiency          .map(x => s">= ${x.showP}").getOrElse("") :: status_min_eff_fs_lowest   :: Nil) ::
-            (I18N.en16510.η_s                       :: s">= ${x.ns       .toOption.showOrElse("ERR")}" :: lreg.min_seasonal_efficiency .map(x => s">= ${x.showP}").getOrElse("") :: status_min_seasonal_eff_fs :: Nil) ::
+            // (I18N.en16510.η_s                       :: s">= ${x.ns       .toOption.showOrElse("ERR")}" :: lreg.min_seasonal_efficiency .map(x => s">= ${x.showP}").getOrElse("") :: status_min_seasonal_eff_fs :: Nil) ::
             // (I18N.heating_appliance.efficiency   :: "η"      :: x.n.show :: Nil) ::
             // (I18N.en16510.η_s                    :: "η_s"    :: x.ns.show   :: Nil) ::
             Nil
         }
 
     given showAstable_EmissionsAndEfficiencyValues: (lreg: LocalRegulations) => ShowAsTable[EmissionsAndEfficiencyValues] =
+        import LocalRegulations.ParamCheckResult
         // def status_ok_or_not(cond: Boolean) = if (cond) "OK" else "NOT OK"
         ShowAsTable.mkLightFor(
             I18N.headers.emissions_and_efficiency_values,
@@ -89,35 +90,32 @@ class ShowAsTableInstances(using Locale):
                 import x.*
                 import x.emissions_values.*
                 val _I = I18N.emissions_and_efficiency_values
-                def mkSingleLine(tev: TestEmissionValue): List[String] = 
-                    val max_lreg = lreg.find_max_for(tev.polluant_name, tev.o2ref)
-                    val ok_or_not = (tev.valueO, max_lreg.flatMap(_.valueO)) match
-                        case (Some(v), Some(max)) => if (v <= max) "OK" else I18N.not_respected.toUpperCase()
-                        case (None, Some(_)) => I18N.missing_data.toUpperCase()
-                        case (Some(_), None) => ""
-                        case (None, None)    => ""
-                    (_I.xxx_at_NpO2(tev.polluant_name.show, tev.o2ref.showP(using show_Percent_0)) :: tev.valueO.showOrElse("-") :: s"<= ${max_lreg.map(_.valueO.showOrElse("")).showOrElse("")}" :: ok_or_not :: Nil)
-                val extraLines: List[List[String]] = 
-                    if (lreg.max_sum_of_dust_and_ogc.isDefined)
-                        List(
-                            emissions_values.sum_of_dust_and_ogc.map(mkSingleLine).getOrElse(Nil)
-                        )
-                    else
-                        List(Nil)
+
+                val checkResults = lreg.checkFor(x)
+
+                val regulation_is_respected = 
+                    if checkResults.allCriteriasAreMet then "OK" else I18N.not_respected.toUpperCase()
+
+                def mkSingleLine(res: ParamCheckResult[?]): List[String] = 
+                    val ok_or_not = res.criteriaIsValid match
+                        case Some(isValid) => if isValid then "OK" else I18N.not_respected.toUpperCase()
+                        case None => I18N.missing_data.toUpperCase()
+                        
+                    res.showDetailedParamDescription :: res.showValue.getOrElse("-") :: res.showCriteria :: ok_or_not :: Nil
+                
                 val effValues = EfficienciesValues(
                     n_nominal = x.min_efficiency_full_stove_nominal.map(_.get),
                     n_lowest  = x.min_efficiency_full_stove_reduced, 
                     ns        = x.min_seasonal_efficiency_full_stove.map(_.get)
                 )
+
+                val resultLines = checkResults.map(mkSingleLine)
+                
                 (_I.firebox_name       :: x.firebox_name                                     :: "" :: "" :: Nil) ::
-                effValues.showOnlyRows.toList  :::
-                mkSingleLine(co)       ::
-                mkSingleLine(dust)     ::
-                mkSingleLine(ogc)      ::
-                mkSingleLine(nox)      ::
-                extraLines                      :::
+                effValues.showOnlyRows.toList   :::
+                resultLines                     :::
                 (_I.accredited_or_notified_body :: accredited_or_notified_body               :: "" :: "" :: Nil) ::
-                (I18N.local_regulations.regulation_ref      :: lreg.regulation_ref           :: "" :: "" :: Nil) ::
+                (I18N.local_regulations.regulation_ref      :: lreg.regulation_ref           :: regulation_is_respected :: "" :: Nil) ::
                 (I18N.local_regulations.country             :: lreg.country.show             :: "" :: "" :: Nil) ::
                 (I18N.type_of_appliance.descr               :: lreg.type_of_appliance.show   :: "" :: "" :: Nil) ::
                 Nil

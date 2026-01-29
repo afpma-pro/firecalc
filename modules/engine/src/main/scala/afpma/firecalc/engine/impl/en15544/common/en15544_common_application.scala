@@ -1123,6 +1123,9 @@ abstract class EN15544_V_2023_Common_Application
             min_efficiency_full_stove_reduced   = ev.n_lowest,
             min_seasonal_efficiency_full_stove  = ev.ns.map(_.some),
         )
+
+    override final def check_emissions_and_efficiency_values_with_local_regulations(lreg: LocalRegulations) = 
+        lreg.checkFor(emissions_and_efficiency_values)
     
     override def η_s = η.map(η =>
         EN16510_1_2022_Formulas.η_s(

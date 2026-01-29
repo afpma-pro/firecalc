@@ -327,6 +327,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     def efficiencies_values: EfficienciesValues
     def emissions_and_efficiency_values: EmissionsAndEfficiencyValues
+    def check_emissions_and_efficiency_values_with_local_regulations(lreg: LocalRegulations): List[LocalRegulations.ParamCheckResult[?]]
     def η_s: WithParams_15544[VNelMcalcErr[Percentage]]
 
 end EN15544_V_2023_Application_Alg

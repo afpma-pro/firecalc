@@ -539,7 +539,7 @@ object coulombutils:
                 mkShowForQtyD[Meter]("%.0f")
             given show_Millimeters: Show[QtyD[Millimeter]] = 
                 mkShowPrettyForQtyD[Millimeter, Millimeter]("%.1f")
-            private val show_Milligram_per_Nm3: Show[QtyD[Milli * Gram / (Meter ^ 3)]] =                 
+            val show_Milligram_per_Nm3: Show[QtyD[Milli * Gram / (Meter ^ 3)]] =                 
                 given ShowUnit[Milli * Gram / (Meter ^ 3)] = ShowUnit.showUnit_Milligram_per_NormalCubicMeter
                 mkShowForQtyD[Milli * Gram / (Meter ^ 3)]("%.0f")
             given show_Moles: Show[QtyD[Mole]] = 
