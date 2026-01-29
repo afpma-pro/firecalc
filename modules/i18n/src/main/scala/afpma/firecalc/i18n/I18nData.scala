@@ -73,6 +73,8 @@ final case class I18nData(
     area_heating_status: AreaHeatingStatus,
     reports: Reports,
     warnings: Warnings,
+    not_respected: String,
+    missing_data: String,
 )
 
 object I18nData:

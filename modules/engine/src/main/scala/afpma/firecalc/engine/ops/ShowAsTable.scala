@@ -92,8 +92,8 @@ class ShowAsTableInstances(using Locale):
                 def mkSingleLine(tev: TestEmissionValue): List[String] = 
                     val max_lreg = lreg.find_max_for(tev.polluant_name, tev.o2ref)
                     val ok_or_not = (tev.valueO, max_lreg.flatMap(_.valueO)) match
-                        case (Some(v), Some(max)) => if (v <= max) "OK" else "NOT OK"
-                        case (None, Some(_)) => "MISSING DATA"
+                        case (Some(v), Some(max)) => if (v <= max) "OK" else I18N.not_respected.toUpperCase()
+                        case (None, Some(_)) => I18N.missing_data.toUpperCase()
                         case (Some(_), None) => ""
                         case (None, None)    => ""
                     (_I.xxx_at_13pO2(tev.polluant_name.show, tev.o2ref.showP(using show_Percent_0)) :: tev.valueO.showOrElse("-") :: s"<= ${max_lreg.map(_.valueO.showOrElse("")).showOrElse("")}" :: ok_or_not :: Nil)
