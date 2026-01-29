@@ -17,7 +17,7 @@
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.4+106-9a3ae2be-SNAPSHOT",
+    "metals.serverVersion": "1.6.5",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 38615,
     "metals.suggestLatestUpgrade": "on",
@@ -47,6 +47,7 @@
             "xml"
         ],
         "excludeGlob": [
+            "**/.var/app/com.visualstudio.code/**",
             "**/node_modules/**",
             "**/target/**",
             "**/project/target/**",
