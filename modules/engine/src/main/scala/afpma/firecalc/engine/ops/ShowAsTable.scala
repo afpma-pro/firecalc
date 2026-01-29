@@ -96,11 +96,11 @@ class ShowAsTableInstances(using Locale):
                         case (None, Some(_)) => I18N.missing_data.toUpperCase()
                         case (Some(_), None) => ""
                         case (None, None)    => ""
-                    (_I.xxx_at_13pO2(tev.polluant_name.show, tev.o2ref.showP(using show_Percent_0)) :: tev.valueO.showOrElse("-") :: s"<= ${max_lreg.map(_.valueO.showOrElse("")).showOrElse("")}" :: ok_or_not :: Nil)
+                    (_I.xxx_at_NpO2(tev.polluant_name.show, tev.o2ref.showP(using show_Percent_0)) :: tev.valueO.showOrElse("-") :: s"<= ${max_lreg.map(_.valueO.showOrElse("")).showOrElse("")}" :: ok_or_not :: Nil)
                 val extraLines: List[List[String]] = 
-                    if (lreg.max_sum_of_dust_and_ogc_at_13pO2.isDefined)
+                    if (lreg.max_sum_of_dust_and_ogc.isDefined)
                         List(
-                            mkSingleLine(emissions_values.sum_of_dust_and_ogc_at_13pO2)
+                            emissions_values.sum_of_dust_and_ogc.map(mkSingleLine).getOrElse(Nil)
                         )
                     else
                         List(Nil)
@@ -109,12 +109,12 @@ class ShowAsTableInstances(using Locale):
                     n_lowest  = x.min_efficiency_full_stove_reduced, 
                     ns        = x.min_seasonal_efficiency_full_stove.map(_.get)
                 )
-                (_I.firebox_name     :: x.firebox_name                            :: "" :: "" :: Nil) ::
+                (_I.firebox_name       :: x.firebox_name                                     :: "" :: "" :: Nil) ::
                 effValues.showOnlyRows.toList  :::
-                mkSingleLine(co_at_13pO2)       ::
-                mkSingleLine(dust_at_13pO2)     ::
-                mkSingleLine(ogc_at_13pO2)      ::
-                mkSingleLine(nox_at_13pO2)      ::
+                mkSingleLine(co)       ::
+                mkSingleLine(dust)     ::
+                mkSingleLine(ogc)      ::
+                mkSingleLine(nox)      ::
                 extraLines                      :::
                 (_I.accredited_or_notified_body :: accredited_or_notified_body               :: "" :: "" :: Nil) ::
                 (I18N.local_regulations.regulation_ref      :: lreg.regulation_ref           :: "" :: "" :: Nil) ::

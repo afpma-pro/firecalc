@@ -20,9 +20,9 @@ object firebox_emissions:
         min_efficiency_full_stove_reduced   = None.validNel,
         min_seasonal_efficiency_full_stove  = None.validNel,
         emissions_values = EmissionValues(
-            co_at_13pO2   = TestEmissionValue(PolluantName.CO  , None, test_method = ""),
-            dust_at_13pO2 = TestEmissionValue(PolluantName.Dust, None, test_method = ""),
-            ogc_at_13pO2  = TestEmissionValue(PolluantName.OGC , None, test_method = ""),
-            nox_at_13pO2  = TestEmissionValue(PolluantName.NOx , None, test_method = ""),
+            co   = TestEmissionValue.defineAt13pO2(PolluantName.CO  , None, test_method = ""),
+            dust = TestEmissionValue.defineAt13pO2(PolluantName.Dust, None, test_method = ""),
+            ogc  = TestEmissionValue.defineAt13pO2(PolluantName.OGC , None, test_method = ""),
+            nox  = TestEmissionValue.defineAt13pO2(PolluantName.NOx , None, test_method = ""),
         )
     )

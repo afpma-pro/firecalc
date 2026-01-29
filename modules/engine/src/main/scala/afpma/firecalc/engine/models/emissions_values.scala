@@ -10,6 +10,9 @@ import afpma.firecalc.units.coulombutils.*
 import coulomb.ops.standard.all.given
 import afpma.firecalc.engine.standard.VNelMcalcErr
 
+import cats.syntax.either.catsSyntaxEitherId
+import cats.syntax.option.catsSyntaxOptionId
+
 case class EfficienciesValues(
     n_nominal: VNelMcalcErr[Percentage],
     n_lowest: VNelMcalcErr[Option[Percentage]],
@@ -34,18 +37,39 @@ case class TestEmissionValue(
     polluant_name: PolluantName,
     valueO: Option[EmissionValueU],
     test_method: String,
-    o2ref: Percentage = 13.percent,
+    o2ref: Percentage,
 )
 
+object TestEmissionValue:
+    def defineAt13pO2(
+        polluant_name: PolluantName,
+        valueO: Option[EmissionValueU],
+        test_method: String,
+    ) = TestEmissionValue(
+        polluant_name,
+        valueO,
+        test_method,
+        o2ref = 13.percent
+    )
+
 case class EmissionValues(
-    co_at_13pO2: TestEmissionValue,
-    dust_at_13pO2: TestEmissionValue,
-    ogc_at_13pO2: TestEmissionValue,
-    nox_at_13pO2: TestEmissionValue,
+    co: TestEmissionValue,
+    dust: TestEmissionValue,
+    ogc: TestEmissionValue,
+    nox: TestEmissionValue,
 ) {
-    val sum_of_dust_and_ogc_at_13pO2 = 
-        val sum_at_13pO2: Option[EmissionValueU] = (dust_at_13pO2.valueO, ogc_at_13pO2.valueO) match
-            case (Some(dust), Some(ogc)) => Some(dust + ogc)
-            case _ => None
-        TestEmissionValue(PolluantName.`Dust+OGC`, sum_at_13pO2, test_method = "")
+    val sum_of_dust_and_ogc: Either[String, TestEmissionValue] = 
+        for 
+            o2ref <- 
+                if (dust.o2ref == ogc.o2ref) then dust.o2ref.asRight
+                else s"could not sum value unless they are defined at same O2 percentage : ${dust} ${ogc}".asLeft
+            sum <- 
+                (dust.valueO, ogc.valueO) match
+                    case (Some(dust), Some(ogc)) => ((dust + ogc): EmissionValueU).asRight
+                    case (None, _)               => "dust value missing".asLeft
+                    case (Some(_), None)         => "ogc value missing".asLeft
+                    case _                       => "dust and ogc values missing".asLeft
+        yield
+            TestEmissionValue(PolluantName.`Dust+OGC`, sum.some, test_method = "", o2ref)
+            
 }

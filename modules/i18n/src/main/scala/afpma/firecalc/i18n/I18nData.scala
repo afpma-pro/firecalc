@@ -253,7 +253,7 @@ object I18nData:
         min_efficiency_firebox_nominal: String,
         min_efficiency_full_stove_reduced: String,
         min_efficiency_full_stove_nominal: String,
-        xxx_at_13pO2: StringFormat2,
+        xxx_at_NpO2: StringFormat2,
     )
 
     case class EN13384(

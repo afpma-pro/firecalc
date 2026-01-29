@@ -26,10 +26,10 @@ object firebox_emissions:
         min_efficiency_full_stove_reduced   = None.validNel,
         min_seasonal_efficiency_full_stove  = None.validNel,
         emissions_values = EmissionValues(
-            co_at_13pO2   = TestEmissionValue(PolluantName.CO  , 1137  .mg_per_Nm3.some, test_method = ""),
-            dust_at_13pO2 = TestEmissionValue(PolluantName.Dust, 26    .mg_per_Nm3.some, test_method = ""),
-            ogc_at_13pO2  = TestEmissionValue(PolluantName.OGC , 87    .mg_per_Nm3.some, test_method = ""),
-            nox_at_13pO2  = TestEmissionValue(PolluantName.NOx , 113   .mg_per_Nm3.some, test_method = ""),
+            co   = TestEmissionValue.defineAt13pO2(PolluantName.CO  , 1137  .mg_per_Nm3.some, test_method = ""),
+            dust = TestEmissionValue.defineAt13pO2(PolluantName.Dust, 26    .mg_per_Nm3.some, test_method = ""),
+            ogc  = TestEmissionValue.defineAt13pO2(PolluantName.OGC , 87    .mg_per_Nm3.some, test_method = ""),
+            nox  = TestEmissionValue.defineAt13pO2(PolluantName.NOx , 113   .mg_per_Nm3.some, test_method = ""),
         )
     )
 
@@ -45,10 +45,10 @@ object firebox_emissions:
         min_efficiency_full_stove_reduced    = None.validNel,
         min_seasonal_efficiency_full_stove   = None.validNel,
         emissions_values = EmissionValues(
-            co_at_13pO2   = TestEmissionValue(PolluantName.CO  , 1304  .mg_per_Nm3.some, test_method = ""),
-            dust_at_13pO2 = TestEmissionValue(PolluantName.Dust, 33    .mg_per_Nm3.some, test_method = ""),
-            ogc_at_13pO2  = TestEmissionValue(PolluantName.OGC , 69    .mg_per_Nm3.some, test_method = ""),
-            nox_at_13pO2  = TestEmissionValue(PolluantName.NOx , 137   .mg_per_Nm3.some, test_method = ""),
+            co   = TestEmissionValue.defineAt13pO2(PolluantName.CO  , 1304  .mg_per_Nm3.some, test_method = ""),
+            dust = TestEmissionValue.defineAt13pO2(PolluantName.Dust, 33    .mg_per_Nm3.some, test_method = ""),
+            ogc  = TestEmissionValue.defineAt13pO2(PolluantName.OGC , 69    .mg_per_Nm3.some, test_method = ""),
+            nox  = TestEmissionValue.defineAt13pO2(PolluantName.NOx , 137   .mg_per_Nm3.some, test_method = ""),
         )
     )
 
@@ -64,10 +64,10 @@ object firebox_emissions:
         min_efficiency_full_stove_reduced   = None.validNel,
         min_seasonal_efficiency_full_stove  = None.validNel,
         emissions_values = EmissionValues(
-            co_at_13pO2   = TestEmissionValue(PolluantName.CO  , 557  .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM B 8303"),
-            dust_at_13pO2 = TestEmissionValue(PolluantName.Dust, 30   .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM M 5861-1 and ÖNORM M 5861-2"),
-            ogc_at_13pO2  = TestEmissionValue(PolluantName.OGC , 39   .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM B 8303"),
-            nox_at_13pO2  = TestEmissionValue(PolluantName.NOx , 133  .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM B 8303"),
+            co   = TestEmissionValue.defineAt13pO2(PolluantName.CO  , 557  .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM B 8303"),
+            dust = TestEmissionValue.defineAt13pO2(PolluantName.Dust, 30   .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM M 5861-1 and ÖNORM M 5861-2"),
+            ogc  = TestEmissionValue.defineAt13pO2(PolluantName.OGC , 39   .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM B 8303"),
+            nox  = TestEmissionValue.defineAt13pO2(PolluantName.NOx , 133  .mg_per_Nm3.some, test_method = "Austrian Standard ÖNORM B 8303"),
         )
     )
 
@@ -88,9 +88,9 @@ object firebox_emissions:
         min_efficiency_full_stove_reduced  = None.validNel,
         min_seasonal_efficiency_full_stove = None.validNel,
         emissions_values = EmissionValues(
-            co_at_13pO2   = TestEmissionValue(PolluantName.CO  , 1154 .mg_per_Nm3.some, test_method = ""),
-            dust_at_13pO2 = TestEmissionValue(PolluantName.Dust, 25   .mg_per_Nm3.some, test_method = ""),
-            ogc_at_13pO2  = TestEmissionValue(PolluantName.OGC , 40   .mg_per_Nm3.some, test_method = ""),
-            nox_at_13pO2  = TestEmissionValue(PolluantName.NOx , 119  .mg_per_Nm3.some, test_method = ""),
+            co   = TestEmissionValue.defineAt13pO2(PolluantName.CO  , 1154 .mg_per_Nm3.some, test_method = ""),
+            dust = TestEmissionValue.defineAt13pO2(PolluantName.Dust, 25   .mg_per_Nm3.some, test_method = ""),
+            ogc  = TestEmissionValue.defineAt13pO2(PolluantName.OGC , 40   .mg_per_Nm3.some, test_method = ""),
+            nox  = TestEmissionValue.defineAt13pO2(PolluantName.NOx , 119  .mg_per_Nm3.some, test_method = ""),
         )
     )
