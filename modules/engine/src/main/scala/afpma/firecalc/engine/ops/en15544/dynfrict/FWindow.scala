@@ -142,8 +142,13 @@ private[dynfrict] final case class FWindow(
                                 if      (nm1.isShortStraightSection   && np1.isRegularStraightSection)  r_nm1.ζ2
                                 else if (nm1.isRegularStraightSection && np1.isShortStraightSection)    r_np1.ζ1
                                 else if (nm1.isShortStraightSection   && np1.isShortStraightSection)
-                                    require(r_nm1.ζ2 == r_np1.ζ1, s"unexpected error: r_nm1.ζ2 != r_np1.ζ1 (${r_nm1.ζ2} != ${r_np1.ζ1})")
-                                    r_np1.ζ1
+                                    if (r_nm1.ζ2 == r_np1.ζ1) r_nm1.ζ2 // same zeta values, return the first one
+                                    else
+                                        // we have two different zeta values
+                                        // we choose the highest one
+                                        // because this is the one that 
+                                        // will probably enforce gas behavior / physics
+                                        if r_nm1.ζ2.value > r_np1.ζ1.value then r_nm1.ζ2 else r_np1.ζ1
                                 else throw new Exception("should not happen")
                             (r_nm1.ζ1.some, z_curr, r_np1.ζ2.some)
                     case (None, Some(r_np1_v)) =>

@@ -153,6 +153,20 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
             elevation_gain * l / length
     }
 
+    object StraightSection:
+        given Show[StraightSection] = Show.show: x =>
+            s"""StraightSection :
+                |length = ${x.length.show}
+                |innerShape = ${x.innerShape.show}
+                |outer_shape = ${x.outer_shape.show}
+                |roughness = ${x.roughness.show}
+                |layers = ${x.layers.map(_.toString).mkString("\n  -", "\n  -", "\n")}
+                |elevation_gain = ${x.elevation_gain.show}
+                |airSpaceDetailed = ${x.airSpaceDetailed.show}
+                |pipeLoc = ${x.pipeLoc}
+                |ductType = ${x.ductType.show}
+                |""".stripMargin
+
     // just some case of SingularFlowResistance ?
     // should extends SingularFlowResistance ?
     // 
