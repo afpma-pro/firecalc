@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.models
 
+import cats.Show
 import cats.syntax.all.*
 
 import afpma.firecalc.i18n.ShowUsingLocale
@@ -12,8 +13,13 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.units.coulombutils.conversions.mg_per_Nm3
+
+import LocalRegulations.*
+import afpma.firecalc.i18n.LocalizedString
+import io.taig.babel.Locale
+import afpma.firecalc.units.coulombutils.ShowUnit.showUnit_Milligram_per_NormalCubicMeter
 
 case class LocalRegulations(
     regulation_ref: String,
@@ -37,9 +43,83 @@ case class LocalRegulations(
 
     def find_max_for(polluant_name: PolluantName, o2ref: Percentage): Option[TestEmissionValue] = 
         all_polluants.filter(_.o2ref == o2ref).find(_.polluant_name == polluant_name)
+
+    private def checkForMin[U: ShowUnit](param: ParamToCheck, omin: Option[QtyD[U]], ov: Option[QtyD[U]], areValueCompatible: Boolean): Option[ParamCheckResult[U]] = 
+        omin.map(min => ParamCheckResult(param, HasMin(min), ov))
+
+    private def checkForMax[U: ShowUnit](param: ParamToCheck, omax: Option[QtyD[U]], ov: Option[QtyD[U]], areValueCompatible: Boolean): Option[ParamCheckResult[U]] = 
+        omax.map(max => ParamCheckResult(param, HasMax(max), ov))
+
+    private def checkForMax_TestEmissionValueWithO2Ref(
+        o2ref_to_param: Percentage => ParamToCheck, 
+        omaxSource: Option[TestEmissionValue], 
+        ovSource: Option[TestEmissionValue]
+    ): Option[ParamCheckResult[?]] = 
+        import ShowUnit.showUnit_Milligram_per_NormalCubicMeter
+        omaxSource.flatMap: src =>
+            val omax = src.valueO
+            val param = o2ref_to_param(src.o2ref)
+            checkForMax(param, omax, ovSource.flatMap(_.valueO), checkSameO2Ref(omaxSource, ovSource))(using showUnit_Milligram_per_NormalCubicMeter)
+
+    private def checkSameO2Ref(ol: Option[TestEmissionValue], or: Option[TestEmissionValue]): Boolean = 
+        (ol, or) match
+            case (Some(l), Some(r)) => l.o2ref == r.o2ref
+            case _                  => true // missing values could have proper o2ref
+        
+
+    def checkFor(eev: EmissionsAndEfficiencyValues): List[ParamCheckResult[?]] = 
+        List(
+            checkForMin(ParamToCheck.MinEff             , min_efficiency                        , eev.min_efficiency_full_stove_nominal.toOption.flatten, true),
+            checkForMin(ParamToCheck.MinSeasonalEff     , min_seasonal_efficiency               , eev.min_seasonal_efficiency_full_stove.toOption.flatten, true),
+            checkForMax_TestEmissionValueWithO2Ref(ParamToCheck.MaxCO.apply              , max_co                  , eev.emissions_values.co.some    ),
+            checkForMax_TestEmissionValueWithO2Ref(ParamToCheck.MaxDust.apply            , max_dust                , eev.emissions_values.dust.some  ),
+            checkForMax_TestEmissionValueWithO2Ref(ParamToCheck.MaxOGC.apply             , max_ogc                 , eev.emissions_values.ogc.some   ),
+            checkForMax_TestEmissionValueWithO2Ref(ParamToCheck.MaxNOX.apply             , max_nox                 , eev.emissions_values.nox.some   ),
+            checkForMax_TestEmissionValueWithO2Ref(ParamToCheck.MaxSumOfDustAndOGC.apply , max_sum_of_dust_and_ogc , eev.emissions_values.sum_of_dust_and_ogc.toOption),
+        ).flatten
 }
 
 object LocalRegulations:
+
+    // parameter / constraint checking
+    sealed trait ParamToCheck
+    object ParamToCheck:
+        case object MinEff extends ParamToCheck
+        case object MinSeasonalEff extends ParamToCheck
+        case class MaxCO(o2ref: Percentage) extends ParamToCheck
+        case class MaxDust(o2ref: Percentage) extends ParamToCheck
+        case class MaxOGC(o2ref: Percentage) extends ParamToCheck
+        case class MaxNOX(o2ref: Percentage) extends ParamToCheck
+        case class MaxSumOfDustAndOGC(o2ref: Percentage) extends ParamToCheck
+
+    sealed trait ParamCriteria[U: ShowUnit]
+    case class HasMax[U: ShowUnit](v: QtyD[U]) extends ParamCriteria[U]
+    case class HasMin[U: ShowUnit](v: QtyD[U]) extends ParamCriteria[U]
+
+    case class ParamCheckResult[U: ShowUnit](
+        param: ParamToCheck,
+        criteria: ParamCriteria[U],
+        value: Option[QtyD[U]],
+    ) {
+        def showCriteria(using showQ: Show[QtyD[U]]) = criteria match
+            case HasMax(v) => s"≤ ${v.showP}"
+            case HasMin(v) => s"≥ ${v.showP}"
+
+        def showValue(using showQ: Show[QtyD[U]]) = 
+            value.map(_.showP)
+    }
+
+    def showDetailedParamDescription[T](x: ParamCheckResult[?]): Locale ?=> String = 
+        import shows.defaults.show_Percent_0
+        x.param match
+            case ParamToCheck.MinEff                     => I18N.emissions_and_efficiency_values.min_efficiency_full_stove_nominal
+            case ParamToCheck.MinSeasonalEff             => I18N.en16510.η_s
+            case ParamToCheck.MaxCO(o2ref)               => I18N.emissions_and_efficiency_values.xxx_at_NpO2(I18N.pollutant_names.CO      , o2ref.showP(using show_Percent_0))
+            case ParamToCheck.MaxDust(o2ref)             => I18N.emissions_and_efficiency_values.xxx_at_NpO2(I18N.pollutant_names.Dust    , o2ref.showP(using show_Percent_0))
+            case ParamToCheck.MaxOGC(o2ref)              => I18N.emissions_and_efficiency_values.xxx_at_NpO2(I18N.pollutant_names.OGC     , o2ref.showP(using show_Percent_0))
+            case ParamToCheck.MaxNOX(o2ref)              => I18N.emissions_and_efficiency_values.xxx_at_NpO2(I18N.pollutant_names.NOx     , o2ref.showP(using show_Percent_0))
+            case ParamToCheck.MaxSumOfDustAndOGC(o2ref)  => I18N.emissions_and_efficiency_values.xxx_at_NpO2(I18N.pollutant_names.Dust_OGC, o2ref.showP(using show_Percent_0))
+        
 
     enum TypeOfAppliance:
         case Pellets, WoodLogs
