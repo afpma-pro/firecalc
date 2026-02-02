@@ -30,11 +30,11 @@ object ProjectDescrUI:
 case class ProjectDescrUI()(using Locale, DisplayUnits):
 
     lazy val node = div(
-        cls := "flex flex-row items-start justify-center",
-        div(cls := "flex-auto flex justify-center", div(cls := "flex-none", form_customer)),
-        div(cls := "flex-auto flex justify-center", div(cls := "flex-none", form_project_descr)),
-        div(cls := "flex-auto flex justify-center", div(cls := "flex-none", form_billing_address)),
-        div(cls := "flex-auto flex justify-center", div(cls := "flex-none", form_project_address)),
+        cls := "flex flex-row flex-wrap items-start justify-start",
+        div(cls := "flex-auto flex justify-start", div(cls := "flex-none", form_customer)),
+        div(cls := "flex-auto flex justify-start", div(cls := "flex-none", form_project_descr)),
+        div(cls := "flex-auto flex justify-start", div(cls := "flex-none", form_billing_address)),
+        div(cls := "flex-auto flex justify-start", div(cls := "flex-none", form_project_address)),
     )
 
     // Customer and address data now come from clientProjectDataVar (client-side only)
