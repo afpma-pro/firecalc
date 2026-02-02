@@ -713,20 +713,20 @@ abstract class EN15544_V_2023_Common_Application
             validateVelocitiesInChimneyPipe(),
         ).sequence[[x] =>> VNelMcalcErr[x], Unit].map(_ => ())
 
-    def validatePressureRequirements_EN15544(): WithParams_15544[ValidatedNel[MCalc_Error, Unit]] =
+    def validatePressureRequirements_EN15544(): WithParams_15544[VNelMcalcErr[Unit]] =
         pressureRequirement_EN15544.andThen: preq =>
             preq.isInValidRange match
                 case true => ().validNel
                 case false => InvalidPressureRequirement(preq).invalidNel
 
-    def validateChimneyWallTempIsAbove45DegreesCelsius(): WithParams_15544[ValidatedNel[MCalc_Error, Unit]] =
+    def validateChimneyWallTempIsAboveCondensationTemp(): WithParams_15544[VNelMcalcErr[Unit]] =
         estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>
             if (t >= formulas.t_chimney_wall_top_min)
                 ().validNel[MecaFlu_Error] 
             else 
                 MecaFlu_Error.InvalidChimneyWallTemperature(t).invalidNel
 
-    def validateEfficiencyIsAboveMinEfficiency(): WithParams_15544[ValidatedNel[MCalc_Error, Unit]] =
+    def validateEfficiencyIsAboveMinEfficiency(): WithParams_15544[VNelMcalcErr[Unit]] =
         η.andThen: eff =>
             emissions_and_efficiency_values.min_efficiency_full_stove_nominal.map:
                 case Some(min_eff) =>
@@ -737,7 +737,19 @@ abstract class EN15544_V_2023_Common_Application
                 case None =>
                     ().validNel
 
-    def validateCitedConstraints(): WithParams_15544[ValidatedNel[MCalc_Error, Unit]] = 
+    override def validateSeasonalEfficiency(countryCode: Country): WithParams_15544[VNelMcalcErr[Unit]] =
+        η_s.andThen: seas_eff =>
+            val lreg = LocalRegulations.findBy(countryCode, inputs.design.firebox.type_of_appliance)
+            lreg.min_seasonal_efficiency match
+                case Some(min_seas_eff) =>
+                    if (seas_eff.value >= min_seas_eff.value)
+                        ().validNel
+                    else
+                        EfficiencyIsTooLow(seas_eff, min_seas_eff).invalidNel
+                case None =>
+                    ().validNel // no min defined, so we're good
+
+    def validateCitedConstraints(): WithParams_15544[VNelMcalcErr[Unit]] = 
         citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
 
     def validateFireboxType(): WithParams_15544[ValidatedNel[FireboxError, Unit]] = 
@@ -1082,13 +1094,14 @@ abstract class EN15544_V_2023_Common_Application
             )
         )
 
-    final def validateResults: VNel[Unit] =
+    final def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit] =
         List(
             validateFluePipeShape(),
             validateVelocitiesInPipes()(using runValidationAtParams),
             validatePressureRequirements_EN15544()(using runValidationAtParams),
-            validateChimneyWallTempIsAbove45DegreesCelsius()(using runValidationAtParams),
-            validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
+            validateChimneyWallTempIsAboveCondensationTemp()(using runValidationAtParams),
+            // validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
+            validateSeasonalEfficiency(countryCode)(using runValidationAtParams),
             validateCitedConstraints()(using runValidationAtParams),
             // Firebox
             validateFireboxType()(using runValidationAtParams),

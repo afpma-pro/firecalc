@@ -108,6 +108,8 @@ import afpma.firecalc.engine.models.CombustionAirPipe_15544
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
 import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.engine.models.LocalRegulations.ParamCheckResults
+import afpma.firecalc.engine.models.LocalRegulations
 
 // Engine state (sent to backend for PDF generation)
 val engineStateVar = appStateSchemaVar.zoomLazy(_.engine_state)((schema, engine) =>
@@ -249,12 +251,27 @@ lazy val results_en15544_strict_sig
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .map(_.make_en15544_Strict_Application)
 
-lazy val en15544_strict_validate_results: Signal[Boolean] =
-    results_en15544_strict_sig
-        .mapAndFoldVNelE(
-            _.validateResults.fold(nel => false, _ => true),
-            default = false
+lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
+    results_en15544_strict_sig.combineWith(project_descr_var.signal)
+        .map((vnelAppl, prj) =>
+            vnelAppl.map(
+                _.validateResultsExceptEmissionsValues(prj.country).fold(nel => false, _ => true)
+            ).getOrElse(false)
         )
+
+lazy val en15544_strict_local_regulations_and_check_results: Signal[(Option[LocalRegulations], LocalRegulations.ParamCheckResults)] =
+    results_en15544_strict_sig.combineWith(project_descr_var.signal)
+        .map((vnelAppl, prj) =>
+            vnelAppl.map { appl =>
+                val lreg = LocalRegulations.findBy(prj.country, appl.inputs.design.firebox.type_of_appliance)
+                val pcres = appl.check_emissions_and_efficiency_values_with_local_regulations(lreg)
+                (Some(lreg), pcres)
+            }
+            .getOrElse((None, LocalRegulations.ParamCheckResults.empty))
+        )
+
+lazy val en15544_strict_check_emissions_and_efficiency_values_with_local_regulations: Signal[LocalRegulations.ParamCheckResults] =
+    en15544_strict_local_regulations_and_check_results.map(_._2)
 
 lazy val results_en13384_sig
     : Signal[VNelMcalcErr[EN13384_1_A1_2019_Common_Application]] =
@@ -312,13 +329,12 @@ lazy val results_en15544_estimated_output_temperatures
         strict.estimated_output_temperatures(using p)
     )
 
-// TODO: retrieve 45°C from standard / engine. Do not hardcode it here. UI should not have knowledge of this.
-lazy val tChimneyWallToOutAbove45_sig: Signal[Boolean] =
+lazy val chimney_wall_temp_above_condensation_temp_sig: Signal[Boolean] =
     results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
             val p = strict.runValidationAtParams
             strict
-                .validateChimneyWallTempIsAbove45DegreesCelsius()(using p)
+                .validateChimneyWallTempIsAboveCondensationTemp()(using p)
                 .map(_ => true)
         ,
         default = false
@@ -467,8 +483,23 @@ val en13384_P_L_sig: Signal[VNelMcalcErr[P_L]] =
 // Build a Signal saying when all conditions / constraints are met
 // TODO: add EN 13384 conditions ?
 
+lazy val conditions_and_results_satisfied_except_emissions_sig: Signal[Boolean] =
+    en15544_strict_validate_results_except_emissions
+
+lazy val conditions_and_results_satisfied_except_emissions_not_sig =
+    conditions_and_results_satisfied_except_emissions_sig.map(!_)
+
+lazy val emissions_and_efficiency_values_satisfied_sig: Signal[Boolean] =
+    en15544_strict_check_emissions_and_efficiency_values_with_local_regulations
+    .map(_.allCriteriasAreMet)
+
+lazy val emissions_and_efficiency_values_satisfied_not_sig = 
+    emissions_and_efficiency_values_satisfied_sig.map(!_)
+
 lazy val all_conditions_and_results_satisfied_sig: Signal[Boolean] =
-    en15544_strict_validate_results
+    en15544_strict_validate_results_except_emissions
+    .combineWith(emissions_and_efficiency_values_satisfied_sig)
+    .map(_ && _)
 
 lazy val all_conditions_and_results_not_satisfied_sig =
     all_conditions_and_results_satisfied_sig.map(!_)

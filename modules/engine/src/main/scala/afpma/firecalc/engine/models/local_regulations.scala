@@ -105,9 +105,18 @@ object LocalRegulations:
 
     type ParamCheckResults = Seq[ParamCheckResult[?]]
 
+    object ParamCheckResults:
+        def empty: ParamCheckResults = Seq.empty[ParamCheckResult[?]]
+
     extension (results: ParamCheckResults)
         def allCriteriasAreMet: Boolean = 
             results.map(_.criteriaIsValid).flatten.forall(_ == true)
+
+        def unmetCriterias: ParamCheckResults = 
+            results.filter(_
+                .criteriaIsValid.map(!_) // keep invalid criteria
+                .getOrElse(false) // skip if criteria undefined
+            )
 
     case class ParamCheckResult[U: ShowUnit](
         param: ParamToCheck,
@@ -175,6 +184,7 @@ object LocalRegulations:
                 throw new IllegalStateException(s"Found ${xs.size} local regulations for country '$c' and appliance type '$t' (expecting only one):\n${regulations_detail}")
   
     object fr:
+        
         lazy val all = List(wood_logs, pellets)
 
         lazy val wood_logs = LocalRegulations(

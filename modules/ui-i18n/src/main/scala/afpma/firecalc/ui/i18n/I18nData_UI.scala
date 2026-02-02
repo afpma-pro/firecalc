@@ -117,6 +117,7 @@ object I18nData_UI:
         connection: Modal.Connection,
         validation: Modal.Validation,
         payment: Modal.Payment,
+        emissions_warning: Modal.EmissionsWarning,
     )
 
     object Modal {
@@ -162,6 +163,26 @@ object I18nData_UI:
           close_window_hint: String,
           button_close: String,
       )
+
+      final case class EmissionsWarning(
+          title: String,
+          message: String,
+          table: EmissionsWarning.Table,
+          not_met: String,
+          according_to: StringFormat1,
+          acknowledge_checkbox: String,
+          button_cancel: String,
+          button_confirm: String,
+      )
+
+      object EmissionsWarning {
+        final case class Table(
+            parameter: String,
+            current_value: String,
+            required: String,
+            status: String,
+        )
+      }
     }
   }
 
@@ -172,6 +193,7 @@ object I18nData_UI:
     save_project: String,
     order_pdf_report: String,
     order_pdf_report_not_possible: String,
+    order_pdf_report_emissions_warning: String,
     display_details: String,
     ph_static_pressure: String,
     pr_loss_to_friction: String,

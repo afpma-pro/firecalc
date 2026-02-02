@@ -33,7 +33,7 @@ final case class ChimneyWallOutputTempIndicator()(using Locale, DisplayUnits)
 
     given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
 
-    private val hasError = tChimneyWallToOutAbove45_sig.map(!_)
+    private val hasError = chimney_wall_temp_above_condensation_temp_sig.map(!_)
 
     private val tooltipMessage: Signal[HtmlElement] =
         results_en15544_t_chimney_wall_top_min
@@ -46,8 +46,8 @@ final case class ChimneyWallOutputTempIndicator()(using Locale, DisplayUnits)
         IndicatorWithErrorTooltip(
             indicator = Indicator(
                 Seq(
-                    (IndicatorConfig.green, tChimneyWallToOutAbove45_sig),
-                    (IndicatorConfig.rose, tChimneyWallToOutAbove45_sig.map(!_))
+                    (IndicatorConfig.green, chimney_wall_temp_above_condensation_temp_sig),
+                    (IndicatorConfig.rose, chimney_wall_temp_above_condensation_temp_sig.map(!_))
                 ),
                 title = p(
                     I18N_UI.indicators.chimney_wall_out_temp_line1,

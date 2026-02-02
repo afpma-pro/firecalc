@@ -15,20 +15,22 @@ object lucide:
     val strokeLinecap  = svgAttr("stroke-linecap", StringAsIsCodec, None)
     val strokeLinejoin = svgAttr("stroke-linejoin", StringAsIsCodec, None)
 
-    def plus = svg(
-        xmlns          := "http://www.w3.org/2000/svg",
-        width          := "24",
-        height         := "24",
-        viewBox        := "0 0 24 24",
-        fill           := "none",
-        stroke         := "currentColor",
-        strokeWidth    := "2",
-        strokeLinecap  := "round",
-        strokeLinejoin := "round",
-        cls            := "lucide lucide-plus",
-        path(d := "M5 12h14"),
-        path(d := "M12 5v14")
-    )
+    def `triangle-alert`(w: Int = 24, h: Int = 24, stroke_width: Double = 2) = 
+        svg(
+            xmlns           := "http://www.w3.org/2000/svg",
+            width           := s"$w",
+            height          := s"$h",
+            viewBox         := "0 0 24 24",
+            fill            := "none",
+            stroke          := "currentColor",
+            strokeWidth     := s"$stroke_width",
+            strokeLinecap   := "round",
+            strokeLinejoin  := "round",
+            cls := "lucide lucide-triangle-alert-icon lucide-triangle-alert",
+            path(d := "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"),
+            path(d := "M12 9v4"),
+            path(d := "M12 17h.01")
+        )
 
     def `circle-check` = svg(
         xmlns          := "http://www.w3.org/2000/svg",
@@ -278,6 +280,21 @@ object lucide:
         path(d := "M7 2h1"),
         path(d := "m22 22-5-10-5 10"),
         path(d := "M14 18h6")
+    )
+
+    def plus = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := "24",
+        height         := "24",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := "2",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-plus",
+        path(d := "M5 12h14"),
+        path(d := "M12 5v14")
     )
 
     def settings = svg(

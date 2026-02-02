@@ -7,6 +7,8 @@ package afpma.firecalc.ui.components
 
 import scala.scalajs.js
 
+import cats.syntax.show.toShow
+
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.FireCalcProjet
 import afpma.firecalc.ui.config.{UIConfig, ViteEnv, BuildMode}
@@ -34,6 +36,7 @@ import afpma.firecalc.payments.shared.api.*
 case class OrderPDFReportModalComponent()(using Locale) extends Component:
 
     private val modal_id = "order_pdf_modal"
+    private val emissions_warning_modal_id = "emissions_warning_modal"
     private val payment_success_modal_id = "payment_success_modal"
 
     protected final case class PDFReportOrderingState(
@@ -52,6 +55,8 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
         val init = PDFReportOrderingState(cgv_accepted = false)
 
     private val pdf_report_ordering_var = Var[PDFReportOrderingState](PDFReportOrderingState.init)
+    
+    private val emissions_warning_acknowledged_var = Var[Boolean](false)
     
     private val cgv_accepted_sig = pdf_report_ordering_var.signal.map(_.cgv_accepted)
 
@@ -347,21 +352,25 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                 cls    := "flex items-stretch gap-2",
                 DaisyUITooltip(
                     ttContent = div(
-                         text <-- all_conditions_and_results_satisfied_sig.map(
-                            if (_) I18N_UI.tooltips.order_pdf_report else I18N_UI.tooltips.order_pdf_report_not_possible
-                        )
+                         text <-- conditions_and_results_satisfied_except_emissions_sig
+                            .combineWith(emissions_and_efficiency_values_satisfied_sig)
+                            .map { case (conditions_ok, emissions_ok) =>
+                                if (!conditions_ok) I18N_UI.tooltips.order_pdf_report_not_possible
+                                else if (!emissions_ok) I18N_UI.tooltips.order_pdf_report_emissions_warning
+                                else I18N_UI.tooltips.order_pdf_report
+                            }
                     ),
                     element = div(
                         tabIndex := 0,
                         role     := "button",
-                        disabledAttr <-- all_conditions_and_results_not_satisfied_sig,
+                        disabledAttr <-- conditions_and_results_satisfied_except_emissions_not_sig,
                         cls      := "btn btn-outline hover:btn-secondary rounded-field",
                         cls(
                             "text-base-content"
-                        ) <-- all_conditions_and_results_satisfied_sig,
+                        ) <-- conditions_and_results_satisfied_except_emissions_sig,
                         cls(
                             "text-base-content/40 hover:text-base-content"
-                        ) <-- all_conditions_and_results_not_satisfied_sig,
+                        ) <-- conditions_and_results_satisfied_except_emissions_not_sig,
                         div(
                             cls := "h-4 flex items-center justify-center",
                             I18N_UI.buttons.order_pdf_report
@@ -370,12 +379,25 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                             cls := "w-4 h-4 flex items-center justify-center",
                             lucide.`tag`(stroke_width = 1.5)
                         ),
-                        onClick --> { _ =>
-                            dom.document
-                                .getElementById(modal_id)
-                                .asInstanceOf[HTMLDialogElement]
-                                .showModal()
-                        }
+                        onClick
+                            .compose(
+                                _.withCurrentValueOf(emissions_and_efficiency_values_satisfied_sig)
+                            ) --> { (_, emissionsOk) =>
+                                if (emissionsOk) {
+                                    // Direct flow to main modal
+                                    dom.document
+                                        .getElementById(modal_id)
+                                        .asInstanceOf[HTMLDialogElement]
+                                        .showModal()
+                                } else {
+                                    // Show warning modal first
+                                    emissions_warning_acknowledged_var.set(false) // Reset checkbox
+                                    dom.document
+                                        .getElementById(emissions_warning_modal_id)
+                                        .asInstanceOf[HTMLDialogElement]
+                                        .showModal()
+                                }
+                            }
                     ),
                     ttPosition = "tooltip-bottom"
                 )
@@ -598,6 +620,139 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
 
                 )
             ),
+            // Emissions Warning Modal - shown when user tries to order with unmet emissions criteria
+            dialogTag(
+                idAttr := emissions_warning_modal_id,
+                cls := "modal",
+                onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]](
+                    mount = ctx => {
+                        val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
+                        val closeHandler: js.Function1[dom.Event, Unit] = _ => {
+                            // Reset acknowledgment state when modal is closed
+                            emissions_warning_acknowledged_var.set(false)
+                        }
+                        dialog.addEventListener("close", closeHandler)
+                        closeHandler
+                    },
+                    unmount = (thisNode, maybeHandler) => {
+                        maybeHandler.foreach { handler =>
+                            val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
+                            dialog.removeEventListener("close", handler)
+                        }
+                    }
+                ),
+                div(
+                    cls := "modal-box w-10/12 max-w-4xl",
+                    h3(
+                        cls := "text-lg font-bold text-warning",
+                        I18N_UI.pdf_ordering.modal.emissions_warning.title
+                    ),
+                    div(
+                        cls := "py-4",
+                        // Warning message
+                        div(
+                            cls := "alert alert-warning mb-4",
+                            lucide.`triangle-alert`(w = 24, h = 24),
+                            span(I18N_UI.pdf_ordering.modal.emissions_warning.message)
+                        ),
+                        // Unmet criteria table
+                        div(
+                            cls := "overflow-x-auto",
+                            child <-- en15544_strict_local_regulations_and_check_results.map { case (lregOpt, checkResults) =>
+                                val unmetCriterias = checkResults.unmetCriterias
+                                div(
+                                    if (unmetCriterias.isEmpty) {
+                                        p(cls := "text-success", "All criteria met")
+                                    } else {
+                                        table(
+                                            cls := "table table-zebra w-full",
+                                            thead(
+                                                tr(
+                                                    th(I18N_UI.pdf_ordering.modal.emissions_warning.table.parameter),
+                                                    th(I18N_UI.pdf_ordering.modal.emissions_warning.table.current_value),
+                                                    th(I18N_UI.pdf_ordering.modal.emissions_warning.table.required + "*"),
+                                                    th(I18N_UI.pdf_ordering.modal.emissions_warning.table.status)
+                                                )
+                                            ),
+                                            tbody(
+                                                unmetCriterias.map { res =>
+                                                    tr(
+                                                        td(res.showDetailedParamDescription),
+                                                        td(res.showValue.getOrElse("-")),
+                                                        td(res.showCriteria),
+                                                        td(
+                                                            cls := "text-warning font-bold",
+                                                            I18N_UI.pdf_ordering.modal.emissions_warning.not_met
+                                                        )
+                                                    )
+                                                }
+                                            )
+                                        )
+                                    },
+                                    // Local regulation citation
+                                    lregOpt.map { lreg =>
+                                        p(
+                                            cls := "mt-4 text-sm italic text-base-content/70",
+                                            {
+                                                val local_ref_and_country = s"${lreg.regulation_ref} (${lreg.country.show})"
+                                                val full_ref_sentence  = I18N_UI.pdf_ordering.modal.emissions_warning.according_to(local_ref_and_country)
+                                                s"*$full_ref_sentence" // prefix with an asterisk
+                                            }
+                                            
+                                        )
+                                    }
+                                )
+                            }
+                        ),
+                        // Acknowledgment checkbox
+                        div(
+                            cls := "form-control mt-6",
+                            label(
+                                cls := "label cursor-pointer justify-start gap-4",
+                                input(
+                                    typ := "checkbox",
+                                    cls := "checkbox checkbox-warning",
+                                    checked <-- emissions_warning_acknowledged_var.signal,
+                                    onChange.mapToChecked --> emissions_warning_acknowledged_var.writer
+                                ),
+                                span(
+                                    cls := "label-text text-base",
+                                    I18N_UI.pdf_ordering.modal.emissions_warning.acknowledge_checkbox
+                                )
+                            )
+                        )
+                    ),
+                    div(
+                        cls := "modal-action flex gap-2",
+                        // Cancel button
+                        form(
+                            method := "dialog",
+                            button(
+                                cls := "btn btn-outline",
+                                I18N_UI.pdf_ordering.modal.emissions_warning.button_cancel
+                            )
+                        ),
+                        // Confirm button - disabled until checkbox is checked
+                        button(
+                            cls := "btn btn-warning",
+                            disabledAttr <-- emissions_warning_acknowledged_var.signal.map(!_),
+                            onClick --> { _ =>
+                                // Close warning modal
+                                dom.document
+                                    .getElementById(emissions_warning_modal_id)
+                                    .asInstanceOf[HTMLDialogElement]
+                                    .close()
+                                // Open main PDF order modal
+                                dom.document
+                                    .getElementById(modal_id)
+                                    .asInstanceOf[HTMLDialogElement]
+                                    .showModal()
+                            },
+                            I18N_UI.pdf_ordering.modal.emissions_warning.button_confirm
+                        )
+                    )
+                )
+            ),
             // Payment Success Modal - shown after 6-digit code validation
             dialogTag(
                 idAttr := payment_success_modal_id,
@@ -668,7 +823,7 @@ case class OrderPDFReportModalComponent()(using Locale) extends Component:
                         ),
                         // Close window hint
                         p(
-                            cls := "text-center mt-4",
+                            cls := "text-center mt-4 font-bold",
                             I18N_UI.pdf_ordering.modal.payment.close_window_hint
                         )
                     ),

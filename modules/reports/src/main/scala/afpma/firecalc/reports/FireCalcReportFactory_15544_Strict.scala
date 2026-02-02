@@ -87,9 +87,10 @@ object FireCalcReportFactory_15544_Strict:
                     ))
         
         override def loadAndValidateFireCalcProject(fireCalcProj: StoveProjectDescr_15544_Strict_Alg) =
+            val countryCode = fireCalcProj.project.country
             fireCalcProj.en15544_Alg match
                 case Valid(en15544_appl) =>
-                    en15544_appl.validateResults match
+                    en15544_appl.validateResultsExceptEmissionsValues(countryCode) match
                         case Invalid(e) =>
                             Left(EN15544ValidationException(e.toList.map(_.toString)))
                         case Valid(_)   =>

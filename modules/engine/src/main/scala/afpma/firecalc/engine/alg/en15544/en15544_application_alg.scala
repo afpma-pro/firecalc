@@ -29,6 +29,7 @@ import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 
 import afpma.firecalc.dto.common.DuctType
+import afpma.firecalc.dto.common.Country
 
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
@@ -317,13 +318,14 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def validateFluePipeShape(): VNel[Unit]
     def validateVelocitiesInPipes(): WithParams_15544[VNel[Unit]]
     def validatePressureRequirements_EN15544(): WithParams_15544[VNelMcalcErr[Unit]]
-    def validateChimneyWallTempIsAbove45DegreesCelsius(): WithParams_15544[VNelMcalcErr[Unit]]
+    def validateChimneyWallTempIsAboveCondensationTemp(): WithParams_15544[VNelMcalcErr[Unit]]
     def validateEfficiencyIsAboveMinEfficiency(): WithParams_15544[VNelMcalcErr[Unit]]
+    def validateSeasonalEfficiency(countryCode: Country): WithParams_15544[VNelMcalcErr[Unit]]
     def validateCitedConstraints(): WithParams_15544[VNelMcalcErr[Unit]]
     def validateFireboxType(): WithParams_15544[ValidatedNel[FireboxError, Unit]]
 
     val runValidationAtParams: Params_15544
-    def validateResults: VNel[Unit]
+    def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit]
 
     def efficiencies_values: EfficienciesValues
     def emissions_and_efficiency_values: EmissionsAndEfficiencyValues

@@ -40,8 +40,8 @@ final case class Indicators()(using Locale, DisplayUnits)
 
             // Indicator(
             //     Seq(
-            //         (IndicatorConfig.green, tChimneyWallToOutAbove45_sig),
-            //         (IndicatorConfig.rose, tChimneyWallToOutAbove45_sig.map(!_))
+            //         (IndicatorConfig.green, chimney_wall_temp_above_condensation_temp_sig),
+            //         (IndicatorConfig.rose, chimney_wall_temp_above_condensation_temp_sig.map(!_))
             //     ),
             //     title = p(I18N_UI.indicators.flue_gas_temp),
             //     subtitle_sig = Var("").signal,
