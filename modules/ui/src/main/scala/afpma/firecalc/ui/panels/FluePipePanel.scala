@@ -29,7 +29,7 @@ import afpma.firecalc.engine.utils.asVNelString
 final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     import hastranslations.given
-    import horizontal_form_15544.given
+    import FlowOnlyHorizontalForm_15544.given
 
     type In = FlowOnlyPipeDescr_15544
     type Out = FluePipe_15544

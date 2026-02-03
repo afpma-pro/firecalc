@@ -151,7 +151,7 @@ object CasType_13384_C16
     val connectorPipe = 
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)),
             layer(e = 1.mm, tr = 0.0.m2_K_per_W),
             pipeLocation(PipeLocation.HeatedArea),
@@ -179,7 +179,7 @@ object CasType_13384_C16
     val chimneyPipe = 
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)),
 
             layer(

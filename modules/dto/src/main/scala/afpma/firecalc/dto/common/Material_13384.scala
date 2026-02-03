@@ -11,24 +11,26 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.units.coulombutils.*
 
 // 13384 - Annexe B / Tableau B.4
-enum Material_13384(val roughness: Roughness):
-    case WeldedSteel        extends Material_13384(1.mm)
-    case Glass              extends Material_13384(1.mm)
-    case Plastic            extends Material_13384(1.mm)
-    case Aluminium          extends Material_13384(1.mm)
-    case ClayFlueLiners     extends Material_13384(1.5.mm)
-    case Bricks             extends Material_13384(5.mm)
-    case SolderedMetal      extends Material_13384(2.mm)
-    case Concrete           extends Material_13384(3.mm)
-    case Fibrociment        extends Material_13384(3.mm)
-    case Masonry            extends Material_13384(5.mm)
-    case CorrugatedMetal    extends Material_13384(5.mm)
+@deprecated("use Material_13384_V2", "2026-02-02")
+enum Material_13384_V1(val roughness: Roughness):
+    case WeldedSteel        extends Material_13384_V1(1.mm)
+    case Glass              extends Material_13384_V1(1.mm)
+    case Plastic            extends Material_13384_V1(1.mm)
+    case Aluminium          extends Material_13384_V1(1.mm)
+    case ClayFlueLiners     extends Material_13384_V1(1.5.mm)
+    case Bricks             extends Material_13384_V1(5.mm)
+    case SolderedMetal      extends Material_13384_V1(2.mm)
+    case Concrete           extends Material_13384_V1(3.mm)
+    case Fibrociment        extends Material_13384_V1(3.mm)
+    case Masonry            extends Material_13384_V1(5.mm)
+    case CorrugatedMetal    extends Material_13384_V1(5.mm)
 
-object Material_13384:
+@deprecated("use Material_13384_V2", "2026-02-02")
+object Material_13384_V1:
 
-    given Conversion[Material_13384, Roughness] = _.roughness
+    given Conversion[Material_13384_V1, Roughness] = _.roughness
 
-    given ShowUsingLocale[Material_13384] = showUsingLocale:
+    given ShowUsingLocale[Material_13384_V1] = showUsingLocale:
         case WeldedSteel        => I18N.en13384.materials.WeldedSteel
         case Glass              => I18N.en13384.materials.Glass
         case Plastic            => I18N.en13384.materials.Plastic

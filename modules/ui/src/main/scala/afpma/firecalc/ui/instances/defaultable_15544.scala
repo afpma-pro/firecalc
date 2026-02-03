@@ -22,6 +22,10 @@ object defaultable_15544:
     import defaultable.{*, given}
 
     val defaultable_material_15544 = Defaultable(Material_15544.BlocsDeChamotte)
+    val defaultable_material_15544_v2 = Defaultable(Material_15544_V2.BlocsDeChamotte())
+
+    def for_Material_15544_V2(m: Material_15544_V2): Defaultable[Length] =
+        Defaultable(m.roughness)
 
     object incr_descr_en15544:
 
@@ -31,7 +35,7 @@ object defaultable_15544:
         given Defaultable[SetRoughness]:
             def default = SetRoughness(roughness.default)
         given Defaultable[SetMaterial]:
-            def default = SetMaterial(defaultable_material_15544.default)
+            def default = SetMaterial(defaultable_material_15544_v2.default)
         given Defaultable[SetNumberOfFlows]:
             def default = SetNumberOfFlows(divideFlowIn.default)
         given Locale => Defaultable[AddSectionSlopped]:

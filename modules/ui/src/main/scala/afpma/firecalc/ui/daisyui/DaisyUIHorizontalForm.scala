@@ -102,13 +102,13 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
                 })
             )
 
-    private def makeIdsForSelectOptions[A: Show](options: Seq[A]): List[(String, A)] = 
+    private def makeIdsForSelectOptions[A: Show](options: Seq[A]): List[(String, A)] =
         options.map(a => (a.show, a)).toList
 
     override def forEnumOrSumTypeLike_UsingShowAsId[A: {Show, Defaultable, ValidateVar}](
         options: List[A],
         updateFieldName: Option[String] => Option[String] = identity,
-    ) = 
+    ) =
         makeFor[A](afpma.firecalc.ui.formgen.Defaultable.summon[A]): (variable, formConfig) =>
             val ids = makeIdsForSelectOptions(options)
             def getById(id: String): A = ids
@@ -122,6 +122,150 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
                 makeId = _.show,
                 getById = getById,
                 labelStart = updateFieldName(formConfig.shownFieldName),
+            )
+
+    /**
+     * Creates a form with TextInputWithDatalist for selection and an editable default value.
+     * When selection changes, the default value is automatically updated.
+     * 
+     * @tparam A The main type being edited (e.g., Material_15544_V2)
+     * @tparam T The type of the default value field (e.g., Roughness)
+     * @param selectOptions List of valid selectable A instances (used to build datalist)
+     * @param getDefaultValue Function to extract the default value T from A
+     * @param withDefaultValue Function to create A from existing A with new T value
+     * @param getId Function to get the unique ID/name for each A (used for datalist value)
+     * @param showA Implicit Show[A] for displaying localized labels
+     * @param formForT Implicit DF[T] for rendering the default value field
+     * @param defaultableA Implicit Defaultable[A] for form defaults
+     * @param validateVarA Implicit ValidateVar[A] for validation
+     */
+    def forSelectionWithDefaultValue_usingDataList[A, T](
+        selectOptions: List[A],
+        getDefaultValue: A => T,
+        withDefaultValue: (A, T) => A,
+        getId: A => String
+    )(using
+        showA: Show[A],
+        formForT: DaisyUIHorizontalForm[T],
+        defaultableA: Defaultable[A],
+        validateVarA: ValidateVar[A],
+        validateVarT: ValidateVar[T]
+    ): DaisyUIHorizontalForm[A] =
+        
+        makeFor[A](defaultableA): (variable, formConfig) =>
+            // Build lookup maps
+            val idToOption: Map[String, A] = selectOptions.map(a => getId(a) -> a).toMap
+            val optionLabels: Seq[String] = selectOptions.map(showA.show)
+            val optionIds: Seq[String] = selectOptions.map(getId)
+            val labelToId: Map[String, String] = (optionLabels zip optionIds).toMap
+            val idToLabel: Map[String, String] = (optionIds zip optionLabels).toMap
+            
+            // Current selection ID
+            val currentId = getId(variable.now())
+            
+            // Var for the displayed text (localized label) - can be invalid free text
+            val displayTextVar = Var[Option[String]](idToLabel.get(currentId))
+            
+            // Var for the default value (type T)
+            val defaultValueVar = variable.zoomLazy(getDefaultValue)(withDefaultValue)
+            
+            // Derive the selected A option from display text
+            // If text matches a known label, resolve to Some(A), otherwise None
+            val selectedOptionSignal: com.raquo.airstream.core.Signal[Option[A]] = displayTextVar.signal.map:
+                case Some(text) =>
+                    labelToId.get(text).flatMap(idToOption.get)
+                case None => None
+            
+            // Binder: When selection changes, update parent variable
+            val selectionChangeBinder = selectedOptionSignal
+                .changes --> Observer[Option[A]]: opt =>
+                    opt.foreach(variable.set)
+            
+            // Build datalist options: value = id, displayed = localized label
+            val datalistId = s"select-options-${formConfig.fieldName.getOrElse("default")}"
+            
+            // Create TextInputWithDatalist
+            val selectionInput = DaisyUIInputs.TextInputWithDatalist(
+                valueOptVar = displayTextVar,
+                datalistId = datalistId,
+                options = optionLabels,
+                placeholder = formConfig.shownFieldName.getOrElse("Select...")
+            )
+            
+            // Validation indicator for invalid selection
+            val invalidIndicator = span(
+                cls := "text-error text-sm",
+                display <-- selectedOptionSignal.map(_.fold("inline")(_ => "none")),
+                "x"
+            )
+            // Default value input using the provided form for T
+            val defaultValueInput = formForT.render(
+                defaultValueVar,
+                formForT.formConfig.doShowFieldName,
+            )
+            
+            div(
+                cls := "flex flex-row gap-2 items-end",
+                div(cls := "flex-auto", selectionInput.node),
+                invalidIndicator,
+                div(cls := "flex-auto", defaultValueInput),
+            ).amend(
+                selectionChangeBinder
+            )
+
+    /**
+     * Creates a form with SelectInput for selection and an editable default value.
+     * When selection changes, the default value is automatically updated.
+     * 
+     * @tparam A The main type being edited (e.g., Material_15544_V2)
+     * @tparam T The type of the default value field (e.g., Roughness)
+     * @param selectOptions List of valid selectable A instances (used to build select options)
+     * @param getDefaultValue Function to extract the default value T from A
+     * @param withDefaultValue Function to create A from existing A with new T value
+     * @param getId Function to get the unique ID/name for each A (used for select option value)
+     * @param showA Implicit Show[A] for displaying localized labels
+     * @param formForT Implicit DF[T] for rendering the default value field
+     * @param defaultableA Implicit Defaultable[A] for form defaults
+     * @param validateVarA Implicit ValidateVar[A] for validation
+     */
+    def forSelectionWithDefaultValue_usingSelectInput[A, T](
+        selectOptions: List[A],
+        getDefaultValue: A => T,
+        withDefaultValue: (A, T) => A,
+        getId: A => String
+    )(using
+        showA: Show[A],
+        formForT: DaisyUIHorizontalForm[T],
+        defaultableA: Defaultable[A],
+        validateVarA: ValidateVar[A],
+        validateVarT: ValidateVar[T]
+    ): DaisyUIHorizontalForm[A] =
+        
+        makeFor[A](defaultableA): (variable, formConfig) =>
+            // Var for the default value (type T)
+            val defaultValueVar = variable.zoomLazy(getDefaultValue)(withDefaultValue)
+            
+            // Create select dropdown using existing component
+            val selectionInput = DaisyUIInputs.SelectFieldsetLabelAndInput(
+                labelOpt = None,  // No label since we're side-by-side
+                selectedVar = variable,
+                options = selectOptions,
+                show = showA.show,
+                makeId = getId,
+                getById = id => selectOptions.find(a => getId(a) == id).getOrElse(defaultableA.default),
+                optionalField = OptionalField.No
+            )
+            
+            // Default value input using the provided form for T
+            val defaultValueInput = formForT.render(
+                defaultValueVar,
+                formForT.formConfig
+            )
+            
+            div(
+                cls := "flex flex-row gap-2 items-end",
+                div(cls := "flex-auto", selectionInput.node),
+                div(cls := "flex-auto", defaultValueInput),
             )
        
     // =================

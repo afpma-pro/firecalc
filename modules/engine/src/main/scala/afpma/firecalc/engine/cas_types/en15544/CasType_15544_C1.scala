@@ -98,7 +98,7 @@ object CasType_15544_C1
     val connectorPipe = 
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)),
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
             pipeLocation(PipeLocation.HeatedArea),

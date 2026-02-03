@@ -20,7 +20,7 @@ object FlowOnlyDefaultable_13384:
 
     import defaultable.{*, given}
 
-    val defaultable_Material_13384 = Defaultable(Material_13384.WeldedSteel)
+    val defaultable_Material_13384 = Defaultable(Material_13384.WeldedSteel())
 
     given Defaultable[SetInnerShape]:
         def default = SetInnerShape(pipeShapeInner.default)

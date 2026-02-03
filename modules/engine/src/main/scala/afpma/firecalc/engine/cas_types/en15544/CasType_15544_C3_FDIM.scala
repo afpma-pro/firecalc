@@ -55,7 +55,7 @@ object CasPratique_15544_FDIM_EX_03
         Seq(
             addFlowResistance("1. grille", 1.23.unitless: ζ, hydraulic_diameter = 154.mm),
 
-            material(Material_13384.WeldedSteel),
+            material(Material_13384.WeldedSteel()),
 
             innerShape(circle(154.mm)),
 
@@ -147,7 +147,7 @@ object CasPratique_15544_FDIM_EX_03
     val conduit_raccordement_descr =
         import ConnectorPipe_Module.*
         Seq(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(25.cm)),
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
             pipeLocation(PipeLocation.HeatedArea),

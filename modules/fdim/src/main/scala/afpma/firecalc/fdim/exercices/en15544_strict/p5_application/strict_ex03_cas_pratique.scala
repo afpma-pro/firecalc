@@ -110,7 +110,7 @@ object strict_ex03_cas_pratique
     val connectorPipe =
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(250.mm)),
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
             pipeLocation(PipeLocation.HeatedArea),
@@ -121,7 +121,7 @@ object strict_ex03_cas_pratique
     val chimneyPipe =
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(250.mm)),
             layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
             

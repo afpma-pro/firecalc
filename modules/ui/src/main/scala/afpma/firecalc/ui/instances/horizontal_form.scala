@@ -207,10 +207,11 @@ object horizontal_form:
 
     // Roughness
 
-    def horizontal_form_Roughness: DaisyUIHorizontalForm[QtyD[Meter]] =
+    def horizontal_form_Roughness: Locale ?=> DaisyUIHorizontalForm[QtyD[Meter]] =
         import defaultable.given_Roughness
         import validatevar.meter.valid_whenPositive
         given_dual_Roughness.form_DaisyUIHorizontalForm
+        .withFieldName(I18N.terms.roughness)
 
     given horizontal_form_TCelsius: Locale => DaisyUIHorizontalForm[TCelsius] =
         import defaultable.given_TCelsius

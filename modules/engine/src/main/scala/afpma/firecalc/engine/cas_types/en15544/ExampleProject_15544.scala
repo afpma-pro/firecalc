@@ -119,7 +119,7 @@ object ExampleProject_15544
     val conduit_raccordement_descr =
         import ConnectorPipe_Module.*
         Seq(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
             pipeLocation(PipeLocation.HeatedArea),
@@ -142,7 +142,7 @@ object ExampleProject_15544
     val conduit_fumees_descr = 
         import ChimneyPipe_Module.*
         Seq(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440)),
 

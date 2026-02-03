@@ -6,10 +6,11 @@
 package afpma.firecalc.dto
 
 object all:
+
+    // common (aka V1)
+
     export afpma.firecalc.dto.common.Address
-    export afpma.firecalc.dto.common.AddThermalPipeElement_13384
-    export afpma.firecalc.dto.common.AddFlowOnlyPipeElement_13384
-    export afpma.firecalc.dto.common.AddFlowOnlyPipeElement_15544
+    
     export afpma.firecalc.dto.common.AirSpaceDetailed
     export afpma.firecalc.dto.common.AirSpaceDetailed.VentilDirection
     export afpma.firecalc.dto.common.AirSpaceDetailed.VentilOpenings
@@ -29,9 +30,6 @@ object all:
     export afpma.firecalc.dto.common.FacingType
 
     export afpma.firecalc.dto.common.FireCalc_Version
-    export afpma.firecalc.dto.common.ThermalPipeDescr_13384
-    export afpma.firecalc.dto.common.FlowOnlyPipeDescr_13384
-    export afpma.firecalc.dto.common.FlowOnlyPipeDescr_15544
     export afpma.firecalc.dto.common.InnerConstructionMaterial
     export afpma.firecalc.dto.common.LocalConditions
     export afpma.firecalc.dto.common.LocalConditions.ChimneyTermination
@@ -45,8 +43,8 @@ object all:
     export afpma.firecalc.dto.common.LocalConditions.ChimneyTermination.AdjacentBuildings.HorizontalDistanceBetweenChimneyAndAdjacentBuildings
     export afpma.firecalc.dto.common.LocalConditions.ChimneyTermination.AdjacentBuildings.HorizontalAngleBetweenChimneyAndAdjacentBuildings
     export afpma.firecalc.dto.common.LocalConditions.ChimneyTermination.AdjacentBuildings.VerticalAngleBetweenChimneyAndAdjacentBuildings
-    export afpma.firecalc.dto.common.Material_13384
-    export afpma.firecalc.dto.common.Material_15544
+    export afpma.firecalc.dto.common.Material_13384_V1
+    export afpma.firecalc.dto.common.Material_15544_V1
     export afpma.firecalc.dto.common.NbOfFlows
     export afpma.firecalc.dto.common.NbOfFlows.*
 
@@ -75,21 +73,55 @@ object all:
     export afpma.firecalc.dto.common.PipeShape.rectangle
     export afpma.firecalc.dto.common.HeatOutputReduced
     export afpma.firecalc.dto.common.ProjectDescr
-    export afpma.firecalc.dto.common.SetThermalPipeProp_13384
-    export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_13384
-    export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_15544
     export afpma.firecalc.dto.common.StandardOrComputationMethod
     export afpma.firecalc.dto.common.StoveParams
     export afpma.firecalc.dto.common.StoveParams.SizingMethod
     export afpma.firecalc.dto.common.AmbiantAirTemperatureSet
     export afpma.firecalc.dto.common.AmbiantAirTemperatureSet.UseTuoOverride
 
+    export afpma.firecalc.dto.v1.Firebox_V1
+
+    export afpma.firecalc.dto.common.AddThermalPipeElement_13384_V1
+    export afpma.firecalc.dto.common.AddFlowOnlyPipeElement_13384_V1
+    export afpma.firecalc.dto.common.AddFlowOnlyPipeElement_15544_V1
+    export afpma.firecalc.dto.common.ThermalPipeDescr_13384_V1
+    export afpma.firecalc.dto.common.FlowOnlyPipeDescr_13384_V1
+    export afpma.firecalc.dto.common.FlowOnlyPipeDescr_15544_V1
+    export afpma.firecalc.dto.common.SetThermalPipeProp_13384_V1
+    export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_13384_V1
+    export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_15544_V1
+
 
     // VERSIONNING
 
+    // V2
+
     // Firebox
     
-    export afpma.firecalc.dto.v2.{Firebox_V2 => Firebox}
-
+    export afpma.firecalc.dto.v2.Firebox_V2 as Firebox
     export afpma.firecalc.dto.v2.Firebox_V2
-    export afpma.firecalc.dto.v1.Firebox_V1
+
+    // V3
+
+    export afpma.firecalc.dto.v3.Material_15544_V2
+    export afpma.firecalc.dto.v3.Material_15544_V2 as Material_15544
+    export afpma.firecalc.dto.v3.Material_13384_V2
+    export afpma.firecalc.dto.v3.Material_13384_V2 as Material_13384
+    export afpma.firecalc.dto.v3.AddThermalPipeElement_13384_V2
+    export afpma.firecalc.dto.v3.AddThermalPipeElement_13384_V2 as AddThermalPipeElement_13384
+    export afpma.firecalc.dto.v3.AddFlowOnlyPipeElement_13384_V2
+    export afpma.firecalc.dto.v3.AddFlowOnlyPipeElement_13384_V2 as AddFlowOnlyPipeElement_13384
+    export afpma.firecalc.dto.v3.AddFlowOnlyPipeElement_15544_V2
+    export afpma.firecalc.dto.v3.AddFlowOnlyPipeElement_15544_V2 as AddFlowOnlyPipeElement_15544
+    export afpma.firecalc.dto.v3.ThermalPipeDescr_13384_V2
+    export afpma.firecalc.dto.v3.ThermalPipeDescr_13384_V2 as ThermalPipeDescr_13384
+    export afpma.firecalc.dto.v3.FlowOnlyPipeDescr_13384_V2
+    export afpma.firecalc.dto.v3.FlowOnlyPipeDescr_13384_V2 as FlowOnlyPipeDescr_13384
+    export afpma.firecalc.dto.v3.FlowOnlyPipeDescr_15544_V2
+    export afpma.firecalc.dto.v3.FlowOnlyPipeDescr_15544_V2 as FlowOnlyPipeDescr_15544
+    export afpma.firecalc.dto.v3.SetThermalPipeProp_13384_V2
+    export afpma.firecalc.dto.v3.SetThermalPipeProp_13384_V2 as SetThermalPipeProp_13384
+    export afpma.firecalc.dto.v3.SetFlowOnlyPipeProp_13384_V2
+    export afpma.firecalc.dto.v3.SetFlowOnlyPipeProp_13384_V2 as SetFlowOnlyPipeProp_13384
+    export afpma.firecalc.dto.v3.SetFlowOnlyPipeProp_15544_V2
+    export afpma.firecalc.dto.v3.SetFlowOnlyPipeProp_15544_V2 as SetFlowOnlyPipeProp_15544

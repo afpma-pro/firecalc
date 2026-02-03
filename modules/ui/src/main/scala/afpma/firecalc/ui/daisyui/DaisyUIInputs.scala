@@ -567,6 +567,55 @@ object DaisyUIInputs:
                 case OptionalField.No => emptyMod,
         )
 
+    /**
+     * Text input with datalist suggestions (autocomplete dropdown).
+     * Renders an input with a linked datalist element for browser-native suggestions.
+     * 
+     * @param valueOptVar The Var holding the current text value (None if empty)
+     * @param datalistId Unique ID for the datalist element
+     * @param options Static list of suggestion options
+     * @param placeholder Placeholder text for the input
+     * @param optionalField Whether the field is optional
+     */
+    final case class TextInputWithDatalist(
+        valueOptVar: Var[Option[String]],
+        datalistId: String,
+        options: Seq[String],
+        placeholder: String = DEFAULT_PLACEHOLDER,
+        optionalField: OptionalField = OptionalField.No,
+    ) extends Component:
+
+        import com.raquo.laminar.codecs.StringAsIsCodec
+        val listAttr: HtmlAttr[String] = htmlAttr("list", StringAsIsCodec)
+
+        val inputNoLabel = input(
+            cls           := "grow",
+            tpe           := "text",
+            L.placeholder := placeholder,
+            listAttr      := datalistId,
+            value         <-- valueOptVar.signal.map(_.getOrElse("")),
+            onInput.mapToValue
+                .map(s => if (s.isEmpty()) None else Some(s)) --> valueOptVar.writer,
+            onFocus --> Observer[org.scalajs.dom.FocusEvent](_ => valueOptVar.set(None)),
+            onClick --> Observer[org.scalajs.dom.MouseEvent](_ => valueOptVar.set(None))
+        )
+
+        val datalistNode = dataList(
+            idAttr := datalistId,
+            options.map(opt => option(value := opt))
+        )
+
+        val node = span(
+            label(
+                cls := "input input-md",
+                inputNoLabel,
+                optionalField match
+                    case OptionalField.Yes(h) => span(cls := "badge badge-xs", s"($h)")
+                    case OptionalField.No => emptyMod,
+            ),
+            datalistNode
+        )
+
     final case class NumberInputOnly(
         valueOptVar: Var[Option[Double]],
         placeholder: String = DEFAULT_PLACEHOLDER,

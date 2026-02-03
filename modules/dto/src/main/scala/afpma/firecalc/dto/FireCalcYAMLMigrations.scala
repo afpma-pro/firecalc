@@ -16,7 +16,7 @@ import afpma.firecalc.dto.transformers.given
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
-
+import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.units.coulombutils.{*, given}
 import coulomb.syntax.*
 
@@ -39,11 +39,17 @@ object FireCalcYAMLMigrations:
     def migrateV1ToV2(v1: FireCalcYAML_V1): FireCalcYAML_V2 =
         v1.transformInto[FireCalcYAML_V2]
 
+    def migrateV2ToV3(v2: FireCalcYAML_V2): FireCalcYAML_V3 =
+        v2.transformInto[FireCalcYAML_V3]
+
     def upgradeToCurrent(dto: Any): Either[Throwable, FireCalcYAML] =
         dto match
-            case fc: FireCalcYAML_V2 => Right(fc)
+            case fcv3: FireCalcYAML_V3 => 
+                Right(fcv3)
+            case fcv2: FireCalcYAML_V2 =>
+                Right(migrateV2ToV3(fcv2))
             case fcv1: FireCalcYAML_V1 =>
-                Right(fcv1.transformInto[FireCalcYAML_V2])
+                Right((migrateV1ToV2 andThen migrateV2ToV3)(fcv1))
             case other =>
                 Left(new Exception(s"Unsupported file version: ${other.getClass().getName}"))
 
@@ -75,9 +81,11 @@ object FireCalcYAMLMigrations:
             case None =>
                 Left("Could not detect version field in YAML")
             case Some(1) =>
-                decodeV1(json).map(migrateV1ToV2)
+                decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3)
             case Some(2) =>
-                decodeV2(json)
+                decodeV2(json).map(migrateV2ToV3)
+            case Some(3) =>
+                decodeV3(json)
             case Some(version) =>
                 Left(s"Unknown FireCalcYAML version: $version")
 
@@ -102,6 +110,14 @@ object FireCalcYAMLMigrations:
         // Use the decoder from v2/FireCalcYAML_V2.scala
         import FireCalcYAML_V2.decoder
         json.as[FireCalcYAML_V2].left.map(e => s"Failed to decode V2: ${e.getMessage()}")
+
+    /**
+     * Decode V3 from JSON using FireCalcYAML_V3 decoder.
+     */
+    private def decodeV3(json: Json): Either[String, FireCalcYAML_V3] =
+        // Use the decoder from V3/FireCalcYAML_V3.scala
+        import FireCalcYAML_V3.decoder
+        json.as[FireCalcYAML_V3].left.map(e => s"Failed to decode V3: ${e.getMessage()}")
 
     /**
      * Try-based wrapper for decodeAndMigrate for Scala.js compatibility.

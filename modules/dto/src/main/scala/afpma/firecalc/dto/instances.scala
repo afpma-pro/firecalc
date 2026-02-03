@@ -8,9 +8,12 @@ package afpma.firecalc.dto
 import scala.util.Try
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v3.*
+
 import afpma.firecalc.units.all.{*, given}
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.utils.circe.{*, given}
+
 import io.circe.*
 import io.circe.Decoder
 import io.circe.Decoder.Result
@@ -129,20 +132,35 @@ object instances:
     given Decoder[HorizontalDistanceBetweenChimneyAndRidgeline] = deriveDecoderForEnum[HorizontalDistanceBetweenChimneyAndRidgeline](HorizontalDistanceBetweenChimneyAndRidgeline.valueOf)
     given Encoder[HorizontalDistanceBetweenChimneyAndRidgeline] = deriveEncoderForEnum[HorizontalDistanceBetweenChimneyAndRidgeline]
 
-    // ThermalPipeDescr_13384
+    // ThermalPipeDescr_13384_V2
 
-    given Decoder[ThermalPipeDescr_13384] = semiauto.deriveDecoder[ThermalPipeDescr_13384]
-    given Encoder[ThermalPipeDescr_13384] = semiauto.deriveEncoder[ThermalPipeDescr_13384]
+    given Decoder[ThermalPipeDescr_13384_V2] = semiauto.deriveDecoder[ThermalPipeDescr_13384_V2]
+    given Encoder[ThermalPipeDescr_13384_V2] = semiauto.deriveEncoder[ThermalPipeDescr_13384_V2]
 
-    // FlowOnlyPipeDescr_13384
+    // FlowOnlyPipeDescr_13384_V2
 
-    given Decoder[FlowOnlyPipeDescr_13384] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384]
-    given Encoder[FlowOnlyPipeDescr_13384] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384]
+    given Decoder[FlowOnlyPipeDescr_13384_V2] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384_V2]
+    given Encoder[FlowOnlyPipeDescr_13384_V2] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384_V2]
 
-    // FlowOnlyPipeDescr_15544
+    // FlowOnlyPipeDescr_15544_V2
 
-    given Decoder[FlowOnlyPipeDescr_15544] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544]
-    given Encoder[FlowOnlyPipeDescr_15544] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544]
+    given Decoder[FlowOnlyPipeDescr_15544_V2] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544_V2]
+    given Encoder[FlowOnlyPipeDescr_15544_V2] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544_V2]
+
+    // ThermalPipeDescr_13384_V1
+
+    given Decoder[ThermalPipeDescr_13384_V1] = semiauto.deriveDecoder[ThermalPipeDescr_13384_V1]
+    given Encoder[ThermalPipeDescr_13384_V1] = semiauto.deriveEncoder[ThermalPipeDescr_13384_V1]
+
+    // FlowOnlyPipeDescr_13384_V1
+
+    given Decoder[FlowOnlyPipeDescr_13384_V1] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384_V1]
+    given Encoder[FlowOnlyPipeDescr_13384_V1] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384_V1]
+
+    // FlowOnlyPipeDescr_15544_V1
+
+    given Decoder[FlowOnlyPipeDescr_15544_V1] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544_V1]
+    given Encoder[FlowOnlyPipeDescr_15544_V1] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544_V1]
 
     // InnerConstructionMaterial
 
@@ -160,15 +178,25 @@ object instances:
     given Decoder[Locale] = Decoder.decodeString.map(lang => Locale(Language(lang)))
     given Encoder[Locale] = Encoder.encodeString.contramap[Locale](loc => loc.language.value)
 
-    // Material_13384
+    // Material_13384 V2
 
-    given Decoder[Material_13384] = deriveDecoderForEnum[Material_13384](Material_13384.valueOf)
-    given Encoder[Material_13384] = deriveEncoderForEnum[Material_13384]
+    given Decoder[Material_13384_V2] = semiauto.deriveDecoder[Material_13384_V2]
+    given Encoder[Material_13384_V2] = semiauto.deriveEncoder[Material_13384_V2]
 
-    // Material_15544
+    // Material_13384 V1
 
-    given Decoder[Material_15544] = deriveDecoderForEnum[Material_15544](Material_15544.valueOf)
-    given Encoder[Material_15544] = deriveEncoderForEnum[Material_15544]
+    given Decoder[Material_13384_V1] = deriveDecoderForEnum[Material_13384_V1](Material_13384_V1.valueOf)
+    given Encoder[Material_13384_V1] = deriveEncoderForEnum[Material_13384_V1]
+
+    // Material_15544 V2
+
+    given Decoder[v3.Material_15544_V2] = semiauto.deriveDecoder[v3.Material_15544_V2]
+    given Encoder[v3.Material_15544_V2] = semiauto.deriveEncoder[v3.Material_15544_V2]
+
+    // Material_15544 V1
+
+    given Decoder[Material_15544_V1] = deriveDecoderForEnum[Material_15544_V1](Material_15544_V1.valueOf)
+    given Encoder[Material_15544_V1] = deriveEncoderForEnum[Material_15544_V1]
 
     // NbOfFlows
 

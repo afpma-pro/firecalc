@@ -20,7 +20,11 @@ object defaultable_13384:
 
     import defaultable.{*, given}
 
-    val defaultable_Material_13384 = Defaultable(Material_13384.WeldedSteel)
+    val defaultable_Material_13384    = Defaultable(Material_13384.WeldedSteel())
+    val defaultable_Material_13384_v2 = Defaultable(Material_13384_V2.WeldedSteel())
+
+    def for_Material_13384_V2(m: Material_13384_V2): Defaultable[Length] =
+        Defaultable(m.roughness)
 
     object incr_descr_en13384:
 
@@ -33,7 +37,7 @@ object defaultable_13384:
         given Defaultable[SetRoughness]:
             def default = SetRoughness(roughness.default)
         given Defaultable[SetMaterial]:
-            def default = SetMaterial(defaultable_Material_13384.default)
+            def default = SetMaterial(defaultable_Material_13384_v2.default)
         given Defaultable[SetLayer]:
             def default = SetLayer(thickness.default, thermalConductivity.default)
         given Defaultable[SetLayers]:

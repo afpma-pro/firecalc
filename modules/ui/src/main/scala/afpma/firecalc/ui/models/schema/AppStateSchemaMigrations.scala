@@ -8,6 +8,7 @@ package afpma.firecalc.ui.models.schema
 import afpma.firecalc.dto.FireCalcYAMLMigrations.given
 import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
 import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2
+import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3
 import afpma.firecalc.ui.models.schema.common.AppStateSchema_Version
 import afpma.firecalc.ui.models.AppStateSchemaHelper
 import io.circe.yaml.scalayaml.parser as yamlParser
@@ -57,7 +58,7 @@ import scala.util.{Try, Success, Failure}
 object AppStateSchemaMigrations:
 
     /** Current schema version - increment when adding new schema versions */
-    val CURRENT_SCHEMA_VERSION = 2
+    val CURRENT_SCHEMA_VERSION = 3
 
     /**
      * Chimney transformer from AppStateSchema_V1 to AppStateSchema_V2.
@@ -92,14 +93,24 @@ object AppStateSchemaMigrations:
                 None
 
             case Some(1) =>
-                // V1 - decode and migrate to V2
-                decodeV1(rawData).flatMap(migrateFromV1ToV2) match
-                    case Success(v2) => Some(v2)
+                // V1 - decode and migrate to V3
+                decodeV1(rawData)
+                .flatMap(migrateFromV1ToV2)
+                .flatMap(migrateFromV2ToV3) match
+                    case Success(v3) => Some(v3)
                     case Failure(e) =>
-                        dom.console.error(s"Failed to migrate V1 to V2: ${e.getMessage()}")
+                        dom.console.error(s"Failed to migrate V1 to V3: ${e.getMessage()}")
                         None
 
             case Some(2) =>
+                // V2 - decode and migrate to V3
+                decodeV2(rawData).flatMap(migrateFromV2ToV3) match
+                    case Success(v3) => Some(v3)
+                    case Failure(e) =>
+                        dom.console.error(s"Failed to migrate V2 to V3: ${e.getMessage()}")
+                        None
+
+            case Some(3) =>
                 // Current version - decode directly
                 AppStateSchemaHelper.decodeFromYaml(rawData).toOption
 
@@ -134,6 +145,17 @@ object AppStateSchemaMigrations:
             case Left(parseError) =>
                 dom.console.log(s"Failed to parse YAML: ${parseError.getMessage()}")
                 None
+    /**
+     * Decode V2 schema from YAML string.
+     */
+    private def decodeV2(yaml: String): Try[AppStateSchema_V2] =
+        import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2.given
+        yamlParser.parse(yaml) match
+            case Right(json) =>
+                json.as[AppStateSchema_V2] match
+                    case Right(schema) => Success(schema)
+                    case Left(err) => Failure(new RuntimeException(s"Failed to decode V2: ${err.getMessage()}"))
+            case Left(err) => Failure(new RuntimeException(s"Failed to parse V2 YAML: ${err.getMessage()}"))
 
     /**
      * Decode V1 schema from YAML string.
@@ -146,6 +168,17 @@ object AppStateSchemaMigrations:
                     case Right(schema) => Success(schema)
                     case Left(err) => Failure(new RuntimeException(s"Failed to decode V1: ${err.getMessage()}"))
             case Left(err) => Failure(new RuntimeException(s"Failed to parse V1 YAML: ${err.getMessage()}"))
+
+    /**
+     * Migrate from V2 to V3 schema.
+     *
+     * Uses Chimney transformer to convert engine_state from FireCalcYAML_V2 to FireCalcYAML_V3.
+     */
+    private def migrateFromV2ToV3(schema: AppStateSchema_V2): Try[AppStateSchema_V3] =
+        Try {
+            dom.console.log("Migrating AppStateSchema from V2 to V3")
+            schema.transformInto[AppStateSchema_V3]
+        }
 
     /**
      * Migrate from V1 to V2 schema.

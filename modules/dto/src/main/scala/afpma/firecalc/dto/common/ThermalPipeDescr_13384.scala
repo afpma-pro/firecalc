@@ -11,41 +11,41 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
 import magnolia1.Transl
 
-sealed trait ThermalPipeDescr_13384
+sealed trait ThermalPipeDescr_13384_V1
 
-sealed trait SetThermalPipeProp_13384 extends ThermalPipeDescr_13384
+sealed trait SetThermalPipeProp_13384_V1 extends ThermalPipeDescr_13384_V1
 
-object SetThermalPipeProp_13384:
+object SetThermalPipeProp_13384_V1:
 
     @Transl(I(_.set_prop.SetInnerShape))
     case class SetInnerShape(
         @Transl(I(_.terms.pipe_shape._self))
         shape: PipeShape
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetOuterShape))
     case class SetOuterShape(
         @Transl(I(_.terms.pipe_shape._self))
         shape: PipeShape
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetThickness))
     case class SetThickness(
         @Transl(I(_.set_prop.SetThickness))
         thickness: Length
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetRoughness))
     case class SetRoughness(
         @Transl(I(_.set_prop.SetRoughness))
         roughness: Roughness
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetMaterial))
     case class SetMaterial(
         @Transl(I(_.set_prop.SetMaterial))
         material: Material_13384
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetLayer))
     case class SetLayer(
@@ -53,42 +53,42 @@ object SetThermalPipeProp_13384:
         thickness: Length,
         @Transl(I(_.terms.thermal_conductivity_λ))
         thermal_conductivity: WattsPerMeterKelvin
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetLayers))
     case class SetLayers(
         layers: List[AppendLayerDescr]
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetAirSpaceAfterLayers))
     case class SetAirSpaceAfterLayers(
         @Transl(I(_.en13384.air_space_detailed))
         air_space_detailed: AirSpaceDetailed
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
 
     @Transl(I(_.set_prop.SetPipeLocation))
     case class SetPipeLocation(
         @Transl(I(_.pipe_location.short))
         pipe_location: PipeLocation
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetDuctType))
     case class SetDuctType(
         duct: DuctType
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetNumberOfFlows))
     case class SetNumberOfFlows(
         @Transl(I(_.set_prop.SetNumberOfFlows_fieldName))
         n_flows: NbOfFlows
-    ) extends SetThermalPipeProp_13384
+    ) extends SetThermalPipeProp_13384_V1
 
 
-sealed trait AddThermalPipeElement_13384 extends ThermalPipeDescr_13384:
+sealed trait AddThermalPipeElement_13384_V1 extends ThermalPipeDescr_13384_V1:
     def name: String
 
-object AddThermalPipeElement_13384:
+object AddThermalPipeElement_13384_V1:
 
     @Transl(I(_.add_element.AddSectionSlopped))
     case class AddSectionSlopped(
@@ -98,7 +98,7 @@ object AddThermalPipeElement_13384:
         length: Length,
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
-    ) extends AddThermalPipeElement_13384
+    ) extends AddThermalPipeElement_13384_V1
 
     @Transl(I(_.add_element.AddSectionHorizontal))
     case class AddSectionHorizontal(
@@ -107,7 +107,7 @@ object AddThermalPipeElement_13384:
         @Transl(I(_.terms.horizontal_length))
         horizontal_length: Length
     )
-        extends AddThermalPipeElement_13384
+        extends AddThermalPipeElement_13384_V1
 
     @Transl(I(_.add_element.AddSectionVertical))
     case class AddSectionVertical(
@@ -115,7 +115,7 @@ object AddThermalPipeElement_13384:
         name: String, 
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length)
-        extends AddThermalPipeElement_13384
+        extends AddThermalPipeElement_13384_V1
 
     sealed abstract class AddDirectionChange(
         @Transl(I(_.terms.name))
@@ -124,7 +124,7 @@ object AddThermalPipeElement_13384:
         val angle: Angle,
         @Transl(I(_.en15544.angle_to_original_direction))
         val angle_to_original_direction: Option[Angle] = None, // TO FIX or IMPLEMENT ??
-    ) extends AddThermalPipeElement_13384
+    ) extends AddThermalPipeElement_13384_V1
 
     @Transl(I(_.add_element.AddAngleAdjustable))
     case class AddAngleAdjustable(
@@ -224,7 +224,7 @@ object AddThermalPipeElement_13384:
         @Transl(I(_.terms.pipe_shape._self))
         val to_shape: PipeShape
     )
-        extends AddThermalPipeElement_13384
+        extends AddThermalPipeElement_13384_V1
 
     @Transl(I(_.add_element.AddSectionDecrease))
     case class AddSectionDecrease(
@@ -251,11 +251,11 @@ object AddThermalPipeElement_13384:
         zeta: QtyD[1], 
         @Transl(I(_.add_element.cross_section))
         cross_section: OptionOfEither[AreaInCm2, PipeShape] // Option[Either[L, R]] has issues when serializing via circe, so custom type with custom encoder/decoder as a workaround
-    ) extends AddThermalPipeElement_13384
+    ) extends AddThermalPipeElement_13384_V1
 
     case class AddPressureDiff(
         @Transl(I(_.terms.name))
         name: String, 
         @Transl(I(_.terms.pressure_difference))
         pressure_difference: Pressure
-    ) extends AddThermalPipeElement_13384
+    ) extends AddThermalPipeElement_13384_V1

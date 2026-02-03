@@ -25,7 +25,7 @@ import afpma.firecalc.ui.instances.defaultable
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.FireCalcYAML
-import afpma.firecalc.dto.v2.FireCalcYAML_V2
+import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.units.coulombutils.*
 
 import io.scalaland.chimney.dsl.*
@@ -40,7 +40,7 @@ object EngineState:
     // given Decoder[AppState] = FireCalcYAML.decoder
     // given Encoder[AppState] = FireCalcYAML.encoder
 
-    val example_projet_15544: EngineState = FireCalcYAML_V2(
+    val example_projet_15544: EngineState = FireCalcYAML_V3(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -59,7 +59,7 @@ object EngineState:
     )
         
 
-    val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V2(
+    val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V3(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -77,7 +77,7 @@ object EngineState:
         chimney_pipe_descr              = CasType_15544_C3.conduit_fumees_descr,
     )
 
-    val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V2(
+    val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V3(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -95,7 +95,7 @@ object EngineState:
         chimney_pipe_descr              = CasPratique_15544_FDIM_EX_03.conduit_fumees_descr,
     )
 
-    val empty: EngineState = FireCalcYAML_V2(
+    val empty: EngineState = FireCalcYAML_V3(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -109,7 +109,7 @@ object EngineState:
         chimney_pipe_descr              = Seq.empty,
     )
 
-    val minimal: EngineState = FireCalcYAML_V2(
+    val minimal: EngineState = FireCalcYAML_V3(
         locale                          = Locale(Languages.Fr),
         display_units                   = DisplayUnits.SI,
         standard_or_computation_method  = StandardOrComputationMethod.EN_15544_2023,
@@ -134,7 +134,7 @@ object EngineState:
         connector_pipe_descr     = 
             import ConnectorPipe_Module.*
             Seq(
-                roughness(Material_13384.WeldedSteel),
+                roughness(Material_13384.WeldedSteel()),
                 innerShape(circle(20.cm)),
                 layer(e = 1.mm, tr = SquareMeterKelvinPerWatt(56.0)),
                 pipeLocation(PipeLocation.HeatedArea),
@@ -143,7 +143,7 @@ object EngineState:
         chimney_pipe_descr        = 
             import ChimneyPipe_Module.*
             Seq(
-                roughness(Material_13384.WeldedSteel),
+                roughness(Material_13384.WeldedSteel()),
                 innerShape(circle(200.mm)),
                 layer(e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
                 pipeLocation(PipeLocation.HeatedArea),

@@ -140,7 +140,7 @@ object `01_cloche_medianne_entree_haute_config_1`
             // addPressureDiff("dispositif de réglage d'air", 3.2.unitless: ζ), // ???
 
             pipeLocation(Area.AirDansLePoele),
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(rectangle(27.cm, 16.cm)),
             layer(e = 1.cm, λ = 1.3.W_per_mK),
             addSectionHorizontal("entrée P03 TC03", 18.cm),
@@ -196,7 +196,7 @@ object `01_cloche_medianne_entree_haute_config_1`
         .incremental
         .define(
             pipeLocation(Area.Accumulateur),
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
             layer(e = 3.cm, λ = 1.3.W_per_mK),
             addSectionHorizontal("sortie foyer", 11.cm),
@@ -237,7 +237,7 @@ object `01_cloche_medianne_entree_haute_config_1`
     val connectorPipe = 
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
             layer(e = 0.1.cm, λ = 15.W_per_mK),
             pipeLocation(Area.DansLaPieceDuPoele),
@@ -249,7 +249,7 @@ object `01_cloche_medianne_entree_haute_config_1`
     val chimneyPipe = 
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
             layer(e = 2.5.cm, λ = 0.096.W_per_mK),
             pipeLocation(Area.DansLaPieceDuPoele),

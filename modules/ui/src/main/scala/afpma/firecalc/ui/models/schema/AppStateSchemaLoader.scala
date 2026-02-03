@@ -8,15 +8,12 @@ package afpma.firecalc.ui.models.schema
 import scala.util.{Try, Success, Failure}
 import io.circe.yaml.scalayaml.parser as yamlParser
 import io.circe.parser.decode
-import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2
 
 /**
  * Loads AppStateSchema from YAML/JSON strings.
  * Expects Schema V2 format (current version).
  */
 object AppStateSchemaLoader:
-
-    import AppStateSchema_V2.given
 
     /**
      * Load AppStateSchema from YAML string.

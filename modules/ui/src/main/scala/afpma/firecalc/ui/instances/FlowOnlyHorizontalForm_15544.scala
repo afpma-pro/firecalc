@@ -8,8 +8,6 @@ import scala.annotation.nowarn
 import scala.deriving.Mirror
 
 import afpma.firecalc.dto.all.*
-import AddFlowOnlyPipeElement_15544.*
-import SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.implicits.I18N
@@ -25,8 +23,12 @@ import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
 import io.taig.babel.Locale
+import afpma.firecalc.ui.instances.dual.given_dual_Length_mm_cm
 
-object horizontal_form_15544:
+object FlowOnlyHorizontalForm_15544:
+
+    import AddFlowOnlyPipeElement_15544.*
+    import SetFlowOnlyPipeProp_15544.*
 
     // import defaultable.given
     import horizontal_form.{*, given}
@@ -44,15 +46,46 @@ object horizontal_form_15544:
         given DaisyUIHorizontalForm[Roughness] = DaisyUIHorizontalForm.formConversionOpaque[Roughness, QtyD[Meter]]
         autoDeriveAndOverwriteFieldNames[SetRoughness]
 
-    given horizontal_form_Material_15544: CtxDF[Material_15544] = 
-        import Material_15544.given
-        given ValidateVar[Material_15544] = 
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_15544]
+    // Material 15544 V2
+
+    given horizontal_form_Material_15544_V2: CtxDF[Material_15544_V2] =
+        // Import ShowUsingLocale and extension methods for Material_15544_V2
+        import Material_15544_V2.{given, *}
+        
+        // Provide form for Roughness (opaque type over QtyD[Meter])
+        import validatevar.meter.valid_whenPositive
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Roughness
+        given DaisyUIHorizontalForm[Roughness] = 
+            DaisyUIHorizontalForm.formConversionOpaque[Roughness, QtyD[Meter]]
+                .withFieldName(I18N.terms.roughness)
+        
+        // Provide Defaultable
+        given Defaultable[Material_15544_V2] = 
+            defaultable_15544.defaultable_material_15544_v2
+        
+        // Provide ValidateVar
+        given ValidateVar[Roughness] = validatevar.roughness.valid_whenPositive
+        given ValidateVar[Material_15544_V2] = 
+            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V2]
+        
+        DaisyUIHorizontalForm.forSelectionWithDefaultValue_usingSelectInput[Material_15544_V2, Roughness](
+            selectOptions = Material_15544_V2.values,
+            getDefaultValue = _.roughness,
+            withDefaultValue = _.withRoughness(_),
+            getId = _.name
+        )
+
+    // Material 15544 V1
+
+    given horizontal_form_Material_15544_V1: CtxDF[Material_15544_V1] = 
+        import Material_15544_V1.given
+        given ValidateVar[Material_15544_V1] = 
+            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V1]
         DaisyUIHorizontalForm
-        .forEnumOrSumTypeLike_UsingShowAsId[Material_15544](Material_15544.values.toList)
+        .forEnumOrSumTypeLike_UsingShowAsId[Material_15544_V1](Material_15544_V1.values.toList)
 
     given horizontal_form_SetMaterial: CtxDF[SetMaterial] = 
-        given DF[Material_15544] = horizontal_form_Material_15544
+        given DF[Material_15544] = horizontal_form_Material_15544_V2
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
     given horizontal_form_SetNumberOfFlows: CtxDF[SetNumberOfFlows] = 
@@ -103,4 +136,4 @@ object horizontal_form_15544:
         given DaisyUIHorizontalForm[QtyD[Pascal]] = horizontal_form_QtyD_Pascal
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddPressureDiff]
 
-end horizontal_form_15544
+end FlowOnlyHorizontalForm_15544

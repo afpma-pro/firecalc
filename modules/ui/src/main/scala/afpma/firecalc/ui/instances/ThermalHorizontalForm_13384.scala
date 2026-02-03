@@ -15,6 +15,7 @@ import afpma.firecalc.ui.components.AppendLayersComponent
 import afpma.firecalc.ui.daisyui.DaisyUIHorizontalForm
 import afpma.firecalc.ui.daisyui.DaisyUIHorizontalForm.autoOverwriteFieldNames
 import afpma.firecalc.ui.formgen.*
+import afpma.firecalc.ui.instances.dual.given_dual_Length_mm_cm
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.NbOfFlows
@@ -26,7 +27,7 @@ import coulomb.policy.standard.given
 import io.taig.babel.Locale
 
 
-object horizontal_form_13384:
+object ThermalHorizontalForm_13384:
 
     import AddThermalPipeElement_13384.*
     import SetThermalPipeProp_13384.*
@@ -58,15 +59,46 @@ object horizontal_form_13384:
         given DaisyUIHorizontalForm[Roughness] = DaisyUIHorizontalForm.formConversionOpaque[Roughness, QtyD[Meter]]
         autoDeriveAndOverwriteFieldNames[SetRoughness]
 
-    given horizontal_form_Material_13384: CtxDF[Material_13384] = 
-        import Material_13384.given
-        given ValidateVar[Material_13384] = 
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384]
+    // Material_13384_V2
+
+    given horizontal_form_Material_13384_V2: CtxDF[Material_13384_V2] =
+        // Import ShowUsingLocale and extension methods for Material_13384_V2
+        import Material_13384_V2.{given, *}
+        
+        // Provide form for Roughness (opaque type over QtyD[Meter])
+        import validatevar.meter.valid_whenPositive
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Roughness
+        given DaisyUIHorizontalForm[Roughness] =
+            DaisyUIHorizontalForm.formConversionOpaque[Roughness, QtyD[Meter]]
+                .withFieldName(I18N.terms.roughness)
+        
+        // Provide Defaultable
+        given Defaultable[Material_13384_V2] =
+            defaultable_13384.defaultable_Material_13384_v2
+        
+        // Provide ValidateVar
+        given ValidateVar[Roughness] = validatevar.roughness.valid_whenPositive
+        given ValidateVar[Material_13384_V2] =
+            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V2]
+        
+        DaisyUIHorizontalForm.forSelectionWithDefaultValue_usingSelectInput[Material_13384_V2, Roughness](
+            selectOptions = Material_13384_V2.values,
+            getDefaultValue = _.roughness,
+            withDefaultValue = _.withRoughness(_),
+            getId = _.name
+        )
+
+    // Material_13384_V1
+
+    given horizontal_form_Material_13384_V1: CtxDF[Material_13384_V1] = 
+        import Material_13384_V1.given
+        given ValidateVar[Material_13384_V1] = 
+            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V1]
         DaisyUIHorizontalForm
-        .forEnumOrSumTypeLike_UsingShowAsId[Material_13384](Material_13384.values.toList)
+        .forEnumOrSumTypeLike_UsingShowAsId[Material_13384_V1](Material_13384_V1.values.toList)
 
     given horizontal_form_SetMaterial: CtxDF[SetMaterial] = 
-        given DF[Material_13384] = horizontal_form_Material_13384
+        given DF[Material_13384] = horizontal_form_Material_13384_V2
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
     given horizontal_form_SetLayer: CtxDF[SetLayer] = 
@@ -345,4 +377,4 @@ object horizontal_form_13384:
             I18N.en13384._ambiant_air_temperature.short
         )
 
-end horizontal_form_13384
+end ThermalHorizontalForm_13384

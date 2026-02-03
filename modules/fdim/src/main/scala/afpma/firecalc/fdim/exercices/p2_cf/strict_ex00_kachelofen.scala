@@ -101,7 +101,7 @@ object strict_ex00_kachelofen
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
         .define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(
                 e = 0.1.mm, // ???
@@ -115,7 +115,7 @@ object strict_ex00_kachelofen
     val chimneyPipe = 
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(
                 e = 2.5.cm,

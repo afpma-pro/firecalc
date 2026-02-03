@@ -141,7 +141,7 @@ object CasType_13384_C2
     val connectorPipe = 
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)),
             layer(
                 e = 1.mm, // 1mm in QC2

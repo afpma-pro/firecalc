@@ -101,7 +101,7 @@ object strict_ex02_kachelofen
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
         .define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
             pipeLocation(PipeLocation.HeatedArea),
@@ -121,7 +121,7 @@ object strict_ex02_kachelofen
     val chimneyPipe = 
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental.define(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440)),
             

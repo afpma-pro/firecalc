@@ -152,7 +152,7 @@ object CasType_15544_C3
     val conduit_raccordement_descr =
         import ConnectorPipe_Module.*
         Seq(
-            roughness(Material_13384.WeldedSteel),
+            roughness(Material_13384.WeldedSteel()),
             innerShape(circle(25.cm)),
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
             pipeLocation(PipeLocation.HeatedArea),

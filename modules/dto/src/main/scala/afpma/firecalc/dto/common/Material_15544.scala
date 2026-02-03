@@ -11,16 +11,18 @@ import afpma.firecalc.units.coulombutils.*
 
 import magnolia1.Transl
 
-enum Material_15544(val roughness: Roughness):
+@deprecated("use Material_15544_V2", "2026-02-02")
+enum Material_15544_V1(val roughness: Roughness):
     // 15544 - Tableau B.2
 
     @Transl(I(_.en15544.materials.tuyaux_en_chamotte))
-    case TuyauxEnChamotte extends Material_15544(0.002.meters)
+    case TuyauxEnChamotte extends Material_15544_V1(0.002.meters)
 
     @Transl(I(_.en15544.materials.blocs_de_chamotte))
-    case BlocsDeChamotte extends Material_15544(0.003.meters)
+    case BlocsDeChamotte extends Material_15544_V1(0.003.meters)
 
-object Material_15544:
-    given ShowUsingLocale[Material_15544] = showUsingLocale:
+@deprecated("use Material_15544_V2", "2026-02-02")
+object Material_15544_V1:
+    given ShowUsingLocale[Material_15544_V1] = showUsingLocale:
         case TuyauxEnChamotte => I18N.en15544.materials.tuyaux_en_chamotte
         case BlocsDeChamotte  => I18N.en15544.materials.blocs_de_chamotte
