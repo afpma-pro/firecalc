@@ -91,28 +91,6 @@ abstract class EN15544_V_2023_Common_Application
 
     // Section "1", "Scope"
 
-    override def injectors_air_velocity: OneOffOrNotApplicable[WithParams_15544[Velocity]] = 
-        firebox.whenOneOff { oneOff =>
-            (p: Params_15544) ?=>
-                given loadOpt: Option[LoadQty] = Some(p._2)
-                val surface_area = oneOff.air_injector_surface_area
-                V_L match
-                    case Some(flow_rate) => flow_rate / surface_area
-                    case None => throw new Exception("could not compute combustion air flow rate")
-        }
-
-    override def validate_injectors_air_velocity: OneOffOrNotApplicable[WithParams_15544[ValidatedNel[FireboxError, Unit]]] =
-        injectors_air_velocity.map: injection_velocity_rate =>
-            (p: Params_15544) ?=>
-                val injector_velocity_rate_min = 2.m_per_s
-                val injector_velocity_rate_max = 4.m_per_s
-                if (injection_velocity_rate < injector_velocity_rate_min)
-                    InjectorVelocityBelowMinimum(injection_velocity_rate.showP, injector_velocity_rate_min.showP).invalidNel
-                else if (injection_velocity_rate > injector_velocity_rate_max)
-                    InjectorVelocityAboveMaximum(injection_velocity_rate.showP, injector_velocity_rate_max.showP).invalidNel
-                else
-                    ().validNel
-
     // Section "2", "Normative references"
 
     // TODO
@@ -752,10 +730,10 @@ abstract class EN15544_V_2023_Common_Application
     def validateCitedConstraints(): WithParams_15544[VNelMcalcErr[Unit]] = 
         citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
 
-    def validateFireboxType(): WithParams_15544[ValidatedNel[FireboxError, Unit]] = 
+    def validateFireboxSpecificConstraints(): WithParams_15544[ValidatedNel[FireboxError, Unit]] = 
         inputs.design.firebox match
             case tested: Tested   => ().validNel // TODO: recheck standard/norm
-            case oneOff: OneOff   => oneOff.validate(m_B)(using Locales.en)
+            case oneOff: OneOff   => oneOff.validateSpecificConstraints(m_B, V_L)(using Locales.en)
     
     protected def validateVelocitiesIn(
         pipeResult: PipeResult
@@ -1104,8 +1082,7 @@ abstract class EN15544_V_2023_Common_Application
             validateSeasonalEfficiency(countryCode)(using runValidationAtParams),
             validateCitedConstraints()(using runValidationAtParams),
             // Firebox
-            validateFireboxType()(using runValidationAtParams),
-            validate_injectors_air_velocity.toOption.map(f => f(using runValidationAtParams)).getOrElse(().validNel[FireboxError])
+            validateFireboxSpecificConstraints()(using runValidationAtParams),
             // TODO: any missing validation ?
             // - extra conditions for EN 13384 ?
         ).sequence[VNel, Unit].map(_ => ())

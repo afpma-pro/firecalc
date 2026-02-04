@@ -458,6 +458,7 @@ object I18nData:
         injector_velocity_below_minimum: StringFormat2,
         injector_velocity_above_maximum: StringFormat2,
         flue_gas_velocity_error: StringFormat5,
+        missing_flow_rate: String,
     )
 
     case class Headers(

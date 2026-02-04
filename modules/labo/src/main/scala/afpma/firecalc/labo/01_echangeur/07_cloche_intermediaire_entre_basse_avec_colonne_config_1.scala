@@ -311,6 +311,5 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
                 height = 58.3.cm
             ),
             glass_area = 200.cm2,
-            air_injector_surface_area = 37.2.cm * 4.mm // checked in echangeur #6 and #7
         )
     )

@@ -38,6 +38,7 @@ import coulomb.ops.standard.all.{*, given}
 import coulomb.ops.algebra.all.{*, given}
 
 import io.taig.babel.Locale
+import afpma.firecalc.units.coulombutils.VolumeFlow
 
 sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
     val emissions_values: EmissionsAndEfficiencyValues = EcoPlus_Combustion_Firebox
@@ -90,15 +91,7 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
     lazy val c25_largeurDesColonnesAirArrieres    = 
         c2_largeurFoyer - 2.0 * c14_debordDesRenfortsDansLesAngles - c13_largeurRenfortMedianArriere
 
-    // vitesse injection
-    def air_injector_surface_area: Area = 
-        val largeurFenteAirFoyer = 2 * c19_largeurDesInjecteursLateraux + c20_largeurDesInjecteursArrieres
-        val nbRangsFenteInjectionAirFoyer = 4.0
-        val surfaceInjectionAirFoyer = nbRangsFenteInjectionAirFoyer * (largeurFenteAirFoyer * h82_hauteurDesInjecteurs_Z)
-        val surfaceInjectionAirPorte = 1.0 * (c21_largeurDesInjecteursSousPorte * h82_hauteurDesInjecteurs_Z)
-        surfaceInjectionAirFoyer + surfaceInjectionAirPorte
-
-    def validate(m_B: m_B): Locale ?=> ValidatedNel[FireboxError, Unit] = 
+    override def validateSpecificConstraints(m_B: m_B, flow_rate: Option[VolumeFlow]) =
         val mB: Mass = m_B
         val buf = new ListBuffer[FireboxError]()
 
@@ -183,7 +176,7 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
 
         val errors = buf.toList
         if (errors.size > 0) NonEmptyList.fromListUnsafe(errors).invalid else ().validNel
-    end validate
+    end validateSpecificConstraints
 
     override def m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
         min = TermConstraint.Min[m_B](6.kg).some,

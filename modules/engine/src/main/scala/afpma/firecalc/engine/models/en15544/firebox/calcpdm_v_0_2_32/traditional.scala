@@ -24,6 +24,7 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.{*, given}
+import algebra.instances.all.given
 import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
@@ -48,9 +49,22 @@ case class TraditionalFirebox(
     val largeurVitre = h71_largeurVitre
     val hauteurVitre = h72_hauteurVitre
 
-    def air_injector_surface_area = h67_sectionCumuleeEntreeAirPorte
+    private def injectors_air_velocity(flow_rate: VolumeFlow): Velocity =
+        flow_rate / h67_sectionCumuleeEntreeAirPorte
 
-    def validate(m_B: m_B): Locale ?=> ValidatedNel[FireboxError, Unit] = ().validNel
+    def validateSpecificConstraints(m_B: m_B, flow_rate_opt: Option[VolumeFlow]): Locale ?=> ValidatedNel[FireboxError, Unit] = 
+        flow_rate_opt match
+            case None => MissingFlowRate.invalidNel
+            case Some(flow_rate) =>
+                val injection_velocity_rate = injectors_air_velocity(flow_rate)
+                val injector_velocity_rate_min = 2.m_per_s
+                val injector_velocity_rate_max = 4.m_per_s
+                if (injection_velocity_rate < injector_velocity_rate_min)
+                    InjectorVelocityBelowMinimum(injection_velocity_rate.showP, injector_velocity_rate_min.showP).invalidNel
+                else if (injection_velocity_rate > injector_velocity_rate_max)
+                    InjectorVelocityAboveMaximum(injection_velocity_rate.showP, injector_velocity_rate_max.showP).invalidNel
+                else
+                    ().validNel
 
     override def m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
         min = TermConstraint.Min[m_B](10.kg).some,

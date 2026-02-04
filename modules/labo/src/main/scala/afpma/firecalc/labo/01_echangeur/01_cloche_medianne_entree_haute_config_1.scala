@@ -282,6 +282,5 @@ object `01_cloche_medianne_entree_haute_config_1`
                 height = 58.3.cm
             ),
             glass_area = 200.cm2, // does not matter here
-            air_injector_surface_area = 37.2.cm * 4.mm // checked in echangeur #1, #6 and #7
         )
     )

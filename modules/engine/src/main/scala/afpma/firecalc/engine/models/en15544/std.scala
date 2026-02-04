@@ -45,6 +45,7 @@ import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
 import afpma.firecalc.engine.impl.en15544.mce.HasTypeMembers_15544_MCE
+import afpma.firecalc.units.coulombutils.VolumeFlow
 
 object std:
 
@@ -137,6 +138,16 @@ object std:
         def height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] = height_of_lowest_opening_constraintSlots.toSeq
         def fireboxDimensions_Base_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] = fireboxDimensions_Base_constraintSlots.toSeq
 
+        /**
+          * Validate constraints NOT related to EN 15544.
+          * Use this method for specific contraints on some family of firebox (e.g: Ecolabeled firebox, 15a doors, or other certified custom designs)
+          *
+          * @param mB
+          * @param flow_rate
+          * @return
+          */
+        def validateSpecificConstraints(mB: m_B, flow_rate: Option[VolumeFlow]): Locale ?=> ValidatedNel[FireboxError, Unit]
+
     object Firebox_15544 extends FireboxHelper_15544:
 
         case class Dimensions(
@@ -208,6 +219,8 @@ object std:
                 max = TermConstraint.Max[m_B](maximumFuelMass).some
             )
 
+            override def validateSpecificConstraints(m_B: m_B, flow_rate: Option[VolumeFlow]) = ().validNel
+
         object Tested:
             given showAsTable: Locale => ShowAsTable[Tested] = 
                 ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
@@ -234,9 +247,7 @@ object std:
             def pn_reduced: HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal
             def dimensions: Dimensions
             def glass_area: GlassArea
-            def air_injector_surface_area: Area
             def height_of_first_row_of_air_injectors: Length
-            def validate(mB: m_B): Locale ?=> ValidatedNel[FireboxError, Unit]
 
         object OneOff:
             final case class CustomForLab(
@@ -246,10 +257,9 @@ object std:
                 pn_reduced: HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
                 dimensions: Dimensions,
                 glass_area: GlassArea,
-                air_injector_surface_area: Area,
                 height_of_first_row_of_air_injectors: Length = 5.cm,
             ) extends OneOff {
-                def validate(m_B: m_B): Locale ?=> ValidatedNel[FireboxError, Unit] = ().validNel
+                override def validateSpecificConstraints(m_B: m_B, flow_rate: Option[VolumeFlow]): Locale ?=> ValidatedNel[FireboxError, Unit] = ().validNel
 
                 override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] = None
             }
@@ -264,7 +274,6 @@ object std:
                         (I18N.firebox.traditional.height                           :: ""  :: dimensions.height.to_cm.showP                           :: Nil) ::
                         (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: ""  :: height_of_first_row_of_air_injectors.to_cm.showP        :: Nil) ::
                         (I18N.firebox.traditional.glass_surface_area               :: ""  :: glass_area.showP                                        :: Nil) ::
-                        (I18N.firebox.traditional.air_injector_surface_area        :: ""  :: air_injector_surface_area.showP                         :: Nil) ::
                         Nil
     end Firebox_15544
     

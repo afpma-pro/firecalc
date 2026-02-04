@@ -160,6 +160,7 @@ object standard {
         case e: FireboxHeightOutOfRange                 => Show[FireboxHeightOutOfRange].show(e)
         case e: InjectorVelocityBelowMinimum            => Show[InjectorVelocityBelowMinimum].show(e)
         case e: InjectorVelocityAboveMaximum            => Show[InjectorVelocityAboveMaximum].show(e)
+        case e: MissingFlowRate                         => Show[MissingFlowRate].show(e)
         case e: FireboxErrorCustom                      => e.reason
 
     final class FireboxErrorCustom(val reason: Locale ?=> String) extends FireboxError
@@ -203,6 +204,11 @@ object standard {
     object InjectorVelocityAboveMaximum:
         given ShowUsingLocale[InjectorVelocityAboveMaximum] = showUsingLocale: e =>
             I18N.errors.injector_velocity_above_maximum(e.velocity, e.maxVelocity)
+
+    type MissingFlowRate = MissingFlowRate.type
+    case object MissingFlowRate extends FireboxError:
+        given ShowUsingLocale[MissingFlowRate] = showUsingLocale: e =>
+            I18N.errors.missing_flow_rate
 
     sealed trait InvalidTermValue[T] extends FireboxError:
         def termName: String

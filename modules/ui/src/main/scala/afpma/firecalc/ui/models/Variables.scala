@@ -467,16 +467,6 @@ val firebox_vnel2_signal =
             vp1.map(_.`ph-(pR+pu)`).andThen(_ => vp2.map(_.`ph-(pR+pu)`))
         )
 
-// injectors air velocity ok ?
-val firebox_vnel3_signal = results_en15544_strict_sig.map(_.andThen(strict =>
-    import cats.syntax.validated.catsSyntaxValidatedId
-    given Locale = localeVar.now()
-    given p: strict.Params_15544 = strict.Params_15544.DraftMin_LoadNominal
-    strict.validate_injectors_air_velocity.toOption
-        .map(f => f)
-        .getOrElse(().validNel)
-))
-
 val en13384_P_L_sig: Signal[VNelMcalcErr[P_L]] =
     results_en13384_sig.map(_.map(_.P_L))
 

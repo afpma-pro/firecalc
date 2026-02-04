@@ -40,19 +40,19 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
     val firebox_vnel1_signal = results_en15544_strict_sig.map(_.andThen(strict =>
         import cats.syntax.validated.catsSyntaxValidatedId
         val mB = strict.m_B
+        val p = strict.runValidationAtParams
+        val firebox_flow_rate = strict.V_L(using p._1)(using Some(p._2))
         strict.inputs.design.firebox match
             case _: Tested => ().validNel
-            case oo: OneOff => oo.validate(mB)
+            case oo: OneOff => oo.validateSpecificConstraints(mB, firebox_flow_rate)
     ))
 
     lazy val vnel_signal = 
         firebox_vnel1_signal
         .combineWith(firebox_vnel2_signal)
-        .combineWith(firebox_vnel3_signal)
-        .map((v1, v2, v3) => 
+        .map((v1, v2) => 
             v1
             .andThen(_ => v2)
-            .andThen(_ => v3)
             .andThen(_ => v1) 
         )
 

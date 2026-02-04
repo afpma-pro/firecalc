@@ -143,8 +143,6 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def t_n: t_n // input
 
     // Section "1", "Scope"
-    def injectors_air_velocity: OneOffOrNotApplicable[WithParams_15544[Velocity]]
-    def validate_injectors_air_velocity: OneOffOrNotApplicable[WithParams_15544[ValidatedNel[FireboxError, Unit]]]
 
     // Section "4.3.1.2", "Firebox surface"
     def U_BR: OneOffOrNotApplicable[U_BR]
@@ -322,7 +320,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def validateEfficiencyIsAboveMinEfficiency(): WithParams_15544[VNelMcalcErr[Unit]]
     def validateSeasonalEfficiency(countryCode: Country): WithParams_15544[VNelMcalcErr[Unit]]
     def validateCitedConstraints(): WithParams_15544[VNelMcalcErr[Unit]]
-    def validateFireboxType(): WithParams_15544[ValidatedNel[FireboxError, Unit]]
+    def validateFireboxSpecificConstraints(): WithParams_15544[ValidatedNel[FireboxError, Unit]]
 
     val runValidationAtParams: Params_15544
     def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit]

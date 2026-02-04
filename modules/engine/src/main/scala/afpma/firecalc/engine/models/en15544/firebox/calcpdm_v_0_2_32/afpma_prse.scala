@@ -76,9 +76,7 @@ case class AFPMA_PRSE(
             9.3.cm * 4 * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte / 4.0)
     )
 
-    def air_injector_surface_area = geometrieEquivalenteDesInjecteursAir.area
-
-    def validate(m_B: m_B): Locale ?=> ValidatedNel[FireboxError, Unit] =
+    override def validateSpecificConstraints(m_B: m_B, flow_rate: Option[VolumeFlow]): Locale ?=> ValidatedNel[FireboxError, Unit] =
         new FireboxErrorCustom(
             I18N.warnings.firebox_afpma_prse_not_validated
         ).invalidNel
