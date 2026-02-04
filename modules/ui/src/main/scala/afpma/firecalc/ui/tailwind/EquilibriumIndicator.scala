@@ -60,7 +60,7 @@ final case class EquilibriumIndicator()(using Locale, DisplayUnits)
                             x => s"""+ ${x.`current-max`.showP}""", "-")
                     else if (resistance)
                         pc_sig.mapAndFoldVNelE(
-                            x => s"- ${x.`current-min`.showP}", "-")
+                            x => s"- ${x.`min-current`.showP}", "-")
                     else pc_sig.mapAndFoldVNelE(
                         x =>
                             import shows.defaults.show_Pascals_1_noUnit 

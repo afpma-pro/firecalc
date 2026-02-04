@@ -404,6 +404,8 @@ object typedefs:
         val current = sum_ph
         val max = sum_ph_max_expected
 
+        val `min-current` = min - current
+
         val `current-min` = current - min
         val `current-max` = current - max
         
