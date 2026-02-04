@@ -230,10 +230,12 @@ object DaisyUIInputs:
 
     final case class FieldsetLegendWithContent(
         legendOpt: Option[String],
-        content: HtmlElement
+        content: HtmlElement,
+        bgClass: String,
+        borderClass: String
     ) extends Component:
         val node =  fieldSet(
-            cls := "fieldset w-full bg-base-200 border border-base-300 p-4 rounded-box",
+            cls := s"fieldset w-full $bgClass border $borderClass p-4 rounded-box",
             legendOpt.map(l => legend(cls := "fieldset-legend", l)), // show title if defined
             content
         )

@@ -46,11 +46,19 @@ final case class AppendLayersComponent(
 
     type DF[x] = DaisyUIHorizontalForm[x]
 
+    private def wrapLine(title: String, content: HtmlElement, isProperty: Boolean): HtmlElement = 
+        DaisyUIInputs.FieldsetLegendWithContent(
+            Some(title), 
+            content, 
+            bgClass = if (isProperty) "bg-base-100" else "bg-base-200",
+            borderClass = if (isProperty) "border-base-300 border-dashed" else "border-base-content/30",
+        )
+
     private def renderElemTyped[AA <: AppendLayerDescr](i: Int, title: String, aa: AA, sig: Signal[(Int, AA, XtraOutputs)])(using DF[AA]): HtmlElement = 
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val node = elem_v.as_HtmlElement.amend(binders)
-        val with_fieldset_node = DaisyUIInputs.FieldsetLegendWithContent(Some(title), node)
-        val summary_node = DaisyUIInputs.FieldsetLegendWithContent(Some(title), div())
+        val with_fieldset_node = wrapLine(title, node, isProperty = true)
+        val summary_node = wrapLine(title, div(), isProperty = true)
         renderIdWithIncrDescr[AA](i, (i, aa), sig, with_fieldset_node, Some(summary_node))
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] = 

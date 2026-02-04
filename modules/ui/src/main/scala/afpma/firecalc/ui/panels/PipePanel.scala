@@ -124,11 +124,11 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             PipeShape.show_PipeShape_valueIn_noUnit,
         )
 
-    protected def renderElemTyped[AA <: Elem](i: Int, title: String, aa: AA, sig: Signal[(Int, AA, XtraOutputs)])(using DF[AA]): HtmlElement = 
+    protected def renderElemTyped[AA <: Elem](i: Int, title: String, aa: AA, sig: Signal[(Int, AA, XtraOutputs)], isProperty: Boolean)(using DF[AA]): HtmlElement = 
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val node = elem_v.as_HtmlElement
-        val header_and_node = renderIncrDescr(title, node).amend(binders)
-        val summary_node = DaisyUIInputs.FieldsetLegendWithContent(Some(title), div())
+        val header_and_node = renderIncrDescr(title, node, isProperty).amend(binders)
+        val summary_node = wrapLine(title, div(), isProperty)
         val complexIncrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
         val xtra_sig = sig.map(_._3)
@@ -161,10 +161,15 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             children(detailed_columns) <-- expertModeOn
         )
 
-    def wrapLine(title: String, content: HtmlElement): HtmlElement = 
-        DaisyUIInputs.FieldsetLegendWithContent(Some(title), content)
+    def wrapLine(title: String, content: HtmlElement, isProperty: Boolean): HtmlElement = 
+        DaisyUIInputs.FieldsetLegendWithContent(
+            Some(title), 
+            content, 
+            bgClass = if (isProperty) "bg-base-100" else "bg-base-200",
+            borderClass = if (isProperty) "border-base-300 border-dashed" else "border-base-content/30",
+        )
 
-    protected def renderIncrDescr(title: String, el: HtmlElement): HtmlElement = wrapLine(title, el)
+    protected def renderIncrDescr(title: String, el: HtmlElement, isProperty: Boolean): HtmlElement = wrapLine(title, el, isProperty)
 
     def statusIcon = 
         vnel_signal

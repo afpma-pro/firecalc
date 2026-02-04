@@ -298,7 +298,9 @@ object vertical_form:
         .wrappedInto(c =>
             FieldsetLegendWithContent(
                 legendOpt = Some(I18N.firebox.typ),
-                content = c
+                content = c,
+                bgClass = "bg-base-200",
+                borderClass = "border-base-300"
             )
         )
 
