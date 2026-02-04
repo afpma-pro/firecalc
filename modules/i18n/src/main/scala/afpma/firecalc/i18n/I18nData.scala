@@ -690,7 +690,13 @@ object I18nData:
         SetNumberOfFlows_fieldName: String,
         SetNumberOfFlows_NumberOfChannels: String,
         SetNumberOfFlows_Join: String,
+        shortcuts: SetProp.Shortcuts,
     )
+
+    object SetProp:
+        case class Shortcuts(
+            start_a_new_pipe: String
+        )
 
     case class TechnicalSpecficiations(
         sizing_method: String,

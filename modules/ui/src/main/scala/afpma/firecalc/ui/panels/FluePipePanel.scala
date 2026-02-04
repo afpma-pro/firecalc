@@ -97,8 +97,19 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     // simple instance of tree (for testing only)
     lazy val tagTreeMenu = TagTreeMenu(
+        shortcut_start_new_pipe,
         prop_elements,
         geom_elements,
+    )
+
+    lazy val shortcut_start_new_pipe =
+        import afpma.firecalc.ui.formgen.{Defaultable as D}
+        TagTreeMenu.Shortcut(
+            txt = I18N.set_prop.shortcuts.start_a_new_pipe,
+            elems = (
+                summon[D[SetMaterial]].default,
+                summon[D[SetInnerShape]].default,
+            )
     )
 
     lazy val geom_elements = TagTreeMenu.Group(

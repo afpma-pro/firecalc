@@ -52,24 +52,39 @@ case class TagTreeMenuComponent[A](
         nl: TagTreeMenu.Elems[A],
         @nowarn snl: Signal[TagTreeMenu.Elems[A]]
     ): HtmlElement =
+        // Determine icon and button style based on element type
+        val (icon, btnClass) = nl match
+            case _: TagTreeMenu.Shortcut[A] => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
+            case _: TagTreeMenu.Group[A]    => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary")
+            case _: TagTreeMenu.Leaf[A]     => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary")
+        
         button(
-            cls := "btn btn-sm bg-base-200 hover:bg-secondary",
-            lucide.`circle-help`,
+            cls := s"btn btn-sm $btnClass",
+            icon,
             txt,
             onClick --> { _ =>
                 // update tree state
                 treeStateVar.update: s =>
                     nl match
-                        case n: TagTreeMenu.Group[A] => s.selectNode(n)
-                        case l: TagTreeMenu.Leaf[A]  => 
-                            // and append line to table of incremental description
-                            // TODO
+                        case n: TagTreeMenu.Group[A] =>
+                            s.selectNode(n)
+                        
+                        case l: TagTreeMenu.Leaf[A]  =>
                             appendBus.onNext:
                                 val size = incrDescrSizeVar.now()
                                 CollectionCommand.Append((size, l.elem))
                             TreeState.initWith(resetTo)
+                        
+                        case sc: TagTreeMenu.Shortcut[A] =>
+                            // Append all elements from tuple
+                            var currentSize = incrDescrSizeVar.now()
+                            sc.elems.productIterator.foreach { elem =>
+                                appendBus.onNext:
+                                    CollectionCommand.Append((currentSize, elem.asInstanceOf[A]))
+                                currentSize += 1
+                            }
+                            TreeState.initWith(resetTo)
             },
-            
         )
 
     private def renderSelectedNode(
@@ -173,8 +188,9 @@ object TagTreeMenuComponent:
             this.copy(
                 selectedNodes = nextSel,
                 choices = x match
-                    case n: TagTreeMenu.Group[A] => n.next
-                    case _: TagTreeMenu.Leaf[A]  => Nil
+                    case n: TagTreeMenu.Group[A]    => n.next
+                    case _: TagTreeMenu.Leaf[A]     => Nil
+                    case _: TagTreeMenu.Shortcut[A] => Nil
             )
 
         def selectNode(n: TagTreeMenu.Group[A]): TreeState[A] =
@@ -214,6 +230,7 @@ object TagTreeMenu:
 
     case class Group[+A](txt: String, next: List[Elems[A]]) extends Elems[A]
     case class Leaf[+A](txt: String, elem: A)                     extends Elems[A]
+    case class Shortcut[+A](txt: String, elems: Tuple) extends Elems[A]
     object Leaf:
         def apply[A](txt: String)(using d: Defaultable[A]): Leaf[A] = 
             Leaf(txt, elem = d.default)

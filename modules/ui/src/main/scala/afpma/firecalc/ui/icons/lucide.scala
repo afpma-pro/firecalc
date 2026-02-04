@@ -466,4 +466,18 @@ object lucide:
         line(x1 := "14", x2 := "14", y1 := "11", y2 := "17")
     )
 
+    def `zap`(w: Int = 24, h: Int = 24, stroke_width: Double) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-zap-icon lucide-zap",
+        path(d := "M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z")
+    )
+
 end lucide
