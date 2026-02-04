@@ -160,6 +160,14 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
         if (c14_debordDesRenfortsDansLesAngles > DEBORD_MAX)
             buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.reinforcement_bars_offset_in_corners, c14_debordDesRenfortsDansLesAngles.to_cm, DEBORD_MAX.to_cm))
 
+        // injector height
+        val Z_MIN = 6.mm
+        val Z_MAX = 8.mm
+        if (h82_hauteurDesInjecteurs_Z < Z_MIN)
+            buf.append(TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.injector_height_Z, h82_hauteurDesInjecteurs_Z.to_mm, Z_MIN.to_mm))
+        if (h82_hauteurDesInjecteurs_Z > Z_MAX)
+            buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.injector_height_Z, h82_hauteurDesInjecteurs_Z.to_mm, Z_MAX.to_mm))
+
         // La somme des surfaces des fentes d'air de combustion bouchées par les barres de renfort ne doit pas
         // excéder 20% de la surface totale des fentes d'air de combustion..
         val largeurFenteAirFoyer = 2 * c19_largeurDesInjecteursLateraux + c20_largeurDesInjecteursArrieres
