@@ -106,11 +106,9 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
             buf.append(TermValueShouldBeGreaterOrEqThan(I18N.en15544.terms_xtra.height_of_the_lowest_opening.name, h83_hauteurEntreLaSoleEtLe1erInjecteur, 5.cm))
 
         if (mB < 6.kg)
-            // buf.append(s"mB < 6 kg : la charge maximale de bois doit être supérieure à 6 kg")
             buf.append(TermValueShouldBeGreaterOrEqThan(I18N.en15544.terms.m_B.name, mB, 6.kg))
         
         if (mB > 40.kg)
-            // buf.append(s"mB > 40 kg : la charge maximale de bois doit être inférieure à 40 kg")
             buf.append(TermValueShouldBeLessOrEqThan(I18N.en15544.terms.m_B.name, mB, 40.kg))
 
         val (d1, d2) = (h77_epaisseurParoiInterneFoyer_D1, epaisseurParoiExterneFoyer_D2)
@@ -121,54 +119,46 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
                 (5.cm, 5.cm)
             
         if (d1 < d1_min)
-            // buf.append(s"D1 < ${d1_min.showP} : l'épaisseur de la paroi interne ${d1.showP} doit être supérieure à ${d1_min.showP}")
             buf.append(TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.inner_wall_thickness_D1, d1.to_cm, d1_min.to_cm))
         if (d2 < d2_min)
             buf.append(TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.outer_wall_thickness_D2, d2.to_cm, d2_min.to_cm))
-            // buf.append(s"D2 < ${d2_min.showP} : l'épaisseur de la paroi externe ${d2.showP} doit être supérieure à ${d2_min.showP}")
 
         val w = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W
         val w_min = 5.cm
         
         if (w < w_min)
             buf.append(TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.air_manifold_height_W, w.to_cm, w_min.to_cm))
-            // buf.append(s"W < ${w_min.showP} : la hauteur minimale de passage de l'air ${w.showP} sous la sole doit être supérieure à ${w_min.showP}")
 
         val A = h12_largeurDuFoyer
         val B = h11_profondeurDuFoyer
         val ratio = (A / B).value
         if ( !( (0.5 <= ratio) && (ratio <= 2.0)) )
             buf.append(TermValueShouldBeBetweenInclusive(I18N.firebox.traditional.width_to_depth_ratio, ratio, minValue = 0.5, maxValue = 2.0))
-            // buf.append(s"le ratio largeur / profondeur doit être compris entre 0.5 et 2 (valeur calculé = $ratioShow)")
 
         val AF = h74_hauteur_de_cendrier_AF
         val AF_min = 5.cm
         val AF_max = 12.cm
         if (AF < AF_min)
             buf.append(TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.ash_pit_height_AF, AF.to_cm, AF_min.to_cm))
-            // buf.append(s"AF < ${AF_min.showP} : la profondeur du cendrier ${AF.showP} doit être supérieure à ${AF_min.showP}")
         if (AF > AF_max)
             buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.ash_pit_height_AF, AF.to_cm, AF_max.to_cm))
-            // buf.append(s"AF > ${AF_max.showP} : la profondeur du cendrier ${AF.showP} doit être inférieure à ${AF_max.showP}")
 
         val H_min = (25.cm.value + mB.toUnit[Kilogram].value).cm
         val H = h13_hauteurDuFoyer
         if (H < H_min)
             buf.append(TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.height, H.to_cm, H_min.to_cm))
-            // buf.append(s"H < ${H_min.showP} : La hauteur minimum du foyer ${H.showP} doit être au minimum de 25 cm + la charge de bois maximale en kg.")
 
-        val E_max = 6.cm
-        if (h79_largeurRenfortMedianLateraux > E_max)
-            buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.width_between_two_air_columns_sides_E, h79_largeurRenfortMedianLateraux.to_cm, E_max.to_cm))
-            // buf.append(s"E > ${E_max.showP} : la largeur de la barre de renfort latérale E doit être inférieure à ${E_max.showP}")
-        if (h80_largeurRenfortMedianArriere > E_max)
-            buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.width_between_two_air_columns_rear_E, h80_largeurRenfortMedianArriere.to_cm, E_max.to_cm))
-            // buf.append(s"E > ${E_max.showP} : la largeur de la barre de renfort arrière E doit être inférieure à ${E_max.showP}")
+        val largeurRenfortMedianLateraux_max = c19_largeurDesInjecteursLateraux * 0.2
+        if (h79_largeurRenfortMedianLateraux > largeurRenfortMedianLateraux_max)
+            buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.width_between_two_air_columns_sides_E, h79_largeurRenfortMedianLateraux.to_cm, largeurRenfortMedianLateraux_max.to_cm))
+
+        val largeurRenfortMedianArriere_max = c20_largeurDesInjecteursArrieres * 0.2
+        if (h80_largeurRenfortMedianArriere > largeurRenfortMedianArriere_max)
+            buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.width_between_two_air_columns_rear_E, h80_largeurRenfortMedianArriere.to_cm, largeurRenfortMedianArriere_max.to_cm))
 
         val DEBORD_MAX = 4.5.cm // pour ne pas que les débords fassent que les colonnes d'air soient moins larges que les injecteurs d'air
         if (c14_debordDesRenfortsDansLesAngles > DEBORD_MAX)
             buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.reinforcement_bars_offset_in_corners, c14_debordDesRenfortsDansLesAngles.to_cm, DEBORD_MAX.to_cm))
-            // buf.append(s"Débord > ${DEBORD_MAX.showP} : le débord dans les angles de doit pas dépasser ${DEBORD_MAX.showP}")
 
         // La somme des surfaces des fentes d'air de combustion bouchées par les barres de renfort ne doit pas
         // excéder 20% de la surface totale des fentes d'air de combustion..
@@ -182,7 +172,6 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
                 ratioSurfaceFenteAir,
                 I18N.firebox.ecolabeled.injector_surface_area_obstructed_max_perc(ratioSurfaceFenteAir.toPercent.showP))
             )
-            // buf.append(s"La somme des surfaces des fentes d'air de combustion bouchées par les barres de renfort ne doit pas excéder 20% de la surface totale des fentes d'air de combustion. (ratio calculé = ${ratioSurfaceFenteAir.toPercent.showP})")
 
         val errors = buf.toList
         if (errors.size > 0) NonEmptyList.fromListUnsafe(errors).invalid else ().validNel
