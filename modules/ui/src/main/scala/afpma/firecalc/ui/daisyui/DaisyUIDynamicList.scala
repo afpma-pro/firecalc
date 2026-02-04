@@ -96,7 +96,12 @@ trait DaisyUIDynamicList extends Component:
         val showFullNodeSig = displayFull.signal
         val showSummaryNodeSig = displayFull.signal.map(b => !b)
 
-        div(cls := "flex-none flex items-center", 
+        div(cls := "flex-none flex items-center",
+            // item number
+            div(
+                cls := "flex-none flex items-center text-base-content/50 justify-center cursor-pointer w-6 h-6", 
+                text <-- sig.map(_._1) // id
+            ),
             // duplicate button
             div(cls := "flex-none flex items-center text-base-content hover:bg-secondary hover:text-secondary-content justify-center cursor-pointer w-6 h-6", 
                 lucide.`copy`(stroke_width = 0.5),
