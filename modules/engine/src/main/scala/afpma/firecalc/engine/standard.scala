@@ -623,7 +623,7 @@ object standard {
         given ShowUsingLocale[NotDefinedYet] = showUsingLocale: e =>
             e match
                 case FluePipeNotDefinedYet    => I18N.incremental_validation.not_defined_yet.flue_pipe
-                case ChimneyPipeNotDefinedYet => I18N.incremental_validation.not_defined_yet.flue_pipe
+                case ChimneyPipeNotDefinedYet         => I18N.incremental_validation.not_defined_yet.chimney_pipe
             
     
     // Property must be set errors (with operation name)
