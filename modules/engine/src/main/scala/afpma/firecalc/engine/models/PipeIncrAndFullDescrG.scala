@@ -31,7 +31,8 @@ case class NamedPipeElDescrG[PipeElDescr <: Matchable](
     el: PipeElDescr,
     nf: NbOfFlows,
 ) {
-    val fullRef = s"[ $typ #$idx ='$name' ]"
+    val prettyRef = s"""'$name' (#$idx)"""
+    val fullRef = s"[ $typ #$idx = '$name' ]"
 }
 object NamedPipeElDescrG:
     given hasLength: [PipeElDescr <: Matchable] => (under: HasLength[PipeElDescr]) => HasLength[NamedPipeElDescrG[PipeElDescr]]: 

@@ -829,6 +829,7 @@ object I18nData:
         case class NotDefinedYet(
             flue_pipe: String,
             chimney_pipe: String,
+            add_element_missing_after_set_prop: StringFormat1
         )
         case class PropertyMustBeSet(
             inner_geometry: StringFormat1,
@@ -913,6 +914,5 @@ object I18nData:
     )
 
     case class BuilderErrors(
-        invalid_operation_sequence: String,
         errors_in_other_section_type: String,
     )

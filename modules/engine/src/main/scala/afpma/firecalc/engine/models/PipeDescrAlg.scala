@@ -56,6 +56,7 @@ trait PipeDescrAlg:
         def getNext(namedEl: NamedPipeElDescr): Option[NamedPipeElDescr] = pfd.getNext(namedEl)
         def getNextOrThrow(namedEl: NamedPipeElDescr): NamedPipeElDescr = pfd.getNextOrThrow(namedEl)
         def getByNameWithType[T <: PipeElDescr](pname: PipeName)(using TypeTest[PipeElDescr, T]): Option[NamedPipeElDescrG[T]] = pfd.getByNameWithType[T](pname)
+        def getLastOption: Option[NamedPipeElDescrG[PipeElDescr]] = pfd.elements.lastOption
         def lastInnerGeom: Option[PipeShape] =
             pfd.elements.foldLeft(None): (oshape, nel) =>
                 nel.el.innerShape(oshape).map(pos => pos(using Position.End))

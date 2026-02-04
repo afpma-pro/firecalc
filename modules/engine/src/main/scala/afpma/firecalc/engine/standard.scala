@@ -608,7 +608,6 @@ object standard {
         case e: PropertyMustBeDefined   => Show[PropertyMustBeDefined].show(e)
         case e: PrerequisiteNotMet      => Show[PrerequisiteNotMet].show(e)
         case e: ConflictDetected        => Show[ConflictDetected].show(e)
-        case InvalidOperationSequence(_)   => Show[InvalidOperationSequence.type].show(InvalidOperationSequence)
     
     // Pipe undefined
     sealed trait NotDefinedYet extends IncrementalValidation_Error
@@ -619,11 +618,19 @@ object standard {
     case object ChimneyPipeNotDefinedYet extends NotDefinedYet:
         override final def sectionTyp: PipeType = ChimneyPipeT
 
+    case class AddElementMissingAfterSetProp[Id_IncrDescr <: Matchable](
+        sectionTyp: PipeType,
+        lastElRef: Option[String]
+    ) extends NotDefinedYet:
+        def showUsingLocale: Locale ?=> String = 
+            I18N.incremental_validation.not_defined_yet.add_element_missing_after_set_prop(lastElRef.getOrElse(""))
+
     object NotDefinedYet:
         given ShowUsingLocale[NotDefinedYet] = showUsingLocale: e =>
             e match
-                case FluePipeNotDefinedYet    => I18N.incremental_validation.not_defined_yet.flue_pipe
-                case ChimneyPipeNotDefinedYet         => I18N.incremental_validation.not_defined_yet.chimney_pipe
+                case FluePipeNotDefinedYet                   => I18N.incremental_validation.not_defined_yet.flue_pipe
+                case ChimneyPipeNotDefinedYet                => I18N.incremental_validation.not_defined_yet.chimney_pipe
+                case e @ AddElementMissingAfterSetProp(_, _) => e.showUsingLocale
             
     
     // Property must be set errors (with operation name)
@@ -683,10 +690,7 @@ object standard {
     case class CannotSetGeometryBeforeChange(sectionTyp: PipeType) extends ConflictDetected
     case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType) extends ConflictDetected
     case class FlowResistanceRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType) extends ConflictDetected
-    
-    // Programming errors (should never happen)
-    case class InvalidOperationSequence(sectionTyp: PipeType) extends IncrementalValidation_Error
-    
+
     object ConflictDetected:
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
             case CannotSetGeometryBeforeChange(_)                 => I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
@@ -695,10 +699,6 @@ object standard {
             case FlowResistanceRequiresGeometry(op, "EN15544", _) => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
             case FlowResistanceRequiresGeometry(op, _, _)         => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
     
-    given ShowUsingLocale[InvalidOperationSequence.type] = showUsingLocale:
-        case InvalidOperationSequence => I18N.builder_errors.invalid_operation_sequence
-
-
     // ErrorsInOtherSectionType
     case object ErrorsInOtherSectionType extends MCalc_Error
     type ErrorsInOtherSectionType = ErrorsInOtherSectionType.type

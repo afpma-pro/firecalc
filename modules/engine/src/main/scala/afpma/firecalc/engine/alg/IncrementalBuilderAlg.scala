@@ -14,7 +14,7 @@ import cats.data.Validated.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.standard.{IncrementalValidation_Error, InvalidOperationSequence, given}
+import afpma.firecalc.engine.standard.{IncrementalValidation_Error, AddElementMissingAfterSetProp, given}
 
 trait IncrementalBuilderAlg extends PipeDescrAlg:
 
@@ -180,8 +180,9 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         val nextGeomOp = convStep.findNextAddElement
         nextGeomOp match
             case None =>
-                // This is a programming error - should never happen in normal operation
-                InvalidOperationSequence(pt).invalidNel
+                val lastIncrDescr = convStep.allRemainingOps.lastOption
+                val lastElRef = lastIncrDescr.map(x => s"'#${x._1}'")
+                AddElementMissingAfterSetProp(pt, lastElRef).invalidNel
             case Some(gop) =>
                 mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel => 
                     nel.foldLeft((inIdsMapping, inPipe)):
