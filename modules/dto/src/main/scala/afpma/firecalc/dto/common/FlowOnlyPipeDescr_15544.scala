@@ -32,7 +32,7 @@ object SetFlowOnlyPipeProp_15544_V1:
     @Transl(I(_.set_prop.SetMaterial))
     case class SetMaterial(
         @Transl(I(_.set_prop.SetMaterial))
-        material: Material_15544
+        material: Material_15544_V1
     ) extends SetFlowOnlyPipeProp_15544_V1
 
     @Transl(I(_.set_prop.SetNumberOfFlows))

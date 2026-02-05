@@ -44,7 +44,7 @@ object SetThermalPipeProp_13384_V1:
     @Transl(I(_.set_prop.SetMaterial))
     case class SetMaterial(
         @Transl(I(_.set_prop.SetMaterial))
-        material: Material_13384
+        material: Material_13384_V1
     ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetLayer))
