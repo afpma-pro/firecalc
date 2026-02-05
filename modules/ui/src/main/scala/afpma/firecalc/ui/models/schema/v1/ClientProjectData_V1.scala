@@ -6,7 +6,7 @@
 package afpma.firecalc.ui.models.schema.v1
 
 import afpma.firecalc.dto.common.{Customer, Address}
-import afpma.firecalc.dto.instances.given
+import afpma.firecalc.dto.instances.{CommonInstances, V1Instances, V2Instances, V3Instances}
 import afpma.firecalc.ui.models.schema.common.ClientProjectData_Version
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto
@@ -24,6 +24,8 @@ final case class ClientProjectData_V1(
 )
 
 object ClientProjectData_V1:
+    
+    import CommonInstances.given
     
     given Encoder[ClientProjectData_V1] = semiauto.deriveEncoder[ClientProjectData_V1]
     given Decoder[ClientProjectData_V1] = semiauto.deriveDecoder[ClientProjectData_V1]

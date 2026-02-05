@@ -26,7 +26,8 @@ sealed trait Firebox_V1 extends FireboxI
 
 object Firebox_V1:
 
-    import afpma.firecalc.dto.instances.given
+    import afpma.firecalc.dto.instances.CommonInstances.given
+    import afpma.firecalc.dto.instances.V1Instances.given
     import afpma.firecalc.units.others.sunits.SUnits.given
 
     given Decoder[Firebox_V1] = semiauto.deriveDecoder[Firebox_V1]

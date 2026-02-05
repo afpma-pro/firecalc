@@ -8,7 +8,9 @@ package afpma.firecalc.dto.v3
 import afpma.firecalc.dto.CustomYAMLEncoderDecoder
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v2.*
-import afpma.firecalc.dto.instances
+import afpma.firecalc.dto.instances.CommonInstances
+import afpma.firecalc.dto.instances.V2Instances
+import afpma.firecalc.dto.instances.V3Instances
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto
@@ -39,7 +41,9 @@ final case class FireCalcYAML_V3(
 
 trait FireCalcYAML_V3_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V3]:
     
-    import instances.given
+    import CommonInstances.given
+    import V2Instances.given
+    import V3Instances.given
 
     override given decoder: Decoder[FireCalcYAML_V3] = semiauto.deriveDecoder[FireCalcYAML_V3]
     override given encoder: Encoder[FireCalcYAML_V3] = semiauto.deriveEncoder[FireCalcYAML_V3]

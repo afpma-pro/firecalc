@@ -5,7 +5,6 @@
 
 package afpma.firecalc.ui.models.schema
 
-import afpma.firecalc.dto.FireCalcYAMLMigrations.given
 import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
 import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2
 import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3
@@ -56,6 +55,9 @@ import scala.util.{Try, Success, Failure}
  * @see docs/dev/SCHEMA_VERSIONING_ARCHITECTURE.md for full versioning documentation
  */
 object AppStateSchemaMigrations:
+
+    import afpma.firecalc.dto.FireCalcYAMLMigrations.given
+    import afpma.firecalc.dto.transformers.given
 
     /** Current schema version - increment when adding new schema versions */
     val CURRENT_SCHEMA_VERSION = 3

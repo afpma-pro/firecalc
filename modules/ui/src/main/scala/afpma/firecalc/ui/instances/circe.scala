@@ -43,7 +43,11 @@ import afpma.firecalc.ui.models.*
 object circe:
     
     // TODO: remove me once migration to dto is done
-    export afpma.firecalc.dto.instances.given
+    import afpma.firecalc.dto.instances.{CommonInstances, V1Instances, V2Instances, V3Instances}
+    export CommonInstances.given
+    export V1Instances.given
+    export V2Instances.given
+    export V3Instances.given
     
     // Business Logic
 

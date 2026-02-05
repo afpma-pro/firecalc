@@ -12,12 +12,8 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import coulomb.syntax.*
 import cats.syntax.all.*
 
-import afpma.firecalc.dto.common.FlowOnlyPipeDescr_13384_V1
-import afpma.firecalc.dto.common.ThermalPipeDescr_13384_V1
-import afpma.firecalc.dto.common.SetFlowOnlyPipeProp_13384_V1
-import afpma.firecalc.dto.common.SetThermalPipeProp_13384_V1
-import afpma.firecalc.dto.common.AddThermalPipeElement_13384_V1
-import afpma.firecalc.dto.common.AddFlowOnlyPipeElement_13384_V1
+import afpma.firecalc.dto.common.*
+import afpma.firecalc.dto.v3.*
 
 object transformers:
 
@@ -34,7 +30,7 @@ object transformers:
             .buildTransformer
 
     given Transformer[Seq[ThermalPipeDescr_13384_V1], Seq[FlowOnlyPipeDescr_13384_V1]] = (xs: Seq[ThermalPipeDescr_13384_V1]) =>
-        xs.mapFilter[FlowOnlyPipeDescr_13384_V1]: 
+        xs.mapFilter[FlowOnlyPipeDescr_13384_V1]:
             x =>
                 x match
                     case y: AddThermalPipeElement_13384_V1                                          => y.into[AddFlowOnlyPipeElement_13384_V1].transform.some
@@ -50,7 +46,27 @@ object transformers:
                     case y @ SetThermalPipeProp_13384_V1.SetDuctType(duct)                          => None
                     case y @ SetThermalPipeProp_13384_V1.SetNumberOfFlows(n_flows)                  => SetFlowOnlyPipeProp_13384_V1.SetNumberOfFlows(n_flows).some
     
-    given Transformer[AddThermalPipeElement_13384_V1, AddFlowOnlyPipeElement_13384_V1] = 
+    given Transformer[AddThermalPipeElement_13384_V1, AddFlowOnlyPipeElement_13384_V1] =
         Transformer.define[AddThermalPipeElement_13384_V1, AddFlowOnlyPipeElement_13384_V1]
             .buildTransformer
-                
+
+    // V2 to V3 Migration: Material transformers
+
+    given Transformer[Material_13384_V1, Material_13384_V2] = (v1: Material_13384_V1) =>
+        v1 match
+            case Material_13384_V1.WeldedSteel     => Material_13384_V2.WeldedSteel()
+            case Material_13384_V1.Glass           => Material_13384_V2.Glass()
+            case Material_13384_V1.Plastic         => Material_13384_V2.Plastic()
+            case Material_13384_V1.Aluminium       => Material_13384_V2.Aluminium()
+            case Material_13384_V1.ClayFlueLiners  => Material_13384_V2.ClayFlueLiners()
+            case Material_13384_V1.Bricks          => Material_13384_V2.Bricks()
+            case Material_13384_V1.SolderedMetal   => Material_13384_V2.SolderedMetal()
+            case Material_13384_V1.Concrete        => Material_13384_V2.Concrete()
+            case Material_13384_V1.Fibrociment     => Material_13384_V2.Fibrociment()
+            case Material_13384_V1.Masonry         => Material_13384_V2.Masonry()
+            case Material_13384_V1.CorrugatedMetal => Material_13384_V2.CorrugatedMetal()
+
+    given Transformer[Material_15544_V1, Material_15544_V2] = (v1: Material_15544_V1) =>
+        v1 match
+            case Material_15544_V1.TuyauxEnChamotte => Material_15544_V2.TuyauxEnChamotte()
+            case Material_15544_V1.BlocsDeChamotte  => Material_15544_V2.BlocsDeChamotte()
