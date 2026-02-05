@@ -11,7 +11,8 @@
         "-Xss10m",
         "-Xms16g",
         "-Xmx16g",
-        "-XX:MaxInlineLevel=32"
+        "-XX:MaxInlineLevel=32",
+        "-Djava.security.properties="
     ],
     "metals.enableIndentOnPaste": false,
     "makefile.configureOnOpen": false,
