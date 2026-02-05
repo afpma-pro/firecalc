@@ -296,6 +296,9 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
         "io.scalaland"      %%% "chimney"           % "1.8.2",
         "io.taig"           %%% "babel-generic"     % "0.5.3",
         "org.typelevel"     %%% "kittens"           % "3.5.0",
+        // Test
+        "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
+        "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
     ),
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
@@ -329,7 +332,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
 
     // scalatest
     libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-    libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-18"   % "3.2.19.0"    % "test",
+    libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
 
     // i18n
     libraryDependencies += "io.taig" %%% "babel-circe"   % "0.5.3",
