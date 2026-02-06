@@ -12,6 +12,7 @@ project/target
 target
 metals.sbt
 modules/ui/firecalc-ui.js
+traces/
 
 web/dist
 web/dist-static

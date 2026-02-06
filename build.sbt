@@ -119,6 +119,9 @@ lazy val reports_version       = s"${reports_base_version}+engine-${engine_versi
 lazy val payments_version      = s"${payments_base_version}+reports-${reports_base_version}+engine-${engine_version}"
 lazy val ui_version            = s"${ui_base_version}+engine-${engine_version}"
 
+// uncomment so that scala 3 traces are valid JSON (parallelExecution seems to procude badly formatted JSON traces)
+// parallelExecution in Global := false
+
 val commonSettings = Seq(
   scalaVersion := scala_version,
   scalacOptions ++= Seq(
@@ -137,6 +140,14 @@ val commonSettings = Seq(
     // "-Xfatal-warnings",
     // "-source:future",
   ),
+  // Activate for generating scala 3 compiler traces
+  // See: scripts/analyze_compiler_traces.py
+//   scalacOptions ++= Def.setting {
+//     Seq(
+//       "-Yprofile-enabled",
+//       s"-Yprofile-trace:traces/${name.value}.trace"
+//     )
+//   }.value,
   // Output compilation scope marker for watch mode parsing
   Compile / compile := {
     val result = (Compile / compile).value
