@@ -11,8 +11,7 @@
         "-Xss10m",
         "-Xms16g",
         "-Xmx16g",
-        "-XX:MaxInlineLevel=32",
-        "-Djava.security.properties="
+        "-XX:MaxInlineLevel=32"
     ],
     "metals.enableIndentOnPaste": false,
     "makefile.configureOnOpen": false,
@@ -71,7 +70,8 @@
             "**/web/electron-app/resources/fontconfig/**",
             "**/.gitignore",
             "**/.jvmopts.ci",
-            "**/Dockerfile"
+            "**/Dockerfile",
+            "**/*.json"
         ]
     },
     "psi-header.variables": [
@@ -177,5 +177,6 @@
         "editor.tabSize": 2
     },
     "metals.inlayHints.implicitArguments.enable": false,
-    "metals.bloopSbtAlreadyInstalled": true
+    "metals.bloopSbtAlreadyInstalled": true,
+    "metals.sbtScript": "sbt"
 }
