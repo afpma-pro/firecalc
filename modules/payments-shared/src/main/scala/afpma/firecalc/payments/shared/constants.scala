@@ -6,5 +6,5 @@
 package afpma.firecalc.payments.shared
 
 object Constants:
-  val FIRECALC_FILE_EXTENSION: String = ".fcalc"
-  val LEGACY_FIRECALC_FILE_EXTENSION: String = ".firecalc.yaml"
+    val FIRECALC_FILE_EXTENSION       : String = ".fcalc"
+    val LEGACY_FIRECALC_FILE_EXTENSION: String = ".firecalc.yaml"

@@ -11,7 +11,7 @@ import com.raquo.laminar.api.L.*
 
 final case class GetStartedSection() extends Component {
 
-  val node: Div =
-    div()
+    val node: Div =
+        div()
 
 }

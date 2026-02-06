@@ -5,22 +5,21 @@
 
 package afpma.firecalc.engine.utils
 
-import scala.annotation.nowarn
-
 import cats.*
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.*
 
+import scala.annotation.nowarn
 
 extension [E, A](e: Either[E, A])
     def toValidatedNel: ValidatedNel[E, A] =
         e.fold(_.invalidNel[A], _.validNel[E])
-    
+
 extension [A](e: Either[Throwable, A])
-    def getOrThrow: A                   = mapOrThrow(identity)
-    def mapOrThrow[B](f: A => B): B     = e.fold(e => throw e, f)
-    def mapShow[B](showErr: Throwable => String, show: A => String): String = e.fold(showErr, show)
+    def getOrThrow: A = mapOrThrow(identity)
+    def mapOrThrow[B](f      : A => B                                ): B      = e.fold(e => throw e, f)
+    def mapShow[B]   (showErr: Throwable => String, show: A => String): String = e.fold(showErr, show)
 
 def ApplyVNel[E] = Apply[[X] =>> ValidatedNel[E, X]]
 
@@ -68,19 +67,18 @@ extension [E, A](vnel: ValidatedNel[E, A])
 
 extension [E: Show, A](@nowarn vnel: ValidatedNel[E, A])
 
-    private def _showVNel = (nele: NonEmptyList[E]) => 
-        s"""|${nele.map(_.show).toList.mkString("", "\n", "\n")}
+    private def _showVNel = (nele: NonEmptyList[E]) => s"""|${nele.map(_.show).toList.mkString("", "\n", "\n")}
             |""".stripMargin
 
     def getOrThrow: A = mapOrThrow(identity)
 
-    def mapOrThrow[B](f: A => B): B = 
+    def mapOrThrow[B](f: A => B): B =
         vnel.fold(
             nele => throw new Error(_showVNel(nele)),
             f
         )
 
-    def mapShow[B](errPrefix: String)(show: A => String): String = 
+    def mapShow[B](errPrefix: String)(show: A => String): String =
         vnel.fold(err => s"ERROR // ${errPrefix} :\n${_showVNel(err)}", show)
 
     def asVNelString: VNelString[A] =
@@ -90,56 +88,54 @@ type VNelString[A] = Validated[NonEmptyList[String], A]
 object VNelString:
 
     // builder methods
-    
-    def validUnitWhenOption[A](oa: Option[A])(cond: A => Boolean)(err: String): VNelString[Unit] = oa match
-        case Some(a) => 
-            validUnitWhen(a)(cond)(err)
-        case None => NonEmptyList.one("aucune valeur").invalid
 
-    def validUnitWhen[A](a: A)(cond: A => Boolean)(err: String): VNelString[Unit] = 
-        if (cond(a)) Validated.Valid(()) 
+    def validUnitWhenOption[A](oa: Option[A])(cond: A => Boolean)(err: String): VNelString[Unit] = oa match
+        case Some(a) =>
+            validUnitWhen(a)(cond)(err)
+        case None    => NonEmptyList.one("aucune valeur").invalid
+
+    def validUnitWhen[A](a: A)(cond: A => Boolean)(err: String): VNelString[Unit] =
+        if (cond(a)) Validated.Valid(())
         else NonEmptyList.one(err).invalid
 
-    
-    def invalidOne[A](err: String): VNelString[A] = 
+    def invalidOne[A](err: String): VNelString[A] =
         Validated.Invalid(NonEmptyList.one(err))
-    
-    def invalid[A](nel: NonEmptyList[String]): VNelString[A] = 
+
+    def invalid[A](nel: NonEmptyList[String]): VNelString[A] =
         Validated.Invalid(nel)
 
-    def invalidUnsafe[A](errs: List[String]): VNelString[A] = 
+    def invalidUnsafe[A](errs: List[String]): VNelString[A] =
         Validated.Invalid(NonEmptyList.fromListUnsafe(errs))
-    
-    def valid[A](a: A): VNelString[A] = 
+
+    def valid[A](a: A): VNelString[A] =
         Validated.Valid(a)
 
     val validUnit = valid(())
 
     // extractors
-    
+
     sealed trait Status[+A]
-    case class Valid[A](a: A) extends Status[A]
-    case class InvalidOne(err: String) extends Status[Nothing]
+    case class Valid[A](a: A)                    extends Status[A]
+    case class InvalidOne(err: String)           extends Status[Nothing]
     case class InvalidMany(errors: List[String]) extends Status[Nothing]
 
     def unapply[A](vn: VNelString[A]): Option[Status[A]] = Some(vn match
-        case Validated.Valid(a) => Valid(a)
-        case Validated.Invalid(nel) => nel match
-            case NonEmptyList(head, Nil)  => InvalidOne(head)
-            case nel @ NonEmptyList(_, _) => InvalidMany(nel.toList)
-    )
+        case Validated.Valid(a)     => Valid(a)
+        case Validated.Invalid(nel) =>
+            nel match
+                case NonEmptyList(head, Nil) => InvalidOne(head)
+                case nel @ NonEmptyList(_, _) => InvalidMany(nel.toList))
 
     object Errors:
         def unapply[A](vn: VNelString[A]): Option[(List[String])] = vn match
             case Invalid(nel @ NonEmptyList(_, _)) => Some(nel.toList)
-            case _ => None
+            case _                                 => None
 
 extension [A](vnsa: VNelString[A])
-    def getOrThrow: A = mapOrThrow(identity)
-    def mapOrThrow[B](f: A => B): B = 
+    def getOrThrow              : A = mapOrThrow(identity)
+    def mapOrThrow[B](f: A => B): B =
         vnsa.fold(
-            nels => throw new Error(
-                s"""|VNelString error :
+            nels => throw new Error(s"""|VNelString error :
                     |${nels.toList.mkString("\t-", "\n\t-", "\n")}
                     |""".stripMargin),
             f

@@ -10,7 +10,7 @@ object all:
     // common (aka V1)
 
     export afpma.firecalc.dto.common.Address
-    
+
     export afpma.firecalc.dto.common.AirSpaceDetailed
     export afpma.firecalc.dto.common.AirSpaceDetailed.VentilDirection
     export afpma.firecalc.dto.common.AirSpaceDetailed.VentilOpenings
@@ -54,7 +54,7 @@ object all:
     export afpma.firecalc.utils.NoneOfEither
     export afpma.firecalc.utils.SomeLeft
     export afpma.firecalc.utils.SomeRight
-    
+
     export afpma.firecalc.dto.common.PipeLocation
     export afpma.firecalc.dto.common.PipeLocation.CustomArea
     export afpma.firecalc.dto.common.PipeLocation.AreaHeatingStatus
@@ -91,13 +91,12 @@ object all:
     export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_13384_V1
     export afpma.firecalc.dto.common.SetFlowOnlyPipeProp_15544_V1
 
-
     // VERSIONNING
 
     // V2
 
     // Firebox
-    
+
     export afpma.firecalc.dto.v2.Firebox_V2 as Firebox
     export afpma.firecalc.dto.v2.Firebox_V2
 

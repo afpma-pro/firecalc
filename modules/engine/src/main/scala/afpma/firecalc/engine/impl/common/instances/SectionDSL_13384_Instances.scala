@@ -5,19 +5,19 @@
 
 package afpma.firecalc.engine.impl.common.instances
 
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.*
-import afpma.firecalc.engine.impl.common.typeclasses.SectionDSL
 import afpma.firecalc.units.coulombutils.*
-import coulomb.*
+
+import afpma.firecalc.dto.all.*
+
+import afpma.firecalc.engine.impl.common.typeclasses.SectionDSL
 
 object SectionDSL_13384_Instances:
 
     // Instance for ThermalPipeDescr_13384
     given thermal13384: SectionDSL[ThermalPipeDescr_13384] with
         def addSectionSlopped(
-            name: String,
-            length: QtyD[Meter],
+            name          : String,
+            length        : QtyD[Meter],
             elevation_gain: QtyD[Meter]
         ) =
             AddThermalPipeElement_13384.AddSectionSlopped(
@@ -25,18 +25,18 @@ object SectionDSL_13384_Instances:
                 length,
                 elevation_gain
             )
-        
+
         def addSectionHorizontal(
-            name: String,
+            name             : String,
             horizontal_length: QtyD[Meter]
         ) =
             AddThermalPipeElement_13384.AddSectionHorizontal(
                 name,
                 horizontal_length
             )
-        
+
         def addSectionVertical(
-            name: String,
+            name          : String,
             elevation_gain: QtyD[Meter]
         ) =
             AddThermalPipeElement_13384.AddSectionVertical(
@@ -47,8 +47,8 @@ object SectionDSL_13384_Instances:
     // Instance for FlowOnlyPipeDescr_13384
     given flowOnly13384: SectionDSL[FlowOnlyPipeDescr_13384] with
         def addSectionSlopped(
-            name: String,
-            length: QtyD[Meter],
+            name          : String,
+            length        : QtyD[Meter],
             elevation_gain: QtyD[Meter]
         ) =
             AddFlowOnlyPipeElement_13384.AddSectionSlopped(
@@ -56,18 +56,18 @@ object SectionDSL_13384_Instances:
                 length,
                 elevation_gain
             )
-        
+
         def addSectionHorizontal(
-            name: String,
+            name             : String,
             horizontal_length: QtyD[Meter]
         ) =
             AddFlowOnlyPipeElement_13384.AddSectionHorizontal(
                 name,
                 horizontal_length
             )
-        
+
         def addSectionVertical(
-            name: String,
+            name          : String,
             elevation_gain: QtyD[Meter]
         ) =
             AddFlowOnlyPipeElement_13384.AddSectionVertical(

@@ -6,14 +6,13 @@
 package afpma.firecalc.dto.common
 
 import afpma.firecalc.i18n.*
-import magnolia1.Transl
 
 import cats.*
 import cats.derived.derived
 
-/**
- * See EN13384_2019 Section 7.8.1
- */
+import magnolia1.Transl
+
+/** See EN13384_2019 Section 7.8.1 */
 @Transl(I(_.set_prop.SetDuctType))
 enum DuctType derives Show:
     case

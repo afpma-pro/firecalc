@@ -4,8 +4,6 @@
  */
 
 package afpma.firecalc.ui.models.schema.migrations
-
-import io.scalaland.chimney.Transformer
 import afpma.firecalc.ui.models.schema.v1.ClientProjectData_V1
 
 /**
@@ -16,10 +14,10 @@ object ClientProjectDataMigrations:
 
     /**
      * Future: Transformer from V1 to V2
-     * 
+     *
      * Example when V2 is created (e.g., adding secondary contact):
-     * 
-     * given Transformer[ClientProjectData_V1, ClientProjectData_V2] = 
+     *
+     * given Transformer[ClientProjectData_V1, ClientProjectData_V2] =
      *     Transformer.define[ClientProjectData_V1, ClientProjectData_V2]
      *         .withFieldConst(_.secondary_contact, None)  // default for existing data
      *         .buildTransformer

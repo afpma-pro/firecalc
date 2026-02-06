@@ -5,22 +5,22 @@
 
 package afpma.firecalc.engine.ops
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
 import afpma.firecalc.engine.models.GasProps
 import afpma.firecalc.engine.ops.en13384.GasOps_13384
 
-import afpma.firecalc.units.coulombutils.*
-
 trait GasOps:
     extension (gas: GasProps)
-        def λ_A: WattsPerMeterKelvin
-        def η_A: NewtonSecondsPerSquareMeter
-        def P_r: Dimensionless
+        def λ_A  : WattsPerMeterKelvin
+        def η_A  : NewtonSecondsPerSquareMeter
+        def P_r  : Dimensionless
         def σ_H2O: QtyD[Percent]
-        def R: JoulesPerKilogramKelvin
+        def R    : JoulesPerKilogramKelvin
 end GasOps
 
 object GasOps:
 
-    def mkUsingEN13384(en13384: EN13384_1_A1_2019_Formulas_Alg): GasOps = 
+    def mkUsingEN13384(en13384: EN13384_1_A1_2019_Formulas_Alg): GasOps =
         new GasOps_13384(using en13384) {}

@@ -5,8 +5,8 @@
 
 package afpma.firecalc.dto
 
-import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.common.FireCalc_Version
+import afpma.firecalc.dto.v3.*
 
 // alias to V3
 type FireCalcYAML = FireCalcYAML_V3

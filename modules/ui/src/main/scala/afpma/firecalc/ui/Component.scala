@@ -10,15 +10,15 @@ import com.raquo.laminar.api.L.*
 import com.raquo.laminar.modifiers.RenderableNode
 
 trait Component {
-  // val body: HtmlElement
-  def node: HtmlElement
+    // val body: HtmlElement
+    def node: HtmlElement
 }
 
 object Component {
-  implicit def component2HtmlElement(component: Component): HtmlElement =
-    component.node
+    implicit def component2HtmlElement(component: Component): HtmlElement =
+        component.node
 
-  given RenderableNode[Component] = 
-    RenderableNode[Component](renderNode = _.node)
+    given RenderableNode[Component] =
+        RenderableNode[Component](renderNode = _.node)
 
 }

@@ -6,18 +6,22 @@
 package afpma.firecalc.engine.impl.common.instances
 
 import algebra.instances.all.given
-import cats.data.{ValidatedNel, Validated}
-import cats.data.Validated.*
-import cats.syntax.all.*
+
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.*
+
 import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
 import afpma.firecalc.engine.standard.*
-import afpma.firecalc.units.coulombutils.*
+
+import cats.data.Validated
+import cats.data.Validated.*
+import cats.data.ValidatedNel
+import cats.syntax.all.*
+
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
 
 object ElementFactory_15544_Instances:
@@ -26,7 +30,7 @@ object ElementFactory_15544_Instances:
 
     extension [S](state: S)
         def getValidated[A](
-            get: S => Option[A],
+            get  : S => Option[A],
             error: IncrementalValidation_Error
         ): ValidatedNel[IncrementalValidation_Error, A] =
             Validated
@@ -36,21 +40,19 @@ object ElementFactory_15544_Instances:
     // ========== Flow-Only Straight Section Factory ==========
 
     case class FlowOnlyStraightSectionCtx_15544(
-        geometry: Option[PipeShape],
+        geometry : Option[PipeShape],
         roughness: Option[Roughness],
-        pipeType: PipeType
+        pipeType : PipeType
     )
 
     given flowOnlyStraightSection15544: ElementFactory[
-        AddFlowOnlyPipeElement_15544.AddSectionSlopped |
-            AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
+        AddFlowOnlyPipeElement_15544.AddSectionSlopped | AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
             AddFlowOnlyPipeElement_15544.AddSectionVertical,
         FlowOnlyPipeDescr_15544.StraightSection,
         FlowOnlyStraightSectionCtx_15544
     ] with
         def make(
-            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped |
-                AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
+            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped | AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
                 AddFlowOnlyPipeElement_15544.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_15544) =
             val vg = ctx.getValidated(
@@ -84,10 +86,10 @@ object ElementFactory_15544_Instances:
                     (len, elev_gain)
 
             (vg, vr).mapN { (g, r) =>
-                FlowOnlyPipeDescr_15544.StraightSection(
-                    length = len,
-                    geometry = g,
-                    roughness = r,
+                FlowOnlyPipeDescr_15544.StraightSection        (
+                    length         = len,
+                    geometry       = g,
+                    roughness      = r,
                     elevation_gain = elev_gain
                 )
             }
@@ -185,9 +187,9 @@ object ElementFactory_15544_Instances:
     // ========== Section Geometry Change Factory ==========
 
     case class SectionGeometryChangeCtx_15544(
-        geometry: Option[PipeShape],
+        geometry                 : Option[PipeShape],
         setPropsHasGeometryChange: Boolean,
-        pipeType: PipeType
+        pipeType                 : PipeType
     )
 
     given sectionGeometryChange15544: ElementFactory[
@@ -207,7 +209,7 @@ object ElementFactory_15544_Instances:
                 ).map { fromGeom =>
                     FlowOnlyPipeDescr_15544.SectionGeometryChange(
                         from = fromGeom,
-                        to = op.to_shape
+                        to   = op.to_shape
                     )
                 }
 

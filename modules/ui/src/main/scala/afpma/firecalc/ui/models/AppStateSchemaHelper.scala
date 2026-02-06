@@ -5,35 +5,29 @@
 
 package afpma.firecalc.ui.models
 
-import scala.util.{Try, Success, Failure}
-import afpma.firecalc.ui.models.schema.v1.{ClientProjectData_V1, BillingInfo_V1}
-import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3
+import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.ui.models.schema.AppStateSchemaLoader
+import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import io.circe.syntax.*
 import io.circe.yaml.scalayaml.printer as yamlPrinter
-import io.scalaland.chimney.dsl.*
-import afpma.firecalc.ui.models.schema.AppStateSchema
 
-/**
- * Helper for managing AppStateSchema initialization and persistence.
- */
+/** Helper for managing AppStateSchema initialization and persistence. */
 object AppStateSchemaHelper:
 
-    import SchemaTransformers.given
-
-    /**
-     * Create initial schema with default values
-     */
+    /** Create initial schema with default values */
     def createInitialSchema(): AppStateSchema =
-        AppStateSchema_V3(
-            engine_state = EngineState.init,
+        AppStateSchema_V3  (
+            engine_state   = EngineState.init,
             sensitive_data = ClientProjectData.empty,
-            billing_data = afpma.firecalc.ui.instances.defaultable.default_BillingInfo.default
+            billing_data   = afpma.firecalc.ui.instances.defaultable.default_BillingInfo.default
         )
 
-    /**
-     * Encode schema to YAML
-     */
+    /** Encode schema to YAML */
     def encodeToYaml(schema: AppStateSchema): Try[String] =
         try
             val json = schema.asJson
@@ -41,15 +35,13 @@ object AppStateSchemaHelper:
         catch
             case e: Exception =>
                 scala.scalajs.js.Dynamic.global.console.log(s"Failed to encode schema: ${e.getMessage()}")
-                Failure(e)
+                Failure                                    (e                                            )
 
-    /**
-     * Decode schema from YAML
-     */
+    /** Decode schema from YAML */
     def decodeFromYaml(yaml: String): Try[AppStateSchema] =
         AppStateSchemaLoader.loadFromYaml(yaml) match
             case Success(sch) => Success(sch)
-            case Failure(e) =>
+            case Failure(e)   =>
                 scala.scalajs.js.Dynamic.global.console.log(s"Failed to decode schema: ${e.getMessage()}")
-                scala.scalajs.js.Dynamic.global.console.log(s"Returning default schema")
-                Success(createInitialSchema())
+                scala.scalajs.js.Dynamic.global.console.log("Returning default schema"                   )
+                Success                                    (createInitialSchema()                        )

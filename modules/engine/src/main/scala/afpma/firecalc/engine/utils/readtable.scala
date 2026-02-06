@@ -14,39 +14,42 @@ object readtable:
 
     case class ValueOutOfBound(
         vTermName: String,
-        v: Double,
-        vMin: Double,
-        vMax: Double
+        v        : Double,
+        vMin     : Double,
+        vMax     : Double
     ) extends ReadTableError(
-        s"value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)"
-    )
+            s"value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)"
+        )
 
     case class CouldNotInterpolate(override val msg: String) extends ReadTableError(msg)
 
     def fromTSVTableRaw_withBiInterpolatation(
-        resName: String,
+        resName          : String,
         tsvTableRawString: String,
-        xHeader: String,
-        yHeader: String,
-        zHeader: String,
-        xi: Double,
-        yi: Double,
-        xMinMax: (Double, Double),
-        yMinMax: (Double, Double),
+        xHeader          : String,
+        yHeader          : String,
+        zHeader          : String,
+        xi               : Double,
+        yi               : Double,
+        xMinMax          : (Double, Double),
+        yMinMax          : (Double, Double)
     ): Either[ReadTableError, Double] = {
         val (xmin, xmax) = xMinMax
         val (ymin, ymax) = yMinMax
 
-        if (xi < xmin) Left(ValueOutOfBound(s"x ($xHeader)", xi, xmin, xmax))
+        if      (xi < xmin) Left(ValueOutOfBound(s"x ($xHeader)", xi, xmin, xmax))
         else if (xi > xmax) Left(ValueOutOfBound(s"x ($xHeader)", xi, xmin, xmax))
         else if (yi < ymin) Left(ValueOutOfBound(s"y ($yHeader)", yi, ymin, ymax))
         else if (yi > ymax) Left(ValueOutOfBound(s"y ($yHeader)", yi, ymin, ymax))
         else
             val data = TSVTableString.fromString(tsvTableRawString)
-            for
-                out <- data.getUsingBilinearInterpolation(xHeader, yHeader, zHeader)(xi, yi) match
+            for out <- data.getUsingBilinearInterpolation(xHeader, yHeader, zHeader)(xi, yi) match
                     case Some(coeff) => Right(coeff)
-                    case None => Left(CouldNotInterpolate(
-                        s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, zHeader=$zHeader, xi=$xi, yi=$yi"))
+                    case None        =>
+                        Left(
+                            CouldNotInterpolate(
+                                s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, zHeader=$zHeader, xi=$xi, yi=$yi"
+                            )
+                        )
             yield out
     }

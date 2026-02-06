@@ -8,12 +8,12 @@ package afpma.firecalc.engine.models
 import cats.*
 
 case class Document(
-    name: String,
-    date: String,
-    version: String,
+    name    : String,
+    date    : String,
+    version : String,
     revision: String,
-    status: String,
-    author: String
+    status  : String,
+    author  : String
 )
 
 object Document {

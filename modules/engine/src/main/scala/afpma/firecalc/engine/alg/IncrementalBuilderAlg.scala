@@ -5,38 +5,36 @@
 
 package afpma.firecalc.engine.alg
 
-import scala.annotation.tailrec
-import scala.reflect.*
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
+import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
-import cats.Show
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.*
 
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.standard.{IncrementalValidation_Error, AddElementMissingAfterSetProp, given}
+import scala.annotation.tailrec
+import scala.reflect.*
 
 trait IncrementalBuilderAlg extends PipeDescrAlg:
 
     /**
-      * data type for the incremental description of some pipe modification
-      * type of modification needs type `SetProp` or `AddElement`
-      */
+     * data type for the incremental description of some pipe modification
+     * type of modification needs type `SetProp` or `AddElement`
+     */
     type IncrDescr
 
     opaque type IdIncr = Int
     object IdIncr:
-        def apply(i: Int): IdIncr = i
-        extension (ii: IdIncr) def unwrap: Int = ii
+        def apply (i : Int   )           : IdIncr = i
+        extension (ii: IdIncr) def unwrap: Int    = ii
 
     opaque type IdEl = PipeIdx
     object IdEl:
-        def apply(i: PipeIdx): IdEl = i
-        extension (x: IdEl) def unwrap: PipeIdx = x
+        def apply (i: PipeIdx)           : IdEl    = i
+        extension (x: IdEl   ) def unwrap: PipeIdx = x
 
-    /**
-      * Keeps track of the original index of the IncrDescr in the input sequence (for traceability later on)
-      */
+    /** Keeps track of the original index of the IncrDescr in the input sequence (for traceability later on) */
     type Id_IncrDescr = (IdIncr, IncrDescr)
 
     final type PipeIncrDescr = PipeIncrDescrG[Id_IncrDescr]
@@ -45,34 +43,32 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     object IdsMapping:
         val empty: IdsMapping = Map()
         extension (m: IdsMapping)
-            def getAll: Seq[(IdIncr, IdEl)]  = m.map(kv => (kv._1, kv._2)).toSeq
-            def get(i: IdIncr): Option[IdEl] = m.get(i)
-            def getUnsafe(i: Int): Option[IdEl]    = m.get(i)
-    
+            def getAll: Seq[(IdIncr, IdEl)] = m.map(kv => (kv._1, kv._2)).toSeq
+            def get      (i: IdIncr): Option[IdEl] = m.get(i)
+            def getUnsafe(i: Int   ): Option[IdEl] = m.get(i)
+
     type SetProp <: IncrDescr
     type AddElement <: IncrDescr
 
     extension (addElement: AddElement) def name: String
 
-    given typeTestSetProp       : TypeTest[IncrDescr, SetProp] = scala.compiletime.deferred
-    given typeTestAddElement   : TypeTest[IncrDescr, AddElement] = scala.compiletime.deferred
-    
-    /**
-      * restrict pipe types that can be defined using this builder
-      */
+    given typeTestSetProp   : TypeTest[IncrDescr, SetProp]    = scala.compiletime.deferred
+    given typeTestAddElement: TypeTest[IncrDescr, AddElement] = scala.compiletime.deferred
+
+    /** restrict pipe types that can be defined using this builder */
     type PT <: PipeType
     def pt: PT
 
-    type ValidatedResult[A] = ValidatedNel[IncrementalValidation_Error, A]
+    type ValidatedResult[A]    = ValidatedNel[IncrementalValidation_Error, A]
     type CtxValidatedResult[A] = PropsState ?=> ValidatedNel[IncrementalValidation_Error, A]
 
     extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr]
         def toFullDescr(): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr)] =
-            val iPropsState     = mkInitPropsState(piDescr)
-            val iPipeFullDescr  = mkInitPipeFullDescr(piDescr)
-            val iIdsMapping     = IdsMapping.empty
-            val iListIncrDescr  = piDescr.listIncrDescr()
+            val iPropsState    = mkInitPropsState(piDescr)
+            val iPipeFullDescr = mkInitPipeFullDescr(piDescr)
+            val iIdsMapping    = IdsMapping.empty
+            val iListIncrDescr = piDescr.listIncrDescr()
             buildIncrDescr(
                 iPipeFullDescr,
                 iIdsMapping,
@@ -90,16 +86,16 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
 
     protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState
 
-    extension (propsState: PropsState)
-    {
-        /** 
+    extension (propsState: PropsState) {
+
+        /**
          *  val t = Tuple.fromProductTyped(this)
          *  t.toList.forall(_.isDefined)
-        */
+         */
         def isValid: Boolean
 
         def getValidated[A](
-            get: PropsState => Option[A],
+            get  : PropsState => Option[A],
             error: IncrementalValidation_Error
         ): ValidatedResult[A] =
             Validated
@@ -107,52 +103,51 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                 .toValidatedNel
 
         def checkNotSet[A](
-            get: PropsState => Option[A],
+            get  : PropsState => Option[A],
             error: IncrementalValidation_Error
         ): ValidatedResult[Unit] =
             Validated.fromEither:
                 get(propsState) match
-                    case None => Right(())
+                    case None    => Right(())
                     case Some(_) => Left(NonEmptyList.one(error))
 
-            
     }
-    
+
     protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr
 
     protected case class ConversionStep(
         allRemainingOps: Vector[Id_IncrDescr]
     ) {
-        def allSetPropsUntilNextAddElement = 
+        def allSetPropsUntilNextAddElement: Vector[(Int, SetProp)] =
             allRemainingOps
                 .takeWhile:
-                    case (_, _: SetProp)    => true
-                    case (_, _)             => false
+                    case (_, _: SetProp) => true
+                    case (_, _         ) => false
                 .map(_.asInstanceOf[(Int, SetProp)])
 
-        def findNextAddElement: Option[(Int, AddElement)] = 
+        def findNextAddElement: Option[(Int, AddElement)] =
             allRemainingOps
                 .find:
                     case (_, _: AddElement) => true
-                    case (_, _)              => false
+                    case (_, _            ) => false
                 .map(_.asInstanceOf[(Int, AddElement)])
 
         def nextOp: Option[Id_IncrDescr] = allRemainingOps.headOption
 
-        def nextOpIfAddElement: Option[(Int, AddElement)] = nextOp.flatMap: 
+        def nextOpIfAddElement: Option[(Int, AddElement)] = nextOp.flatMap:
             case (id, o: AddElement) => (id, o).some
-            case (_, _) => None
+            case (_, _             ) => None
 
-        def isLastStep: Boolean = 
-            findNextAddElement.isEmpty && 
-            allSetPropsUntilNextAddElement.isEmpty
+        def isLastStep: Boolean =
+            findNextAddElement.isEmpty &&
+                allSetPropsUntilNextAddElement.isEmpty
 
         def currentStepOps: Vector[Id_IncrDescr] =
             findNextAddElement match
                 case Some(nextAddElement) => allSetPropsUntilNextAddElement appended nextAddElement
-                case None => allSetPropsUntilNextAddElement
+                case None                 => allSetPropsUntilNextAddElement
 
-        def nextStepOps: Vector[Id_IncrDescr] = 
+        def nextStepOps: Vector[Id_IncrDescr] =
             allRemainingOps.drop(currentStepOps.size)
     }
 
@@ -163,52 +158,52 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
 
     protected def updateStateBeforeConversionStep(
         propsState: PropsState,
-        convStep: ConversionStep
+        convStep  : ConversionStep
     ): ValidatedResult[PropsState]
 
     protected def updateStateAfterConversionStep(
         propsState: PropsState,
-        convStep: ConversionStep
+        convStep  : ConversionStep
     ): ValidatedResult[PropsState]
 
     protected def updateIdsMappingAndPipeFullDescr(
-        inPipe: PipeFullDescr,
+        inPipe      : PipeFullDescr,
         inIdsMapping: IdsMapping,
-        propsState: PropsState,
-        convStep: ConversionStep
+        propsState  : PropsState,
+        convStep    : ConversionStep
     ): ValidatedResult[(IdsMapping, PipeFullDescr)] =
         val nextGeomOp = convStep.findNextAddElement
         nextGeomOp match
-            case None =>
+            case None      =>
                 val lastIncrDescr = convStep.allRemainingOps.lastOption
-                val lastElRef = lastIncrDescr.map(x => s"'#${x._1}'")
+                val lastElRef     = lastIncrDescr.map(x => s"'#${x._1}'")
                 AddElementMissingAfterSetProp(pt, lastElRef).invalidNel
             case Some(gop) =>
-                mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel => 
+                mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel =>
                     nel.foldLeft((inIdsMapping, inPipe)):
                         case ((outIdsMapping, outPipe), (idIncr, nextFullElem)) =>
                             (
                                 outIdsMapping.updated(idIncr, nextFullElem.idx),
-                                outPipe.appendElem(nextFullElem)
+                                outPipe.appendElem   (nextFullElem            )
                             )
 
     protected def mkFullElementsDescr(
-        prevs: PipeFullDescr,
-        convStep: ConversionStep,
-    )(
+        prevs          : PipeFullDescr,
+        convStep       : ConversionStep
+    )                                (
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]]
 
     // protected def appendFullElementToPipe(pipe: PipeFullDescr)(nel: NamedPipeElDescr): PipeFullDescr
 
     @tailrec
-    final protected def buildIncrDescr(
+    protected final def buildIncrDescr(
         pFullDescr: PipeFullDescr,
         idsMapping: IdsMapping,
         propsState: PropsState,
-        opsDone: Vector[Id_IncrDescr],
-        opsLeft: Vector[Id_IncrDescr]
-    ): ValidatedResult[(IdsMapping, PipeFullDescr)] = 
+        opsDone   : Vector[Id_IncrDescr],
+        opsLeft   : Vector[Id_IncrDescr]
+    ): ValidatedResult[(IdsMapping, PipeFullDescr)] =
         val convStep = mkConversionStep(opsLeft)
         if (convStep.isLastStep)
             // we hit the end of the conversion steps, nothing left to do
@@ -235,18 +230,18 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                                         nextIdMappings,
                                         nextPropsState,
                                         nextOpsDone,
-                                        nextOpsLeft,
+                                        nextOpsLeft
                                     )
-                                case i @ Invalid(_) => i
-                        case i @ Invalid(_) => i
-                case i @ Invalid(_) => i
+                                case i @ Invalid(_)        => i
+                        case i @ Invalid(_)                           => i
+                case i @ Invalid(_)       => i
 
     val ElementFactory: ElementFactoryModule
     export ElementFactory.{*, given}
 
     protected trait ElementFactoryModule:
         case class Ctx(propsState: PropsState)
-        def ctx(using ev: Ctx): Ctx = ev
+        def ctx     (using ev: Ctx): Ctx = ev
         def ctxState(using ev: Ctx) = ev.propsState
         given mkCtx: (ps: PropsState) => Ctx = Ctx(ps)
 

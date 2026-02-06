@@ -10,7 +10,7 @@ import afpma.firecalc.ui.models.schema.v1.ClientProjectData_V1
 /**
  * Client-side only data containing sensitive customer information.
  * This data is NEVER sent to the backend.
- * 
+ *
  * Type alias to the latest version (V1).
  */
 type ClientProjectData = ClientProjectData_V1

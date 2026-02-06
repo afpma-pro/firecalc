@@ -5,12 +5,11 @@
 
 package afpma.firecalc.ui.instances
 
-import afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues
 import afpma.firecalc.i18n.I18nData
 import afpma.firecalc.i18n.implicits.given
+import afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues
 
 import io.taig.babel.Locale
-import afpma.firecalc.payments.shared.i18n.I18nData_PaymentsShared
 
 object hastranslations:
 
@@ -114,6 +113,5 @@ object hastranslations:
 
     // given hastranslations_AppendLayerDescr: Locale => HasTranslatedFieldsWithValues[AppendLayerDescr] =
     //     HasTranslatedFieldsWithValues.makeFor[AppendLayerDescr, I18nData]
-
 
 end hastranslations

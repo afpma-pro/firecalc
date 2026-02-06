@@ -13,4 +13,3 @@ trait HasVerticalElev[A]:
 object HasVerticalElev:
     def from[A](f: A => Length) = new HasVerticalElev[A]:
         extension (a: A) def verticalElev: Length = f(a)
-

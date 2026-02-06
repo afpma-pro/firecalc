@@ -5,6 +5,16 @@
 
 package afpma.firecalc.dto
 
+import afpma.firecalc.dto.common.*
+import afpma.firecalc.dto.transformers.given
+import afpma.firecalc.dto.v1.FireCalcYAML_V1
+import afpma.firecalc.dto.v2.FireCalcYAML_V2
+import afpma.firecalc.dto.v3.FireCalcYAML_V3
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import io.circe.Json
 import io.circe.syntax.*
 import io.circe.yaml.scalayaml.parser as yamlParser
@@ -12,26 +22,16 @@ import io.circe.yaml.scalayaml.printer as yamlPrinter
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 
-import afpma.firecalc.dto.transformers.given
-import afpma.firecalc.dto.common.*
-import afpma.firecalc.dto.v1.FireCalcYAML_V1
-import afpma.firecalc.dto.v2.FireCalcYAML_V2
-import afpma.firecalc.dto.v3.FireCalcYAML_V3
-import afpma.firecalc.units.coulombutils.{*, given}
-import coulomb.syntax.*
-
-import scala.util.{Try, Success, Failure}
-
-
 object FireCalcYAMLMigrations:
 
     // V1 → V2 Migration
     // The new `height_of_first_row_of_air_injectors` field has a default value (5.cm)
     // in the Firebox case classes, so Chimney can derive the transformer automatically
     // since the Circe decoder will use the default when deserializing V1 JSON.
-    
+
     given Transformer[FireCalcYAML_V1, FireCalcYAML_V2] =
-        Transformer.define[FireCalcYAML_V1, FireCalcYAML_V2]
+        Transformer
+            .define[FireCalcYAML_V1, FireCalcYAML_V2]
             .withFieldConst(_.version, FireCalc_Version(2))
             .withFieldComputed(_.firebox, _.firebox.transformInto[v2.Firebox_V2])
             .buildTransformer
@@ -44,7 +44,7 @@ object FireCalcYAMLMigrations:
 
     def upgradeToCurrent(dto: Any): Either[Throwable, FireCalcYAML] =
         dto match
-            case fcv3: FireCalcYAML_V3 => 
+            case fcv3: FireCalcYAML_V3 =>
                 Right(fcv3)
             case fcv2: FireCalcYAML_V2 =>
                 Right(migrateV2ToV3(fcv2))
@@ -67,7 +67,7 @@ object FireCalcYAMLMigrations:
         yamlParser.parse(yaml) match
             case Left(parseError) =>
                 Left(s"Failed to parse YAML: ${parseError.getMessage()}")
-            case Right(json) =>
+            case Right(json)      =>
                 decodeAndMigrateJson(json)
 
     /**
@@ -78,50 +78,40 @@ object FireCalcYAMLMigrations:
      */
     def decodeAndMigrateJson(json: Json): Either[String, FireCalcYAML] =
         detectVersion(json) match
-            case None =>
+            case None          =>
                 Left("Could not detect version field in YAML")
-            case Some(1) =>
+            case Some(1)       =>
                 decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3)
-            case Some(2) =>
+            case Some(2)       =>
                 decodeV2(json).map(migrateV2ToV3)
-            case Some(3) =>
+            case Some(3)       =>
                 decodeV3(json)
             case Some(version) =>
                 Left(s"Unknown FireCalcYAML version: $version")
 
-    /**
-     * Detect version from JSON.
-     */
+    /** Detect version from JSON. */
     private def detectVersion(json: Json): Option[Int] =
         json.hcursor.downField("version").as[Int].toOption
 
-    /**
-     * Decode V1 from JSON using FireCalcYAML_V1 decoder.
-     */
+    /** Decode V1 from JSON using FireCalcYAML_V1 decoder. */
     private def decodeV1(json: Json): Either[String, FireCalcYAML_V1] =
         // Use the decoder from v1/FireCalcYAML_V1.scala
         import FireCalcYAML_V1.decoder
         json.as[FireCalcYAML_V1].left.map(e => s"Failed to decode V1: ${e.getMessage()}")
 
-    /**
-     * Decode V2 from JSON using FireCalcYAML_V2 decoder.
-     */
+    /** Decode V2 from JSON using FireCalcYAML_V2 decoder. */
     private def decodeV2(json: Json): Either[String, FireCalcYAML_V2] =
         // Use the decoder from v2/FireCalcYAML_V2.scala
         import FireCalcYAML_V2.decoder
         json.as[FireCalcYAML_V2].left.map(e => s"Failed to decode V2: ${e.getMessage()}")
 
-    /**
-     * Decode V3 from JSON using FireCalcYAML_V3 decoder.
-     */
+    /** Decode V3 from JSON using FireCalcYAML_V3 decoder. */
     private def decodeV3(json: Json): Either[String, FireCalcYAML_V3] =
         // Use the decoder from V3/FireCalcYAML_V3.scala
         import FireCalcYAML_V3.decoder
         json.as[FireCalcYAML_V3].left.map(e => s"Failed to decode V3: ${e.getMessage()}")
 
-    /**
-     * Try-based wrapper for decodeAndMigrate for Scala.js compatibility.
-     */
+    /** Try-based wrapper for decodeAndMigrate for Scala.js compatibility. */
     def decodeAndMigrateTry(yaml: String): Try[FireCalcYAML] =
         decodeAndMigrate(yaml) match
             case Right(fc) => Success(fc)
@@ -134,7 +124,6 @@ object FireCalcYAMLMigrations:
      * @return Either[String, String] - Left with error message, Right with YAML string
      */
     def encodeToYaml(fc: FireCalcYAML): Either[String, String] =
-        import FireCalcYAML_V2.encoder
         try
             val json = fc.asJson
             Right(yamlPrinter.print(json))
@@ -142,12 +131,10 @@ object FireCalcYAMLMigrations:
             case e: Exception =>
                 Left(s"Failed to encode to YAML: ${e.getMessage()}")
 
-    /**
-     * Try-based wrapper for encodeToYaml for Scala.js compatibility.
-     */
+    /** Try-based wrapper for encodeToYaml for Scala.js compatibility. */
     def encodeToYamlTry(fc: FireCalcYAML): Try[String] =
         encodeToYaml(fc) match
             case Right(yaml) => Success(yaml)
-            case Left(err) => Failure(new RuntimeException(err))
+            case Left(err)   => Failure(new RuntimeException(err))
 
 end FireCalcYAMLMigrations

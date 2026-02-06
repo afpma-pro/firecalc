@@ -5,29 +5,21 @@
 
 package afpma.firecalc.payments.http
 
-import cats.effect.Async
-import cats.syntax.all.*
-import org.http4s.*
-import org.http4s.dsl.Http4sDsl
-import org.http4s.circe.*
-import org.http4s.syntax.literals.*
-import org.http4s.headers.`Content-Type`
-import io.circe.syntax.*
-import afpma.firecalc.payments.service.*
-import afpma.firecalc.payments.domain.*
+import afpma.firecalc.payments.email.EmailConfig
+import afpma.firecalc.payments.i18n.implicits.given
 import afpma.firecalc.payments.shared.*
 import afpma.firecalc.payments.shared.api.*
-import afpma.firecalc.payments.domain.Codecs.given
-import afpma.firecalc.payments.email.EmailConfig
-import org.typelevel.log4cats.Logger
+
+import cats.effect.Async
+import cats.syntax.all.*
+
+import org.http4s.*
+import org.http4s.dsl.Http4sDsl
+import org.http4s.headers.`Content-Type`
 import org.typelevel.ci.CIStringSyntax
+import org.typelevel.log4cats.Logger
 
-// Import i18n translations
-import afpma.firecalc.payments.i18n.implicits.given
-import io.taig.babel.*
-
-class StaticPageRoutes[F[_]: Async](emailConfig: EmailConfig)(implicit logger: Logger[F])
-    extends Http4sDsl[F]:
+class StaticPageRoutes[F[_]: Async](emailConfig: EmailConfig)(implicit logger: Logger[F]) extends Http4sDsl[F]:
 
     import BackendCompatibleLanguage.given
 
@@ -35,22 +27,24 @@ class StaticPageRoutes[F[_]: Async](emailConfig: EmailConfig)(implicit logger: L
         // Try to get language from query parameter first
         request.params.get("lang") match {
             case Some(code) => BackendCompatibleLanguage.fromCodeWithFallback(code)
-            case _ => 
+            case _          =>
                 // Fallback to Accept-Language header parsing
                 request.headers.get(ci"Accept-Language") match {
-                    case Some(header) if header.head.value.toLowerCase.contains("en") => BackendCompatibleLanguage.English
-                    case Some(header) if header.head.value.toLowerCase.contains("fr") => BackendCompatibleLanguage.French
-                    case _ => BackendCompatibleLanguage.DefaultLanguage // Default fallback
+                    case Some(header) if header.head.value.toLowerCase.contains("en") =>
+                        BackendCompatibleLanguage.English
+                    case Some(header) if header.head.value.toLowerCase.contains("fr") =>
+                        BackendCompatibleLanguage.French
+                    case _                                                            => BackendCompatibleLanguage.DefaultLanguage // Default fallback
                 }
         }
     }
 
     private def generatePaymentCompleteHtml(language: BackendCompatibleLanguage): String = {
         given BackendCompatibleLanguage = language
-        val translations = I18N_Payments
-        val page = translations.pages.payment_complete
-        val langCode = language.code
-        
+        val translations                = I18N_Payments
+        val page                        = translations.pages.payment_complete
+        val langCode                    = language.code
+
         s"""<!DOCTYPE html>
 <html lang="$langCode">
 <head>
@@ -226,10 +220,10 @@ class StaticPageRoutes[F[_]: Async](emailConfig: EmailConfig)(implicit logger: L
 
     private def generatePaymentCancelledHtml(language: BackendCompatibleLanguage): String = {
         given BackendCompatibleLanguage = language
-        val translations = I18N_Payments
-        val page = translations.pages.payment_cancelled
-        val langCode = language.code
-        
+        val translations                = I18N_Payments
+        val page                        = translations.pages.payment_cancelled
+        val langCode                    = language.code
+
         s"""<!DOCTYPE html>
 <html lang="$langCode">
 <head>

@@ -5,9 +5,10 @@
 
 package afpma.firecalc.dto.common
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.i18n.*
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.units.coulombutils.*
 
 import magnolia1.Transl
 

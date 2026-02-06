@@ -5,29 +5,25 @@
 
 package afpma.firecalc.engine.models.en15544.firebox
 
-import afpma.firecalc.units.coulombutils.{*, given}
-
 import algebra.instances.all.given
 
-import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
+import afpma.firecalc.units.coulombutils.*
 
+import coulomb.*
+import coulomb.policy.standard.given
 
 trait EcolabeledFirebox:
     import EcolabeledFirebox.*
 
     def circonferenceConduitArriveeAir: Option[QtyD[Meter]]
 
-    def typeArriveeAir: TypeArriveeAir
-    def largeurFoyer: QtyD[Meter]
+    def typeArriveeAir : TypeArriveeAir
+    def largeurFoyer   : QtyD[Meter]
     def profondeurFoyer: QtyD[Meter]
 
     def largeurPorteDansLaMaconnerie: QtyD[Meter]
     // def largeurPorte: QtyD[Meter]
-    def largeurVitre: QtyD[Meter]
+    def largeurVitre                : QtyD[Meter]
 
     def hauteurVitre: QtyD[Meter]
 
@@ -56,8 +52,8 @@ trait EcolabeledFirebox:
     def St = largeurEspaceInterParoiPorte
 
     def largeurRenfortsMediansLateraux: QtyD[Meter]
-    def largeurRenfortMedianArriere: QtyD[Meter]
-    def debordRenfortsDansLesAngles: QtyD[Meter]
+    def largeurRenfortMedianArriere   : QtyD[Meter]
+    def debordRenfortsDansLesAngles   : QtyD[Meter]
 
     /** Z */
     def hauteurInjecteurs: QtyD[Meter]
@@ -86,11 +82,11 @@ trait EcolabeledFirebox:
 
     /** Lt */
     def largeurInjecteurSousPorte: QtyD[Meter] = largeurPorteDansLaMaconnerie - 6.cm
-    def Lt: QtyD[Meter] = largeurInjecteurSousPorte
+    def Lt                       : QtyD[Meter] = largeurInjecteurSousPorte
 
     def largeurMaxRenfortsMediansLateraux: QtyD[Meter] =
         20.percent * largeurInjecteursLateraux
-    def largeurMaxRenfortsMediansArriere: QtyD[Meter] =
+    def largeurMaxRenfortsMediansArriere : QtyD[Meter] =
         20.percent * largeurInjecteursArrieres
 
     def largeurColonnesAirLaterales: QtyD[Meter] =
@@ -104,24 +100,24 @@ object EcolabeledFirebox:
         case Version1, Version2
 
     case class UserInput(
-        largeurFoyer: QtyD[Meter],
-        profondeurFoyer: QtyD[Meter],
-        largeurPorteDansLaMaconnerie: QtyD[Meter],
+        largeurFoyer                       : QtyD[Meter],
+        profondeurFoyer                    : QtyD[Meter],
+        largeurPorteDansLaMaconnerie       : QtyD[Meter],
         // largeurPorte: QtyD[Meter],
-        largeurVitre: QtyD[Meter],
-        hauteurVitre: QtyD[Meter],
-        hauteurCendrier: QtyD[Meter],
+        largeurVitre                       : QtyD[Meter],
+        hauteurVitre                       : QtyD[Meter],
+        hauteurCendrier                    : QtyD[Meter],
         hauteurArriveeConduitAirDessousSole: QtyD[Meter],
-        epaisseurSole: QtyD[Meter],
-        epaisseurParoiInterneDuFoyer: QtyD[Meter],
-        largeurEspaceInterParoi: QtyD[Meter],
-        largeurEspaceInterParoiPorte: QtyD[Meter],
-        largeurRenfortsMediansLateraux: QtyD[Meter],
-        largeurRenfortMedianArriere: QtyD[Meter],
-        debordRenfortsDansLesAngles: QtyD[Meter],
-        hauteurInjecteurs: QtyD[Meter],
-        hauteurInjecteurPorte: QtyD[Meter],
-        hauteurEntreSoleEtPremierInjecteur: QtyD[Meter]
+        epaisseurSole                      : QtyD[Meter],
+        epaisseurParoiInterneDuFoyer       : QtyD[Meter],
+        largeurEspaceInterParoi            : QtyD[Meter],
+        largeurEspaceInterParoiPorte       : QtyD[Meter],
+        largeurRenfortsMediansLateraux     : QtyD[Meter],
+        largeurRenfortMedianArriere        : QtyD[Meter],
+        debordRenfortsDansLesAngles        : QtyD[Meter],
+        hauteurInjecteurs                  : QtyD[Meter],
+        hauteurInjecteurPorte              : QtyD[Meter],
+        hauteurEntreSoleEtPremierInjecteur : QtyD[Meter]
     )
 
     def version1: UserInput => EcolabeledFirebox =
@@ -136,7 +132,7 @@ object EcolabeledFirebox:
         )
 
     private def fromVersion(
-        _typeArriveeAir: TypeArriveeAir,
+        _typeArriveeAir                : TypeArriveeAir,
         _circonferenceConduitArriveeAir: Option[QtyD[Meter]]
     )(
         input: UserInput
@@ -146,31 +142,31 @@ object EcolabeledFirebox:
                 require(_typeArriveeAir == TypeArriveeAir.Version2)
                 _circonferenceConduitArriveeAir
             val typeArriveeAir: TypeArriveeAir = _typeArriveeAir
-            val largeurFoyer: QtyD[Meter] = input.largeurFoyer
-            val profondeurFoyer: QtyD[Meter] = input.profondeurFoyer
-            val largeurPorteDansLaMaconnerie: QtyD[Meter] =
+            val largeurFoyer                       : QtyD[Meter] = input.largeurFoyer
+            val profondeurFoyer                    : QtyD[Meter] = input.profondeurFoyer
+            val largeurPorteDansLaMaconnerie       : QtyD[Meter] =
                 input.largeurPorteDansLaMaconnerie
             // val largeurPorte: QtyD[Meter]                        = input.largeurPorte
-            val largeurVitre: QtyD[Meter] = input.largeurVitre
-            val hauteurVitre: QtyD[Meter] = input.hauteurVitre
-            val hauteurCendrier: QtyD[Meter] = input.hauteurCendrier
+            val largeurVitre                       : QtyD[Meter] = input.largeurVitre
+            val hauteurVitre                       : QtyD[Meter] = input.hauteurVitre
+            val hauteurCendrier                    : QtyD[Meter] = input.hauteurCendrier
             val hauteurArriveeConduitAirDessousSole: QtyD[Meter] =
                 input.hauteurArriveeConduitAirDessousSole
-            val epaisseurSole: QtyD[Meter] = input.epaisseurSole
-            val epaisseurParoiInterneDuFoyer: QtyD[Meter] =
+            val epaisseurSole                      : QtyD[Meter] = input.epaisseurSole
+            val epaisseurParoiInterneDuFoyer       : QtyD[Meter] =
                 input.epaisseurParoiInterneDuFoyer
-            val largeurEspaceInterParoi: QtyD[Meter] = input.largeurEspaceInterParoi
-            val largeurEspaceInterParoiPorte: QtyD[Meter] =
+            val largeurEspaceInterParoi            : QtyD[Meter] = input.largeurEspaceInterParoi
+            val largeurEspaceInterParoiPorte       : QtyD[Meter] =
                 input.largeurEspaceInterParoiPorte
-            val largeurRenfortsMediansLateraux: QtyD[Meter] =
+            val largeurRenfortsMediansLateraux     : QtyD[Meter] =
                 input.largeurRenfortsMediansLateraux
-            val largeurRenfortMedianArriere: QtyD[Meter] =
+            val largeurRenfortMedianArriere        : QtyD[Meter] =
                 input.largeurRenfortMedianArriere
-            val debordRenfortsDansLesAngles: QtyD[Meter] =
+            val debordRenfortsDansLesAngles        : QtyD[Meter] =
                 input.debordRenfortsDansLesAngles
-            val hauteurInjecteurs: QtyD[Meter] = input.hauteurInjecteurs
-            val hauteurInjecteurPorte: QtyD[Meter] = input.hauteurInjecteurPorte
-            val hauteurEntreSoleEtPremierInjecteur: QtyD[Meter] =
+            val hauteurInjecteurs                  : QtyD[Meter] = input.hauteurInjecteurs
+            val hauteurInjecteurPorte              : QtyD[Meter] = input.hauteurInjecteurPorte
+            val hauteurEntreSoleEtPremierInjecteur : QtyD[Meter] =
                 input.hauteurEntreSoleEtPremierInjecteur
 
 end EcolabeledFirebox

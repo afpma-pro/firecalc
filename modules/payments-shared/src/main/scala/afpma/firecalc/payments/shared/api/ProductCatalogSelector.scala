@@ -5,22 +5,26 @@
 
 package afpma.firecalc.payments.shared.api
 
-import afpma.firecalc.payments.shared.api.v1.{ProductCatalog, ProductionCatalog, StagingCatalog, DevelopmentCatalog}
+import afpma.firecalc.payments.shared.api.v1.DevelopmentCatalog
+import afpma.firecalc.payments.shared.api.v1.ProductCatalog
+import afpma.firecalc.payments.shared.api.v1.ProductionCatalog
+import afpma.firecalc.payments.shared.api.v1.StagingCatalog
 
 /** Utility to select the appropriate product catalog based on configuration */
 object ProductCatalogSelector:
-  
-  /**
-   * Get the product catalog based on environment configuration
-   * @param catalogType Either "development", "staging", or "production"
-   * @return The appropriate product catalog with allProducts list
-   */
-  def getCatalog(catalogType: String): ProductCatalog = catalogType.toLowerCase match
-    case "production" => ProductionCatalog
-    case "staging" => StagingCatalog
-    case "development" => DevelopmentCatalog
-    case other => throw new IllegalArgumentException(
-      s"Invalid product catalog type: '$other'. Must be 'development', 'staging', or 'production'"
-    )
+
+    /**
+     * Get the product catalog based on environment configuration
+     * @param catalogType Either "development", "staging", or "production"
+     * @return The appropriate product catalog with allProducts list
+     */
+    def getCatalog(catalogType: String): ProductCatalog = catalogType.toLowerCase match
+        case "production"  => ProductionCatalog
+        case "staging"     => StagingCatalog
+        case "development" => DevelopmentCatalog
+        case other         =>
+            throw new IllegalArgumentException(
+                s"Invalid product catalog type: '$other'. Must be 'development', 'staging', or 'production'"
+            )
 
 end ProductCatalogSelector

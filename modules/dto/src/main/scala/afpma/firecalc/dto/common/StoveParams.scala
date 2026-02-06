@@ -5,18 +5,18 @@
 
 package afpma.firecalc.dto.common
 
-import scala.annotation.nowarn
+import afpma.firecalc.units.coulombutils.*
 
-import cats.Show
+import afpma.firecalc.dto.common.StoveParams.SizingMethod
 
 import afpma.firecalc.i18n.*
 import afpma.firecalc.i18n.implicits.I18N
 
-import afpma.firecalc.dto.common.StoveParams.SizingMethod
-import afpma.firecalc.units.coulombutils.*
+import cats.Show
 
 import coulomb.*
-import coulomb.syntax.*
+
+import scala.annotation.nowarn
 
 import io.taig.babel.Locale
 import magnolia1.Transl
@@ -24,41 +24,41 @@ import magnolia1.Transl
 @Transl(I(_.stove_params))
 case class StoveParams(
     @Transl(I(_.technical_specifications.sizing_method))
-    val sizing_method: StoveParams.SizingMethod,
+    val sizing_method              : StoveParams.SizingMethod,
     @Transl(I(_.technical_specifications.maximum_load))
-    val maximum_load: Option[QtyD[Kilogram]],
+    val maximum_load               : Option[QtyD[Kilogram]],
     @Transl(I(_.technical_specifications.nominal_heat_output))
-    val nominal_heat_output: Option[QtyD[Kilo * Watt]],
+    val nominal_heat_output        : Option[QtyD[Kilo * Watt]],
     @Transl(I(_.technical_specifications.heating_cycle))
-    val heating_cycle: QtyD[Hour],
+    val heating_cycle              : QtyD[Hour],
     @Transl(I(_.emissions_and_efficiency_values.min_efficiency_full_stove_nominal))
-    val min_efficiency: QtyD[Percent],
+    val min_efficiency             : QtyD[Percent],
     @Transl(I(_.technical_specifications.facing_type))
-    val facing_type: FacingType,
+    val facing_type                : FacingType,
     @Transl(I(_.technical_specifications.inner_construction_material))
-    val inner_construction_material: InnerConstructionMaterial = InnerConstructionMaterial.WithinSpecs,
+    val inner_construction_material: InnerConstructionMaterial = InnerConstructionMaterial.WithinSpecs
 ) {
     def mB_or_pn: Either[QtyD[Kilogram], QtyD[Kilo * Watt]] = sizing_method match
         case SizingMethod.MaxLoad           => Left(maximum_load.get)
         case SizingMethod.NominalHeatOutput => Right(nominal_heat_output.get)
 
-    def mB: Option[Mass] = maximum_load
+    def mB: Option[Mass]  = maximum_load
     def pn: Option[Power] = nominal_heat_output
 
-    def with_mB(mB: Mass): StoveParams = 
+    def with_mB(mB: Mass) : StoveParams =
         this.copy(maximum_load = Some(mB), nominal_heat_output = None)
-    def with_pn(pn: Power): StoveParams = 
+    def with_pn(pn: Power): StoveParams =
         this.copy(maximum_load = None, nominal_heat_output = Some(pn))
 
     // prevent edit using copy
     private def copy(
-        sizing_method: StoveParams.SizingMethod = this.sizing_method,
-        @nowarn maximum_load: Option[QtyD[Kilogram]] = this.maximum_load,
+        sizing_method              : StoveParams.SizingMethod  = this.sizing_method,
+        @nowarn maximum_load       : Option[QtyD[Kilogram]]    = this.maximum_load,
         @nowarn nominal_heat_output: Option[QtyD[Kilo * Watt]] = this.nominal_heat_output,
-        heating_cycle: QtyD[Hour] = this.heating_cycle,
-        min_efficiency: QtyD[Percent] = this.min_efficiency,
-        facing_type: FacingType = this.facing_type,
-        inner_construction_material: InnerConstructionMaterial = this.inner_construction_material,
+        heating_cycle              : QtyD[Hour]                = this.heating_cycle,
+        min_efficiency             : QtyD[Percent]             = this.min_efficiency,
+        facing_type                : FacingType                = this.facing_type,
+        inner_construction_material: InnerConstructionMaterial = this.inner_construction_material
     ) = StoveParams(
         sizing_method,
         maximum_load,
@@ -66,7 +66,7 @@ case class StoveParams(
         heating_cycle,
         min_efficiency,
         facing_type,
-        inner_construction_material,
+        inner_construction_material
     )
 }
 
@@ -83,13 +83,13 @@ object StoveParams:
 
     // prevent default constructor
     private def apply(
-        sizing_method: StoveParams.SizingMethod,
-        maximum_load: Option[QtyD[Kilogram]],
-        nominal_heat_output: Option[QtyD[Kilo * Watt]],
-        heating_cycle: QtyD[Hour],
-        min_efficiency: QtyD[Percent],
-        facing_type: FacingType,
-        inner_construction_material: InnerConstructionMaterial = InnerConstructionMaterial.WithinSpecs,
+        sizing_method              : StoveParams.SizingMethod,
+        maximum_load               : Option[QtyD[Kilogram]],
+        nominal_heat_output        : Option[QtyD[Kilo * Watt]],
+        heating_cycle              : QtyD[Hour],
+        min_efficiency             : QtyD[Percent],
+        facing_type                : FacingType,
+        inner_construction_material: InnerConstructionMaterial = InnerConstructionMaterial.WithinSpecs
     ): StoveParams = new StoveParams(
         sizing_method,
         maximum_load,
@@ -97,22 +97,29 @@ object StoveParams:
         heating_cycle,
         min_efficiency,
         facing_type,
-        inner_construction_material,
+        inner_construction_material
     )
 
     def fromMaxLoadAndStoragePeriod(
-        maximum_load: QtyD[Kilogram],
-        heating_cycle: QtyD[Hour],
+        maximum_load  : QtyD[Kilogram],
+        heating_cycle : QtyD[Hour],
         min_efficiency: QtyD[Percent],
-        facing_type: FacingType
+        facing_type   : FacingType
     ) = StoveParams(SizingMethod.MaxLoad, Some(maximum_load), None, heating_cycle, min_efficiency, facing_type)
 
     def fromNominalHeatOutput(
         nominal_heat_output: QtyD[Kilo * Watt],
-        heating_cycle: QtyD[Hour],
-        min_efficiency: QtyD[Percent],
-        facing_type: FacingType
-    ) = StoveParams(SizingMethod.NominalHeatOutput, None, Some(nominal_heat_output), heating_cycle, min_efficiency, facing_type)
+        heating_cycle      : QtyD[Hour],
+        min_efficiency     : QtyD[Percent],
+        facing_type        : FacingType
+    ) = StoveParams(
+        SizingMethod.NominalHeatOutput,
+        None,
+        Some(nominal_heat_output),
+        heating_cycle,
+        min_efficiency,
+        facing_type
+    )
 
 enum FacingType:
 
@@ -134,7 +141,7 @@ enum InnerConstructionMaterial:
     case WithinSpecs
 
 object InnerConstructionMaterial:
-    given show_InnerConstructionMaterial: Locale => Show[InnerConstructionMaterial] = 
+    given show_InnerConstructionMaterial: Locale => Show[InnerConstructionMaterial] =
         Show.show:
-            case InnerConstructionMaterial.WithinSpecs => 
-                    I18N.technical_specifications.inner_construction_material_within_specs
+            case InnerConstructionMaterial.WithinSpecs =>
+                I18N.technical_specifications.inner_construction_material_within_specs

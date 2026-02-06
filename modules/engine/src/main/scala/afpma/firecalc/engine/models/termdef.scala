@@ -5,36 +5,37 @@
 
 package afpma.firecalc.engine.models
 
-import scala.math.Ordering.Implicits.*
+import afpma.firecalc.units.coulombutils.showP
+
+import afpma.firecalc.i18n.Localized
+import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.implicits.I18N
+
+import afpma.firecalc.engine.models.TermConstraint.*
+import afpma.firecalc.engine.standard.*
 
 import cats.*
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.*
 
-import afpma.firecalc.engine.models.TermConstraint.*
-import afpma.firecalc.engine.standard.*
+import scala.math.Ordering.Implicits.*
 
-import afpma.firecalc.i18n.Localized
-import afpma.firecalc.i18n.ShowUsingLocale
-import afpma.firecalc.i18n.implicits.I18N
-
-import afpma.firecalc.units.coulombutils.showP
 import io.taig.babel.Locale
 
 // TermDef
 
 sealed class TermDefDetails[Q](
-    val name: Localized[String],
-    val description: Localized[String],
+    val name       : Localized[String],
+    val description: Localized[String]
 )
 
 object TermDefDetails:
     def apply[Q](using instance: TermDefDetails[Q]): TermDefDetails[Q] = instance
 
     def apply[Q](
-        name: Localized[String],
-        description: Localized[String],
+        name       : Localized[String],
+        description: Localized[String]
     ): TermDefDetails[Q] =
         new TermDefDetails(name, description)
 
@@ -55,7 +56,6 @@ object TermDefDetails:
     //             description = td.description,
     //         )
 
-
 sealed class TermDef[Q](
     val symbol: String,
     val source: String
@@ -72,13 +72,12 @@ object TermDef {
         new TermDef(symbol, source)
 
     def apply[Q](
-        symbol: String,
+        symbol: String
     ): TermDef[Q] =
         TermDef(symbol, source = "")
 
     // conversions
-    def fromTermDefToTermDefOption[A]
-        : Conversion[TermDef[A], TermDef[Option[A]]] =
+    def fromTermDefToTermDefOption[A]: Conversion[TermDef[A], TermDef[Option[A]]] =
         (td: TermDef[A]) =>
             new TermDef[Option[A]](
                 symbol = td.symbol,
@@ -96,34 +95,31 @@ object TermDef {
 
 // TermConstraint
 enum TermConstraintError[O: TermDefDetails](val o: O):
-    
-    case MinError(min: O, override val o: O, showO: Show[O])(using TermDefDetails[O])
-        extends TermConstraintError(o)
 
-    case MaxError(max: O, override val o: O, showO: Show[O])(using TermDefDetails[O])
-        extends TermConstraintError(o)
+    case MinError(min: O, override val o: O, showO: Show[O])(using TermDefDetails[O]) extends TermConstraintError(o)
 
-    case GenericError(override val o: O, failMsgString: String)(using TermDefDetails[O])
-        extends TermConstraintError(o)
+    case MaxError(max: O, override val o: O, showO: Show[O])(using TermDefDetails[O]) extends TermConstraintError(o)
+
+    case GenericError(override val o: O, failMsgString: String)(using TermDefDetails[O]) extends TermConstraintError(o)
 
     case TypedError(override val o: O, error: Any, showError: Any => Locale ?=> String)(using TermDefDetails[O])
         extends TermConstraintError(o)
 
     // Locale-aware error message generation
     def failMsg(using Locale): String = this match
-        case MinError(min, value, showO) =>
+        case MinError(min, value, showO)  =>
             given Show[O] = showO
             I18N.errors.term_constraint_min_error(TermDefDetails[O].name, value.showP, min.showP)
-        case MaxError(max, value, showO) =>
+        case MaxError(max, value, showO)  =>
             given Show[O] = showO
             I18N.errors.term_constraint_max_error(TermDefDetails[O].name, value.showP, max.showP)
-        case GenericError(_, msg) =>
+        case GenericError(_, msg)         =>
             s"${TermDefDetails[O].name} ${msg}"
         case TypedError(_, error, showFn) =>
             showFn(error)
 
 sealed abstract class TermConstraint[O](
-    val source: String,
+    val source  : String,
     val validate: O => TermConstraint.ValidatedResult[O]
 )
 
@@ -131,37 +127,36 @@ object TermConstraint:
 
     opaque type ValidatedResult[O] = ValidatedNel[TermConstraintError[O], O]
 
-    extension [O](o: O) def validResult: ValidatedResult[O] = o.validNel
-    extension [O](tce: TermConstraintError[O])
-        def invalidResult: ValidatedResult[O] = tce.invalidNel
+    extension [O](o  : O                     ) def validResult  : ValidatedResult[O] = o.validNel
+    extension [O](tce: TermConstraintError[O]) def invalidResult: ValidatedResult[O] = tce.invalidNel
 
     object ValidatedResult:
 
         extension [O](vr: ValidatedResult[O])
-            def isValid = vr.isValid
+            def isValid   = vr.isValid
             def isInvalid = vr.isInvalid
 
         extension [O](vr: ValidatedResult[O])
             def unwrap: ValidatedNel[TermConstraintError[O], O] = vr
-            
-            def foldToErr: Option[List[InvalidConstraint]] = 
-                if (vr.isInvalid) 
+
+            def foldToErr: Option[List[InvalidConstraint]] =
+                if (vr.isInvalid)
                     Some(vr.swap.toOption.get.map(InvalidConstraint(_)).toList)
-                else 
+                else
                     None
 
-            def showInvalidConstraintErrors: Option[List[TermConstraintError[O]]] = 
-                if (vr.isInvalid) 
+            def showInvalidConstraintErrors: Option[List[TermConstraintError[O]]] =
+                if (vr.isInvalid)
                     Some(vr.swap.toOption.get.toList)
-                else 
+                else
                     None
 
         extension [O: {TermDef, TermDefDetails}](vr: ValidatedResult[O])
-            
-            def showIfInvalid(using Locale): Option[String] = 
+
+            def showIfInvalid(using Locale): Option[String] =
                 given svr: Show[ValidatedResult[O]] =
                     TermConstraint.showValidatedResult[O]
-                if (vr.isInvalid) 
+                if (vr.isInvalid)
                     val term_name = TermDefDetails[O].name.show
                     Some(s"$term_name: ${svr.show(vr)}")
                 else None
@@ -184,11 +179,11 @@ object TermConstraint:
                 def combine(
                     x: ValidatedResult[U],
                     y: ValidatedResult[U]
-                ): ValidatedResult[U] =
+                )        : ValidatedResult[U] =
                     (x, y) match {
-                        case (Valid(_), Valid(_))       => u.validNel
-                        case (i @ Invalid(_), Valid(_)) => i
-                        case (Valid(_), i @ Invalid(_)) => i
+                        case (Valid(_), Valid(_)              ) => u.validNel
+                        case (i @ Invalid(_), Valid(_)        ) => i
+                        case (Valid(_), i @ Invalid(_)        ) => i
                         case (i1 @ Invalid(_), i2 @ Invalid(_)) =>
                             i1.combine(i2)
                     }
@@ -197,20 +192,21 @@ object TermConstraint:
     end ValidatedResult
 
     // instances for show
-    given showValidatedResult: [Q] => (td: TermDef[Q], tdd: TermDefDetails[Q], loc: Locale) => Show[ValidatedResult[Q]] =
+    given showValidatedResult
+        : [Q] => (td: TermDef[Q], tdd: TermDefDetails[Q], loc: Locale) => Show[ValidatedResult[Q]] =
         showValidatedResultUsingSymbol[Q](using td.symbol, tdd.name, loc)
 
     given showValidatedResultUsingSymbol: [Q] => (
         symbol: String,
-        name: String,
-        loc: Locale
+        name  : String,
+        loc   : Locale
     ) => Show[ValidatedResult[Q]] = Show.show(o =>
         o match
             case Invalid(nel) =>
-                given Locale = loc
+                given Locale   = loc
                 val errorsShow = showTermConstraintErrorNel[Q].show(nel)
                 s"$errorsShow"
-            case Valid(_) =>
+            case Valid(_)     =>
                 s"Valid '${symbol}' - $name"
     )
 
@@ -222,12 +218,12 @@ object TermConstraint:
         )
 
     // helpers
-    private val showSource = Show.show[String](src => s"(cf $src)")
+    Show.show[String](src => s"(cf $src)")
 
     // subtypes of TermConstraint
 
     case class Min[O: {Show, Ordering, TermDefDetails}](
-        min: O,
+        min                : O,
         override val source: String
     ) extends TermConstraint[O](
             source,
@@ -241,7 +237,7 @@ object TermConstraint:
             Min[Q](min, "")
 
     case class Max[Q: {Show, Ordering, TermDefDetails}](
-        max: Q,
+        max                : Q,
         override val source: String
     ) extends TermConstraint[Q](
             source,
@@ -255,14 +251,14 @@ object TermConstraint:
             Max[Q](max, "")
 
     case class Generic[Q: TermDefDetails](
-        value: Q,
+        value              : Q,
         override val source: String,
-        isValid: Q => Either[String, Q]
+        isValid            : Q => Either[String, Q]
     ) extends TermConstraint[Q](
             source,
             validate = q =>
                 isValid(q) match
-                    case Right(q) => q.validResult
+                    case Right(q)     => q.validResult
                     case Left(errMsg) =>
                         TermConstraintError.GenericError(value, errMsg).invalidResult
         )
@@ -270,7 +266,7 @@ object TermConstraint:
     object Generic:
 
         def apply[Q: TermDefDetails](
-            value: Q,
+            value  : Q,
             isValid: Q => Either[String, Q]
         ): Generic[Q] =
             Generic[Q](
@@ -280,14 +276,15 @@ object TermConstraint:
             )
 
     case class GenericTyped[Q, E](
-        value: Q,
+        value              : Q,
         override val source: String,
-        isValid: Q => Either[E, Q]
-    )(using showE: ShowUsingLocale[E], tdd: TermDefDetails[Q]) extends TermConstraint[Q](
+        isValid            : Q => Either[E, Q]
+    )                            (using showE: ShowUsingLocale[E], tdd: TermDefDetails[Q])
+        extends TermConstraint[Q](
             source,
             validate = q =>
                 isValid(q) match
-                    case Right(q) => q.validResult
+                    case Right(q)    => q.validResult
                     case Left(error) =>
                         val showFn: Any => Locale ?=> String = (e: Any) => showE.show(e.asInstanceOf[E])
                         TermConstraintError.TypedError(value, error, showFn).invalidResult
@@ -295,11 +292,10 @@ object TermConstraint:
 
     object GenericTyped:
         def apply[Q: TermDefDetails, E: ShowUsingLocale](
-            value: Q,
+            value  : Q,
             isValid: Q => Either[E, Q]
         ): GenericTyped[Q, E] =
             GenericTyped[Q, E](value, "", isValid)
-
 
 // AllTermConstraints - Immutable implementation
 
@@ -317,7 +313,7 @@ case class AllTermConstraints[U](constraints: Seq[Option[TermConstraint[U]]]):
                 constraints.map:
                     case Some(tc) => tc.validate(u).some
                     case None     => None
-            case None =>
+            case None    =>
                 constraints.flatten.map(_ => None)
 
     def checkAllAndCombine(u: U): ValidatedResult[U] =
@@ -331,27 +327,26 @@ object AllTermConstraints:
     def empty[U]: AllTermConstraints[U] = AllTermConstraints(Seq.empty)
     def fromSeq[U](otcs: Seq[Option[TermConstraint[U]]]): AllTermConstraints[U] = AllTermConstraints(otcs)
 
-
 case class CheckableConstraint[U](
     value: Option[U],
     alltc: AllTermConstraints[U]
-)(using val td: TermDef[U], val tdd: TermDefDetails[U], val sh: Show[U]) {
-    val termDef: TermDef[U] = td
-    val termDefDetails: TermDefDetails[U] = tdd
-    val vresultOption: Option[ValidatedResult[U]] = 
+)                                (using val td: TermDef[U], val tdd: TermDefDetails[U], val sh: Show[U]) {
+    val termDef       : TermDef[U]                 = td
+    val termDefDetails: TermDefDetails[U]          = tdd
+    val vresultOption : Option[ValidatedResult[U]] =
         alltc.checkAllAndCombineWhenDefined(value)
 }
 
 object CheckableConstraint:
-    
+
     def make[U: {TermDef, TermDefDetails, Show}](
-        u: U,
+        u          : U,
         constraints: Seq[Option[TermConstraint[U]]]
     ): CheckableConstraint[U] =
         CheckableConstraint(Some(u), AllTermConstraints(constraints))
 
     def makeOption[U: {TermDef, TermDefDetails, Show}](
-        ou: Option[U],
+        ou         : Option[U],
         constraints: Seq[Option[TermConstraint[U]]]
     ): CheckableConstraint[U] =
         CheckableConstraint(ou, AllTermConstraints(constraints))

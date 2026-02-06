@@ -5,10 +5,6 @@
 
 package afpma.firecalc.engine.ops
 
-
-
-
-
 object resistance:
 
     export afpma.firecalc.engine.ops.DynamicFrictionCoeffOp

@@ -6,8 +6,8 @@
 package afpma.firecalc.dto.common
 
 import afpma.firecalc.i18n.ShowUsingLocale
-import afpma.firecalc.i18n.showUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
+import afpma.firecalc.i18n.showUsingLocale
 
 enum OutsideAirLocationInHeater:
     case FromBottom
@@ -15,6 +15,5 @@ enum OutsideAirLocationInHeater:
 object OutsideAirLocationInHeater:
     type FromBottom = FromBottom.type
 
-    given ShowUsingLocale[OutsideAirLocationInHeater] = showUsingLocale(_ =>
-        I18N.firebox.afpma_prse.outside_air_location_from_bottom
-    )
+    given ShowUsingLocale[OutsideAirLocationInHeater] =
+        showUsingLocale(_ => I18N.firebox.afpma_prse.outside_air_location_from_bottom)

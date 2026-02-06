@@ -12,8 +12,8 @@ object DisplayUnits:
 
     def summon(using ev: DisplayUnits) = ev
 
-    def fromString(str: String): Option[DisplayUnits] = 
+    def fromString(str: String): Option[DisplayUnits] =
         DisplayUnits.values.find(_.toString == str)
 
-    type SI         = SI.type
-    type Imperial   = Imperial.type
+    type SI       = SI.type
+    type Imperial = Imperial.type

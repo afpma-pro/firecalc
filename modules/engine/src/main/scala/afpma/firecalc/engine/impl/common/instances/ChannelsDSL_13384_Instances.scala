@@ -6,10 +6,8 @@
 package afpma.firecalc.engine.impl.common.instances
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.*
+
 import afpma.firecalc.engine.impl.common.typeclasses.ChannelsDSL
-import afpma.firecalc.units.coulombutils.*
-import coulomb.*
 
 object ChannelsDSL_13384_Instances:
 
@@ -17,7 +15,7 @@ object ChannelsDSL_13384_Instances:
     given thermal13384: ChannelsDSL[ThermalPipeDescr_13384] with
         def channelsSplit(n: Int) =
             SetThermalPipeProp_13384.SetNumberOfFlows(n.flows)
-        
+
         def channelsJoin() =
             SetThermalPipeProp_13384.SetNumberOfFlows(1.flow)
 
@@ -25,6 +23,6 @@ object ChannelsDSL_13384_Instances:
     given flowOnly13384: ChannelsDSL[FlowOnlyPipeDescr_13384] with
         def channelsSplit(n: Int) =
             SetFlowOnlyPipeProp_13384.SetNumberOfFlows(n.flows)
-        
+
         def channelsJoin() =
             SetFlowOnlyPipeProp_13384.SetNumberOfFlows(1.flow)

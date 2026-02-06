@@ -11,7 +11,6 @@
 // import afpma.firecalc.units.coulombutils.Density
 // import afpma.firecalc.units.coulombutils.FlowVelocity
 
-
 // abstract class EN13384_For15544_Application(
 //     override val formulas: EN13384_1_A1_2019_Formulas_Alg,
 //     override val inputs: Inputs,

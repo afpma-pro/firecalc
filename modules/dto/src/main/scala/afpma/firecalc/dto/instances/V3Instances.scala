@@ -5,20 +5,18 @@
 
 package afpma.firecalc.dto.instances
 
+import afpma.firecalc.units.all.given
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.v3.FlowOnlyPipeDescr_13384_V2
+import afpma.firecalc.dto.v3.FlowOnlyPipeDescr_15544_V2
 import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v3.Material_15544_V2
 import afpma.firecalc.dto.v3.ThermalPipeDescr_13384_V2
-import afpma.firecalc.dto.v3.FlowOnlyPipeDescr_13384_V2
-import afpma.firecalc.dto.v3.FlowOnlyPipeDescr_15544_V2
-import afpma.firecalc.units.all.{*, given}
-import afpma.firecalc.units.coulombutils.*
 
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto
-
-import coulomb.*
-import coulomb.syntax.*
 
 object V3Instances:
 

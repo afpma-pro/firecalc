@@ -4,18 +4,16 @@
  */
 
 package afpma.firecalc.dto.v3
-
-import cats.syntax.show.toShow
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.i18n.*
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.units.coulombutils.{*, given}
 
 import magnolia1.Transl
 
 // 15544 - Tableau B.2
 enum Material_15544_V2(
-    val name: String,
+    val name     : String,
     val roughness: Roughness
 ):
     @Transl(I(_.en15544.materials.tuyaux_en_chamotte))
@@ -31,15 +29,13 @@ enum Material_15544_V2(
     ) extends Material_15544_V2("chamotte_block", roughness)
 
 object Material_15544_V2:
-    
-    /**
-     * All available material options with default roughness values
-     */
+
+    /** All available material options with default roughness values */
     val values: List[Material_15544_V2] = List(
         TuyauxEnChamotte(),
-        BlocsDeChamotte()
+        BlocsDeChamotte ()
     )
-    
+
     /**
      * Helper method to create a new instance with updated roughness
      * while preserving the material type
@@ -49,11 +45,11 @@ object Material_15544_V2:
             m match
                 case _: TuyauxEnChamotte => TuyauxEnChamotte(newRoughness)
                 case _: BlocsDeChamotte  => BlocsDeChamotte(newRoughness)
-    
-    private def showAndAppendValue(enumShow: String, v: Roughness): String = 
+
+    private def showAndAppendValue(enumShow: String, v: Roughness): String =
         // s"$enumShow (${v.show})"
         s"$enumShow"
-    
+
     given ShowUsingLocale[Material_15544_V2] = showUsingLocale:
         case TuyauxEnChamotte(r) => showAndAppendValue(I18N.en15544.materials.tuyaux_en_chamotte, r)
         case BlocsDeChamotte(r)  => showAndAppendValue(I18N.en15544.materials.blocs_de_chamotte, r)

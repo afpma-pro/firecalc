@@ -5,7 +5,6 @@
 
 package afpma.firecalc.engine.models
 
-
 // phantom type
 
 sealed trait Gas

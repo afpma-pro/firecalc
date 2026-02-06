@@ -10,20 +10,21 @@ import afpma.firecalc.ui.i18n.implicits.given
 import com.raquo.airstream.core.Observer
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
+
 import io.taig.babel.Locale
 
 case class tw_labels_and_inputs()(using Locale):
 
     final case class LabelAndInput(
-        id: String,
-        descr: String,
+        id         : String,
+        descr      : String,
         placeHolder: String,
-        zSignal: Signal[Option[String]],
-        zObserver: Observer[String]
+        zSignal    : Signal[Option[String]],
+        zObserver  : Observer[String]
     )
 
     // TAILWIND MANUAL STYLE
-    
+
     def renderLabelAndInputSeq(xs: Seq[LabelAndInput]): HtmlElement =
         val ifFirst              = "rounded-b-none rounded-t-md "
         val ifLast               = "rounded-t-none rounded-b-md "
@@ -31,7 +32,7 @@ case class tw_labels_and_inputs()(using Locale):
 
         def customCls(x: LabelAndInput): String =
             val idx = xs.indexOf(x)
-            if (idx == 0) ifFirst
+            if      (idx == 0            ) ifFirst
             else if (idx == xs.length - 1) ifLast
             else ifNotFirstAndNotLast
 
@@ -51,17 +52,17 @@ case class tw_labels_and_inputs()(using Locale):
         )
 
     def renderLabelAndInput(
-        x: LabelAndInput,
+        x        : LabelAndInput,
         customCls: String
     ): HtmlElement =
         import x.*
         div(
-            label(
+            label                  (
                 forId                   := id,
                 cls                     := "sr-only",
                 descr
             ),
-            input(
+            input                  (
                 cls                     := s"relative block w-full ${customCls}border-0 bg-transparent py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6",
                 tpe                     := "text",
                 nameAttr                := id,

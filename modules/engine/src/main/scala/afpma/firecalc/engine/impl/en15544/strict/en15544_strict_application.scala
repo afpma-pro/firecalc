@@ -13,7 +13,6 @@ import afpma.firecalc.engine.alg.en13384.WithLoadQty
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
@@ -22,55 +21,45 @@ import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
 import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
-import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
-import afpma.firecalc.units.coulombutils
-import afpma.firecalc.units.coulombutils.{*, given}
+import afpma.firecalc.units.coulombutils.*
 
-import coulomb.*
-import coulomb.syntax.*
 import algebra.instances.all.given
 
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
 import scala.annotation.nowarn
 import afpma.firecalc.engine.standard.VNelMcalcErr
 import cats.data.Validated
-import afpma.firecalc.engine.standard.MCalc_Error
-import afpma.firecalc.engine.standard.EN13384_ErrorMessage
 import afpma.firecalc.engine.standard.UnexpectedDevError
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 
 object EN15544_Strict_Application:
     def make(
-        f: EN15544_V_2023_Formulas_Alg,
+        f: EN15544_V_2023_Formulas_Alg
     )(
-        i: Inputs_15544_Strict,
+        i: Inputs_15544_Strict
     ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
         override lazy val inputs: Inputs_15544 = i
 
     }
 
 sealed abstract class EN15544_Strict_Application(
-    override val formulas: EN15544_V_2023_Formulas_Alg,
-) 
-    extends impl.en15544.common.EN15544_V_2023_Common_Application
-    with HasTypeMembers_15544_Strict
-{
+    override val formulas: EN15544_V_2023_Formulas_Alg
+) extends impl.en15544.common.EN15544_V_2023_Common_Application
+    with HasTypeMembers_15544_Strict {
     en15544 =>
 
     override val doc: Document = Document(
-        name = "15544:2023-02",
-        date = "2023-02",
-        version = "2023-02",
+        name     = "15544:2023-02",
+        date     = "2023-02",
+        version  = "2023-02",
         revision = "NA",
-        status = "Approved",
-        author = "AFNOR"
+        status   = "Approved",
+        author   = "AFNOR"
     )
 
     override lazy val en13384_inputs = Inputs_13384_WithFlowOnlyAirIntake(
@@ -81,13 +70,13 @@ sealed abstract class EN15544_Strict_Application(
         en13384_inputs_flueGasCondition
     )
 
-    override def en13384_inputs_pipes: Pipes_13384 = 
+    override def en13384_inputs_pipes: Pipes_13384 =
         (inputs.pipes: Pipes_13384_WithFlowOnlyAirIntake)
 
     // algebra as given
     lazy val en13384_formulas: EN13384_1_A1_2019_Formulas = new EN13384_1_A1_2019_Formulas:
-        // overrides        
-        override def P_R_dynamicPressure_calc(ρ_m: Density, w_m: FlowVelocity) = 
+        // overrides
+        override def P_R_dynamicPressure_calc(ρ_m: Density, w_m: FlowVelocity) =
             en15544.formulas.p_d_calc(ρ_m, w_m)
 
     lazy val energy_in_nominal_load = energy_in_wet_wood(m_B)
@@ -95,68 +84,71 @@ sealed abstract class EN15544_Strict_Application(
 
     val combustionDuration: Duration = (1 / 0.78).hours.toUnit[Minute]
 
-    lazy val en13384_η_WN: VNelMcalcErr[Percentage] = 
+    lazy val en13384_η_WN: VNelMcalcErr[Percentage] =
         t_fluepipe_end(using Params_15544.DraftMin_LoadNominal)
-        .map(t_fp_end => formulas.η_calc(t_fp_end)) // en15544.n_min ? mais en enlevant l'accumulateur ?
-    
-    lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] = 
+            .map(t_fp_end => formulas.η_calc(t_fp_end)) // en15544.n_min ? mais en enlevant l'accumulateur ?
+
+    lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] =
         m_B_min.map: _ =>
             // m_B_min is defined so we can compute using LoadQty.Reduced
             t_fluepipe_end(using Params_15544.DraftMin_LoadMin)
-            .map(t_fp_end =>
-                formulas.η_calc(t_fp_end) // en15544.n_min ? mais en enlevant l'accumulateur ?
-            )
+                .map(t_fp_end =>
+                    formulas.η_calc(t_fp_end) // en15544.n_min ? mais en enlevant l'accumulateur ?
+                )
 
-    lazy val en13384_fluegas_σ_CO2_dry_nominal: Percentage = fluegas_σ_CO2_dry_nominal // yes, even for tested firebox
-    lazy val en13384_fluegas_σ_CO2_dry_lowest : Option[Percentage] = fluegas_σ_CO2_dry_lowest  // yes, even for tested firebox
+    lazy val en13384_fluegas_σ_CO2_dry_nominal: Percentage         = fluegas_σ_CO2_dry_nominal // yes, even for tested firebox
+    lazy val en13384_fluegas_σ_CO2_dry_lowest : Option[Percentage] =
+        fluegas_σ_CO2_dry_lowest // yes, even for tested firebox
 
     lazy val en13384_fluegas_σ_H2O_nominal: Option[Percentage] = None // no override, will use EN13384 formulas
     lazy val en13384_fluegas_σ_H2O_lowest : Option[Percentage] = None // no override, will use EN13384 formulas
 
     lazy val en13384_heatingAppliance_massFlows: MassFlows = MassFlows.undefined
 
-    lazy val en13384_heatingAppliance_temperatures: VNelMcalcErr[Temperatures] = 
+    lazy val en13384_heatingAppliance_temperatures: VNelMcalcErr[Temperatures] =
         import LoadQty.givens.nominal
 
-        val isEqualAndValidVNel: (VNelMcalcErr[TCelsius], VNelMcalcErr[TCelsius]) => Boolean = 
+        val isEqualAndValidVNel: (VNelMcalcErr[TCelsius], VNelMcalcErr[TCelsius]) => Boolean =
             case (Validated.Valid(t1), Validated.Valid(t2)) => t1 == t2
             case _ => false
 
-        val flue_gas_temp_nominal_vnel = 
+        val flue_gas_temp_nominal_vnel =
             computeAndRequireEqualityAtDraftMinDraftMax[Unit, VNelMcalcErr[TCelsius]] { (pReq: DraftCondition) ?=>
                 t_fluepipe_end(using (pReq, nominal))
             }(isEqualAndValidVNel)(using ())
 
         flue_gas_temp_nominal_vnel.map: fg_temp_nominal =>
             HeatingAppliance.Temperatures(
-            flue_gas_temp_nominal = 
-                fg_temp_nominal,
-            flue_gas_temp_reduced = 
-                None,
+                flue_gas_temp_nominal = fg_temp_nominal,
+                flue_gas_temp_reduced = None
                 // import LoadQty.givens.reduced
                 // computeAndRequireEqualityAtDraftMinDraftMax[Unit, TCelsius] { (pReq: PressureRequirements) ?=>
                 //     t_fluepipe_end(using (ep, lowest))
                 // }(_ == _)(using ()).some,
-        )
+            )
 
     override final lazy val en13384_T_L_override = en13384_T_L_override_default
 
-    def fluegas_σ_CO2_dry: WithLoadQty[Option[σ_CO2]] = 
+    def fluegas_σ_CO2_dry: WithLoadQty[Option[σ_CO2]] =
         val ei: Either[IllegalStateException, Option["OK"]] = inputs.design.firebox match
-            case _: OneOff => Right("OK".some)
-            case tt: Tested => 
+            case _ : OneOff => Right("OK".some)
+            case tt: Tested =>
                 val afr_opt = LoadQty.summon match
                     case LoadQty.Nominal => tt.airFuelRatio_nominal.some
-                    case LoadQty.Reduced  => tt.airFuelRatio_lowest
+                    case LoadQty.Reduced => tt.airFuelRatio_lowest
                 afr_opt.fold(Right(None)): afr =>
-                    if (afr < 1.95 || afr > 3.95)   // TODO: add constraint instead ? in formulas impl. ?
-                        Left(new IllegalStateException(s"ERROR: tested firebox should have air-fuel ratio λ such as 1.95 <= λ <= 3.95, got ${afr.show}"))
+                    if (afr < 1.95 || afr > 3.95) // TODO: add constraint instead ? in formulas impl. ?
+                        Left (
+                            new IllegalStateException(
+                                s"ERROR: tested firebox should have air-fuel ratio λ such as 1.95 <= λ <= 3.95, got ${afr.show}"
+                            )
+                        )
                     else
                         Right("OK".some)
         ei.map(o => o.map(_ => formulas.fluegas_σ_CO2_calc)).fold(e => throw e, identity)
 
-    val fluegas_σ_CO2_dry_nominal: σ_CO2 = fluegas_σ_CO2_dry(using LoadQty.Nominal).get // should always be defined
-    val fluegas_σ_CO2_dry_lowest: Option[σ_CO2] = fluegas_σ_CO2_dry(using LoadQty.Reduced)
+    val fluegas_σ_CO2_dry_nominal: σ_CO2         = fluegas_σ_CO2_dry(using LoadQty.Nominal).get // should always be defined
+    val fluegas_σ_CO2_dry_lowest : Option[σ_CO2] = fluegas_σ_CO2_dry(using LoadQty.Reduced)
 
     val wood_σ_H2O: σ_H2O = formulas.wood_σ_H2O_calc
 
@@ -164,22 +156,22 @@ sealed abstract class EN15544_Strict_Application(
         formulas = en13384_formulas
     ):
         self =>
-        
         override lazy val inputs = en13384_inputs
 
-        override def airIntake_PipeResult_withVentilationOpenings(fd: AirIntakePipe_Module.FullDescr): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] = 
+        override def airIntake_PipeResult_withVentilationOpenings(
+            fd                : AirIntakePipe_Module.FullDescr
+        ): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] =
             ops_en13384.FlowOnlyMecaFlu_13384.makePipeResult(
-                fd                          = 
-                    FlowOnlyAirIntakePipe_Module_13384.unwrap(fd),
-                    // self.inputs.pipes.AirIntakePipe_Module.unwrap(fd),
-                    // fd.unwrap,
-                hafg                        = HeatingAppliance.FlueGas.summon,
-                hamf                        = HeatingAppliance.MassFlows.summon,
-                hapwr                       = HeatingAppliance.Powers.summon,
-                haeff                       = HeatingAppliance.Efficiency.summon,
-                temp_start                  = T_L,
-                last_pipe_velocity          = None,
-                gas                         = CombustionAir,
+                fd                 = FlowOnlyAirIntakePipe_Module_13384.unwrap(fd),
+                // self.inputs.pipes.AirIntakePipe_Module.unwrap(fd),
+                // fd.unwrap,
+                hafg               = HeatingAppliance.FlueGas.summon,
+                hamf               = HeatingAppliance.MassFlows.summon,
+                hapwr              = HeatingAppliance.Powers.summon,
+                haeff              = HeatingAppliance.Efficiency.summon,
+                temp_start         = T_L,
+                last_pipe_velocity = None,
+                gas                = CombustionAir
             )
 
         override def airIntake_PipeResult =
@@ -188,22 +180,22 @@ sealed abstract class EN15544_Strict_Application(
                 onFullDescr     = fd => airIntake_PipeResult_withVentilationOpenings(fd)
             )
 
-        final override lazy val computeAt = ComputeAt.Middle
-        final override lazy val p_L_override = en13384_p_L_override
+        override final lazy val computeAt                                      = ComputeAt.Middle
+        override final lazy val p_L_override                                   = en13384_p_L_override
         // overrides
-        @nowarn override def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas) = 
+        @nowarn override def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas) =
             en15544.ρ_G(T_m.toUnit[Celsius])
 
-        override def P_H(h: Length, t: TKelvin)(using HeatingAppliance.FlueGas) = 
+        override def P_H(h: Length, t: TKelvin)(using HeatingAppliance.FlueGas) =
             en15544.formulas.p_h_calc(h, en15544.ρ_L, ρ_m(t))
 
         override def P_R_staticFriction(
-            L: Length, 
-            D_h: Length, 
-            r: Roughness,
+            L                : Length,
+            D_h              : Length,
+            r                : Roughness,
             w_m_not_corrected: Velocity,
-            ρ_m: Density,
-            t_m: TKelvin,
+            ρ_m              : Density,
+            t_m              : TKelvin
         ): EpOp[Pressure] =
             val λf = en15544.formulas.λ_f_calc(D_h, r)
             val pd = en15544.formulas.p_d_calc(ρ_m, w_m_not_corrected)
@@ -214,84 +206,104 @@ sealed abstract class EN15544_Strict_Application(
         override def P_R_dynamicFriction(
             Σ_ζ: Dimensionless,
             ρ_m: QtyD[Kilogram / (Meter ^ 3)],
-            w_m: QtyD[Meter / Second],
+            w_m: QtyD[Meter / Second]
         ): EpOp[Pressure] =
             val pd = en15544.formulas.p_d_calc(ρ_m, w_m)
             en15544.formulas.p_u_calc(Σ_ζ, pd)
 
-        override def ρ_B(T_B: TKelvin): EpOp[Density] = 
+        override def ρ_B(T_B: TKelvin): EpOp[Density] =
             en15544.ρ_L
 
-        override def m_dot = 
+        override def m_dot =
             given Option[LoadQty] = LoadQty.Nominal.some
-            getOrThrow_forLoadOp(en15544.m_G, ifNone = UnexpectedDevError("could not compute en13384.m_dot : en15544.m_G undefined"))
-        
-        override def m_dot_min = 
-            given Option[LoadQty] = m_B_min.map(_ => LoadQty.Reduced)
-            getOrThrow_forLoadOp(en15544.m_G, ifNone = UnexpectedDevError(s"could not determine 'm_dot_min' because 'm_B_min' is not defined"))
+            getOrThrow_forLoadOp(
+                en15544.m_G,
+                ifNone = UnexpectedDevError("could not compute en13384.m_dot : en15544.m_G undefined")
+            )
 
-        override def mB_dot = 
+        override def m_dot_min =
+            given Option[LoadQty] = m_B_min.map(_ => LoadQty.Reduced)
+            getOrThrow_forLoadOp(
+                en15544.m_G,
+                ifNone = UnexpectedDevError("could not determine 'm_dot_min' because 'm_B_min' is not defined")
+            )
+
+        override def mB_dot =
             given Option[LoadQty] = LoadQty.Nominal.some
-            getOrThrow_forLoadOp(en15544.m_L, ifNone = UnexpectedDevError("could not compute en13384.mB_dot : en15544.m_L undefined"))
+            getOrThrow_forLoadOp(
+                en15544.m_L,
+                ifNone = UnexpectedDevError("could not compute en13384.mB_dot : en15544.m_L undefined")
+            )
 
-        override def mB_dot_min = 
+        override def mB_dot_min =
             given Option[LoadQty] = m_B_min.map(_ => LoadQty.Reduced)
-            getOrThrow_forLoadOp(en15544.m_L, ifNone = UnexpectedDevError(s"could not determine 'mB_dot_min' because 'm_B_min' or 'en15544.m_L' is not defined"))
-        
+            getOrThrow_forLoadOp(
+                en15544.m_L,
+                ifNone = UnexpectedDevError(
+                    "could not determine 'mB_dot_min' because 'm_B_min' or 'en15544.m_L' is not defined"
+                )
+            )
+
         // CAN BE COMMENTED ? CAN WE LEAVE IT TO DEFAULT IMPL ?
-        // override def σ_CO2(using HeatingAppliance.FlueGas): WithLoadQty[Percentage] = 
+        // override def σ_CO2(using HeatingAppliance.FlueGas): WithLoadQty[Percentage] =
         //     en15544.fluegas_σ_CO2_dry
 
-        // override lazy val last_known_density_before_connector_pipe = 
+        // override lazy val last_known_density_before_connector_pipe =
         //     flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_density_middle)
-    
-        // override lazy val last_known_velocity_before_connector_pipe = 
+
+        // override lazy val last_known_velocity_before_connector_pipe =
         //     flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_middle)
     end en13384_application
 
     def combustionAir_PipeResult =
         airIntake_PipeResult.andThen: _ =>
-            ops_en15544.FlowOnlyMecaFlu_15544.makePipeResult(
-                fd                  = CombustionAirPipe_Module_15544.unwrap(inputs.pipes.combustionAir),
-                gas                 = CombustionAir,
+            ops_en15544.FlowOnlyMecaFlu_15544
+                .makePipeResult                 (
+                    fd                  = CombustionAirPipe_Module_15544.unwrap(inputs.pipes.combustionAir),
+                    gas                 = CombustionAir,
+                    loadQty             = LoadQty.summon,
+                    z_geodetical_height = z_geodetical_height,
+                    params              = pressReq_from_Params_15544
+                )(using en15544)
+                .toValidatedNel
+
+    def firebox_PipeResult =
+        ops_en15544.FlowOnlyMecaFlu_15544
+            .makePipeResult                 (
+                fd                  = FireboxPipe_Module_15544.unwrap(inputs.pipes.firebox),
+                gas                 = FlueGas,
                 loadQty             = LoadQty.summon,
                 z_geodetical_height = z_geodetical_height,
                 params              = pressReq_from_Params_15544
-            )(using en15544).toValidatedNel
+            )(using en15544)
+            .toValidatedNel
 
-    def firebox_PipeResult = 
-        ops_en15544.FlowOnlyMecaFlu_15544.makePipeResult(
-            fd                  = FireboxPipe_Module_15544.unwrap(inputs.pipes.firebox),
-            gas                 = FlueGas,
-            loadQty             = LoadQty.summon,
-            z_geodetical_height = z_geodetical_height,
-            params              = pressReq_from_Params_15544
-        )(using en15544).toValidatedNel
-
-    // def t_connector_pipe_mean: WithParams_15544[t_connector_pipe_mean] = 
+    // def t_connector_pipe_mean: WithParams_15544[t_connector_pipe_mean] =
     //     connector_PipeResult
     //         .map: cp =>
     //             val tms = cp.elements.flatMap(_.gas_temp_mean.map(_.toUnit[Kelvin]))
     //             en13384_formulas.T_mV_calc(tms.size, tms).toUnit[Celsius]
     //         .fold(e => throw new Exception(e.msg), identity)
 
-    def flue_PipeResult = 
-        ops_en15544.FlowOnlyMecaFlu_15544.makePipeResult(
-            fd                  = FluePipe_Module_15544.unwrap(inputs.pipes.flue),
-            gas                 = FlueGas,
-            loadQty             = LoadQty.summon,
-            z_geodetical_height = z_geodetical_height,
-            params              = pressReq_from_Params_15544
-        )(using en15544).toValidatedNel
+    def flue_PipeResult =
+        ops_en15544.FlowOnlyMecaFlu_15544
+            .makePipeResult                 (
+                fd                  = FluePipe_Module_15544.unwrap(inputs.pipes.flue),
+                gas                 = FlueGas,
+                loadQty             = LoadQty.summon,
+                z_geodetical_height = z_geodetical_height,
+                params              = pressReq_from_Params_15544
+            )(using en15544)
+            .toValidatedNel
 
-    override final def pipesResult_15544_VNelS = 
-        PipesResult_15544_VNelString(
-            airIntake           = airIntake_PipeResult,
-            combustionAir       = combustionAir_PipeResult,
-            firebox             = firebox_PipeResult,
-            flue                = flue_PipeResult,
-            connector           = connector_PipeResult,
-            chimney             = chimney_PipeResult,
+    override final def pipesResult_15544_VNelS =
+        PipesResult_15544_VNelString    (
+            airIntake     = airIntake_PipeResult,
+            combustionAir = combustionAir_PipeResult,
+            firebox       = firebox_PipeResult,
+            flue          = flue_PipeResult,
+            connector     = connector_PipeResult,
+            chimney       = chimney_PipeResult
         )
 
     override final def outputs =
@@ -300,18 +312,19 @@ sealed abstract class EN15544_Strict_Application(
             techSpecs,
             pipesResult,
             reference_temperatures,
-            efficiencies_values,
+            efficiencies_values
             // pressureRequirement_EN15544,
             // estimated_output_temperatures,
             // flue_gas_triple_of_variates
         )
 
-    final override val runValidationAtParams: Params_15544 = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.Nominal)
-    
+    override final val runValidationAtParams: Params_15544 =
+        (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.Nominal)
+
     def net_calorific_value_of_wet_wood(
-        @nowarn ncv_dry: HeatCapacity, 
-        @nowarn hum: Percentage,
-        @nowarn kind: KindOfWood
+        @nowarn ncv_dry: HeatCapacity,
+        @nowarn hum    : Percentage,
+        @nowarn kind   : KindOfWood
     ): HeatCapacity =
         4.16.kWh_per_kg // See 4.2.1
 

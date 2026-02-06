@@ -5,24 +5,24 @@
 
 package afpma.firecalc.engine.alg.en15544
 
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.all.*
+
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.*
-
 import coulomb.*
-import coulomb.syntax.*
 
 /**
-  * Pure Algebra only contains pure formulas.
-  * You should not implement it using inputs to your class or object.
-  */
+ * Pure Algebra only contains pure formulas.
+ * You should not implement it using inputs to your class or object.
+ */
 trait EN15544_V_2023_Formulas_Alg:
 
     // 4.2.1
-    
+
     def m_B_calc: (P_n, t_n, n_min) => m_B
 
     /**
@@ -58,7 +58,7 @@ trait EN15544_V_2023_Formulas_Alg:
 
     // Section "4.3.1.4", "Firebox height"
     def H_BR_min_calc: m_B => H_BR
-    def H_BR_calc: (m_B, A_BR, U_BR) => H_BR
+    def H_BR_calc    : (m_B, A_BR, U_BR) => H_BR
 
     // Section "4.3.2", "Calculated flue pipe length"
     def L_Z_calculated_calc: (FacingType, m_B) => L_N
@@ -66,7 +66,7 @@ trait EN15544_V_2023_Formulas_Alg:
     // Section "4.3.3", "Minimum flue pipe length"
     def Table_1_Factor_a_opt_calc: n_min => Option[Table_1_Factor_a]
     def Table_1_Factor_b_opt_calc: n_min => Option[Table_1_Factor_b]
-    def L_Z_min_calc: (Table_1_Factor_a_or_b, m_B) => L_N
+    def L_Z_min_calc             : (Table_1_Factor_a_or_b, m_B) => L_N
 
     // Section "4.3.4", "Gas groove profile"
     def A_GS_calc: m_B => A_GS
@@ -105,11 +105,11 @@ trait EN15544_V_2023_Formulas_Alg:
     def t_outside_air_mean: t_outside_air_mean
 
     // Section "4.8.2", "Mean firebox temperature"
-    lazy val t_BR_default: TCelsius
+    lazy val t_BR_default            : TCelsius
     lazy val t_BR_default_in_standard: TCelsius
     def t_BR_calc: (Firebox_15544) => t_BR
 
-    lazy val t_burnout_default: TCelsius
+    lazy val t_burnout_default    : TCelsius
     lazy val t_burnout_in_standard: TCelsius
     def t_burnout_calc: (Firebox_15544) => t_burnout
 
@@ -138,7 +138,7 @@ trait EN15544_V_2023_Formulas_Alg:
 
     /** concentration de dioxyde carbone (% en volume) : humide ou sec ??? (supposée humide) */
     def fluegas_σ_CO2_calc: σ_CO2
-    
+
     /** teneur en eau du bois (% en masse) */
     def wood_σ_H2O_calc: σ_H2O
 

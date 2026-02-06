@@ -9,8 +9,8 @@ import com.raquo.airstream.state.Var
 
 def convertToOpaqueVar[A, T](
     va: Var[A]
-)(using 
-    in: Conversion[A, T],
+)(using
+    in : Conversion[A, T],
     out: Conversion[T, A]
 ): Var[T] =
     va.zoomLazy(in)((_, t) => out(t))

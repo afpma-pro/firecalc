@@ -4,8 +4,6 @@
  */
 
 package afpma.firecalc.payments.shared.api.migrations
-
-import io.scalaland.chimney.Transformer
 import afpma.firecalc.payments.shared.api.v1.CustomerInfo_V1
 
 /**
@@ -16,10 +14,10 @@ object CustomerInfoMigrations:
 
     /**
      * Future: Transformer from V1 to V2
-     * 
+     *
      * Example when V2 is created (e.g., adding VAT number):
-     * 
-     * given Transformer[CustomerInfo_V1, CustomerInfo_V2] = 
+     *
+     * given Transformer[CustomerInfo_V1, CustomerInfo_V2] =
      *     Transformer.define[CustomerInfo_V1, CustomerInfo_V2]
      *         .withFieldConst(_.vatNumber, None)  // default for existing data
      *         .buildTransformer

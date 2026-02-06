@@ -10,7 +10,7 @@ import cats.*
 object tags {
 
     opaque type Tagged[+V, +Tag] = Any
-    type @@[+V, +Tag] = V & Tagged[V, Tag]
+    type @@[+V, +Tag]            = V & Tagged[V, Tag]
 
     def tagWith[Tag]: [V] => V => V @@ Tag =
         [V] => (v: V) => v

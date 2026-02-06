@@ -5,10 +5,10 @@
 
 package afpma.firecalc.i18n.customloader
 
-import scala.jdk.CollectionConverters.*
-
 import cats.Id
 import cats.syntax.all.*
+
+import scala.jdk.CollectionConverters.*
 
 import io.taig.babel.*
 import org.ekrich.config.Config
@@ -16,7 +16,7 @@ import org.ekrich.config.ConfigFactory
 
 final class CustomLoader(configs: Map[String, String]) extends Loader[Id]:
     override def load(
-        base: String,
+        base   : String,
         locales: Set[Locale]
     ): Id[Translations[Babel]] =
         val all = locales.toList
@@ -42,21 +42,18 @@ final class CustomLoader(configs: Map[String, String]) extends Loader[Id]:
         config.root.entrySet.asScala
             .map(entry => entry.getKey -> entry.getValue)
             .toList
-            .foldLeftM(Map.empty[String, Babel]) {
-                case (result, (key, value)) =>
-                    toBabel(value.unwrapped, Path.one(key)).map(babel =>
-                        result + (key -> babel)
-                    )
+            .foldLeftM(Map.empty[String, Babel]) { case (result, (key, value)) =>
+                toBabel(value.unwrapped, Path.one(key)).map(babel => result + (key -> babel))
             }
             .map(Babel.Object.apply)
 
     def toBabel(value: AnyRef, path: Path): Either[Throwable, Babel] =
         value match {
-            case value: String => Babel.Value(value).asRight
-            case obj: java.util.Map[_, _] =>
+            case value: String              => Babel.Value(value).asRight
+            case obj  : java.util.Map[_, _] =>
                 obj.asScala.toList
                     .traverse { case (a, b) =>
-                        val key = a.asInstanceOf[String]
+                        val key   = a.asInstanceOf[String]
                         val value = b.asInstanceOf[AnyRef]
                         toBabel(value, path / key).tupleLeft(key)
                     }

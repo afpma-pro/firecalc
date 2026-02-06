@@ -4,8 +4,6 @@
  */
 
 package afpma.firecalc.ui.models.schema.migrations
-
-import io.scalaland.chimney.Transformer
 import afpma.firecalc.ui.models.schema.v1.BillingInfo_V1
 
 /**
@@ -16,10 +14,10 @@ object BillingInfoMigrations:
 
     /**
      * Future: Transformer from V1 to V2
-     * 
+     *
      * Example when V2 is created (e.g., adding business registration number):
-     * 
-     * given Transformer[BillingInfo_V1, BillingInfo_V2] = 
+     *
+     * given Transformer[BillingInfo_V1, BillingInfo_V2] =
      *     Transformer.define[BillingInfo_V1, BillingInfo_V2]
      *         .withFieldConst(_.business_registration, None)  // default for existing data
      *         .buildTransformer

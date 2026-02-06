@@ -7,6 +7,8 @@ package afpma.firecalc.engine.ops.en13384
 
 import algebra.instances.all.given
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
 import afpma.firecalc.engine.models.PipeWithGasFlow
 import afpma.firecalc.engine.ops.ExteriorAirOps
@@ -15,14 +17,11 @@ import afpma.firecalc.engine.ops.PipeWithGasFlowOps
 import afpma.firecalc.engine.standard.EN13384_FormulaError
 import afpma.firecalc.engine.utils.*
 
-import afpma.firecalc.units.coulombutils.*
-
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
 
 private[ops] trait PipeWithGasFlowOps_13384(using
-    _en13384: EN13384_1_A1_2019_Formulas_Alg,
+    _en13384: EN13384_1_A1_2019_Formulas_Alg
 ) extends PipeWithGasFlowOps[EN13384_FormulaError]:
 
     override val gasOps: GasOps = GasOps.mkUsingEN13384(_en13384)
@@ -32,7 +31,7 @@ private[ops] trait PipeWithGasFlowOps_13384(using
     import extAirOps.*
 
     private val DEBUG = false
-    inline private def debug(msg: String): Unit = if (DEBUG) println(msg) else ()
+    private inline def debug(msg: String): Unit = if (DEBUG) println(msg) else ()
 
     extension (pgf: PipeWithGasFlow)
 
@@ -44,32 +43,32 @@ private[ops] trait PipeWithGasFlowOps_13384(using
 
         override def w_m(Tm: TKelvin): Velocity =
             _en13384.w_m_calc(pgf.innerShape.area, pgf.massFlow, ρ_m(Tm))
-        
-        override def ρ_m(Tm: TKelvin): Density = 
+
+        override def ρ_m(Tm: TKelvin): Density =
             debug(s"""|p_L = ${pgf.ext_air.p_L}
                       |R   = ${pgf.gas.R}
-                      |Tm  = ${Tm.show} | ${Tm.to_degC.show}""".stripMargin
-            )
+                      |Tm  = ${Tm.show} | ${Tm.to_degC.show}""".stripMargin)
             _en13384.ρ_m_calc(pgf.ext_air.p_L, pgf.gas.R, Tm)
-        
-        override def T_m(T_u: TempD[Kelvin], T_e: TempD[Kelvin], S_H: Dimensionless): Op[TempD[Kelvin]] = 
+
+        override def T_m(T_u: TempD[Kelvin], T_e: TempD[Kelvin], S_H: Dimensionless): Op[TempD[Kelvin]] =
             // TOFIX: SIMPLIFY
             // circular dep if we do not assume T_e = T_m for short pipe
             // T_e.validNel
             // TODO: use K or K_b ???
             K(S_H).map: K =>
-                _en13384.T_m_calc(T_u, T_e, K)    
+                _en13384.T_m_calc(T_u, T_e, K)
 
         override def R_e(w_m_correction_if_less_than_1p5_meter_per_sec: Boolean): Dimensionless =
-            val ρm = ρ_m(gas_temp_approx) // TOFIX: gas_temp_approx instead of T_m (as approx. to prevent circular dep)
-            val wm_not_corrected = w_m(gas_temp_approx) // TOFIX: gas_temp_approx instead of T_m (as approx. to prevent circular dep)
-            val wm = 
+            val ρm               = ρ_m(gas_temp_approx) // TOFIX: gas_temp_approx instead of T_m (as approx. to prevent circular dep)
+            val wm_not_corrected = w_m(
+                gas_temp_approx
+            ) // TOFIX: gas_temp_approx instead of T_m (as approx. to prevent circular dep)
+            val wm               =
                 // wm_not_corrected
-                if (!w_m_correction_if_less_than_1p5_meter_per_sec) wm_not_corrected
-                else
-                    if (wm_not_corrected < 0.5.metersPerSecond) 0.5.metersPerSecond
-                    else wm_not_corrected
-            
+                if      (!w_m_correction_if_less_than_1p5_meter_per_sec) wm_not_corrected
+                else if (wm_not_corrected < 0.5.metersPerSecond        ) 0.5.metersPerSecond
+                else wm_not_corrected
+
             val re_out = _en13384.R_e_calc(wm, pgf.innerShape.dh, ρm, pgf.gas.η_A)
             debug(s"""|== R_e calculation
                       |gas_temp_approx  = ${gas_temp_approx.show} | ${gas_temp_approx.to_degC.show}
@@ -77,16 +76,15 @@ private[ops] trait PipeWithGasFlowOps_13384(using
                       |wm               = ${wm.show}
                       |dh               = ${pgf.innerShape.dh.show}
                       |η_A              = ${pgf.gas.η_A.show}
-                      |R_e              = ${re_out}""".stripMargin
-            )
+                      |R_e              = ${re_out}""".stripMargin)
             re_out
 
         override def N_u: Op[Dimensionless] =
-            val dh = pgf.innerShape.dh
+            val dh            = pgf.innerShape.dh
             val sectionLength = pgf.pipeLength
-            val re = R_e(w_m_correction_if_less_than_1p5_meter_per_sec = true)
-            val psi = Ψ
-            val psi_smooth = Ψsmooth
+            val re            = R_e(w_m_correction_if_less_than_1p5_meter_per_sec = true)
+            val psi           = Ψ
+            val psi_smooth    = Ψsmooth
             debug(s"""|dh      = ${dh.show}
                       |L_tot   = ${sectionLength.show}
                       |Re      = ${re.show}
@@ -108,10 +106,11 @@ private[ops] trait PipeWithGasFlowOps_13384(using
 
         override def k(S_H: Dimensionless): Op[WattsPerSquareMeterKelvin] =
             α_i.andThen: αi =>
-                _en13384.thermal_resistance_for_layers_calc(gas_temp_approx, pgf.innerShape, pgf.layers)
+                _en13384
+                    .thermal_resistance_for_layers_calc(gas_temp_approx, pgf.innerShape, pgf.layers)
                     .toValidatedNel
                     .map: tr =>
-                        val D_h = pgf.innerShape.dh
+                        val D_h  = pgf.innerShape.dh
                         val D_ha = pgf.outer_shape.dh
                         debug(s"""|D_h  = ${D_h.show}
                                   |D_ha = ${D_ha.show}
@@ -129,27 +128,28 @@ private[ops] trait PipeWithGasFlowOps_13384(using
 
         override def k_b: Op[WattsPerSquareMeterKelvin] =
             α_i.andThen: αi =>
-                _en13384.thermal_resistance_for_layers_calc(gas_temp_approx, pgf.innerShape, pgf.layers)
+                _en13384
+                    .thermal_resistance_for_layers_calc(gas_temp_approx, pgf.innerShape, pgf.layers)
                     .toValidatedNel
                     .map: tr =>
                         _en13384.k_b_calc(
                             pgf.innerShape.dh,
                             pgf.outer_shape.dh,
-                            α_a, 
+                            α_a,
                             αi,
                             tr
                         )
 
         /**
-          * Coefficient de transfert thermique à la sortie du conduit de fumée (k_ob) à la température d'équilibre
-          *
-          * @param _1_Λ_o résistance thermique de toute isolation supplémentaire de la partie du conduit de fumée au-dessus du toit relative au diamètre hydraulique interne par rapport au conduit, en m2.K/W
-          * @return
-          */
+         * Coefficient de transfert thermique à la sortie du conduit de fumée (k_ob) à la température d'équilibre
+         *
+         * @param _1_Λ_o résistance thermique de toute isolation supplémentaire de la partie du conduit de fumée au-dessus du toit relative au diamètre hydraulique interne par rapport au conduit, en m2.K/W
+         * @return
+         */
         override def k_ob(
-            _1_Λ: SquareMeterKelvinPerWatt,
+            _1_Λ  : SquareMeterKelvinPerWatt,
             _1_Λ_o: SquareMeterKelvinPerWatt
-        ): Op[WattsPerSquareMeterKelvin] = 
+        ): Op[WattsPerSquareMeterKelvin] =
             α_i.map: αi =>
                 _en13384.k_ob_calc(
                     αi,
@@ -157,7 +157,7 @@ private[ops] trait PipeWithGasFlowOps_13384(using
                     _1_Λ_o,
                     pgf.innerShape.dh,
                     pgf.outer_shape.dh,
-                    α_a,
+                    α_a
                 )
 
         // override def K_b: Op[Dimensionless] =
@@ -172,7 +172,7 @@ private[ops] trait PipeWithGasFlowOps_13384(using
 
         override def K(S_H: Dimensionless): Op[Dimensionless] =
             k(S_H).map: k =>
-                debug(s"k = ${k.show}")
+                debug          (s"k = ${k.show}")
                 _en13384.K_calc(
                     pgf.gas.cp,
                     k,
@@ -183,7 +183,7 @@ private[ops] trait PipeWithGasFlowOps_13384(using
 
         override def Ψ: Dimensionless =
             val dh = pgf.innerShape.dh
-            val r = pgf.roughness
+            val r  = pgf.roughness
             val re = R_e(w_m_correction_if_less_than_1p5_meter_per_sec = true)
             _en13384.solvepsi(dh, r, re)
 

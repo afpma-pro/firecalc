@@ -5,17 +5,21 @@
 
 package afpma.firecalc.ui.models.schema
 
+import afpma.firecalc.ui.models.AppStateSchemaHelper
+import afpma.firecalc.ui.models.schema.common.AppStateSchema_Version
 import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
 import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2
 import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3
-import afpma.firecalc.ui.models.schema.common.AppStateSchema_Version
-import afpma.firecalc.ui.models.AppStateSchemaHelper
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+import io.circe.Decoder
 import io.circe.yaml.scalayaml.parser as yamlParser
-import io.circe.{Decoder, Json}
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import org.scalajs.dom
-import scala.util.{Try, Success, Failure}
 
 /**
  * Schema migration manager for AppState persistence.
@@ -70,9 +74,13 @@ object AppStateSchemaMigrations:
      * to ensure the FireCalcYAML version is also upgraded from 1 to 2.
      */
     given Transformer[AppStateSchema_V1, AppStateSchema_V2] =
-        Transformer.define[AppStateSchema_V1, AppStateSchema_V2]
+        Transformer
+            .define[AppStateSchema_V1, AppStateSchema_V2]
             .withFieldConst(_.version, AppStateSchema_Version(2))
-            .withFieldComputed(_.engine_state, v1 => v1.engine_state.transformInto[afpma.firecalc.dto.v2.FireCalcYAML_V2])
+            .withFieldComputed(
+                _.engine_state,
+                v1 => v1.engine_state.transformInto[afpma.firecalc.dto.v2.FireCalcYAML_V2]
+            )
             .buildTransformer
 
     /**
@@ -97,10 +105,10 @@ object AppStateSchemaMigrations:
             case Some(1) =>
                 // V1 - decode and migrate to V3
                 decodeV1(rawData)
-                .flatMap(migrateFromV1ToV2)
-                .flatMap(migrateFromV2ToV3) match
+                    .flatMap(migrateFromV1ToV2)
+                    .flatMap(migrateFromV2ToV3) match
                     case Success(v3) => Some(v3)
-                    case Failure(e) =>
+                    case Failure(e)  =>
                         dom.console.error(s"Failed to migrate V1 to V3: ${e.getMessage()}")
                         None
 
@@ -108,7 +116,7 @@ object AppStateSchemaMigrations:
                 // V2 - decode and migrate to V3
                 decodeV2(rawData).flatMap(migrateFromV2ToV3) match
                     case Success(v3) => Some(v3)
-                    case Failure(e) =>
+                    case Failure(e)  =>
                         dom.console.error(s"Failed to migrate V2 to V3: ${e.getMessage()}")
                         None
 
@@ -134,12 +142,12 @@ object AppStateSchemaMigrations:
             case Right(jsonValue) =>
                 // Navigate to version field using cursor
                 val versionCursor = jsonValue.hcursor.downField("version")
-                
+
                 // Try to decode as Int
                 versionCursor.as[Int] match
                     case Right(versionNum) =>
                         dom.console.log(s"Detected schema version: $versionNum")
-                        Some(versionNum)
+                        Some           (versionNum                             )
                     case Left(decodeError) =>
                         dom.console.log(s"Failed to decode version field: ${decodeError.getMessage()}")
                         None
@@ -147,29 +155,26 @@ object AppStateSchemaMigrations:
             case Left(parseError) =>
                 dom.console.log(s"Failed to parse YAML: ${parseError.getMessage()}")
                 None
-    /**
-     * Decode V2 schema from YAML string.
-     */
+
+    /** Decode V2 schema from YAML string. */
     private def decodeV2(yaml: String): Try[AppStateSchema_V2] =
         import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2.given
         yamlParser.parse(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V2] match
                     case Right(schema) => Success(schema)
-                    case Left(err) => Failure(new RuntimeException(s"Failed to decode V2: ${err.getMessage()}"))
-            case Left(err) => Failure(new RuntimeException(s"Failed to parse V2 YAML: ${err.getMessage()}"))
+                    case Left(err)     => Failure(new RuntimeException(s"Failed to decode V2: ${err.getMessage()}"))
+            case Left(err)   => Failure(new RuntimeException(s"Failed to parse V2 YAML: ${err.getMessage()}"))
 
-    /**
-     * Decode V1 schema from YAML string.
-     */
+    /** Decode V1 schema from YAML string. */
     private def decodeV1(yaml: String): Try[AppStateSchema_V1] =
         import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1.given
         yamlParser.parse(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V1] match
                     case Right(schema) => Success(schema)
-                    case Left(err) => Failure(new RuntimeException(s"Failed to decode V1: ${err.getMessage()}"))
-            case Left(err) => Failure(new RuntimeException(s"Failed to parse V1 YAML: ${err.getMessage()}"))
+                    case Left(err)     => Failure(new RuntimeException(s"Failed to decode V1: ${err.getMessage()}"))
+            case Left(err)   => Failure(new RuntimeException(s"Failed to parse V1 YAML: ${err.getMessage()}"))
 
     /**
      * Migrate from V2 to V3 schema.
@@ -201,8 +206,8 @@ object AppStateSchemaMigrations:
      * Logs a warning before clearing to aid debugging.
      */
     def clearInvalidData(): Unit =
-        dom.console.warn("Clearing invalid schema data from localStorage")
-        dom.window.localStorage.removeItem(LocalStorageKeys.APP_STATE_SCHEMA)
+        dom.console.warn                  ("Clearing invalid schema data from localStorage")
+        dom.window.localStorage.removeItem(LocalStorageKeys.APP_STATE_SCHEMA               )
 
     /**
      * Validate a schema by attempting to encode and decode it.
@@ -223,6 +228,6 @@ object AppStateSchemaMigrations:
                     case Failure(e) =>
                         dom.console.error(s"Schema decode validation failed: ${e.getMessage()}")
                         false
-            case Failure(e) =>
+            case Failure(e)    =>
                 dom.console.error(s"Schema encode validation failed: ${e.getMessage()}")
                 false

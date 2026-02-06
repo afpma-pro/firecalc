@@ -5,27 +5,29 @@
 
 package afpma.firecalc.engine
 
-import cats.Show
-import cats.derived.*
-import cats.syntax.show.*
-import cats.syntax.all.*
-
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.gtypedefs.v
-
-import afpma.firecalc.i18n.{ShowUsingLocale, showUsingLocale}
-import afpma.firecalc.i18n.implicits.I18N
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.*
-import io.taig.babel.{Locale, Locales}
-import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
-import cats.data.NonEmptyList
+
+import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.implicits.I18N
+import afpma.firecalc.i18n.showUsingLocale
+
+import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.TermConstraintError
-import cats.data.ValidatedNel
-import afpma.firecalc.engine.standard.ThermalResistance_Error.SideRatioTooHighForRectangularForm
+import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
+import afpma.firecalc.engine.models.gtypedefs.v
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CouldNotComputeThermalResistance
+import afpma.firecalc.engine.standard.ThermalResistance_Error.SideRatioTooHighForRectangularForm
+
+import cats.Show
+import cats.data.NonEmptyList
+import cats.data.ValidatedNel
+import cats.derived.*
+import cats.syntax.all.*
+
+import io.taig.babel.Locale
 
 object standard {
 
@@ -35,7 +37,7 @@ object standard {
         def mapN_andThen_impl(f: X1 ?=> X2 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
             (
                 vmcex_tup._1,
-                vmcex_tup._2,
+                vmcex_tup._2
             )
                 .mapN:
                     case (x1, x2) => (x1, x2)
@@ -43,11 +45,11 @@ object standard {
                     given X1 = x1
                     given X2 = x2
                     f
-        
+
         def mapN_andThen(f: (X1, X2) => VNelMcalcErr[O]): VNelMcalcErr[O] =
             (
                 vmcex_tup._1,
-                vmcex_tup._2,
+                vmcex_tup._2
             )
                 .mapN:
                     case (x1, x2) => (x1, x2)
@@ -59,7 +61,7 @@ object standard {
             (
                 vmcex_tup._1,
                 vmcex_tup._2,
-                vmcex_tup._3,
+                vmcex_tup._3
             )
                 .mapN:
                     case (x1, x2, x3) => (x1, x2, x3)
@@ -70,12 +72,12 @@ object standard {
                     f
 
     extension [X1, X2, X3, X4, O](vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2], VNelMcalcErr[X3], VNelMcalcErr[X4]))
-        def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> X4 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
+        def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> X4 ?=> VNelMcalcErr[O])       : VNelMcalcErr[O] =
             (
                 vmcex_tup._1,
                 vmcex_tup._2,
                 vmcex_tup._3,
-                vmcex_tup._4,
+                vmcex_tup._4
             )
                 .mapN:
                     case (x1, x2, x3, x4) => (x1, x2, x3, x4)
@@ -85,15 +87,17 @@ object standard {
                     given X3 = x3
                     given X4 = x4
                     f
-    extension [X1, X2, X3, X4, X5, O](vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2], VNelMcalcErr[X3], VNelMcalcErr[X4], VNelMcalcErr[X5]))
+    extension [X1, X2, X3, X4, X5, O](
+        vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2], VNelMcalcErr[X3], VNelMcalcErr[X4], VNelMcalcErr[X5])
+    )
         def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> X4 ?=> X4 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
             (
                 vmcex_tup._1,
                 vmcex_tup._2,
                 vmcex_tup._3,
                 vmcex_tup._4,
-                vmcex_tup._5,
-           )
+                vmcex_tup._5
+            )
                 .mapN:
                     case (x1, x2, x3, x4, x5) => (x1, x2, x3, x4, x5)
                 .andThen: (x1, x2, x3, x4, x5) =>
@@ -110,12 +114,12 @@ object standard {
 
     given ShowUsingLocale[MCalc_Error] = showUsingLocale:
         case e: UnexpectedDevError          => s"DEV_ERROR: ${e.msg}"
-        case e: Inputs_Error                => e.show  // Uses ShowUsingLocale[Inputs_Error]
-        case e: EN15544_Error               => e.show  // Uses ShowUsingLocale[EN15544_Error]
-        case e: EN13384_Error               => e.show  // Uses ShowUsingLocale[EN13384_Error]
-        case e: MecaFlu_Error               => e.show  // Uses ShowUsingLocale[MecaFlu_Error]
-        case e: IncrementalValidation_Error => e.show  // Uses ShowUsingLocale[IncrementalValidation_Error]
-        case e: ErrorsInOtherSectionType    => e.show  // Uses ShowUsingLocale[ErrorsInOtherSectionType]
+        case e: Inputs_Error                => e.show // Uses ShowUsingLocale[Inputs_Error]
+        case e: EN15544_Error               => e.show // Uses ShowUsingLocale[EN15544_Error]
+        case e: EN13384_Error               => e.show // Uses ShowUsingLocale[EN13384_Error]
+        case e: MecaFlu_Error               => e.show // Uses ShowUsingLocale[MecaFlu_Error]
+        case e: IncrementalValidation_Error => e.show // Uses ShowUsingLocale[IncrementalValidation_Error]
+        case e: ErrorsInOtherSectionType    => e.show // Uses ShowUsingLocale[ErrorsInOtherSectionType]
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
@@ -124,12 +128,12 @@ object standard {
 
     sealed trait Inputs_Error extends MCalc_Error
 
-    case object InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType extends Inputs_Error
+    case object InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType  extends Inputs_Error
     case object InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType extends Inputs_Error
 
     object Inputs_Error:
         given ShowUsingLocale[Inputs_Error] = showUsingLocale:
-            case e: InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType.type =>
+            case e: InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType.type  =>
                 I18N.inputs_error.invald_type_of_appliance.pellets_incompatible_with_wood_log_fuel_type
             case e: InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType.type =>
                 I18N.inputs_error.invald_type_of_appliance.wood_logs_incompatible_with_pellets_fuel_type
@@ -137,34 +141,34 @@ object standard {
     // EN 15544
 
     sealed trait EN15544_Error extends MCalc_Error
-    
+
     given ShowUsingLocale[EN15544_Error] = showUsingLocale:
-        case e: FireboxError                => Show[FireboxError].show(e)
-        case e: FluePipeError               => Show[FluePipeError].show(e)
-        case e: PressureLossCoeff_Error     => Show[PressureLossCoeff_Error].show(e)
-        case e: InvalidPressureRequirement  => e.show  // Uses ShowUsingLocale[InvalidPressureRequirement]
-        case e: EfficiencyIsTooLow          => e.show  // Uses ShowUsingLocale[EfficiencyIsTooLow]
-        case e: InvalidConstraint           => Show[InvalidConstraint].show(e)
-        case e: EN15544_ErrorMessage        => Show[EN15544_ErrorMessage].show(e)
-    
+        case e: FireboxError               => Show[FireboxError].show(e)
+        case e: FluePipeError              => Show[FluePipeError].show(e)
+        case e: PressureLossCoeff_Error    => Show[PressureLossCoeff_Error].show(e)
+        case e: InvalidPressureRequirement => e.show // Uses ShowUsingLocale[InvalidPressureRequirement]
+        case e: EfficiencyIsTooLow         => e.show // Uses ShowUsingLocale[EfficiencyIsTooLow]
+        case e: InvalidConstraint          => Show[InvalidConstraint].show(e)
+        case e: EN15544_ErrorMessage       => Show[EN15544_ErrorMessage].show(e)
+
     sealed trait FireboxError extends EN15544_Error with HasSectionTypError:
         override final def sectionTyp: PipeType = FireboxPipeT
-    
+
     given ShowUsingLocale[FireboxError] = showUsingLocale:
-        case e: InvalidTermValue[?]                     => show_InvalidTermValue(using e.showT).show(e)
-        case e: FireboxBaseSurfaceNotInRange            => Show[FireboxBaseSurfaceNotInRange].show(e)
-        case e: FireboxBaseRatioInvalid                 => Show[FireboxBaseRatioInvalid].show(e)
-        case e: FireboxBaseMinWidthInvalid              => Show[FireboxBaseMinWidthInvalid].show(e)
-        case e: GlassAreaTooLarge                       => Show[GlassAreaTooLarge].show(e)
-        case e: GlassSurfaceRatioNotConfirmed           => Show[GlassSurfaceRatioNotConfirmed].show(e)
-        case e: FireboxHeightOutOfRange                 => Show[FireboxHeightOutOfRange].show(e)
-        case e: InjectorVelocityBelowMinimum            => Show[InjectorVelocityBelowMinimum].show(e)
-        case e: InjectorVelocityAboveMaximum            => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: MissingFlowRate                         => Show[MissingFlowRate].show(e)
-        case e: FireboxErrorCustom                      => e.reason
+        case e: InvalidTermValue[?]           => show_InvalidTermValue(using e.showT).show(e)
+        case e: FireboxBaseSurfaceNotInRange  => Show[FireboxBaseSurfaceNotInRange].show(e)
+        case e: FireboxBaseRatioInvalid       => Show[FireboxBaseRatioInvalid].show(e)
+        case e: FireboxBaseMinWidthInvalid    => Show[FireboxBaseMinWidthInvalid].show(e)
+        case e: GlassAreaTooLarge             => Show[GlassAreaTooLarge].show(e)
+        case e: GlassSurfaceRatioNotConfirmed => Show[GlassSurfaceRatioNotConfirmed].show(e)
+        case e: FireboxHeightOutOfRange       => Show[FireboxHeightOutOfRange].show(e)
+        case e: InjectorVelocityBelowMinimum  => Show[InjectorVelocityBelowMinimum].show(e)
+        case e: InjectorVelocityAboveMaximum  => Show[InjectorVelocityAboveMaximum].show(e)
+        case e: MissingFlowRate               => Show[MissingFlowRate].show(e)
+        case e: FireboxErrorCustom            => e.reason
 
     final class FireboxErrorCustom(val reason: Locale ?=> String) extends FireboxError
-    
+
     case class FireboxBaseSurfaceNotInRange(actual: String, min: String, max: String) extends FireboxError
     object FireboxBaseSurfaceNotInRange:
         given ShowUsingLocale[FireboxBaseSurfaceNotInRange] = showUsingLocale: e =>
@@ -174,32 +178,32 @@ object standard {
     object FireboxBaseRatioInvalid:
         given ShowUsingLocale[FireboxBaseRatioInvalid] = showUsingLocale: e =>
             I18N.errors.firebox_base_ratio_invalid(e.ratio, e.depth, e.width)
-    
+
     case class FireboxBaseMinWidthInvalid(enteredWidth: String, baseDimensions: String) extends FireboxError
     object FireboxBaseMinWidthInvalid:
         given ShowUsingLocale[FireboxBaseMinWidthInvalid] = showUsingLocale: e =>
             I18N.errors.firebox_base_min_width(e.enteredWidth, e.baseDimensions)
-    
+
     case class GlassAreaTooLarge(glassArea: String, maxAllowed: String) extends FireboxError
     object GlassAreaTooLarge:
         given ShowUsingLocale[GlassAreaTooLarge] = showUsingLocale: e =>
             I18N.errors.glass_area_too_large(e.glassArea, e.maxAllowed)
-    
+
     case class GlassSurfaceRatioNotConfirmed() extends FireboxError
     object GlassSurfaceRatioNotConfirmed:
         given ShowUsingLocale[GlassSurfaceRatioNotConfirmed] = showUsingLocale: (e: GlassSurfaceRatioNotConfirmed) =>
-                I18N.errors.glass_surface_ratio_not_confirmed
-    
+            I18N.errors.glass_surface_ratio_not_confirmed
+
     case class FireboxHeightOutOfRange(min: String, max: String, entered: String) extends FireboxError
     object FireboxHeightOutOfRange:
         given ShowUsingLocale[FireboxHeightOutOfRange] = showUsingLocale: e =>
             I18N.errors.firebox_height_out_of_range(e.min, e.max, e.entered)
-    
+
     case class InjectorVelocityBelowMinimum(velocity: String, minVelocity: String) extends FireboxError
     object InjectorVelocityBelowMinimum:
         given ShowUsingLocale[InjectorVelocityBelowMinimum] = showUsingLocale: e =>
             I18N.errors.injector_velocity_below_minimum(e.velocity, e.minVelocity)
-    
+
     case class InjectorVelocityAboveMaximum(velocity: String, maxVelocity: String) extends FireboxError
     object InjectorVelocityAboveMaximum:
         given ShowUsingLocale[InjectorVelocityAboveMaximum] = showUsingLocale: e =>
@@ -211,77 +215,83 @@ object standard {
             I18N.errors.missing_flow_rate
 
     sealed trait InvalidTermValue[T] extends FireboxError:
-        def termName: String
+        def termName : String
         def termValue: T
-        given showT: Show[T] = scala.compiletime.deferred
+        given showT  : Show[T] = scala.compiletime.deferred
 
     given show_InvalidTermValue: [T: Show] => ShowUsingLocale[InvalidTermValue[T]] = showUsingLocale:
-        case x: TermValueShouldBeGreaterOrEqThan[?] => 
+        case x: TermValueShouldBeGreaterOrEqThan[?]  =>
             I18N.errors.term_should_be_greater_or_eq_than(x.termName, x.minValue.show, x.termValue.show)
-        case x: TermValueShouldBeGreaterThan[?] => 
+        case x: TermValueShouldBeGreaterThan[?]      =>
             I18N.errors.term_should_be_greater_than(x.termName, x.minValue.show, x.termValue.show)
-        case x: TermValueShouldBeLessOrEqThan[?] => 
+        case x: TermValueShouldBeLessOrEqThan[?]     =>
             I18N.errors.term_should_be_less_or_eq_than(x.termName, x.maxValue.show, x.termValue.show)
-        case x: TermValueShouldBeLessThan[?] => 
+        case x: TermValueShouldBeLessThan[?]         =>
             I18N.errors.term_should_be_less_than(x.termName, x.maxValue.show, x.termValue.show)
         case x: TermValueShouldBeBetweenInclusive[?] =>
             I18N.errors.term_should_be_between_inclusive(x.termName, x.minValue.show, x.maxValue.show, x.termValue.show)
-        case x: TermValueCustom[?] =>
+        case x: TermValueCustom[?]                   =>
             x.message
-    
-    
+
     case class TermValueShouldBeGreaterOrEqThan[T: Show](
-        override val termName: String,
+        override val termName : String,
         override val termValue: T,
-        minValue: T,
+        minValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
-    
+
     case class TermValueShouldBeGreaterThan[T: Show](
-        override val termName: String,
+        override val termName : String,
         override val termValue: T,
-        minValue: T,
+        minValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
-    
+
     case class TermValueShouldBeLessOrEqThan[T: Show](
-        override val termName: String,
+        override val termName : String,
         override val termValue: T,
-        maxValue: T,
+        maxValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
-    
+
     case class TermValueShouldBeLessThan[T: Show](
-        override val termName: String,
+        override val termName : String,
         override val termValue: T,
-        maxValue: T,
+        maxValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
-    
+
     case class TermValueShouldBeBetweenInclusive[T: Show](
-        override val termName: String,
+        override val termName : String,
         override val termValue: T,
-        minValue: T,
-        maxValue: T,
+        minValue              : T,
+        maxValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
-    
+
     case class TermValueCustom[T: Show](
-        override val termName: String,
+        override val termName : String,
         override val termValue: T,
-        val message: String
+        val message           : String
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     sealed trait FluePipeError extends EN15544_Error with HasSectionTypError
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
-        case err: FlueGasVelocityError          => err.show
-        case err: FluePipeInvalidGeometryRatio  => err.show
-        case err: FluePipeErrorCustom           => err.reason
+        case err: FlueGasVelocityError         => err.show
+        case err: FluePipeInvalidGeometryRatio => err.show
+        case err: FluePipeErrorCustom          => err.reason
 
-    case class FlueGasVelocityError(sectionId: Int, sectionTyp: PipeType, sectionName: String, gasVelocity: v, minVel: v, maxVel: v) extends FluePipeError
-    object FlueGasVelocityError:
+    case class FlueGasVelocityError(
+        sectionId  : Int,
+        sectionTyp : PipeType,
+        sectionName: String,
+        gasVelocity: v,
+        minVel     : v,
+        maxVel     : v
+    ) extends FluePipeError
+    object FlueGasVelocityError        :
         given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
             I18N.errors.flue_gas_velocity_error(
                 err.sectionId.toString,
@@ -290,54 +300,62 @@ object standard {
                 err.minVel.show,
                 err.maxVel.show
             )
-    case class FluePipeInvalidGeometryRatio(sectionId: Int, sectionTyp: PipeType, sectionName: String, ratio: QtyD[1], minRatio: QtyD[1], maxRatio: QtyD[1]) extends FluePipeError
+    case class FluePipeInvalidGeometryRatio(
+        sectionId  : Int,
+        sectionTyp : PipeType,
+        sectionName: String,
+        ratio      : QtyD[1],
+        minRatio   : QtyD[1],
+        maxRatio   : QtyD[1]
+    ) extends FluePipeError
     object FluePipeInvalidGeometryRatio:
         given ShowUsingLocale[FluePipeInvalidGeometryRatio] = showUsingLocale:
-            case FluePipeInvalidGeometryRatio(id, _, name, r, rmin, rmax)  => 
+            case FluePipeInvalidGeometryRatio(id, _, name, r, rmin, rmax) =>
                 given Show[QtyD[1]] = shows.defaults.show_Unitless_1
-                val term = s"${I18N.terms.width_to_height_ratio} #${id} $name"
+                val term            = s"${I18N.terms.width_to_height_ratio} #${id} $name"
                 I18N.errors.term_should_be_between_inclusive(term, r.show, rmin.show, rmax.show)
 
     class FluePipeErrorCustom(val sectionTyp: PipeType, val reason: Locale ?=> String) extends FluePipeError
 
-    case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError derives Show
-    
+    case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType)
+        extends EN15544_Error
+        with HasSectionTypError derives Show
+
     // EN 13384
     // NOTE: No 'def msg: String' - all error messages are provided via I18N translations through ShowUsingLocale
     sealed trait EN13384_Error extends standard.MCalc_Error
 
     object EN13384_Error:
         given ShowUsingLocale[EN13384_Error] = showUsingLocale:
-            case e: SideRatioTooHighForRectangularForm =>
+            case e: SideRatioTooHighForRectangularForm                         =>
                 I18N.en13384.errors.side_ratio_too_high_for_rectangular_form(e.outer_shape.show)
             case _: CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing =>
                 I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
-            case e: CouldNotComputeThermalResistance =>
+            case e: CouldNotComputeThermalResistance                           =>
                 I18N.en13384.errors.could_not_compute_thermal_resistance(e.reason)
-            case e: EN13384_ErrorMessage =>
+            case e: EN13384_ErrorMessage                                       =>
                 // EN13384_ErrorMessage.msg is intentional user-provided data, keep it
                 I18N.en13384.errors.en13384_error_message(e.msg)
-            case _: DuctTypeError =>
+            case _: DuctTypeError                                              =>
                 I18N.en13384.errors.invalid_duct_type_only_non_concentric_high_resistance
-            case _: NoOutsideSurfaceFound =>
+            case _: NoOutsideSurfaceFound                                      =>
                 I18N.en13384.errors.no_outside_surface_for_tu_calculation
-            case e: ZeroLengthPipe =>
+            case e: ZeroLengthPipe                                             =>
                 I18N.en13384.errors.zero_length_pipe(e.pname)
-            case e: ReIsAbove10million =>
+            case e: ReIsAbove10million                                         =>
                 I18N.en13384.errors.re_is_above_10million(e.`R_e`.show)
-            case e: PsiRatioIsGreaterThan3 =>
+            case e: PsiRatioIsGreaterThan3                                     =>
                 I18N.en13384.errors.psi_ratio_is_greater_than_3(e.ratio.show)
-            case e: PrandtlTooSmall =>
+            case e: PrandtlTooSmall                                            =>
                 I18N.en13384.errors.prandtl_too_small(e.`P_r`.show)
-            case e: PrandtlTooBig =>
+            case e: PrandtlTooBig                                              =>
                 I18N.en13384.errors.prandtl_too_big(e.`P_r`.show)
-            
-            
 
     // ThermalResistance
     // NOTE: No 'msg' parameter - all messages are provided via I18N translations through ShowUsingLocale[EN13384_Error]
     sealed abstract class ThermalResistance_Error(override val sectionTyp: PipeType)
-        extends EN13384_Error with HasSectionTypError
+        extends EN13384_Error
+        with HasSectionTypError
     object ThermalResistance_Error:
         case class SideRatioTooHighForRectangularForm(outer_shape: PipeShape, override val sectionTyp: PipeType)
             extends ThermalResistance_Error(sectionTyp)
@@ -347,28 +365,30 @@ object standard {
         // Note: 'reason' is data (e.g. from ReadTableError), not a pre-formatted message
         case class CouldNotComputeThermalResistance(reason: String, override val sectionTyp: PipeType)
             extends ThermalResistance_Error(sectionTyp)
-    
+
     // EN13384_ErrorMessage keeps 'msg' as it's intentional user-provided data
-    case class EN13384_ErrorMessage(msg: String) extends EN13384_Error
-    case class DuctTypeError(override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError
+    case class EN13384_ErrorMessage(msg: String)                        extends EN13384_Error
+    case class DuctTypeError(override val sectionTyp: PipeType)         extends EN13384_Error with HasSectionTypError
     case class NoOutsideSurfaceFound(override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError
-    
-    object DuctTypeError:
+
+    object DuctTypeError        :
         given ShowUsingLocale[DuctTypeError] = showUsingLocale: _ =>
             I18N.en13384.errors.invalid_duct_type_only_non_concentric_high_resistance
     object NoOutsideSurfaceFound:
         given ShowUsingLocale[NoOutsideSurfaceFound] = showUsingLocale: _ =>
             I18N.en13384.errors.no_outside_surface_for_tu_calculation
-    
+
     // NuCalcError - no 'msg' parameter, all messages via I18N
-    sealed abstract class NuCalcError(override val sectionTyp: PipeType)
-        extends EN13384_Error with HasSectionTypError
-    case class ZeroLengthPipe(pname: String, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
-    case class ReIsAbove10million(R_e: Double, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
+    sealed abstract class NuCalcError(override val sectionTyp: PipeType)                extends EN13384_Error with HasSectionTypError
+    case class ZeroLengthPipe(pname: String, override val sectionTyp: PipeType)         extends NuCalcError(sectionTyp)
+    case class ReIsAbove10million(R_e: Double, override val sectionTyp: PipeType)       extends NuCalcError(sectionTyp)
     case class PsiRatioIsGreaterThan3(ratio: Double, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
-    sealed abstract class PrandtlOutOfBound(val P_r: Double, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
-    case class PrandtlTooSmall(override val P_r: Double, override val sectionTyp: PipeType) extends PrandtlOutOfBound(P_r, sectionTyp)
-    case class PrandtlTooBig(override val P_r: Double, override val sectionTyp: PipeType) extends PrandtlOutOfBound(P_r, sectionTyp)
+    sealed abstract class PrandtlOutOfBound(val P_r: Double, override val sectionTyp: PipeType)
+        extends NuCalcError(sectionTyp)
+    case class PrandtlTooSmall(override val P_r: Double, override val sectionTyp: PipeType)
+        extends PrandtlOutOfBound(P_r, sectionTyp)
+    case class PrandtlTooBig(override val P_r: Double, override val sectionTyp: PipeType)
+        extends PrandtlOutOfBound(P_r, sectionTyp)
 
     // ============================================================================
     // CONTEXT-FREE ERRORS (Formula Layer)
@@ -424,27 +444,29 @@ object standard {
 
         // ShowUsingLocale for formula errors (delegates to i18n)
         given ShowUsingLocale[EN13384_FormulaError] = showUsingLocale:
-            case e: SideRatioTooHigh =>
+            case e: SideRatioTooHigh                   =>
                 I18N.en13384.errors.side_ratio_too_high_for_rectangular_form(e.outer_shape.show)
-            case _: MissingOuterLayer =>
+            case _: MissingOuterLayer                  =>
                 I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
             case e: ThermalResistanceComputationFailed =>
                 I18N.en13384.errors.could_not_compute_thermal_resistance(e.msg)
-            case e: ReynoldsTooHigh =>
+            case e: ReynoldsTooHigh                    =>
                 I18N.en13384.errors.re_is_above_10million(e.R_e.show)
-            case e: PsiRatioTooHigh =>
+            case e: PsiRatioTooHigh                    =>
                 I18N.en13384.errors.psi_ratio_is_greater_than_3(e.ratio.show)
-            case e: PrandtlTooLow =>
+            case e: PrandtlTooLow                      =>
                 I18N.en13384.errors.prandtl_too_small(e.P_r.show)
-            case e: PrandtlTooHigh =>
+            case e: PrandtlTooHigh                     =>
                 I18N.en13384.errors.prandtl_too_big(e.P_r.show)
-            case _: NoOutsideSurface =>
+            case _: NoOutsideSurface                   =>
                 I18N.en13384.errors.no_outside_surface_for_tu_calculation
-            case _: InvalidDuctType =>
+            case _: InvalidDuctType                    =>
                 I18N.en13384.errors.invalid_duct_type_only_non_concentric_high_resistance
     end EN13384_FormulaError
 
-    sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType) extends EN15544_Error with HasSectionTypError
+    sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType)
+        extends EN15544_Error
+        with HasSectionTypError
 
     // PressureLossCoeff_Error
 
@@ -454,17 +476,18 @@ object standard {
 
     sealed class SingularFlowResistanceCoeffError(val msg: String)
 
-    case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String) extends SingularFlowResistanceCoeffError(msg) derives Show
+    case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)
+        extends SingularFlowResistanceCoeffError(msg) derives Show
 
     given show_SingularFlowResistanceCoeffError: Show[SingularFlowResistanceCoeffError] = Show.show: s =>
         s"SingularFlowResistanceCoeffError(msg = ${s.msg})"
 
     given show_PressureLossCoeff_Error: Show[PressureLossCoeff_Error] = Show.show:
-        // case l: LocalStructError                                            => 
+        // case l: LocalStructError                                            =>
         //     Show[LocalStructError].show(l)
-        // case m: MissingAlpha3AngleForShortFluePipeSection                   => 
+        // case m: MissingAlpha3AngleForShortFluePipeSection                   =>
         //     Show[MissingAlpha3AngleForShortFluePipeSection].show(m)
-        // case c: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?]   => 
+        // case c: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?]   =>
         //     SingularFlowResistanceCoeffError.show_UnexpectedRatio(using c.show_shape).show(c)
         // case s: SingularFlowResistanceCoeffError                            =>
         //     show_SingularFlowResistanceCoeffError.show(s)
@@ -474,22 +497,25 @@ object standard {
 
         sealed abstract class CouldNotSelectCoeffValuesForInterpolation[S: Show](
             shape: S,
-            m: String,
+            m    : String
         ) extends SingularFlowResistanceCoeffError(
-            s"shape ${shape.show} > could not select coeff values for interpolation > $m"
-        )
+                s"shape ${shape.show} > could not select coeff values for interpolation > $m"
+            )
 
         case class UnexpectedRatio_Ld_Dh[S](shape: S, ratio: Double)(using val show_shape: Show[S])
-            extends CouldNotSelectCoeffValuesForInterpolation[S](shape, s"unexpected ratio Ld/Dh = ${"%.3f".format(ratio)}")
+            extends CouldNotSelectCoeffValuesForInterpolation[S](
+                shape,
+                s"unexpected ratio Ld/Dh = ${"%.3f".format(ratio)}"
+            )
 
-        given show_UnexpectedRatio: [S] => (show_Shape: Show[S]) => Show[UnexpectedRatio_Ld_Dh[S]] = 
+        given show_UnexpectedRatio: [S] => (show_Shape: Show[S]) => Show[UnexpectedRatio_Ld_Dh[S]] =
             Show.show[UnexpectedRatio_Ld_Dh[S]]: u =>
                 s"UnexpectedRatio_Ld_Dh(shape = ${u.shape.show}, ratio = ${u.ratio})"
 
         case class NoGivenRatio_Ld_Dh[S](shape: S)(using val show_shape: Show[S])
-            extends CouldNotSelectCoeffValuesForInterpolation[S](shape, s"expecing ratio Ld/Dh but none given")
+            extends CouldNotSelectCoeffValuesForInterpolation[S](shape, "expecing ratio Ld/Dh but none given")
 
-        given show_NoGivenRatio: [S] => (show_Shape: Show[S]) => Show[NoGivenRatio_Ld_Dh[S]] = 
+        given show_NoGivenRatio: [S] => (show_Shape: Show[S]) => Show[NoGivenRatio_Ld_Dh[S]] =
             Show.show[NoGivenRatio_Ld_Dh[S]]: u =>
                 s"NoGivenRatio_Ld_Dh(shape = ${u.shape.show})"
 
@@ -497,18 +523,18 @@ object standard {
             new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m")
 
         case class ValueOutOfBound[S: Show](
-            shape: S,
+            shape    : S,
             vTermName: String,
-            v: Double,
-            vMin: Double,
-            vMax: Double
+            v        : Double,
+            vMin     : Double,
+            vMax     : Double
         ) extends SingularFlowResistanceCoeffError(
-            s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)"
-        )
+                s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)"
+            )
 
         def CouldNotComputeIndividualCoefficientForShape[S: Show](
             shape: S,
-            m: String,
+            m    : String
         ) =
             new SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > could not compute individual coefficient > $m"
@@ -522,9 +548,8 @@ object standard {
         given ShowUsingLocale[InvalidPressureRequirement] = showUsingLocale: e =>
             I18N.en15544_errors.invalid_pressure_requirement(e.preq.show)
 
-    
     // EfficiencyIsTooLow
-    
+
     case class EfficiencyIsTooLow(eff: QtyD[Percent], min_eff: QtyD[Percent]) extends EN15544_Error
     object EfficiencyIsTooLow:
         given ShowUsingLocale[EfficiencyIsTooLow] = showUsingLocale: e =>
@@ -533,7 +558,6 @@ object standard {
     case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error
     object InvalidConstraint:
         given ShowUsingLocale[InvalidConstraint] = showUsingLocale(_.error.failMsg)
-    
 
     // MecaFlu_Error
     // NOTE: No 'msg: String' field - all error messages are provided via I18N translations through ShowUsingLocale
@@ -544,20 +568,23 @@ object standard {
         // Firebox type errors
         case class UnexpectedFireboxType(reason: String) extends MecaFlu_Error:
             override def sectionTyp: PipeType = FireboxPipeT
-        
+
         // Pipe type errors
         case class UnexpectedPipeType(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
-        
+
         // Cross section errors
-        case class CouldNotDetermineCrossSectionArea(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
-        
+        case class CouldNotDetermineCrossSectionArea(sectionRef: String, override val sectionTyp: PipeType)
+            extends MecaFlu_Error
+
         // Air space errors
-        case class CouldNotDetermineAirSpaceDetailed(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+        case class CouldNotDetermineAirSpaceDetailed(sectionRef: String, override val sectionTyp: PipeType)
+            extends MecaFlu_Error
         given ShowUsingLocale[CouldNotDetermineAirSpaceDetailed] = showUsingLocale: x =>
             I18N.mecaflu.errors.could_not_determine_air_space_detailed(x.sectionRef)
 
         // Ratio validation errors
-        case class UseUnsafeToSkipRatioValidationError(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+        case class UseUnsafeToSkipRatioValidationError(reason: String, override val sectionTyp: PipeType)
+            extends MecaFlu_Error
 
         // Dynamic friction errors
         case class DynamicFrictionError(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
@@ -570,45 +597,64 @@ object standard {
         case class UnexpectedThrowable(e: Throwable, override val sectionTyp: PipeType) extends MecaFlu_Error
 
         // Thermal resistance computation errors (context-aware)
-        case class ThermalResistanceNotApplicableForCombustionAir(override val sectionTyp: PipeType) extends MecaFlu_Error
-        
-        case class ThermalResistanceRequiresStraightSection(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
-        
-        case class ThermalResistanceCalculationErrors(errors: cats.data.NonEmptyList[EN13384_Error], override val sectionTyp: PipeType) extends MecaFlu_Error
-        
+        case class ThermalResistanceNotApplicableForCombustionAir(override val sectionTyp: PipeType)
+            extends MecaFlu_Error
+
+        case class ThermalResistanceRequiresStraightSection(sectionRef: String, override val sectionTyp: PipeType)
+            extends MecaFlu_Error
+
+        case class ThermalResistanceCalculationErrors(
+            errors                 : cats.data.NonEmptyList[EN13384_Error],
+            override val sectionTyp: PipeType
+        ) extends MecaFlu_Error
+
         // Heat transfer coefficient calculation errors (context-aware)
-        case class HeatTransferCoefficientErrors(errors: cats.data.NonEmptyList[EN13384_Error], override val sectionTyp: PipeType) extends MecaFlu_Error
-        
+        case class HeatTransferCoefficientErrors(
+            errors                 : cats.data.NonEmptyList[EN13384_Error],
+            override val sectionTyp: PipeType
+        ) extends MecaFlu_Error
+
         // Temperature calculation errors (context-aware)
-        case class NoStraightSectionDefinedForTemperatureCalc(sectionRef: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+        case class NoStraightSectionDefinedForTemperatureCalc(sectionRef: String, override val sectionTyp: PipeType)
+            extends MecaFlu_Error
 
         // All error messages are provided via I18N translations
         given ShowUsingLocale[MecaFlu_Error] = showUsingLocale:
-            case UnexpectedFireboxType(reason)                             => I18N.mecaflu.errors.unexpected_firebox_type(reason)
-            case UnexpectedPipeType(reason, _)                             => I18N.mecaflu.errors.unexpected_pipe_type(reason)
-            case CouldNotDetermineCrossSectionArea(ref, _)                 => I18N.mecaflu.errors.could_not_determine_cross_section_area(ref)
-            case x: CouldNotDetermineAirSpaceDetailed                      => x.show
-            case UseUnsafeToSkipRatioValidationError(reason, _)            => I18N.mecaflu.errors.use_unsafe_to_skip_ratio_validation(reason)
-            case DynamicFrictionError(reason, _)                           => I18N.mecaflu.errors.dynamic_friction_error(reason)
-            case InvalidChimneyWallTemperature(temp)                       => I18N.mecaflu.errors.invalid_chimney_wall_temperature(temp.show)
-            case UnexpectedThrowable(e, _)                                 => I18N.mecaflu.errors.unexpected_throwable(s"${e.getMessage()}\n${e.getStackTrace().take(10).toList.mkString("\n")}")
-            case ThermalResistanceNotApplicableForCombustionAir(_)         => I18N.mecaflu.errors.thermal_resistance_not_applicable_for_combustion_air
-            case ThermalResistanceRequiresStraightSection(ref, _)          => I18N.mecaflu.errors.thermal_resistance_requires_straight_section(ref)
-            case ThermalResistanceCalculationErrors(errs, _)               => I18N.mecaflu.errors.thermal_resistance_calculation_errors(errs.toList.map(_.show).mkString(", "))
-            case HeatTransferCoefficientErrors(errs, _)                    => I18N.mecaflu.errors.heat_transfer_coefficient_errors(errs.toList.map(_.show).mkString(", "))
-            case NoStraightSectionDefinedForTemperatureCalc(ref, _)        => I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
-    
+            case UnexpectedFireboxType(reason)                      => I18N.mecaflu.errors.unexpected_firebox_type(reason)
+            case UnexpectedPipeType(reason, _)                      => I18N.mecaflu.errors.unexpected_pipe_type(reason)
+            case CouldNotDetermineCrossSectionArea(ref, _)          =>
+                I18N.mecaflu.errors.could_not_determine_cross_section_area(ref)
+            case x: CouldNotDetermineAirSpaceDetailed => x.show
+            case UseUnsafeToSkipRatioValidationError(reason, _)     =>
+                I18N.mecaflu.errors.use_unsafe_to_skip_ratio_validation(reason)
+            case DynamicFrictionError(reason, _)                    => I18N.mecaflu.errors.dynamic_friction_error(reason)
+            case InvalidChimneyWallTemperature(temp)                => I18N.mecaflu.errors.invalid_chimney_wall_temperature(temp.show)
+            case UnexpectedThrowable(e, _)                          =>
+                I18N.mecaflu.errors.unexpected_throwable(
+                    s"${e.getMessage()}\n${e.getStackTrace().take(10).toList.mkString("\n")}"
+                )
+            case ThermalResistanceNotApplicableForCombustionAir(_)  =>
+                I18N.mecaflu.errors.thermal_resistance_not_applicable_for_combustion_air
+            case ThermalResistanceRequiresStraightSection(ref, _)   =>
+                I18N.mecaflu.errors.thermal_resistance_requires_straight_section(ref)
+            case ThermalResistanceCalculationErrors(errs, _)        =>
+                I18N.mecaflu.errors.thermal_resistance_calculation_errors(errs.toList.map(_.show).mkString(", "))
+            case HeatTransferCoefficientErrors(errs, _)             =>
+                I18N.mecaflu.errors.heat_transfer_coefficient_errors(errs.toList.map(_.show).mkString(", "))
+            case NoStraightSectionDefinedForTemperatureCalc(ref, _) =>
+                I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
+
     // Incremental Builder Validation Errors
-    
+
     sealed trait IncrementalValidation_Error extends MCalc_Error with HasSectionTypError
-    
+
     given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
-        case e: NotDefinedYet           => Show[NotDefinedYet].show(e)
-        case e: PropertyMustBeSet       => Show[PropertyMustBeSet].show(e)
-        case e: PropertyMustBeDefined   => Show[PropertyMustBeDefined].show(e)
-        case e: PrerequisiteNotMet      => Show[PrerequisiteNotMet].show(e)
-        case e: ConflictDetected        => Show[ConflictDetected].show(e)
-    
+        case e: NotDefinedYet         => Show[NotDefinedYet].show(e)
+        case e: PropertyMustBeSet     => Show[PropertyMustBeSet].show(e)
+        case e: PropertyMustBeDefined => Show[PropertyMustBeDefined].show(e)
+        case e: PrerequisiteNotMet    => Show[PrerequisiteNotMet].show(e)
+        case e: ConflictDetected      => Show[ConflictDetected].show(e)
+
     // Pipe undefined
     sealed trait NotDefinedYet extends IncrementalValidation_Error
 
@@ -620,9 +666,9 @@ object standard {
 
     case class AddElementMissingAfterSetProp[Id_IncrDescr <: Matchable](
         sectionTyp: PipeType,
-        lastElRef: Option[String]
+        lastElRef : Option[String]
     ) extends NotDefinedYet:
-        def showUsingLocale: Locale ?=> String = 
+        def showUsingLocale: Locale ?=> String =
             I18N.incremental_validation.not_defined_yet.add_element_missing_after_set_prop(lastElRef.getOrElse(""))
 
     object NotDefinedYet:
@@ -631,74 +677,87 @@ object standard {
                 case FluePipeNotDefinedYet                   => I18N.incremental_validation.not_defined_yet.flue_pipe
                 case ChimneyPipeNotDefinedYet                => I18N.incremental_validation.not_defined_yet.chimney_pipe
                 case e @ AddElementMissingAfterSetProp(_, _) => e.showUsingLocale
-            
-    
+
     // Property must be set errors (with operation name)
     sealed trait PropertyMustBeSet extends IncrementalValidation_Error:
         def operationName: String
-    
-    case class InnerGeometryMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    case class OuterGeometryMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    case class GeometryMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    case class RoughnessMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    case class LayersMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
+
+    case class InnerGeometryMustBeSet(operationName: String, sectionTyp: PipeType)       extends PropertyMustBeSet
+    case class OuterGeometryMustBeSet(operationName: String, sectionTyp: PipeType)       extends PropertyMustBeSet
+    case class GeometryMustBeSet(operationName: String, sectionTyp: PipeType)            extends PropertyMustBeSet
+    case class RoughnessMustBeSet(operationName: String, sectionTyp: PipeType)           extends PropertyMustBeSet
+    case class LayersMustBeSet(operationName: String, sectionTyp: PipeType)              extends PropertyMustBeSet
     case class AirSpaceAfterLayersMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    case class PipeLocationMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    case class DuctTypeMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    
+    case class PipeLocationMustBeSet(operationName: String, sectionTyp: PipeType)        extends PropertyMustBeSet
+    case class DuctTypeMustBeSet(operationName: String, sectionTyp: PipeType)            extends PropertyMustBeSet
+
     object PropertyMustBeSet:
         given ShowUsingLocale[PropertyMustBeSet] = showUsingLocale: e =>
             e match
-                case InnerGeometryMustBeSet(op, _)         => I18N.incremental_validation.property_must_be_set.inner_geometry(op)
-                case OuterGeometryMustBeSet(op, _)         => I18N.incremental_validation.property_must_be_set.outer_geometry(op)
-                case GeometryMustBeSet(op, _)              => I18N.incremental_validation.property_must_be_set.geometry(op)
-                case RoughnessMustBeSet(op, _)             => I18N.incremental_validation.property_must_be_set.roughness(op)
-                case LayersMustBeSet(op, _)                => I18N.incremental_validation.property_must_be_set.layers(op)
-                case AirSpaceAfterLayersMustBeSet(op, _)   => I18N.incremental_validation.property_must_be_set.air_space_after_layers(op)
-                case PipeLocationMustBeSet(op, _)          => I18N.incremental_validation.property_must_be_set.pipe_location(op)
-                case DuctTypeMustBeSet(op, _)              => I18N.incremental_validation.property_must_be_set.duct_type(op)
-    
+                case InnerGeometryMustBeSet(op, _)       =>
+                    I18N.incremental_validation.property_must_be_set.inner_geometry(op)
+                case OuterGeometryMustBeSet(op, _)       =>
+                    I18N.incremental_validation.property_must_be_set.outer_geometry(op)
+                case GeometryMustBeSet(op, _)            => I18N.incremental_validation.property_must_be_set.geometry(op)
+                case RoughnessMustBeSet(op, _)           => I18N.incremental_validation.property_must_be_set.roughness(op)
+                case LayersMustBeSet(op, _)              => I18N.incremental_validation.property_must_be_set.layers(op)
+                case AirSpaceAfterLayersMustBeSet(op, _) =>
+                    I18N.incremental_validation.property_must_be_set.air_space_after_layers(op)
+                case PipeLocationMustBeSet(op, _)        => I18N.incremental_validation.property_must_be_set.pipe_location(op)
+                case DuctTypeMustBeSet(op, _)            => I18N.incremental_validation.property_must_be_set.duct_type(op)
+
     // Property must be defined errors (without operation name)
     sealed trait PropertyMustBeDefined extends IncrementalValidation_Error
-    
-    case class SectionGeometryMustBeDefined(sectionTyp: PipeType) extends PropertyMustBeDefined
+
+    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)   extends PropertyMustBeDefined
     case class NextSectionLengthMustBeDefined(sectionTyp: PipeType) extends PropertyMustBeDefined
-    
+
     object PropertyMustBeDefined:
         given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
-            case _: SectionGeometryMustBeDefined       => I18N.incremental_validation.property_must_be_defined.section_geometry
-            case _: NextSectionLengthMustBeDefined     => I18N.incremental_validation.property_must_be_defined.next_section_length
-    
+            case _: SectionGeometryMustBeDefined   =>
+                I18N.incremental_validation.property_must_be_defined.section_geometry
+            case _: NextSectionLengthMustBeDefined =>
+                I18N.incremental_validation.property_must_be_defined.next_section_length
+
     // Prerequisite errors
     sealed trait PrerequisiteNotMet extends IncrementalValidation_Error
-    
-    case class ThicknessRequiresInnerGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
-    case class LayerRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
-    case class LayersRequireInnerShape(sectionTyp: PipeType) extends PrerequisiteNotMet
+
+    case class ThicknessRequiresInnerGeometry(sectionTyp: PipeType)         extends PrerequisiteNotMet
+    case class LayerRequiresSectionGeometry(sectionTyp: PipeType)           extends PrerequisiteNotMet
+    case class LayersRequireInnerShape(sectionTyp: PipeType)                extends PrerequisiteNotMet
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
-    
+
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
-            case _: ThicknessRequiresInnerGeometry             => I18N.incremental_validation.prerequisites.thickness_requires_inner_geometry
-            case _: LayerRequiresSectionGeometry               => I18N.incremental_validation.prerequisites.layer_requires_section_geometry
-            case _: LayersRequireInnerShape                    => I18N.incremental_validation.prerequisites.layers_require_inner_shape
-            case _: DirectionChangeRequiresSectionGeometry     => I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
-    
+            case _: ThicknessRequiresInnerGeometry         =>
+                I18N.incremental_validation.prerequisites.thickness_requires_inner_geometry
+            case _: LayerRequiresSectionGeometry           =>
+                I18N.incremental_validation.prerequisites.layer_requires_section_geometry
+            case _: LayersRequireInnerShape                => I18N.incremental_validation.prerequisites.layers_require_inner_shape
+            case _: DirectionChangeRequiresSectionGeometry =>
+                I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
+
     // Conflict errors
     sealed trait ConflictDetected extends IncrementalValidation_Error
-    
-    case class CannotSetGeometryBeforeChange(sectionTyp: PipeType) extends ConflictDetected
+
+    case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)                   extends ConflictDetected
     case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType) extends ConflictDetected
-    case class FlowResistanceRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType) extends ConflictDetected
+    case class FlowResistanceRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
+        extends ConflictDetected
 
     object ConflictDetected:
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
-            case CannotSetGeometryBeforeChange(_)                 => I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
-            case SectionChangeRequiresCircle(shape, _)            => I18N.incremental_validation.conflicts.section_change_requires_circle(shape)
-            case FlowResistanceRequiresGeometry(op, "EN13384", _) => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case FlowResistanceRequiresGeometry(op, "EN15544", _) => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
-            case FlowResistanceRequiresGeometry(op, _, _)         => I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-    
+            case CannotSetGeometryBeforeChange(_)                 =>
+                I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
+            case SectionChangeRequiresCircle(shape, _)            =>
+                I18N.incremental_validation.conflicts.section_change_requires_circle(shape)
+            case FlowResistanceRequiresGeometry(op, "EN13384", _) =>
+                I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
+            case FlowResistanceRequiresGeometry(op, "EN15544", _) =>
+                I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
+            case FlowResistanceRequiresGeometry(op, _, _)         =>
+                I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
+
     // ErrorsInOtherSectionType
     case object ErrorsInOtherSectionType extends MCalc_Error
     type ErrorsInOtherSectionType = ErrorsInOtherSectionType.type

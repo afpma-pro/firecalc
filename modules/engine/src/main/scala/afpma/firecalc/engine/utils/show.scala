@@ -9,8 +9,8 @@ import cats.Show
 import cats.syntax.all.*
 
 extension [A: Show](oa: Option[A])
-    
-    def showOrElse(orElse: String): String = 
+
+    def showOrElse(orElse: String): String =
         oa.map(_.show).getOrElse(orElse)
 
 extension (s: String)

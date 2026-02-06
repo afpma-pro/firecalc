@@ -12,7 +12,7 @@ package afpma.firecalc.dto.instances
 
 /**
  * V2Instances - Version 2 specific codec instances
- * 
+ *
  * Note: Firebox_V2 codecs are defined in its own companion object
  * No additional version-specific codecs needed for V2
  */

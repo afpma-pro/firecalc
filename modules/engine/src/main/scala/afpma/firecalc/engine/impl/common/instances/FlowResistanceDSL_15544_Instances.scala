@@ -5,12 +5,12 @@
 
 package afpma.firecalc.engine.impl.common.instances
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.*
+
 import afpma.firecalc.engine.impl.common.typeclasses.FlowResistanceDSL
 import afpma.firecalc.engine.models.gtypedefs.*
-import afpma.firecalc.units.coulombutils.*
-import coulomb.*
 
 object FlowResistanceDSL_15544_Instances:
 
@@ -22,10 +22,10 @@ object FlowResistanceDSL_15544_Instances:
                 zeta,
                 None
             )
-        
+
         def addFlowResistance_crossSection(
-            name: String,
-            zeta: ζ,
+            name         : String,
+            zeta         : ζ,
             cross_section: AreaInCm2
         ) =
             AddFlowOnlyPipeElement_15544.AddFlowResistance(
@@ -33,10 +33,10 @@ object FlowResistanceDSL_15544_Instances:
                 zeta,
                 Some(Left(cross_section))
             )
-        
+
         def addFlowResistance_dh(
-            name: String,
-            zeta: ζ,
+            name              : String,
+            zeta              : ζ,
             hydraulic_diameter: QtyD[Meter]
         ) =
             AddFlowOnlyPipeElement_15544.AddFlowResistance(
@@ -44,9 +44,9 @@ object FlowResistanceDSL_15544_Instances:
                 zeta,
                 Some(Right(PipeShape.circle(hydraulic_diameter)))
             )
-        
+
         def addPressureDiff(
-            name: String,
+            name               : String,
             pressure_difference: QtyD[Pascal]
         ) =
             AddFlowOnlyPipeElement_15544.AddPressureDiff(

@@ -9,12 +9,12 @@ import java.time.LocalDate
 
 object Components {
 
-  // format date like 22 May 1990
-  def formatDate(localDate: LocalDate): String = {
-    val month = localDate.getMonth.toString.toLowerCase.capitalize
-    val day   = localDate.getDayOfMonth
-    val year  = localDate.getYear
-    s"$day $month $year"
-  }
+    // format date like 22 May 1990
+    def formatDate(localDate: LocalDate): String = {
+        val month = localDate.getMonth.toString.toLowerCase.capitalize
+        val day   = localDate.getDayOfMonth
+        val year  = localDate.getYear
+        s"$day $month $year"
+    }
 
 }

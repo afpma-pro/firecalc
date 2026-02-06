@@ -5,10 +5,9 @@
 
 package afpma.firecalc.engine.ops
 
-import afpma.firecalc.engine.ops.PositionOp
-
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.ops.PositionOp
+
 trait HasInnerShapeAtPos[A]:
-    extension (a: A)
-        def innerShape(oPrevShape: Option[PipeShape]): Option[PositionOp[PipeShape]]
+    extension (a: A) def innerShape(oPrevShape: Option[PipeShape]): Option[PositionOp[PipeShape]]

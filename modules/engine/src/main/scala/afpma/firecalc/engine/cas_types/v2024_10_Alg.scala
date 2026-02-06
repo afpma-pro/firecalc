@@ -9,4 +9,3 @@ import afpma.firecalc.i18n.LocalizedAlg
 
 trait v2024_10_Alg extends LocalizedAlg:
     val cas_type_name: String
-

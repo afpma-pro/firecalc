@@ -5,10 +5,7 @@
 
 package afpma.firecalc.ui.daisyui
 
-import scala.annotation.nowarn
-
-import cats.Show
-import cats.syntax.show.*
+import afpma.firecalc.units.all.*
 
 import afpma.firecalc.engine.utils.*
 
@@ -17,11 +14,16 @@ import afpma.firecalc.ui.daisyui.DaisyUIInputs.CommonRenderingFactory
 import afpma.firecalc.ui.formgen.*
 import afpma.firecalc.ui.utils.OptionalField
 
-import afpma.firecalc.units.all.*
+import cats.Show
+import cats.syntax.show.*
+
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+
+import scala.annotation.nowarn
+
 import magnolia1.*
 
 // TODO: use a case class instead as implementation ?
@@ -34,36 +36,36 @@ trait DaisyUIHorizontalForm[A] extends LaminarForm[A, DaisyUIHorizontalForm[A]]:
         _formConfigOverwrite = formConfigOpt
         self
 
-    def toVerticalForm: DaisyUIVerticalForm[A] = 
+    def toVerticalForm: DaisyUIVerticalForm[A] =
         DaisyUIVerticalForm.makeFor(self.defaultable_instance): (v, cfg) =>
             self.render(v, cfg)
 
-    def wrappedInto(contentWrapper: L.HtmlElement => L.HtmlElement): DaisyUIHorizontalForm[A] = 
+    def wrappedInto(contentWrapper: L.HtmlElement => L.HtmlElement): DaisyUIHorizontalForm[A] =
         DaisyUIHorizontalForm.makeFor[A](defaultable_instance): (va, fc) =>
             contentWrapper(render(va, fc))
 
-object DaisyUIHorizontalForm 
-extends LaminarFormFactory[DaisyUIHorizontalForm]
-with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better control
+object DaisyUIHorizontalForm
+    extends LaminarFormFactory[DaisyUIHorizontalForm]
+    with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better control
 
     type TypeClass[A] = DaisyUIHorizontalForm[A]
 
     def makeForUsingOverwrite[A](
         mkDefaultableInstanceFromFormConfigOverwrite: Option[FormConfig] => Defaultable[A]
     )(
-        renderFunc: (Var[A], FormConfig) => HtmlElement,
+        renderFunc: (Var[A], FormConfig) => HtmlElement
     ): VV_to_DF[A] =
         new DaisyUIHorizontalForm[A]:
-            
-            def defaultable_instance: Defaultable[A] = 
+
+            def defaultable_instance: Defaultable[A] =
                 mkDefaultableInstanceFromFormConfigOverwrite(_formConfigOverwrite)
 
             lazy val validate_var = ValidateVar[A]
 
             @nowarn override def render(
-                variable: Var[A],
-                formConfig: FormConfig,
-            )(using ValidateVar[A]): HtmlElement = 
+                variable  : Var[A],
+                formConfig: FormConfig
+            )(using ValidateVar[A]): HtmlElement =
                 renderFunc(variable, formConfig)
 
     // ========================================
@@ -77,14 +79,17 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
                 withLabel = formConfig.shownFieldName
             )
 
-    def forList_fromComponent[A](mkComp: Var[List[A]] => HtmlElement)(using ValidateVar[List[A]]): DaisyUIHorizontalForm[List[A]] = 
+    def forList_fromComponent[A](mkComp: Var[List[A]] => HtmlElement)(using
+        ValidateVar[List[A]]
+    ): DaisyUIHorizontalForm[List[A]] =
         given dlist: Defaultable[List[A]] = Defaultable(List.empty)
         makeFor(dlist): (variable, _) =>
             mkComp(variable)
 
-    override given forList: [A, K] => (fa: DaisyUIHorizontalForm[A]) => (idOf: A => K) => DaisyUIHorizontalForm[List[A]] =
+    override given forList
+        : [A, K] => (fa: DaisyUIHorizontalForm[A]) => (idOf: A => K) => DaisyUIHorizontalForm[List[A]] =
         import fa.given_ValidateVar
-        val dlist = afpma.firecalc.ui.formgen.Defaultable.forList[A](using fa.defaultable_instance)
+        val dlist                  = afpma.firecalc.ui.formgen.Defaultable.forList[A](using fa.defaultable_instance)
         given ValidateVar[List[A]] = ValidateVar.forList
         makeFor(dlist): (variable, formConfig) =>
             div(
@@ -94,8 +99,8 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
                         idAttr := s"list-item-$id",
                         div(
                             fa.render(
-                                aVar, 
-                                formConfig,
+                                aVar,
+                                formConfig
                             )
                         )
                     )
@@ -106,28 +111,28 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
         options.map(a => (a.show, a)).toList
 
     override def forEnumOrSumTypeLike_UsingShowAsId[A: {Show, Defaultable, ValidateVar}](
-        options: List[A],
-        updateFieldName: Option[String] => Option[String] = identity,
+        options        : List[A],
+        updateFieldName: Option[String] => Option[String] = identity
     ) =
         makeFor[A](afpma.firecalc.ui.formgen.Defaultable.summon[A]): (variable, formConfig) =>
             val ids = makeIdsForSelectOptions(options)
-            def getById(id: String): A = ids
+            def getById(id: String)      : A = ids
                 .find(x => x._1 == id)
                 .getOrElse(throw new Exception("unexpected error: can not get element back"))
                 ._2
             DaisyUIInputs.LabelledSelectInputWithUnitAndTooltip(
                 variable,
                 options,
-                show = _.show,
-                makeId = _.show,
-                getById = getById,
-                labelStart = updateFieldName(formConfig.shownFieldName),
+                show       = _.show,
+                makeId     = _.show,
+                getById    = getById,
+                labelStart = updateFieldName(formConfig.shownFieldName)
             )
 
     /**
      * Creates a form with TextInputWithDatalist for selection and an editable default value.
      * When selection changes, the default value is automatically updated.
-     * 
+     *
      * @tparam A The main type being edited (e.g., Material_15544_V2)
      * @tparam T The type of the default value field (e.g., Roughness)
      * @param selectOptions List of valid selectable A instances (used to build datalist)
@@ -140,60 +145,59 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
      * @param validateVarA Implicit ValidateVar[A] for validation
      */
     def forSelectionWithDefaultValue_usingDataList[A, T](
-        selectOptions: List[A],
-        getDefaultValue: A => T,
+        selectOptions   : List[A],
+        getDefaultValue : A => T,
         withDefaultValue: (A, T) => A,
-        getId: A => String
+        getId           : A => String
     )(using
-        showA: Show[A],
-        formForT: DaisyUIHorizontalForm[T],
+        showA       : Show[A],
+        formForT    : DaisyUIHorizontalForm[T],
         defaultableA: Defaultable[A],
         validateVarA: ValidateVar[A],
         validateVarT: ValidateVar[T]
     ): DaisyUIHorizontalForm[A] =
-        
+
         makeFor[A](defaultableA): (variable, formConfig) =>
             // Build lookup maps
-            val idToOption: Map[String, A] = selectOptions.map(a => getId(a) -> a).toMap
-            val optionLabels: Seq[String] = selectOptions.map(showA.show)
-            val optionIds: Seq[String] = selectOptions.map(getId)
-            val labelToId: Map[String, String] = (optionLabels zip optionIds).toMap
-            val idToLabel: Map[String, String] = (optionIds zip optionLabels).toMap
-            
+            val idToOption  : Map[String, A]      = selectOptions.map(a => getId(a) -> a).toMap
+            val optionLabels: Seq[String]         = selectOptions.map(showA.show)
+            val optionIds   : Seq[String]         = selectOptions.map(getId)
+            val labelToId   : Map[String, String] = (optionLabels zip optionIds).toMap
+            val idToLabel   : Map[String, String] = (optionIds zip optionLabels).toMap
+
             // Current selection ID
             val currentId = getId(variable.now())
-            
+
             // Var for the displayed text (localized label) - can be invalid free text
             val displayTextVar = Var[Option[String]](idToLabel.get(currentId))
-            
+
             // Var for the default value (type T)
             val defaultValueVar = variable.zoomLazy(getDefaultValue)(withDefaultValue)
-            
+
             // Derive the selected A option from display text
             // If text matches a known label, resolve to Some(A), otherwise None
             val selectedOptionSignal: com.raquo.airstream.core.Signal[Option[A]] = displayTextVar.signal.map:
                 case Some(text) =>
                     labelToId.get(text).flatMap(idToOption.get)
-                case None => None
-            
+                case None       => None
+
             // Binder: When selection changes, update parent variable
-            val selectionChangeBinder = selectedOptionSignal
-                .changes --> Observer[Option[A]]: opt =>
-                    opt.foreach(variable.set)
-            
+            val selectionChangeBinder = selectedOptionSignal.changes --> Observer[Option[A]]: opt =>
+                opt.foreach(variable.set)
+
             // Build datalist options: value = id, displayed = localized label
             val datalistId = s"select-options-${formConfig.fieldName.getOrElse("default")}"
-            
+
             // Create TextInputWithDatalist
             val selectionInput = DaisyUIInputs.TextInputWithDatalist(
                 valueOptVar = displayTextVar,
-                datalistId = datalistId,
-                options = optionLabels,
+                datalistId  = datalistId,
+                options     = optionLabels,
                 placeholder = formConfig.shownFieldName.getOrElse("Select...")
             )
-            
+
             // Validation indicator for invalid selection
-            val invalidIndicator = span(
+            val invalidIndicator  = span(
                 cls := "text-error text-sm",
                 display <-- selectedOptionSignal.map(_.fold("inline")(_ => "none")),
                 "x"
@@ -201,14 +205,14 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
             // Default value input using the provided form for T
             val defaultValueInput = formForT.render(
                 defaultValueVar,
-                formForT.formConfig.doShowFieldName,
+                formForT.formConfig.doShowFieldName
             )
-            
+
             div(
                 cls := "flex flex-row gap-2 items-end",
                 div(cls := "flex-auto", selectionInput.node),
                 invalidIndicator,
-                div(cls := "flex-auto", defaultValueInput),
+                div(cls := "flex-auto", defaultValueInput  )
             ).amend(
                 selectionChangeBinder
             )
@@ -216,7 +220,7 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
     /**
      * Creates a form with SelectInput for selection and an editable default value.
      * When selection changes, the default value is automatically updated.
-     * 
+     *
      * @tparam A The main type being edited (e.g., Material_15544_V2)
      * @tparam T The type of the default value field (e.g., Roughness)
      * @param selectOptions List of valid selectable A instances (used to build select options)
@@ -229,45 +233,45 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
      * @param validateVarA Implicit ValidateVar[A] for validation
      */
     def forSelectionWithDefaultValue_usingSelectInput[A, T](
-        selectOptions: List[A],
-        getDefaultValue: A => T,
+        selectOptions   : List[A],
+        getDefaultValue : A => T,
         withDefaultValue: (A, T) => A,
-        getId: A => String
+        getId           : A => String
     )(using
-        showA: Show[A],
-        formForT: DaisyUIHorizontalForm[T],
+        showA       : Show[A],
+        formForT    : DaisyUIHorizontalForm[T],
         defaultableA: Defaultable[A],
         validateVarA: ValidateVar[A],
         validateVarT: ValidateVar[T]
     ): DaisyUIHorizontalForm[A] =
-        
+
         makeFor[A](defaultableA): (variable, formConfig) =>
             // Var for the default value (type T)
             val defaultValueVar = variable.zoomLazy(getDefaultValue)(withDefaultValue)
-            
+
             // Create select dropdown using existing component
             val selectionInput = DaisyUIInputs.SelectFieldsetLabelAndInput(
-                labelOpt = None,  // No label since we're side-by-side
-                selectedVar = variable,
-                options = selectOptions,
-                show = showA.show,
-                makeId = getId,
-                getById = id => selectOptions.find(a => getId(a) == id).getOrElse(defaultableA.default),
+                labelOpt      = None, // No label since we're side-by-side
+                selectedVar   = variable,
+                options       = selectOptions,
+                show          = showA.show,
+                makeId        = getId,
+                getById       = id => selectOptions.find(a => getId(a) == id).getOrElse(defaultableA.default),
                 optionalField = OptionalField.No
             )
-            
+
             // Default value input using the provided form for T
             val defaultValueInput = formForT.render(
                 defaultValueVar,
                 formForT.formConfig
             )
-            
+
             div(
                 cls := "flex flex-row gap-2 items-end",
                 div(cls := "flex-auto", selectionInput.node),
-                div(cls := "flex-auto", defaultValueInput),
+                div(cls := "flex-auto", defaultValueInput  )
             )
-       
+
     // =================
     // Option
 
@@ -292,44 +296,43 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
 
     override def forOptionQtyD_default[U: SUnit] = forOptionQtyD[U](
         updateFieldName = identity,
-        optionalField = OptionalField.No
+        optionalField   = OptionalField.No
     )
 
     protected def mkRenderingFactoryForNumberWithUnitsAndValidation(
-        sunitsVar: Var[List[SUnit[?]]],
-        sunitCurrentVar: Var[SUnit[?]],
+        sunitsVar      : Var[List[SUnit[?]]],
+        sunitCurrentVar: Var[SUnit[?]]
     ): CommonRenderingFactory[Double] =
-        DaisyUIInputs
-            .NumberInputWithUnitsAndFloatingLabelAndTooltipValidation
+        DaisyUIInputs.NumberInputWithUnitsAndFloatingLabelAndTooltipValidation
             .WithUnits(
-                sunitsVar, 
+                sunitsVar,
                 sunitCurrentVar,
-                withFloatingLabel = true,
+                withFloatingLabel = true
             )
 
     protected def mkRenderingFactoryForEnum_UsingShowAsId[A: Show](
         options: List[A]
     ) = new CommonRenderingFactory[A] {
         @nowarn def make(
-            v: Var[Option[A]], 
-            label: Option[String], 
+            v            : Var[Option[A]],
+            label        : Option[String],
             optionalField: OptionalField
-        )(using ValidateVar[Option[A]]): L.HtmlElement = 
+        )(using ValidateVar[Option[A]]): L.HtmlElement =
             // because we want an optional field, we add empty string "" in the list, it will be matched as 'None'
-            val optionsNew  = None :: options.map(Some(_))
-            val showsNew    = ""   :: makeIdsForSelectOptions(options)
-            val idsNew      = showsNew zip optionsNew
-            def getById(id: String): Option[A] = idsNew
+            val optionsNew = None :: options.map(Some(_))
+            val showsNew   = ""   :: makeIdsForSelectOptions(options)
+            val idsNew     = showsNew zip optionsNew
+            def getById(id: String)      : Option[A] = idsNew
                 .find(x => x._1 == id)
                 .getOrElse(throw new Exception("unexpected error: can not get element back"))
                 ._2
             DaisyUIInputs.LabelledSelectInputWithUnitAndTooltip(
                 v,
                 optionsNew,
-                show = _.show,
-                makeId = _.show,
-                getById = getById,
-                labelStart = label,
+                show       = _.show,
+                makeId     = _.show,
+                getById    = getById,
+                labelStart = label
             )
     }
 
@@ -338,9 +341,9 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
 
     def join[A](
         caseClass: CaseClass[DaisyUIHorizontalForm.Typeclass, A]
-    ): DaisyUIHorizontalForm[A] = 
+    ): DaisyUIHorizontalForm[A] =
         new DaisyUIHorizontalForm[A]:
-            
+
             val defaultable_instance = Defaultable[A]:
                 caseClass.construct: param =>
                     param.typeclass.defaultable_instance.default
@@ -355,16 +358,16 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
             // "{param3.label}" / "error 31"
 
             lazy val validate_var: ValidateVar[A] = ValidateVar.make: a =>
-                val paramsVNelString: List[VNelString[Unit]] = 
+                val paramsVNelString: List[VNelString[Unit]] =
                     caseClass.parameters.toList.map: param =>
                         val paramLabel = param.label
-                        val p = param.deref(a)
-                        val vnel = param.typeclass.validate_var.validate(p)
+                        val p          = param.deref(a)
+                        val vnel       = param.typeclass.validate_var.validate(p)
                         vnel.leftMap(_.map(err => s"$paramLabel / $err"))
 
                 paramsVNelString.forall(_.isValid) match
-                    case true => VNelString.validUnit
-                    case false => 
+                    case true  => VNelString.validUnit
+                    case false =>
                         VNelString.invalidUnsafe(
                             paramsVNelString
                                 .filter(_.isInvalid)
@@ -377,29 +380,29 @@ with Derivation[DaisyUIHorizontalForm]: // use semi auto derivation for better c
             val panel = caseClass.formConfigFrom(_formConfigOverwrite)
 
             @nowarn override def render(
-                variable: Var[A],
+                variable  : Var[A],
                 formConfig: FormConfig
-            )(using ValidateVar[A]): HtmlElement = 
+            )(using ValidateVar[A]): HtmlElement =
                 val renderedParams = caseClass.params.map: param =>
-                    val plabel = param.label
+                    val plabel          = param.label
                     // scala.scalajs.js.Dynamic.global.console.log(s"plabel = ${plabel}")
-                    val overwrite = getFieldNameOverwriteForParam(plabel)
+                    val overwrite       = getFieldNameOverwriteForParam(plabel)
                     // scala.scalajs.js.Dynamic.global.console.log(s"overwrite = ${overwrite}")
-                    val fn = param.fieldNameFrom(overwrite)
+                    val fn              = param.fieldNameFrom(overwrite)
                     // scala.scalajs.js.Dynamic.global.console.log(s"fieldNameFrom returned = ${fn}")
                     val finalFormConfig = formConfig.withFieldName(fn)
                     // scala.scalajs.js.Dynamic.global.console.log(s"finalFormConfig = ${finalFormConfig}")
                     caseClass.renderParam(param, variable, finalFormConfig)
                 caseClass.renderCaseClass(panel, renderedParams)
-                    // .amend(
-                    //     span(text <-- variable.signal.map(_.toString()))
-                    // )
+                // .amend(
+                //     span(text <-- variable.signal.map(_.toString()))
+                // )
 
     val render_SumType_WrapperCls: String = "flex flex-row gap-1 items-end"
 
     extension [A](caseClass: CaseClass[DaisyUIHorizontalForm, A])
         def renderCaseClass(
-            panelConfig: FormConfig,
+            panelConfig   : FormConfig,
             renderedParams: Seq[HtmlElement]
         ): HtmlElement =
             div(

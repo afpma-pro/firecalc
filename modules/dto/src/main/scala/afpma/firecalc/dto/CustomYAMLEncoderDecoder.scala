@@ -25,8 +25,8 @@ trait CustomYAMLEncoderDecoder[A]:
             try {
                 val xj = x.asJson
                 Success(xj)
-            } catch 
-                case e => 
+            } catch
+                case e =>
                     Failure(e)
         jsonEncodedTry.map(yamlPrinter.print)
 

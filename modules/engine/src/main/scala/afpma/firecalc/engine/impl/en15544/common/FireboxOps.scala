@@ -15,7 +15,7 @@ trait FireboxOps:
         ): A | B =
             firebox match
                 case i: OneOff => f(i)
-                case _         => orElse
+                case _ => orElse
 
         def ifOneOff_[A](f: OneOff => A): A | Unit =
             ifOneOff(orElse = ())(f)
@@ -23,7 +23,7 @@ trait FireboxOps:
         def ifTested[A, B](orElse: B)(f: Tested => A): A | B =
             firebox match
                 case i: Tested => f(i)
-                case _         => orElse
+                case _ => orElse
 
         def ifTested_[A](f: Tested => A): A | Unit =
             ifTested(orElse = ())(f)
@@ -31,12 +31,12 @@ trait FireboxOps:
         def ifNotTested[A, B](orElse: B)(f: => A): A | B =
             firebox match
                 case _: Tested => orElse
-                case _         => f
+                case _ => f
 
         def ifNotTested_[A](f: => A): A | Unit =
             ifNotTested(orElse = ())(f)
 
-        def whenOneOff[A](f: OneOff => A): OneOffOrNotApplicable[A] = 
+        def whenOneOff[A](f: OneOff => A): OneOffOrNotApplicable[A] =
             firebox match
-                case i: OneOff  => OneOffOrNotApplicable.oneOff(f(i))
-                case _: Tested  => OneOffOrNotApplicable.notApplicable
+                case i: OneOff => OneOffOrNotApplicable.oneOff(f(i))
+                case _: Tested => OneOffOrNotApplicable.notApplicable

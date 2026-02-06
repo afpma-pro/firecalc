@@ -5,9 +5,12 @@
 
 package afpma.firecalc.ui.models.schema
 
-import scala.util.{Try, Success, Failure}
-import io.circe.yaml.scalayaml.parser as yamlParser
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import io.circe.parser.decode
+import io.circe.yaml.scalayaml.parser as yamlParser
 
 /**
  * Loads AppStateSchema from YAML/JSON strings.
@@ -23,19 +26,17 @@ object AppStateSchemaLoader:
         yamlParser.parse(yaml) match
             case Left(parseFailure) =>
                 Failure(new Exception(s"Failed to parse YAML: ${parseFailure.getMessage()}"))
-            case Right(json) =>
+            case Right(json)        =>
                 decode[AppStateSchema](json.noSpaces) match
                     case Left(decodeError) =>
                         Failure(new Exception(s"Failed to decode schema: ${decodeError.getMessage()}"))
-                    case Right(schema) =>
+                    case Right(schema)     =>
                         Success(schema)
 
-    /**
-     * Load AppStateSchema from JSON string.
-     */
+    /** Load AppStateSchema from JSON string. */
     def loadFromJson(json: String): Try[AppStateSchema] =
         decode[AppStateSchema](json) match
             case Left(decodeError) =>
                 Failure(new Exception(s"Failed to decode schema: ${decodeError.getMessage()}"))
-            case Right(schema) =>
+            case Right(schema)     =>
                 Success(schema)

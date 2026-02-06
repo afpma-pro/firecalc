@@ -13,8 +13,7 @@ object AppStateSchema_Version:
 
     given Encoder[AppStateSchema_Version] = Encoder.encodeInt
     given Decoder[AppStateSchema_Version] = Decoder.decodeInt
-    
+
     def apply(i: Int): AppStateSchema_Version = i
-    
-    extension (v: AppStateSchema_Version)
-        def unwrap: Int = v
+
+    extension (v: AppStateSchema_Version) def unwrap: Int = v

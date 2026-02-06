@@ -5,296 +5,308 @@
 
 package afpma.firecalc.payments.email.impl
 
-import cats.effect.Async
-import cats.syntax.all.*
-import org.typelevel.log4cats.Logger
-import emil.*
-import emil.javamail.*
-import emil.builder.Attach
-import emil.javamail.syntax.MimeTypeTypeOps
-import emil.builder.MailBuilder
-import emil.builder.From
-import emil.builder.To
-import emil.builder.Subject
-import emil.builder.HtmlBody
-import emil.builder.AttachUrl
-import emil.builder.AttachFile
-import emil.builder.AttachStream
-import emil.builder.Trans
+import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.i18n.implicits.given
 import afpma.firecalc.payments.shared.api.*
-import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.shared.i18n.implicits.lookupTranslation
-import io.taig.babel.{Locale, Locales}
+
+import cats.effect.Async
+import cats.syntax.all.*
+
+import emil.*
+import emil.builder.Attach
+import emil.builder.AttachStream
+import emil.builder.From
+import emil.builder.HtmlBody
+import emil.builder.MailBuilder
+import emil.builder.Subject
+import emil.builder.To
+import emil.builder.Trans
+import emil.javamail.*
+import emil.javamail.syntax.MimeTypeTypeOps
+import io.taig.babel.Locales
+import org.typelevel.log4cats.Logger
 
 class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailService[F] {
 
-  import BackendCompatibleLanguage.given
+    import BackendCompatibleLanguage.given
 
-  private val logger = Logger[F]
+    private val logger = Logger[F]
 
-  // Emil configuration
-  private val smtpConfig = MailConfig(
-    url = s"smtp://${config.smtpHost}:${config.smtpPort}",
-    user = config.username,
-    password = config.password,
-    // Port 465 uses implicit SSL, port 587 uses explicit TLS (STARTTLS)
-    sslType = if (config.smtpPort == 465) SSLType.SSL 
-              else if (config.useTLS) SSLType.StartTLS 
-              else SSLType.NoEncryption
-  )
-
-  private val emil = JavaMailEmil[F]()
-
-  override def sendUserAuthenticationCode(authCode: AuthenticationCodeEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
-    val translations = I18N_Payments
-    
-    val subject = if (authCode.isNewUser) {
-      translations.emails.authentication.subject_new_user
-    } else {
-      translations.emails.authentication.subject_existing_user
-    }
-
-    val content = buildAuthCodeContent(authCode)
-
-    val mail = createEmilMail(
-      to            = authCode.email,
-      subject       = subject,
-      htmlContent   = content
+    // Emil configuration
+    private val smtpConfig = MailConfig(
+        url      = s"smtp://${config.smtpHost}:${config.smtpPort}",
+        user     = config.username,
+        password = config.password,
+        // Port 465 uses implicit SSL, port 587 uses explicit TLS (STARTTLS)
+        sslType  =
+            if (config.smtpPort == 465) SSLType.SSL
+            else if (config.useTLS) SSLType.StartTLS
+            else SSLType.NoEncryption
     )
 
-    for {
-      _ <- logger.info(s"Sending authentication code to ${authCode.email.value}")
-      result <- sendEmilMail(mail)
-      _ <- logger.info(s"Authentication code email result: $result")
-    } yield result
-  }
+    private val emil = JavaMailEmil[F]()
 
-  override def sendUserInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
-    val translations = I18N_Payments
-    val attachments = List(createInvoiceAttachment(invoice))
-    
-    val mail = createEmilMail(
-      to = invoice.email,
-      subject = translations.emails.invoice.subject(invoice.invoiceNumber),
-      htmlContent = buildInvoiceContent(invoice),
-      attachments = attachments
-    )
+    override def sendUserAuthenticationCode(
+        authCode: AuthenticationCodeEmail
+    )(using language: BackendCompatibleLanguage): F[EmailResult] = {
+        val translations = I18N_Payments
 
-    sendMailWithLogging(
-      mail = mail,
-      operationDescription = s"invoice ${invoice.invoiceNumber}",
-      recipient = invoice.email.value
-    )
-  }
+        val subject = if (authCode.isNewUser) {
+            translations.emails.authentication.subject_new_user
+        } else {
+            translations.emails.authentication.subject_existing_user
+        }
 
-  override def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
-    val translations = I18N_Payments
-    val attachments = List(
-      createInvoiceAttachment(invoice),
-      createReportAttachment(pdfReport)
-    )
-    
-    val mail = createEmilMail(
-      to = invoice.email,
-      subject = translations.emails.invoice.subject(invoice.invoiceNumber),
-      htmlContent = buildInvoiceWithReportContent(invoice, pdfReport),
-      attachments = attachments
-    )
+        val content = buildAuthCodeContent(authCode)
 
-    sendMailWithLogging(
-      mail = mail,
-      operationDescription = s"invoice ${invoice.invoiceNumber} with report ${pdfReport.reportName}",
-      recipient = invoice.email.value
-    )
-  }
+        val mail = createEmilMail(
+            to          = authCode.email,
+            subject     = subject,
+            htmlContent = content
+        )
 
-  override def sendUserPaymentLink(paymentLink: PaymentLinkEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
-    val translations = I18N_Payments
-    
-    val prodNameI18nKey = paymentLink.productName
-    val translatedProductName = lookupTranslation(prodNameI18nKey).getOrElse(prodNameI18nKey)
-
-    val mail = createEmilMail(
-      to = paymentLink.email,
-      subject = translations.emails.payment_link.subject(translatedProductName),
-      htmlContent = buildPaymentLinkContent(paymentLink)
-    )
-
-    for {
-      _ <- logger.info(s"Sending payment link to ${paymentLink.email.value}")
-      result <- sendEmilMail(mail)
-      _ <- logger.info(s"Payment link email result: $result")
-    } yield result
-  }
-
-  override def sendAdminInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
-    val translations = I18N_Payments
-    
-    // Admin invoice with PDF attachment
-    val mail = createEmilMail(
-      to = invoice.email,
-      subject = s"[ADMIN] ${translations.emails.invoice.subject(invoice.invoiceNumber)}",
-      htmlContent = buildInvoiceContent(invoice),
-      attachments = List(createInvoiceAttachment(invoice))
-    )
-
-    for {
-      _ <- logger.info(s"Sending admin invoice ${invoice.invoiceNumber} to ${invoice.email.value}")
-      result <- sendEmilMail(mail)
-      _ <- logger.info(s"Admin invoice email result: $result")
-    } yield result
-  }
-
-  override def sendUserPdfReport(pdfReport: PdfReportEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
-    val translations = I18N_Payments
-    val attachments = List(createReportAttachment(pdfReport))
-
-    val mail = createEmilMail(
-      to = pdfReport.email,
-      subject = translations.emails.pdf_report.subject(pdfReport.reportName),
-      htmlContent = buildPdfReportContent(pdfReport),
-      attachments = attachments
-    )
-
-    sendMailWithLogging(
-      mail = mail,
-      operationDescription = s"PDF report ${pdfReport.reportName}",
-      recipient = pdfReport.email.value
-    )
-  }
-
-  override def sendAdminNotification(notification: AdminNotification): F[EmailResult] = {
-    val mail = createEmilMail(
-      to = notification.adminEmail,
-      subject = s"[ADMIN] ${notification.subject}",
-      htmlContent = buildAdminNotificationContent(notification)
-    )
-
-    for {
-      _ <- logger.info(s"Sending admin notification: ${notification.subject}")
-      result <- sendEmilMail(mail)
-      _ <- logger.info(s"Admin notification result: $result")
-    } yield result
-  }
-
-  override def sendUserNotification(notification: UserNotification): F[EmailResult] = {
-    given BackendCompatibleLanguage = notification.language
-    val translations = I18N_Payments
-    
-    // Build subject based on error type
-    val subject = notification.error match {
-      case ex: afpma.firecalc.reports.EN15544ValidationException =>
-        translations.emails.user_notification.en15544_validation_error.subject(notification.orderId.getOrElse("N/A"))
-    }
-    
-    val mail = createEmilMail(
-      to = notification.email,
-      subject = subject,
-      htmlContent = buildUserNotificationContent(notification)
-    )
-
-    for {
-      _ <- logger.info(s"Sending user notification: $subject to ${notification.email.value}")
-      result <- sendEmilMail(mail)
-      _ <- logger.info(s"User notification result: $result")
-    } yield result
-  }
-
-  override def sendEmail(message: EmailMessage): F[EmailResult] = {
-    val attachments = message.attachments.map { att =>
-      AttachStream[F](
-        filename = Some(att.filename),
-        mimeType = MimeType.parse(att.contentType).getOrElse(MimeType.octetStream),
-        data     = fs2.Stream.emits(att.content)
-      )
-    }
-
-    val mail = createEmilMail(
-      to            = message.to,
-      subject       = message.subject.value,
-      htmlContent   = message.content.value,
-      attachments   = attachments
-    )
-
-    sendEmilMail(mail)
-  }
-
-  // Private helper methods using Emil
-
-  private def createEmilMail(
-    to: EmailAddress,
-    subject: String,
-    htmlContent: String,
-    attachments: List[Attach[F]] = List.empty
-  ): Mail[F] = {
-
-    val parts = Seq[Trans[F]](
-        From(config.fromAddress.value),
-        To(to.value),
-        Subject(subject),
-        HtmlBody(htmlContent),
-    ) ++ attachments.toSeq
-
-    MailBuilder.build(parts*)
-  }
-
-  private def sendEmilMail(mail: Mail[F]): F[EmailResult] = {
-    Async[F].blocking {
-      emil(smtpConfig).send(mail).map(_ => EmailSent).handleErrorWith { error =>
         for {
-          _ <- logger.error(error)(s"Failed to send email")
-        } yield EmailFailed(error.getMessage)
-      }
-    }.flatten
-  }
-
-  // DRY helper methods for common operations
-
-  private def createInvoiceAttachment(invoice: InvoiceEmail) = {
-    AttachStream[F](
-      filename = Some(s"invoice-${invoice.invoiceNumber}.pdf"),
-      mimeType = MimeType.pdf,
-      data     = fs2.Stream.emits(invoice.pdfBytes)
-    )
-  }
-
-  private def createReportAttachment(pdfReport: PdfReportEmail) = {
-    AttachStream[F](
-      filename = Some(s"${pdfReport.reportName}.pdf"),
-      mimeType = MimeType.pdf,
-      data     = fs2.Stream.emits(pdfReport.pdfBytes)
-    )
-  }
-
-  private def sendMailWithLogging(
-    mail: Mail[F],
-    operationDescription: String,
-    recipient: String
-  ): F[EmailResult] = {
-    for {
-      _ <- logger.info(s"Sending $operationDescription to $recipient")
-      result <- sendEmilMail(mail)
-      _ <- logger.info(s"Email result for $operationDescription: $result")
-    } yield result
-  }
-
-  // Content builders with translations
-  private def buildAuthCodeContent(authCode: AuthenticationCodeEmail)(using language: BackendCompatibleLanguage): String = {
-    val translations = I18N_Payments
-    
-    val introText = if (authCode.isNewUser) {
-      translations.emails.authentication.intro_new_user
-    } else {
-      translations.emails.authentication.intro_existing_user
+            _      <- logger.info(s"Sending authentication code to ${authCode.email.value}")
+            result <- sendEmilMail(mail)
+            _      <- logger.info(s"Authentication code email result: $result")
+        } yield result
     }
-    
-    val productText = authCode.productName.fold("")(i18nKey =>
-      val translatedProductName = lookupTranslation(i18nKey).getOrElse(i18nKey)
-      s"<p>${translations.emails.authentication.product_info(translatedProductName)}</p>"
-    )
 
-    s"""
+    override def sendUserInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
+        val translations = I18N_Payments
+        val attachments  = List(createInvoiceAttachment(invoice))
+
+        val mail = createEmilMail(
+            to          = invoice.email,
+            subject     = translations.emails.invoice.subject(invoice.invoiceNumber),
+            htmlContent = buildInvoiceContent(invoice),
+            attachments = attachments
+        )
+
+        sendMailWithLogging                (
+            mail                 = mail,
+            operationDescription = s"invoice ${invoice.invoiceNumber}",
+            recipient            = invoice.email.value
+        )
+    }
+
+    override def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
+        language: BackendCompatibleLanguage
+    ): F[EmailResult] = {
+        val translations = I18N_Payments
+        val attachments  = List(
+            createInvoiceAttachment(invoice  ),
+            createReportAttachment (pdfReport)
+        )
+
+        val mail = createEmilMail(
+            to          = invoice.email,
+            subject     = translations.emails.invoice.subject(invoice.invoiceNumber),
+            htmlContent = buildInvoiceWithReportContent(invoice, pdfReport),
+            attachments = attachments
+        )
+
+        sendMailWithLogging                (
+            mail                 = mail,
+            operationDescription = s"invoice ${invoice.invoiceNumber} with report ${pdfReport.reportName}",
+            recipient            = invoice.email.value
+        )
+    }
+
+    override def sendUserPaymentLink(
+        paymentLink: PaymentLinkEmail
+    )(using language: BackendCompatibleLanguage): F[EmailResult] = {
+        val translations = I18N_Payments
+
+        val prodNameI18nKey       = paymentLink.productName
+        val translatedProductName = lookupTranslation(prodNameI18nKey).getOrElse(prodNameI18nKey)
+
+        val mail = createEmilMail(
+            to          = paymentLink.email,
+            subject     = translations.emails.payment_link.subject(translatedProductName),
+            htmlContent = buildPaymentLinkContent(paymentLink)
+        )
+
+        for {
+            _      <- logger.info(s"Sending payment link to ${paymentLink.email.value}")
+            result <- sendEmilMail(mail)
+            _      <- logger.info(s"Payment link email result: $result")
+        } yield result
+    }
+
+    override def sendAdminInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
+        val translations = I18N_Payments
+
+        // Admin invoice with PDF attachment
+        val mail = createEmilMail(
+            to          = invoice.email,
+            subject     = s"[ADMIN] ${translations.emails.invoice.subject(invoice.invoiceNumber)}",
+            htmlContent = buildInvoiceContent(invoice),
+            attachments = List(createInvoiceAttachment(invoice))
+        )
+
+        for {
+            _      <- logger.info(s"Sending admin invoice ${invoice.invoiceNumber} to ${invoice.email.value}")
+            result <- sendEmilMail(mail)
+            _      <- logger.info(s"Admin invoice email result: $result")
+        } yield result
+    }
+
+    override def sendUserPdfReport(
+        pdfReport: PdfReportEmail
+    )(using language: BackendCompatibleLanguage): F[EmailResult] = {
+        val translations = I18N_Payments
+        val attachments  = List(createReportAttachment(pdfReport))
+
+        val mail = createEmilMail(
+            to          = pdfReport.email,
+            subject     = translations.emails.pdf_report.subject(pdfReport.reportName),
+            htmlContent = buildPdfReportContent(pdfReport),
+            attachments = attachments
+        )
+
+        sendMailWithLogging                (
+            mail                 = mail,
+            operationDescription = s"PDF report ${pdfReport.reportName}",
+            recipient            = pdfReport.email.value
+        )
+    }
+
+    override def sendAdminNotification(notification: AdminNotification): F[EmailResult] = {
+        val mail = createEmilMail(
+            to          = notification.adminEmail,
+            subject     = s"[ADMIN] ${notification.subject}",
+            htmlContent = buildAdminNotificationContent(notification)
+        )
+
+        for {
+            _      <- logger.info(s"Sending admin notification: ${notification.subject}")
+            result <- sendEmilMail(mail)
+            _      <- logger.info(s"Admin notification result: $result")
+        } yield result
+    }
+
+    override def sendUserNotification(notification: UserNotification): F[EmailResult] = {
+        given BackendCompatibleLanguage = notification.language
+        val translations                = I18N_Payments
+
+        // Build subject based on error type
+        val subject = notification.error match {
+            case ex: afpma.firecalc.reports.EN15544ValidationException =>
+                translations.emails.user_notification.en15544_validation_error
+                    .subject(notification.orderId.getOrElse("N/A"))
+        }
+
+        val mail = createEmilMail(
+            to          = notification.email,
+            subject     = subject,
+            htmlContent = buildUserNotificationContent(notification)
+        )
+
+        for {
+            _      <- logger.info(s"Sending user notification: $subject to ${notification.email.value}")
+            result <- sendEmilMail(mail)
+            _      <- logger.info(s"User notification result: $result")
+        } yield result
+    }
+
+    override def sendEmail(message: EmailMessage): F[EmailResult] = {
+        val attachments = message.attachments.map { att =>
+            AttachStream[F](
+                filename = Some(att.filename),
+                mimeType = MimeType.parse(att.contentType).getOrElse(MimeType.octetStream),
+                data     = fs2.Stream.emits(att.content)
+            )
+        }
+
+        val mail = createEmilMail(
+            to          = message.to,
+            subject     = message.subject.value,
+            htmlContent = message.content.value,
+            attachments = attachments
+        )
+
+        sendEmilMail(mail)
+    }
+
+    // Private helper methods using Emil
+
+    private def createEmilMail(
+        to         : EmailAddress,
+        subject    : String,
+        htmlContent: String,
+        attachments: List[Attach[F]] = List.empty
+    ): Mail[F] = {
+
+        val parts = Seq[Trans[F]](
+            From    (config.fromAddress.value),
+            To      (to.value                ),
+            Subject (subject                 ),
+            HtmlBody(htmlContent             )
+        ) ++ attachments.toSeq
+
+        MailBuilder.build(parts*)
+    }
+
+    private def sendEmilMail(mail: Mail[F]): F[EmailResult] = {
+        Async[F].blocking {
+            emil(smtpConfig).send(mail).map(_ => EmailSent).handleErrorWith { error =>
+                for {
+                    _ <- logger.error(error)("Failed to send email")
+                } yield EmailFailed(error.getMessage)
+            }
+        }.flatten
+    }
+
+    // DRY helper methods for common operations
+
+    private def createInvoiceAttachment(invoice: InvoiceEmail) = {
+        AttachStream[F](
+            filename = Some(s"invoice-${invoice.invoiceNumber}.pdf"),
+            mimeType = MimeType.pdf,
+            data     = fs2.Stream.emits(invoice.pdfBytes)
+        )
+    }
+
+    private def createReportAttachment(pdfReport: PdfReportEmail) = {
+        AttachStream[F](
+            filename = Some(s"${pdfReport.reportName}.pdf"),
+            mimeType = MimeType.pdf,
+            data     = fs2.Stream.emits(pdfReport.pdfBytes)
+        )
+    }
+
+    private def sendMailWithLogging(
+        mail                : Mail[F],
+        operationDescription: String,
+        recipient           : String
+    ): F[EmailResult] = {
+        for {
+            _      <- logger.info(s"Sending $operationDescription to $recipient")
+            result <- sendEmilMail(mail)
+            _      <- logger.info(s"Email result for $operationDescription: $result")
+        } yield result
+    }
+
+    // Content builders with translations
+    private def buildAuthCodeContent(
+        authCode: AuthenticationCodeEmail
+    )(using language: BackendCompatibleLanguage): String = {
+        val translations = I18N_Payments
+
+        val introText = if (authCode.isNewUser) {
+            translations.emails.authentication.intro_new_user
+        } else {
+            translations.emails.authentication.intro_existing_user
+        }
+
+        val productText = authCode.productName.fold("")(i18nKey =>
+            val translatedProductName = lookupTranslation(i18nKey).getOrElse(i18nKey)
+            s"<p>${translations.emails.authentication.product_info(translatedProductName)}</p>"
+        )
+
+        s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.authentication.greeting}</h2>
@@ -306,17 +318,16 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |</body>
     |</html>
     """.stripMargin
-  }
+    }
 
-  private def buildInvoiceContent(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): String = {
-    val translations = I18N_Payments
-    val currentDate = java.time.LocalDate.now().toString
+    private def buildInvoiceContent(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): String = {
+        val translations = I18N_Payments
+        val currentDate  = java.time.LocalDate.now().toString
 
-    val prodNameI18nKey = invoice.productName
-    val translatedProductName = lookupTranslation(prodNameI18nKey).getOrElse(prodNameI18nKey)
+        val prodNameI18nKey       = invoice.productName
+        val translatedProductName = lookupTranslation(prodNameI18nKey).getOrElse(prodNameI18nKey)
 
-
-    s"""
+        s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.invoice.greeting}</h2>
@@ -336,14 +347,16 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |</body>
     |</html>
     """.stripMargin
-  }
+    }
 
-  private def buildPaymentLinkContent(paymentLink: PaymentLinkEmail)(using language: BackendCompatibleLanguage): String = {
-    val translations = I18N_Payments
-    
-    val translatedProductName = lookupTranslation(paymentLink.productName).getOrElse(paymentLink.productName)
+    private def buildPaymentLinkContent(
+        paymentLink: PaymentLinkEmail
+    )(using language: BackendCompatibleLanguage): String = {
+        val translations = I18N_Payments
 
-    s"""
+        val translatedProductName = lookupTranslation(paymentLink.productName).getOrElse(paymentLink.productName)
+
+        s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.payment_link.greeting}</h2>
@@ -357,14 +370,16 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |</body>
     |</html>
     """.stripMargin
-  }
+    }
 
-  private def buildAdminNotificationContent(notification: AdminNotification): String = {
-    // Admin notifications don't use language parameter - they're always in English for internal use
-    val translations = I18N_Payments(using Locales.en)
-    val orderInfo = notification.orderId.fold("")(id => s"<p><strong>${translations.emails.admin_notification.order_id_label}</strong> $id</p>")
+    private def buildAdminNotificationContent(notification: AdminNotification): String = {
+        // Admin notifications don't use language parameter - they're always in English for internal use
+        val translations = I18N_Payments(using Locales.en)
+        val orderInfo    = notification.orderId.fold("")(id =>
+            s"<p><strong>${translations.emails.admin_notification.order_id_label}</strong> $id</p>"
+        )
 
-    s"""
+        s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.admin_notification.greeting}</h2>
@@ -374,13 +389,15 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |</body>
     |</html>
     """.stripMargin
-  }
+    }
 
-  private def buildInvoiceWithReportContent(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using language: BackendCompatibleLanguage): String = {
-    val translations = I18N_Payments
-    val currentDate = java.time.LocalDate.now().toString
+    private def buildInvoiceWithReportContent(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
+        language: BackendCompatibleLanguage
+    ): String = {
+        val translations = I18N_Payments
+        val currentDate  = java.time.LocalDate.now().toString
 
-    s"""
+        s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.invoice.greeting}</h2>
@@ -405,14 +422,16 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |</body>
     |</html>
     """.stripMargin
-  }
+    }
 
-  private def buildPdfReportContent(pdfReport: PdfReportEmail)(using language: BackendCompatibleLanguage): String = {
-    val translations = I18N_Payments
-    val currentDate = java.time.LocalDate.now().toString
-    val orderInfo = pdfReport.orderId.fold("")(id => s"<p><strong>${translations.emails.pdf_report.order_id_label}</strong> $id</p>")
+    private def buildPdfReportContent(pdfReport: PdfReportEmail)(using language: BackendCompatibleLanguage): String = {
+        val translations = I18N_Payments
+        val currentDate  = java.time.LocalDate.now().toString
+        val orderInfo    = pdfReport.orderId.fold("")(id =>
+            s"<p><strong>${translations.emails.pdf_report.order_id_label}</strong> $id</p>"
+        )
 
-    s"""
+        s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.pdf_report.greeting(pdfReport.customerName)}</h2>
@@ -430,30 +449,30 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |</body>
     |</html>
     """.stripMargin
-  }
+    }
 
-  private def buildUserNotificationContent(notification: UserNotification): String = {
-    given BackendCompatibleLanguage = notification.language
-    val translations = I18N_Payments
-    val orderInfo = notification.orderId.fold("")(id =>
-      s"<p><strong>${translations.emails.user_notification.order_id_label}</strong> $id</p>"
-    )
+    private def buildUserNotificationContent(notification: UserNotification): String = {
+        given BackendCompatibleLanguage = notification.language
+        val translations                = I18N_Payments
+        val orderInfo                   = notification.orderId.fold("")(id =>
+            s"<p><strong>${translations.emails.user_notification.order_id_label}</strong> $id</p>"
+        )
 
-    // Build content based on error type
-    val errorContent = notification.error match {
-      case ex: afpma.firecalc.reports.EN15544ValidationException =>
-        val errorsList = ex.validationErrors.map(err => s"<li>$err</li>").mkString("\n")
-        s"""
+        // Build content based on error type
+        val errorContent = notification.error match {
+            case ex: afpma.firecalc.reports.EN15544ValidationException =>
+                val errorsList = ex.validationErrors.map(err => s"<li>$err</li>").mkString("\n")
+                s"""
         |  <p>${translations.emails.user_notification.en15544_validation_error.intro}</p>
         |  <h3>${translations.emails.user_notification.en15544_validation_error.errors_heading}</h3>
         |  <ul>
         |    $errorsList
         |  </ul>
         """.stripMargin
-      
-    }
 
-    s"""
+        }
+
+        s"""
     |<html>
     |<body>
     |  <h2>${translations.emails.user_notification.greeting}</h2>
@@ -464,5 +483,5 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |</body>
     |</html>
     """.stripMargin
-  }
+    }
 }

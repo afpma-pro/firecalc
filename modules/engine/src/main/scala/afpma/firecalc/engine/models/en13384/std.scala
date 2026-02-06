@@ -5,27 +5,23 @@
 
 package afpma.firecalc.engine.models.en13384
 
-import scala.annotation.targetName
-
 import algebra.instances.all.given
+
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.all.*
+
+import afpma.firecalc.i18n.*
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.*
 
-import afpma.firecalc.i18n.*
-
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.{*, given}
-
-import algebra.instances.all.given
-
 import coulomb.*
-import coulomb.syntax.*
+import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
 
+import scala.annotation.targetName
 
 object std:
 
@@ -36,99 +32,88 @@ object std:
             type AirIntakePipe_Module_T = self.AirIntakePipe_Module_T
         }
 
-        val pipes: Pipes_13384
+        val pipes               : Pipes_13384
         val nationalAcceptedData: NationalAcceptedData
-        val fuelType: FuelType
-        val localConditions: LocalConditions
-        val flueGasCondition: FlueGasCondition
+        val fuelType            : FuelType
+        val localConditions     : LocalConditions
+        val flueGasCondition    : FlueGasCondition
 
     case class Inputs_13384_WithFlowOnlyAirIntake(
-        pipes: Pipes_13384_WithFlowOnlyAirIntake,
+        pipes               : Pipes_13384_WithFlowOnlyAirIntake,
         nationalAcceptedData: NationalAcceptedData,
-        fuelType: FuelType,
-        localConditions: LocalConditions,
-        flueGasCondition: FlueGasCondition,
-    ) extends Inputs_13384_Alg with HasPipeModules_13384_WithFlowOnlyAirIntake:
+        fuelType            : FuelType,
+        localConditions     : LocalConditions,
+        flueGasCondition    : FlueGasCondition
+    ) extends Inputs_13384_Alg
+        with HasPipeModules_13384_WithFlowOnlyAirIntake:
         override type Pipes_13384 = Pipes_13384_WithFlowOnlyAirIntake
 
     case class Inputs_13384_WithThermalAirIntake(
-        pipes: Pipes_13384_WithThermalAirIntake,
+        pipes               : Pipes_13384_WithThermalAirIntake,
         nationalAcceptedData: NationalAcceptedData,
-        fuelType: FuelType,
-        localConditions: LocalConditions,
-        flueGasCondition: FlueGasCondition,
-    ) extends Inputs_13384_Alg with HasPipeModules_13384_WithThermalAirIntake:
-        override type Pipes_13384 = Pipes_13384_WithThermalAirIntake  
-    
+        fuelType            : FuelType,
+        localConditions     : LocalConditions,
+        flueGasCondition    : FlueGasCondition
+    ) extends Inputs_13384_Alg
+        with HasPipeModules_13384_WithThermalAirIntake:
+        override type Pipes_13384 = Pipes_13384_WithThermalAirIntake
 
     /**
-      * Caractérisation de l'appareil de combustion utilisé
-      *
-      * @param flue_gas_mass_flow débit massique des fumées
-      * @param flue_gas_temperature température des fumées
-      * @param flue_gas_draft_min_pdiff_max tirage minimal nécessaire ou la pression différentielle maximale de l'appareil à combustion, pour les conduits de fumée fonctionnant sous pression négative
-      * @param flue_gas_draft_max_pdiff_min tirage minimal nécessaire ou la pression différentielle maximale de l'appareil à combustion, pour les conduits de fumée fonctionnant sous pression négative
-      */
+     * Caractérisation de l'appareil de combustion utilisé
+     *
+     * @param flue_gas_mass_flow débit massique des fumées
+     * @param flue_gas_temperature température des fumées
+     * @param flue_gas_draft_min_pdiff_max tirage minimal nécessaire ou la pression différentielle maximale de l'appareil à combustion, pour les conduits de fumée fonctionnant sous pression négative
+     * @param flue_gas_draft_max_pdiff_min tirage minimal nécessaire ou la pression différentielle maximale de l'appareil à combustion, pour les conduits de fumée fonctionnant sous pression négative
+     */
     case class HeatingAppliance(
-        reference         : LocalizedString                          ,
-        type_of_appliance : TypeOfAppliance                          ,
-        efficiency        : HeatingAppliance.Efficiency              ,
-        fluegas           : HeatingAppliance.FlueGas                 ,
-        powers            : HeatingAppliance.Powers                  ,
-        temperatures      : HeatingAppliance.Temperatures            ,
-        massFlows         : HeatingAppliance.MassFlows               = HeatingAppliance.MassFlows.undefined,
-        pressures         : HeatingAppliance.Pressures               ,
-        volumeFlows       : Option[HeatingAppliance.VolumeFlows]     = None
+        reference        : LocalizedString,
+        type_of_appliance: TypeOfAppliance,
+        efficiency       : HeatingAppliance.Efficiency,
+        fluegas          : HeatingAppliance.FlueGas,
+        powers           : HeatingAppliance.Powers,
+        temperatures     : HeatingAppliance.Temperatures,
+        massFlows        : HeatingAppliance.MassFlows           = HeatingAppliance.MassFlows.undefined,
+        pressures        : HeatingAppliance.Pressures,
+        volumeFlows      : Option[HeatingAppliance.VolumeFlows] = None
     )
 
     object HeatingAppliance:
 
-        type CtxOp4_EFPoM[X] = 
-            HeatingAppliance.Efficiency ?=>
-            HeatingAppliance.FlueGas ?=>
-            HeatingAppliance.Powers ?=>
-            HeatingAppliance.MassFlows ?=> X
+        type CtxOp4_EFPoM[X] =
+            HeatingAppliance.Efficiency ?=> HeatingAppliance.FlueGas ?=> HeatingAppliance.Powers ?=> HeatingAppliance.MassFlows ?=> X
 
-        type CtxOp5_EFPoTM[X] = 
-            HeatingAppliance.Efficiency ?=>
-            HeatingAppliance.FlueGas ?=>
-            HeatingAppliance.Powers ?=>
-            HeatingAppliance.Temperatures ?=>
-            HeatingAppliance.MassFlows ?=> X
-        
-        type CtxOp6_EFPoTMPr[X] = 
-            HeatingAppliance.Efficiency ?=>
-            HeatingAppliance.FlueGas ?=>
-            HeatingAppliance.Powers ?=>
-            HeatingAppliance.Temperatures ?=>
-            HeatingAppliance.MassFlows ?=>
-            HeatingAppliance.Pressures ?=> X
+        type CtxOp5_EFPoTM[X] =
+            HeatingAppliance.Efficiency ?=> HeatingAppliance.FlueGas ?=> HeatingAppliance.Powers ?=> HeatingAppliance.Temperatures ?=> HeatingAppliance.MassFlows ?=> X
+
+        type CtxOp6_EFPoTMPr[X] =
+            HeatingAppliance.Efficiency ?=> HeatingAppliance.FlueGas ?=> HeatingAppliance.Powers ?=> HeatingAppliance.Temperatures ?=> HeatingAppliance.MassFlows ?=> HeatingAppliance.Pressures ?=> X
 
         def summon(using ha: HeatingAppliance): HeatingAppliance = ha
 
         // given HeatingAppliance -> given HeatingAppliance.*
-        given ha2ha_efficiency: (ha: HeatingAppliance)    => HeatingAppliance.Efficiency     = ha.efficiency
-        given ha2ha_fluegas: (ha: HeatingAppliance)       => HeatingAppliance.FlueGas        = ha.fluegas
-        given ha2ha_powers: (ha: HeatingAppliance)        => HeatingAppliance.Powers         = ha.powers
-        given ha2ha_temperatures: (ha: HeatingAppliance)  => HeatingAppliance.Temperatures   = ha.temperatures
-        given ha2ha_massFlows: (ha: HeatingAppliance)     => HeatingAppliance.MassFlows      = ha.massFlows
-        given ha2ha_pressures: (ha: HeatingAppliance)     => HeatingAppliance.Pressures      = ha.pressures
-        
+        given ha2ha_efficiency  : (ha: HeatingAppliance) => HeatingAppliance.Efficiency   = ha.efficiency
+        given ha2ha_fluegas     : (ha: HeatingAppliance) => HeatingAppliance.FlueGas      = ha.fluegas
+        given ha2ha_powers      : (ha: HeatingAppliance) => HeatingAppliance.Powers       = ha.powers
+        given ha2ha_temperatures: (ha: HeatingAppliance) => HeatingAppliance.Temperatures = ha.temperatures
+        given ha2ha_massFlows   : (ha: HeatingAppliance) => HeatingAppliance.MassFlows    = ha.massFlows
+        given ha2ha_pressures   : (ha: HeatingAppliance) => HeatingAppliance.Pressures    = ha.pressures
+
         case class Efficiency(
             perc_nominal: Percentage,
-            perc_lowest: Option[Percentage]
+            perc_lowest : Option[Percentage]
         )
         object Efficiency:
             def summon(using ev: HeatingAppliance.Efficiency): Efficiency = ev
 
         case class FlueGas(
-            co2_dry_perc_nominal: Percentage            ,
-            co2_dry_perc_reduced : Option[Percentage]    ,
-            h2o_perc_nominal    : Option[Percentage]    = None,
-            h2o_perc_reduced     : Option[Percentage]    = None,
+            co2_dry_perc_nominal: Percentage,
+            co2_dry_perc_reduced: Option[Percentage],
+            h2o_perc_nominal    : Option[Percentage] = None,
+            h2o_perc_reduced    : Option[Percentage] = None
         )
 
-        object FlueGas:
+        object FlueGas     :
             def summon(using ev: HeatingAppliance.FlueGas): FlueGas = ev
         case class Temperatures(
             flue_gas_temp_nominal: TCelsius,
@@ -138,51 +123,50 @@ object std:
             def summon(using ev: HeatingAppliance.Temperatures): Temperatures = ev
         case class Powers(
             heat_output_nominal: Power,
-            heat_output_reduced: Option[Power],
+            heat_output_reduced: Option[Power]
         )
-        object Powers:
+        object Powers      :
             def summon(using ev: HeatingAppliance.Powers): Powers = ev
 
         case class MassFlows(
-            flue_gas_mass_flow_nominal: Option[MassFlow],
-            flue_gas_mass_flow_reduced: Option[MassFlow],
+            flue_gas_mass_flow_nominal      : Option[MassFlow],
+            flue_gas_mass_flow_reduced      : Option[MassFlow],
             combustion_air_mass_flow_nominal: Option[MassFlow],
-            combustion_air_mass_flow_reduced: Option[MassFlow],
+            combustion_air_mass_flow_reduced: Option[MassFlow]
         )
         object MassFlows:
             val undefined = MassFlows(None, None, None, None)
             def summon(using ev: HeatingAppliance.MassFlows): MassFlows = ev
 
         case class Pressures(
-            underPressure: UnderPressure,
+            underPressure     : UnderPressure,
             flue_gas_draft_min: Option[Pressure],
             flue_gas_draft_max: Option[Pressure],
             flue_gas_pdiff_min: Option[Pressure],
-            flue_gas_pdiff_max: Option[Pressure],
+            flue_gas_pdiff_max: Option[Pressure]
         )
         object Pressures:
             def summon(using ev: HeatingAppliance.Pressures): Pressures = ev
 
         case class VolumeFlows(
-            flue_gas_volume_flow_nominal: VolumeFlow,
-            flue_gas_volume_flow_reduced: Option[VolumeFlow],
+            flue_gas_volume_flow_nominal      : VolumeFlow,
+            flue_gas_volume_flow_reduced      : Option[VolumeFlow],
             combustion_air_volume_flow_nominal: VolumeFlow,
-            combustion_air_volume_flow_reduced: Option[VolumeFlow],
+            combustion_air_volume_flow_reduced: Option[VolumeFlow]
         )
 
     /**
-     *
      * @param humidity humidité du bois (% de la masse de bois sec)
      * @param composition composition du bois
      */
     case class Wood(
-        humidity: Percentage, // % de la masse de bois sec
+        humidity   : Percentage, // % de la masse de bois sec
         composition: Wood.Composition
     )
-    
-     /**
+
+    /**
      * Composition élémentaire du bois
-     * 
+     *
      * @param xC proportion massique en C (sur masse sèche)
      * @param xH proportion massique en H (sur masse sèche)
      * @param xO proportion massique en O (sur masse sèche)
@@ -191,32 +175,32 @@ object std:
      */
     object Wood:
         case class Composition(
-            xC: Percentage,
-            xH: Percentage,
-            xO: Percentage,
-            xN: Percentage,
-            xOther: Percentage,
+            xC    : Percentage,
+            xH    : Percentage,
+            xO    : Percentage,
+            xN    : Percentage,
+            xOther: Percentage
         )
 
         /**
-          * Bois selon ONORM_B_8303
-          *
-          * @param humidity % humidité sur bois sec
-          * @return
-          */
-        def from_ONORM_B_8303(humidity: Percentage): Wood = 
+         * Bois selon ONORM_B_8303
+         *
+         * @param humidity % humidité sur bois sec
+         * @return
+         */
+        def from_ONORM_B_8303(humidity: Percentage): Wood =
             Wood(
-                humidity, 
-                Composition(
-                    xC      = 49.72            .percent,
-                    xH      = 5.31             .percent,
-                    xN      = 0.22             .percent,
-                    xO      = 44.34            .percent,
-                    xOther  = (0.01 + 0.36)    .percent,
+                humidity,
+                Composition    (
+                    xC     = 49.72.percent,
+                    xH     = 5.31.percent,
+                    xN     = 0.22.percent,
+                    xO     = 44.34.percent,
+                    xOther = (0.01 + 0.36).percent
                 )
             )
 
-        given Conversion[Wood, afpma.firecalc.engine.wood_combustion.Wood] = 
+        given Conversion[Wood, afpma.firecalc.engine.wood_combustion.Wood] =
             w =>
                 afpma.firecalc.engine.wood_combustion.Wood(
                     atomic_composition = Map(
@@ -224,65 +208,62 @@ object std:
                         "H"      -> w.composition.xH,
                         "O"      -> w.composition.xO,
                         "N"      -> w.composition.xN,
-                        "Others" -> w.composition.xOther,
+                        "Others" -> w.composition.xOther
                     ),
-                    humidity = w.humidity,
+                    humidity           = w.humidity
                 )
 
     end Wood
 
     case class NationalAcceptedData(
         val T_uo_override: T_uo_temperature_override,
-        val T_L_override: T_L_override
+        val T_L_override : T_L_override
     )
 
     object NationalAcceptedData:
-        val noOverride = NationalAcceptedData(
-            T_uo_override       = T_uo_temperature_override.none,
-            T_L_override        = T_L_override.none
+        val noOverride                                                                 = NationalAcceptedData(
+            T_uo_override = T_uo_temperature_override.none,
+            T_L_override  = T_L_override.none
         )
-        def overrideWith(tuo_temperatures: AmbiantAirTemperatureSet) = NationalAcceptedData(
-            T_uo_override       = T_uo_temperature_override.from(tuo_temperatures),
-            T_L_override        = T_L_override.none
+        def overrideWith(tuo_temperatures: AmbiantAirTemperatureSet)                   = NationalAcceptedData(
+            T_uo_override = T_uo_temperature_override.from(tuo_temperatures),
+            T_L_override  = T_L_override.none
         )
-        def overrideWith(tl: T_L_override) = NationalAcceptedData(
-            T_uo_override       = T_uo_temperature_override.none,
-            T_L_override        = tl
+        def overrideWith(tl: T_L_override)                                             = NationalAcceptedData(
+            T_uo_override = T_uo_temperature_override.none,
+            T_L_override  = tl
         )
         def overrideWith(tuo_temperatures: AmbiantAirTemperatureSet, tl: T_L_override) = NationalAcceptedData(
-            T_uo_override       = T_uo_temperature_override.from(tuo_temperatures),
-            T_L_override        = tl
+            T_uo_override = T_uo_temperature_override.from(tuo_temperatures),
+            T_L_override  = tl
         )
 
-    /**
-      * See Annex A of EN13384-1:2015+A1:2019
-      */
+    /** See Annex A of EN13384-1:2015+A1:2019 */
     object ThermalResistance:
 
         import afpma.firecalc.engine.models.gtypedefs.{ThermalConductivity, D_h}
 
         /**
-          * Returns thermal resistance of a single layer 
-          *
-          * @param dhi hydraulic diameter of interior layer
-          * @param e thickness of layer
-          * @param λ thermal conductivity of layer
-          * @param form form of layer
-          * @return thermal resistance of layer
-          */
+         * Returns thermal resistance of a single layer
+         *
+         * @param dhi hydraulic diameter of interior layer
+         * @param e thickness of layer
+         * @param λ thermal conductivity of layer
+         * @param form form of layer
+         * @return thermal resistance of layer
+         */
         @targetName("forSingleLayer_usingThickness")
         @deprecated def forSingleLayer(
-            dhi: D_h,
-            e: QtyD[Meter],
-            λ: ThermalConductivity,
-            form: CoefficientOfForm,
-            
-        ): SquareMeterKelvinPerWatt = 
+            dhi : D_h,
+            e   : QtyD[Meter],
+            λ   : ThermalConductivity,
+            form: CoefficientOfForm
+        ): SquareMeterKelvinPerWatt =
             val dho: D_h = dhi.toUnit[Meter] + 2.0 * e
             forSingleLayer(dhi, dho, λ, form)
 
         /**
-         * Returns thermal resistance of a single layer 
+         * Returns thermal resistance of a single layer
          *
          * @param dhi hydraulic diameter of interior layer
          * @param e thickness of layer
@@ -292,25 +273,27 @@ object std:
          */
         @targetName("forSingleLayer_usingHydraulicDiameters")
         @deprecated def forSingleLayer(
-            dhi: D_h,
-            dho: D_h,
+            dhi   : D_h,
+            dho   : D_h,
             lambda: ThermalConductivity,
-            form: CoefficientOfForm,
-        ): SquareMeterKelvinPerWatt = 
+            form  : CoefficientOfForm
+        ): SquareMeterKelvinPerWatt =
             SquareMeterKelvinPerWatt(
-                form.unwrap * dhi.to_m.value / (2.0 * lambda.toUnit[Watt / (Meter * Kelvin)].value) * math.log((dho / dhi).value)
+                form.unwrap * dhi.to_m.value / (2.0 * lambda.toUnit[Watt / (Meter * Kelvin)].value) * math.log(
+                    (dho / dhi).value
+                )
             )
 
         // TODO: formula should be delegated to some specific implementation, not hard-coded here.
-        // @deprecated def forLayers(layers: Layers): SquareMeterKelvinPerWatt = 
+        // @deprecated def forLayers(layers: Layers): SquareMeterKelvinPerWatt =
         //     val y = layers.form.y
         //     import layers.dh
-        //     val rs = 
-        //         for 
+        //     val rs =
+        //         for
         //             x <- layers.xs
         //             r = (
-        //                     dh.toUnit[Meter].value / (2.0 * (x.λ.toUnit[Watt / (Meter * Kelvin)]).value) 
-        //                     * 
+        //                     dh.toUnit[Meter].value / (2.0 * (x.λ.toUnit[Watt / (Meter * Kelvin)]).value)
+        //                     *
         //                     math.log((x.dho / x.dhi).value)
         //                 )
         //         yield
@@ -324,10 +307,10 @@ object std:
         // )
 
         // object Layers:
-        //     def make(dh: D_h, layers: List[(Length, ThermalConductivity)], form: CoefficientOfForm): Layers = 
+        //     def make(dh: D_h, layers: List[(Length, ThermalConductivity)], form: CoefficientOfForm): Layers =
         //         var dhi: Length = dh
-        //         val xs = 
-        //             for 
+        //         val xs =
+        //             for
         //                 (thickness, lambda) <- layers
         //             yield
         //                 val dho: Length = dhi + 2.0 * thickness
@@ -337,7 +320,7 @@ object std:
         //         Layers(dh, xs, form)
 
         //     extension (layers: Layers)
-        //         def Λinverse: SquareMeterKelvinPerWatt = 
+        //         def Λinverse: SquareMeterKelvinPerWatt =
         //             ThermalResistance.forLayers(layers)
 
         // case class Layer(
@@ -349,9 +332,9 @@ object std:
         // object Layer:
         //     import afpma.firecalc.dto.all.*
 
-        //     def mkFromThicknessAndLambda(dhi: D_h, e: Length, λ: ThermalConductivity): Layer = 
+        //     def mkFromThicknessAndLambda(dhi: D_h, e: Length, λ: ThermalConductivity): Layer =
         //         Layer(
-        //             dhi = dhi, 
+        //             dhi = dhi,
         //             dho = dhi + 2.0 * e,
         //             λ   = λ
         //         )
@@ -360,18 +343,16 @@ object std:
 
         opaque type CoefficientOfForm = Double
         object CoefficientOfForm:
-            def wrap(d: Double): CoefficientOfForm = d
-            extension (c: CoefficientOfForm)
-                def unwrap: Double = c
+            def wrap  (d: Double           )           : CoefficientOfForm = d
+            extension (c: CoefficientOfForm) def unwrap: Double            = c
 
     end ThermalResistance
 
     case class ReferenceTemperatures(
         // ambiant_air_temperatures: TuTemperatures,
         flueGasCondition: FlueGasCondition,
-        tuo: T_uo_temperature,
-        tl: T_L_override,
+        tuo             : T_uo_temperature,
+        tl              : T_L_override
     )
 
-    
 end std

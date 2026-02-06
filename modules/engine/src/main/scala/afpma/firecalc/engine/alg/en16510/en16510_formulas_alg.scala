@@ -5,10 +5,10 @@
 
 package afpma.firecalc.engine.alg.en16510
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.engine.alg.Standard
 import afpma.firecalc.engine.models.en16510.*
-
-import afpma.firecalc.units.coulombutils.*
 
 trait EN16510_1_2022_Formulas_Alg extends Standard:
 
@@ -16,8 +16,8 @@ trait EN16510_1_2022_Formulas_Alg extends Standard:
 
     /** rendement énergétique saisonnier pour le chauffage des locaux */
     def η_s(
-        η: Percentage, 
+        η : Percentage,
         f2: CorrectionFactor_F2,
         f3: CorrectionFactors_F3,
-        f4: CorrectionFactor_F4,
+        f4: CorrectionFactor_F4
     ): Percentage

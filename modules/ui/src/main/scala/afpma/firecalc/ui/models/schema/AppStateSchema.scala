@@ -13,5 +13,5 @@ type AppStateSchema = AppStateSchema_V3
 object AppStateSchema:
 
     val LATEST_VERSION: Int = 3
-    
+
     export AppStateSchema_V3.{given, *}

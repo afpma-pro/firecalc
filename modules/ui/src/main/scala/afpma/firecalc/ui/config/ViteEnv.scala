@@ -24,11 +24,11 @@ import scala.scalajs.js.annotation.JSImport
 @js.native
 @JSImport("/src/main/js/vite-env.js", JSImport.Namespace)
 private object ImportMetaEnv extends js.Any {
-  val VITE_BACKEND_PROTOCOL: String = js.native
-  val VITE_BACKEND_HOST: String = js.native
-  val VITE_BACKEND_PORT: String = js.native
-  val VITE_BACKEND_BASE_PATH: String = js.native
-  val MODE: String = js.native
+    val VITE_BACKEND_PROTOCOL : String = js.native
+    val VITE_BACKEND_HOST     : String = js.native
+    val VITE_BACKEND_PORT     : String = js.native
+    val VITE_BACKEND_BASE_PATH: String = js.native
+    val MODE                  : String = js.native
 }
 
 /**
@@ -53,51 +53,50 @@ private object ImportMetaEnv extends js.Any {
  * ```
  */
 object ViteEnv {
-  /** Backend protocol: "http" or "https" */
-  def backendProtocol: String = ImportMetaEnv.VITE_BACKEND_PROTOCOL
-  
-  /** Backend host: e.g., "localhost" or "api.firecalc.afpma.pro" */
-  def backendHost: String = ImportMetaEnv.VITE_BACKEND_HOST
-  
-  /** Backend port: e.g., "8181" or "443" */
-  def backendPort: String = ImportMetaEnv.VITE_BACKEND_PORT
-  
-  /** Backend base path: e.g., "/v1" */
-  def backendBasePath: String = ImportMetaEnv.VITE_BACKEND_BASE_PATH
-  
-  /**
-   * Current build mode as a type-safe enum.
-   *
-   * This is the primary way to check the current environment mode.
-   * Use pattern matching for exhaustive checks.
-   */
-  lazy val buildMode: BuildMode = BuildMode.fromString(ImportMetaEnv.MODE)
-  
-  /**
-   * Raw mode string from Vite (for debugging/logging only).
-   * Prefer using `buildMode` for type-safe access.
-   */
-  def modeString: String = ImportMetaEnv.MODE
-  
-  // Convenience methods for common checks
-  
-  /** True if running in development mode */
-  def isDevelopment: Boolean = buildMode == BuildMode.Development
-  
-  /** True if running in staging mode */
-  def isStaging: Boolean = buildMode == BuildMode.Staging
-  
-  /** True if running in production mode */
-  def isProduction: Boolean = buildMode == BuildMode.Production
-  
-  /** True if running in any non-production mode (development or staging) */
-  def isNonProduction: Boolean = !isProduction
-  
-  /**
-   * Returns debug information about the current environment configuration
-   */
-  def debugInfo(): String =
-    s"""ViteEnv Configuration:
+
+    /** Backend protocol: "http" or "https" */
+    def backendProtocol: String = ImportMetaEnv.VITE_BACKEND_PROTOCOL
+
+    /** Backend host: e.g., "localhost" or "api.firecalc.afpma.pro" */
+    def backendHost: String = ImportMetaEnv.VITE_BACKEND_HOST
+
+    /** Backend port: e.g., "8181" or "443" */
+    def backendPort: String = ImportMetaEnv.VITE_BACKEND_PORT
+
+    /** Backend base path: e.g., "/v1" */
+    def backendBasePath: String = ImportMetaEnv.VITE_BACKEND_BASE_PATH
+
+    /**
+     * Current build mode as a type-safe enum.
+     *
+     * This is the primary way to check the current environment mode.
+     * Use pattern matching for exhaustive checks.
+     */
+    lazy val buildMode: BuildMode = BuildMode.fromString(ImportMetaEnv.MODE)
+
+    /**
+     * Raw mode string from Vite (for debugging/logging only).
+     * Prefer using `buildMode` for type-safe access.
+     */
+    def modeString: String = ImportMetaEnv.MODE
+
+    // Convenience methods for common checks
+
+    /** True if running in development mode */
+    def isDevelopment: Boolean = buildMode == BuildMode.Development
+
+    /** True if running in staging mode */
+    def isStaging: Boolean = buildMode == BuildMode.Staging
+
+    /** True if running in production mode */
+    def isProduction: Boolean = buildMode == BuildMode.Production
+
+    /** True if running in any non-production mode (development or staging) */
+    def isNonProduction: Boolean = !isProduction
+
+    /** Returns debug information about the current environment configuration */
+    def debugInfo(): String =
+        s"""ViteEnv Configuration:
        |  Build Mode: ${buildMode} (raw: "${modeString}")
        |  Backend Protocol: $backendProtocol
        |  Backend Host: $backendHost

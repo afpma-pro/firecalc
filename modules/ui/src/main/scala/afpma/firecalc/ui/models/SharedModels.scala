@@ -4,20 +4,15 @@
  */
 
 package afpma.firecalc.ui.models
-
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-
-import magnolia1.Transl
-import io.taig.babel.Locale
-import cats.Show
 import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
-import afpma.firecalc.utils.circe.{*, given}
+
+import cats.Show
+
+import io.taig.babel.Locale
 
 // Customer type enum
 enum BillableCustomerType:
-  case Individual, Business
+    case Individual, Business
 
 object BillableCustomerType:
     given show: Locale => Show[BillableCustomerType] = Show.show:
@@ -59,7 +54,7 @@ object BillableCountry:
 
 enum BillingLanguage(val code: String):
     case English extends BillingLanguage("en")
-    case French extends BillingLanguage("fr")
+    case French  extends BillingLanguage("fr")
     // case German extends BillingLanguage("de")
     // case Portuguese extends BillingLanguage("pt")
     // case Spanish extends BillingLanguage("es")
@@ -74,34 +69,34 @@ object BillingLanguage:
     import io.taig.babel.{Locale, Locales}
 
     given show: Locale => Show[BillingLanguage] = Show.show:
-        case x: English.type     => x.toString      
-        case x: French.type      => x.toString      
-        // case x: German.type      => x.toString      
-        // case x: Portuguese.type  => x.toString          
-        // case x: Spanish.type     => x.toString      
-        // case x: Italian.type     => x.toString      
-        // case x: Dutch.type       => x.toString  
-        // case x: Danish.type      => x.toString      
-        // case x: Norwegian.type   => x.toString      
-        // case x: Slovenian.type   => x.toString      
-        // case x: Swedish.type     => x.toString      
-    
+        case x: English.type => x.toString
+        case x: French.type  => x.toString
+        // case x: German.type      => x.toString
+        // case x: Portuguese.type  => x.toString
+        // case x: Spanish.type     => x.toString
+        // case x: Italian.type     => x.toString
+        // case x: Dutch.type       => x.toString
+        // case x: Danish.type      => x.toString
+        // case x: Norwegian.type   => x.toString
+        // case x: Slovenian.type   => x.toString
+        // case x: Swedish.type     => x.toString
+
     /** Default language used as fallback throughout the application */
     val DefaultLanguage: BillingLanguage = French
-    
+
     /** Convert BillableLanguage to Babel Locale for i18n translations */
     extension (lang: BillingLanguage)
         def toLocale: Locale = lang match
-            case English    => Locales.en
-            case French     => Locales.fr
+            case English => Locales.en
+            case French  => Locales.fr
             // case _ => Locales.en // Default fallback to English for unsupported languages
 
     implicit def billingLanguageToLocale(implicit bcl: BillingLanguage): Locale = bcl.toLocale
-    
+
     /** Parse language code string to BillingLanguage */
     def fromCode(code: String): Option[BillingLanguage] =
         BillingLanguage.values.find(_.code == code)
-    
+
     /** Parse language code string with fallback to default language */
     def fromCodeWithFallback(code: String): BillingLanguage =
         fromCode(code).getOrElse(DefaultLanguage)

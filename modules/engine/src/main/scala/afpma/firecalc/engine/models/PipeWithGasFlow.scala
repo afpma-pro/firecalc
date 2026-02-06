@@ -5,21 +5,21 @@
 
 package afpma.firecalc.engine.models
 
-import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.all.*
+
 import coulomb.*
-import coulomb.syntax.*
 
 final case class PipeWithGasFlow(
-    innerShape: PipeShape,
-    outer_shape: PipeShape,
-    pipeLength: QtyD[Meter],
-    layers: List[AppendLayerDescr],
-    roughness: Roughness,
+    innerShape          : PipeShape,
+    outer_shape         : PipeShape,
+    pipeLength          : QtyD[Meter],
+    layers              : List[AppendLayerDescr],
+    roughness           : Roughness,
     airSpace_afterLayers: AirSpaceDetailed,
-    pipeLoc: PipeLocation,
-    gas: GasProps,
-    massFlow: QtyD[Kilogram / Second],
-    ext_air: ExteriorAir,
+    pipeLoc             : PipeLocation,
+    gas                 : GasProps,
+    massFlow            : QtyD[Kilogram / Second],
+    ext_air             : ExteriorAir
 )

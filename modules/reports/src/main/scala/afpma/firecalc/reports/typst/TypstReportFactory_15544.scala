@@ -5,37 +5,27 @@
 
 package afpma.firecalc.reports.typst
 
-import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
-import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
-import afpma.firecalc.engine.api.v0_2024_10
-import afpma.firecalc.engine.models.Pipes_15544_Alg
-import afpma.firecalc.engine.models.Pipes_15544_Strict
-import afpma.firecalc.engine.models.Pipes_15544_MCE
-import io.taig.babel.Locale
-import afpma.firecalc.dto.common.ProjectDescr
-import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
-import afpma.firecalc.engine.utils.ShowAsTable
-import afpma.firecalc.reports.typst.TypShow.sanitized
-import afpma.firecalc.engine.utils.getOrThrow
-import afpma.firecalc.engine.models.LocalRegulations
-import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
-import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
-import io.taig.babel.Language
-import io.taig.babel.Languages
-import io.taig.babel.Locales
-import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.utils.BuildInfo
-import afpma.firecalc.engine.models.AirIntakePipe_Module_Generic
-import afpma.firecalc.engine.models.CombustionAirPipe_Module_Generic
-import afpma.firecalc.engine.models.FireboxPipe_Module_Generic
-import afpma.firecalc.engine.models.FluePipe_Module_Generic
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
+
+import afpma.firecalc.i18n.implicits.I18N
+
+import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
+import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
+import afpma.firecalc.engine.models.LocalRegulations
+import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
+import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
+import afpma.firecalc.engine.utils.getOrThrow
+
+import afpma.firecalc.reports.typst.TypShow.sanitized
+
+import io.taig.babel.Locale
 
 abstract class TypstReportFactory_15544(
     val isDraft: Boolean
-)(using Locale)
+)                                      (using Locale)
     extends HasTypeMembers_15544_Alg:
     self =>
 
@@ -44,7 +34,7 @@ abstract class TypstReportFactory_15544(
         type CombustionAirPipe_Module_T = self.CombustionAirPipe_Module_T
         type FireboxPipe_Module_T       = self.FireboxPipe_Module_T
         type FluePipe_Module_T          = self.FluePipe_Module_T
-        type Pipes_15544 = self.Pipes_15544
+        type Pipes_15544                = self.Pipes_15544
     }
 
     val en15544_app: EN15544_Application
@@ -70,7 +60,7 @@ abstract class TypstReportFactory_15544(
     // Typst sections by appearing order
 
     def imports: String =
-        s"""|#import "@preview/fancy-units:0.1.1": num, unit, qty, fancy-units-configure, add-macros
+        """|#import "@preview/fancy-units:0.1.1": num, unit, qty, fancy-units-configure, add-macros
             |#import "@preview/based:0.1.0": base64
             |""".stripMargin
 
@@ -109,7 +99,7 @@ abstract class TypstReportFactory_15544(
         } else {
             ""
         }
-        
+
         s"""|#fancy-units-configure(
             |  per-mode: "slash",
             |  unit-separator: sym.dot,
@@ -136,8 +126,13 @@ abstract class TypstReportFactory_15544(
             |
             |      align(top + left)[
             |        *${I18N.reports.document.software_label} : ${I18N.reports.document.software_name}* \\
-            |        ${I18N.reports.document.versions_label} : ${I18N.reports.document.reports_module_version.apply(BuildInfo.reportsBaseVersion)} ${I18N.reports.document.engine_module_version.apply(BuildInfo.engineVersion)} \\
-            |        ${if (isDraft) I18N.reports.document.no_certification_text else I18N.reports.document.certification_text_with_source_and_date} \\
+            |        ${I18N.reports.document.versions_label} : ${I18N.reports.document.reports_module_version.apply(
+               BuildInfo.reportsBaseVersion
+           )} ${I18N.reports.document.engine_module_version.apply(BuildInfo.engineVersion)} \\
+            |        ${
+               if (isDraft) I18N.reports.document.no_certification_text
+               else I18N.reports.document.certification_text_with_source_and_date
+           } \\
             |        \\
             |      ],
             |
@@ -171,12 +166,12 @@ abstract class TypstReportFactory_15544(
         ConfigPathResolver.resolveLogoPath("reports") match {
             case Some(logoPath) if Files.exists(logoPath) =>
                 try {
-                    val bytes = Files.readAllBytes(logoPath)
+                    val bytes  = Files.readAllBytes(logoPath)
                     val base64 = Base64.getEncoder().encodeToString(bytes)
                     val format = logoPath.toString.toLowerCase() match {
                         case f if f.endsWith(".jpg") || f.endsWith(".jpeg") => "jpg"
-                        case f if f.endsWith(".png") => "png"
-                        case _ => "jpg" // fallback
+                        case f if f.endsWith(".png")                        => "png"
+                        case _                                              => "jpg" // fallback
                     }
                     Some((base64, format))
                 } catch {
@@ -184,12 +179,12 @@ abstract class TypstReportFactory_15544(
                         println(s"Warning: Could not load logo from $logoPath: ${ex.getMessage}")
                         None
                 }
-            case _ =>
+            case _                                        =>
                 println("No logo file found, continuing without logo")
                 None
         }
     }
-    
+
     def main_header: String =
         logo_base64_and_format match {
             case Some((base64, format)) =>
@@ -208,7 +203,7 @@ abstract class TypstReportFactory_15544(
                     |  ]
                     |)
                     |""".stripMargin
-            case None =>
+            case None                   =>
                 s"""|#grid(
                     |  columns: (1fr),
                     |  align(center + horizon)[
@@ -227,10 +222,10 @@ abstract class TypstReportFactory_15544(
 
     def technical_specifications: String =
         TypShow
-        .mkFromShowAsTable[TechnicalSpecficiations](
-            maxWidthForFirstColumn = false
-        )
-        .showAsTyp(en15544_app.outputs.technicalSpecs)
+            .mkFromShowAsTable[TechnicalSpecficiations](
+                maxWidthForFirstColumn = false
+            )
+            .showAsTyp(en15544_app.outputs.technicalSpecs)
 
     def firebox_descr: String =
         en15544_app.inputs.design.firebox.typ
@@ -238,31 +233,31 @@ abstract class TypstReportFactory_15544(
     def level_1_en15544: String =
         heading_1(I18N.reports.headings.compliance_en15544)
 
-    def en15544_citedConstraints: String = 
+    def en15544_citedConstraints: String =
         en15544_app.citedConstraints.typ
 
-    def en15544_pressureRequirement: String = 
+    def en15544_pressureRequirement: String =
         en15544_app.pressureRequirement_EN15544.getOrThrow.typ
 
-    def en15544_t_chimney_wall_top: String = 
+    def en15544_t_chimney_wall_top: String =
         given EN15544_V_2023_Formulas_Alg = en15544_app.formulas
         en15544_app.t_chimney_wall_top.getOrThrow.typ
 
-    def en15544_emissions_and_efficiency_values: String = 
+    def en15544_emissions_and_efficiency_values: String =
         given LocalRegulations = stove_proj_15544_strict.localRegulations
         TypShow
-        .mkFromShowAsTable[EmissionsAndEfficiencyValues](
-            maxWidthForFirstColumn = false
-        )
-        .showAsTyp(en15544_app.emissions_and_efficiency_values)
+            .mkFromShowAsTable[EmissionsAndEfficiencyValues](
+                maxWidthForFirstColumn = false
+            )
+            .showAsTyp(en15544_app.emissions_and_efficiency_values)
 
-    def en15544_flue_gas_triple_of_variates: String = 
+    def en15544_flue_gas_triple_of_variates: String =
         en15544_app.flue_gas_triple_of_variates.getOrThrow.typ
 
-    def en15544_estimated_output_temperatures: String = 
+    def en15544_estimated_output_temperatures: String =
         en15544_app.estimated_output_temperatures.typ
 
-    def en15544_pipesResult: String = 
+    def en15544_pipesResult: String =
         s"""|#[
             |  #set page(flipped: true)
             |  #set text(size: 6pt)
@@ -273,27 +268,27 @@ abstract class TypstReportFactory_15544(
     def level_1_en13384: String =
         heading_1(I18N.reports.headings.compliance_en13384)
 
-    def en13384_heatingAppliance_final: String = 
+    def en13384_heatingAppliance_final: String =
         en15544_app.en13384_heatingAppliance_final.getOrThrow.typ
 
-    def en13384_localConditions: String = 
+    def en13384_localConditions: String =
         en15544_app.inputs.localConditions.typ
 
-    def en13384_windPressure: String = 
+    def en13384_windPressure: String =
         en15544_app.en13384_application.P_L.typ
 
-    def en13384_temperatureRequirements: String = 
+    def en13384_temperatureRequirements: String =
         en15544_app.temperatureRequirements_EN13384.getOrThrow.typ
 
-    def en13384_pressureRequirements: String = 
+    def en13384_pressureRequirements: String =
         en15544_app.pressureRequirements_EN13384.getOrThrow.typ
 
-    def en13384_reference_temperatures: String = 
+    def en13384_reference_temperatures: String =
         TypShow
-        .mkFromShowAsTable[ReferenceTemperatures](
-            maxWidthForFirstColumn = false
-        )
-        .showAsTyp(en15544_app.outputs.reference_temperatures)
+            .mkFromShowAsTable[ReferenceTemperatures](
+                maxWidthForFirstColumn = false
+            )
+            .showAsTyp(en15544_app.outputs.reference_temperatures)
 
     /* Build typst document (string representation) */
     final def build(): String =
@@ -326,7 +321,7 @@ abstract class TypstReportFactory_15544(
             en13384_temperatureRequirements,
             en13384_pressureRequirements,
             page_break,
-            en13384_reference_temperatures,
+            en13384_reference_temperatures
         )
             .filter(_.trim.nonEmpty)
             .mkString("\n\n")

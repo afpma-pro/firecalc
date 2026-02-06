@@ -5,12 +5,10 @@
 
 package afpma.firecalc.engine.impl.common.typeclasses
 
-/**
- * Typeclass for channel split/join operations.
- */
+/** Typeclass for channel split/join operations. */
 trait ChannelsDSL[Descr]:
     def channelsSplit(n: Int): Descr
-    def channelsJoin(): Descr
+    def channelsJoin (      ): Descr
 
 object ChannelsDSL:
     def apply[D](using ev: ChannelsDSL[D]): ChannelsDSL[D] = ev

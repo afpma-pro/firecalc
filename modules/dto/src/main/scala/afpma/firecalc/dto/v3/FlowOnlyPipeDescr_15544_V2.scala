@@ -5,10 +5,12 @@
 
 package afpma.firecalc.dto.v3
 
-import afpma.firecalc.i18n.*
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.i18n.*
+
 import magnolia1.Transl
 
 sealed trait FlowOnlyPipeDescr_15544_V2
@@ -36,7 +38,7 @@ object SetFlowOnlyPipeProp_15544_V2:
     ) extends SetFlowOnlyPipeProp_15544_V2
 
     @Transl(I(_.set_prop.SetNumberOfFlows))
-    case class SetNumberOfFlows(            
+    case class SetNumberOfFlows(
         @Transl(I(_.set_prop.SetNumberOfFlows_fieldName))
         n_flows: NbOfFlows
     ) extends SetFlowOnlyPipeProp_15544_V2
@@ -49,9 +51,9 @@ object AddFlowOnlyPipeElement_15544_V2:
     @Transl(I(_.add_element.AddSectionSlopped))
     case class AddSectionSlopped(
         @Transl(I(_.terms.name))
-        name: String,
+        name          : String,
         @Transl(I(_.terms.length))
-        length: Length,
+        length        : Length,
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_15544_V2
@@ -59,7 +61,7 @@ object AddFlowOnlyPipeElement_15544_V2:
     @Transl(I(_.add_element.AddSectionHorizontal))
     case class AddSectionHorizontal(
         @Transl(I(_.terms.name))
-        name: String, 
+        name             : String,
         @Transl(I(_.terms.horizontal_length))
         horizontal_length: Length
     ) extends AddFlowOnlyPipeElement_15544_V2
@@ -67,7 +69,7 @@ object AddFlowOnlyPipeElement_15544_V2:
     @Transl(I(_.add_element.AddSectionVertical))
     case class AddSectionVertical(
         @Transl(I(_.terms.name))
-        name: String, 
+        name          : String,
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_15544_V2
@@ -75,20 +77,19 @@ object AddFlowOnlyPipeElement_15544_V2:
     @Transl(I(_.add_element.add_direction_change_element))
     sealed abstract class AddDirectionChange(
         @Transl(I(_.terms.name))
-        override val name: String,
+        override val name              : String,
         @Transl(I(_.terms.angle))
-        val angle: Angle,
+        val angle                      : Angle,
         @Transl(I(_.en15544.angle_to_original_direction))
         val angle_to_original_direction: Option[Angle] = None // TO FIX or IMPLEMENT ??
     ) extends AddFlowOnlyPipeElement_15544_V2
 
-
     @Transl(I(_.add_element.AddSharpeAngle_0_to_180))
     case class AddSharpeAngle_0_to_180(
         @Transl(I(_.terms.name))
-        override val name: String, 
+        override val name                       : String,
         @Transl(I(_.terms.angle))
-        override val angle: Angle, 
+        override val angle                      : Angle,
         @Transl(I(_.en15544.angle_to_original_direction))
         override val angle_to_original_direction: Option[Angle]
     ) extends AddDirectionChange(name, angle, angle_to_original_direction)
@@ -99,11 +100,10 @@ object AddFlowOnlyPipeElement_15544_V2:
         override val name: String
     ) extends AddDirectionChange(name, 60.degrees)
 
-
     @Transl(I(_.add_element.AddSectionShapeChange))
     case class AddSectionShapeChange(
         @Transl(I(_.terms.name))
-        val name: String, 
+        val name    : String,
         @Transl(I(_.terms.pipe_shape._self))
         val to_shape: PipeShape
     ) extends AddFlowOnlyPipeElement_15544_V2
@@ -111,9 +111,9 @@ object AddFlowOnlyPipeElement_15544_V2:
     @Transl(I(_.add_element.AddFlowResistance))
     case class AddFlowResistance(
         @Transl(I(_.add_element.name))
-        name: String, 
+        name         : String,
         @Transl(I(_.add_element.zeta))
-        zeta: QtyD[1], 
+        zeta         : QtyD[1],
         @Transl(I(_.add_element.cross_section))
         cross_section: OptionOfEither[AreaInCm2, PipeShape] // Option[Either[L, R]] has issues when serializing via circe, so custom type with custom encoder/decoder as a workaround
     ) extends AddFlowOnlyPipeElement_15544_V2
@@ -121,7 +121,7 @@ object AddFlowOnlyPipeElement_15544_V2:
     @Transl(I(_.add_element.AddPressureDiff))
     case class AddPressureDiff(
         @Transl(I(_.add_element.name))
-        name: String, 
+        name               : String,
         @Transl(I(_.terms.pressure_difference))
         pressure_difference: Pressure
     ) extends AddFlowOnlyPipeElement_15544_V2

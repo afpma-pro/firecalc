@@ -5,7 +5,8 @@
 
 package afpma.firecalc.ui.models.schema.common
 
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
+import io.circe.Encoder
 
 /**
  * Version tracking for ClientProjectData schema.
@@ -15,11 +16,10 @@ opaque type ClientProjectData_Version = Int
 
 object ClientProjectData_Version:
     def apply(v: Int): ClientProjectData_Version = v
-    
-    extension (v: ClientProjectData_Version)
-        def toInt: Int = v
-        
+
+    extension (v: ClientProjectData_Version) def toInt: Int = v
+
     given Ordering[ClientProjectData_Version] = Ordering.by(_.toInt)
-    
+
     given Encoder[ClientProjectData_Version] = Encoder[Int].contramap(_.toInt)
     given Decoder[ClientProjectData_Version] = Decoder[Int].map(ClientProjectData_Version.apply)

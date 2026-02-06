@@ -4,19 +4,16 @@
  */
 
 package afpma.firecalc.dto.v3
-
-import cats.syntax.show.toShow
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.i18n.*
 import afpma.firecalc.i18n.implicits.I18N
-
-import afpma.firecalc.units.coulombutils.{*, given}
 
 import magnolia1.Transl
 
 // 13384 - Annexe B / Tableau B.4
 sealed abstract class Material_13384_V2(
-    val name: String,
+    val name     : String,
     val roughness: Roughness
 )
 
@@ -76,23 +73,21 @@ object Material_13384_V2:
         override val roughness: Roughness = 5.mm
     ) extends Material_13384_V2("CorrugatedMetal", roughness)
 
-    /**
-     * All available material options with default roughness values
-     */
+    /** All available material options with default roughness values */
     val values: List[Material_13384_V2] = List(
-        WeldedSteel(),
-        Glass(),
-        Plastic(),
-        Aluminium(),
-        ClayFlueLiners(),
-        Bricks(),
-        SolderedMetal(),
-        Concrete(),
-        Fibrociment(),
-        Masonry(),
+        WeldedSteel    (),
+        Glass          (),
+        Plastic        (),
+        Aluminium      (),
+        ClayFlueLiners (),
+        Bricks         (),
+        SolderedMetal  (),
+        Concrete       (),
+        Fibrociment    (),
+        Masonry        (),
         CorrugatedMetal()
     )
-    
+
     /**
      * Helper method to create a new instance with updated roughness
      * while preserving the material type
@@ -114,7 +109,7 @@ object Material_13384_V2:
 
     given Conversion[Material_13384_V2, Roughness] = _.roughness
 
-    private def showAndAppendValue(enumShow: String, v: Roughness): String = 
+    private def showAndAppendValue(enumShow: String, v: Roughness): String =
         // s"$enumShow (${v.show})"
         enumShow
 

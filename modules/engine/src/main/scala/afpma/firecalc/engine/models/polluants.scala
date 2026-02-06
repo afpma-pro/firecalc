@@ -14,8 +14,8 @@ enum PolluantName:
 
 object PolluantName:
     given ShowUsingLocale[PolluantName] = showUsingLocale:
-        case CO => I18N.pollutant_names.CO
-        case Dust => I18N.pollutant_names.Dust
-        case OGC => I18N.pollutant_names.OGC
-        case NOx => I18N.pollutant_names.NOx
+        case CO         => I18N.pollutant_names.CO
+        case Dust       => I18N.pollutant_names.Dust
+        case OGC        => I18N.pollutant_names.OGC
+        case NOx        => I18N.pollutant_names.NOx
         case `Dust+OGC` => I18N.pollutant_names.Dust_OGC

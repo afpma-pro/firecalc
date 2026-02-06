@@ -7,10 +7,10 @@ package afpma.firecalc.ui.utils
 
 enum OptionalField(val hint: Option[String]):
     case Yes(h: String) extends OptionalField(Some(h))
-    case No extends OptionalField(None)
+    case No             extends OptionalField(None)
 
 object OptionalField:
     extension (opt: OptionalField)
         def isOptional: Boolean = opt match
             case Yes(_) => true
-            case No => false
+            case No     => false

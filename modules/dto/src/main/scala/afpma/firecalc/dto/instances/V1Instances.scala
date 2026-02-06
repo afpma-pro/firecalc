@@ -5,17 +5,16 @@
 
 package afpma.firecalc.dto.instances
 
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.all.{*, given}
+import afpma.firecalc.units.all.given
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.utils.circe.{*, given}
+
+import afpma.firecalc.utils.circe.*
+
+import afpma.firecalc.dto.all.*
 
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto
-
-import coulomb.*
-import coulomb.syntax.*
 
 object V1Instances:
 

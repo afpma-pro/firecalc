@@ -5,7 +5,6 @@
 
 package afpma.firecalc.ui.daisyui
 
-
 import afpma.firecalc.ui.Component
 
 import com.raquo.laminar.api.L.*

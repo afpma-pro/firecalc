@@ -12,16 +12,16 @@ trait WoodCombustionAlg:
     def molarmass_el(el: AtomicEl | MoleculeEl): MolarMass
 
     extension (ext_air: ExteriorAir)
-        def press_vap_sat: Pressure
-        def press_vap: Pressure
+        def press_vap_sat       : Pressure
+        def press_vap           : Pressure
         def fraction_molaire_H2O: QtyD[1]
 
     extension (w: Wood)
-        def mass_dry: WMassOp[DryMass]
-        def mass_H2O: WMassOp[HumidMass]
+        def mass_dry     : WMassOp[DryMass]
+        def mass_H2O     : WMassOp[HumidMass]
         def frac_mass_H2O: Percentage
         def mass_atomic_el(el: AtomicEl): WMassOp[DryMass]
-        def moles_el(el: AtomicEl): WMassOp[Moles]
+        def moles_el      (el: AtomicEl): WMassOp[Moles]
         def moles_H2O: WMassOp[Moles]
         // def co2_max_wet(xih2o: Percentage): PercByVolHumid
         // def co2_max_dry: PercByVolHumid
@@ -35,8 +35,8 @@ trait WoodCombustionAlg:
         // def o2_dry_from_co2_dry(co2_dry: Percentage): Percentage
 
     extension (inp_air: ExteriorAir)
-        def moles_O(w: Wood, lambda: Double): WMassOp[Moles]
-        def moles_N(w: Wood, lambda: Double): WMassOp[Moles]
+        def moles_O  (w: Wood, lambda: Double): WMassOp[Moles]
+        def moles_N  (w: Wood, lambda: Double): WMassOp[Moles]
         def moles_H2O(w: Wood, lambda: Double): WMassOp[Moles]
 
     extension (ins: CombustionInputsByMassFlow)
@@ -44,16 +44,16 @@ trait WoodCombustionAlg:
         def output_perfect_massflow(el: "CO2" | "O2" | "N2"): MassFlow
         def output_perfect_massflow_H2O: MassFlow
         def output_perfect_massflow_tot: MassFlow
-        def output_perfect_percbyvol_humid(el: "CO2" | "O2" | "N2"): PercByVolHumid 
+        def output_perfect_percbyvol_humid(el: "CO2" | "O2" | "N2"): PercByVolHumid
         def output_perfect_percbyvol_humid_H2O: PercByVolHumid
         def output_perfect_percbyvol_dry(el: "CO2" | "O2" | "N2"): PercByVolDry
-        def output_perfect_percbymass(el: "CO2" | "O2" | "N2"): PercByMass
+        def output_perfect_percbymass   (el: "CO2" | "O2" | "N2"): PercByMass
         def output_perfect_percbymass_H2O: PercByMass
 
     extension (ins: CombustionInputsByMass)
-        def input_air_volume: Volume
+        def input_air_volume   : Volume
         def input_all_moles_H2O: Moles
-        def input_all_moles_el(el: AtomicEl): Moles
+        def input_all_moles_el  (el: AtomicEl                                   ): Moles
         def output_perfect_moles(el: "CO2" | "O2" | "N2" | "C" | "H" | "O" | "N"): Moles
         def output_perfect_moles_H2O: Moles
         def output_perfect_moles_tot: Moles
@@ -63,10 +63,7 @@ trait WoodCombustionAlg:
         def output_perfect_percbyvol_humid(el: "CO2" | "O2" | "N2"): PercByVolHumid
         def output_perfect_percbyvol_humid_H2O: PercByVolHumid
         def output_perfect_percbyvol_dry(el: "CO2" | "O2" | "N2"): PercByVolDry
-        def output_perfect_percbymass(el: "CO2" | "O2" | "N2"): PercByMass
+        def output_perfect_percbymass   (el: "CO2" | "O2" | "N2"): PercByMass
         def output_perfect_percbymass_H2O: PercByMass
 
 end WoodCombustionAlg
-
-
-

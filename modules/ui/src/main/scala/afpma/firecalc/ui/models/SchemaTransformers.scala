@@ -5,9 +5,6 @@
 
 package afpma.firecalc.ui.models
 
-import io.scalaland.chimney.Transformer
-import io.scalaland.chimney.dsl.*
-
 /**
  * Transformers between UI models and schema types.
  *
@@ -17,6 +14,6 @@ import io.scalaland.chimney.dsl.*
  * Payment transformers (BillingInfo_V1 → CustomerInfo_V1) are in
  * ui/models/transformers/PaymentTransformers.scala
  */
-object SchemaTransformers:
+object SchemaTransformers
     // This object is kept for future transformers between UI and schema types
     // Currently empty as all types use direct aliases

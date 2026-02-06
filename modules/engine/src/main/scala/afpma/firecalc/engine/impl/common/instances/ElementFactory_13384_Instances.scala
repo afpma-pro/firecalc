@@ -6,25 +6,25 @@
 package afpma.firecalc.engine.impl.common.instances
 
 import algebra.instances.all.given
-import cats.data.{ValidatedNel, Validated, NonEmptyList}
-import cats.data.Validated.*
-import cats.syntax.all.*
+
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.*
-import afpma.firecalc.engine.impl.common.typeclasses.{
-    ElementFactory,
-    PropsStateOps,
-    ThermalPropsStateOps
-}
+
+import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.{
-    ThermalPipeDescr_13384,
-    FlowOnlyPipeDescr_13384
-}
+import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
+import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 import afpma.firecalc.engine.standard.*
-import afpma.firecalc.units.coulombutils.*
+
+import cats.data.NonEmptyList
+import cats.data.Validated
+import cats.data.Validated.*
+import cats.data.ValidatedNel
+import cats.syntax.all.*
+
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
 
 object ElementFactory_13384_Instances:
@@ -33,7 +33,7 @@ object ElementFactory_13384_Instances:
 
     extension [S](state: S)
         def getValidated[A](
-            get: S => Option[A],
+            get  : S => Option[A],
             error: IncrementalValidation_Error
         ): ValidatedNel[IncrementalValidation_Error, A] =
             Validated
@@ -44,20 +44,18 @@ object ElementFactory_13384_Instances:
 
     case class FlowOnlyStraightSectionCtx_13384(
         innerShape: Option[PipeShape],
-        roughness: Option[Roughness],
-        pipeType: PipeType
+        roughness : Option[Roughness],
+        pipeType  : PipeType
     )
 
     given flowOnlyStraightSection13384: ElementFactory[
-        AddFlowOnlyPipeElement_13384.AddSectionSlopped |
-            AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
+        AddFlowOnlyPipeElement_13384.AddSectionSlopped | AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
             AddFlowOnlyPipeElement_13384.AddSectionVertical,
         FlowOnlyPipeDescr_13384.StraightSection,
         FlowOnlyStraightSectionCtx_13384
     ] with
         def make(
-            op: AddFlowOnlyPipeElement_13384.AddSectionSlopped |
-                AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
+            op: AddFlowOnlyPipeElement_13384.AddSectionSlopped | AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
                 AddFlowOnlyPipeElement_13384.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_13384) =
             val vig = ctx.getValidated(
@@ -91,10 +89,10 @@ object ElementFactory_13384_Instances:
                     (len, elev_gain)
 
             (vig, vr).mapN { (ig, r) =>
-                FlowOnlyPipeDescr_13384.StraightSection(
-                    length = len,
-                    innerShape = ig,
-                    roughness = r,
+                FlowOnlyPipeDescr_13384.StraightSection        (
+                    length         = len,
+                    innerShape     = ig,
+                    roughness      = r,
                     elevation_gain = elev_gain
                 )
             }
@@ -102,26 +100,24 @@ object ElementFactory_13384_Instances:
     // ========== Thermal Straight Section Factory ==========
 
     case class ThermalStraightSectionCtx_13384(
-        innerShape: Option[PipeShape],
-        outer_shape: Option[PipeShape],
-        roughness: Option[Roughness],
-        layers: Option[List[AppendLayerDescr]],
+        innerShape          : Option[PipeShape],
+        outer_shape         : Option[PipeShape],
+        roughness           : Option[Roughness],
+        layers              : Option[List[AppendLayerDescr]],
         airSpace_afterLayers: Option[AirSpaceDetailed],
-        pipeLoc: Option[PipeLocation],
-        ductType: Option[DuctType],
-        pipeType: PipeType
+        pipeLoc             : Option[PipeLocation],
+        ductType            : Option[DuctType],
+        pipeType            : PipeType
     )
 
     given thermalStraightSection13384: ElementFactory[
-        AddThermalPipeElement_13384.AddSectionSlopped |
-            AddThermalPipeElement_13384.AddSectionHorizontal |
+        AddThermalPipeElement_13384.AddSectionSlopped | AddThermalPipeElement_13384.AddSectionHorizontal |
             AddThermalPipeElement_13384.AddSectionVertical,
         ThermalPipeDescr_13384.StraightSection,
         ThermalStraightSectionCtx_13384
     ] with
         def make(
-            op: AddThermalPipeElement_13384.AddSectionSlopped |
-                AddThermalPipeElement_13384.AddSectionHorizontal |
+            op: AddThermalPipeElement_13384.AddSectionSlopped | AddThermalPipeElement_13384.AddSectionHorizontal |
                 AddThermalPipeElement_13384.AddSectionVertical
         )(using ctx: ThermalStraightSectionCtx_13384) =
             val vig     = ctx.getValidated(
@@ -174,27 +170,26 @@ object ElementFactory_13384_Instances:
                         else elev_gain
                     (len, elev_gain)
 
-            (vig, vog, vr, vlayers, vasp, vpl, vduct).mapN {
-                (ig, og, r, layers, asp, pl, duct) =>
-                    ThermalPipeDescr_13384.StraightSection(
-                        length = len,
-                        innerShape = ig,
-                        outer_shape = og,
-                        roughness = r,
-                        layers = layers,
-                        elevation_gain = elev_gain,
-                        airSpaceDetailed = asp,
-                        pipeLoc = pl,
-                        ductType = duct
-                    )
+            (vig, vog, vr, vlayers, vasp, vpl, vduct).mapN { (ig, og, r, layers, asp, pl, duct) =>
+                ThermalPipeDescr_13384.StraightSection          (
+                    length           = len,
+                    innerShape       = ig,
+                    outer_shape      = og,
+                    roughness        = r,
+                    layers           = layers,
+                    elevation_gain   = elev_gain,
+                    airSpaceDetailed = asp,
+                    pipeLoc          = pl,
+                    ductType         = duct
+                )
             }
 
     // ========== FlowOnly Direction Change Factory ==========
 
     case class DirectionChangeCtx_13384(
-        innerShape: Option[PipeShape],
+        innerShape       : Option[PipeShape],
         nextSectionLength: Option[QtyD[Meter]],
-        pipeType: PipeType
+        pipeType         : PipeType
     )
 
     given flowOnlyDirectionChange13384: ElementFactory[
@@ -405,7 +400,7 @@ object ElementFactory_13384_Instances:
 
     case class FlowResistanceCtx_13384(
         innerShape: Option[PipeShape],
-        pipeType: PipeType
+        pipeType  : PipeType
     )
 
     given flowOnlyFlowResistance13384: ElementFactory[
@@ -517,9 +512,9 @@ object ElementFactory_13384_Instances:
     // ========== FlowOnly Section Geometry Change Factory ==========
 
     case class SectionGeometryChangeCtx_13384(
-        innerShape: Option[PipeShape],
+        innerShape               : Option[PipeShape],
         setPropsHasGeometryChange: Boolean,
-        pipeType: PipeType
+        pipeType                 : PipeType
     )
 
     given flowOnlySectionGeometryChange13384: ElementFactory[
@@ -547,7 +542,7 @@ object ElementFactory_13384_Instances:
                                 FlowOnlyPipeDescr_13384.SectionDecrease
                                     .mkFromDiameters(
                                         fromD1 = fromCircleGeom.diameter,
-                                        toD2 = diam
+                                        toD2   = diam
                                     )
                             case AddFlowOnlyPipeElement_13384
                                     .AddSectionIncrease(
@@ -557,7 +552,7 @@ object ElementFactory_13384_Instances:
                                 FlowOnlyPipeDescr_13384.SectionIncrease
                                     .mkFromDiameters(
                                         fromD1 = fromCircleGeom.diameter,
-                                        toD2 = diam
+                                        toD2   = diam
                                     )
                         sec.validNel
                     case notACircleGeom: PipeShape        =>
@@ -593,7 +588,7 @@ object ElementFactory_13384_Instances:
                                 ThermalPipeDescr_13384.SectionDecrease
                                     .mkFromDiameters(
                                         fromD1 = fromCircleGeom.diameter,
-                                        toD2 = diam
+                                        toD2   = diam
                                     )
                             case AddThermalPipeElement_13384.AddSectionIncrease(
                                     _,
@@ -602,7 +597,7 @@ object ElementFactory_13384_Instances:
                                 ThermalPipeDescr_13384.SectionIncrease
                                     .mkFromDiameters(
                                         fromD1 = fromCircleGeom.diameter,
-                                        toD2 = diam
+                                        toD2   = diam
                                     )
                         sec.validNel
                     case notACircleGeom: PipeShape        =>

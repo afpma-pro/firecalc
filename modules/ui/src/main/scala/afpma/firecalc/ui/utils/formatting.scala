@@ -7,10 +7,11 @@ package afpma.firecalc.ui.utils
 
 extension (d: Double)
 
-    /** Prints only necessary chars when formatting doubles 
+    /**
+     * Prints only necessary chars when formatting doubles
      * - remove trailing zeros, dot, or comma
      * - format using maxPrecision
-    */
+     */
     def formatPrecise(maxPrecision: Int = 6): String =
         val formatted = String.format(s"%.${maxPrecision}f", d)
         if (formatted.contains('.') || formatted.contains(','))

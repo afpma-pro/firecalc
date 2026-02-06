@@ -10,17 +10,12 @@ import java.io.File
 
 import FireCalcReportFactory_15544_Strict.Op
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
-import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Strict
-import afpma.firecalc.dto.FireCalcYAML
 import scala.util.Failure
 import scala.util.Success
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr
 import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
-import afpma.firecalc.engine.cas_types.v2024_10_Alg
-import afpma.firecalc.reports.typst.TypstReportFactory_15544
 import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
-import afpma.firecalc.engine.models.Pipes_15544_Strict
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.LoadQty
@@ -31,13 +26,15 @@ import java.io.FileOutputStream
 
 trait FireCalcReportFactory_15544_Strict:
 
-    def loadYAMLFile(yamlFile: File): Op[FireCalcReportFactory_15544_Strict]
-    def loadYAMLString(yamlString: String): Op[FireCalcReportFactory_15544_Strict]
-    def loadAndValidateFireCalcProject(fcProj: StoveProjectDescr_15544_Strict_Alg): Op[FireCalcReportFactory_15544_Strict]
+    def loadYAMLFile                  (yamlFile  : File  ): Op[FireCalcReportFactory_15544_Strict]
+    def loadYAMLString                (yamlString: String): Op[FireCalcReportFactory_15544_Strict]
+    def loadAndValidateFireCalcProject(
+        fcProj: StoveProjectDescr_15544_Strict_Alg
+    ): Op[FireCalcReportFactory_15544_Strict]
 
     def makeTypstString(isDraft: Boolean): Op[String]
-    def makePDFBuffer(isDraft: Boolean): Op[Array[Byte]]
-    def makePDF(isDraft: Boolean): Op[File]
+    def makePDFBuffer  (isDraft: Boolean): Op[Array[Byte]]
+    def makePDF        (isDraft: Boolean): Op[File]
 
 object FireCalcReportFactory_15544_Strict:
 
@@ -46,14 +43,13 @@ object FireCalcReportFactory_15544_Strict:
     def init()(using Locale): FireCalcReportFactory_15544_Strict =
         new FireCalcReportFactory_15544_Strict_Impl {}
 
-    private trait FireCalcReportFactory_15544_Strict_Impl
-        extends FireCalcReportFactory_15544_Strict:
+    private trait FireCalcReportFactory_15544_Strict_Impl extends FireCalcReportFactory_15544_Strict:
         self =>
-        
+
         given Locale = compiletime.deferred
-        protected var appl: Option[EN15544_Strict_Application] = None
-        protected var fcProj: Option[StoveProjectDescr_15544_Strict_Alg] = None
-        protected var typString: Option[String] = None
+        protected var appl     : Option[EN15544_Strict_Application]         = None
+        protected var fcProj   : Option[StoveProjectDescr_15544_Strict_Alg] = None
+        protected var typString: Option[String]                             = None
 
         override def loadYAMLFile(
             yamlFile: File
@@ -64,11 +60,13 @@ object FireCalcReportFactory_15544_Strict:
                 loadYAMLString(y)
             catch
                 case e: Exception =>
-                    Left(YAMLFileReadException(
-                        filePath = yamlFile.getAbsolutePath,
-                        reason = Option(e.getMessage).getOrElse("Unknown error"),
-                        cause = Some(e)
-                    ))
+                    Left(
+                        YAMLFileReadException(
+                            filePath = yamlFile.getAbsolutePath,
+                            reason   = Option(e.getMessage).getOrElse("Unknown error"),
+                            cause    = Some(e)
+                        )
+                    )
 
         override def loadYAMLString(
             yamlString: String
@@ -79,13 +77,15 @@ object FireCalcReportFactory_15544_Strict:
                 case Success(fc) =>
                     val stoveProj = StoveProjectDescr.makeFor_EN15544_Strict(fc)
                     loadAndValidateFireCalcProject(stoveProj)
-                case Failure(e) =>
-                    Left(YAMLDecodingException(
-                        yamlLength = yamlString.length,
-                        reason = Option(e.getMessage).getOrElse("Unknown error"),
-                        cause = Some(e)
-                    ))
-        
+                case Failure(e)  =>
+                    Left(
+                        YAMLDecodingException(
+                            yamlLength = yamlString.length,
+                            reason     = Option(e.getMessage).getOrElse("Unknown error"),
+                            cause      = Some(e)
+                        )
+                    )
+
         override def loadAndValidateFireCalcProject(fireCalcProj: StoveProjectDescr_15544_Strict_Alg) =
             val countryCode = fireCalcProj.project.country
             fireCalcProj.en15544_Alg match
@@ -96,12 +96,12 @@ object FireCalcReportFactory_15544_Strict:
                         case Valid(_)   =>
                             Right(
                                 new FireCalcReportFactory_15544_Strict_Impl {
-                                    appl        = Some(en15544_appl)
-                                    fcProj      = Some(fireCalcProj)
-                                    typString   = None
+                                    appl      = Some(en15544_appl)
+                                    fcProj    = Some(fireCalcProj)
+                                    typString = None
                                 }
                             )
-                case Invalid(e) =>
+                case Invalid(e)          =>
                     Left(EN15544ValidationException(e.toList.map(_.toString)))
 
         private def compileAndRenderTypString(isDraft: Boolean): Op[Unit] =
@@ -118,34 +118,34 @@ object FireCalcReportFactory_15544_Strict:
                     // update local state
                     typString = Some(typstReportFactory.build())
                     Right(())
-                case (None, None) => Left(InternalStateException("appl and fcProj"))
-                case (None, _) => Left(InternalStateException("appl"))
-                case (_, None) => Left(InternalStateException("fcProj"))
-            
-
+                case (None, None                     ) => Left(InternalStateException("appl and fcProj"))
+                case (None, _                        ) => Left(InternalStateException("appl")           )
+                case (_, None                        ) => Left(InternalStateException("fcProj")         )
 
         override def makeTypstString(isDraft: Boolean): Op[String] =
             for
                 _      <- compileAndRenderTypString(isDraft)
-                typStr <- if typString.isDefined then Right(typString.get) else Left(InternalStateException("typString"))
-            yield
-                typStr
+                typStr <-
+                    if typString.isDefined then Right(typString.get) else Left(InternalStateException("typString"))
+            yield typStr
 
         override def makePDFBuffer(isDraft: Boolean): Op[Array[Byte]] =
             for
-                _      <- compileAndRenderTypString(isDraft)
-                typStr <- if typString.isDefined then Right(typString.get) else Left(InternalStateException("typString"))
-                pdfBytes <- try
-                    Right(JavaTypst.render(typStr))
-                catch
-                    case e: Exception =>
-                        Left(TypstRenderingException(
-                            typstLength = typStr.length,
-                            reason = Option(e.getMessage).getOrElse("Unknown error"),
-                            cause = Some(e)
-                        ))
-            yield
-                pdfBytes
+                _        <- compileAndRenderTypString(isDraft)
+                typStr   <-
+                    if typString.isDefined then Right(typString.get) else Left(InternalStateException("typString"))
+                pdfBytes <-
+                    try Right(JavaTypst.render(typStr))
+                    catch
+                        case e: Exception =>
+                            Left(
+                                TypstRenderingException(
+                                    typstLength = typStr.length,
+                                    reason      = Option(e.getMessage).getOrElse("Unknown error"),
+                                    cause       = Some(e)
+                                )
+                            )
+            yield pdfBytes
 
         override def makePDF(isDraft: Boolean): Op[File] =
             makePDFBuffer(isDraft).flatMap: pdfBytes =>
@@ -156,16 +156,18 @@ object FireCalcReportFactory_15544_Strict:
                     val fos = new FileOutputStream(tempFile)
                     try {
                         fos.write(pdfBytes)
-                        Right(tempFile)
+                        Right    (tempFile)
                     } finally {
                         fos.close()
                     }
                 catch
                     case e: Exception =>
-                        Left(PDFFileCreationException(
-                            operation = "file creation and write",
-                            reason = Option(e.getMessage).getOrElse("Unknown error"),
-                            cause = Some(e)
-                        ))
+                        Left(
+                            PDFFileCreationException(
+                                operation = "file creation and write",
+                                reason    = Option(e.getMessage).getOrElse("Unknown error"),
+                                cause     = Some(e)
+                            )
+                        )
 
     end FireCalcReportFactory_15544_Strict_Impl

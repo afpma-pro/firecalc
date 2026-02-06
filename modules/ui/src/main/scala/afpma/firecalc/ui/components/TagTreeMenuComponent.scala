@@ -5,8 +5,6 @@
 
 package afpma.firecalc.ui.components
 
-import scala.annotation.nowarn
-
 import afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
@@ -17,13 +15,17 @@ import afpma.firecalc.ui.icons.lucide
 
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.api.features.unitArrows
+
+import scala.annotation.nowarn
+
 import io.taig.babel.Locale
 
 case class TagTreeMenuComponent[A](
-    ttm: TagTreeMenu[A],
-    appendBus: Observer[CollectionCommand[(Int, A)]],
+    ttm             : TagTreeMenu[A],
+    appendBus       : Observer[CollectionCommand[(Int, A)]],
     incrDescrSizeVar: Var[Int]
-)(using Locale) extends Component:
+)                                 (using Locale)
+    extends Component:
     import TagTreeMenuComponent.*
 
     // lazy val appendObs = appendBus.toObserver
@@ -42,22 +44,22 @@ case class TagTreeMenuComponent[A](
         cls := "btn btn-error btn-sm",
         lucide.`circle-x`,
         I18N_UI.buttons.cancel,
-        onClick.mapTo(TreeState.initWith(resetTo)) --> treeStateVar.writer,
+        onClick.mapTo(TreeState.initWith(resetTo)) --> treeStateVar.writer
     )
-        
+
     private def renderSep = span(lucide.`chevron-right`)
 
     private def renderChoice(resetTo: TagTreeMenu[A])(
-        txt: String,
-        nl: TagTreeMenu.Elems[A],
+        txt        : String,
+        nl         : TagTreeMenu.Elems[A],
         @nowarn snl: Signal[TagTreeMenu.Elems[A]]
     ): HtmlElement =
         // Determine icon and button style based on element type
         val (icon, btnClass) = nl match
             case _: TagTreeMenu.Shortcut[A] => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
-            case _: TagTreeMenu.Group[A]    => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary")
-            case _: TagTreeMenu.Leaf[A]     => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary")
-        
+            case _: TagTreeMenu.Group[A]    => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+            case _: TagTreeMenu.Leaf[A]     => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+
         button(
             cls := s"btn btn-sm $btnClass",
             icon,
@@ -68,13 +70,13 @@ case class TagTreeMenuComponent[A](
                     nl match
                         case n: TagTreeMenu.Group[A] =>
                             s.selectNode(n)
-                        
-                        case l: TagTreeMenu.Leaf[A]  =>
+
+                        case l: TagTreeMenu.Leaf[A] =>
                             appendBus.onNext:
                                 val size = incrDescrSizeVar.now()
                                 CollectionCommand.Append((size, l.elem))
                             TreeState.initWith(resetTo)
-                        
+
                         case sc: TagTreeMenu.Shortcut[A] =>
                             // Append all elements from tuple
                             var currentSize = incrDescrSizeVar.now()
@@ -84,12 +86,12 @@ case class TagTreeMenuComponent[A](
                                 currentSize += 1
                             }
                             TreeState.initWith(resetTo)
-            },
+            }
         )
 
     private def renderSelectedNode(
-        txt: String,
-        n: TagTreeMenu.Group[A],
+        txt       : String,
+        n         : TagTreeMenu.Group[A],
         @nowarn sn: Signal[TagTreeMenu.Group[A]]
     ): HtmlElement =
         button(
@@ -121,13 +123,13 @@ case class TagTreeMenuComponent[A](
         //     cls := "flex flex-row",
         //     div(cls := "flex-none", renderButtonCancel(resetTo)),
         //     div(cls := "flex-none", span(children <-- selectedNodesRenderedStream)),
-        //     div(cls := "flex-none", span(children <-- choicesRendered))            
+        //     div(cls := "flex-none", span(children <-- choicesRendered))
         // )
         div(
             cls := "flex flex-row flex-wrap gap-y-4 items-center gap-x-2",
             renderButtonCancel(resetTo),
             children <-- selectedNodesRenderedStream,
-            children <-- choicesRendered,
+            children <-- choicesRendered
         )
 
     private def render(resetTo: TagTreeMenu[A]): HtmlElement =
@@ -144,7 +146,7 @@ case class TagTreeMenuComponent[A](
 
         div(
             cls := "pt-2",
-            renderWhenClosed.amend(display <-- displayWhenClosed),
+            renderWhenClosed.amend                   (display <-- displayWhenClosed          ),
             renderWhenSelectionPending(resetTo).amend(display <-- displayWhenSelectionPending)
         )
 
@@ -154,7 +156,7 @@ case class TagTreeMenuComponent[A](
 
     private def insertSepBetween(
         list: List[HtmlElement],
-        sep: HtmlElement
+        sep : HtmlElement
     ): List[HtmlElement] =
         list match
             case Nil          => Nil
@@ -170,7 +172,7 @@ object TagTreeMenuComponent:
 
     private case class TreeState[A](
         selectedNodes: Vector[TagTreeMenu.Group[A]],
-        choices: List[TagTreeMenu.Elems[A]],
+        choices      : List[TagTreeMenu.Elems[A]],
         choicesOpened: Boolean
     ):
         import TreeState.Status
@@ -187,7 +189,7 @@ object TagTreeMenuComponent:
             val nextSel = selectedNodes.splitAt(idx + 1)._1
             this.copy(
                 selectedNodes = nextSel,
-                choices = x match
+                choices       = x match
                     case n: TagTreeMenu.Group[A]    => n.next
                     case _: TagTreeMenu.Leaf[A]     => Nil
                     case _: TagTreeMenu.Shortcut[A] => Nil
@@ -196,7 +198,7 @@ object TagTreeMenuComponent:
         def selectNode(n: TagTreeMenu.Group[A]): TreeState[A] =
             this.copy(
                 selectedNodes = selectedNodes.appended(n),
-                choices = n.next
+                choices       = n.next
             )
 
     end TreeState
@@ -208,7 +210,7 @@ object TagTreeMenuComponent:
         def initWith[A](tree: TagTreeMenu[A]): TreeState[A] =
             TreeState(
                 selectedNodes = Vector.empty,
-                choices = tree.elems,
+                choices       = tree.elems,
                 choicesOpened = false
                 // selectedNodes = Vector(geom_elements, grids),
                 // choices = Leaf("avec le zeta et la section") :: Nil,
@@ -229,10 +231,10 @@ object TagTreeMenu:
         def txt: String
 
     case class Group[+A](txt: String, next: List[Elems[A]]) extends Elems[A]
-    case class Leaf[+A](txt: String, elem: A)                     extends Elems[A]
-    case class Shortcut[+A](txt: String, elems: Tuple) extends Elems[A]
+    case class Leaf[+A](txt: String, elem: A)               extends Elems[A]
+    case class Shortcut[+A](txt: String, elems: Tuple)      extends Elems[A]
     object Leaf:
-        def apply[A](txt: String)(using d: Defaultable[A]): Leaf[A] = 
+        def apply[A](txt: String)(using d: Defaultable[A]): Leaf[A] =
             Leaf(txt, elem = d.default)
 
         def apply[A](using d: Defaultable[A], t: HasTranslatedFieldsWithValues[A]): Leaf[A] =

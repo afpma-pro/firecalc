@@ -5,17 +5,17 @@
 
 package afpma.firecalc.payments.http
 
-import cats.effect.Async
-import org.http4s.*
-import org.http4s.dsl.Http4sDsl
 import afpma.firecalc.utils.BuildInfo
 
-class SourceRoutes[F[_]: Async]
-    extends Http4sDsl[F]:
+import cats.effect.Async
 
-    val routes: HttpRoutes[F] = HttpRoutes.of[F] {
-        case GET -> Root / "source" =>
-            Ok(s"""
+import org.http4s.*
+import org.http4s.dsl.Http4sDsl
+
+class SourceRoutes[F[_]: Async] extends Http4sDsl[F]:
+
+    val routes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / "source" =>
+        Ok(s"""
               |FireCalc AFPMA - Payments Backend
               |Licensed under AGPLv3
               |

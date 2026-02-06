@@ -5,26 +5,26 @@
 
 package afpma.firecalc.engine.alg.en13384
 
-import cats.data.*
-
 import algebra.instances.all.given
 
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.all.*
+
 import afpma.firecalc.engine.alg.Standard
-import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.ThermalResistance.CoefficientOfForm
 import afpma.firecalc.engine.models.gtypedefs.ThermalConductivity
 import afpma.firecalc.engine.standard.*
 
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.*
+import cats.data.*
+
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.ops.standard.all.given
 
 trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
-    
+
     import EN13384_1_A1_2019_Formulas_Alg.*
-    
+
     // type definitions
     import afpma.firecalc.engine.models.en13384.typedefs.*
 
@@ -35,66 +35,67 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // "Conduits de fumée fonctionnant sous pression négative"
 
     /**
-      * tirage minimal au niveau de l’admission des fumées dans le conduit (voir 5.10), en Pa
-      *
-      * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
-      * @param P_R perte de charge du conduit de fumée, en Pa ;
-      * @param P_L pression de la vitesse du vent, en Pa ;
-      * @return
-      */
+     * tirage minimal au niveau de l’admission des fumées dans le conduit (voir 5.10), en Pa
+     *
+     * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
+     * @param P_R perte de charge du conduit de fumée, en Pa ;
+     * @param P_L pression de la vitesse du vent, en Pa ;
+     * @return
+     */
     def P_Z(
         P_H: Pressure,
         P_R: Pressure,
-        P_L: Pressure,
+        P_L: Pressure
     ): Pressure
 
     /**
-      * tirage minimal requis au niveau de l’admission des fumées dans le conduit, en Pa ;
-      *
-      * @param P_W tirage minimal de l'appareil à combustion, en Pa ;
-      * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
-      * @param P_B résultante de pression à l'alimentation en air (voir 5.11.3), en Pa ;
-      * @return
-      */
+     * tirage minimal requis au niveau de l’admission des fumées dans le conduit, en Pa ;
+     *
+     * @param P_W tirage minimal de l'appareil à combustion, en Pa ;
+     * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
+     * @param P_B résultante de pression à l'alimentation en air (voir 5.11.3), en Pa ;
+     * @return
+     */
     def P_Ze(
-        P_W: Pressure,
+        P_W : Pressure,
         P_FV: Pressure,
-        P_B: Pressure,
+        P_B : Pressure
     ): Pressure
 
     // Section "5.2.2"
     // "Conduits de fumée fonctionnant sous pression positive"
 
     /**
-      * pression positive maximale au niveau de l'admission des fumées dans le conduit, en Pa ;
-      *
-      * @param P_R perte de charge du conduit de fumée, en Pa ;
-      * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
-      * @param P_L pression de la vitesse du vent, en Pa ;
-      * @return
-      */
+     * pression positive maximale au niveau de l'admission des fumées dans le conduit, en Pa ;
+     *
+     * @param P_R perte de charge du conduit de fumée, en Pa ;
+     * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
+     * @param P_L pression de la vitesse du vent, en Pa ;
+     * @return
+     */
     def P_ZO(
         P_R: Pressure,
         P_H: Pressure,
-        P_L: Pressure,
+        P_L: Pressure
     ): Pressure
+
     /**
-      * pression positive minimale au niveau de l’admission des fumées dans le conduit, en Pa ;
-      *
-      * @param P_R perte de charge du conduit de fumée, en Pa ;
-      * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
-      * @return
-      */
+     * pression positive minimale au niveau de l’admission des fumées dans le conduit, en Pa ;
+     *
+     * @param P_R perte de charge du conduit de fumée, en Pa ;
+     * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
+     * @return
+     */
     def P_ZOmin(
         P_R: Pressure,
-        P_H: Pressure,
+        P_H: Pressure
     ): Pressure
 
     // Section "5.3"
     // Exigence relative à la température
 
     /**
-     * limite de température, en K 
+     * limite de température, en K
      *
      * @param fgCondition flue gas condition (dry or wet)
      * @param T_sp limite de température de condensation des fumées
@@ -119,10 +120,10 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return débit massique des fumées, en g/s
      */
     def m_dot_calc(
-        f_m1: Double,
-        f_m2: Double,
+        f_m1 : Double,
+        f_m2 : Double,
         σ_CO2: QtyD[Percent],
-        Q_F: QtyD[Kilo * Watt]
+        Q_F  : QtyD[Kilo * Watt]
     ): QtyD[Gram / Second]
 
     /**
@@ -135,10 +136,10 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return débit massique des fumées, en g/s
      */
     def mB_dot_calc(
-        f_m1: Double,
-        f_m3: Double,
+        f_m1 : Double,
+        f_m3 : Double,
         σ_CO2: QtyD[Percent],
-        Q_F: QtyD[Kilo * Watt]
+        Q_F  : QtyD[Kilo * Watt]
     ): QtyD[Gram / Second]
 
     /**
@@ -163,57 +164,57 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // Section "5.5.3", "Température des fumées"
 
     /**
-      * Température des fumées à la puissance utile nominale (T_WN)
-      *
-      * @param twn Température des fumées à la puissance utile nominale (T_WN)
-      * @return Température des fumées à la puissance utile nominale (T_WN)
-      */
+     * Température des fumées à la puissance utile nominale (T_WN)
+     *
+     * @param twn Température des fumées à la puissance utile nominale (T_WN)
+     * @return Température des fumées à la puissance utile nominale (T_WN)
+     */
     def T_WN(twn: TCelsius): TCelsius
 
     /**
-      * Température des fumées à la puissance utile la plus faible possible (T_Wmin)
-      *
-      * @param twmin (optional) Température des fumées à la puissance utile la plus faible possible
-      * @param twn Température des fumées à la puissance utile nominale (T_WN)
-      * @return Température des fumées à la puissance utile nominale (T_WN)
-      */
+     * Température des fumées à la puissance utile la plus faible possible (T_Wmin)
+     *
+     * @param twmin (optional) Température des fumées à la puissance utile la plus faible possible
+     * @param twn Température des fumées à la puissance utile nominale (T_WN)
+     * @return Température des fumées à la puissance utile nominale (T_WN)
+     */
     def T_Wmin(twmin: Option[TCelsius], twn: TCelsius): TCelsius
 
-    // Section "5.5.4", 
-    // Tirage minimal de l'appareil à combustion (P_W) 
+    // Section "5.5.4",
+    // Tirage minimal de l'appareil à combustion (P_W)
     // pour les conduits de fumée fonctionnant sous pression négative
 
     /**
-      * Tirage minimal de l'appareil à combustion (P_W) 
-      * pour les conduits de fumée fonctionnant sous pression négative
-      * 
-      * @param pw valeur donnée par le fabricant
-      * @return
-      */
+     * Tirage minimal de l'appareil à combustion (P_W)
+     * pour les conduits de fumée fonctionnant sous pression négative
+     *
+     * @param pw valeur donnée par le fabricant
+     * @return
+     */
     def P_W_calc(pw: Pressure): Pressure
 
     /**
-      * Tirage maximal de l'appareil à combustion (P_Wmax) 
-      * pour les conduits de fumée fonctionnant sous pression négative
-      * 
-      * @param pwmax valeur donnée par le fabricant
-      * @return
-      */
+     * Tirage maximal de l'appareil à combustion (P_Wmax)
+     * pour les conduits de fumée fonctionnant sous pression négative
+     *
+     * @param pwmax valeur donnée par le fabricant
+     * @return
+     */
     def P_Wmax_calc(pwmax: Pressure): Pressure
 
     // Section "5.6.3", "Résistance Thermique (1 / Λ)"
 
     def thermal_resistance_for_layer_calc(
-        cof: CoefficientOfForm, 
-        dhi: Length, 
-        dho: Length, 
+        cof   : CoefficientOfForm,
+        dhi   : Length,
+        dho   : Length,
         lambda: ThermalConductivity
     ): SquareMeterKelvinPerWatt
 
     def thermal_resistance_for_layers_calc(
         mean_gas_temp: TCelsius,
-        startGeom: PipeShape,
-        layers: List[AppendLayerDescr],
+        startGeom    : PipeShape,
+        layers       : List[AppendLayerDescr]
     ): Either[EN13384_FormulaError, SquareMeterKelvinPerWatt]
 
     // Section "5.7.1.2", "Température de l'air extérieur (T_L)"
@@ -226,7 +227,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return température de l’air extérieur, en K
      */
     def T_L_calc(
-        pReq: DraftCondition,
+        pReq        : DraftCondition,
         T_L_override: Map[DraftCondition, T_L]
     ): T_L
 
@@ -251,81 +252,81 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return Température de l'air ambiant, en K
      */
     def T_u_calc(
-        T_L: T_L,
-        airSpace: AirSpace,
-        pReq: DraftCondition,
-        flueGasCond: FlueGasCondition,
+        T_L                           : T_L,
+        airSpace                      : AirSpace,
+        pReq                          : DraftCondition,
+        flueGasCond                   : FlueGasCondition,
         unheatedHeightInsideAndOutside: QtyD[Meter],
-        T_uo_override: T_uo_temperature_override,
-        T_u_custom_area: Option[TKelvin],
-    )(
-        A_ub: QtyD[(Meter ^ 2)],
-        A_uh: QtyD[(Meter ^ 2)],
-        A_uu: QtyD[(Meter ^ 2)],
-        A_ul: QtyD[(Meter ^ 2)],
-        A_u_custom_area: QtyD[(Meter ^ 2)],
+        T_uo_override                 : T_uo_temperature_override,
+        T_u_custom_area               : Option[TKelvin]
+    )           (
+        A_ub                          : QtyD[(Meter ^ 2)],
+        A_uh                          : QtyD[(Meter ^ 2)],
+        A_uu                          : QtyD[(Meter ^ 2)],
+        A_ul                          : QtyD[(Meter ^ 2)],
+        A_u_custom_area               : QtyD[(Meter ^ 2)]
     ): Either[EN13384_FormulaError.NoOutsideSurface, TempD[Kelvin]]
 
     def T_u_temp_helper(
-        T_L: T_L,
-        airSpace: AirSpace,
-        pReq: DraftCondition,
-        flueGasCond: FlueGasCondition,
+        T_L                           : T_L,
+        airSpace                      : AirSpace,
+        pReq                          : DraftCondition,
+        flueGasCond                   : FlueGasCondition,
         unheatedHeightInsideAndOutside: QtyD[Meter],
-        T_uo_override: T_uo_temperature_override,
-    )(
-        ambAirTempSet: AmbiantAirTemperatureSet
+        T_uo_override                 : T_uo_temperature_override
+    )                  (
+        ambAirTempSet                 : AmbiantAirTemperatureSet
     ): TKelvin
 
-    val T_uo_default: T_uo_temperature
+    val T_uo_default           : T_uo_temperature
     protected val T_ux_defaults: TuTemperatures
 
     def T_uo(using T_uo_override: T_uo_temperature_override): T_uo_temperature
 
     def T_uo_calc(
-        T_L: T_L,
+        T_L                           : T_L,
         unheatedHeightInsideAndOutside: Length,
-        airSpace: AirSpace,
-        pReq: DraftCondition,
-        flueGasCond: FlueGasCondition,
-    )(using
-        T_uo_override: T_uo_temperature_override
+        airSpace                      : AirSpace,
+        pReq                          : DraftCondition,
+        flueGasCond                   : FlueGasCondition
+    )            (using
+        T_uo_override                 : T_uo_temperature_override
     ): TKelvin
 
     /**
-      * Interpretation of 5.7.1.3
-      * 
-      * Define how we consider a detailed definition of air gaps in relation to 5.7.1.3
-      * Issues : 
-      *     - no minimum width is defined for a ventilated air gap
-      *     - no explicit mention when we have a mix of sections : some without and some with air gap defined (ventilated or not)
-      *
-      * @param airGap
-      * @return TypeLameAir
-      */
+     * Interpretation of 5.7.1.3
+     *
+     * Define how we consider a detailed definition of air gaps in relation to 5.7.1.3
+     * Issues :
+     *     - no minimum width is defined for a ventilated air gap
+     *     - no explicit mention when we have a mix of sections : some without and some with air gap defined (ventilated or not)
+     *
+     * @param airGap
+     * @return TypeLameAir
+     */
     // def interpretTypeLameAirFromAirGap(airGap: AirGap): TypeLameAir
 
     /**
-      * Interpretation of 5.7.1.3
-      * 
-      * @param airSpaceDetailed
-      * @return AirSpace
-      */
+     * Interpretation of 5.7.1.3
+     *
+     * @param airSpaceDetailed
+     * @return AirSpace
+     */
     def interpretAirSpaceFromAirSpaceDetailed(airSpaceDetailed: AirSpaceDetailed): AirSpace
 
     // Section "5.7.2"
     // Pression de l'air extérieur (p_L)
 
     /**
-      * Pression de l'air extérieur (p_L)
-      *
-      * @param T_L température de l'air extérieur, en K
-      * @param z hauteur au-dessus du niveau de la mer, en m
-      * @return Pression de l'air extérieur (p_L)
-      */
+     * Pression de l'air extérieur (p_L)
+     *
+     * @param T_L température de l'air extérieur, en K
+     * @param z hauteur au-dessus du niveau de la mer, en m
+     * @return Pression de l'air extérieur (p_L)
+     */
     def p_L_calc(
         T_L: TempD[Kelvin],
-        z: QtyD[Meter]
+        z  : QtyD[Meter]
     ): QtyD[Pascal]
 
     // Section "5.7.3.1"
@@ -335,17 +336,17 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     def R_L: JoulesPerKilogramKelvin
 
     // Section "5.7.3.2"
-    // Constante des gaz des fumées (R), en J/(kg.K) 
+    // Constante des gaz des fumées (R), en J/(kg.K)
 
     /**
-     * Constante des gaz des fumées, en J/(kg.K) 
+     * Constante des gaz des fumées, en J/(kg.K)
      *
      * @param comb type de combustible
      * @param σ_H2O teneur en vapeur d'eau des fumées, en %
      * @param σ_CO2 teneur en dioxyde de carbone des fumées sèches, en %
      */
     def R_calc(
-        comb: FuelType,
+        comb : FuelType,
         σ_H2O: QtyD[Percent],
         σ_CO2: QtyD[Percent]
     ): JoulesPerKilogramKelvin
@@ -353,29 +354,29 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // Section 5.7.4, Masse volumique de l'air extérieur (ρ_L)
 
     /**
-      * Masse volumique de l'air extérieur (ρ_L)
-      *
-      * @param p_L pression de l’air extérieur, en Pa
-      * @param T_L température de l’air extérieur, en K
-      * @return
-      */
+     * Masse volumique de l'air extérieur (ρ_L)
+     *
+     * @param p_L pression de l’air extérieur, en Pa
+     * @param T_L température de l’air extérieur, en K
+     * @return
+     */
     def ρ_L_calc(
         p_L: Pressure,
-        T_L: TKelvin,
+        T_L: TKelvin
     ): Density
 
     /**
-      * Masse volumique de l'air de combustion (ρ_B)
-      *
-      * @param T_B pression de l’air de combustion, en Pa
-      * @param z hauteur au-dessus du niveau de la mer, en m
-      * @return
-      */
+     * Masse volumique de l'air de combustion (ρ_B)
+     *
+     * @param T_B pression de l’air de combustion, en Pa
+     * @param z hauteur au-dessus du niveau de la mer, en m
+     * @return
+     */
     def ρ_B_calc(
         T_B: TKelvin,
-        z: Length
+        z  : Length
     ): Density
-    
+
     // Section "5.7.5", "Capacité calorifique spécifique des fumées (c_p)"
 
     /**
@@ -390,11 +391,11 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return
      */
     def c_p_calc(
-        t_m: TempD[Celsius],
-        f_c0: Double,
-        f_c1: Double,
-        f_c2: Double,
-        f_c3: Double,
+        t_m  : TempD[Celsius],
+        f_c0 : Double,
+        f_c1 : Double,
+        f_c2 : Double,
+        f_c3 : Double,
         σ_CO2: QtyD[Percent]
     ): JoulesPerKilogramKelvin
 
@@ -408,8 +409,8 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return capacité calorifique spécifique des fumées c_p, en J/(kg⋅K)
      */
     def c_p_calc(
-        t_m: TempD[Celsius],
-        comb: FuelType,
+        t_m  : TempD[Celsius],
+        comb : FuelType,
         σ_CO2: QtyD[Percent]
     ): JoulesPerKilogramKelvin
 
@@ -417,27 +418,27 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // Température de condensation (T_sp)
 
     /**
-      * Température de condensation (T_sp)
-      *
-      * @param comb type de combustible
-      * @param T_p point de rosée de l'eau des fumées pour différents combustibles et différentes concentrations envolume de CO 2 dans les fumées doit être calculé à l'aide des Formules (B.5), (B.6) et (B.7).
-      * @param T_sp température de condensation des fumées est le point de rosée acide
-      * @return
-      */
+     * Température de condensation (T_sp)
+     *
+     * @param comb type de combustible
+     * @param T_p point de rosée de l'eau des fumées pour différents combustibles et différentes concentrations envolume de CO 2 dans les fumées doit être calculé à l'aide des Formules (B.5), (B.6) et (B.7).
+     * @param T_sp température de condensation des fumées est le point de rosée acide
+     * @return
+     */
     def T_sp(
-        comb: FuelType,
-        T_p: TKelvin,
-        ΔT_sp: Option[TKelvin],
+        comb : FuelType,
+        T_p  : TKelvin,
+        ΔT_sp: Option[TKelvin]
     ): TKelvin
 
     // Section "5.7.7", Facteur de correction de l'instabilité de la température (S_H)
 
     /**
-      * Calcule le facteur de correction de l'instabilité de la température (S_H)
-      *
-      * @param pReq pressure requirements (min or max draft)
-      * @return S_H
-      */
+     * Calcule le facteur de correction de l'instabilité de la température (S_H)
+     *
+     * @param pReq pressure requirements (min or max draft)
+     * @return S_H
+     */
     def S_H_calc(
         pReq: DraftCondition
     ): Dimensionless
@@ -461,7 +462,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     def T_m_calc(
         T_u: TempD[Kelvin],
         T_e: TempD[Kelvin],
-        K: Dimensionless
+        K  : Dimensionless
     ): TempD[Kelvin]
 
     /**
@@ -475,9 +476,8 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     def T_o_calc(
         T_u: TempD[Kelvin],
         T_e: TempD[Kelvin],
-        K: Dimensionless
+        K  : Dimensionless
     ): TempD[Kelvin]
-
 
     /**
      * Calcule la température moyenne des fumées dans le conduit de raccordement T_mV
@@ -520,11 +520,11 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return Coefficient de refroidissement du conduit de fumée
      */
     def K_calc(
-        c_p: JoulesPerKilogramKelvin,
-        k: WattsPerSquareMeterKelvin,
-        L: QtyD[Meter],
+        c_p  : JoulesPerKilogramKelvin,
+        k    : WattsPerSquareMeterKelvin,
+        L    : QtyD[Meter],
         m_dot: QtyD[Kilogram / Second],
-        U: QtyD[Meter]
+        U    : QtyD[Meter]
     ): Dimensionless
 
     /**
@@ -538,11 +538,11 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return Coefficient de refroidissement du conduit de raccordement
      */
     def K_V_calc(
-        c_p: JoulesPerKilogramKelvin,
-        k_V: WattsPerSquareMeterKelvin,
-        L_V: QtyD[Meter],
+        c_p  : JoulesPerKilogramKelvin,
+        k_V  : WattsPerSquareMeterKelvin,
+        L_V  : QtyD[Meter],
         m_dot: QtyD[Kilogram / Second],
-        U_V: QtyD[Meter]
+        U_V  : QtyD[Meter]
     ): K_V
 
     // Section "5.8.3", "Coefficient de transfert thermique (k_b)"
@@ -560,10 +560,10 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return coefficient de transfert thermique du conduit de fumée à la température d'équilibre K_b, en W/(m 2 ⋅ K)
      */
     def k_b_calc(
-        D_h: QtyD[Meter],
-        D_ha: QtyD[Meter],
-        α_a: WattsPerSquareMeterKelvin,
-        α_i: WattsPerSquareMeterKelvin,
+        D_h     : QtyD[Meter],
+        D_ha    : QtyD[Meter],
+        α_a     : WattsPerSquareMeterKelvin,
+        α_i     : WattsPerSquareMeterKelvin,
         Λinverse: SquareMeterKelvinPerWatt
     ): WattsPerSquareMeterKelvin
 
@@ -579,11 +579,11 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return coefficient de transfert thermique du conduit de fumée à une température de non-équilibre k, en W/(m 2 ⋅ K)
      */
     def k_calc(
-        D_h: QtyD[Meter],
-        D_ha: QtyD[Meter],
-        S_H: Dimensionless,
-        α_a: WattsPerSquareMeterKelvin,
-        α_i: WattsPerSquareMeterKelvin,
+        D_h     : QtyD[Meter],
+        D_ha    : QtyD[Meter],
+        S_H     : Dimensionless,
+        α_a     : WattsPerSquareMeterKelvin,
+        α_i     : WattsPerSquareMeterKelvin,
         Λinverse: SquareMeterKelvinPerWatt
     ): WattsPerSquareMeterKelvin
 
@@ -615,11 +615,11 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return nombre de Nusselt moyen sur la hauteur du conduit de fumée
      */
     def N_u_calc(
-        D_h: QtyD[Meter],
-        L_tot: QtyD[Meter],
-        P_r: Dimensionless,
-        R_e: Dimensionless,
-        Ψ: Dimensionless,
+        D_h     : QtyD[Meter],
+        L_tot   : QtyD[Meter],
+        P_r     : Dimensionless,
+        R_e     : Dimensionless,
+        Ψ       : Dimensionless,
         Ψ_smooth: Dimensionless
     ): FormulaOp[Dimensionless]
 
@@ -648,9 +648,9 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      */
     def R_e_calc(
         w_m_notCorrected: QtyD[Meter / Second],
-        D_h: QtyD[Meter],
-        ρ_m: QtyD[Kilogram / (Meter ^ 3)],
-        η_A: NewtonSecondsPerSquareMeter
+        D_h             : QtyD[Meter],
+        ρ_m             : QtyD[Kilogram / (Meter ^ 3)],
+        η_A             : NewtonSecondsPerSquareMeter
     ): Dimensionless
 
     /**
@@ -679,10 +679,10 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return coefficient externe de transfert thermique dans le conduit de fumée α_a, en W/(m2 ⋅ K)
      */
     def α_a_calc(
-        pipeLoc: PipeLocation,
-        airSpaceDetailed: AirSpaceDetailed,
+        pipeLoc         : PipeLocation,
+        airSpaceDetailed: AirSpaceDetailed
     ): WattsPerSquareMeterKelvin
-    
+
     /**
      * Calcule le coefficient externe de transfert thermique α_a du conduit
      *
@@ -702,33 +702,33 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // Section "5.9.1", "Masse volumique des fumées (ρ_m)"
 
     /**
-      * Calcule la masse volumique moyenne des fumées (formule 27)
-      *
-      * @param p_L pression atmosphérique extérieure, en Pa
-      * @param R constante des gaz des fumées, en J/(kg.K)
-      * @param T_m température moyenne des fumées, en K
-      * @return ρ_m masse volumique moyenne des fumées, en kg/m3
-      */
+     * Calcule la masse volumique moyenne des fumées (formule 27)
+     *
+     * @param p_L pression atmosphérique extérieure, en Pa
+     * @param R constante des gaz des fumées, en J/(kg.K)
+     * @param T_m température moyenne des fumées, en K
+     * @return ρ_m masse volumique moyenne des fumées, en kg/m3
+     */
     def ρ_m_calc(
         p_L: QtyD[Pascal],
-        R: JoulesPerKilogramKelvin,
+        R  : JoulesPerKilogramKelvin,
         T_m: TempD[Kelvin]
     ): QtyD[Kilogram / (Meter ^ 3)]
 
     // Section "5.9.2", Vitesse des fumées (w_m)
 
     /**
-      * Calcule la vitesse moyenne des fumées w_m, en m/s
-      *
-      * @param A section transversale interne du conduit de fumée, en m2
-      * @param m_dot débit massique des fumées (voir 5.5.1), en kg/s
-      * @param ρ_m masse volumique moyenne des fumées, en kg/m 3
-      * @return vitesse moyenne des fumées, en m/s
-      */
+     * Calcule la vitesse moyenne des fumées w_m, en m/s
+     *
+     * @param A section transversale interne du conduit de fumée, en m2
+     * @param m_dot débit massique des fumées (voir 5.5.1), en kg/s
+     * @param ρ_m masse volumique moyenne des fumées, en kg/m 3
+     * @return vitesse moyenne des fumées, en m/s
+     */
     def w_m_calc(
-        A: Area,
+        A    : Area,
         m_dot: QtyD[Kilogram / Second],
-        ρ_m: Density,
+        ρ_m  : Density
     ): QtyD[Meter / Second]
 
     // Section "5.10", Détermination des pressions
@@ -738,30 +738,30 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // négative (P_Z et P_Zmax )
 
     /**
-      * tirage maximal au niveau de l’admission des fumées, en Pa.
-      *
-      * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
-      * @param P_R perte de charge du conduit de fumée, en Pa ;
-      * @return
-      */
+     * tirage maximal au niveau de l’admission des fumées, en Pa.
+     *
+     * @param P_H tirage théorique disponible dû à l'effet de cheminée, en Pa ;
+     * @param P_R perte de charge du conduit de fumée, en Pa ;
+     * @return
+     */
     def P_Zmax(
         P_H: Pressure,
-        P_R: Pressure,
+        P_R: Pressure
     ): Pressure
 
     // Section "5.10.2"
     // "Tirage théorique disponible dû à l'effet de cheminée (P_H)"
 
     /**
-      * tirage théorique disponible dû à l'effet de cheminée
-      *
-      * @param H hauteur utile du conduit de fumée, en m ;
-      * @param ρ_L masse volumique de l'air extérieur (voir 5.7.4), en kg/m 3 ;
-      * @param ρ_m masse volumique moyenne des fumées (voir 5.9.1), en kg/m 3 .
-      * @return
-      */
+     * tirage théorique disponible dû à l'effet de cheminée
+     *
+     * @param H hauteur utile du conduit de fumée, en m ;
+     * @param ρ_L masse volumique de l'air extérieur (voir 5.7.4), en kg/m 3 ;
+     * @param ρ_m masse volumique moyenne des fumées (voir 5.9.1), en kg/m 3 .
+     * @return
+     */
     def P_H_calc(
-        H: QtyD[Meter],
+        H  : QtyD[Meter],
         ρ_L: QtyD[Kilogram / (Meter ^ 3)],
         ρ_m: QtyD[Kilogram / (Meter ^ 3)]
     ): Pressure
@@ -783,34 +783,34 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      */
     final def P_R(
         P_G: QtyD[Pascal],
-        Ψ: Dimensionless,
-        L: QtyD[Meter],
+        Ψ  : Dimensionless,
+        L  : QtyD[Meter],
         D_h: QtyD[Meter],
         Σ_ζ: Dimensionless,
         ρ_m: QtyD[Kilogram / (Meter ^ 3)],
         w_m: QtyD[Meter / Second],
         S_E: Dimensionless
-    ): Pressure = 
+    ): Pressure =
         P_R_sum_calc(
-            P_R_staticFriction_calc(Ψ,L,D_h,ρ_m,w_m,S_E),
-            P_R_dynamicFriction_calc(Σ_ζ,ρ_m,w_m,S_E),
-            P_R_velocityChange_calc(S_E, P_G)
+            P_R_staticFriction_calc (Ψ, L, D_h, ρ_m, w_m, S_E),
+            P_R_dynamicFriction_calc(Σ_ζ, ρ_m, w_m, S_E      ),
+            P_R_velocityChange_calc (S_E, P_G                )
         )
 
     final def P_R_sum_calc(
-        P_R_staticFriction: Pressure,
+        P_R_staticFriction : Pressure,
         P_R_dynamicFriction: Pressure,
-        P_R_velocityChange: Pressure,
-    ): Pressure = 
-          P_R_staticFriction
-        + P_R_dynamicFriction
-        + P_R_velocityChange
+        P_R_velocityChange : Pressure
+    ): Pressure =
+        P_R_staticFriction
+            + P_R_dynamicFriction
+            + P_R_velocityChange
 
     def P_R_dynamicPressure_calc(ρ_m: Density, w_m: FlowVelocity): Pressure
 
     def P_R_staticFriction_calc(
-        Ψ: Dimensionless,
-        L: QtyD[Meter],
+        Ψ  : Dimensionless,
+        L  : QtyD[Meter],
         D_h: QtyD[Meter],
         ρ_m: QtyD[Kilogram / (Meter ^ 3)],
         w_m: QtyD[Meter / Second],
@@ -825,14 +825,14 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     ): Pressure
 
     /**
-      * pression (de sécurité ?) due au changement de vitesse des fumées
-      *
-      * @param S_E coefficient de sécurité du débit (voir 5.7.8) ;
-      * @param P_G différence de pression due au changement de vitesse des fumées dans le conduit, en Pa
-      * @return
-      */
+     * pression (de sécurité ?) due au changement de vitesse des fumées
+     *
+     * @param S_E coefficient de sécurité du débit (voir 5.7.8) ;
+     * @param P_G différence de pression due au changement de vitesse des fumées dans le conduit, en Pa
+     * @return
+     */
     def P_R_velocityChange_calc(
-        S_E: Dimensionless, 
+        S_E: Dimensionless,
         P_G: QtyD[Pascal]
     ): Pressure
 
@@ -861,12 +861,10 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // Section 5.10.4
     // Pression de la vitesse du vent (P_L)
 
-    /**
-      * Pression de la vitesse du vent (P_L)
-      */
+    /** Pression de la vitesse du vent (P_L) */
     def P_L_calc(
-        coastal_region: Boolean,
-        chimney_termination: ChimneyTermination,
+        coastal_region     : Boolean,
+        chimney_termination: ChimneyTermination
     ): P_L
 
     // Section "5.11.1"
@@ -875,53 +873,53 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // des fumées dans le conduit (P_ZOe et P_ZOemin)
 
     /**
-      * tirage maximal admis au niveau de l’admission des fumées dans le conduit, en Pa ;
-      *
-      * @param P_Wmax tirage maximal de l'appareil à combustion, en Pa ;
-      * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
-      * @param P_B résultante de pression à l'alimentation en air (voir 5.11.3), en Pa ;
-      * @return
-      */
+     * tirage maximal admis au niveau de l’admission des fumées dans le conduit, en Pa ;
+     *
+     * @param P_Wmax tirage maximal de l'appareil à combustion, en Pa ;
+     * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
+     * @param P_B résultante de pression à l'alimentation en air (voir 5.11.3), en Pa ;
+     * @return
+     */
     def P_Zemax(
         P_Wmax: Pressure,
-        P_FV: Pressure,
-        P_B: Pressure,
+        P_FV  : Pressure,
+        P_B   : Pressure
     ): Pressure
 
     /**
-      * pression différentielle maximale au niveau de l'admission des fumées dans le conduit, en Pa ;
-      *
-      * @param P_WO pression différentielle maximale au niveau de la sortie de l'appareil à combustion, en Pa ;
-      * @param P_B résultante de pression à l'alimentation en air, en Pa.
-      * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
-      * @return
-      */
+     * pression différentielle maximale au niveau de l'admission des fumées dans le conduit, en Pa ;
+     *
+     * @param P_WO pression différentielle maximale au niveau de la sortie de l'appareil à combustion, en Pa ;
+     * @param P_B résultante de pression à l'alimentation en air, en Pa.
+     * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
+     * @return
+     */
     def P_ZOe(
         P_WO: Pressure,
-        P_B: Pressure,
-        P_FV: Pressure,
-    ): Pressure 
+        P_B : Pressure,
+        P_FV: Pressure
+    ): Pressure
 
     /**
-      * pression différentielle minimale au niveau de l'admission des fumées dans le conduit, en Pa ;
-      *
-      * @param P_WOmin pression différentielle minimale à la sortie de l'appareil à combustion, en Pa ;
-      * @param P_B résultante de pression à l'alimentation en air, en Pa.
-      * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
-      * @return
-      */
+     * pression différentielle minimale au niveau de l'admission des fumées dans le conduit, en Pa ;
+     *
+     * @param P_WOmin pression différentielle minimale à la sortie de l'appareil à combustion, en Pa ;
+     * @param P_B résultante de pression à l'alimentation en air, en Pa.
+     * @param P_FV résultante de pression au conduit de raccordement des fumées, en Pa ;
+     * @return
+     */
     def P_ZOemin(
         P_WOmin: Pressure,
-        P_B: Pressure,
-        P_FV: Pressure,
+        P_B    : Pressure,
+        P_FV   : Pressure
     ): Pressure
 
     // Section "5.11.3.2"
     // "Tirage théorique disponible dû à l'effet de cheminée du conduit de raccordement (P_HV)"
 
     def P_HV_calc(
-        H_V: QtyD[Meter],
-        ρ_L: QtyD[Kilogram / (Meter ^ 3)],
+        H_V : QtyD[Meter],
+        ρ_L : QtyD[Kilogram / (Meter ^ 3)],
         ρ_mV: QtyD[Kilogram / (Meter ^ 3)]
     ): QtyD[Pascal]
 
@@ -929,12 +927,12 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // "Perte de charge de l'alimentation en air (P_B)"
 
     def P_B_without_ventilation_openings: Pressure
-    
+
     /**
-      * Coefficient de sécurité du débit pour l'alimentation en air (la valeur de S EB est généralement 1,2)
-      * @param pReq pressure requirements (min or max draft)
-      * @return
-      */
+     * Coefficient de sécurité du débit pour l'alimentation en air (la valeur de S EB est généralement 1,2)
+     * @param pReq pressure requirements (min or max draft)
+     * @return
+     */
     def S_EB_calc(pReq: DraftCondition): Dimensionless
 
     /**
@@ -949,18 +947,18 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return Perte de charge de l'alimentation en air (P_B)
      */
     final def P_B(
-        ΨB: Dimensionless,
-        LB: QtyD[Meter],
-        DhB: QtyD[Meter],
-        ΣζB: Dimensionless,
-        ρB: QtyD[Kilogram / (Meter ^ 3)],
-        wB: QtyD[Meter / Second],
+        ΨB  : Dimensionless,
+        LB  : QtyD[Meter],
+        DhB : QtyD[Meter],
+        ΣζB : Dimensionless,
+        ρB  : QtyD[Kilogram / (Meter ^ 3)],
+        wB  : QtyD[Meter / Second],
         S_EB: Dimensionless
-    ): Pressure = 
+    ): Pressure =
         P_R_sum_calc(
-            P_R_staticFriction_calc(ΨB,LB,DhB,ρB,wB,S_EB),
-            P_R_dynamicFriction_calc(ΣζB,ρB,wB,S_EB),
-            P_R_velocityChange = 0.pascals,
+            P_R_staticFriction_calc (ΨB, LB, DhB, ρB, wB, S_EB),
+            P_R_dynamicFriction_calc(ΣζB, ρB, wB, S_EB        ),
+            P_R_velocityChange = 0.pascals
         )
 
     // Section "5.12"
@@ -978,28 +976,28 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     def T_iob(
         T_ob: TempD[Kelvin],
         k_ob: WattsPerSquareMeterKelvin,
-        α_i: WattsPerSquareMeterKelvin,
+        α_i : WattsPerSquareMeterKelvin,
         T_uo: TempD[Kelvin]
     ): TempD[Kelvin]
 
     /**
-      * Calcule le coefficient de transfert thermique à la sortie du conduit de fumée k_ob à la température d'équilibre
-      *
-      * @param α_i coefficient interne de transfert thermique à la sortie du conduit de fumée, en W/(m2⋅K)
-      * @param _1_Λ résistance thermique, en m2·K/W
-      * @param _1_Λ_o résistance thermique de toute isolation supplémentaire de la partie du conduit de fumée au-dessus du toit relative au diamètre hydraulique interne par rapport au conduit, en m2·K/W
-      * @param D_h diamètre hydraulique intérieur, en m
-      * @param D_hao diamètre hydraulique extérieur à la sortie du conduit de fumée, en m
-      * @param α_ao coefficient externe de transfert thermique à la sortie du conduit de fumée, en W/(m2⋅K)
-      * @return coefficient de transfert thermique à la sortie du conduit de fumée k_ob à la température d'équilibre, en W/(m2⋅K)
-      */
+     * Calcule le coefficient de transfert thermique à la sortie du conduit de fumée k_ob à la température d'équilibre
+     *
+     * @param α_i coefficient interne de transfert thermique à la sortie du conduit de fumée, en W/(m2⋅K)
+     * @param _1_Λ résistance thermique, en m2·K/W
+     * @param _1_Λ_o résistance thermique de toute isolation supplémentaire de la partie du conduit de fumée au-dessus du toit relative au diamètre hydraulique interne par rapport au conduit, en m2·K/W
+     * @param D_h diamètre hydraulique intérieur, en m
+     * @param D_hao diamètre hydraulique extérieur à la sortie du conduit de fumée, en m
+     * @param α_ao coefficient externe de transfert thermique à la sortie du conduit de fumée, en W/(m2⋅K)
+     * @return coefficient de transfert thermique à la sortie du conduit de fumée k_ob à la température d'équilibre, en W/(m2⋅K)
+     */
     def k_ob_calc(
-        α_i: WattsPerSquareMeterKelvin,
-        _1_Λ: SquareMeterKelvinPerWatt,
+        α_i   : WattsPerSquareMeterKelvin,
+        _1_Λ  : SquareMeterKelvinPerWatt,
         _1_Λ_o: SquareMeterKelvinPerWatt,
-        D_h: QtyD[Meter],
-        D_hao: QtyD[Meter],
-        α_ao: WattsPerSquareMeterKelvin
+        D_h   : QtyD[Meter],
+        D_hao : QtyD[Meter],
+        α_ao  : WattsPerSquareMeterKelvin
     ): WattsPerSquareMeterKelvin
 
     // Section "7.7", "Valeurs de base de calcul"
@@ -1017,7 +1015,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     def T_mB_calc(ductType: DuctType, tL: T_L): FormulaOp[T_mB]
 
     // Section "7.8.4", "Températures moyennes pour le calcul des pressions"
-    
+
     /**
      * température moyenne des fumées sur la longueur du conduit des fumées, en K ;
      *
@@ -1027,19 +1025,19 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     def T_m_calc(Tms: Seq[TKelvin]): TKelvin
 
     /**
-      * température moyenne des fumées sur la longueur du conduit de raccordement des fumées, en K ;
-      *
-      * @param TmVs températures moyennes des fumées sur la longueur des segments de conduit de raccordement des fumées, en K ;
-      * @return
-      */
+     * température moyenne des fumées sur la longueur du conduit de raccordement des fumées, en K ;
+     *
+     * @param TmVs températures moyennes des fumées sur la longueur des segments de conduit de raccordement des fumées, en K ;
+     * @return
+     */
     def T_mV_calc(TmVs: Seq[TKelvin]): TKelvin
 
     /**
-      * température moyenne des fumées sur la longueur du conduit d'air comburant, en K ;
-      *
-      * @param TmBs températures moyennes des fumées sur la longueur des segments de conduit d'air comburant, en K ;
-      * @return
-      */
+     * température moyenne des fumées sur la longueur du conduit d'air comburant, en K ;
+     *
+     * @param TmBs températures moyennes des fumées sur la longueur des segments de conduit d'air comburant, en K ;
+     * @return
+     */
     def T_mB_calc(TmBs: Seq[TKelvin]): TKelvin
 
     // NOT IMPLEMENTED
@@ -1059,8 +1057,8 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return tirage dû à l'effet de cheminée du conduit d'air de combustion, en Pa
      */
     def P_HB_calc(
-        H_B: QtyD[Meter],
-        ρ_L: QtyD[Kilogram / (Meter ^ 3)],
+        H_B : QtyD[Meter],
+        ρ_L : QtyD[Kilogram / (Meter ^ 3)],
         ρ_mB: QtyD[Kilogram / (Meter ^ 3)]
     ): Pressure
 
@@ -1076,8 +1074,8 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return tirage dû à l'effet de cheminée du conduit de raccordement côté air, en Pa
      */
     def P_HBV_calc(
-        H_BV: QtyD[Meter],
-        ρ_L: QtyD[Kilogram / (Meter ^ 3)],
+        H_BV : QtyD[Meter],
+        ρ_L  : QtyD[Kilogram / (Meter ^ 3)],
         ρ_mBV: QtyD[Kilogram / (Meter ^ 3)]
     ): Pressure
 
@@ -1097,14 +1095,14 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return perte de charge du conduit d'air comburant, en Pa
      */
     def P_RB(
-        P_GB: QtyD[Pascal],
-        Ψ_B: Dimensionless,
-        L: QtyD[Meter],
-        D_hB: QtyD[Meter],
+        P_GB : QtyD[Pascal],
+        Ψ_B  : Dimensionless,
+        L    : QtyD[Meter],
+        D_hB : QtyD[Meter],
         Σ_ζ_B: Dimensionless,
-        ρ_mB: QtyD[Kilogram / (Meter ^ 3)],
-        w_mB: QtyD[Meter / Second],
-        S_EB: Dimensionless
+        ρ_mB : QtyD[Kilogram / (Meter ^ 3)],
+        w_mB : QtyD[Meter / Second],
+        S_EB : Dimensionless
     ): Pressure
 
     /**
@@ -1119,16 +1117,16 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * @return coefficient de perte de charge due au frottement dans le conduit
      */
     def solvepsi(
-        D_h: QtyD[Meter],
-        r: QtyD[Meter],
-        Re: Dimensionless,
+        D_h            : QtyD[Meter],
+        r              : QtyD[Meter],
+        Re             : Dimensionless,
         approxPrecision: Double = 1e-5
     ): Dimensionless
 
     /** solvepsi for r = 0 */
     def solvepsi_smooth(
-        D_h: QtyD[Meter],
-        Re: Dimensionless,
+        D_h            : QtyD[Meter],
+        Re             : Dimensionless,
         approxPrecision: Double = 1e-5
     ): Dimensionless
 
@@ -1190,13 +1188,13 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * teneur en vapeur d'eau des fumées, en %
      *
      * formule (B.5)
-     * 
+     *
      * @param comb type de combustible
      * @param σ_CO2 teneur en dioxyde de carbone des fumées sèches
      * @return
      */
     def σ_H2O_from_σ_CO2_calc(
-        comb: FuelType,
+        comb : FuelType,
         σ_CO2: QtyD[Percent]
     ): QtyD[Percent]
 
@@ -1204,13 +1202,13 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * teneur en dioxyde de carbone des fumées sèches, en %
      *
      * formule (B.5) inversée
-     * 
+     *
      * @param comb type de combustible
      * @param σ_H2O teneur en en vapeur d'eau des fumées, en %
      * @return
      */
     @deprecated def σ_CO2_from_σ_H2O_calc(
-        comb: FuelType,
+        comb : FuelType,
         σ_H2O: QtyD[Percent]
     ): QtyD[Percent]
 
@@ -1218,7 +1216,7 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      * pression partielle de la vapeur d'eau, en Pa
      *
      * formule (B.6)
-     * 
+     *
      * @param σ_H2O teneur en en vapeur d'eau des fumées, en %
      * @param p_L pression de l'air extérieur, en Pa ;
      * @return
@@ -1226,18 +1224,18 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     def p_D_from_σ_H2O_calc(σ_H2O: Percentage, p_L: Pressure): Pressure
 
     /**
-      * température du point de rosée, en °C ;
-      * 
-      * formule (B.7)
-      *
-      * @param p_D pression partielle de la vapeur d'eau, en Pa ;
-      * @return
-      */
+     * température du point de rosée, en °C ;
+     *
+     * formule (B.7)
+     *
+     * @param p_D pression partielle de la vapeur d'eau, en Pa ;
+     * @return
+     */
     def t_p_calc(p_D: Pressure): TCelsius
 
     /**
      * teneur en vapeur d'eau des fumées, en %
-     * 
+     *
      * formule (B.12)
      *
      * @param P_D pression partielle de la vapeur d'eau, en Pa ;
@@ -1246,14 +1244,14 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
      */
     def σ_H2O_from_PD_pL(
         P_D: Pressure,
-        p_L: Pressure,
+        p_L: Pressure
     ): QtyD[Percent]
 
     /**
      * pression partielle de la vapeur d'eau, en Pa
      *
      * formule (B.13)
-     * 
+     *
      * @param T_P température du point de rosée, en Kelvin ;
      * @return
      */
@@ -1262,16 +1260,16 @@ trait `EN13384_1_A1_2019_Formulas_Alg` extends Standard:
     // Section "Tableau B.6"
 
     def thermalResistanceFromConductivity_forCylindricalLayers(
-        y: CoefficientOfForm,
+        y   : CoefficientOfForm,
         D_hn: Length,
-        λ_n: ThermalConductivity,
-        dn: Length,
+        λ_n : ThermalConductivity,
+        dn  : Length
     ): SquareMeterKelvinPerWatt
 
     def deadAirSpaceThermalResistance(
         t_emittingSurfaceTemp: TCelsius,
-        dn_airSpaceWidth: Length,
-        innerShape: PipeShape,
+        dn_airSpaceWidth     : Length,
+        innerShape           : PipeShape
     ): Either[EN13384_FormulaError, SquareMeterKelvinPerWatt]
 
 end EN13384_1_A1_2019_Formulas_Alg
@@ -1291,6 +1289,6 @@ object EN13384_1_A1_2019_Formulas_Alg:
 
     /** Context-aware error operations (legacy, for ops layer) */
     type Op[A] = ValidatedNel[Error, A]
-    
+
     /** Context-free formula error operations (for pure formula layer) */
     type FormulaOp[A] = ValidatedNel[EN13384_FormulaError, A]

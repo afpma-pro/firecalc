@@ -5,10 +5,14 @@
 
 package afpma.firecalc.ui.models.schema.v1
 
-import afpma.firecalc.dto.common.{Customer, Address}
-import afpma.firecalc.dto.instances.{CommonInstances, V1Instances, V2Instances, V3Instances}
+import afpma.firecalc.dto.common.Address
+import afpma.firecalc.dto.common.Customer
+import afpma.firecalc.dto.instances.CommonInstances
+
 import afpma.firecalc.ui.models.schema.common.ClientProjectData_Version
-import io.circe.{Decoder, Encoder}
+
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.generic.semiauto
 
 /**
@@ -17,21 +21,21 @@ import io.circe.generic.semiauto
  * It is stored in browser's localStorage via AppStateSchema.
  */
 final case class ClientProjectData_V1(
-    version: ClientProjectData_Version = ClientProjectData_Version(1),
-    customer: Customer,
+    version        : ClientProjectData_Version = ClientProjectData_Version(1),
+    customer       : Customer,
     billing_address: Address,
     project_address: Address
 )
 
 object ClientProjectData_V1:
-    
+
     import CommonInstances.given
-    
+
     given Encoder[ClientProjectData_V1] = semiauto.deriveEncoder[ClientProjectData_V1]
     given Decoder[ClientProjectData_V1] = semiauto.deriveDecoder[ClientProjectData_V1]
-    
+
     val empty: ClientProjectData_V1 = ClientProjectData_V1(
-        customer = Customer.empty,
+        customer        = Customer.empty,
         billing_address = Address.empty_butInFrance,
         project_address = Address.empty_butInFrance
     )

@@ -21,11 +21,11 @@ import com.raquo.laminar.api.L.*
  * @param ttPosition DaisyUI tooltip position class (default: "tooltip-top")
  */
 final case class IndicatorWithErrorTooltip(
-    indicator: Indicator,
-    errorSignal: Signal[Boolean],
+    indicator     : Indicator,
+    errorSignal   : Signal[Boolean],
     tooltipContent: HtmlElement,
-    ttStyle: String = "tooltip-error",
-    ttPosition: String = "tooltip-bottom",
+    ttStyle       : String = "tooltip-error",
+    ttPosition    : String = "tooltip-bottom"
 ) extends Component:
 
     lazy val node: HtmlElement =
@@ -33,13 +33,12 @@ final case class IndicatorWithErrorTooltip(
             cls := "inline-block",
             child <-- errorSignal.map { hasError =>
                 if hasError then
-                    DaisyUITooltip(
-                        ttContent = tooltipContent,
-                        element = indicator.node,
-                        ttStyle = ttStyle,
+                    DaisyUITooltip (
+                        ttContent  = tooltipContent,
+                        element    = indicator.node,
+                        ttStyle    = ttStyle,
                         ttPosition = ttPosition
                     ).node
-                else
-                    indicator.node
+                else indicator.node
             }
         )

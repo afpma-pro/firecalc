@@ -5,13 +5,13 @@
 
 package afpma.firecalc.engine.ops.en13384
 
-import afpma.firecalc.engine.models.en13384.typedefs.*
-
-import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.all.*
+
+import afpma.firecalc.engine.models.en13384.typedefs.*
+
 import coulomb.*
-import coulomb.syntax.*
 
 trait HasOutsideSurfaceInLocation[P]:
     extension (p: P)
@@ -20,5 +20,4 @@ trait HasOutsideSurfaceInLocation[P]:
         ): QtyD[(Meter ^ 2)]
 
 trait HasUnheatedHeightInsideAndOutside[A]:
-    extension (a: A)
-        def unheatedHeightInsideAndOutside: UnheatedHeightInsideAndOutside
+    extension (a: A) def unheatedHeightInsideAndOutside: UnheatedHeightInsideAndOutside

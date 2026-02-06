@@ -4,64 +4,57 @@
  */
 
 package afpma.firecalc.engine.ops
-
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
-import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_Alg
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
-import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
-import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
-import afpma.firecalc.engine.models.gtypedefs.z_geodetical_height
-import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.engine.alg.en13384.Params_13384
-import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
-import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
-import afpma.firecalc.dto.common.PipeShape
+
 import afpma.firecalc.dto.common.AirSpaceDetailed
+import afpma.firecalc.dto.common.PipeShape
+
+import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
+import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
+import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
+import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.ops.Position.*
+import afpma.firecalc.engine.standard.MecaFlu_Error
+
 import cats.syntax.all.*
 
 /**
  * Algebra for fluid mechanics calculations on pipe descriptions.
- * 
+ *
  * This trait defines the common interface for computing fluid mechanics
  * results on different types of pipe descriptions (EN13384 flow-only,
  * EN13384 thermal, EN15544 flow-only).
  */
 trait MecaFluAlg:
-    
+
     /** The pipe description algebra this MecaFlu operates on */
     type PipeDescr <: PipeDescrAlg
-    
+
     /** Reference to the pipe description instance */
     val pipeDescr: PipeDescr
-    
+
     /** The application algebra used for computation */
     // type ApplicationAlg
-    
+
     /** Parameters type for the calculation */
     type Params
-    
+
     /** Result type for a single pipe section */
     type SectionResult <: PipeSectionResult[pipeDescr.PipeElDescr]
-    
+
     /** Result type for a full pipe */
     type FullResult <: PipeResult
 
-/**
- * Intermediate algebra for EN13384-based fluid mechanics calculations.
- */
+/** Intermediate algebra for EN13384-based fluid mechanics calculations. */
 trait MecaFlu_13384_Alg extends MecaFluAlg with HasTypeMembers_13384_Alg:
     self =>
 
     type ApplicationAlg <: EN13384_1_A1_2019_Application_Alg {
         type AirIntakePipe_Module_T = self.AirIntakePipe_Module_T
-        type Inputs_13384 = self.Inputs_13384
+        type Inputs_13384           = self.Inputs_13384
     }
 
     override type Params = Params_13384
@@ -73,7 +66,7 @@ trait MecaFlu_13384_Alg extends MecaFluAlg with HasTypeMembers_13384_Alg:
     //     hapwr: HeatingAppliance.Powers,
     //     haeff: HeatingAppliance.Efficiency,
     //     temp_start: TCelsius,
-    //     last_pipe_density: Option[Density],      
+    //     last_pipe_density: Option[Density],
     //     last_pipe_velocity: Option[FlowVelocity],
     //     last_CrossSectionArea: Option[Area],
     //     last_InnerGeom: Option[PipeShape],
@@ -92,9 +85,7 @@ trait MecaFlu_13384_Alg extends MecaFluAlg with HasTypeMembers_13384_Alg:
     //     gas: Gas,
     // )(using params: Params_13384, alg: ApplicationAlg): Either[MecaFlu_Error, FullResult]
 
-/**
- * Intermediate algebra for EN15544-based fluid mechanics calculations.
- */
+/** Intermediate algebra for EN15544-based fluid mechanics calculations. */
 trait MecaFlu_15544_Alg extends MecaFluAlg with HasTypeMembers_15544_Alg:
     self =>
 
@@ -108,11 +99,11 @@ trait MecaFlu_15544_Alg extends MecaFluAlg with HasTypeMembers_15544_Alg:
         type Inputs_13384               = self.Inputs_13384
         type Inputs_15544               = self.Inputs_15544
     }
-    
+
     override type Params = DraftCondition
 
     type DirectionChangeT <: Matchable
-    
+
     // def makePipeSectionResult(
     //     gip: GasInPipeEl[NamedPipeElDescrG[pipeDescr.PipeElDescr], Gas, Params],
     //     loadQty: LoadQty,
@@ -121,7 +112,7 @@ trait MecaFlu_15544_Alg extends MecaFluAlg with HasTypeMembers_15544_Alg:
     //     next_Velocity_middle: Option[FlowVelocity],
     //     next_Density_middle: Option[Density],
     //     gas_temp: PositionOp[TCelsius],
-    // )(using 
+    // )(using
     //     alg: ApplicationAlg,
     //     dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChangeT]]
     // ): SectionResult
@@ -132,7 +123,7 @@ trait MecaFlu_15544_Alg extends MecaFluAlg with HasTypeMembers_15544_Alg:
     //     loadQty: LoadQty,
     //     z_geodetical_height: z_geodetical_height,
     //     params: Params,
-    // )(using 
+    // )(using
     //     alg: ApplicationAlg,
     //     ssa: ShortSectionAlg
     // ): Either[MecaFlu_Error, FullResult]
@@ -147,10 +138,10 @@ object MecaFluOps:
     // ============================================
     // Gas Type Discriminator
     // ============================================
-    
+
     /**
      * Discriminate computation based on gas type determined by PipeType.
-     * 
+     *
      * @param pt The pipe type to check
      * @param ifCombustionAir Value/computation for combustion air pipes (AirIntake, CombustionAir)
      * @param ifFlueGas Value/computation for flue gas pipes (Firebox, Flue, Connector, Chimney)
@@ -158,15 +149,15 @@ object MecaFluOps:
      */
     def whenGasType[A](pt: PipeType)(ifCombustionAir: => A, ifFlueGas: => A): A =
         pt match
-            case AirIntakePipeT | CombustionAirPipeT => 
+            case AirIntakePipeT | CombustionAirPipeT                      =>
                 ifCombustionAir
-            case FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT => 
+            case FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT =>
                 ifFlueGas
 
     // ============================================
     // Cross-Section Area Computation
     // ============================================
-    
+
     /**
      * Compute cross-section area for a pipe element using type-specific extractors.
      * This pattern is common across all MecaFlu implementations.
@@ -181,78 +172,76 @@ object MecaFluOps:
      */
     def computeCrossSectionArea(
         lastCrossSectionArea: Option[Area],
-        elementRef: String,
-        pipeType: PipeType,
+        elementRef          : String,
+        pipeType            : PipeType
     )(
-        getStraightArea: => Option[Area],
-        getSectionChangeAreas: => Option[(Area, Area)],
-        getSingularCrossSection: => Option[Area],
+        getStraightArea        : => Option[Area],
+        getSectionChangeAreas  : => Option[(Area, Area)],
+        getSingularCrossSection: => Option[Area]
     ): Either[MecaFlu_Error, PositionOpX[Start | End, Area]] =
         getStraightArea match
             case Some(area) =>
                 QtyDAtPosition.constantAtStartEnd(area).asRight.map(_.atPos)
-            case None =>
+            case None       =>
                 getSectionChangeAreas match
                     case Some((fromArea, toArea)) =>
                         QtyDAtPosition.from(start = fromArea, end = toArea).asRight.map(_.atPos)
-                    case None =>
+                    case None                     =>
                         getSingularCrossSection match
                             case Some(crossSection) =>
                                 QtyDAtPosition.constantAtStartEnd(crossSection).asRight.map(_.atPos)
-                            case None =>
+                            case None               =>
                                 lastCrossSectionArea match
                                     case Some(lastArea) =>
                                         QtyDAtPosition.constantAtStartEnd(lastArea).asRight.map(_.atPos)
-                                    case None =>
-                                        MecaFlu_Error.CouldNotDetermineCrossSectionArea(
-                                            s"$elementRef: could not determine 'cross section area'",
-                                            pipeType
-                                        ).asLeft
+                                    case None           =>
+                                        MecaFlu_Error
+                                            .CouldNotDetermineCrossSectionArea(
+                                                s"$elementRef: could not determine 'cross section area'",
+                                                pipeType
+                                            )
+                                            .asLeft
 
     // ============================================
     // Pipe Section Accumulator State
     // ============================================
-    
+
     /**
      * State carried between pipe section calculations during accumulation.
      * Used by the mapAccumulate pattern in PipeResult implementations.
      */
     case class AccumulatorState(
-        gasTempStart: TCelsius,
+        gasTempStart        : TCelsius,
         lastCrossSectionArea: Option[Area],
-        lastInnerGeom: Option[PipeShape],
+        lastInnerGeom       : Option[PipeShape],
         // Optional fields for thermal calculations
         lastAirSpaceDetailed: Option[AirSpaceDetailed] = None
     )
 
-    /**
-     * Create initial accumulator state for pipe result calculation.
-     */
+    /** Create initial accumulator state for pipe result calculation. */
     def initialAccumulatorState(
-        startTemp: TCelsius,
-        lastAirSpace: Option[AirSpaceDetailed] = None
+        startTemp           : TCelsius,
+        lastAirSpace        : Option[AirSpaceDetailed] = None
     ): AccumulatorState =
         AccumulatorState(
-            gasTempStart = startTemp,
+            gasTempStart         = startTemp,
             lastCrossSectionArea = None,
-            lastInnerGeom = None,
+            lastInnerGeom        = None,
             lastAirSpaceDetailed = lastAirSpace
         )
 
-    /**
-     * Update accumulator state after processing a pipe section.
-     */
+    /** Update accumulator state after processing a pipe section. */
     def updateAccumulatorState(
-        current: AccumulatorState,
-        newGasTempEnd: TCelsius,
-        newCrossSectionArea: Area,
-        newInnerGeom: PipeShape,
-        newAirSpaceDetailed: Option[AirSpaceDetailed] = None
+        current                    : AccumulatorState,
+        newGasTempEnd              : TCelsius,
+        newCrossSectionArea        : Area,
+        newInnerGeom               : PipeShape,
+        newAirSpaceDetailed        : Option[AirSpaceDetailed] = None
     ): AccumulatorState =
         current.copy(
-            gasTempStart = newGasTempEnd,
+            gasTempStart         = newGasTempEnd,
             lastCrossSectionArea = Some(newCrossSectionArea),
-            lastInnerGeom = Some(newInnerGeom),
+            lastInnerGeom        = Some(newInnerGeom),
             lastAirSpaceDetailed = newAirSpaceDetailed.orElse(current.lastAirSpaceDetailed)
         )
 

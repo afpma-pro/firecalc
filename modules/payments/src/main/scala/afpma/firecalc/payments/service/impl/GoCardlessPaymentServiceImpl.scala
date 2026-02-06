@@ -5,41 +5,50 @@
 
 package afpma.firecalc.payments.service.impl
 
-import cats.effect.{Async, Resource}
+import java.time.Instant
+import java.util.UUID
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+
+import afpma.firecalc.payments.domain.*
+import afpma.firecalc.payments.email.*
+import afpma.firecalc.payments.i18n.implicits.given
+import afpma.firecalc.payments.repository.*
+import afpma.firecalc.payments.repository.impl.CustomerSyntax.*
+import afpma.firecalc.payments.service.*
+import afpma.firecalc.payments.shared.*
+import afpma.firecalc.payments.shared.api.BackendCompatibleLanguage
+import afpma.firecalc.payments.shared.api.CountryCode_ISO_3166_1_ALPHA_2
+import afpma.firecalc.payments.shared.api.CustomerInfo
+import afpma.firecalc.payments.shared.api.OrderId
+
+import cats.effect.Async
 import cats.syntax.all.*
-import org.http4s.client.Client
-import org.http4s.{Request, Method, Uri, Headers, Header}
-import org.http4s.circe.*
+
+import scala.deriving.Mirror
+import scala.util.Try
+
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
-import afpma.firecalc.payments.domain.*
-import afpma.firecalc.payments.shared.*
-import afpma.firecalc.payments.shared.api.{OrderId, CustomerInfo, CustomerType, BackendCompatibleLanguage, CountryCode_ISO_3166_1_ALPHA_2}
-import afpma.firecalc.payments.repository.*
-import org.typelevel.log4cats.Logger
-import java.time.Instant
-import java.util.UUID
+import org.http4s.Header
+import org.http4s.Headers
+import org.http4s.Method
+import org.http4s.Request
+import org.http4s.Uri
+import org.http4s.circe.*
+import org.http4s.client.Client
 import org.typelevel.ci.CIStringSyntax
-import afpma.firecalc.payments.email.*
-import afpma.firecalc.payments.service.*
-import afpma.firecalc.payments.i18n.implicits.given
-import afpma.firecalc.payments.repository.impl.CustomerSyntax.*
-import scala.util.Try
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import java.util.Base64
-import scala.deriving.Mirror
-import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
+import org.typelevel.log4cats.Logger
 
 case class GoCardlessConfig private (
-    accessToken: String,
-    baseUrl: String = "https://api.gocardless.com",
-    environment: String = "sandbox", // or "live"
-    redirectUri: String,
-    exitUri: String,
+    accessToken  : String,
+    baseUrl      : String = "https://api.gocardless.com",
+    environment  : String = "sandbox", // or "live"
+    redirectUri  : String,
+    exitUri      : String,
     webhookSecret: String,
-    adminEmail: String
+    adminEmail   : String
 ) {
     def withWebhookSecret(webhookSecret: String) = this.copy(
         webhookSecret = webhookSecret
@@ -47,39 +56,39 @@ case class GoCardlessConfig private (
 
     def withRedirectUris(redirectUri: String, exitUri: String) = this.copy(
         redirectUri = redirectUri,
-        exitUri = exitUri
+        exitUri     = exitUri
     )
 
     def withApplicationDomain(domain: String, protocol: "http" | "https") = this.copy(
         redirectUri = s"$protocol://$domain/v1/payment_complete",
-        exitUri = s"$protocol://$domain/v1/payment_cancelled"
+        exitUri     = s"$protocol://$domain/v1/payment_cancelled"
     )
 }
 
 object GoCardlessConfig:
     def sandbox(accessToken: String, domain: String, protocol: "http" | "https", adminEmail: String) = GoCardlessConfig(
-        accessToken = accessToken,
-        baseUrl = "https://api-sandbox.gocardless.com",
-        environment = "sandbox",
-        redirectUri = s"$protocol://$domain/v1/payment_complete",
-        exitUri = s"$protocol://$domain/v1/payment_cancelled",
+        accessToken   = accessToken,
+        baseUrl       = "https://api-sandbox.gocardless.com",
+        environment   = "sandbox",
+        redirectUri   = s"$protocol://$domain/v1/payment_complete",
+        exitUri       = s"$protocol://$domain/v1/payment_cancelled",
         webhookSecret = "sandbox_webhook_secret",
-        adminEmail = adminEmail
+        adminEmail    = adminEmail
     )
 
     def live(
-        accessToken: String,
-        webhookSecret: String,
-        domain: String,
-        adminEmail: String
+        accessToken        : String,
+        webhookSecret      : String,
+        domain             : String,
+        adminEmail         : String
     ) = GoCardlessConfig(
         accessToken,
-        baseUrl = "https://api.gocardless.com",
-        environment = "live",
-        redirectUri = s"https://$domain/v1/payment_complete",
-        exitUri = s"https://$domain/v1/payment_cancelled",
+        baseUrl       = "https://api.gocardless.com",
+        environment   = "live",
+        redirectUri   = s"https://$domain/v1/payment_complete",
+        exitUri       = s"https://$domain/v1/payment_cancelled",
         webhookSecret = webhookSecret,
-        adminEmail = adminEmail
+        adminEmail    = adminEmail
     )
 
 // GoCardless Language enum
@@ -97,40 +106,40 @@ enum GoCardlessLanguage(val code: String):
     case Swedish    extends GoCardlessLanguage("sv")
 
 object GoCardlessLanguage:
-    
+
     val DefaultLanguage: GoCardlessLanguage = BackendCompatibleLanguage.DefaultLanguage
-    
+
     def fromCode(code: String): Option[GoCardlessLanguage] =
         GoCardlessLanguage.values.find(_.code == code)
 
     def fromCodeWithFallback(code: String): GoCardlessLanguage =
         fromCode(code).getOrElse(DefaultLanguage)
-    
+
     /** Convert BackendCompatibleLanguage to GoCardlessLanguage manually */
     def fromBackendLanguage(lang: BackendCompatibleLanguage): GoCardlessLanguage = lang match
-        case BackendCompatibleLanguage.English => GoCardlessLanguage.English
-        case BackendCompatibleLanguage.French => GoCardlessLanguage.French
-        case BackendCompatibleLanguage.German => GoCardlessLanguage.German
+        case BackendCompatibleLanguage.English    => GoCardlessLanguage.English
+        case BackendCompatibleLanguage.French     => GoCardlessLanguage.French
+        case BackendCompatibleLanguage.German     => GoCardlessLanguage.German
         case BackendCompatibleLanguage.Portuguese => GoCardlessLanguage.Portuguese
-        case BackendCompatibleLanguage.Spanish => GoCardlessLanguage.Spanish
-        case BackendCompatibleLanguage.Italian => GoCardlessLanguage.Italian
-        case BackendCompatibleLanguage.Dutch => GoCardlessLanguage.Dutch
-        case BackendCompatibleLanguage.Danish => GoCardlessLanguage.Danish
-        case BackendCompatibleLanguage.Norwegian => GoCardlessLanguage.Norwegian
-        case BackendCompatibleLanguage.Slovenian => GoCardlessLanguage.Slovenian
-        case BackendCompatibleLanguage.Swedish => GoCardlessLanguage.Swedish
-    
+        case BackendCompatibleLanguage.Spanish    => GoCardlessLanguage.Spanish
+        case BackendCompatibleLanguage.Italian    => GoCardlessLanguage.Italian
+        case BackendCompatibleLanguage.Dutch      => GoCardlessLanguage.Dutch
+        case BackendCompatibleLanguage.Danish     => GoCardlessLanguage.Danish
+        case BackendCompatibleLanguage.Norwegian  => GoCardlessLanguage.Norwegian
+        case BackendCompatibleLanguage.Slovenian  => GoCardlessLanguage.Slovenian
+        case BackendCompatibleLanguage.Swedish    => GoCardlessLanguage.Swedish
+
     /** Implicit conversion from BackendCompatibleLanguage to GoCardlessLanguage */
     given Conversion[BackendCompatibleLanguage, GoCardlessLanguage] = fromBackendLanguage
 
 // GoCardless API Models
 case class CreateCustomerRequest private (
-    email: String,
-    given_name: Option[String] = None,
-    family_name: Option[String] = None,
-    company_name: Option[String] = None,
-    language: String,
-    metadata: Map[String, String] = Map.empty
+    email       : String,
+    given_name  : Option[String]      = None,
+    family_name : Option[String]      = None,
+    company_name: Option[String]      = None,
+    language    : String,
+    metadata    : Map[String, String] = Map.empty
 )
 
 object CreateCustomerRequest:
@@ -139,53 +148,53 @@ object CreateCustomerRequest:
         else Left("Email must be non-empty and contain @ symbol")
 
     def forIndividual(
-        email: String,
-        givenName: String,
+        email     : String,
+        givenName : String,
         familyName: String,
-        language: GoCardlessLanguage,
-        metadata: Map[String, String] = Map.empty
+        language  : GoCardlessLanguage,
+        metadata  : Map[String, String] = Map.empty
     ): Either[String, CreateCustomerRequest] =
         for {
             validEmail <- validateEmail(email)
-        } yield CreateCustomerRequest(
-            email = validEmail,
-            given_name = Some(givenName.trim).filter(_.nonEmpty),
-            family_name = Some(familyName.trim).filter(_.nonEmpty),
+        } yield CreateCustomerRequest       (
+            email        = validEmail,
+            given_name   = Some(givenName.trim).filter(_.nonEmpty),
+            family_name  = Some(familyName.trim).filter(_.nonEmpty),
             company_name = None,
-            language = language.code,
-            metadata = metadata
+            language     = language.code,
+            metadata     = metadata
         )
 
     def forCompany(
-        email: String,
+        email      : String,
         companyName: String,
-        language: GoCardlessLanguage,
-        metadata: Map[String, String] = Map.empty
+        language   : GoCardlessLanguage,
+        metadata   : Map[String, String] = Map.empty
     ): Either[String, CreateCustomerRequest] =
         for {
             validEmail <- validateEmail(email)
-        } yield CreateCustomerRequest(
-            email = validEmail,
-            given_name = None,
-            family_name = None,
+        } yield CreateCustomerRequest       (
+            email        = validEmail,
+            given_name   = None,
+            family_name  = None,
             company_name = Some(companyName.trim).filter(_.nonEmpty),
-            language = language.code,
-            metadata = metadata
+            language     = language.code,
+            metadata     = metadata
         )
 
 case class GoCardlessCustomer(
-    id: String,
-    email: String,
-    given_name: Option[String],
+    id         : String,
+    email      : String,
+    given_name : Option[String],
     family_name: Option[String],
-    metadata: Map[String, String]
+    metadata   : Map[String, String]
 )
 
 case class CreateBillingRequestRequest(
     mandate_request: MandateRequest,
-    payment_request: Option[PaymentRequest] = None,
-    metadata: Map[String, String] = Map.empty,
-    links: Option[BillingRequestLinks] = None
+    payment_request: Option[PaymentRequest]      = None,
+    metadata       : Map[String, String]         = Map.empty,
+    links          : Option[BillingRequestLinks] = None
 )
 
 case class BillingRequestLinks(
@@ -193,62 +202,61 @@ case class BillingRequestLinks(
 )
 
 case class MandateRequest(
-    currency: String = "EUR",
+    currency: String              = "EUR",
     metadata: Map[String, String] = Map.empty,
-    scheme: Option[String] = Some("sepa_core")
+    scheme  : Option[String]      = Some("sepa_core")
 )
 
 case class PaymentRequest(
-    amount: Int, // Amount in cents
-    currency: String = "EUR",
+    amount     : Int, // Amount in cents
+    currency   : String              = "EUR",
     description: String,
-    metadata: Map[String, String] = Map.empty
+    metadata   : Map[String, String] = Map.empty
 )
 
 case class BillingRequestFlow(
-    id: String,
+    id               : String,
     authorisation_url: String,
-    redirect_uri: Option[String]
+    redirect_uri     : Option[String]
 )
 
 case class CreateBillingRequestFlowRequest(
-    redirect_uri: String,
-    exit_uri: Option[String] = None,
-    language: GoCardlessLanguage,
+    redirect_uri      : String,
+    exit_uri          : Option[String]            = None,
+    language          : GoCardlessLanguage,
     prefilled_customer: Option[PrefilledCustomer] = None,
-    links: BillingRequestFlowLinks
+    links             : BillingRequestFlowLinks
 )
 
-
 case class PrefilledCustomer(
-    email: String,
-    given_name: Option[String] = None,
-    family_name: Option[String] = None,
-    company_name: Option[String] = None,
-    address_line1: Option[String] = None,
-    address_line2: Option[String] = None,
-    address_line3: Option[String] = None,
-    city: Option[String] = None,
-    region: Option[String] = None,
-    postal_code: Option[String] = None,
-    country_code: Option[CountryCode_ISO_3166_1_ALPHA_2] = None,
-    language: Option[String] = None
+    email        : String,
+    given_name   : Option[String]                         = None,
+    family_name  : Option[String]                         = None,
+    company_name : Option[String]                         = None,
+    address_line1: Option[String]                         = None,
+    address_line2: Option[String]                         = None,
+    address_line3: Option[String]                         = None,
+    city         : Option[String]                         = None,
+    region       : Option[String]                         = None,
+    postal_code  : Option[String]                         = None,
+    country_code : Option[CountryCode_ISO_3166_1_ALPHA_2] = None,
+    language     : Option[String]                         = None
 )
 
 object PrefilledCustomer:
     def fromCustomerInfo(customerInfo: CustomerInfo): PrefilledCustomer =
-        PrefilledCustomer(
-            email = customerInfo.email,
-            given_name = customerInfo.givenName.filter(_.trim.nonEmpty),
-            family_name = customerInfo.familyName.filter(_.trim.nonEmpty),
-            company_name = customerInfo.companyName.filter(_.trim.nonEmpty),
+        PrefilledCustomer        (
+            email         = customerInfo.email,
+            given_name    = customerInfo.givenName.filter(_.trim.nonEmpty),
+            family_name   = customerInfo.familyName.filter(_.trim.nonEmpty),
+            company_name  = customerInfo.companyName.filter(_.trim.nonEmpty),
             address_line1 = customerInfo.addressLine1.filter(_.trim.nonEmpty),
             address_line2 = customerInfo.addressLine2.filter(_.trim.nonEmpty),
             address_line3 = customerInfo.addressLine3.filter(_.trim.nonEmpty),
-            city = customerInfo.city.filter(_.trim.nonEmpty),
-            region = customerInfo.region.filter(_.trim.nonEmpty),
-            postal_code = customerInfo.postalCode.filter(_.trim.nonEmpty),
-            country_code = customerInfo.countryCode
+            city          = customerInfo.city.filter(_.trim.nonEmpty),
+            region        = customerInfo.region.filter(_.trim.nonEmpty),
+            postal_code   = customerInfo.postalCode.filter(_.trim.nonEmpty),
+            country_code  = customerInfo.countryCode
         )
 
 case class BillingRequestFlowLinks(
@@ -256,33 +264,33 @@ case class BillingRequestFlowLinks(
 )
 
 case class BillingRequest(
-    id: String,
-    status: String,
+    id      : String,
+    status  : String,
     metadata: Map[String, String],
-    links: Option[Map[String, String]] = None
+    links   : Option[Map[String, String]] = None
 )
 
 case class GoCardlessPayment(
-    id: String,
+    id      : String,
     metadata: Map[String, String]
 )
 
 // Webhook models
 case class WebhookEvent(
-    id: String,
-    created_at: String,
-    action: String,
-    resource_type: String,
-    links: Map[String, String],
-    details: WebhookEventDetails,
-    metadata: Option[Map[String, String]] = None,
+    id               : String,
+    created_at       : String,
+    action           : String,
+    resource_type    : String,
+    links            : Map[String, String],
+    details          : WebhookEventDetails,
+    metadata         : Option[Map[String, String]] = None,
     resource_metadata: Option[Map[String, String]] = None
 )
 
 case class WebhookEventDetails(
-    origin: String,
-    cause: String,
-    description: String,
+    origin         : String,
+    cause          : String,
+    description    : String,
     bank_account_id: Option[String] = None
 )
 
@@ -293,46 +301,44 @@ case class WebhookPayload(
 enum WebhookEventStatus:
     case Processed, Unknown, InvalidSignature
 
-// inline final def deriveEncoder[A](using inline A: Mirror.Of[A]): Encoder.AsObject[A] = 
+// inline final def deriveEncoder[A](using inline A: Mirror.Of[A]): Encoder.AsObject[A] =
 //     Encoder.AsObject.derived[A]
 
-inline final def deriveEncoder_andDeepDropNullValues[A](using inline A: Mirror.Of[A]): Encoder[A] = 
+final inline def deriveEncoder_andDeepDropNullValues[A](using inline A: Mirror.Of[A]): Encoder[A] =
     deriveEncoder[A].mapJson(_.deepDropNullValues)
 
 // JSON codecs
-given Encoder[CreateCustomerRequest]                  = deriveEncoder_andDeepDropNullValues
+given Encoder[CreateCustomerRequest] = deriveEncoder_andDeepDropNullValues
 given [K: KeyEncoder, V: Encoder]: Encoder[Map[K, V]] = Encoder.encodeMap[K, V]
-given Decoder[GoCardlessCustomer]                     = deriveDecoder
-given Encoder[MandateRequest]                         = deriveEncoder_andDeepDropNullValues
-given Encoder[PaymentRequest]                         = deriveEncoder_andDeepDropNullValues
-given Encoder[CreateBillingRequestRequest]            = deriveEncoder_andDeepDropNullValues
-given Decoder[BillingRequest]                         = deriveDecoder
-given Decoder[GoCardlessPayment]                      = deriveDecoder
+given Decoder[GoCardlessCustomer]          = deriveDecoder
+given Encoder[MandateRequest]              = deriveEncoder_andDeepDropNullValues
+given Encoder[PaymentRequest]              = deriveEncoder_andDeepDropNullValues
+given Encoder[CreateBillingRequestRequest] = deriveEncoder_andDeepDropNullValues
+given Decoder[BillingRequest]              = deriveDecoder
+given Decoder[GoCardlessPayment]           = deriveDecoder
 
-given Encoder[PrefilledCustomer]                    = deriveEncoder_andDeepDropNullValues
+given Encoder[PrefilledCustomer] = deriveEncoder_andDeepDropNullValues
 
-given Encoder[CreateBillingRequestFlowRequest]      = deriveEncoder_andDeepDropNullValues
+given Encoder[CreateBillingRequestFlowRequest] = deriveEncoder_andDeepDropNullValues
 
 given Encoder[GoCardlessLanguage] = Encoder[String].contramap(_.code)
-given Decoder[GoCardlessLanguage] = Decoder[String].emap(s => 
-  GoCardlessLanguage.values.find(_.code == s).toRight(s"Invalid GoCardless language: $s")
-)
+given Decoder[GoCardlessLanguage] =
+    Decoder[String].emap(s => GoCardlessLanguage.values.find(_.code == s).toRight(s"Invalid GoCardless language: $s"))
 
 given Encoder[CountryCode_ISO_3166_1_ALPHA_2] = Encoder[String].contramap(_.code)
-given Decoder[CountryCode_ISO_3166_1_ALPHA_2] = Decoder[String].emap(s =>
-    CountryCode_ISO_3166_1_ALPHA_2.fromString(s).toRight(s"Invalid country code: $s")
-)
+given Decoder[CountryCode_ISO_3166_1_ALPHA_2] =
+    Decoder[String].emap(s => CountryCode_ISO_3166_1_ALPHA_2.fromString(s).toRight(s"Invalid country code: $s"))
 
-given Encoder[BillingRequestLinks]                  = deriveEncoder_andDeepDropNullValues
-given Encoder[BillingRequestFlowLinks]              = deriveEncoder_andDeepDropNullValues
-given Decoder[BillingRequestFlow]                   = deriveDecoder
-given Decoder[WebhookEventDetails]                  = deriveDecoder
-given Decoder[WebhookEvent]                         = deriveDecoder
-given Decoder[WebhookPayload]                       = deriveDecoder
+given Encoder[BillingRequestLinks]     = deriveEncoder_andDeepDropNullValues
+given Encoder[BillingRequestFlowLinks] = deriveEncoder_andDeepDropNullValues
+given Decoder[BillingRequestFlow]      = deriveDecoder
+given Decoder[WebhookEventDetails]     = deriveDecoder
+given Decoder[WebhookEvent]            = deriveDecoder
+given Decoder[WebhookPayload]          = deriveDecoder
 
 // Wrapper types for proper GoCardless API envelopes
 case class CustomerEnvelope(customers: CreateCustomerRequest)
-case class CustomerResponseEnvelope(customers: GoCardlessCustomer)  
+case class CustomerResponseEnvelope(customers: GoCardlessCustomer)
 case class BillingRequestEnvelope(billing_requests: CreateBillingRequestRequest)
 case class BillingRequestResponseEnvelope(billing_requests: BillingRequest)
 case class BillingRequestFlowEnvelope(billing_request_flows: CreateBillingRequestFlowRequest)
@@ -340,125 +346,87 @@ case class BillingRequestFlowResponseEnvelope(billing_request_flows: BillingRequ
 case class PaymentResponseEnvelope(payments: GoCardlessPayment)
 
 // Encoders/Decoders for envelope types
-given Encoder[CustomerEnvelope] = deriveEncoder_andDeepDropNullValues
-given Decoder[CustomerResponseEnvelope] = deriveDecoder
-given Encoder[BillingRequestEnvelope] = deriveEncoder_andDeepDropNullValues
-given Decoder[BillingRequestResponseEnvelope] = deriveDecoder
-given Decoder[PaymentResponseEnvelope] = deriveDecoder
-given Encoder[BillingRequestFlowEnvelope] = deriveEncoder_andDeepDropNullValues
+given Encoder[CustomerEnvelope]                   = deriveEncoder_andDeepDropNullValues
+given Decoder[CustomerResponseEnvelope]           = deriveDecoder
+given Encoder[BillingRequestEnvelope]             = deriveEncoder_andDeepDropNullValues
+given Decoder[BillingRequestResponseEnvelope]     = deriveDecoder
+given Decoder[PaymentResponseEnvelope]            = deriveDecoder
+given Encoder[BillingRequestFlowEnvelope]         = deriveEncoder_andDeepDropNullValues
 given Decoder[BillingRequestFlowResponseEnvelope] = deriveDecoder
 
 class GoCardlessPaymentServiceImpl[F[_]: Async](
-    httpClient: Client[F],
-    config: GoCardlessConfig,
+    httpClient  : Client[F],
+    config      : GoCardlessConfig,
     emailService: EmailService[F],
     orderService: OrderService[F],
     customerRepo: CustomerRepository[F]
-)(implicit logger: Logger[F])
+)                                              (implicit logger: Logger[F])
     extends PaymentService[F]:
 
     import BackendCompatibleLanguage.given
-    
+
     private def gcHeaders: Headers =
         Headers(
             Header.Raw(ci"Authorization", s"Bearer ${config.accessToken}"),
-            Header.Raw(ci"Content-Type", "application/json"),
-            Header.Raw(ci"GoCardless-Version", "2015-07-06")
+            Header.Raw(ci"Content-Type", "application/json"              ),
+            Header.Raw(ci"GoCardless-Version", "2015-07-06"              )
         )
 
     private def makeRequest[A: Encoder, B: Decoder](
         method: Method,
-        path: String,
-        body: Option[A] = None
+        path  : String,
+        body  : Option[A] = None
     ): F[B] =
         for {
-            uri <- Async[F].fromEither(
+            uri             <- Async[F].fromEither(
                 Uri.fromString(s"${config.baseUrl}$path")
             )
             request = Request[F](
-                method = method,
-                uri = uri,
+                method  = method,
+                uri     = uri,
                 headers = gcHeaders
             )
-            requestWithBody <- body.fold(Async[F].pure(request)) { b =>
+            requestWithBody <- body.fold          (Async[F].pure(request)                                  ) { b =>
                 val jsonBody = b.asJson
                 logger.info(s"Making GoCardless request: $method $path with JSON: ${jsonBody.spaces2}") *>
-                Async[F].pure(request.withEntity(jsonBody))
+                    Async[F].pure(request.withEntity(jsonBody))
             }
-            _               <- body.fold(logger.info(s"Making GoCardless request: $method $path"))(_ => Async[F].unit)
-            response        <- httpClient.expectOr[Json](requestWithBody) { resp =>
-                resp.as[String]
-                    .map(body =>
-                        new RuntimeException(
-                            s"GoCardless API error: ${resp.status}, body: $body"
+            _               <- body.fold          (logger.info(s"Making GoCardless request: $method $path"))(_ => Async[F].unit)
+            response        <- httpClient
+                .expectOr[Json](requestWithBody) { resp =>
+                    resp.as[String]
+                        .map(body =>
+                            new RuntimeException(
+                                s"GoCardless API error: ${resp.status}, body: $body"
+                            )
                         )
-                    )
-            }.handleErrorWith { error =>
-                logger.info(s"GoCardless HTTP request failed: $method $path, error: ${error.getMessage}") *>
-                Async[F].raiseError(error)
-            }
+                }
+                .handleErrorWith { error =>
+                    logger.info(s"GoCardless HTTP request failed: $method $path, error: ${error.getMessage}") *>
+                        Async[F].raiseError(error)
+                }
             // _               <- response match {
-            //     case _ => 
+            //     case _ =>
             //         // Log API errors if they occurred (this will be caught by expectOr if status was not successful)
             //         Async[F].unit
             // }
             _               <- logger.info(s"GoCardless response JSON: ${response.spaces2}")
             result          <- Async[F].fromEither(response.as[B]).handleErrorWith { error =>
-                logger.info(s"GoCardless JSON decode failed for $method $path: ${error.getMessage}, JSON was: ${response.spaces2}") *>
-                Async[F].raiseError(error)
+                logger.info(
+                    s"GoCardless JSON decode failed for $method $path: ${error.getMessage}, JSON was: ${response.spaces2}"
+                ) *>
+                    Async[F].raiseError(error)
             }
         } yield result
 
-    private def createCustomer(
-        customerInfo: CustomerInfo,
-        language: GoCardlessLanguage = GoCardlessLanguage.English
-    ): F[GoCardlessCustomer] =
-        val requestResult = customerInfo.customerType match {
-            case CustomerType.Individual =>
-                (customerInfo.givenName, customerInfo.familyName) match {
-                    case (Some(gn), Some(fn)) =>
-                        CreateCustomerRequest.forIndividual(
-                            customerInfo.email,
-                            gn,
-                            fn,
-                            language
-                        )
-                    case _                    =>
-                        Left(
-                            "Given name and family name are required for individual customers"
-                        )
-                }
-            case CustomerType.Business   =>
-                customerInfo.companyName match {
-                    case Some(cn) =>
-                        CreateCustomerRequest.forCompany(customerInfo.email, cn, language)
-                    case None     =>
-                        Left("Company name is required for business customers")
-                }
-        }
-
-        requestResult match {
-            case Left(error)    =>
-                Async[F].raiseError(
-                    new RuntimeException(s"Customer validation failed: $error")
-                )
-            case Right(request) =>
-                val envelope = CustomerEnvelope(request)
-                makeRequest[CustomerEnvelope, CustomerResponseEnvelope](
-                    Method.POST,
-                    "/customers",
-                    Some(envelope)
-                ).map(_.customers)
-        }
-
     private def createBillingRequest(
-        orderId: OrderId,
-        amount: BigDecimal,
-        customerEmail: String,
-        product: Product,
+        orderId                     : OrderId,
+        amount                      : BigDecimal,
+        customerEmail               : String,
+        product                     : Product,
         existingGoCardlessCustomerId: Option[String] = None
     )(using lang: BackendCompatibleLanguage): F[BillingRequest] =
-        val translations = I18N_Payments
+        val translations  = I18N_Payments
         val amountInCents = (amount * 100).toInt
         val request       = CreateBillingRequestRequest(
             mandate_request = MandateRequest(
@@ -466,22 +434,20 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 metadata = Map("order_id" -> orderId.value.toString)
             ),
             payment_request = Some(
-                PaymentRequest(
-                    amount = amountInCents,
-                    currency = "EUR",
+                PaymentRequest     (
+                    amount      = amountInCents,
+                    currency    = "EUR",
                     description = translations.common.payment_description(orderId.value.toString, product.description),
-                    metadata = Map("order_id" -> orderId.value.toString)
+                    metadata    = Map("order_id" -> orderId.value.toString)
                 )
             ),
-            metadata = Map(
+            metadata        = Map(
                 "order_id"       -> orderId.value.toString,
                 "customer_email" -> customerEmail
             ),
-            links = existingGoCardlessCustomerId.map(customerId => 
-                BillingRequestLinks(customer = Some(customerId))
-            )
+            links           = existingGoCardlessCustomerId.map(customerId => BillingRequestLinks(customer = Some(customerId)))
         )
-        
+
         val envelope = BillingRequestEnvelope(request)
         makeRequest[BillingRequestEnvelope, BillingRequestResponseEnvelope](
             Method.POST,
@@ -491,59 +457,63 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
 
     private def createBillingRequestFlow(
         billingRequestId: String,
-        customerInfo: CustomerInfo,
-        language: GoCardlessLanguage
+        customerInfo    : CustomerInfo,
+        language        : GoCardlessLanguage
     ): F[BillingRequestFlow] =
         // Add language parameter to redirect URI
         val redirectUriWithLang = s"${config.redirectUri}?lang=${language.code}"
-        val exitUriWithLang = s"${config.exitUri}?lang=${language.code}"
-        
+        val exitUriWithLang     = s"${config.exitUri}?lang=${language.code}"
+
         val prefilledCustomer = PrefilledCustomer.fromCustomerInfo(customerInfo)
-        
+
         val request = CreateBillingRequestFlowRequest(
-            redirect_uri = redirectUriWithLang,
-            exit_uri = Some(exitUriWithLang),
-            language = language,
+            redirect_uri       = redirectUriWithLang,
+            exit_uri           = Some(exitUriWithLang),
+            language           = language,
             prefilled_customer = Some(prefilledCustomer),
-            links = BillingRequestFlowLinks(billing_request = billingRequestId)
+            links              = BillingRequestFlowLinks(billing_request = billingRequestId)
         )
-        
+
         val envelope = BillingRequestFlowEnvelope(request)
         makeRequest[BillingRequestFlowEnvelope, BillingRequestFlowResponseEnvelope](
             Method.POST,
-            s"/billing_request_flows",
+            "/billing_request_flows",
             Some(envelope)
         ).map(_.billing_request_flows)
 
     def verifyWebhookSignature(body: String, signature: String): F[Boolean] =
         val isSignatureValid = Try {
-            val mac = Mac.getInstance("HmacSHA256")
+            val mac       = Mac.getInstance("HmacSHA256")
             val secretKey = new SecretKeySpec(config.webhookSecret.getBytes("UTF-8"), "HmacSHA256")
             mac.init(secretKey)
-            val computedSignature = mac.doFinal(body.getBytes("UTF-8"))
+            val computedSignature    = mac.doFinal(body.getBytes("UTF-8"))
             val computedSignatureHex = computedSignature.map("%02x".format(_)).mkString
             computedSignatureHex == signature
         }.getOrElse(false)
 
         config.environment match {
-            case "live" =>
+            case "live"    =>
                 logger
-                .info(s"Live environment: webhook signature verification ${if (isSignatureValid) "passed" else "failed"}")
-                .map(_ => isSignatureValid)
+                    .info(s"Live environment: webhook signature verification ${
+                            if (isSignatureValid) "passed" else "failed"
+                        }")
+                    .map(_ => isSignatureValid)
             case "sandbox" =>
                 if (isSignatureValid) {
                     logger
-                    .info("Sandbox environment: webhook signature verification passed")
-                    .map(_ => true)
+                        .info("Sandbox environment: webhook signature verification passed")
+                        .map(_ => true)
                 } else {
                     logger
-                    .warn("Sandbox environment: webhook signature verification failed, but allowing webhook to proceed")
-                    .map(_ => true)
+                        .warn(
+                            "Sandbox environment: webhook signature verification failed, but allowing webhook to proceed"
+                        )
+                        .map(_ => true)
                 }
-            case other =>
+            case other     =>
                 logger
-                .warn(s"Unknown environment '$other', treating as live environment")
-                .map(_ => isSignatureValid)
+                    .warn(s"Unknown environment '$other', treating as live environment")
+                    .map(_ => isSignatureValid)
         }
 
     private def getPayment(paymentId: String): F[GoCardlessPayment] =
@@ -561,7 +531,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                         Try(UUID.fromString(orderIdStr)).toOption.map(OrderId.apply)
                     }
                 }
-            case None => Async[F].pure(None)
+            case None            => Async[F].pure(None)
         }
 
     // Helper method to extract GoCardlessPaymentId from webhook event links
@@ -570,54 +540,67 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
 
     // Helper method to update order status with error handling
     private def updatePaymentIdIfNeededAndPresent(orderId: OrderId, paymentId: Option[String]): F[Unit] =
-        orderService.updatePaymentIdIfNeededAndPresent(orderId, paymentId, PaymentProvider.GoCardless).flatMap { success =>
-            if (success) {
-                logger.info(s"Updated order ${orderId.value} with paymentId $paymentId")
-            } else {
-                logger.error(s"Failed/Already done: Skipped update order ${orderId.value} with paymentId $paymentId")
+        orderService
+            .updatePaymentIdIfNeededAndPresent(orderId, paymentId, PaymentProvider.GoCardless)
+            .flatMap { success =>
+                if (success) {
+                    logger.info(s"Updated order ${orderId.value} with paymentId $paymentId")
+                } else {
+                    logger.error(
+                        s"Failed/Already done: Skipped update order ${orderId.value} with paymentId $paymentId"
+                    )
+                }
             }
-        }.handleErrorWith { error =>
-            logger.error(s"Error updating order ${orderId.value}: ${error.getMessage}")
-        }
+            .handleErrorWith { error =>
+                logger.error(s"Error updating order ${orderId.value}: ${error.getMessage}")
+            }
 
     // Helper method to update order status with error handling
     private def updateOrderStatus(orderId: OrderId, status: OrderStatus): F[Unit] =
-        orderService.updateOrderStatus(orderId, status).flatMap { success =>
-            if (success) {
-                logger.info(s"Updated order ${orderId.value} to status $status")
-            } else {
-                logger.error(s"Failed to update order ${orderId.value} to status $status")
+        orderService
+            .updateOrderStatus(orderId, status)
+            .flatMap { success =>
+                if (success) {
+                    logger.info(s"Updated order ${orderId.value} to status $status")
+                } else {
+                    logger.error(s"Failed to update order ${orderId.value} to status $status")
+                }
             }
-        }.handleErrorWith { error =>
-            logger.error(s"Error updating order ${orderId.value}: ${error.getMessage}")
-        }
+            .handleErrorWith { error =>
+                logger.error(s"Error updating order ${orderId.value}: ${error.getMessage}")
+            }
 
     // Helper method to send admin notifications with error handling
-    private def sendAdminNotification(subject: String, message: String, orderId: Option[OrderId] = None)(using lang: BackendCompatibleLanguage): F[Unit] =
+    private def sendAdminNotification(subject: String, message: String, orderId: Option[OrderId] = None)(using
+        lang: BackendCompatibleLanguage
+    ): F[Unit] =
         val notification = AdminNotification(
             adminEmail = EmailAddress.unsafeFromString(config.adminEmail),
-            subject = subject,
-            message = message,
-            orderId = orderId.map(_.value.toString)
+            subject    = subject,
+            message    = message,
+            orderId    = orderId.map(_.value.toString)
         )
-        
-        emailService.sendAdminNotification(notification).flatMap {
-            case EmailSent => logger.info(s"Admin notification sent: $subject")
-            case EmailFailed(error) => logger.error(s"Failed to send admin notification: $error")
-        }.handleErrorWith { error =>
-            logger.error(s"Error sending admin notification: ${error.getMessage}")
-        }
+
+        emailService
+            .sendAdminNotification(notification)
+            .flatMap {
+                case EmailSent          => logger.info(s"Admin notification sent: $subject")
+                case EmailFailed(error) => logger.error(s"Failed to send admin notification: $error")
+            }
+            .handleErrorWith { error =>
+                logger.error(s"Error sending admin notification: ${error.getMessage}")
+            }
 
     def processWebhookEvent(event: WebhookEvent): F[WebhookEventStatus] =
         // Helper function to get language from order or use default
         def getLanguageForOrder(orderId: OrderId): F[BackendCompatibleLanguage] =
             orderService.findOrder(orderId).map {
                 case Some(order) => order.language
-                case None => BackendCompatibleLanguage.DefaultLanguage
+                case None        => BackendCompatibleLanguage.DefaultLanguage
             }
 
         (event.resource_type, event.action) match {
-            
+
             case ("payments", "created") =>
                 extractOrderId(event).flatMap {
                     case Some(orderId) =>
@@ -625,11 +608,12 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                             _ <- logger.info(s"Payment created for order ${orderId.value}")
                             _ <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
                         } yield WebhookEventStatus.Processed
-                    case None =>
-                        logger.error(s"Payment created event ${event.id} missing or invalid order_id in metadata")
-                        .map(_ => WebhookEventStatus.Processed)
+                    case None          =>
+                        logger
+                            .error(s"Payment created event ${event.id} missing or invalid order_id in metadata")
+                            .map(_ => WebhookEventStatus.Processed)
                 }
-            
+
             case ("payments", "submitted") =>
                 extractOrderId(event).flatMap {
                     case Some(orderId) =>
@@ -638,11 +622,12 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                             _ <- updateOrderStatus(orderId, OrderStatus.Processing)
                             _ <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
                         } yield WebhookEventStatus.Processed
-                    case None =>
-                        logger.error(s"Payment submitted event ${event.id} missing or invalid order_id in metadata")
-                        .map(_ => WebhookEventStatus.Processed)
+                    case None          =>
+                        logger
+                            .error(s"Payment submitted event ${event.id} missing or invalid order_id in metadata")
+                            .map(_ => WebhookEventStatus.Processed)
                 }
-            
+
             case ("payments", "confirmed") =>
                 extractOrderId(event).flatMap {
                     case Some(orderId) =>
@@ -651,31 +636,36 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                             _ <- updateOrderStatus(orderId, OrderStatus.Confirmed)
                             _ <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
                         } yield WebhookEventStatus.Processed
-                    case None =>
-                        logger.error(s"Payment confirmed event ${event.id} missing or invalid order_id in metadata")
-                        .map(_ => WebhookEventStatus.Processed)
+                    case None          =>
+                        logger
+                            .error(s"Payment confirmed event ${event.id} missing or invalid order_id in metadata")
+                            .map(_ => WebhookEventStatus.Processed)
                 }
-            
+
             case ("payments", "paid_out") =>
                 extractOrderId(event).flatMap {
                     case Some(orderId) =>
                         for {
-                            _ <- logger.info(s"Payment paid out for order ${orderId.value}")
-                            _ <- updateOrderStatus(orderId, OrderStatus.PaidOut)
+                            _    <- logger.info(s"Payment paid out for order ${orderId.value}")
+                            _    <- updateOrderStatus(orderId, OrderStatus.PaidOut)
                             lang <- getLanguageForOrder(orderId)
-                            _ <- sendAdminNotification(
+                            _    <- sendAdminNotification(
                                 subject = "GoCardless Payment Paid Out",
-                                message = s"Payment for order ${orderId.value} has been paid out. Event ID: ${event.id}, Description: ${event.details.description}",
+                                message =
+                                    s"Payment for order ${orderId.value} has been paid out. Event ID: ${event.id}, Description: ${event.details.description}",
                                 orderId = Some(orderId)
                             )(using lang)
-                            _ <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
+                            _    <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
                         } yield WebhookEventStatus.Processed
-                    case None =>
+                    case None          =>
                         for {
-                            _ <- logger.error(s"Payment paid out event ${event.id} missing or invalid order_id in metadata")
+                            _ <- logger.error(
+                                s"Payment paid out event ${event.id} missing or invalid order_id in metadata"
+                            )
                             _ <- sendAdminNotification(
                                 subject = "GoCardless Payment Paid Out (No Order ID)",
-                                message = s"Payment paid out event received but no valid order_id found. Event ID: ${event.id}, Description: ${event.details.description}"
+                                message =
+                                    s"Payment paid out event received but no valid order_id found. Event ID: ${event.id}, Description: ${event.details.description}"
                             )(using BackendCompatibleLanguage.DefaultLanguage)
                         } yield WebhookEventStatus.Processed
                 }
@@ -684,116 +674,136 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 extractOrderId(event).flatMap {
                     case Some(orderId) =>
                         for {
-                            _ <- logger.error(s"Payment cancelled for order ${orderId.value}: ${event.details.description}")
-                            _ <- updateOrderStatus(orderId, OrderStatus.Cancelled)
+                            _    <- logger.error(
+                                s"Payment cancelled for order ${orderId.value}: ${event.details.description}"
+                            )
+                            _    <- updateOrderStatus(orderId, OrderStatus.Cancelled)
                             lang <- getLanguageForOrder(orderId)
-                            _ <- sendAdminNotification(
+                            _    <- sendAdminNotification(
                                 subject = "GoCardless Payment Cancelled",
-                                message = s"Payment for order ${orderId.value} has been cancelled. Event ID: ${event.id}, Description: ${event.details.description}",
+                                message =
+                                    s"Payment for order ${orderId.value} has been cancelled. Event ID: ${event.id}, Description: ${event.details.description}",
                                 orderId = Some(orderId)
                             )(using lang)
-                            _ <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
+                            _    <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
                         } yield WebhookEventStatus.Processed
-                    case None =>
+                    case None          =>
                         for {
-                            _ <- logger.error(s"Payment cancelled event ${event.id} missing or invalid order_id in metadata")
+                            _ <- logger.error(
+                                s"Payment cancelled event ${event.id} missing or invalid order_id in metadata"
+                            )
                             _ <- sendAdminNotification(
                                 subject = "GoCardless Payment Cancelled (No Order ID)",
-                                message = s"Payment cancelled event received but no valid order_id found. Event ID: ${event.id}, Description: ${event.details.description}"
+                                message =
+                                    s"Payment cancelled event received but no valid order_id found. Event ID: ${event.id}, Description: ${event.details.description}"
                             )(using BackendCompatibleLanguage.DefaultLanguage)
                         } yield WebhookEventStatus.Processed
                 }
-                
+
             case ("payments", "failed") =>
                 extractOrderId(event).flatMap {
                     case Some(orderId) =>
                         for {
-                            _ <- logger.error(s"Payment failed for order ${orderId.value}: ${event.details.description}")
-                            _ <- updateOrderStatus(orderId, OrderStatus.Failed)
+                            _    <- logger.error(
+                                s"Payment failed for order ${orderId.value}: ${event.details.description}"
+                            )
+                            _    <- updateOrderStatus(orderId, OrderStatus.Failed)
                             lang <- getLanguageForOrder(orderId)
-                            _ <- sendAdminNotification(
+                            _    <- sendAdminNotification(
                                 subject = "GoCardless Payment Failed",
-                                message = s"Payment for order ${orderId.value} has failed. Event ID: ${event.id}, Description: ${event.details.description}",
+                                message =
+                                    s"Payment for order ${orderId.value} has failed. Event ID: ${event.id}, Description: ${event.details.description}",
                                 orderId = Some(orderId)
                             )(using lang)
-                            _ <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
+                            _    <- updatePaymentIdIfNeededAndPresent(orderId, extractGoCardlessPaymentId(event))
                         } yield WebhookEventStatus.Processed
-                    case None =>
+                    case None          =>
                         for {
-                            _ <- logger.error(s"Payment failed event ${event.id} missing or invalid order_id in metadata")
+                            _ <- logger.error(
+                                s"Payment failed event ${event.id} missing or invalid order_id in metadata"
+                            )
                             _ <- sendAdminNotification(
                                 subject = "GoCardless Payment Failed (No Order ID)",
-                                message = s"Payment failed event received but no valid order_id found. Event ID: ${event.id}, Description: ${event.details.description}"
+                                message =
+                                    s"Payment failed event received but no valid order_id found. Event ID: ${event.id}, Description: ${event.details.description}"
                             )(using BackendCompatibleLanguage.DefaultLanguage)
                         } yield WebhookEventStatus.Processed
                 }
-                
+
             case ("mandates", _) =>
                 for {
                     _ <- logger.info(s"Mandate event: ${event.action} - ${event.details.description}")
                     _ <- sendAdminNotification(
                         subject = s"GoCardless Mandate ${event.action.capitalize}",
-                        message = s"Mandate ${event.action} event received. Event ID: ${event.id}, Description: ${event.details.description}, Mandate ID: ${event.links.get("mandate").getOrElse("N/A")}"
+                        message =
+                            s"Mandate ${event.action} event received. Event ID: ${event.id}, Description: ${event.details.description}, Mandate ID: ${event.links.get("mandate").getOrElse("N/A")}"
                     )(using BackendCompatibleLanguage.DefaultLanguage)
                 } yield WebhookEventStatus.Processed
-                
+
             case ("billing_requests", _) =>
                 extractOrderId(event).flatMap {
                     case Some(orderId) =>
                         for {
-                            _ <- logger.info(s"Billing request ${event.action} for order ${orderId.value}")
+                            _    <- logger.info(s"Billing request ${event.action} for order ${orderId.value}")
                             lang <- getLanguageForOrder(orderId)
-                            _ <- sendAdminNotification(
+                            _    <- sendAdminNotification(
                                 subject = s"GoCardless Billing Request ${event.action.capitalize}",
-                                message = s"Billing request ${event.action} event received for order ${orderId.value}. Event ID: ${event.id}, Description: ${event.details.description}",
+                                message =
+                                    s"Billing request ${event.action} event received for order ${orderId.value}. Event ID: ${event.id}, Description: ${event.details.description}",
                                 orderId = Some(orderId)
                             )(using lang)
                         } yield WebhookEventStatus.Processed
-                    case None =>
+                    case None          =>
                         for {
-                            _ <- logger.info(s"Billing request ${event.action}: ${event.links.get("billing_request").getOrElse("N/A")}")
+                            _ <- logger.info(
+                                s"Billing request ${event.action}: ${event.links.get("billing_request").getOrElse("N/A")}"
+                            )
                             _ <- sendAdminNotification(
                                 subject = s"GoCardless Billing Request ${event.action.capitalize}",
-                                message = s"Billing request ${event.action} event received. Event ID: ${event.id}, Description: ${event.details.description}, Billing Request ID: ${event.links.get("billing_request").getOrElse("N/A")}"
+                                message =
+                                    s"Billing request ${event.action} event received. Event ID: ${event.id}, Description: ${event.details.description}, Billing Request ID: ${event.links.get("billing_request").getOrElse("N/A")}"
                             )(using BackendCompatibleLanguage.DefaultLanguage)
                         } yield WebhookEventStatus.Processed
                 }
-                
+
             case _ =>
                 for {
                     _ <- logger.info(s"Unhandled webhook event: ${event.resource_type}/${event.action}")
                     _ <- sendAdminNotification(
                         subject = s"GoCardless Unhandled Event: ${event.resource_type}/${event.action}",
-                        message = s"Received unhandled webhook event. Resource Type: ${event.resource_type}, Action: ${event.action}, Event ID: ${event.id}, Description: ${event.details.description}"
+                        message =
+                            s"Received unhandled webhook event. Resource Type: ${event.resource_type}, Action: ${event.action}, Event ID: ${event.id}, Description: ${event.details.description}"
                     )(using BackendCompatibleLanguage.DefaultLanguage)
                 } yield WebhookEventStatus.Unknown
         }
 
     def processWebhook(body: String, signature: String): F[Either[String, WebhookEventStatus]] =
-        verifyWebhookSignature(body, signature).flatMap { isValid =>
-            if (isValid) {
-                for {
-                    _ <- logger.info("Processing GoCardless webhook")
-                    parseResult <- Async[F].fromEither(
-                        io.circe.parser.decode[WebhookPayload](body)
+        verifyWebhookSignature(body, signature)
+            .flatMap { isValid =>
+                if (isValid) {
+                    for {
+                        _                 <- logger.info("Processing GoCardless webhook")
+                        parseResult       <- Async[F].fromEither(
+                            io.circe.parser.decode[WebhookPayload](body)
+                        )
+                        whEventStatusList <- parseResult.events.traverse(processWebhookEvent)
+                        _                 <- logger.info(s"Successfully processed ${parseResult.events.length} webhook events")
+                    } yield Right(
+                        if (whEventStatusList.forall(_ == WebhookEventStatus.Unknown)) WebhookEventStatus.Unknown
+                        else WebhookEventStatus.Processed
                     )
-                    whEventStatusList <- parseResult.events.traverse(processWebhookEvent)
-                    _ <- logger.info(s"Successfully processed ${parseResult.events.length} webhook events")
-                } yield Right(
-                    if (whEventStatusList.forall(_ == WebhookEventStatus.Unknown)) WebhookEventStatus.Unknown
-                    else WebhookEventStatus.Processed
-                )
-            } else {
-                Async[F].pure(Right(WebhookEventStatus.InvalidSignature))
+                } else {
+                    Async[F].pure(Right(WebhookEventStatus.InvalidSignature))
+                }
             }
-        }.handleErrorWith { error =>
-            logger.error(s"Error processing webhook: ${error.getMessage}") *>
-            Async[F].pure(Left(s"Error processing webhook: ${error.getMessage}"))
-        }
+            .handleErrorWith { error =>
+                logger.error(s"Error processing webhook: ${error.getMessage}") *>
+                    Async[F].pure(Left(s"Error processing webhook: ${error.getMessage}"))
+            }
 
     def createPaymentLink(
-        orderId: OrderId,
-        amount: BigDecimal,
+        orderId     : OrderId,
+        amount      : BigDecimal,
         customerInfo: CustomerInfo
     ): F[String] =
         for {
@@ -804,12 +814,15 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             gcLanguage = GoCardlessLanguage.fromBackendLanguage(customerInfo.language)
 
             // Get order and product first to access language
-            order <- orderService.findOrder(orderId).flatMap { orderOpt => 
+            order <- orderService.findOrder(orderId).flatMap { orderOpt =>
                 Async[F].fromOption(orderOpt, new RuntimeException(s"Unexpected: could not find order ${orderId}"))
             }
-            
-            product <- orderService.findProduct(orderId).flatMap { productOpt => 
-                Async[F].fromOption(productOpt, new RuntimeException(s"Unexpected: could not find product associated with order ${orderId}"))
+
+            product <- orderService.findProduct(orderId).flatMap { productOpt =>
+                Async[F].fromOption(
+                    productOpt,
+                    new RuntimeException(s"Unexpected: could not find product associated with order ${orderId}")
+                )
             }
 
             // Step 1: Check if customer already exists in our database
@@ -822,7 +835,9 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 amount,
                 customerInfo.email,
                 product,
-                existingCustomer.flatMap(c => if (c.paymentProvider.contains(PaymentProvider.GoCardless)) c.paymentProviderId else None)
+                existingCustomer.flatMap(c =>
+                    if (c.paymentProvider.contains(PaymentProvider.GoCardless)) c.paymentProviderId else None
+                )
             )(using order.language)
             _              <- logger.info(s"Created billing request: ${billingRequest.id}")
 
@@ -836,38 +851,54 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
 
                         // Customer exists but invalid provider or gcCustomerId
                         case Some(customer) =>
-                            
-                            if (customer.paymentProvider.contains(PaymentProvider.GoCardless) && customer.paymentProviderId.contains(gcCustomerId))
+
+                            if (
+                                customer.paymentProvider.contains(
+                                    PaymentProvider.GoCardless
+                                ) && customer.paymentProviderId.contains(gcCustomerId)
+                            )
                                 // Customer exists with valid provider and gcCustomerId
                                 logger.info(s"Customer already has GoCardless ID: $gcCustomerId, skipping update")
                             else
                                 // Update existing customer with GoCardless info
-                                customerRepo.updatePaymentProvider(customer.id, gcCustomerId, PaymentProvider.GoCardless).flatMap { success =>
-                                    if (success) {
-                                        logger.info(s"Updated existing customer ${customer.id.value} with GoCardless ID: $gcCustomerId")
-                                    } else {
-                                        logger.warn(s"Failed to update customer ${customer.id.value} with GoCardless ID: $gcCustomerId")
+                                customerRepo
+                                    .updatePaymentProvider(customer.id, gcCustomerId, PaymentProvider.GoCardless)
+                                    .flatMap { success =>
+                                        if (success) {
+                                            logger.info(
+                                                s"Updated existing customer ${customer.id.value} with GoCardless ID: $gcCustomerId"
+                                            )
+                                        } else {
+                                            logger.warn(
+                                                s"Failed to update customer ${customer.id.value} with GoCardless ID: $gcCustomerId"
+                                            )
+                                        }
                                     }
-                                }
-                            
+
                         // Customer does not exist
                         case None =>
                             // Create new customer with GoCardless info
                             val newCustomerId = CustomerId(UUID.randomUUID())
-                            val now = Instant.now()
-                            val newCustomer = customerInfo.toDomainCustomer(newCustomerId.value, now).copy(
-                                paymentProvider = Some(PaymentProvider.GoCardless),
-                                paymentProviderId = Some(gcCustomerId)
-                            )
+                            val now           = Instant.now()
+                            val newCustomer   = customerInfo
+                                .toDomainCustomer(newCustomerId.value, now)
+                                .copy  (
+                                    paymentProvider   = Some(PaymentProvider.GoCardless),
+                                    paymentProviderId = Some(gcCustomerId)
+                                )
                             customerRepo.createFull(newCustomer).flatMap { success =>
                                 if (success) {
-                                    logger.info(s"Created new customer ${newCustomerId.value} with GoCardless ID: $gcCustomerId")
+                                    logger.info(
+                                        s"Created new customer ${newCustomerId.value} with GoCardless ID: $gcCustomerId"
+                                    )
                                 } else {
-                                    logger.warn(s"Failed to create customer ${newCustomerId.value} with GoCardless ID: $gcCustomerId")
+                                    logger.warn(
+                                        s"Failed to create customer ${newCustomerId.value} with GoCardless ID: $gcCustomerId"
+                                    )
                                 }
                             }
                     }
-                    
+
                 case None =>
                     logger.warn("No customer ID found in billing request response")
                     Async[F].unit
@@ -884,7 +915,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             )
 
             // Step 4: Send payment link via email
-            _                  <- sendPaymentLinkEmail(
+            _ <- sendPaymentLinkEmail(
                 customerInfo.email,
                 billingRequestFlow.authorisation_url,
                 orderId,
@@ -898,40 +929,48 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
 
     private def sendPaymentLinkEmail(
         customerEmail: String,
-        paymentUrl: String,
-        orderId: OrderId,
-        amount: BigDecimal
+        paymentUrl   : String,
+        orderId      : OrderId,
+        amount       : BigDecimal
     )(using lang: BackendCompatibleLanguage): F[Unit] =
         for {
             // Retrieve order to get language and verify it matches the context parameter
             orderOpt <- orderService.findOrder(orderId)
-            order <- Async[F].fromOption(orderOpt, new RuntimeException(s"Order ${orderId.value} not found when sending payment link email"))
-            
+            order    <- Async[F].fromOption(
+                orderOpt,
+                new RuntimeException(s"Order ${orderId.value} not found when sending payment link email")
+            )
+
             // Retrieve product to get name and description
             productOpt <- orderService.findProduct(orderId)
-            product <- Async[F].fromOption(productOpt, new RuntimeException(s"Product for order ${orderId.value} not found when sending payment link email"))
-            
+            product    <- Async[F].fromOption(
+                productOpt,
+                new RuntimeException(s"Product for order ${orderId.value} not found when sending payment link email")
+            )
+
             // Use the language from the order to ensure consistency
             languageFromOrder = order.language
-            
+
             paymentLinkEmail = PaymentLinkEmail(
-                email = EmailAddress.unsafeFromString(customerEmail),
-                paymentUrl = paymentUrl,
+                email       = EmailAddress.unsafeFromString(customerEmail),
+                paymentUrl  = paymentUrl,
                 productName = product.name,
-                amount = amount,
-                currency = product.currency.toString
+                amount      = amount,
+                currency    = product.currency.toString
             )
-            
+
             // Send email using the order's language for proper translations
             _ <- emailService.sendUserPaymentLink(paymentLinkEmail)(using languageFromOrder)
-            
-            _ <- logger.info(s"Payment link email sent to $customerEmail for order ${orderId.value} with product: ${product.name} in language: ${languageFromOrder.code}")
+
+            _ <- logger.info(
+                s"Payment link email sent to $customerEmail for order ${orderId.value} with product: ${product.name} in language: ${languageFromOrder.code}"
+            )
         } yield ()
 
 object GoCardlessPaymentServiceImpl:
     def create[F[_]: Async](
-        httpClient: Client[F],
-        config: GoCardlessConfig,
+        httpClient  : Client[F],
+        config      : GoCardlessConfig,
         emailService: EmailService[F],
         orderService: OrderService[F],
         customerRepo: CustomerRepository[F]

@@ -5,20 +5,19 @@
 
 package afpma.firecalc.engine.ops
 
-import cats.Show
-import cats.data.*
-import cats.syntax.all.*
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.utils.*
 
-import afpma.firecalc.units.coulombutils.*
+import cats.Show
+import cats.data.*
+import cats.syntax.all.*
 
 trait DynamicFrictionCoeffOp[A]:
 
-    extension (a: A)
-        def dynamicFrictionCoeff: DynamicFrictionCoeffOp.Result
+    extension (a: A) def dynamicFrictionCoeff: DynamicFrictionCoeffOp.Result
 
 object DynamicFrictionCoeffOp:
 
@@ -33,11 +32,10 @@ object DynamicFrictionCoeffOp:
 
     // according to EN 13384-1:2015+A1:2019
 
-    type Err = afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
+    type Err    = afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
     type Result = ValidatedNel[Err, ζ]
 
-    extension (res: Result)
-        def toENelString: ValidatedNel[String, ζ] = res.leftMap(_.map(_.msg))
+    extension (res: Result) def toENelString: ValidatedNel[String, ζ] = res.leftMap(_.map(_.msg))
 
     // summon helper
     def apply[S](using
@@ -58,29 +56,29 @@ object DynamicFrictionCoeffOp:
         }
 
     def interpolateHelperE[S: Show](
-        shape: S,
-        resName: String,
+        shape            : S,
+        resName          : String,
         tsvTableRawString: String,
-        xHeader: String,
-        xi: Double,
-        xMinMax: (Double, Double),
+        xHeader          : String,
+        xi               : Double,
+        xMinMax          : (Double, Double),
         yHeaderSelectFunc: Option[Double] => Either[Err, String],
-        yCriteria: Option[Double]
+        yCriteria        : Option[Double]
     ): Either[Err, ζ] = {
         val (xmin, xmax) = xMinMax
 
-        if (xi < xmin) Left(ValueOutOfBound[S](shape, "x", xi, xmin, xmax))
+        if      (xi < xmin) Left(ValueOutOfBound[S](shape, "x", xi, xmin, xmax))
         else if (xi > xmax) Left(ValueOutOfBound[S](shape, "x", xi, xmin, xmax))
         else
             val data = TSVTableString.fromString(tsvTableRawString)
             for
                 yHeader <- yHeaderSelectFunc(yCriteria)
-                out <- data.getUsingLinearInterpolation(xHeader, yHeader)(
+                out     <- data.getUsingLinearInterpolation(xHeader, yHeader)(
                     xi
                 ) match
-                    case Some(coeff) => 
+                    case Some(coeff) =>
                         Right(coeff)
-                    case None =>
+                    case None        =>
                         Left(
                             CouldNotComputeIndividualCoefficientForShape[S](
                                 shape,
@@ -91,17 +89,24 @@ object DynamicFrictionCoeffOp:
     }
 
     def interpolateHelper[S: Show](
-        shape: S,
-        resName: String,
+        shape            : S,
+        resName          : String,
         tsvTableRawString: String,
-        xHeader: String,
-        xi: Double,
-        xMinMax: (Double, Double),
+        xHeader          : String,
+        xi               : Double,
+        xMinMax          : (Double, Double),
         yHeaderSelectFunc: Option[Double] => Either[Err, String],
-        yCriteria: Option[Double]
-    ): Result = 
+        yCriteria        : Option[Double]
+    ): Result =
         interpolateHelperE(
-            shape, resName, tsvTableRawString, xHeader, xi, xMinMax, yHeaderSelectFunc, yCriteria
+            shape,
+            resName,
+            tsvTableRawString,
+            xHeader,
+            xi,
+            xMinMax,
+            yHeaderSelectFunc,
+            yCriteria
         ).toValidatedNel
 
 end DynamicFrictionCoeffOp

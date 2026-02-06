@@ -5,11 +5,10 @@
 
 package afpma.firecalc.ui.components
 
-import scala.util.Failure
-import scala.util.Success
+import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
+import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
-import afpma.firecalc.payments.shared.Constants.{FIRECALC_FILE_EXTENSION, LEGACY_FIRECALC_FILE_EXTENSION}
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.daisyui.DaisyUITooltip
@@ -18,186 +17,173 @@ import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.services.FileSystemService
 
 import com.raquo.laminar.api.L.*
+
+import scala.util.Failure
+import scala.util.Success
+
 import io.taig.babel.Locale
 import org.scalajs.dom
 
 object FireCalcProjet:
 
-    case class HardCodedEngineStateComponent(nextEngineState: EngineState, buttonTitle: String)(using Locale) extends Component:
-        lazy val node = 
-            div( 
+    case class HardCodedEngineStateComponent(nextEngineState: EngineState, buttonTitle: String)(using Locale)
+        extends Component:
+        lazy val node =
+            div(
                 cls := "h-5",
-                DaisyUITooltip(
-                    ttContent = p(I18N_UI.tooltips.load_project("'Exemple'")),
-                    element = 
+                DaisyUITooltip (
+                    ttContent  = p(I18N_UI.tooltips.load_project("'Exemple'")),
+                    element    = div(
+                        cls := "h-4 cursor-pointer",
                         div(
-                            cls := "h-4 cursor-pointer",
-                            div(
-                                cls := "flex flex-row items-center gap-x-2",
-                                lucide.`file-question-mark`(stroke_width = 1),
-                                // p( cls := "text-sm", buttonTitle),
-                            ),
-                            onClick --> { _ => 
-                                engineStateVar.set(nextEngineState)
-                            }
+                            cls := "flex flex-row items-center gap-x-2",
+                            lucide.`file-question-mark`(stroke_width = 1)
+                            // p( cls := "text-sm", buttonTitle),
                         ),
+                        onClick --> { _ =>
+                            engineStateVar.set(nextEngineState)
+                        }
+                    ),
                     ttPosition = "tooltip-bottom"
                 )
             )
-            
-    
+
     case class NewBlankComponent()(using Locale) extends Component:
-        lazy val node = 
+        lazy val node =
             div(
                 cls := "",
-                DaisyUITooltip(
-                    ttContent = p(I18N_UI.tooltips.new_project),
-                    element = 
-                        div(
-                            cls := "w-4 h-4 cursor-pointer",
-                            lucide.`file`(stroke_width = 1),
-                            onClick --> { _ => 
-                                engineStateVar.set(EngineState.init)
-                            }
-                        ),
+                DaisyUITooltip (
+                    ttContent  = p(I18N_UI.tooltips.new_project),
+                    element    = div(
+                        cls := "w-4 h-4 cursor-pointer",
+                        lucide.`file`(stroke_width = 1),
+                        onClick --> { _ =>
+                            engineStateVar.set(EngineState.init)
+                        }
+                    ),
                     ttPosition = "tooltip-bottom"
                 )
             )
-            
-
 
     case class BackupComponent()(using Locale) extends Component:
 
         val isProcessingVar = Var(false)
-        val errorVar = Var[Option[String]](None)
+        val errorVar        = Var[Option[String]](None)
 
         def saveYaml(engineState: EngineState): Unit =
             import scala.concurrent.ExecutionContext.Implicits.global
             import afpma.firecalc.dto.FireCalcYAMLMigrations
-            
+
             isProcessingVar.set(true)
-            errorVar.set(None)
+            errorVar.set       (None)
 
             // Convert state to YAML using dto module
             FireCalcYAMLMigrations.encodeToYamlTry(engineState) match
                 case Failure(ex) =>
-                    errorVar.set(Some(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage)))
-                    isProcessingVar.set(false)
-                    
+                    errorVar.set       (Some(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage)))
+                    isProcessingVar.set(false                                                             )
+
                 case Success(yamlContent) =>
                     // Use FileSystemService which handles both browser and Electron
                     FileSystemService.saveFile(filename_var.now(), yamlContent).foreach {
                         case Left(error) =>
-                            errorVar.set(Some(error))
-                            isProcessingVar.set(false)
-                            
+                            errorVar.set       (Some(error))
+                            isProcessingVar.set(false      )
+
                         case Right(_) =>
                             isProcessingVar.set(false)
                     }
 
-        lazy val node = 
+        lazy val node =
             div(
-                    cls := "",
-
-                    DaisyUITooltip(
-                        ttContent = p(I18N_UI.tooltips.save_project),
-                        element = 
-                            div(
-                                cls := "w-4 h-4 cursor-pointer",
-                                disabled <-- isProcessingVar,
-                                lucide.`file-down`(stroke_width = 1),
-                                onClick --> { _ =>
-                                    saveYaml(engineStateVar.now())
-                                }
-                            ),
-                        ttPosition = "tooltip-bottom"
+                cls := "",
+                DaisyUITooltip (
+                    ttContent  = p(I18N_UI.tooltips.save_project),
+                    element    = div(
+                        cls := "w-4 h-4 cursor-pointer",
+                        disabled <-- isProcessingVar,
+                        lucide.`file-down`(stroke_width = 1),
+                        onClick --> { _ =>
+                            saveYaml(engineStateVar.now())
+                        }
                     ),
+                    ttPosition = "tooltip-bottom"
+                )
 
-                    // Processing indicator
-                    // child <-- isProcessingVar.signal.map {
-                    //     case true => div(cls := "processing", "Preparing download...")
-                    //     case false => emptyNode
-                    // },
+                // Processing indicator
+                // child <-- isProcessingVar.signal.map {
+                //     case true => div(cls := "processing", "Preparing download...")
+                //     case false => emptyNode
+                // },
 
-                    // Error message
-                    // child <-- errorVar.signal.map {
-                    //     case Some(msg) => div(cls := "error-message", s"Error: $msg")
-                    //     case None => emptyNode
-                    // }
-
+                // Error message
+                // child <-- errorVar.signal.map {
+                //     case Some(msg) => div(cls := "error-message", s"Error: $msg")
+                //     case None => emptyNode
+                // }
 
             )
-            
-            
-            
-
 
     case class UploadComponent()(using Locale) extends Component:
 
         val isLoadingVar = Var(false)
-        val errorVar = Var[Option[String]](None)
-        val fileNameVar = Var[Option[String]](None)
+        val errorVar     = Var[Option[String]](None)
+        val fileNameVar  = Var[Option[String]](None)
 
-        /**
-         * Load project from file content
-         */
+        /** Load project from file content */
         def loadFromContent(yamlContent: String, fileName: String): Unit =
             import afpma.firecalc.dto.FireCalcYAMLMigrations
-            
+
             scala.scalajs.js.Dynamic.global.console.log(s"Loading file: $fileName")
-            fileNameVar.set(Some(fileName))
-            isLoadingVar.set(true)
-            errorVar.set(None)
-            
+            fileNameVar.set                            (Some(fileName)            )
+            isLoadingVar.set                           (true                      )
+            errorVar.set                               (None                      )
+
             // Use migration-aware decoder that handles V1→V2 upgrades automatically
             FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
                 case Failure(e) =>
-                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project")
-                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage())
-                    errorVar.set(Some(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage)))
-                    isLoadingVar.set(false)
-                    
+                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project"                                  )
+                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                                                   )
+                    errorVar.set                               (Some(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage)))
+                    isLoadingVar.set                           (false                                                            )
+
                 case Success(nextEngineState) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
-                    engineStateVar.set(nextEngineState)
-                    isLoadingVar.set(false)
+                    engineStateVar.set                         (nextEngineState              )
+                    isLoadingVar.set                           (false                        )
 
-        /**
-         * Open file using Electron native dialog
-         */
+        /** Open file using Electron native dialog */
         def openFileElectron(): Unit =
             import scala.concurrent.ExecutionContext.Implicits.global
-            
+
             isLoadingVar.set(true)
-            errorVar.set(None)
-            
+            errorVar.set    (None)
+
             FileSystemService.openFile().foreach {
                 case Left(error) =>
-                    errorVar.set(Some(error))
-                    isLoadingVar.set(false)
-                    
+                    errorVar.set    (Some(error))
+                    isLoadingVar.set(false      )
+
                 case Right(None) =>
                     // User cancelled
                     isLoadingVar.set(false)
-                    
+
                 case Right(Some((content, fileName))) =>
                     loadFromContent(content, fileName)
             }
 
-        /**
-         * Read file from browser file input
-         */
+        /** Read file from browser file input */
         def readFileFromBrowser(file: dom.File): Unit =
             import scala.concurrent.ExecutionContext.Implicits.global
-            
+
             isLoadingVar.set(true)
-            errorVar.set(None)
-            
+            errorVar.set    (None)
+
             FileSystemService.readFileFromInput(file).foreach {
                 case Left(error) =>
-                    errorVar.set(Some(error))
-                    isLoadingVar.set(false)
-                    
+                    errorVar.set    (Some(error))
+                    isLoadingVar.set(false      )
+
                 case Right((content, fileName)) =>
                     loadFromContent(content, fileName)
             }
@@ -205,14 +191,13 @@ object FireCalcProjet:
         lazy val node =
             // Hidden file input for browser mode only
             val hiddenFileInput = input(
-                typ := "file",
+                typ    := "file",
                 accept := s"$FIRECALC_FILE_EXTENSION,$LEGACY_FIRECALC_FILE_EXTENSION,.yaml",
-                cls := "hidden",
+                cls    := "hidden",
                 inContext { thisNode =>
                     onChange --> { _ =>
                         val files = thisNode.ref.files
-                        if files.length > 0 then
-                            readFileFromBrowser(files(0))
+                        if files.length > 0 then readFileFromBrowser(files(0))
                     }
                 }
             )
@@ -224,26 +209,23 @@ object FireCalcProjet:
                 hiddenFileInput,
 
                 // Visible button
-                DaisyUITooltip(
-                    ttContent = p(I18N_UI.tooltips.open_project),
-                    element =
-                        div(
-                            cls := "w-4 h-4 cursor-pointer",
-                            disabled <-- isLoadingVar,
-                            lucide.`folder-open`(stroke_width = 1),
-                            onClick --> { _ =>
-                                if FileSystemService.isElectron then
-                                    openFileElectron()
-                                else
-                                    hiddenFileInput.ref.click()
-                            }
-                        ),
+                DaisyUITooltip (
+                    ttContent  = p(I18N_UI.tooltips.open_project),
+                    element    = div(
+                        cls := "w-4 h-4 cursor-pointer",
+                        disabled <-- isLoadingVar,
+                        lucide.`folder-open`(stroke_width = 1),
+                        onClick --> { _ =>
+                            if FileSystemService.isElectron then openFileElectron()
+                            else hiddenFileInput.ref.click                       ()
+                        }
+                    ),
                     ttPosition = "tooltip-bottom"
                 ),
 
                 // Error message
                 child <-- errorVar.signal.map {
                     case Some(msg) => div(cls := "error-message", I18N_UI.errors.error_prefix.apply(msg))
-                    case None => emptyNode
+                    case None      => emptyNode
                 }
             )

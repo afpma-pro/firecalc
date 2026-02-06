@@ -5,9 +5,9 @@
 
 package afpma.firecalc.engine.models
 
-import cats.Show
-
 import afpma.firecalc.i18n.implicits.I18N
+
+import cats.Show
 
 import io.taig.babel.Locale
 
@@ -43,10 +43,9 @@ type ChimneyPipeT = ChimneyPipeT.type
 type PipeType_EN13384 = AirIntakePipeT | CombustionAirPipeT | FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT
 type PipeType_EN15544 = CombustionAirPipeT | FireboxPipeT | FluePipeT
 
-given AirIntakePipeT = AirIntakePipeT
+given AirIntakePipeT     = AirIntakePipeT
 given CombustionAirPipeT = CombustionAirPipeT
-given FireboxPipeT = FireboxPipeT
-given FluePipeT = FluePipeT
-given ConnectorPipeT = ConnectorPipeT
-given ChimneyPipeT = ChimneyPipeT
-    
+given FireboxPipeT       = FireboxPipeT
+given FluePipeT          = FluePipeT
+given ConnectorPipeT     = ConnectorPipeT
+given ChimneyPipeT       = ChimneyPipeT

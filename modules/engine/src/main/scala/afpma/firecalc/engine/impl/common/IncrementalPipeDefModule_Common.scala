@@ -5,44 +5,44 @@
 
 package afpma.firecalc.engine.impl.common
 
-import scala.reflect.*
-
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.models.Gas
 import afpma.firecalc.engine.models.GasInPipeEl
 import afpma.firecalc.engine.ops.HasLength
-import afpma.firecalc.engine.utils.VNelString
-import cats.data.ValidatedNel
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
+import cats.data.ValidatedNel
+
+import scala.reflect.*
+
 trait IncrementalPipeDefModule_Common[PipeType]:
-    
+
     // export FullDescrResult.*
-    
+
     type PipeElDescr0 <: Matchable
 
     type _IncrementalBuilder <: IncrementalBuilderAlg {
         type PipeElDescr = PipeElDescr0
-        type PT = PipeType
+        type PT          = PipeType
     }
 
     val incremental: _IncrementalBuilder
 
-    type El                 = incremental.PipeElDescr
-    type NamedEl            = incremental.NamedPipeElDescr
+    type El         = incremental.PipeElDescr
+    type NamedEl    = incremental.NamedPipeElDescr
     // type IncrDescr          = incremental.PipeIncrDescr
-    type FullDescr          = incremental.PipeFullDescr
-    type IdsMapping         = incremental.IdsMapping
+    type FullDescr  = incremental.PipeFullDescr
+    type IdsMapping = incremental.IdsMapping
 
-    type VNelE[X]              = ValidatedNel[IncrementalValidation_Error, X]
+    type VNelE[X] = ValidatedNel[IncrementalValidation_Error, X]
 
     opaque type FullDescrResult = VNelE[(IdsMapping, PipeCanBe)]
     object FullDescrResult:
         given Conversion[VNelE[(IdsMapping, PipeCanBe)], FullDescrResult] = identity
         extension (fdr: FullDescrResult)
-            def extractPipe: VNelE[PipeCanBe] = fdr.map(_._2)
+            def extractPipe      : VNelE[PipeCanBe]  = fdr.map(_._2)
             def extractIdsMapping: VNelE[IdsMapping] = fdr.map(_._1)
-    
+
     type PipeCanBe
 
     type G <: Gas
@@ -54,15 +54,15 @@ trait IncrementalPipeDefModule_Common[PipeType]:
     given hasLength: HasLength[El] = scala.compiletime.deferred
 
     extension (n: NamedEl)
-        def toGasInPipeEl(using params: Params): GasPipeElParams = 
+        def toGasInPipeEl(using params: Params): GasPipeElParams =
             GasInPipeEl(gas, n, params)
 
     // export incremental.elems
     given tt_FullDescr: TypeTest[PipeCanBe, FullDescr] = new:
-        def unapply(x: PipeCanBe): Option[x.type & FullDescr] = 
+        def unapply(x: PipeCanBe): Option[x.type & FullDescr] =
             if (incremental.isPipeFullDescr(x))
                 val xx: x.type & FullDescr = x.asInstanceOf[x.type & FullDescr]
-                Some(xx) 
+                Some(xx)
             else None
 
 object IncrementalPipeDefModule_Common:

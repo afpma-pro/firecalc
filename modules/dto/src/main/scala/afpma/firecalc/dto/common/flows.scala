@@ -5,12 +5,12 @@
 
 package afpma.firecalc.dto.common
 
+import afpma.firecalc.units.coulombutils.*
+
 import cats.Show
 
 import coulomb.*
 import coulomb.syntax.*
-
-import afpma.firecalc.units.coulombutils.*
 
 opaque type NbOfFlows <: Int = Int
 object NbOfFlows:
@@ -20,11 +20,8 @@ object NbOfFlows:
 
     given Show[NbOfFlows] = Show.show(n => s"$n")
 
-    extension (x: 1)
-        def flow: NbOfFlows = 1
+    extension (x: 1) def flow: NbOfFlows = 1
 
-    extension (x: Int)
-        def flows: NbOfFlows = x
+    extension (x: Int) def flows: NbOfFlows = x
 
-    extension (nf: NbOfFlows)
-        def asQty: QtyD[1] = nf.toDouble.withUnit[1]
+    extension (nf: NbOfFlows) def asQty: QtyD[1] = nf.toDouble.withUnit[1]

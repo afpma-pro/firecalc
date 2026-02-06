@@ -5,38 +5,28 @@
 
 package afpma.firecalc.ui.tailwind
 
-import cats.Show
-import cats.syntax.all.*
+import afpma.firecalc.units.coulombutils.*
 
-import algebra.instances.all.given
-
-import afpma.firecalc.engine.utils.*
-
-import afpma.firecalc.ui.i18n.implicits.given
+import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.utils.*
 
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.{*, given}
+import cats.Show
+
 import com.raquo.laminar.api.L.*
-import coulomb.policy.standard.given
+
 import io.taig.babel.Locale
 
-final case class Indicators()(using Locale, DisplayUnits)
-    extends Component:
+final case class Indicators()(using Locale, DisplayUnits) extends Component:
 
     given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
-       
+
     lazy val node =
         div(
             cls := "top-8 relative flex justify-end",
-
             EquilibriumIndicator(),
-
-            EfficiencyIndicator(),
+            EfficiencyIndicator (),
 
             // Indicator(
             //     Seq(

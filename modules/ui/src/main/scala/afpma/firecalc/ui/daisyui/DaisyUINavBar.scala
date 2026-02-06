@@ -5,20 +5,20 @@
 
 package afpma.firecalc.ui.daisyui
 
+import afpma.firecalc.dto.all.*
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.FireCalcProjet
+import afpma.firecalc.ui.components.OrderPDFReportModalComponent
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 
-import afpma.firecalc.dto.all.*
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
+
 import io.taig.babel.Language
-import org.scalajs.dom
-import org.scalajs.dom.HTMLDialogElement
-import afpma.firecalc.ui.components.OrderPDFReportModalComponent
 
 object DaisyUINavBar:
 
@@ -31,7 +31,7 @@ object DaisyUINavBar:
         svg.fill    := "none",
         svg.viewBox := "0 0 24 24",
         svg.stroke  := "currentColor",
-        svg.path(
+        svg.path (
             svg.svgAttr("stroke-linecap", StringAsIsCodec, None)  := "round",
             svg.svgAttr("stroke-linejoin", StringAsIsCodec, None) := "round",
             svg.svgAttr("stroke-width", StringAsIsCodec, None)    := "2",
@@ -41,10 +41,11 @@ object DaisyUINavBar:
 
     final case class HeaderMenuButton(
         titleLeftNode: HtmlElement,
-        buttonString: String
-    )(using Locale) extends Component:
+        buttonString : String
+    )                                (using Locale)
+        extends Component:
 
-        val disabledAttr: HtmlAttr[Boolean]   = htmlAttr("disabled"     , BooleanAsAttrPresenceCodec)
+        val disabledAttr: HtmlAttr[Boolean] = htmlAttr("disabled", BooleanAsAttrPresenceCodec)
 
         val node = div(
             cls := "flex flew-row navbar items-center justify-center bg-(--color-vlight-ocre) shadow-sm gap-x-2",
@@ -54,16 +55,16 @@ object DaisyUINavBar:
             ),
             div(
                 cls := "flex-1 flex flex-row items-center justify-center gap-x-6",
-                FireCalcProjet.NewBlankComponent(),
-                FireCalcProjet.UploadComponent(),
-                FireCalcProjet.BackupComponent(),
+                FireCalcProjet.NewBlankComponent            (),
+                FireCalcProjet.UploadComponent              (),
+                FireCalcProjet.BackupComponent              (),
                 FireCalcProjet.HardCodedEngineStateComponent(
                     nextEngineState = EngineState.example_projet_15544,
-                    buttonTitle = I18N_UI.buttons.load_example_project_15544
-                ),
+                    buttonTitle     = I18N_UI.buttons.load_example_project_15544
+                )
             ),
             // OPTIONAL
-            
+
             // div(
             //     cls := "flex-1 flex flex-row justify-center gap-x-6",
 
@@ -86,30 +87,30 @@ object DaisyUINavBar:
 
             // EN15544 button
             div(
-                    cls := "flex items-stretch gap-2",
-                    div(
-                            tabIndex        := 0,
-                            role            := "button",
-                            disabledAttr    := true,
-                            cls             := "btn btn-outline hover:btn-secondary rounded-field",
-                            "EN 15544:2023"
-                    ),
-                    // div(
-                    //     cls := "dropdown dropdown-end",
-                    //     div(
-                    //         tabIndex := 0,
-                    //         role     := "button",
-                    //         cls      := "btn btn-outline rounded-field",
-                    //         "EN 15544:2023"
-                    //     ),
-                    //     ul(
-                    //         tabIndex := 0,
-                    //         cls      := "menu dropdown-content bg-base-200 rounded-box z-1 mt-4 w-24 p-2 shadow-sm",
-                    //         li(a("EN 15544:2023")),
-                    //         // MCE
-                    //         // Other variants
-                    //     )
-                    // )
+                cls := "flex items-stretch gap-2",
+                div    (
+                    tabIndex     := 0,
+                    role         := "button",
+                    disabledAttr := true,
+                    cls          := "btn btn-outline hover:btn-secondary rounded-field",
+                    "EN 15544:2023"
+                )
+                // div(
+                //     cls := "dropdown dropdown-end",
+                //     div(
+                //         tabIndex := 0,
+                //         role     := "button",
+                //         cls      := "btn btn-outline rounded-field",
+                //         "EN 15544:2023"
+                //     ),
+                //     ul(
+                //         tabIndex := 0,
+                //         cls      := "menu dropdown-content bg-base-200 rounded-box z-1 mt-4 w-24 p-2 shadow-sm",
+                //         li(a("EN 15544:2023")),
+                //         // MCE
+                //         // Other variants
+                //     )
+                // )
             ),
 
             // ORDER PDF BUTTON
@@ -123,27 +124,25 @@ object DaisyUINavBar:
 
                 div(
                     cls := "flex items-stretch gap-2",
-                    DaisyUITooltip(
-                        ttContent = div(I18N_UI.tooltips.display_details),
-                        element = 
-                            div(
-                                tabIndex := 0,
-                                role     := "button",
-                                cls      := "btn btn-outline hover:btn-secondary rounded-field",
-                                cls("text-base-content")                            <-- expertModeOn,
-                                cls("text-base-content/40 hover:text-base-content") <-- expertModeOff,
-                                lucide.`flask-conical`(stroke_width = 1.5),
-                                onClick.mapToUnit --> { _ => 
-                                    // toggle expert mode
-                                    if (expertModeVar.now() == true) expertModeVar.set(false)
-                                    else expertModeVar.set(true)
-                                }
-                            ),
-                        ttPosition = "tooltip-bottom",
+                    DaisyUITooltip (
+                        ttContent  = div(I18N_UI.tooltips.display_details),
+                        element    = div(
+                            tabIndex := 0,
+                            role     := "button",
+                            cls      := "btn btn-outline hover:btn-secondary rounded-field",
+                            cls("text-base-content") <-- expertModeOn,
+                            cls("text-base-content/40 hover:text-base-content") <-- expertModeOff,
+                            lucide.`flask-conical`(stroke_width = 1.5),
+                            onClick.mapToUnit --> { _ =>
+                                // toggle expert mode
+                                if (expertModeVar.now() == true) expertModeVar.set(false)
+                                else expertModeVar.set(true)
+                            }
+                        ),
+                        ttPosition = "tooltip-bottom"
                     )
                 ),
 
-                
                 // LANGUAGE button
                 div(
                     cls := "flex items-stretch",
@@ -153,24 +152,52 @@ object DaisyUINavBar:
                             tabIndex := 0,
                             role     := "button",
                             cls      := "btn not-focus:btn-outline rounded-field hover:btn-secondary focus:btn-secondary focus:btn",
-                            div(cls := "w-4 h-4 flex items-center justify-center", lucide.languages(stroke_width = 1.5)),
+                            div(cls := "w-4 h-4 flex items-center justify-center", lucide.languages(stroke_width = 1.5))
                             // div(cls := "w-4 h-4 flex items-center justify-center", lucide.`chevron-down`),
                         ),
-                        ul(
+                        ul (
                             tabIndex := 0,
                             cls      := "menu dropdown-content place-content-end bg-base-200 rounded-box z-1 mt-4 w-18 p-2 shadow-sm",
                             children(
-                                li(cls := "w-full place-content-center", a(dataAttr("id") := "France", router.navigateTo(HomePage(Language("fr"), Some(DisplayUnits.SI))), "FR")),
-                                li(cls := "w-full place-content-center", a(dataAttr("id") := "English", router.navigateTo(HomePage(Language("en"), Some(DisplayUnits.SI))), "EN")),
+                                li(
+                                    cls := "w-full place-content-center",
+                                    a(
+                                        dataAttr("id") := "France",
+                                        router.navigateTo(HomePage(Language("fr"), Some(DisplayUnits.SI))),
+                                        "FR"
+                                    )
+                                ),
+                                li(
+                                    cls := "w-full place-content-center",
+                                    a(
+                                        dataAttr("id") := "English",
+                                        router.navigateTo(HomePage(Language("en"), Some(DisplayUnits.SI))),
+                                        "EN"
+                                    )
+                                )
                             ) <-- displayUnitsVar.signal.map(du => du == DisplayUnits.SI),
                             children(
-                                li(cls := "w-full place-content-center", a(dataAttr("id") := "France", router.navigateTo(HomePage(Language("fr"), Some(DisplayUnits.Imperial))), "FR")),
-                                li(cls := "w-full place-content-center", a(dataAttr("id") := "English", router.navigateTo(HomePage(Language("en"), Some(DisplayUnits.Imperial))), "EN")),
+                                li(
+                                    cls := "w-full place-content-center",
+                                    a(
+                                        dataAttr("id") := "France",
+                                        router.navigateTo(HomePage(Language("fr"), Some(DisplayUnits.Imperial))),
+                                        "FR"
+                                    )
+                                ),
+                                li(
+                                    cls := "w-full place-content-center",
+                                    a(
+                                        dataAttr("id") := "English",
+                                        router.navigateTo(HomePage(Language("en"), Some(DisplayUnits.Imperial))),
+                                        "EN"
+                                    )
+                                )
                             ) <-- displayUnitsVar.signal.map(du => du == DisplayUnits.Imperial)
                         )
                     )
                 ),
-                
+
                 // UNITS button
                 div(
                     cls := "flex items-stretch gap-2",
@@ -182,21 +209,33 @@ object DaisyUINavBar:
                             cls      := "btn btn-outline hover:btn-secondary focus:btn-secondary rounded-field",
                             I18N_UI.buttons.units.toLowerCase()
                         ),
-                        ul(
+                        ul (
                             tabIndex := 0,
                             cls      := "menu dropdown-content bg-base-200 rounded-box z-1 mt-4 w-24 p-2 shadow-sm",
                             children <-- localeVar.signal.map(loc =>
                                 Seq(
-                                    li(a("SI", 
-                                    router.navigateTo(HomePage(
-                                        lang = loc.language,
-                                        displayUnitsOpt = Some(DisplayUnits.SI)
-                                    )))),
-                                    li(a("Imperial",                                 
-                                    router.navigateTo(HomePage(
-                                        lang = loc.language,
-                                        displayUnitsOpt = Some(DisplayUnits.Imperial)
-                                    )))),
+                                    li(
+                                        a(
+                                            "SI",
+                                            router.navigateTo(
+                                                HomePage           (
+                                                    lang            = loc.language,
+                                                    displayUnitsOpt = Some(DisplayUnits.SI)
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    li(
+                                        a(
+                                            "Imperial",
+                                            router.navigateTo(
+                                                HomePage           (
+                                                    lang            = loc.language,
+                                                    displayUnitsOpt = Some(DisplayUnits.Imperial)
+                                                )
+                                            )
+                                        )
+                                    )
                                 )
                             )
                             // li(a("imperial"))

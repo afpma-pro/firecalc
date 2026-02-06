@@ -5,12 +5,9 @@
 
 package afpma.firecalc.ui.tailwind
 
-import cats.Show
-import cats.syntax.all.*
+import afpma.firecalc.units.coulombutils.{*, given}
 
-import algebra.instances.all.given
-
-import afpma.firecalc.engine.utils.*
+import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.ui.i18n.implicits.given
 
@@ -19,18 +16,19 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.utils.*
 
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.{*, given}
+import cats.Show
+
 import com.raquo.laminar.api.L.*
+
 import coulomb.policy.standard.given
+
 import io.taig.babel.Locale
 
 /**
  * Indicator component for displaying efficiency status.
  * Shows whether the stove efficiency meets the minimum requirements.
  */
-final case class EfficiencyIndicator()(using Locale, DisplayUnits)
-    extends Component:
+final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Component:
 
     given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
 
@@ -57,13 +55,13 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits)
         }
 
     lazy val node: HtmlElement =
-        IndicatorWithErrorTooltip(
-            indicator = Indicator(
+        IndicatorWithErrorTooltip     (
+            indicator      = Indicator(
                 Seq(
                     (IndicatorConfig.green, effInRange_sig),
-                    (IndicatorConfig.rose, hasError)
+                    (IndicatorConfig.rose, hasError       )
                 ),
-                title = p(I18N_UI.indicators.efficiency),
+                title        = p(I18N_UI.indicators.efficiency),
                 subtitle_sig = flueGasTemp_sig
             )(
                 p(
@@ -71,7 +69,7 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits)
                     text <-- eff_and_min_eff.map((vn, _) => vn).mapAndFoldVNelE(_.showP, "-")
                 )
             ),
-            errorSignal = hasError,
+            errorSignal    = hasError,
             tooltipContent = div(child <-- tooltipMessage)
         ).node
 

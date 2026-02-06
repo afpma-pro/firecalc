@@ -127,7 +127,7 @@ val commonSettings = Seq(
   scalacOptions ++= Seq(
     // "-explain",
     // "-explain-cyclic",
-    // "-deprecation", // TODO: uncomment when building (deactivation should improve compile time)
+    "-deprecation", // TODO: uncomment when building (deactivation should improve compile time)
     // "-encoding",
     // "utf8",
     "-feature",
@@ -137,6 +137,7 @@ val commonSettings = Seq(
     // "-unchecked",
     // "-Wunused:all",
     // "-Wunused:all",
+    "-Wunused:imports,privates,locals",
     // "-Xfatal-warnings",
     // "-source:future",
   ),
