@@ -137,10 +137,10 @@ val commonSettings = Seq(
     // "-Xfatal-warnings",
     // "-source:future",
   ),
-  // Output compilation scope information for watch mode parsing
+  // Output compilation scope marker for watch mode parsing
   Compile / compile := {
     val result = (Compile / compile).value
-    System.err.println(s"[info] => Compilation scope: ${name.value}")
+    System.err.println(s"[FIRECALC_COMPILE_DONE] module=${name.value}")
     result
   }
 )
@@ -160,10 +160,10 @@ lazy val root = (project in file("."))
   .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, engine.js, engine.jvm, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
   .settings(
     name := "firecalc-root",
-    // Output compilation scope information for watch mode parsing
+    // Output compilation scope marker for watch mode parsing
     Compile / compile := {
       val result = (Compile / compile).value
-      System.err.println(s"[info] => Compilation scope: ${name.value}")
+      System.err.println(s"[FIRECALC_COMPILE_DONE] module=${name.value}")
       result
     }
   )

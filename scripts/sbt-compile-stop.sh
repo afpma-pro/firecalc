@@ -7,6 +7,7 @@
 # Stop sbt watch mode
 
 PID_FILE=".logs/sbt-compile.pid"
+SCOPE_FILE=".logs/sbt-compile.scope"
 
 if [ ! -f "$PID_FILE" ]; then
     echo "No sbt watch process found"
@@ -18,7 +19,7 @@ PID=$(cat "$PID_FILE")
 if kill -0 "$PID" 2>/dev/null; then
     if kill "$PID" 2>/dev/null; then
         echo "Stopped sbt watch process (PID: $PID)"
-        rm "$PID_FILE"
+        rm -f "$PID_FILE" "$SCOPE_FILE"
     else
         echo "Failed to stop process (PID: $PID)"
         echo "You may need to run: kill $PID"
@@ -26,5 +27,5 @@ if kill -0 "$PID" 2>/dev/null; then
     fi
 else
     echo "Process already stopped (PID: $PID)"
-    rm "$PID_FILE"
+    rm -f "$PID_FILE" "$SCOPE_FILE"
 fi

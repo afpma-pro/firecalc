@@ -12,6 +12,7 @@ SCOPE=${1:-}  # Optional: engine, ui, etc.
 LOGS_DIR=".logs"
 LOG_FILE="$LOGS_DIR/sbt-compile.log"
 PID_FILE="$LOGS_DIR/sbt-compile.pid"
+SCOPE_FILE="$LOGS_DIR/sbt-compile.scope"
 
 # Create logs directory if needed
 mkdir -p "$LOGS_DIR"
@@ -29,6 +30,10 @@ fi
 
 # Clear log file
 > "$LOG_FILE"
+
+# Store scope for the check script
+# Empty scope = full project compilation (root)
+echo "$SCOPE" > "$SCOPE_FILE"
 
 # Build sbt command
 if [ -z "$SCOPE" ]; then
@@ -48,6 +53,7 @@ echo "Started sbt watch mode"
 echo "  Command: sbt '$SBT_CMD'"
 echo "  PID: $NEW_PID"
 echo "  Log: $LOG_FILE"
+echo "  Scope: ${SCOPE:-full project}"
 echo ""
 echo "Use ./scripts/sbt-compile-check.sh to check compilation status"
 echo "Use ./scripts/sbt-compile-stop.sh to stop"
