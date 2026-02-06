@@ -5,33 +5,26 @@
 
 package afpma.firecalc.ui.models
 
-import io.circe.*
-import io.circe.syntax.*
-import io.circe.parser.*
+import afpma.firecalc.units.all.given
+import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.all.*
+
+import afpma.firecalc.ui.instances
+import afpma.firecalc.ui.instances.circe.given
+import afpma.firecalc.ui.utils.InputQtyD
+
+import coulomb.*
+import coulomb.policy.standard.given
+import coulomb.syntax.*
+import coulomb.units.us.*
+
+import io.circe.*
+import io.circe.parser.*
+import io.circe.syntax.*
 import org.scalatest.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
-
-import afpma.firecalc.ui.instances
-import afpma.firecalc.ui.utils.InputQtyD
-import afpma.firecalc.units.all.given
-import afpma.firecalc.units.coulombutils.{*, given}
-
-import algebra.instances.all.given
-
-import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
-
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.dto.all.*
-import coulomb.units.us.*
-
-import afpma.firecalc.ui.instances.circe.given
-import afpma.firecalc.dto.instances.given
 
 
 class JsonEncodingDecoding_Suite extends AnyFreeSpec with Matchers:

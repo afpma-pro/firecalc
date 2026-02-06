@@ -5,28 +5,22 @@
 
 package afpma.firecalc.fdim.exercices.en15544_strict.p5_application
 
-import cats.syntax.all.* 
-
-import afpma.firecalc.engine.models
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.units.coulombutils.*
 
-
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled_V1
-import afpma.firecalc.engine.models.en13384.typedefs
+
 import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.models
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled_V1
+
+import cats.syntax.all.*
 
 object strict_ex03_cas_pratique 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
     with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
     self =>
 
-    import std.*
     import gtypedefs.ζ
 
     val exercice_name = "exercices // p5_application // mce_ex03_cas_pratique"

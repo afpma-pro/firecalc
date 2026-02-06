@@ -4,20 +4,10 @@
  */
 
 package afpma.firecalc.units.others
-
-import coulomb.*
-import coulomb.syntax.*
+import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.{*, given}
 
-import algebra.instances.all.given
-
 import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
-
-import afpma.firecalc.units.all.*
 
 object sunits:
     object SUnits:

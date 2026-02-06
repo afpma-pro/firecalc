@@ -12,7 +12,7 @@ class ConfigPathResolverTest extends munit.FunSuite {
 
   test("resolveEnvironment returns default 'dev' when no environment is set") {
     // Clear any existing environment variables for test isolation
-    val originalEnv = sys.env.get("FIRECALC_ENV")
+    // val originalEnv = sys.env.get("FIRECALC_ENV")
     val originalProp = sys.props.get("firecalc.env")
     
     try {

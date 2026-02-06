@@ -5,26 +5,21 @@
 
 package afpma.firecalc.fdim.exercices.p2_cf
 
-import cats.syntax.all.* 
-
-import afpma.firecalc.engine.models
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
 
-
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
-import afpma.firecalc.engine.models.en13384.typedefs
+
 import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.models
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+
+import cats.syntax.all.*
 
 object strict_ex00_kachelofen 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
     with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
         
-    import afpma.firecalc.engine.models.en15544.std.*
     import gtypedefs.ζ
 
     val exercice_name: String = "exercices // p2_cf // ex00_kachelofen"

@@ -7,7 +7,7 @@ package afpma.firecalc.payments.shared.i18n
 
 import afpma.firecalc.payments.shared.i18n.I18nData_PaymentsShared.*
 
-import io.taig.babel.StringFormat1
+// import io.taig.babel.StringFormat1
 
 final case class I18nData_PaymentsShared(
     billing_info: BillingInfo,

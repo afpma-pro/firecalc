@@ -5,21 +5,15 @@
 
 package afpma.firecalc.engine.wood_combustion
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-
 import afpma.firecalc.units.coulombutils.{*, given}
-
-import algebra.instances.all.given
-
-import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
 
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Alg
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Impl
+
+import coulomb.*
+
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 class bs845_Suite extends AnyFreeSpec with Matchers {
 
@@ -46,7 +40,7 @@ class bs845_Suite extends AnyFreeSpec with Matchers {
             wood.lambda_from_co2_wet(co2_perc_wet) `shouldEqual` (expected_lambda +- 0.1)
         }
 
-        s"lambda = 2.95 if %CO2 ≃ 7.05 % vol dry (checking efficiency with lambda in 15544)" in {
+        "lambda = 2.95 if %CO2 ≃ 7.05 % vol dry (checking efficiency with lambda in 15544)" in {
             val co2_perc_dry = 7.05.percent
             wood.lambda_from_co2_dry(co2_perc_dry) `shouldEqual` (2.95 +- 0.1)
         }

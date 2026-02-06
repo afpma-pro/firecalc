@@ -5,17 +5,16 @@
 
 package afpma.firecalc.dto.generators.common
 
-import org.scalacheck.Gen
-import io.taig.babel.{Locale, Language}
-import afpma.firecalc.dto.common.{
-    ProjectDescr,
-    LocalConditions,
-    Country,
-    DisplayUnits,
-    StandardOrComputationMethod
-}
+import afpma.firecalc.dto.common.Country
+import afpma.firecalc.dto.common.DisplayUnits
+import afpma.firecalc.dto.common.LocalConditions
+import afpma.firecalc.dto.common.ProjectDescr
+import afpma.firecalc.dto.common.StandardOrComputationMethod
 import afpma.firecalc.dto.generators.base.PrimitiveGenerators
-import afpma.firecalc.units.coulombutils.*
+
+import io.taig.babel.Language
+import io.taig.babel.Locale
+import org.scalacheck.Gen
 
 trait CommonTypes_Generators extends PrimitiveGenerators:
 

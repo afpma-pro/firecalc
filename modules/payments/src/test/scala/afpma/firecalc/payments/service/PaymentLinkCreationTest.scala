@@ -5,22 +5,24 @@
 
 package afpma.firecalc.payments.service
 
-import utest.*
-import cats.effect.IO
-import cats.effect.unsafe.implicits.global
+import java.time.Instant
+import java.util.UUID
+
 import afpma.firecalc.payments.domain.*
+import afpma.firecalc.payments.email
+import afpma.firecalc.payments.email.*
+import afpma.firecalc.payments.repository.*
+import afpma.firecalc.payments.service.OrderCompletionCallback
+import afpma.firecalc.payments.service.OrderStateTransition
 import afpma.firecalc.payments.shared.*
 import afpma.firecalc.payments.shared.api.*
-import afpma.firecalc.payments.exceptions.*
-import afpma.firecalc.payments.service.impl.GoCardlessPaymentServiceImpl
-import afpma.firecalc.payments.service.{OrderStateTransition, OrderCompletionCallback}
-import afpma.firecalc.payments.repository.*
-import afpma.firecalc.payments.email.*
-import afpma.firecalc.payments.email
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import java.util.UUID
-import java.time.Instant
+import utest.*
 
 object PaymentLinkCreationTest extends TestSuite {
   
@@ -98,8 +100,8 @@ object PaymentLinkCreationTest extends TestSuite {
       def markOrderConfirmed(orderId: OrderId, paymentId: String, paymentProvider: PaymentProvider): IO[Unit] = ???
       def markOrderFailed(orderId: OrderId): IO[Unit] = ???
       def findCustomer(orderId: OrderId): IO[Option[Customer]] = ???
-      def registerInvoiceNumberGenerationCallback(invoiceService: InvoiceNumberService[IO]): IO[Unit] = IO.unit
-      def registerInvoicePdfGenerationCallback(invoicePdfGenerationService: InvoicePdfGenerationService[IO]): IO[Unit] = IO.unit
+      
+      
       def updateOrderStatus(orderId: OrderId, status: OrderStatus): IO[Boolean] = IO.pure(true)
       def updatePaymentId(orderId: OrderId, paymentId: String, paymentProvider: PaymentProvider): IO[Boolean] = IO.pure(true)
       def updatePaymentIdIfNeededAndPresent(orderId: OrderId, paymentId: Option[String], paymentProvider: PaymentProvider): IO[Boolean] = IO.pure(true)

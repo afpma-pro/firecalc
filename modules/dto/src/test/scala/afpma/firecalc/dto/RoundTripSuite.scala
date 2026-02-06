@@ -5,17 +5,15 @@
 
 package afpma.firecalc.dto
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-import org.scalactic.anyvals.PosInt
-import org.scalactic.anyvals.PosZDouble
-import org.scalactic.anyvals.PosZInt
-
 import afpma.firecalc.dto.generators.AllGenerators
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.dto.v3.FireCalcYAML_V3
+
+import org.scalactic.anyvals.PosInt
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 class RoundTripSuite
     extends AnyFreeSpec

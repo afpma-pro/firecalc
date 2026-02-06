@@ -5,22 +5,17 @@
 
 package afpma.firecalc.engine.wood_combustion
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
+import algebra.instances.all.given
 
-import afpma.firecalc.engine.utils
 import afpma.firecalc.units.coulombutils.{*, given}
 
-import algebra.instances.all.given
+import afpma.firecalc.engine.utils
 
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
 
-
-import algebra.instances.all.given
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 class wood_combustion_Suite extends AnyFreeSpec with Matchers:
 

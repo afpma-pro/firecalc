@@ -256,7 +256,7 @@ object vertical_form:
         given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
             horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
         given DF[Int]                                                            = int_emptyAsDefault_alwaysValid
-        given DF[Boolean]                                                        = boolean_trueAsDefault_alwaysValid
+        // given DF[Boolean]                                                        = boolean_trueAsDefault_alwaysValid
         given DF[PipeShape]                                                      = horizontal_form.horizontal_form_PipeShape.toVerticalForm.hideFieldName
             .wrappedInto(c =>
                 FieldsetLabelAndContent  (

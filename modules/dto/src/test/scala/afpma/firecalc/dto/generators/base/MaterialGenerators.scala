@@ -5,10 +5,12 @@
 
 package afpma.firecalc.dto.generators.base
 
+import afpma.firecalc.dto.common.Material_13384_V1
+import afpma.firecalc.dto.common.Material_15544_V1
+import afpma.firecalc.dto.v3.Material_13384_V2
+import afpma.firecalc.dto.v3.Material_15544_V2
+
 import org.scalacheck.Gen
-import afpma.firecalc.dto.common.{Material_13384_V1, Material_15544_V1}
-import afpma.firecalc.dto.v3.{Material_13384_V2, Material_15544_V2}
-import afpma.firecalc.units.coulombutils.*
 
 trait MaterialGenerators extends PrimitiveGenerators:
 

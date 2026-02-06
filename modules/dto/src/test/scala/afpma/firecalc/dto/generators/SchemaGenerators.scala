@@ -5,14 +5,17 @@
 
 package afpma.firecalc.dto.generators
 
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v1.*
 import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
-import afpma.firecalc.dto.common.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.{*, given}
+
 import coulomb.syntax.*
-import io.taig.babel.{Language, Locale}
+
+import io.taig.babel.Language
+import io.taig.babel.Locale
 
 object SchemaGenerators:
 

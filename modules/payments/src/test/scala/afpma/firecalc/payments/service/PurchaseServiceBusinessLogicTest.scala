@@ -5,20 +5,34 @@
 
 package afpma.firecalc.payments.service
 
-import utest.*
+import java.time.Instant
+import java.util.UUID
+
+import afpma.firecalc.payments.domain.*
+import afpma.firecalc.payments.email.AdminNotification
+import afpma.firecalc.payments.email.AuthenticationCodeEmail
+import afpma.firecalc.payments.email.EmailAddress
+import afpma.firecalc.payments.email.EmailMessage
+import afpma.firecalc.payments.email.EmailResult
+import afpma.firecalc.payments.email.EmailSent
+import afpma.firecalc.payments.email.EmailService
+import afpma.firecalc.payments.email.InvoiceEmail
+import afpma.firecalc.payments.email.PaymentLinkEmail
+import afpma.firecalc.payments.email.PdfReportEmail
+import afpma.firecalc.payments.email.UserNotification
+import afpma.firecalc.payments.exceptions.*
+import afpma.firecalc.payments.repository.*
+import afpma.firecalc.payments.service.OrderCompletionCallback
+import afpma.firecalc.payments.service.OrderStateTransition
+import afpma.firecalc.payments.service.impl.PurchaseServiceImpl
+import afpma.firecalc.payments.shared.api.*
+
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import afpma.firecalc.payments.domain.*
-import afpma.firecalc.payments.shared.api.*
-import afpma.firecalc.payments.exceptions.*
-import afpma.firecalc.payments.service.impl.PurchaseServiceImpl
-import afpma.firecalc.payments.service.{OrderStateTransition, OrderCompletionCallback}
-import afpma.firecalc.payments.repository.*
-import afpma.firecalc.payments.email.{EmailService, EmailAddress, AuthenticationCodeEmail, EmailMessage, InvoiceEmail, PaymentLinkEmail, PdfReportEmail, AdminNotification, UserNotification, EmailResult, EmailSent, EmailFailed}
+
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import java.util.UUID
-import java.time.Instant
+import utest.*
 
 object PurchaseServiceBusinessLogicTest extends TestSuite {
   
@@ -201,8 +215,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
       def markOrderConfirmed(orderId: OrderId, paymentId: String, paymentProvider: PaymentProvider): IO[Unit] = ???
       def markOrderFailed(orderId: OrderId): IO[Unit] = ???
       def findCustomer(orderId: OrderId): IO[Option[Customer]] = ???
-      def registerInvoiceNumberGenerationCallback(invoiceService: InvoiceNumberService[IO]): IO[Unit] = IO.unit
-      def registerInvoicePdfGenerationCallback(invoicePdfGenerationService: InvoicePdfGenerationService[IO]): IO[Unit] = IO.unit
+      
+      
       def updateOrderStatus(orderId: OrderId, status: OrderStatus): IO[Boolean] = IO.pure(true)
       def updatePaymentId(orderId: OrderId, paymentId: String, paymentProvider: PaymentProvider): IO[Boolean] = IO.pure(true)
       def updatePaymentIdIfNeededAndPresent(orderId: OrderId, paymentId: Option[String], paymentProvider: PaymentProvider): IO[Boolean] = IO.pure(true)
@@ -329,7 +343,7 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
         customer = testCustomerInfo
       )
       
-      val result = service.createPurchaseIntent(request).unsafeRunSync()
+      service.createPurchaseIntent(request).unsafeRunSync()
       
       // Verify existing customer was reused (only one customer in repos)
       assert(repos.customers.size == 1)

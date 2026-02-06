@@ -5,7 +5,7 @@
 
 package afpma.firecalc.reports
 
-import afpma.firecalc.engine.models // scalafix:ok
+// import afpma.firecalc.engine.models // scalafix:ok
 import java.io.File
 
 import FireCalcReportFactory_15544_Strict.Op

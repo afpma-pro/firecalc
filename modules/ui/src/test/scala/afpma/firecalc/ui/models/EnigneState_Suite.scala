@@ -7,11 +7,8 @@ package afpma.firecalc.ui.models
 
 import io.circe.*
 import io.circe.syntax.*
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
-
-import afpma.firecalc.ui.instances.circe.given
 
 class EnigneState_Suite extends AnyFreeSpec with Matchers:
 

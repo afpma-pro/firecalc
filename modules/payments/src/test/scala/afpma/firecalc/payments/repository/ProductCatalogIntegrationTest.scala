@@ -5,22 +5,24 @@
 
 package afpma.firecalc.payments.repository
 
-import utest.*
+import java.util.UUID
+
 import afpma.firecalc.payments.TestDatabaseSetup
-import afpma.firecalc.payments.domain.{Currency, Product}
-import afpma.firecalc.payments.shared.api.v1.*
+import afpma.firecalc.payments.domain.Currency
+import afpma.firecalc.payments.domain.Product
 import afpma.firecalc.payments.shared.api.ProductCatalogSelector
+import afpma.firecalc.payments.shared.api.v1.*
 import afpma.firecalc.payments.shared.i18n.I18nData_PaymentsShared
-import afpma.firecalc.payments.shared.i18n.implicits.{given, *}
+import afpma.firecalc.payments.shared.i18n.implicits.given
+
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import io.taig.babel.Locale
+
 import io.taig.babel.Locales
 import molecule.db.common.spi.Conn
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-
-import java.util.UUID
+import utest.*
 
 object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
 
@@ -32,7 +34,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
       // Given a test product from the development catalog
       val testProduct = DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023
       
-      val result = (for {
+      (for {
         conn <- setupTestDatabase
         given Conn = conn
         productRepo <- ProductRepository.create[IO]
@@ -78,7 +80,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
         active = false
       )
       
-      val result = (for {
+      (for {
         conn <- setupTestDatabase
         given Conn = conn
         productRepo <- ProductRepository.create[IO]
@@ -228,7 +230,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
     }
 
     test("Product catalog integration - sync all development products to database") {
-      val result = (for {
+      (for {
         conn <- setupTestDatabase
         given Conn = conn
         productRepo <- ProductRepository.create[IO]
@@ -252,7 +254,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
     }
 
     test("Product catalog integration - sync all staging products to database") {
-      val result = (for {
+      (for {
         conn <- setupTestDatabase
         given Conn = conn
         productRepo <- ProductRepository.create[IO]
@@ -269,7 +271,7 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
     }
 
     test("Product catalog integration - sync all production products to database") {
-      val result = (for {
+      (for {
         conn <- setupTestDatabase
         given Conn = conn
         productRepo <- ProductRepository.create[IO]

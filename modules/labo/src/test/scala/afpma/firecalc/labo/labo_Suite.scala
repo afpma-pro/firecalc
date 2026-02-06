@@ -5,11 +5,12 @@
 
 package afpma.firecalc.labo
 
-import cats.data.*
-import org.scalatest.freespec.AnyFreeSpec
-import afpma.firecalc.engine.api.v0_2024_10
-import afpma.firecalc.labo.`01_echangeur`.*
 import afpma.firecalc.labo.ConfigurationRunners_Labo
+import afpma.firecalc.labo.`01_echangeur`.*
+
+import cats.data.*
+
+import org.scalatest.freespec.AnyFreeSpec
 
 class labo_Suite extends ConfigurationRunners_Labo {
 

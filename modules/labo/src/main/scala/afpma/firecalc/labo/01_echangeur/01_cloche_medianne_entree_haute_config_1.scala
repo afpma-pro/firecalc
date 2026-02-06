@@ -5,33 +5,26 @@
 
 package afpma.firecalc.labo.`01_echangeur`
 
-import afpma.firecalc.engine.impl.en15544.labo.*
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en13384.std.Wood
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en15544.std
-import afpma.firecalc.units.coulombutils.{*, given}
-
 import algebra.instances.all.given
 
-import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
+import afpma.firecalc.units.coulombutils.*
 
-import algebra.instances.all.given
-
-import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
-import afpma.firecalc.engine.biblio.kov.firebox_emissions
 import afpma.firecalc.dto.all.*
+
 import afpma.firecalc.i18n.LocalizedString
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
-import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
 
 import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.biblio.kov.firebox_emissions
+import afpma.firecalc.engine.impl.en15544.labo.*
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
+import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
+import afpma.firecalc.engine.models.en13384.std.Wood
+import afpma.firecalc.engine.models.en15544.std
+import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
+
+import coulomb.*
+import coulomb.ops.standard.all.given
 
 object `01_cloche_medianne_entree_haute_config_1` 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Labo_Alg:

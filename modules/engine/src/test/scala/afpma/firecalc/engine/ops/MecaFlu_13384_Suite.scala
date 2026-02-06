@@ -5,24 +5,26 @@
 
 package afpma.firecalc.engine.ops
 
-import cats.syntax.all.*
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-import afpma.firecalc.engine.models.ChimneyPipe_Module
-import afpma.firecalc.engine.models.FlueGas
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.engine.ops.en13384.ThermalMecaFlu_13384
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
-import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C2
-import afpma.firecalc.engine.models.GasInPipeEl
-import afpma.firecalc.engine.models.NamedPipeElDescrG
-import afpma.firecalc.engine.models.Gas
+
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.cas_types.en13384.v20241001.CasType_13384_C16
-import afpma.firecalc.engine.impl.en13384.EN13384_WithFlowOnlyAirIntake_Application
+import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C2
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 import afpma.firecalc.engine.impl.en13384.EN13384_WithThermalAirIntake_Application
+import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
+import afpma.firecalc.engine.models.ChimneyPipe_Module
+import afpma.firecalc.engine.models.FlueGas
+import afpma.firecalc.engine.models.Gas
+import afpma.firecalc.engine.models.GasInPipeEl
+import afpma.firecalc.engine.models.NamedPipeElDescrG
+import afpma.firecalc.engine.ops.en13384.ThermalMecaFlu_13384
+
+import cats.syntax.all.*
+
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 // import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
 // import afpma.firecalc.engine.models.FluePipe_Module_15544
 // import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application

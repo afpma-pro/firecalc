@@ -5,16 +5,16 @@
 
 package afpma.firecalc.dto.generators.pipe_descr
 
-import org.scalacheck.Gen
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.common.*
-import afpma.firecalc.dto.v3.ThermalPipeDescr_13384_V2
+import afpma.firecalc.dto.generators.base.*
+import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v3.SetThermalPipeProp_13384_V2
 import afpma.firecalc.dto.v3.SetThermalPipeProp_13384_V2.*
-import afpma.firecalc.dto.v3.AddThermalPipeElement_13384_V2
-import afpma.firecalc.dto.v3.Material_13384_V2
-import afpma.firecalc.dto.generators.base.*
-import afpma.firecalc.utils.*
-import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.dto.v3.ThermalPipeDescr_13384_V2
+
+import org.scalacheck.Gen
 
 trait SetThermalPipeProp_13384_V2_Generators
     extends PrimitiveGenerators

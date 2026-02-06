@@ -5,10 +5,11 @@
 
 package afpma.firecalc.payments.service
 
-import utest.*
-import afpma.firecalc.payments.exceptions._
-import afpma.firecalc.payments.domain._
 import java.util.UUID
+
+import afpma.firecalc.payments.exceptions.*
+
+import utest.*
 
 object PurchaseServiceTypedExceptionTest extends TestSuite {
   

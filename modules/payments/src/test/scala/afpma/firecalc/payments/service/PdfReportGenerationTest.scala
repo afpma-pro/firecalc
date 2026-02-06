@@ -5,19 +5,21 @@
 
 package afpma.firecalc.payments.service
 
+import java.io.File
+
+import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict
+
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
-import utest.*
+import afpma.firecalc.payments.shared.api.FileDescriptionWithContent
+
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict
-import afpma.firecalc.payments.shared.api.FileDescriptionWithContent
+
 import scala.io.Source
-import java.util.UUID
-import java.nio.file.Files
-import java.io.File
 
 import io.taig.babel.Locale
 import io.taig.babel.Locales
+import utest.*
 
 object PdfReportGenerationTest extends TestSuite {
 

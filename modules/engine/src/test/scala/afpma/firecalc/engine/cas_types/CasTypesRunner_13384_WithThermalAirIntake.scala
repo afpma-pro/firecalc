@@ -4,31 +4,11 @@
  */
 
 package afpma.firecalc.engine.cas_types
-
-import cats.data.*
-import cats.syntax.all.*
-
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-
-import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.standard.*
 
-import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.alg.en13384.Params_13384
-import afpma.firecalc.engine.utils.{*, given}
-import afpma.firecalc.engine.api.v0_2024_10
-import afpma.firecalc.units.coulombutils.{show_Pascals as _, *, given}
-import algebra.instances.all.given
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.impl.en13384.EN13384_WithThermalAirIntake_Application
-import cats.Show
-import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
-import io.taig.babel.Locale
-import io.taig.babel.Locales
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
+import org.scalatest.freespec.AnyFreeSpec
 
 trait CasTypesRunner_13384_WithThermalAirIntake
     extends CasTypesRunner_13384_Common:

@@ -5,31 +5,33 @@
 
 package afpma.firecalc.engine.ops
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
+import afpma.firecalc.units.coulombutils.TCelsius
+import afpma.firecalc.units.coulombutils.conversions.*
+
+import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
+import afpma.firecalc.engine.models.FlueGas
 import afpma.firecalc.engine.models.FluePipe_Module_15544
 import afpma.firecalc.engine.models.FluePipe_Module_15544.*
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+import afpma.firecalc.engine.models.Gas
+import afpma.firecalc.engine.models.GasInPipeEl
+import afpma.firecalc.engine.models.LoadQty
+import afpma.firecalc.engine.models.NamedPipeElDescrG
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange
+import afpma.firecalc.engine.ops.PositionOp
+import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
+import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
+import afpma.firecalc.engine.utils.*
+
+import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
 
 import cats.syntax.all.*
-import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
-import afpma.firecalc.engine.models.FlueGas
-import afpma.firecalc.engine.models.GasInPipeEl
-import afpma.firecalc.units.coulombutils.TCelsius
-import afpma.firecalc.engine.models.Gas
-import afpma.firecalc.engine.models.NamedPipeElDescrG
-import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange
-import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
-import afpma.firecalc.engine.models.LoadQty
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
-import afpma.firecalc.units.coulombutils.conversions.*
-import afpma.firecalc.engine.utils.*
-import afpma.firecalc.engine.ops.PositionOp
+
 import io.taig.babel.Locale
 import io.taig.babel.Locales
-import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 

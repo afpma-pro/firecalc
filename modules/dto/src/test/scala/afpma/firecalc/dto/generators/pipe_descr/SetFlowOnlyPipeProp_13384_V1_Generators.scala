@@ -5,14 +5,11 @@
 
 package afpma.firecalc.dto.generators.pipe_descr
 
-import org.scalacheck.Gen
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.common.SetFlowOnlyPipeProp_13384_V1.*
-import afpma.firecalc.dto.common.AddFlowOnlyPipeElement_13384_V1
-import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.generators.base.*
-import afpma.firecalc.utils.*
-import afpma.firecalc.units.coulombutils.*
+
+import org.scalacheck.Gen
 
 trait SetFlowOnlyPipeProp_13384_V1_Generators
     extends PrimitiveGenerators

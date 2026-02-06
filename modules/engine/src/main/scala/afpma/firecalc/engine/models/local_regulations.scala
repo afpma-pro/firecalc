@@ -87,7 +87,7 @@ case class LocalRegulations(
             case _ => true // missing values could have proper o2ref
 
     def checkFor(eev: EmissionsAndEfficiencyValues): List[ParamCheckResult[?]] =
-        given Show[QtyD[Milli * Gram / (Meter ^ 3)]] = show_Milligram_per_Nm3
+        // given Show[QtyD[Milli * Gram / (Meter ^ 3)]] = show_Milligram_per_Nm3
         List(
             checkForMin                           (
                 ParamToCheck.MinEff,

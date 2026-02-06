@@ -5,24 +5,26 @@
 
 package afpma.firecalc.engine.ops.en15544.dynfrict
 
-import cats.data.Validated.*
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSection
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
-import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.fdim.exercices.en15544_strict.*
+import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
+import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex02_carneau_descendant
+
+import cats.data.Validated.*
+
 import org.scalatest.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 import org.scalatest.prop.TableFor2
-import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.{strict_ex02_carneau_descendant, strict_ex01_colonne_ascendante}
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 
 class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec with Matchers {
     
@@ -59,7 +61,7 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
                 dc.shouldBe(defined)
             }
     
-            it should s"have a coeff" in {
+            it should "have a coeff" in {
                 val cv = inst.dynamicFrictionCoeff(dc.get)
     
                 cv.should(beValid)

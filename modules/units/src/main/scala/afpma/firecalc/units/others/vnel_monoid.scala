@@ -5,24 +5,17 @@
 
 package afpma.firecalc.units.others
 
+import algebra.instances.all.given
+
+import afpma.firecalc.units.coulombutils.*
+
 import cats.*
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.*
 
-import afpma.firecalc.units.coulombutils.{*, given}
-
-import algebra.instances.all.given
-
 import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
-
-import algebra.instances.all.given
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
+import coulomb.ops.standard.all.given
 
 object vnel_monoid:
     given semigroupVNel: [E, A] => Semigroup[ValidatedNel[E, A]] =

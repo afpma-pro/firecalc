@@ -5,14 +5,12 @@
 
 package afpma.firecalc.dto
 
+import afpma.firecalc.dto.generators.AllGenerators
+
+import org.scalactic.anyvals.PosInt
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-import org.scalactic.anyvals.PosInt
-import org.scalactic.anyvals.PosZDouble
-import org.scalactic.anyvals.PosZInt
-
-import afpma.firecalc.dto.generators.AllGenerators
 
 class MigrationSmokeSuite
     extends AnyFreeSpec

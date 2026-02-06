@@ -5,35 +5,28 @@
 
 package afpma.firecalc.ui.models
 
-import io.circe.*
-import io.circe.syntax.*
-import io.circe.parser.*
-
-import io.circe.yaml.scalayaml.{printer as yamlPrinter, parser as yamlParser}
-
-
-import org.scalatest.*
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.ui.utils.InputQtyD
 import afpma.firecalc.units.all.given
-import afpma.firecalc.units.coulombutils.{*, given}
+import afpma.firecalc.units.coulombutils.*
 
-import algebra.instances.all.given
-
-import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
+import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.ui.instances
 import afpma.firecalc.ui.instances.circe.given
-import afpma.firecalc.dto.instances.given
+import afpma.firecalc.ui.utils.InputQtyD
+
+import coulomb.*
+import coulomb.policy.standard.given
+import coulomb.syntax.*
 import coulomb.units.us.*
+
+import io.circe.*
+import io.circe.parser.*
+import io.circe.syntax.*
+import io.circe.yaml.scalayaml.parser as yamlParser
+import io.circe.yaml.scalayaml.printer as yamlPrinter
+import org.scalatest.*
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
 

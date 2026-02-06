@@ -5,11 +5,12 @@
 
 package afpma.firecalc.ui.models.schema
 
+import afpma.firecalc.ui.models.AppStateSchemaHelper
+
+import scala.util.Success
+
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
-import afpma.firecalc.ui.models.AppStateSchemaHelper
-import scala.util.{Success, Failure}
 
 /**
  * Comprehensive tests for the SchemaMigrations system.

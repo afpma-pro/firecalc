@@ -5,15 +5,14 @@
 
 package afpma.firecalc.payments.repository
 
-import utest.*
-import cats.effect.{IO, Resource}
-import cats.effect.unsafe.implicits.global
 import afpma.firecalc.payments.TestDatabaseSetup
 import afpma.firecalc.payments.repository.impl.MoleculeInvoiceCounterRepository
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+
 import molecule.db.common.spi.Conn
-import scala.concurrent.ExecutionContext
+import utest.*
 
 object InvoiceCounterRepositoryTest extends TestSuite with TestDatabaseSetup {
   

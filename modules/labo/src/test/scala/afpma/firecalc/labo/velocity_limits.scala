@@ -5,26 +5,25 @@
 
 package afpma.firecalc.labo
 
-import cats.syntax.all.*
-import org.scalacheck.*
-import org.scalatest.*
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 import afpma.firecalc.units.coulombutils.{*, given}
 
-import algebra.instances.all.given
+import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
+import afpma.firecalc.engine.models.en13384.typedefs.FuelType
+import afpma.firecalc.engine.wood_combustion.CombustionInputs
+import afpma.firecalc.engine.wood_combustion.ExteriorAir
+import afpma.firecalc.engine.wood_combustion.Wood
+import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
+
+import cats.syntax.all.*
 
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
 
-import afpma.firecalc.engine.models.en13384.typedefs.FuelType
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalacheck.*
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 import org.scalatest.prop.Configuration
-import afpma.firecalc.engine.wood_combustion.{ExteriorAir, CombustionInputs, WoodCombustionImpl, Wood}
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class velocity_limits_Suite extends AnyFreeSpec with Matchers with ScalaCheckDrivenPropertyChecks with Configuration:
 

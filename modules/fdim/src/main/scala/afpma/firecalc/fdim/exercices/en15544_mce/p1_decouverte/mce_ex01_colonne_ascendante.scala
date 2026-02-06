@@ -5,38 +5,29 @@
 
 package afpma.firecalc.fdim.exercices.en15544_mce.p1_decouverte
 
-import cats.syntax.all.*
+import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.all.*
+
+import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.Wood
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en15544.std
-import afpma.firecalc.units.coulombutils.{*, given}
-
-import algebra.instances.all.given
-
-import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
-
-
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.wood_combustion.WoodCombustionAlg
 import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
-import afpma.firecalc.engine.models.gtypedefs.KindOfWood
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
-import afpma.firecalc.engine.models.en13384.typedefs
-import afpma.firecalc.engine.api.v0_2024_10
+
+import cats.syntax.all.*
+
+import coulomb.*
+import coulomb.policy.standard.given
 
 object mce_ex01_colonne_ascendante 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_MCE_Alg
     with v0_2024_10.Firebox_15544_MCE_OneOff_Alg:
     self =>
 
-    import std.*
     import gtypedefs.ζ
 
     val exercice_name = "exercices // p1_decouverte // mce_ex01_colonne_ascendante"

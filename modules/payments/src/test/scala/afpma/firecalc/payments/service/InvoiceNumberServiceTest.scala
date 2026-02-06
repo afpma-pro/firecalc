@@ -5,21 +5,22 @@
 
 package afpma.firecalc.payments.service
 
-import utest.*
-import cats.effect.{IO, Resource}
-import cats.effect.unsafe.implicits.global
+import java.time.ZoneId
+
 import afpma.firecalc.payments.TestDatabaseSetup
-import afpma.firecalc.payments.repository.impl.{MoleculeInvoiceCounterRepository, MoleculeOrderRepository}
-import afpma.firecalc.payments.config.{PaymentsConfig, InvoiceRetryConfig, DatabaseConfig, InvoiceConfig}
-import afpma.firecalc.payments.domain.*
-import afpma.firecalc.payments.repository.impl.dsl.MoleculeDomain.*
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
-import molecule.db.common.spi.Conn
-import scala.concurrent.ExecutionContext
-import java.time.{Instant, ZoneId}
-import java.util.UUID
 import afpma.firecalc.payments.config.AdminConfig
+import afpma.firecalc.payments.config.DatabaseConfig
+import afpma.firecalc.payments.config.InvoiceConfig
+import afpma.firecalc.payments.config.InvoiceRetryConfig
+import afpma.firecalc.payments.config.PaymentsConfig
+import afpma.firecalc.payments.repository.impl.MoleculeInvoiceCounterRepository
+import afpma.firecalc.payments.repository.impl.MoleculeOrderRepository
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+
+import molecule.db.common.spi.Conn
+import utest.*
 
 object InvoiceNumberServiceTest extends TestSuite with TestDatabaseSetup {
   

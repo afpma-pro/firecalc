@@ -5,16 +5,20 @@
 
 package afpma.firecalc.fdim.exercices.en15544_strict
 
+import afpma.firecalc.engine.models.ChimneyPipe
+import afpma.firecalc.engine.models.CombustionAirPipe_15544
+import afpma.firecalc.engine.models.ConnectorPipe
+import afpma.firecalc.engine.models.FireboxPipe_15544
+import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384
+import afpma.firecalc.engine.models.FluePipe_15544
+
+import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.*
+
 import cats.data.*
 import cats.data.Validated.Valid
 
-import afpma.firecalc.engine.models.CombustionAirPipe_15544
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
-import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.*
-import afpma.firecalc.engine.models.{FluePipe_15544, ChimneyPipe, ConnectorPipe, FireboxPipe_15544, ThermalAirIntakePipe_Module}
-import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384
 
 
 class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {

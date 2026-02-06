@@ -5,32 +5,25 @@
 
 package afpma.firecalc.engine.models.en13384
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-
-import io.taig.babel.Locales
-
-
-import afpma.firecalc.i18n.ShowUsingLocale.given
-import afpma.firecalc.engine.standard.EN13384_FormulaError.given
+import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.{*, given}
 
-import algebra.instances.all.given
+import afpma.firecalc.dto.all.*
+
+import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
+import afpma.firecalc.engine.models.en13384.std.ThermalResistance.CoefficientOfForm
+import afpma.firecalc.engine.models.gtypedefs.D_h
+import afpma.firecalc.engine.models.gtypedefs.ThermalConductivity
+import afpma.firecalc.engine.standard.EN13384_FormulaError.given
 
 import coulomb.*
-import coulomb.syntax.*
+import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
 
-import algebra.instances.all.given
-
-import afpma.firecalc.engine.models.gtypedefs.ThermalConductivity
-import afpma.firecalc.engine.models.gtypedefs.D_h
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en13384.std.ThermalResistance.CoefficientOfForm
+import io.taig.babel.Locales
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
 

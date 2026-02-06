@@ -43,8 +43,8 @@ import org.typelevel.log4cats.Logger
 
 case class GoCardlessConfig private (
     accessToken  : String,
-    baseUrl      : String = "https://api.gocardless.com",
-    environment  : String = "sandbox", // or "live"
+    baseUrl      : String, // = "https://api.gocardless.com",
+    environment  : String, // "sandbox" or "live"
     redirectUri  : String,
     exitUri      : String,
     webhookSecret: String,
@@ -135,11 +135,11 @@ object GoCardlessLanguage:
 // GoCardless API Models
 case class CreateCustomerRequest private (
     email       : String,
-    given_name  : Option[String]      = None,
-    family_name : Option[String]      = None,
-    company_name: Option[String]      = None,
+    given_name  : Option[String], //      = None,
+    family_name : Option[String], //      = None,
+    company_name: Option[String], //      = None,
     language    : String,
-    metadata    : Map[String, String] = Map.empty
+    metadata    : Map[String, String] // = Map.empty
 )
 
 object CreateCustomerRequest:
@@ -424,7 +424,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         amount                      : BigDecimal,
         customerEmail               : String,
         product                     : Product,
-        existingGoCardlessCustomerId: Option[String] = None
+        existingGoCardlessCustomerId: Option[String] // = None
     )(using lang: BackendCompatibleLanguage): F[BillingRequest] =
         val translations  = I18N_Payments
         val amountInCents = (amount * 100).toInt

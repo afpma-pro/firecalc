@@ -5,8 +5,10 @@
 
 package afpma.firecalc.payments.invoice
 
+import java.time.Instant
+import java.time.ZoneOffset
+
 import utest.*
-import java.time.{Instant, ZoneId, ZoneOffset}
 
 object InvoiceNumberValidatorTest extends TestSuite {
   

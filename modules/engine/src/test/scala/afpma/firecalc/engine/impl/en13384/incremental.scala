@@ -6,11 +6,11 @@
 package afpma.firecalc.engine.impl.en13384
 
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection
+
+import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
-import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 
 class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with IncrementalHelper_13384 {
 

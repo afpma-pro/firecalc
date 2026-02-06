@@ -5,20 +5,16 @@
 
 package afpma.firecalc.dto.generators.schema
 
-import org.scalacheck.Gen
-import afpma.firecalc.dto.v3.FireCalcYAML_V3
-import afpma.firecalc.dto.v2.Firebox_V2
 import afpma.firecalc.dto.common.*
-import afpma.firecalc.dto.generators.common.{
-    CommonTypes_Generators,
-    StoveParams_Generators
-}
+import afpma.firecalc.dto.generators.common.CommonTypes_Generators
+import afpma.firecalc.dto.generators.common.StoveParams_Generators
 import afpma.firecalc.dto.generators.firebox.Firebox_V2_Generators
-import afpma.firecalc.dto.generators.pipe_descr.{
-    SetThermalPipeProp_13384_V2_Generators,
-    SetFlowOnlyPipeProp_13384_V2_Generators,
-    SetFlowOnlyPipeProp_15544_V2_Generators
-}
+import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_13384_V2_Generators
+import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_15544_V2_Generators
+import afpma.firecalc.dto.generators.pipe_descr.SetThermalPipeProp_13384_V2_Generators
+import afpma.firecalc.dto.v3.FireCalcYAML_V3
+
+import org.scalacheck.Gen
 
 /**
  * FireCalcYAML_V3_Generators

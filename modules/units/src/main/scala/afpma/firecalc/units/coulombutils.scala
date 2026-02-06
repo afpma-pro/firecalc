@@ -5,26 +5,26 @@
 
 package afpma.firecalc.units
 
-import cats.{Show, Monoid}
-import cats.data.*
-
 import algebra.instances.all.given
-import coulomb.policy.standard.given
 
 import afpma.firecalc.i18n.I
 
+import cats.Monoid
+import cats.Show
+import cats.data.*
+
 import coulomb.*
-import coulomb.syntax.*
-import coulomb.units.accepted.{*, given}
-import coulomb.units.si.{*, given}
-import coulomb.units.si.prefixes.{*, given}
-import coulomb.units.time.{*, given}
-import coulomb.units.temperature.{*, given}
-import coulomb.units.mksa.{*, given}
-import coulomb.units.temperature.{*, given}
-import coulomb.units.us.{*, given}
 import coulomb.conversion.*
 import coulomb.define.*
+import coulomb.policy.standard.given
+import coulomb.syntax.*
+import coulomb.units.accepted.*
+import coulomb.units.mksa.*
+import coulomb.units.si.*
+import coulomb.units.si.prefixes.*
+import coulomb.units.temperature.*
+import coulomb.units.time.*
+import coulomb.units.us.*
 
 import magnolia1.Transl
 

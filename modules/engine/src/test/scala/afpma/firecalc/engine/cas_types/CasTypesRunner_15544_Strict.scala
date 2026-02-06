@@ -6,23 +6,20 @@
 package afpma.firecalc.engine.cas_types
 
 
+import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
+import afpma.firecalc.engine.utils.*
+
 import cats.implicits.toShow
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-
-import afpma.firecalc.engine.models.*
-
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-
-import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
-import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
-import afpma.firecalc.engine.utils.*
-import afpma.firecalc.engine.api.v0_2024_10
 import io.taig.babel.Locale
 import io.taig.babel.Locales
-import afpma.firecalc.engine.alg.en13384.Params_13384
-import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
@@ -48,7 +45,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         def seperate_tables = println("\n".repeat(3))
 
-        println(s"""|=============================================
+        println("""|=============================================
                     |
                     | DESCRIPTION
                     |
@@ -68,7 +65,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         seperate_tables
 
-        println(s"""|=============================================
+        println("""|=============================================
                     |
                     | CONFORMITÉ avec EN 15544:2023
                     |
@@ -80,7 +77,6 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         seperate_tables
 
-        import afpma.firecalc.engine.standard.MecaFlu_Error.given
 
         println(s""" Calcul avec Params = ${p}""")
 
@@ -116,7 +112,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         seperate_tables
 
-        println(s"""|=============================================
+        println("""|=============================================
                     |
                     | CONFORMITÉ avec EN 13384-1
                     |

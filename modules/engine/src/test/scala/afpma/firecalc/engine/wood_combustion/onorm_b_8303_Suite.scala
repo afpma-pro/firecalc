@@ -5,16 +5,13 @@
 
 package afpma.firecalc.engine.wood_combustion
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-
-import afpma.firecalc.units.coulombutils.{*, given}
+import afpma.firecalc.units.coulombutils.*
 
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
+
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 class onorm_b_8303_Suite extends AnyFreeSpec with Matchers {
 

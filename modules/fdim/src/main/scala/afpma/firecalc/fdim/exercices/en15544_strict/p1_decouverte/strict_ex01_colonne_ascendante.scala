@@ -5,21 +5,17 @@
 
 package afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte
 
-import cats.syntax.all.*
-
-import afpma.firecalc.engine.models
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
-import afpma.firecalc.engine.models.en13384.typedefs
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.api.v0_2024_10.SimpleStoveProjectDescrFr_15544_Alg
+import afpma.firecalc.engine.models
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+
+import cats.syntax.all.*
 
 object strict_ex01_colonne_ascendante 
     extends SimpleStoveProjectDescrFr_15544_Alg
@@ -27,7 +23,6 @@ object strict_ex01_colonne_ascendante
     with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
     self =>
 
-    import std.*
     import gtypedefs.ζ
 
     val exercice_name: String = "exercices // p1_decouverte // ex01_colonne_ascendante"

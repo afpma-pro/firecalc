@@ -90,7 +90,7 @@ object standard {
     extension [X1, X2, X3, X4, X5, O](
         vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2], VNelMcalcErr[X3], VNelMcalcErr[X4], VNelMcalcErr[X5])
     )
-        def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> X4 ?=> X4 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
+        def mapN_andThen_impl(f: X1 ?=> X2 ?=> X3 ?=> X4 ?=> X5 ?=> VNelMcalcErr[O]): VNelMcalcErr[O] =
             (
                 vmcex_tup._1,
                 vmcex_tup._2,

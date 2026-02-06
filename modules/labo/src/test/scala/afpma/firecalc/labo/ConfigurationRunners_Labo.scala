@@ -5,40 +5,29 @@
 
 package afpma.firecalc.labo
 
-import cats.data.*
-import cats.data.Validated.Valid
-import cats.syntax.all.*
-
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.*
-
-import afpma.firecalc.engine.models.*
-
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
 import afpma.firecalc.units.coulombutils.{*, given}
 
-import algebra.instances.all.given
+import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.common.NbOfFlows
+
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Labo_Alg
+import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_Alg
+import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
+import afpma.firecalc.engine.models.gtypedefs.ζ
+import afpma.firecalc.engine.utils.*
+
+import cats.data.*
+import cats.syntax.all.*
 
 import coulomb.*
-import coulomb.syntax.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{*, given}
-import coulomb.ops.algebra.all.{*, given}
 
-import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
-import afpma.firecalc.engine.utils.*
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_Alg
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_MCE_Alg
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Labo_Alg
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
-import afpma.firecalc.engine.models.Preview.toPreviews
-import afpma.firecalc.engine.models.given
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.gtypedefs.ζ
-import io.taig.babel.Locale
 import io.taig.babel.Languages
-import afpma.firecalc.dto.common.{NbOfFlows, given}
+import io.taig.babel.Locale
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.*
 
 trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
 
@@ -228,15 +217,12 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         import ex.given_Locale
         given Option[LoadQty] = Some(p._2)
 
-        given LocalRegulations = ex.localRegulations
+        // given LocalRegulations = ex.localRegulations
 
-        val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
-        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
-        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+        // val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
+        // val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
+        // val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
 
-        import showAsTableInstances.given
-        import showAsTableInstances_EN15544.given
-        import showAsTableInstances_EN13384.given
 
         // println(_en15544.inputs.showAsCliTable)
         // println(_en15544.citedConstraints.showAsCliTable)
@@ -263,7 +249,7 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
             pipesResult_15544.chimney               ,
         ).asSectionResultsMerged
 
-        println(s"""|
+        println("""|
                     |
                     |""".stripMargin)
 
@@ -319,7 +305,7 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         println(vecsec.gasTemperatureAtStartOf("TC30").showValuesAsQuotedCSVRow(";"))
         println(vecsec.gasTemperatureAtStartOf("TC31").showValuesAsQuotedCSVRow(";"))
         println(vecsec.gasTemperatureAtStartOf("TC32").showValuesAsQuotedCSVRow(";"))
-        println(s"""|
+        println("""|
                     |
                     |""".stripMargin)
         

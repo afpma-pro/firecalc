@@ -5,15 +5,14 @@
 
 package afpma.firecalc.utils
 
+import scala.util.Try
+
 import io.circe.*
 import io.circe.Decoder
 import io.circe.Decoder.Result
 import io.circe.DecodingFailure.Reason
 import io.circe.DecodingFailure.Reason.WrongTypeExpectation
 import io.circe.Encoder
-import io.circe.generic.semiauto
-
-import scala.util.Try
 
 object circe:
 

@@ -11,8 +11,6 @@ import afpma.firecalc.dto.common.NbOfFlows
 
 import afpma.firecalc.i18n.implicits.I18N
 
-import afpma.firecalc.engine.models.gtypedefs.*
-
 import afpma.firecalc.ui.components.AppendLayersComponent
 import afpma.firecalc.ui.daisyui.DaisyUIHorizontalForm
 import afpma.firecalc.ui.formgen.*
@@ -100,7 +98,7 @@ object ThermalHorizontalForm_13384:
 
     given horizontal_form_SetLayer: CtxDF[SetLayer] =
         given DaisyUIHorizontalForm[QtyD[Meter]]         = horizontal_form_Thickness
-        given DaisyUIHorizontalForm[ThermalConductivity] = horizontal_form_ThermalConductivity
+        // given DaisyUIHorizontalForm[ThermalConductivity] = horizontal_form_ThermalConductivity
         autoDeriveAndOverwriteFieldNames[SetLayer]
 
     given horizontal_form_SetLayers: CtxDF[SetLayers] =
@@ -241,9 +239,9 @@ object ThermalHorizontalForm_13384:
     // AirSpaceDetailed
 
     given horizontal_form_AirSpaceDetailed: CtxDF[AirSpaceDetailed] =
-        given DF[QtyD[Meter]]                      = horizontal_form_Length_mm_cm
-        given DF[VentilDirection]                  = horizontal_form_AirSpaceDetailed_VentilDirection
-        given DF[VentilOpenings]                   = horizontal_form_AirSpaceDetailed_VentilOpenings
+        // given DF[QtyD[Meter]]                      = horizontal_form_Length_mm_cm
+        // given DF[VentilDirection]                  = horizontal_form_AirSpaceDetailed_VentilDirection
+        // given DF[VentilOpenings]                   = horizontal_form_AirSpaceDetailed_VentilOpenings
         // be explicit
         given DF[AirSpaceDetailed.WithoutAirSpace] = horizontal_form_AirSpaceDetailed_WithoutAirSpace
         given DF[AirSpaceDetailed.WithAirSpace]    = horizontal_form_AirSpaceDetailed_WithAirSpace
@@ -299,10 +297,10 @@ object ThermalHorizontalForm_13384:
         autoDeriveAndOverwriteFieldNames[DuctType]
 
     given horizontal_form_PipeLocation: CtxDF[PipeLocation] =
-        given DF[Boolean]                        = horizontal_form.boolean_trueAsDefault_alwaysValid
-        given ValidateVar[PipeLocation]          = validatevar.pipeLocation.valid_Always
-        given DF[AmbiantAirTemperatureSet]       = horizontal_form_AmbiantAirTemperatureSet
-        given DF[PipeLocation.AreaName]          = horizontal_form_PipeLocation_AreaName
+        // given DF[Boolean]                        = horizontal_form.boolean_trueAsDefault_alwaysValid
+        // given ValidateVar[PipeLocation]          = validatevar.pipeLocation.valid_Always
+        // given DF[AmbiantAirTemperatureSet]       = horizontal_form_AmbiantAirTemperatureSet
+        // given DF[PipeLocation.AreaName]          = horizontal_form_PipeLocation_AreaName
         // be explicit
         given DF[PipeLocation.BoilerRoom]        = horizontal_form_PipeLocation_BoilerRoom
         given DF[PipeLocation.HeatedArea]        = horizontal_form_PipeLocation_HeatedArea
@@ -324,7 +322,7 @@ object ThermalHorizontalForm_13384:
         autoDeriveAndOverwriteFieldNames[PipeLocation.OutsideOrExterior]
 
     given horizontal_form_PipeLocation_CustomArea: CtxDF[PipeLocation.CustomArea] =
-        given DF[String]                   = horizontal_form.string_emptyAsDefault_alwaysValid
+        // given DF[String]                   = horizontal_form.string_emptyAsDefault_alwaysValid
         given DF[Boolean]                  = horizontal_form.boolean_falseAsDefault_alwaysValid
         given DF[AmbiantAirTemperatureSet] = horizontal_form_AmbiantAirTemperatureSet
         given DF[PipeLocation.AreaName]    = horizontal_form_PipeLocation_AreaName
