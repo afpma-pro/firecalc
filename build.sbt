@@ -138,6 +138,8 @@ val commonSettings = Seq(
     // "-Wunused:all",
     // "-Wunused:all",
     "-Wunused:imports,privates,locals",
+    // Silence all warnings from auto-generated Molecule boilerplate in src_managed
+    "-Wconf:src=src_managed/.*:silent",
     // "-Xfatal-warnings",
     // "-source:future",
   ),
@@ -892,34 +894,48 @@ lazy val payments = (project in file("modules/payments"))
     scalacOptions ++= Seq(
     ),
 
-    // Ensure moleculeGen runs before compile and copy SQL files to classpath
+    // Ensure moleculeGen runs before compile and copy SQL files to classpath.
+    // moleculeGen is guarded: it only runs when generated sources are missing
+    // (e.g. after clean). Without this guard, moleculeGen deletes and recreates
+    // all files on every invocation, causing an infinite recompilation loop
+    // with Metals/BSP (changed sources retrigger compile).
     Compile / compile := {
-      val compilationResult = (Compile / compile).dependsOn(moleculeGen).value
-      
+      val compilationResult = (Compile / compile).value
+
       // Copy moleculeGen SQL files to target classes directory after compilation
       val moleculeGenSourceDir = baseDirectory.value / "src" / "main" / "resources" / "moleculeGen"
       val targetClassesDir = (Compile / classDirectory).value / "moleculeGen"
-      
+
       if (moleculeGenSourceDir.exists()) {
-        System.err.println(s"[info] => Copying moleculeGen resources from $moleculeGenSourceDir to $targetClassesDir")
-        
-        // Remove target directory first to avoid file/directory conflicts
         if (targetClassesDir.exists()) {
           IO.delete(targetClassesDir)
         }
-        
-        // Use IO.copy with proper file mapping instead of copyDirectory
         val mappings = (moleculeGenSourceDir ** "*.sql").get.map { file =>
           val relativePath = file.relativeTo(moleculeGenSourceDir).get
           (file, targetClassesDir / relativePath.getPath)
         }
         IO.copy(mappings)
         System.err.println(s"[info] => Copied ${mappings.length} SQL files to classpath")
-      } else {
-        System.err.println(s"[info] => moleculeGen source directory not found: $moleculeGenSourceDir")
       }
-      
+
       compilationResult
+    },
+
+    // Guard moleculeGen: only run when generated sources directory is empty/missing.
+    // Uses Def.taskDyn because .value cannot be called conditionally in Def.task.
+    // Returns Seq.empty because MoleculePlugin already adds sourceManaged to
+    // unmanagedSourceDirectories, so the generated files are picked up automatically.
+    Compile / sourceGenerators += Def.taskDyn {
+      val srcManagedDir = (Compile / sourceManaged).value / "moleculeGen"
+      val needsGen = !srcManagedDir.exists() || IO.listFiles(srcManagedDir).isEmpty
+      if (needsGen) {
+        Def.task {
+          val _ = moleculeGen.value
+          Seq.empty[File]
+        }
+      } else {
+        Def.task(Seq.empty[File])
+      }
     },
 
     Compile / run / fork := true,
