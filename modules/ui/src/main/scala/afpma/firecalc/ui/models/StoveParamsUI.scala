@@ -51,9 +51,12 @@ object StoveParamsUI:
 case class StoveParamsUI()(using Locale, DisplayUnits):
 
     import StoveParamsUI.given
-    import vertical_form.given
-    import dual.given
     import hastranslations.given
+
+    private given dual: DualCommonInstances = new DualCommonInstances()
+
+    private given vertical_form: VerticalFormCommonInstances = new VerticalFormCommonInstances()
+    import vertical_form.given
 
     type DF[A] = DaisyUIVerticalForm[A]
 
@@ -65,14 +68,14 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
 
     given form_option_mB: DaisyUIVerticalForm[Option[QtyD[Kilogram]]] =
         import validatevar.kilogram.valid_whenPositive
-        given DF[QtyD[Kilogram]] = given_dual_Kilogram.form_DaisyUIVerticalForm
+        given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form_DaisyUIVerticalForm
         DaisyUIVerticalForm
             .conditionalOn[StoveParams, QtyD[Kilogram]](stove_params_var)
             .withFieldName(I18N.en15544.terms.m_B.name)
 
     given form_option_pn: DaisyUIVerticalForm[Option[QtyD[Kilo * Watt]]] =
         import validatevar.kilowatt.valid_whenPositive
-        given DF[Power] = given_dual_Power.form_DaisyUIVerticalForm
+        given DF[Power] = dual.given_dual_Power.form_DaisyUIVerticalForm
         DaisyUIVerticalForm
             .conditionalOn[StoveParams, QtyD[Kilo * Watt]](stove_params_var)
             .withFieldName(I18N.en15544.terms.P_n.name)

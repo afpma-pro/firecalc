@@ -5,6 +5,7 @@
 
 package afpma.firecalc.ui.components
 import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.dto.common.DisplayUnits
 
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
@@ -30,7 +31,7 @@ import io.taig.babel.Locale
 import org.scalajs.dom
 import org.scalajs.dom.HTMLDialogElement
 
-case class OrderPDFReportModalComponent()(using Locale) extends Component:
+case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Component:
 
     private val modal_id                   = "order_pdf_modal"
     private val emissions_warning_modal_id = "emissions_warning_modal"

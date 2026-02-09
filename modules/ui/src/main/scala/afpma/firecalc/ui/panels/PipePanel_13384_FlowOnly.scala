@@ -24,7 +24,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     type In = FlowOnlyPipeDescr_13384
 
     import hastranslations.given
-    import FlowOnlyHorizontalForm_13384.given
+
+    private given flowOnlyHorizontalForm_13384: FlowOnlyHorizontalForm_13384 = FlowOnlyHorizontalForm_13384()
+    import flowOnlyHorizontalForm_13384.given
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal

@@ -39,6 +39,7 @@ case class ProjectDescrUI()(using Locale, DisplayUnits):
     lazy val project_address_var =
         clientProjectDataVar.zoomLazy(_.project_address)((cpd, a) => cpd.copy(project_address = a))
 
+    private val vertical_form = new VerticalFormCommonInstances()
     import vertical_form.given
 
     lazy val form_customer        = customer_var.as_HtmlElement

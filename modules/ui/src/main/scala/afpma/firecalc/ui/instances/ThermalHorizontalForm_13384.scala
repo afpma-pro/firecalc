@@ -23,40 +23,35 @@ import scala.deriving.Mirror
 
 import io.taig.babel.Locale
 
-object ThermalHorizontalForm_13384:
+class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
     import AddThermalPipeElement_13384.*
     import SetThermalPipeProp_13384.*
 
-    type CtxDF[A] = DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[A]
-    type LocDF[A] = Locale ?=> DaisyUIHorizontalForm[A]
-    type DF[A]    = DaisyUIHorizontalForm[A]
-
     // import defaultable.given
+    private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
     import horizontal_form.{*, given}
 
     // AddElement
 
-    given horizontal_form_SetInnerShape: CtxDF[SetInnerShape] =
-        given DaisyUIHorizontalForm[PipeShape] = horizontal_form_PipeShape
+    given horizontal_form_SetInnerShape: DaisyUIHorizontalForm[SetInnerShape] =
         autoDeriveAndOverwriteFieldNames[SetInnerShape]
 
-    given horizontal_form_SetOuterShape: CtxDF[SetOuterShape] =
-        given DaisyUIHorizontalForm[PipeShape] = horizontal_form_PipeShape
+    given horizontal_form_SetOuterShape: DaisyUIHorizontalForm[SetOuterShape] =
         autoDeriveAndOverwriteFieldNames[SetOuterShape]
 
-    given horizontal_form_SetThickness: CtxDF[SetThickness] =
+    given horizontal_form_SetThickness: DaisyUIHorizontalForm[SetThickness] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Thickness
         autoDeriveAndOverwriteFieldNames[SetThickness]
 
-    given horizontal_form_SetRoughness: CtxDF[SetRoughness] =
+    given horizontal_form_SetRoughness: DaisyUIHorizontalForm[SetRoughness] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Roughness
         given DaisyUIHorizontalForm[Roughness]   = DaisyUIHorizontalForm.formConversionOpaque[Roughness, QtyD[Meter]]
         autoDeriveAndOverwriteFieldNames[SetRoughness]
 
     // Material_13384_V2
 
-    given horizontal_form_Material_13384_V2: CtxDF[Material_13384_V2] =
+    given horizontal_form_Material_13384_V2: DaisyUIHorizontalForm[Material_13384_V2] =
         // Import ShowUsingLocale and extension methods for Material_13384_V2
         import Material_13384_V2.{given, *}
 
@@ -85,23 +80,21 @@ object ThermalHorizontalForm_13384:
 
     // Material_13384_V1
 
-    given horizontal_form_Material_13384_V1: CtxDF[Material_13384_V1] =
+    given horizontal_form_Material_13384_V1: DaisyUIHorizontalForm[Material_13384_V1] =
         import Material_13384_V1.given
         given ValidateVar[Material_13384_V1] =
             validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V1]
         DaisyUIHorizontalForm
             .forEnumOrSumTypeLike_UsingShowAsId[Material_13384_V1](Material_13384_V1.values.toList)
 
-    given horizontal_form_SetMaterial: CtxDF[SetMaterial] =
-        given DF[Material_13384] = horizontal_form_Material_13384_V2
+    given horizontal_form_SetMaterial: DaisyUIHorizontalForm[SetMaterial] =
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
-    given horizontal_form_SetLayer: CtxDF[SetLayer] =
+    given horizontal_form_SetLayer: DaisyUIHorizontalForm[SetLayer] =
         given DaisyUIHorizontalForm[QtyD[Meter]]         = horizontal_form_Thickness
-        // given DaisyUIHorizontalForm[ThermalConductivity] = horizontal_form_ThermalConductivity
         autoDeriveAndOverwriteFieldNames[SetLayer]
 
-    given horizontal_form_SetLayers: CtxDF[SetLayers] =
+    given horizontal_form_SetLayers: DaisyUIHorizontalForm[SetLayers] =
         // import defaultable.given_AppendLayerDescr
         given DaisyUIHorizontalForm[List[AppendLayerDescr]] =
             import validatevar.valid_always.given
@@ -109,19 +102,16 @@ object ThermalHorizontalForm_13384:
                 AppendLayersComponent(appnd_layers_var).node
         autoDeriveAndOverwriteFieldNames[SetLayers]
 
-    given horizontal_form_SetAirSpaceAfterLayers: CtxDF[SetAirSpaceAfterLayers] =
-        given DF[AirSpaceDetailed] = horizontal_form_AirSpaceDetailed
+    given horizontal_form_SetAirSpaceAfterLayers: DaisyUIHorizontalForm[SetAirSpaceAfterLayers] =
         autoDeriveAndOverwriteFieldNames[SetAirSpaceAfterLayers]
 
-    given horizontal_form_SetPipeLocation: CtxDF[SetPipeLocation] =
-        given DF[PipeLocation] = horizontal_form_PipeLocation
+    given horizontal_form_SetPipeLocation: DaisyUIHorizontalForm[SetPipeLocation] =
         autoDeriveAndOverwriteFieldNames[SetPipeLocation]
 
-    given horizontal_form_SetDuctType: CtxDF[SetDuctType] =
-        given DF[DuctType] = horizontal_form_DuctType
+    given horizontal_form_SetDuctType: DaisyUIHorizontalForm[SetDuctType] =
         autoDeriveAndOverwriteFieldNames[SetDuctType]
 
-    given horizontal_form_SetNumberOfFlows: CtxDF[SetNumberOfFlows] =
+    given horizontal_form_SetNumberOfFlows: DaisyUIHorizontalForm[SetNumberOfFlows] =
         import validatevar.validOption_always.given
         given DaisyUIHorizontalForm[Int]       = DaisyUIHorizontalForm.forInt
         given DaisyUIHorizontalForm[NbOfFlows] = DaisyUIHorizontalForm.formConversionOpaque[NbOfFlows, Int]
@@ -130,253 +120,208 @@ object ThermalHorizontalForm_13384:
     // AddElement
 
     // helper with string field always validated
-    inline def autoDeriveAndOverwriteFieldNames_AddElement_Subtype[A](using inline m: Mirror.Of[A]): LocDF[A] =
+    inline def autoDeriveAndOverwriteFieldNames_AddElement_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
         autoDeriveAndOverwriteFieldNames[A]
 
-    given horizontal_form_AddSectionSlopped: CtxDF[AddSectionSlopped] =
+    given horizontal_form_AddSectionSlopped: DaisyUIHorizontalForm[AddSectionSlopped] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionSlopped]
 
-    given horizontal_form_AddSectionHorizontal: CtxDF[AddSectionHorizontal] =
+    given horizontal_form_AddSectionHorizontal: DaisyUIHorizontalForm[AddSectionHorizontal] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionHorizontal]
 
-    given horizontal_form_AddSectionVertical: CtxDF[AddSectionVertical] =
+    given horizontal_form_AddSectionVertical: DaisyUIHorizontalForm[AddSectionVertical] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionVertical]
 
-    given horizontal_form_AddAngleAdjustable: CtxDF[AddAngleAdjustable] =
+    given horizontal_form_AddAngleAdjustable: DaisyUIHorizontalForm[AddAngleAdjustable] =
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddAngleAdjustable]
 
-    given horizontal_form_AddSharpeAngle_0_to_90: CtxDF[AddSharpeAngle_0_to_90] =
+    given horizontal_form_AddSharpeAngle_0_to_90: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90] =
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90]
 
-    given horizontal_form_AddSharpeAngle_0_to_90_Unsafe: CtxDF[AddSharpeAngle_0_to_90_Unsafe] =
+    given horizontal_form_AddSharpeAngle_0_to_90_Unsafe: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90_Unsafe] =
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90_Unsafe]
 
-    given horizontal_form_AddSmoothCurve_90: CtxDF[AddSmoothCurve_90] =
+    given horizontal_form_AddSmoothCurve_90: DaisyUIHorizontalForm[AddSmoothCurve_90] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90]
 
-    given horizontal_form_AddSmoothCurve_90_Unsafe: CtxDF[AddSmoothCurve_90_Unsafe] =
+    given horizontal_form_AddSmoothCurve_90_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_90_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90_Unsafe]
 
-    given horizontal_form_AddSmoothCurve_60: CtxDF[AddSmoothCurve_60] =
+    given horizontal_form_AddSmoothCurve_60: DaisyUIHorizontalForm[AddSmoothCurve_60] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60]
 
-    given horizontal_form_AddSmoothCurve_60_Unsafe: CtxDF[AddSmoothCurve_60_Unsafe] =
+    given horizontal_form_AddSmoothCurve_60_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_60_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60_Unsafe]
 
-    given horizontal_form_AddElbows_2x45: CtxDF[AddElbows_2x45] =
+    given horizontal_form_AddElbows_2x45: DaisyUIHorizontalForm[AddElbows_2x45] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_2x45]
 
-    given horizontal_form_AddElbows_3x30: CtxDF[AddElbows_3x30] =
+    given horizontal_form_AddElbows_3x30: DaisyUIHorizontalForm[AddElbows_3x30] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_3x30]
 
-    given horizontal_form_AddElbows_4x22p5: CtxDF[AddElbows_4x22p5] =
+    given horizontal_form_AddElbows_4x22p5: DaisyUIHorizontalForm[AddElbows_4x22p5] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_4x22p5]
 
-    given horizontal_form_AddSectionDecrease: CtxDF[AddSectionDecrease] =
+    given horizontal_form_AddSectionDecrease: DaisyUIHorizontalForm[AddSectionDecrease] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionDecrease]
 
-    given horizontal_form_AddSectionIncrease: CtxDF[AddSectionIncrease] =
+    given horizontal_form_AddSectionIncrease: DaisyUIHorizontalForm[AddSectionIncrease] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionIncrease]
 
-    given horizontal_form_AddFlowResistance: CtxDF[AddFlowResistance] =
+    given horizontal_form_AddFlowResistance: DaisyUIHorizontalForm[AddFlowResistance] =
         given DaisyUIHorizontalForm[OptionOfEither[AreaInCm2, PipeShape]] =
             horizontal_form_Either_AreaInCm2_or_PipeShape
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddFlowResistance]
 
     // AmbiantAirTemperatureSet
 
-    given horizontal_form_AmbiantAirTemperatureSet: CtxDF[AmbiantAirTemperatureSet] =
-        given DF[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] = horizontal_form_TuTemperature_Or_TCelsius
+    given horizontal_form_AmbiantAirTemperatureSet: DaisyUIHorizontalForm[AmbiantAirTemperatureSet] =
+        given DaisyUIHorizontalForm[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] = horizontal_form_TuTemperature_Or_TCelsius
         autoDeriveAndOverwriteFieldNames[AmbiantAirTemperatureSet]
 
     // AppendLayerDescr
 
-    given horizontal_form_FromLambda: CtxDF[AppendLayerDescr.FromLambda] =
+    given horizontal_form_FromLambda: DaisyUIHorizontalForm[AppendLayerDescr.FromLambda] =
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.FromLambda]
 
-    given horizontal_form_FromLambdaUsingThickness: CtxDF[AppendLayerDescr.FromLambdaUsingThickness] =
+    given horizontal_form_FromLambdaUsingThickness: DaisyUIHorizontalForm[AppendLayerDescr.FromLambdaUsingThickness] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.FromLambdaUsingThickness]
 
     given horizontal_form_FromThermalResistanceUsingThickness
-        : CtxDF[AppendLayerDescr.FromThermalResistanceUsingThickness] =
+        : DaisyUIHorizontalForm[AppendLayerDescr.FromThermalResistanceUsingThickness] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.FromThermalResistanceUsingThickness]
 
-    given horizontal_form_FromThermalResistance: CtxDF[AppendLayerDescr.FromThermalResistance] =
+    given horizontal_form_FromThermalResistance: DaisyUIHorizontalForm[AppendLayerDescr.FromThermalResistance] =
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.FromThermalResistance]
 
-    given horizontal_form_AirSpaceUsingOuterShape: CtxDF[AppendLayerDescr.AirSpaceUsingOuterShape] =
-        given DF[VentilDirection] = horizontal_form_AirSpaceDetailed_VentilDirection
-        given DF[VentilOpenings]  = horizontal_form_AirSpaceDetailed_VentilOpenings
+    given horizontal_form_AirSpaceUsingOuterShape: DaisyUIHorizontalForm[AppendLayerDescr.AirSpaceUsingOuterShape] =
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.AirSpaceUsingOuterShape]
 
-    given horizontal_form_AirSpaceUsingThickness: CtxDF[AppendLayerDescr.AirSpaceUsingThickness] =
-        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_mm_cm
-        given DF[VentilDirection]                = horizontal_form_AirSpaceDetailed_VentilDirection
-        given DF[VentilOpenings]                 = horizontal_form_AirSpaceDetailed_VentilOpenings
+    given horizontal_form_AirSpaceUsingThickness: DaisyUIHorizontalForm[AppendLayerDescr.AirSpaceUsingThickness] =
+        given DaisyUIHorizontalForm[QtyD[Meter]]     = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.AirSpaceUsingThickness]
 
-    given horizontal_form_AppendLayerDescr: CtxDF[AppendLayerDescr] =
-        given DF[QtyD[Meter]]     = horizontal_form_Length_mm_cm
-        given DF[VentilDirection] = horizontal_form_AirSpaceDetailed_VentilDirection
-        given DF[VentilOpenings]  = horizontal_form_AirSpaceDetailed_VentilOpenings
+    @nowarn
+    given horizontal_form_AppendLayerDescr: DaisyUIHorizontalForm[AppendLayerDescr] =
+        given DaisyUIHorizontalForm[QtyD[Meter]]     = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr]
 
     // AirSpaceDetailed
 
-    given horizontal_form_AirSpaceDetailed: CtxDF[AirSpaceDetailed] =
-        // given DF[QtyD[Meter]]                      = horizontal_form_Length_mm_cm
-        // given DF[VentilDirection]                  = horizontal_form_AirSpaceDetailed_VentilDirection
-        // given DF[VentilOpenings]                   = horizontal_form_AirSpaceDetailed_VentilOpenings
-        // be explicit
-        given DF[AirSpaceDetailed.WithoutAirSpace] = horizontal_form_AirSpaceDetailed_WithoutAirSpace
-        given DF[AirSpaceDetailed.WithAirSpace]    = horizontal_form_AirSpaceDetailed_WithAirSpace
+    given horizontal_form_AirSpaceDetailed: DaisyUIHorizontalForm[AirSpaceDetailed] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed]
 
-    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: CtxDF[AirSpaceDetailed.WithoutAirSpace] =
+    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace]
 
-    given horizontal_form_AirSpaceDetailed_WithAirSpace: CtxDF[AirSpaceDetailed.WithAirSpace] =
-        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_mm_cm
-        given DF[VentilDirection]                = horizontal_form_AirSpaceDetailed_VentilDirection
-        given DF[VentilOpenings]                 = horizontal_form_AirSpaceDetailed_VentilOpenings
+    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace] =
+        given DaisyUIHorizontalForm[QtyD[Meter]]     = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace]
 
     // PipeLocation.AreaName
 
-    given horizontal_form_PipeLocation_AreaName_BoilerRoom       : CtxDF[PipeLocation.AreaName.BoilerRoom]        =
+    given horizontal_form_PipeLocation_AreaName_BoilerRoom       : DaisyUIHorizontalForm[PipeLocation.AreaName.BoilerRoom]        =
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.BoilerRoom]
-    given horizontal_form_PipeLocation_AreaName_HeatedArea       : CtxDF[PipeLocation.AreaName.HeatedArea]        =
+    given horizontal_form_PipeLocation_AreaName_HeatedArea       : DaisyUIHorizontalForm[PipeLocation.AreaName.HeatedArea]        =
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.HeatedArea]
-    given horizontal_form_PipeLocation_AreaName_UnheatedInside   : CtxDF[PipeLocation.AreaName.UnheatedInside]    =
+    given horizontal_form_PipeLocation_AreaName_UnheatedInside   : DaisyUIHorizontalForm[PipeLocation.AreaName.UnheatedInside]    =
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.UnheatedInside]
-    given horizontal_form_PipeLocation_AreaName_OutsideOrExterior: CtxDF[PipeLocation.AreaName.OutsideOrExterior] =
+    given horizontal_form_PipeLocation_AreaName_OutsideOrExterior: DaisyUIHorizontalForm[PipeLocation.AreaName.OutsideOrExterior] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.OutsideOrExterior]
-    given horizontal_form_PipeLocation_AreaName_CustomArea       : CtxDF[PipeLocation.AreaName.CustomArea]        =
+    given horizontal_form_PipeLocation_AreaName_CustomArea       : DaisyUIHorizontalForm[PipeLocation.AreaName.CustomArea]        =
         given ValidateVar[Option[String]] = validatevar.string.validOption_Always
-        given DF[String]                  = DaisyUIHorizontalForm.forString
+        given DaisyUIHorizontalForm[String] = DaisyUIHorizontalForm.forString
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.CustomArea]
 
-    given horizontal_form_PipeLocation_AreaName: CtxDF[PipeLocation.AreaName] =
-        // be explicit
-        given DF[PipeLocation.AreaName.BoilerRoom]        = horizontal_form_PipeLocation_AreaName_BoilerRoom
-        given DF[PipeLocation.AreaName.HeatedArea]        = horizontal_form_PipeLocation_AreaName_HeatedArea
-        given DF[PipeLocation.AreaName.UnheatedInside]    = horizontal_form_PipeLocation_AreaName_UnheatedInside
-        given DF[PipeLocation.AreaName.OutsideOrExterior] = horizontal_form_PipeLocation_AreaName_OutsideOrExterior
-        given DF[PipeLocation.AreaName.CustomArea]        = horizontal_form_PipeLocation_AreaName_CustomArea
+    given horizontal_form_PipeLocation_AreaName: DaisyUIHorizontalForm[PipeLocation.AreaName] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName]
 
     // DuctType
 
     given horizontal_form_DuctType_NonConcentricDuctsHighThermalResistance
-        : CtxDF[DuctType.NonConcentricDuctsHighThermalResistance] =
+        : DaisyUIHorizontalForm[DuctType.NonConcentricDuctsHighThermalResistance] =
         autoDeriveAndOverwriteFieldNames[DuctType.NonConcentricDuctsHighThermalResistance]
 
     given horizontal_form_DuctType_NonConcentricDuctsLowThermalResistance
-        : CtxDF[DuctType.NonConcentricDuctsLowThermalResistance] =
+        : DaisyUIHorizontalForm[DuctType.NonConcentricDuctsLowThermalResistance] =
         autoDeriveAndOverwriteFieldNames[DuctType.NonConcentricDuctsLowThermalResistance]
 
-    given horizontal_form_DuctType_ConcentricDucts: CtxDF[DuctType.ConcentricDucts] =
+    given horizontal_form_DuctType_ConcentricDucts: DaisyUIHorizontalForm[DuctType.ConcentricDucts] =
         autoDeriveAndOverwriteFieldNames[DuctType.ConcentricDucts]
 
-    given horizontal_form_DuctType: CtxDF[DuctType] =
+    given horizontal_form_DuctType: DaisyUIHorizontalForm[DuctType] =
         autoDeriveAndOverwriteFieldNames[DuctType]
 
-    given horizontal_form_PipeLocation: CtxDF[PipeLocation] =
-        // given DF[Boolean]                        = horizontal_form.boolean_trueAsDefault_alwaysValid
-        // given ValidateVar[PipeLocation]          = validatevar.pipeLocation.valid_Always
-        // given DF[AmbiantAirTemperatureSet]       = horizontal_form_AmbiantAirTemperatureSet
-        // given DF[PipeLocation.AreaName]          = horizontal_form_PipeLocation_AreaName
-        // be explicit
-        given DF[PipeLocation.BoilerRoom]        = horizontal_form_PipeLocation_BoilerRoom
-        given DF[PipeLocation.HeatedArea]        = horizontal_form_PipeLocation_HeatedArea
-        given DF[PipeLocation.UnheatedInside]    = horizontal_form_PipeLocation_UnheatedInside
-        given DF[PipeLocation.OutsideOrExterior] = horizontal_form_PipeLocation_OutsideOrExterior
-        given DF[PipeLocation.CustomArea]        = horizontal_form_PipeLocation_CustomArea
+    given horizontal_form_PipeLocation: DaisyUIHorizontalForm[PipeLocation] =
         autoDeriveAndOverwriteFieldNames[PipeLocation]
 
-    given horizontal_form_PipeLocation_BoilerRoom: LocDF[PipeLocation.BoilerRoom] =
+    given horizontal_form_PipeLocation_BoilerRoom: DaisyUIHorizontalForm[PipeLocation.BoilerRoom] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.BoilerRoom]
 
-    given horizontal_form_PipeLocation_HeatedArea: LocDF[PipeLocation.HeatedArea] =
+    given horizontal_form_PipeLocation_HeatedArea: DaisyUIHorizontalForm[PipeLocation.HeatedArea] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.HeatedArea]
 
-    given horizontal_form_PipeLocation_UnheatedInside: LocDF[PipeLocation.UnheatedInside] =
+    given horizontal_form_PipeLocation_UnheatedInside: DaisyUIHorizontalForm[PipeLocation.UnheatedInside] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.UnheatedInside]
 
-    given horizontal_form_PipeLocation_OutsideOrExterior: LocDF[PipeLocation.OutsideOrExterior] =
+    given horizontal_form_PipeLocation_OutsideOrExterior: DaisyUIHorizontalForm[PipeLocation.OutsideOrExterior] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.OutsideOrExterior]
 
-    given horizontal_form_PipeLocation_CustomArea: CtxDF[PipeLocation.CustomArea] =
-        // given DF[String]                   = horizontal_form.string_emptyAsDefault_alwaysValid
-        given DF[Boolean]                  = horizontal_form.boolean_falseAsDefault_alwaysValid
-        given DF[AmbiantAirTemperatureSet] = horizontal_form_AmbiantAirTemperatureSet
-        given DF[PipeLocation.AreaName]    = horizontal_form_PipeLocation_AreaName
+    given horizontal_form_PipeLocation_CustomArea: DaisyUIHorizontalForm[PipeLocation.CustomArea] =
+        given DaisyUIHorizontalForm[Boolean] = horizontal_form.boolean_falseAsDefault_alwaysValid
         autoDeriveAndOverwriteFieldNames[PipeLocation.CustomArea]
 
     // Ventil Direction
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_UndefinedDir
-        : CtxDF[AirSpaceDetailed.VentilDirection.UndefinedDir] =
+        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.UndefinedDir] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.UndefinedDir]
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_SameDirAsFlueGas
-        : CtxDF[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas] =
+        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas]
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_OppositeDirOfFlueGas
-        : CtxDF[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas] =
+        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas]
 
-    given horizontal_form_AirSpaceDetailed_VentilDirection: CtxDF[AirSpaceDetailed.VentilDirection] =
-        // be explicit
-        given DF[AirSpaceDetailed.VentilDirection.UndefinedDir]         =
-            horizontal_form_AirSpaceDetailed_VentilDirection_UndefinedDir
-        given DF[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas]     =
-            horizontal_form_AirSpaceDetailed_VentilDirection_SameDirAsFlueGas
-        given DF[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas] =
-            horizontal_form_AirSpaceDetailed_VentilDirection_OppositeDirOfFlueGas
+    given horizontal_form_AirSpaceDetailed_VentilDirection: DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection]
 
     // Ventil Openings
 
-    given horizontal_form_AirSpaceDetailed_VentilOpenings_NoOpening: CtxDF[AirSpaceDetailed.VentilOpenings.NoOpening] =
+    given horizontal_form_AirSpaceDetailed_VentilOpenings_NoOpening: DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.NoOpening] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.NoOpening]
 
     given horizontal_form_AirSpaceDetailed_VentilOpenings_AnnularAreaFullyOpened
-        : CtxDF[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened] =
+        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened]
 
     given horizontal_form_AirSpaceDetailed_VentilOpenings_PartiallyOpened_InAccordanceWith_DTU_24_1
-        : CtxDF[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1] =
+        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1]
 
-    given horizontal_form_AirSpaceDetailed_VentilOpenings: CtxDF[AirSpaceDetailed.VentilOpenings] =
-        // be explicit
-        given DF[AirSpaceDetailed.VentilOpenings.NoOpening]                                 = horizontal_form_AirSpaceDetailed_VentilOpenings_NoOpening
-        given DF[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened]                    =
-            horizontal_form_AirSpaceDetailed_VentilOpenings_AnnularAreaFullyOpened
-        given DF[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1] =
-            horizontal_form_AirSpaceDetailed_VentilOpenings_PartiallyOpened_InAccordanceWith_DTU_24_1
+    given horizontal_form_AirSpaceDetailed_VentilOpenings: DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings]
 
     // TuTemperature
 
-    given horizontal_form_TuTemperature_Or_TCelsius: CtxDF[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] =
+    given horizontal_form_TuTemperature_Or_TCelsius: DaisyUIHorizontalForm[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] =
         given Defaultable[TCelsius] =
             defaultable.tcelsius // or tuo default value of a specific Country / global setting ?
         given DaisyUIHorizontalForm[TCelsius]                                = horizontal_form.horizontal_form_TCelsius

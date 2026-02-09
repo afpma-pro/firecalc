@@ -33,7 +33,9 @@ case class FireboxComponent(
 )                          (using Locale, DisplayUnits)
     extends Component:
 
+    val vertical_form = new VerticalFormCommonInstances()
     import vertical_form.given
+
     import FireboxComponent.*
 
     val showEcolabeledV1Img = firebox_var.signal.map:

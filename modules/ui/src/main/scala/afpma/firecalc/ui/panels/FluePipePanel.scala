@@ -29,7 +29,9 @@ import io.taig.babel.Locale
 final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     import hastranslations.given
-    import FlowOnlyHorizontalForm_15544.given
+
+    private given flowOnlyHorizontalForm_15544: FlowOnlyHorizontalForm_15544 = FlowOnlyHorizontalForm_15544()
+    import flowOnlyHorizontalForm_15544.given
 
     type In  = FlowOnlyPipeDescr_15544
     type Out = FluePipe_15544

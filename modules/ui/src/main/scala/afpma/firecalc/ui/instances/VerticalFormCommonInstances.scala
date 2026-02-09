@@ -40,20 +40,22 @@ import scala.deriving.Mirror
 
 import io.taig.babel.Locale
 
-object vertical_form:
-
-    import dual.given
+class VerticalFormCommonInstances(using DisplayUnits, Locale):
+    
     import SUnits.given
     // import defaultable.given
     import hastranslations.given
 
+    private given dual: DualCommonInstances = new DualCommonInstances()
+    import dual.given
+
     type DF[A]    = DaisyUIVerticalForm[A]
-    type LDF[A]   = Locale ?=> DaisyUIVerticalForm[A]
-    type CtxDF[A] = DisplayUnits ?=> Locale ?=> DaisyUIVerticalForm[A]
+
+    private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
 
     // factory helper
 
-    inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A], l: Locale): DaisyUIVerticalForm[A] =
+    inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A]): DaisyUIVerticalForm[A] =
         DaisyUIVerticalForm
             .autoDerived[A](using m)
             .autoOverwriteFieldNames
@@ -107,12 +109,12 @@ object vertical_form:
         import validatevar.percent.validOption_whenPositive
         DaisyUIVerticalForm.forQtyD[Percent]
 
-    val vertical_form_Length_cm: CtxDF[Length] =
+    val vertical_form_Length_cm: DF[Length] =
         import validatevar.meter.valid_whenPositive
         import defaultable.qty_d.meter.zero
         given_dual_Length_cm.form_DaisyUIVerticalForm
 
-    val vertical_form_Length_mm_cm: CtxDF[Length] =
+    val vertical_form_Length_mm_cm: DF[Length] =
         import validatevar.meter.valid_whenPositive
         import defaultable.qty_d.meter.zero
         given_dual_Length_mm_cm.form_DaisyUIVerticalForm
@@ -122,20 +124,20 @@ object vertical_form:
     // alias
     def I18N_COS(using Locale) = I18N.local_conditions.chimney_termination
 
-    given given_Address: LDF[Address] =
+    given given_Address: DF[Address] =
         given DaisyUIVerticalForm[String] = string_emptyAsDefault_alwaysValid
         DaisyUIVerticalForm.autoDerived[Address].autoOverwriteFieldNames
 
     // Area : cm2
 
-    given vertical_form_AreaInCm2: CtxDF[AreaInCm2] =
+    given vertical_form_AreaInCm2: DF[AreaInCm2] =
         import defaultable.qty_d.area_in_cm2.zero
         import validatevar.area_in_cm2.valid_whenPositive
         given_dual_Area_cm2_or_in2.form_DaisyUIVerticalForm
 
     // Area : cm2 + m2
 
-    given vertical_form_Area_cm2_m2: CtxDF[Area] =
+    given vertical_form_Area_cm2_m2: DF[Area] =
         import defaultable.qty_d.area.zero
         import validatevar.area.valid_whenPositive
         given_dual_Area_cm2_m2_or_in2.form_DaisyUIVerticalForm
@@ -143,7 +145,7 @@ object vertical_form:
 
     // Firebox
 
-    given given_Firebox_Traditional: CtxDF[Firebox.Traditional] =
+    given given_Firebox_Traditional: DF[Firebox.Traditional] =
         given DaisyUIVerticalForm[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
             horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
         given DaisyUIVerticalForm[Length]                                                         = vertical_form_Length_cm
@@ -216,7 +218,7 @@ object vertical_form:
             Version
         ]
 
-    private def ecolabeled(default_version: Version): CtxDF[Firebox.EcoLabeled] =
+    private def ecolabeled(default_version: Version): DF[Firebox.EcoLabeled] =
         import com.raquo.laminar.api.enrichSource
         val version_var: Var[Version] = Var(default_version)
 
@@ -252,7 +254,7 @@ object vertical_form:
 
         DaisyUIVerticalForm.autoDerived[Firebox.EcoLabeled].autoOverwriteFieldNames
 
-    given given_AFPMA_PRSE: CtxDF[Firebox.AFPMA_PRSE] =
+    given given_AFPMA_PRSE: DF[Firebox.AFPMA_PRSE] =
         given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
             horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
         given DF[Int]                                                            = int_emptyAsDefault_alwaysValid
@@ -284,7 +286,7 @@ object vertical_form:
             updateFieldName = _ => Some("-BILLING LANGUAGE-")
         )
 
-    given given_Firebox: CtxDF[Firebox] =
+    given given_Firebox: DF[Firebox] =
         // given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
         //     horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
 
@@ -424,7 +426,7 @@ object vertical_form:
 
     // Zeta ζ
 
-    def vertical_form_zeta(d: Defaultable[QtyD[1]]): Locale ?=> DaisyUIVerticalForm[ζ] =
+    def vertical_form_zeta(d: Defaultable[QtyD[1]]): DaisyUIVerticalForm[ζ] =
         // import defaultable.zeta
         // import validatevar.unitless.validOption_whenPositive
         // given DaisyUIVerticalForm[QtyD[1]] = DaisyUIVerticalForm.forQtyD[1]
@@ -448,7 +450,7 @@ object vertical_form:
 
     // Zeta ζ as QtyD[1]
 
-    def vertical_form_zeta_as_QtyD(d: Defaultable[QtyD[1]]): Locale ?=> DaisyUIVerticalForm[QtyD[1]] =
+    def vertical_form_zeta_as_QtyD(d: Defaultable[QtyD[1]]): DaisyUIVerticalForm[QtyD[1]] =
         // import defaultable.zeta
         // import validatevar.unitless.validOption_whenPositive
         // given DaisyUIVerticalForm[QtyD[1]] = DaisyUIVerticalForm.forQtyD[1]
@@ -467,4 +469,4 @@ object vertical_form:
             // )
             }(using Defaultable[ζ](d.default))
 
-end vertical_form
+end VerticalFormCommonInstances

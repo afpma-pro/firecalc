@@ -31,7 +31,9 @@ final case class AppendLayersComponent(
     type Elem = AppendLayerDescr
 
     import hastranslations.given
-    import ThermalHorizontalForm_13384.given
+
+    private given thermalHorizontalForm_13384: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
+    import thermalHorizontalForm_13384.given
 
     lazy val vnel_signal = air_intake_vnel_signal
 

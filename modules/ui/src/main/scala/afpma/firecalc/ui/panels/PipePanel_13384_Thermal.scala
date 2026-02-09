@@ -23,7 +23,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     type In = ThermalPipeDescr_13384
 
     import hastranslations.given
-    import ThermalHorizontalForm_13384.given
+
+    private given thermalHorizontalForm_13384: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
+    import thermalHorizontalForm_13384.given
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal

@@ -42,7 +42,7 @@ object DaisyUINavBar:
     final case class HeaderMenuButton(
         titleLeftNode: HtmlElement,
         buttonString : String
-    )                                (using Locale)
+    )                                (using DisplayUnits, Locale)
         extends Component:
 
         val disabledAttr: HtmlAttr[Boolean] = htmlAttr("disabled", BooleanAsAttrPresenceCodec)

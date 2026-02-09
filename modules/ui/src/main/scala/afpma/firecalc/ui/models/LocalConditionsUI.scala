@@ -18,7 +18,6 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
 import afpma.firecalc.ui.formgen.*
 import afpma.firecalc.ui.instances.*
-import afpma.firecalc.ui.instances.dual.dual_z_geodetical_height
 
 import cats.syntax.all.*
 
@@ -77,7 +76,11 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
 
     import LocalConditionsUI.*
     import defaultable.chimney_termination.given
+    
+    private given vertical_form: VerticalFormCommonInstances = new VerticalFormCommonInstances()
     import vertical_form.given
+
+    given dual: DualCommonInstances = new DualCommonInstances()
 
     private val FC_I18N_COS = I18N.local_conditions.chimney_termination
 
@@ -191,7 +194,7 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     given form_z_geodetical_height: DisplayUnits => DaisyUIVerticalForm[QtyD[Meter]] =
         import defaultable.given_z_geodetical_height
         import validatevar.meter.valid_whenPositive
-        dual_z_geodetical_height.form_DaisyUIVerticalForm
+        dual.given_dual_z_geodetical_height.form_DaisyUIVerticalForm
             .withFieldName(I18N.local_conditions.altitude)
 
     // LocalConditions Clone

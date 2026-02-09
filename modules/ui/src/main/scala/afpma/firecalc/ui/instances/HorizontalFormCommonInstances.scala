@@ -28,20 +28,17 @@ import scala.deriving.Mirror
 
 import io.taig.babel.Locale
 
-object horizontal_form:
-
-    type DF[A]    = DaisyUIHorizontalForm[A]
-    type CtxDF[A] = DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[A]
-    type LocDF[A] = Locale ?=> DaisyUIHorizontalForm[A]
+class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     import DaisyUIHorizontalForm.given
     import SUnits.given
     // import defaultable.given
+    
+    given dual: DualCommonInstances = new DualCommonInstances()
     import dual.given
 
     // factory helper
-    // inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A], l: Locale): DaisyUIHorizontalForm[A] =
-    inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A]): LocDF[A] =
+    inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
         import hastranslations.given
         import afpma.firecalc.ui.daisyui.DaisyUIHorizontalForm.autoOverwriteFieldNames
         DaisyUIHorizontalForm
@@ -111,19 +108,19 @@ object horizontal_form:
     given horizontal_form_PipeShape_Circle: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Circle] =
         import defaultable.qty_d.meter.zero
         import validatevar.meter.valid_whenPositive
-        given DF[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
         autoDeriveAndOverwriteFieldNames[PipeShape.Circle]
 
     given horizontal_form_PipeShape_Square: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Square] =
         import defaultable.qty_d.meter.zero
         import validatevar.meter.valid_whenPositive
-        given DF[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
         autoDeriveAndOverwriteFieldNames[PipeShape.Square]
 
     given horizontal_form_PipeShape_Rectangle: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Rectangle] =
         import defaultable.qty_d.meter.zero
         import validatevar.meter.valid_whenPositive
-        given DF[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
         autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
 
     given horizontal_form_PipeShape: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape] =
@@ -171,22 +168,22 @@ object horizontal_form:
 
     // QtyD[Meter]
 
-    val horizontal_form_QtyD_Meter: Locale ?=> DaisyUIHorizontalForm[QtyD[Meter]] =
+    val horizontal_form_QtyD_Meter: DaisyUIHorizontalForm[QtyD[Meter]] =
         import validatevar.valid_always.given
         import defaultable.qty_d.meter.zero
         DaisyUIHorizontalForm.forQtyD[Meter]
 
-    val horizontal_form_Length_cm_m: DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[QtyD[Meter]] =
+    val horizontal_form_Length_cm_m: DaisyUIHorizontalForm[QtyD[Meter]] =
         import validatevar.valid_always.given
         import defaultable.qty_d.meter.zero
         given_dual_Length_cm_m.form_DaisyUIHorizontalForm
 
-    val horizontal_form_Length_mm_cm: DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[QtyD[Meter]] =
+    val horizontal_form_Length_mm_cm: DaisyUIHorizontalForm[QtyD[Meter]] =
         import validatevar.valid_always.given
         import defaultable.qty_d.meter.zero
         given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
 
-    val horizontal_form_QtyD_Pascal: DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[QtyD[Pascal]] =
+    val horizontal_form_QtyD_Pascal: DaisyUIHorizontalForm[QtyD[Pascal]] =
         import validatevar.valid_always.given
         import defaultable.qty_d.pascal.zero
         DaisyUIHorizontalForm.forQtyD[Pascal]
@@ -212,7 +209,7 @@ object horizontal_form:
 
     // Roughness
 
-    def horizontal_form_Roughness: Locale ?=> DaisyUIHorizontalForm[QtyD[Meter]] =
+    val horizontal_form_Roughness: DaisyUIHorizontalForm[QtyD[Meter]] =
         import defaultable.given_Roughness
         import validatevar.meter.valid_whenPositive
         given_dual_Roughness.form_DaisyUIHorizontalForm
@@ -232,8 +229,8 @@ object horizontal_form:
         import afpma.firecalc.ui.instances.defaultable.qty_d.area_in_cm2.zero
         import afpma.firecalc.ui.instances.validatevar.area_in_cm2.valid_whenPositive
 
-        given DF[PipeShape]  = horizontal_form_PipeShape
-        given DF[AreaInCm2]  = given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[PipeShape]  = horizontal_form_PipeShape
+        given DaisyUIHorizontalForm[AreaInCm2]  = given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm
             .withFieldName(I18N.terms.area)
 
         DaisyUIHorizontalForm.optionOfEither[AreaInCm2, PipeShape](
@@ -250,14 +247,14 @@ object horizontal_form:
 
     // Thickness
 
-    def horizontal_form_Thickness: DisplayUnits ?=> Locale ?=> DaisyUIHorizontalForm[QtyD[Meter]] =
+    def horizontal_form_Thickness: DaisyUIHorizontalForm[QtyD[Meter]] =
         import defaultable.qty_d.meter.zero
         // import validatevar.meter.validOption_whenPositive
         import validatevar.meter.valid_whenPositive
         // DaisyUIHorizontalForm.forValidatedQtyD_NoneAsDefault[Meter]()(
         //     using given_forOptionQtyD_default
         // )
-        dual.given_dual_Thickness.form_DaisyUIHorizontalForm
+        given_dual_Thickness.form_DaisyUIHorizontalForm
 
     // Zeta ζ
 
@@ -279,4 +276,4 @@ object horizontal_form:
     given horizontal_form_AreaHeatingStatus_NotHeated: Locale => DaisyUIHorizontalForm[AreaHeatingStatus.NotHeated] =
         autoDeriveAndOverwriteFieldNames[AreaHeatingStatus.NotHeated]
 
-end horizontal_form
+end HorizontalFormCommonInstances

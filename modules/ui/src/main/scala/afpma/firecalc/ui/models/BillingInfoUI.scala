@@ -17,10 +17,12 @@ import afpma.firecalc.ui.models.BillingInfo
 import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
+import afpma.firecalc.dto.common.DisplayUnits
 
-case class BillingInfoUI()(using Locale):
+case class BillingInfoUI()(using DisplayUnits, Locale):
 
-    import vertical_form.given
+    private val vertical_form = new VerticalFormCommonInstances()
+
     import DaisyUIVerticalForm.autoOverwriteFieldNames
     import hastranslations.forModule_PaymentsShared.given
 
