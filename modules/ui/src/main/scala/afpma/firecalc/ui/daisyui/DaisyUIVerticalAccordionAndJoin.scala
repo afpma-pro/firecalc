@@ -102,25 +102,37 @@ final case class DaisyUIVerticalAccordionAndJoin(
             idx           = 0,
             title         = Title.WithTitleOnly(
                 I18N.panels.output_and_other_parameters,
-                xtra_sig = stove_params_var.signal.map: pdm =>
-                    given Show[QtyD[Kilogram]] = shows.defaults.show_Kilograms_1
-                    given showPound0: Show[QtyD[Pound]] = shows.defaults.show_Pound_0
-                    val mb_or_pn = pdm.maximum_load
-                        .map(mb => s"${I18N.technical_specifications.maximum_load_short} ${mb.showP_orImpUnits[Pound]}")
-                        .orElse(pdm.nominal_heat_output.map(_.showP_orImpUnits[BTU / Hour]))
-                        .getOrElse("")
-                    div(
-                        cls := "flex flex-row max-w-3/4",
-                        div(cls := "flex-grow w-36", mb_or_pn),
+                xtra_sig = 
+                    stove_params_var.signal
+                    .combineWith(results_en15544_strict_sig)
+                    .map { (pdm, vnel_appl) =>
+                        given Show[QtyD[Kilogram]] = shows.defaults.show_Kilograms_1
+                        given showPound0: Show[QtyD[Pound]] = shows.defaults.show_Pound_0
+                        val opt_appl = vnel_appl.toOption
+                        val mb_value = pdm.sizing_method match
+                            case SizingMethod.NominalHeatOutput => opt_appl.map(_.m_B)  // use calculated value from en15544
+                            case SizingMethod.MaxLoad           => pdm.maximum_load     // use input from user
+                        val mb_value_show = mb_value.map(_.showP_orImpUnits[Pound]).getOrElse("-")
+                        val mb_show = s"${I18N.technical_specifications.maximum_load_short} = ${mb_value_show}"
+                        val pn_value = pdm.sizing_method match
+                            case SizingMethod.NominalHeatOutput => pdm.nominal_heat_output  // use input from user
+                            case SizingMethod.MaxLoad           => opt_appl.map(_.P_n)      // use calculated value from en15544
+                        val pn_value_show = pn_value.map(_.showP_orImpUnits[BTU / Hour]).getOrElse("-")
+                        val pn_show = s"${I18N.technical_specifications.nominal_heat_output_short} = ${pn_value_show}"
                         div(
-                            cls := "flex-grow w-36",
-                            s"${I18N.technical_specifications.heating_cycle} = ${pdm.heating_cycle.show}"
-                        ),
-                        div(
-                            cls := "flex-grow w-36",
-                            I18N.technical_specifications.facing_type_sentence(pdm.facing_type.show.toLowerCase())
-                        )
-                    ).some
+                            cls := "flex flex-row max-w-3/4",
+                            div(cls := "flex-grow w-36", mb_show),
+                            div(cls := "flex-grow w-36", pn_show),
+                            div(
+                                cls := "flex-grow w-36",
+                                s"${I18N.technical_specifications.heating_cycle} = ${pdm.heating_cycle.show}"
+                            ),
+                            div(
+                                cls := "flex-grow w-36",
+                                I18N.technical_specifications.facing_type_sentence(pdm.facing_type.show.toLowerCase())
+                            )
+                        ).some
+                    }
             ),
             content       = stoveParamsUI
         ),

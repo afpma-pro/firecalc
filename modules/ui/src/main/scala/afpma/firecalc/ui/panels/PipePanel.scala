@@ -145,37 +145,37 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         given Show[ζ]                 = Show.show(z => "%.1f ζ".format(z))
 
         val detailed_columns = Seq(
-            th(
+            td(
                 cls := "text-center font-normal",
                 text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle))
             ),
-            th(
+            td(
                 cls := "text-center font-normal",
                 text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch])
             ),
-            th(
+            td(
                 cls := "text-center font-normal",
                 text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit])
             ),
-            th(
+            td(
                 cls := "text-center font-normal",
                 text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]))
             ),
-            th(cls := "text-center font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
-            th(cls := "text-center font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
-            th(cls := "text-center font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
-            th(
+            td(cls := "text-center font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
+            td(cls := "text-center font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
+            td(cls := "text-center font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
+            td(
                 cls := "text-center font-normal",
                 text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP))
             ),
-            th(
+            td(
                 cls := "text-center font-normal",
                 text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero))
             )
         )
 
         tr(
-            td(complexIncrNode),
+            td(cls := "w-0", complexIncrNode),
             children(detailed_columns) <-- expertModeOn
         )
 
@@ -254,13 +254,13 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 cls := "relative",
                 // table start
                 table(
-                    cls := "sticky top-0 table table-xs table-pin-rows table-pin-cols",
+                    cls := "sticky top-0 table table-auto table-xs table-pin-rows table-pin-cols",
 
                     // table header
                     thead(
                         cls := "",
                         tr(
-                            td(),
+                            td(cls := "w-0"),
                             children(detailed_headers) <-- expertModeOn
                         )
                     ),
