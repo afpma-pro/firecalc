@@ -61,6 +61,36 @@ object DaisyUINavBar:
                 FireCalcProjet.HardCodedEngineStateComponent(
                     nextEngineState = EngineState.example_projet_15544,
                     buttonTitle     = I18N_UI.buttons.load_example_project_15544
+                ),
+                // Undo button
+                div(
+                    cls := "flex items-center h-6",
+                    DaisyUITooltip (
+                        ttContent  = div(I18N_UI.buttons.undo),
+                        element    = div(
+                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                            lucide.undo(stroke_width = 1.5, w = 16, h = 16),
+                            onClick.mapToUnit --> { _ =>
+                                scala.scalajs.js.Dynamic.global.document.execCommand("undo")
+                            }
+                        ),
+                        ttPosition = "tooltip-bottom"
+                    )
+                ),
+                // Redo button
+                div(
+                    cls := "flex items-center h-6",
+                    DaisyUITooltip (
+                        ttContent  = div(I18N_UI.buttons.redo),
+                        element    = div(
+                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                            lucide.redo(stroke_width = 1.5, w = 16, h = 16),
+                            onClick.mapToUnit --> { _ =>
+                                scala.scalajs.js.Dynamic.global.document.execCommand("redo")
+                            }
+                        ),
+                        ttPosition = "tooltip-bottom"
+                    )
                 )
             ),
             // OPTIONAL

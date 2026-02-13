@@ -482,4 +482,34 @@ object lucide:
         )
     )
 
+    def undo(w: Int = 24, h: Int = 24, stroke_width: Double) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-undo-icon lucide-undo",
+        path(d := "M3 7v6h6"),
+        path(d := "M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13")
+    )
+
+    def redo(w: Int = 24, h: Int = 24, stroke_width: Double) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-redo-icon lucide-redo",
+        path(d := "M21 7v6h-6"),
+        path(d := "M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7")
+    )
+
 end lucide

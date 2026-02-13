@@ -40,6 +40,8 @@ object I18nData_UI:
         load_example_project_15544: String,
         menu                      : String,
         order_pdf_report          : String,
+        redo                      : String,
+        undo                      : String,
         units                     : String
     )
 
