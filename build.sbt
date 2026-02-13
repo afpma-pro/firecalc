@@ -514,8 +514,8 @@ lazy val jsSourceMapSettings = Def.settings(
         // - Include both file:/ and file:/// prefixes (both occur in practice).
         // - Keep trailing slash on the target so absolute paths preserve their leading slash.
         Seq(
-          "-scalajs-mapSourceURI:file:/->http://localhost:5173/@fs/",
-          "-scalajs-mapSourceURI:file:///->http://localhost:5173/@fs/"
+          "-scalajs-mapSourceURI:file:/->https://localhost:5173/@fs/",
+          "-scalajs-mapSourceURI:file:///->https://localhost:5173/@fs/"
         )
     }
 )

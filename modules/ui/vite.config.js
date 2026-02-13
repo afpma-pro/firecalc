@@ -7,6 +7,7 @@ import { resolve } from 'path'
 import { defineConfig, loadEnv } from "vite";
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
@@ -57,6 +58,8 @@ export default defineConfig(({ mode }) => {
         // Only use viteSingleFile for production builds (Electron packaging)
         // In dev mode, this plugin defeats HMR and forces full page reloads
         ...(process.env.NODE_ENV === 'production' ? [viteSingleFile()] : []),
+        // Enable HTTPS + HTTP/2 in dev for faster loading of many small Scala.js modules
+        ...(mode === 'development' ? [basicSsl()] : []),
         scalaJSPlugin({
             cwd: '../../',
             projectID: 'ui',
