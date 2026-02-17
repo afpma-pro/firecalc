@@ -7,7 +7,7 @@ package afpma.firecalc.ui.models
 
 import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.ui.models.schema.AppStateSchemaLoader
-import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3
+import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4
 
 import scala.util.Failure
 import scala.util.Success
@@ -21,7 +21,7 @@ object AppStateSchemaHelper:
 
     /** Create initial schema with default values */
     def createInitialSchema(): AppStateSchema =
-        AppStateSchema_V3  (
+        AppStateSchema_V4  (
             engine_state   = EngineState.init,
             sensitive_data = ClientProjectData.empty,
             billing_data   = afpma.firecalc.ui.instances.defaultable.default_BillingInfo.default

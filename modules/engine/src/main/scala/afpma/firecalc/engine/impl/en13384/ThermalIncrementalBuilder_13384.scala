@@ -190,50 +190,60 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
+
+        def updateVNelState(vState: ValidatedNel[IncrementalValidation_Error, PropsState])(atom: SetProp): ValidatedNel[IncrementalValidation_Error, PropsState] =
+            atom match
+                case SetInnerShape(g)            =>
+                    vState.map(_.modify(_.innerShape).setTo(g.some))
+                case SetOuterShape(g)            =>
+                    vState.map(_.modify(_.outer_shape).setTo(g.some))
+                case SetThickness(t)             =>
+                    vState andThen: v =>
+                        v.innerShape match
+                            case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
+                            case Some(ig) =>
+                                v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
+                case SetRoughness(r)             =>
+                    vState.map(_.modify(_.roughness).setTo(r.some))
+                case SetMaterial(lm)             =>
+                    vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
+                case SetLayer(e, lambda)         =>
+                    val vGeom = vState.andThen(_.getValidated(_.innerShape, LayerRequiresSectionGeometry(pt)))
+                    vGeom.andThen: geom =>
+                        vState.map(
+                            _.modify(_.layers)
+                                .setTo(List(AppendLayerDescr.FromLambdaUsingThickness(e, lambda)).some)
+                                .modify(_.outer_shape) // also update outer geometry using thickness of layer
+                                .setTo(geom.expandGeomWithThickness(e).some)
+                        )
+                case SetLayers(ldescrs)          =>
+                    val vGeom = vState.andThen(_.getValidated(_.innerShape, LayersRequireInnerShape(pt)))
+
+                    vGeom andThen: geom =>
+                        vState.map(
+                            _.modify(_.layers)
+                                .setTo(ldescrs.some)
+                                .modify(_.outer_shape) // also update outer geometry using thickness of layer
+                                .setTo(ldescrs.compute_outer_shape(geom).some)
+                        )
+                case SetAirSpaceAfterLayers(asp) =>
+                    vState.map(_.modify(_.airSpace_afterLayers).setTo(asp.some))
+                case SetPipeLocation(loc)        =>
+                    vState.map(_.modify(_.pipeLoc).setTo(loc.some))
+                case SetDuctType(duct)           =>
+                    vState.map(_.modify(_.ductType).setTo(duct.some))
+                case SetNumberOfFlows(nf)        =>
+                    vState.map(_.modify(_.nFlows).setTo(nf.some))
+                case SetPropertiesInBatch(_, _) => 
+                    throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
+
         convStep.allSetPropsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (_, atom)) =>
                 atom match
-                    case SetInnerShape(g)            =>
-                        vState.map(_.modify(_.innerShape).setTo(g.some))
-                    case SetOuterShape(g)            =>
-                        vState.map(_.modify(_.outer_shape).setTo(g.some))
-                    case SetThickness(t)             =>
-                        vState andThen: v =>
-                            v.innerShape match
-                                case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
-                                case Some(ig) =>
-                                    v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
-                    case SetRoughness(r)             =>
-                        vState.map(_.modify(_.roughness).setTo(r.some))
-                    case SetMaterial(lm)             =>
-                        vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                    case SetLayer(e, lambda)         =>
-                        val vGeom = vState.andThen(_.getValidated(_.innerShape, LayerRequiresSectionGeometry(pt)))
-                        vGeom.andThen: geom =>
-                            vState.map(
-                                _.modify(_.layers)
-                                    .setTo(List(AppendLayerDescr.FromLambdaUsingThickness(e, lambda)).some)
-                                    .modify(_.outer_shape) // also update outer geometry using thickness of layer
-                                    .setTo(geom.expandGeomWithThickness(e).some)
-                            )
-                    case SetLayers(ldescrs)          =>
-                        val vGeom = vState.andThen(_.getValidated(_.innerShape, LayersRequireInnerShape(pt)))
-
-                        vGeom andThen: geom =>
-                            vState.map(
-                                _.modify(_.layers)
-                                    .setTo(ldescrs.some)
-                                    .modify(_.outer_shape) // also update outer geometry using thickness of layer
-                                    .setTo(ldescrs.compute_outer_shape(geom).some)
-                            )
-                    case SetAirSpaceAfterLayers(asp) =>
-                        vState.map(_.modify(_.airSpace_afterLayers).setTo(asp.some))
-                    case SetPipeLocation(loc)        =>
-                        vState.map(_.modify(_.pipeLoc).setTo(loc.some))
-                    case SetDuctType(duct)           =>
-                        vState.map(_.modify(_.ductType).setTo(duct.some))
-                    case SetNumberOfFlows(nf)        =>
-                        vState.map(_.modify(_.nFlows).setTo(nf.some))
+                    case SetPropertiesInBatch(batch_name, props) => 
+                        props.foldLeft(vState)(updateVNelState(_)(_))
+                    case otherAtom =>
+                        updateVNelState(vState)(otherAtom)
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances

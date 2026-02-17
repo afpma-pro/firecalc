@@ -20,6 +20,7 @@ import io.circe.yaml.scalayaml.parser as yamlParser
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import org.scalajs.dom
+import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4
 
 /**
  * Schema migration manager for AppState persistence.
@@ -103,24 +104,36 @@ object AppStateSchemaMigrations:
                 None
 
             case Some(1) =>
-                // V1 - decode and migrate to V3
+                // V1 - decode and migrate to V4
                 decodeV1(rawData)
                     .flatMap(migrateFromV1ToV2)
-                    .flatMap(migrateFromV2ToV3) match
-                    case Success(v3) => Some(v3)
-                    case Failure(e)  =>
-                        dom.console.error(s"Failed to migrate V1 to V3: ${e.getMessage()}")
-                        None
+                    .flatMap(migrateFromV2ToV3)
+                    .flatMap(migrateFromV3ToV4) match
+                        case Success(v4) => Some(v4)
+                        case Failure(e)  =>
+                            dom.console.error(s"Failed to migrate V1 to V4: ${e.getMessage()}")
+                            None
 
             case Some(2) =>
-                // V2 - decode and migrate to V3
-                decodeV2(rawData).flatMap(migrateFromV2ToV3) match
-                    case Success(v3) => Some(v3)
-                    case Failure(e)  =>
-                        dom.console.error(s"Failed to migrate V2 to V3: ${e.getMessage()}")
-                        None
+                // V2 - decode and migrate to V4
+                decodeV2(rawData)
+                    .flatMap(migrateFromV2ToV3)
+                    .flatMap(migrateFromV3ToV4) match
+                        case Success(v4) => Some(v4)
+                        case Failure(e)  =>
+                            dom.console.error(s"Failed to migrate V2 to V4: ${e.getMessage()}")
+                            None
 
             case Some(3) =>
+                // V3 - decode and migrate to V4
+                decodeV3(rawData)
+                    .flatMap(migrateFromV3ToV4) match
+                        case Success(v4) => Some(v4)
+                        case Failure(e)  =>
+                            dom.console.error(s"Failed to migrate V3 to V4: ${e.getMessage()}")
+                            None
+
+            case Some(4) =>
                 // Current version - decode directly
                 AppStateSchemaHelper.decodeFromYaml(rawData).toOption
 
@@ -156,6 +169,16 @@ object AppStateSchemaMigrations:
                 dom.console.log(s"Failed to parse YAML: ${parseError.getMessage()}")
                 None
 
+    /** Decode V3 schema from YAML string. */
+    private def decodeV3(yaml: String): Try[AppStateSchema_V3] =
+        import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3.given
+        yamlParser.parse(yaml) match
+            case Right(json) =>
+                json.as[AppStateSchema_V3] match
+                    case Right(schema) => Success(schema)
+                    case Left(err)     => Failure(new RuntimeException(s"Failed to decode V3: ${err.getMessage()}"))
+            case Left(err)   => Failure(new RuntimeException(s"Failed to parse V3 YAML: ${err.getMessage()}"))
+
     /** Decode V2 schema from YAML string. */
     private def decodeV2(yaml: String): Try[AppStateSchema_V2] =
         import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2.given
@@ -175,6 +198,17 @@ object AppStateSchemaMigrations:
                     case Right(schema) => Success(schema)
                     case Left(err)     => Failure(new RuntimeException(s"Failed to decode V1: ${err.getMessage()}"))
             case Left(err)   => Failure(new RuntimeException(s"Failed to parse V1 YAML: ${err.getMessage()}"))
+
+    /**
+     * Migrate from V3 to V4 schema.
+     *
+     * Uses Chimney transformer to convert engine_state from FireCalcYAML_V3 to FireCalcYAML_V4.
+     */
+    private def migrateFromV3ToV4(schema: AppStateSchema_V3): Try[AppStateSchema_V4] =
+        Try {
+            dom.console.log("Migrating AppStateSchema from V3 to V4")
+            schema.transformInto[AppStateSchema_V4]
+        }
 
     /**
      * Migrate from V2 to V3 schema.
