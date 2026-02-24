@@ -678,6 +678,7 @@ object I18nData:
         _self                            : String,
         _geometric_properties            : String,
         define_layers                    : String,
+        SetPropertiesInBatch             : String,
         SetInnerShape                    : String,
         SetOuterShape                    : String,
         SetThickness                     : String,

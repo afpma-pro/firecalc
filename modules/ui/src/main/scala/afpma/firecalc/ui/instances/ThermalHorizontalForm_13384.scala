@@ -4,6 +4,7 @@
  */
 
 package afpma.firecalc.ui.instances
+
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
@@ -22,6 +23,7 @@ import scala.annotation.nowarn
 import scala.deriving.Mirror
 
 import io.taig.babel.Locale
+import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
 
 class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
@@ -34,6 +36,51 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
     // AddElement
 
+    given horizontal_form_SetPropertiesInBatch: DaisyUIHorizontalForm[SetPropertiesInBatch] =
+        import defaultable_13384.incr_descr_en13384.defaultable_Seq_SetSingleProp
+        // given DaisyUIHorizontalForm[String] = string_emptyAsDefault_alwaysValid
+
+        // List[SetSingleProp] should be a global vertical form
+        // containing horizontal form instances for each "SetSingleProp" element
+        given df_list: DaisyUIVerticalForm[List[SetSingleProp]] =
+            DaisyUIVerticalForm
+                .forList_WithEphemeralIds[SetSingleProp](using horizontal_form_SetSingleProp.toVerticalForm)
+
+        // Convert from List -> Seq
+        given seqForm: DaisyUIVerticalForm[Seq[SetSingleProp]] =
+            DaisyUIVerticalForm.formConversionOpaque[Seq[SetSingleProp], List[SetSingleProp]](using
+                df_list,
+                _.toList,
+                _.toSeq
+            )
+
+        val d: Defaultable[SetPropertiesInBatch] = summon[Defaultable[SetPropertiesInBatch]]
+        given vv: ValidateVar[SetPropertiesInBatch] = ValidateVar.valid
+
+        val stringForm: DaisyUIHorizontalForm[String] = string_emptyAsDefault_alwaysValid
+
+        DaisyUIHorizontalForm.makeFor[SetPropertiesInBatch](d): (v, fc) =>
+            import com.raquo.laminar.api.L.*
+            import afpma.firecalc.ui.instances.validatevar.valid_always.given_ValidateVar_AlwaysValid
+            import afpma.firecalc.ui.components.SetPropertiesInBatchFormComponent
+            import afpma.firecalc.ui.models.HardcodedPipeCatalogDatabase
+
+            val titleVar   = v.zoomLazy(_.batch_name)((spb, name) => spb.copy(batch_name = name))
+            val contentVar = v.zoomLazy(_.props)((spb, props) => spb.copy(props = props))
+
+            val titleElement   = stringForm.render(titleVar, fc)
+            val contentElement = seqForm.render(contentVar, fc)
+
+            SetPropertiesInBatchFormComponent(
+                v         = v,
+                catalog   = HardcodedPipeCatalogDatabase,
+                titleEl   = titleElement,
+                contentEl = contentElement
+            ).node
+
+    given horizontal_form_SetSingleProp: DaisyUIHorizontalForm[SetSingleProp] =
+        DaisyUIHorizontalForm.splitViaMatchingOnly[SetSingleProp]
+    
     given horizontal_form_SetInnerShape: DaisyUIHorizontalForm[SetInnerShape] =
         autoDeriveAndOverwriteFieldNames[SetInnerShape]
 

@@ -13,6 +13,8 @@ import afpma.firecalc.i18n.implicits.given
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
+import afpma.firecalc.ui.models.HardcodedPipeCatalogDatabase
+import afpma.firecalc.ui.i18n.implicits.given
 
 import com.raquo.laminar.api.L.*
 
@@ -30,6 +32,11 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
             .splitMatchSeq(_._1)
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetPropertiesInBatch, XtraOutputs), HtmlElement] {
+                case (i, aa: SetPropertiesInBatch, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetPropertiesInBatch](iaax._1, I18N.set_prop.SetPropertiesInBatch, iaax._2, sig, isProperty = true)
+            }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInnerShape, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInnerShape, x) => (i, aa, x)
             } { (iaax, sig) =>
@@ -302,7 +309,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     lazy val tagTreeMenu = TagTreeMenu(
         shortcut_start_new_pipe,
         prop_elements,
-        geom_elements
+        geom_elements,
+        catalog_elements
     )
 
     lazy val shortcut_start_new_pipe =
@@ -391,4 +399,14 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             TagTreeMenu.Leaf[SetLayer],
             TagTreeMenu.Leaf[SetLayers]
         )
+    )
+
+    // catalog
+    lazy val catalog_elements = TagTreeMenu.Modal[ThermalPipeDescr_13384](
+        txt = I18N_UI.catalog._self,
+        modalContent = (onSelect) =>
+            PipeCatalogSelectComponent(
+                database = HardcodedPipeCatalogDatabase,
+                onSelect = onSelect.contramap[SetPropertiesInBatch](identity)
+            ).node
     )

@@ -16,6 +16,7 @@ import io.taig.babel.StringFormat1
 
 final case class I18nData_UI(
     buttons              : Buttons,
+    catalog              : Catalog,
     client_project_data  : ClientProjectData,
     connectivity_status  : ConnectivityStatus,
     customer             : Customer,
@@ -35,14 +36,21 @@ final case class I18nData_UI(
 object I18nData_UI:
 
     case class Buttons(
+        select                    : String,
         add                       : String,
         cancel                    : String,
+        import_catalog            : String,
         load_example_project_15544: String,
         menu                      : String,
         order_pdf_report          : String,
         redo                      : String,
         undo                      : String,
         units                     : String
+    )
+
+    case class Catalog(
+        _self                : String,
+        select_from_catalog  : String
     )
 
     case class ClientProjectData(

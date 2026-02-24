@@ -31,6 +31,7 @@ import afpma.firecalc.ui.formgen.Defaultable.given
 import afpma.firecalc.ui.instances.validatevar
 import afpma.firecalc.ui.utils.OptionalField
 import afpma.firecalc.ui.utils.convertToOpaqueVar
+import afpma.firecalc.ui.daisyui.DaisyUIInputs
 
 import cats.Show
 import cats.syntax.all.toFunctorOps
@@ -52,6 +53,7 @@ import magnolia1.CaseClass
 import magnolia1.Derivation
 import magnolia1.SealedTrait
 import magnolia1.SealedTrait.Subtype
+import scala.deriving.Mirror
 
 trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFactory.SplitAsSelectWithOptionsImpl[DF]:
     self: Derivation[DF] =>
@@ -139,6 +141,8 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
 
     // opaque types
 
+    // TODO: rename to "map" or alike ? not specific to opaque type. 
+    // Conversion possible as long as bijection exists between 2 types.
     def formConversionOpaque[T, A](using
         fa : DF[A],
         out: Conversion[T, A],
@@ -776,6 +780,48 @@ object LaminarFormFactory:
     trait SplitAsSelectWithOptionsImpl[DF[x] <: LaminarForm[x, DF[x]]] extends Derivation[DF]:
         self: LaminarFormFactory[DF] =>
 
+        inline def splitViaMatchingOnly[A](using sum: Mirror.SumOf[A]): DF[A] =
+
+            val sealedTrait = sealedTraitFromMirror(sum)
+
+            val anns     = sealedTrait.annotations.toList
+            val typeInfo = sealedTrait.typeInfo
+
+            given ValidateVar[A] = ValidateVar.make: a =>
+                sealedTrait.choose(a) { sub =>
+                    val c = sub.cast(a)
+                    sub.typeclass.validate_var.validate(c)
+                }
+
+            self.makeForUsingOverwrite[A](_formConfigOverwrite =>
+                val finalFieldName = LaminarForm.mkFinalFieldName(
+                    _formConfigOverwrite,
+                    anns,
+                    typeInfo
+                )
+                Defaultable
+                    .selectFirstSubtypeAsDefaultableOrThrow[A](finalFieldName)(
+                        sealedTrait.subtypes.map(_.typeclass.defaultable_instance)
+                    )
+            ): (variable, _) =>
+
+                val a = variable.now()
+
+                val subt_typeclass_curr = sealedTrait.choose(a)(_.typeclass.asInstanceOf[DF[A]])
+                val subt_typeclass_label = finalFieldNameForSubtype_fromValue(sealedTrait)(a)
+
+                val content = 
+                    render_SumType_WrappedSubtypeFormAsNode(
+                        variable.as_HtmlElement(using subt_typeclass_curr)
+                    )
+
+                DaisyUIInputs.FieldsetLegendWithContent    (
+                    Some(subt_typeclass_label),
+                    content,
+                    bgClass     = "bg-base-100",
+                    borderClass = "border-base-300 border-dashed"
+                )
+        
         inline def eitherAsSelectWithOptions[L, R](
             selectFieldName: String
         )(using
@@ -1013,15 +1059,6 @@ object LaminarFormFactory:
                         sealedTrait.subtypes.map(_.typeclass.defaultable_instance)
                     )
             ): (variable, _) =>
-                def finalFieldNameForSubtype(sub: Subtype[DF, A, ?]): String =
-                    LaminarForm.mkFinalFieldName(
-                        sub.typeclass._formConfigOverwrite,
-                        sub.annotations.toList,
-                        sub.typeInfo
-                    )
-
-                def finalFieldNameForSubtype_fromValue(a: A): String =
-                    sealedTrait.choose(a)(sub => finalFieldNameForSubtype(sub.subtype))
 
                 val subt_defaultables: IArray[Defaultable[A]] =
                     sealedTrait.subtypes.map: subt =>
@@ -1042,7 +1079,7 @@ object LaminarFormFactory:
 
                 // initialiaze manual vars
 
-                val var_subt_label_curr = Var(finalFieldNameForSubtype_fromValue(a))
+                val var_subt_label_curr = Var(finalFieldNameForSubtype_fromValue(sealedTrait)(a))
 
                 val subt_typeclasses =
                     sealedTrait.subtypes.map(
@@ -1052,10 +1089,21 @@ object LaminarFormFactory:
                 renderAndBind_SumType_WithSelectAndOptions(
                     variable,
                     var_subt_label_curr,
-                    value_to_subt_label = finalFieldNameForSubtype_fromValue,
+                    value_to_subt_label = finalFieldNameForSubtype_fromValue(sealedTrait),
                     // select_field_label = Some(finalFieldNameForSelect),
                     select_field_label  = None,
                     subt_defaultables   = subt_defaultables,
                     subt_labels         = subt_labels,
                     subt_typeclasses    = subt_typeclasses
                 )
+        end split
+
+        def finalFieldNameForSubtype[A](sub: Subtype[DF, A, ?]): String =
+            LaminarForm.mkFinalFieldName(
+                sub.typeclass._formConfigOverwrite,
+                sub.annotations.toList,
+                sub.typeInfo
+            )
+
+        def finalFieldNameForSubtype_fromValue[A](sealedTrait: SealedTrait[DF, A])(a: A): String =
+            sealedTrait.choose(a)(sub => finalFieldNameForSubtype(sub.subtype))

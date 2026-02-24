@@ -33,9 +33,6 @@ import org.scalajs.dom.HTMLDialogElement
 
 case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Component:
 
-    private val modal_id                   = "order_pdf_modal"
-    private val emissions_warning_modal_id = "emissions_warning_modal"
-    private val payment_success_modal_id   = "payment_success_modal"
 
     protected final case class PDFReportOrderingState(
         cgv_accepted                      : Boolean        = false,
@@ -347,14 +344,8 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                 // Its presence tells the order modal close handler not to reset state
                 pdf_report_ordering_var.update     (_.copy(payment_link = Some(response.paymentUrl)))
                 // Close the order modal and open the payment success modal
-                dom.document
-                    .getElementById(modal_id)
-                    .asInstanceOf[HTMLDialogElement]
-                    .close                         (                                                )
-                dom.document
-                    .getElementById(payment_success_modal_id)
-                    .asInstanceOf[HTMLDialogElement]
-                    .showModal                     (                                                )
+                mainModal.ref.asInstanceOf[HTMLDialogElement].close()
+                successModal.ref.asInstanceOf[HTMLDialogElement].showModal()
             case Left(errorMessage) =>
                 // Log error and store in state for display
                 verify_and_process_response_var.set(Some(Left(errorMessage)))
@@ -399,26 +390,26 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                             ) --> { (_, emissionsOk) =>
                             if (emissionsOk) {
                                 // Direct flow to main modal
-                                dom.document
-                                    .getElementById(modal_id)
-                                    .asInstanceOf[HTMLDialogElement]
-                                    .showModal()
+                                mainModal.ref.asInstanceOf[HTMLDialogElement].showModal()
                             } else {
                                 // Show warning modal first
                                 emissions_warning_acknowledged_var.set(false) // Reset checkbox
-                                dom.document
-                                    .getElementById(emissions_warning_modal_id)
-                                    .asInstanceOf[HTMLDialogElement]
-                                    .showModal                        (     )
+                                warningModal.ref.asInstanceOf[HTMLDialogElement].showModal()
                             }
                         }
                     ),
                     ttPosition = "tooltip-bottom"
                 )
             ),
-            dialogTag   (
-                idAttr := modal_id,
-                cls    := "modal",
+            mainModal,
+            warningModal,
+            successModal
+        )
+            .amend(binders)
+
+    lazy val mainModal: HtmlElement =
+        dialogTag(
+            cls := "modal",
                 onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
                     mount   = ctx => {
                         val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
@@ -704,11 +695,12 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                         )
                     )
                 )
-            ),
-            // Emissions Warning Modal - shown when user tries to order with unmet emissions criteria
-            dialogTag   (
-                idAttr := emissions_warning_modal_id,
-                cls    := "modal",
+        )
+
+    // Emissions Warning Modal - shown when user tries to order with unmet emissions criteria
+    lazy val warningModal: HtmlElement =
+        dialogTag(
+            cls := "modal",
                 onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
                     mount   = ctx => {
                         val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
@@ -830,25 +822,20 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                             disabledAttr <-- emissions_warning_acknowledged_var.signal.map(!_),
                             onClick --> { _ =>
                                 // Close warning modal
-                                dom.document
-                                    .getElementById(emissions_warning_modal_id)
-                                    .asInstanceOf[HTMLDialogElement]
-                                    .close    ()
+                                warningModal.ref.asInstanceOf[HTMLDialogElement].close()
                                 // Open main PDF order modal
-                                dom.document
-                                    .getElementById(modal_id)
-                                    .asInstanceOf[HTMLDialogElement]
-                                    .showModal()
+                                mainModal.ref.asInstanceOf[HTMLDialogElement].showModal()
                             },
                             I18N_UI.pdf_ordering.modal.emissions_warning.button_confirm
                         )
                     )
                 )
-            ),
-            // Payment Success Modal - shown after 6-digit code validation
-            dialogTag   (
-                idAttr := payment_success_modal_id,
-                cls    := "modal",
+        )
+
+    // Payment Success Modal - shown after 6-digit code validation
+    lazy val successModal: HtmlElement =
+        dialogTag(
+            cls := "modal",
                 onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
                     mount   = ctx => {
                         val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
@@ -933,5 +920,3 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                     )
                 )
             )
-        )
-            .amend(binders)

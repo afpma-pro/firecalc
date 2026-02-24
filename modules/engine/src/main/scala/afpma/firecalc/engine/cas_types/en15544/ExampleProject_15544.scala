@@ -15,6 +15,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
 
 import io.taig.babel.Languages
+import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
 
 object ExampleProject_15544
     extends v2024_10_Alg
@@ -117,9 +118,17 @@ object ExampleProject_15544
     val conduit_fumees_descr =
         import ChimneyPipe_Module.*
         Seq (
-            roughness (Material_13384.WeldedSteel()),
-            innerShape(circle(200.mm)              ),
-            layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440)),
+            // roughness (Material_13384.WeldedSteel()),
+            // innerShape(circle(200.mm)              ),
+            // layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440)),
+            SetPropertiesInBatch(
+                batch_name = "POUJOULAT 200mm DPI",
+                Seq(
+                    roughness (Material_13384.WeldedSteel()),
+                    innerShape(circle(200.mm)              ),
+                    layer     (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440)),
+                )
+            ),
             pipeLocation      (PipeLocation.HeatedArea                         ),
             addSectionVertical("intérieur", 550.mm                             ),
             pipeLocation      (PipeLocation.OutsideOrExterior                  ), // plutot NON CHAUFFEE car combles ???

@@ -30,6 +30,9 @@ object V4Instances:
     given Decoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveDecoder[SetThermalPipeProp_13384_V3.SetSingleProp]
     given Encoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveEncoder[SetThermalPipeProp_13384_V3.SetSingleProp]
 
+    given Decoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveDecoder
+    given Encoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveEncoder
+
     given Decoder[ThermalPipeDescr_13384_V3] = semiauto.deriveDecoder[ThermalPipeDescr_13384_V3]
     given Encoder[ThermalPipeDescr_13384_V3] = semiauto.deriveEncoder[ThermalPipeDescr_13384_V3]
 

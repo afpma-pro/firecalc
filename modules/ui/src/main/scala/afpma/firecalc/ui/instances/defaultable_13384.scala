@@ -18,6 +18,7 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.formgen.Defaultable
 
 import io.taig.babel.Locale
+import afpma.firecalc.i18n.I18nData.SetProp
 
 object defaultable_13384:
 
@@ -31,6 +32,10 @@ object defaultable_13384:
 
     object incr_descr_en13384:
 
+        // given Defaultable[SetThermalPipeProp_13384] = Defaultable.autoDerived[SetThermalPipeProp_13384]
+
+        given defaultable_Seq_SetSingleProp: Defaultable[Seq[SetSingleProp]]              :
+            def default = Seq.empty
         given Defaultable[SetInnerShape]              :
             def default = SetInnerShape(pipeShapeInner.default)
         given Defaultable[SetOuterShape]              :
