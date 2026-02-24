@@ -6,7 +6,7 @@
 package afpma.firecalc.engine.ops
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.common.AirSpaceDetailed
+import afpma.firecalc.dto.common.AirSpaceDetailed_V1
 import afpma.firecalc.dto.common.PipeShape
 
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
@@ -215,13 +215,13 @@ object MecaFluOps:
         lastCrossSectionArea: Option[Area],
         lastInnerGeom       : Option[PipeShape],
         // Optional fields for thermal calculations
-        lastAirSpaceDetailed: Option[AirSpaceDetailed] = None
+        lastAirSpaceDetailed: Option[AirSpaceDetailed_V1] = None
     )
 
     /** Create initial accumulator state for pipe result calculation. */
     def initialAccumulatorState(
         startTemp           : TCelsius,
-        lastAirSpace        : Option[AirSpaceDetailed] = None
+        lastAirSpace        : Option[AirSpaceDetailed_V1] = None
     ): AccumulatorState =
         AccumulatorState(
             gasTempStart         = startTemp,
@@ -236,7 +236,7 @@ object MecaFluOps:
         newGasTempEnd              : TCelsius,
         newCrossSectionArea        : Area,
         newInnerGeom               : PipeShape,
-        newAirSpaceDetailed        : Option[AirSpaceDetailed] = None
+        newAirSpaceDetailed        : Option[AirSpaceDetailed_V1] = None
     ): AccumulatorState =
         current.copy(
             gasTempStart         = newGasTempEnd,

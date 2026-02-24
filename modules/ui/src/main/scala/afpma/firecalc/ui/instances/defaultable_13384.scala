@@ -105,7 +105,7 @@ object defaultable_13384:
         given Locale => Defaultable[AddFlowResistance]            :
             def default = AddFlowResistance(I18N_UI.default_element_names.grid, defaultable.zeta.default, None)
 
-    val airSpaceDetailed = Defaultable(AirSpaceDetailed.WithoutAirSpace)
+    val airSpaceDetailed = Defaultable(AirSpaceDetailed.WithoutAirSpace_V2)
 
     val appendLayerDescr =
         import defaultable.pipeShapeOuter // scalafix:ok

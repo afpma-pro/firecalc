@@ -60,9 +60,9 @@ enum AppendLayerDescr:
         @Transl(I(_.terms.outer_shape))
         outer_shape     : PipeShape,
         @Transl(I(_.en13384._air_space_detailed.ventil_direction))
-        ventil_direction: VentilDirection,
+        ventil_direction: AirSpaceDetailed_V2.VentilDirection,
         @Transl(I(_.en13384._air_space_detailed.ventil_openings))
-        ventil_openings : VentilOpenings
+        ventil_openings : AirSpaceDetailed_V2.VentilOpenings
     )
 
     @Transl(I(_.append_layer_descr.AirSpaceUsingThickness))
@@ -70,9 +70,9 @@ enum AppendLayerDescr:
         @Transl(I(_.terms.thickness))
         thickness       : Length,
         @Transl(I(_.en13384._air_space_detailed.ventil_direction))
-        ventil_direction: VentilDirection,
+        ventil_direction: AirSpaceDetailed_V2.VentilDirection,
         @Transl(I(_.en13384._air_space_detailed.ventil_openings))
-        ventil_openings : VentilOpenings
+        ventil_openings : AirSpaceDetailed_V2.VentilOpenings
     )
 
 object AppendLayerDescr:
@@ -117,11 +117,11 @@ object AppendLayerDescr:
                                     (og, airSpaces, Status.Ok)
                                 case AppendLayerDescr.AirSpaceUsingOuterShape(og, vdir, vst)     =>
                                     val e: QtyD[Meter] = (og.dh - ig.dh) / 2.0
-                                    val asp = AirSpaceDetailed.WithAirSpace(e, vdir, vst)
+                                    val asp = AirSpaceDetailed.WithAirSpace_V2(e, vdir, vst)
                                     (og, airSpaces.appended(asp), Status.Error_MissingLayerAfterAirSpace)
                                 case AppendLayerDescr.AirSpaceUsingThickness(e, vdir, vst)       =>
                                     val og  = ig.expandGeomWithThickness(e)
-                                    val asp = AirSpaceDetailed.WithAirSpace(e, vdir, vst)
+                                    val asp = AirSpaceDetailed.WithAirSpace_V2(e, vdir, vst)
                                     (og, airSpaces.appended(asp), Status.Error_MissingLayerAfterAirSpace)
             finalAcc._3 match
                 case Error_MissingLayerAfterAirSpace => Left("missing layer after air space")
@@ -133,8 +133,8 @@ object AppendLayerDescr:
                 .toOption
                 .flatMap(
                     _.flatMap:
-                        case AirSpaceDetailed.WithoutAirSpace => None
-                        case withAirSpace: AirSpaceDetailed.WithAirSpace => withAirSpace.some
+                        case AirSpaceDetailed.WithoutAirSpace_V2 => None
+                        case withAirSpace: AirSpaceDetailed.WithAirSpace_V2 => withAirSpace.some
                     .sortBy(_.width)
                         .lastOption
                 )

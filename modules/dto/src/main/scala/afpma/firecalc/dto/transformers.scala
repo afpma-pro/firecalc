@@ -9,11 +9,14 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v3.*
+import afpma.firecalc.dto.v4.*
 
 import cats.syntax.all.*
 
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
+import afpma.firecalc.dto.common.AirSpaceDetailed_V1.WithoutAirSpace
+import afpma.firecalc.dto.common.AirSpaceDetailed_V1.WithAirSpace
 
 object transformers:
 
@@ -75,3 +78,12 @@ object transformers:
         v1 match
             case Material_15544_V1.TuyauxEnChamotte => Material_15544_V2.TuyauxEnChamotte()
             case Material_15544_V1.BlocsDeChamotte  => Material_15544_V2.BlocsDeChamotte()
+
+    // V3 to V4 Migration
+
+    given Transformer[AirSpaceDetailed_V1, AirSpaceDetailed_V2] = (v1: AirSpaceDetailed_V1) =>
+        v1 match
+            case WithoutAirSpace => AirSpaceDetailed_V2.WithoutAirSpace_V2
+            case WithAirSpace(width, direction, ventil_openings) => AirSpaceDetailed_V2.WithAirSpace_V2(width, direction, ventil_openings)
+        
+        

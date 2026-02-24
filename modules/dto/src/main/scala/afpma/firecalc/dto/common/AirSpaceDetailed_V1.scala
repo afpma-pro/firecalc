@@ -20,20 +20,20 @@ import coulomb.policy.standard.given
 import magnolia1.Transl
 
 @Transl(I(_.en13384.air_space_detailed))
-sealed trait AirSpaceDetailed
+sealed trait AirSpaceDetailed_V1
 
-object AirSpaceDetailed:
+object AirSpaceDetailed_V1:
 
     import VentilDirection.*
 
-    given showAirSpaceDetailed: Show[AirSpaceDetailed] = Show.show:
+    given showAirSpaceDetailed: Show[AirSpaceDetailed_V1] = Show.show:
         case WithoutAirSpace                                                                => "-"
         case WithAirSpace(w, _, VentilOpenings.NoOpening)                                   => s"𐄂${w.to_cm.showP}"
         case WithAirSpace(w, dir, VentilOpenings.AnnularAreaFullyOpened)                    => s"✓${dir.show} ${w.to_cm.showP}"
         case WithAirSpace(w, dir, VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1) =>
             s"~${dir.show} ${w.to_cm.showP}"
 
-    extension (asd: AirSpaceDetailed)
+    extension (asd: AirSpaceDetailed_V1)
 
         def isHygienic: Boolean = asd match
             case WithAirSpace(w, SameDirAsFlueGas, VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1)
@@ -56,7 +56,7 @@ object AirSpaceDetailed:
             case _                                               => false
 
     @Transl(I(_.en13384._air_space_detailed.without_air_space))
-    case object WithoutAirSpace extends AirSpaceDetailed
+    case object WithoutAirSpace extends AirSpaceDetailed_V1
 
     @Transl(I(_.en13384._air_space_detailed.without_air_space))
     type WithoutAirSpace = WithoutAirSpace.type
@@ -69,7 +69,7 @@ object AirSpaceDetailed:
         direction      : VentilDirection,
         @Transl(I(_.en13384._air_space_detailed.ventil_openings))
         ventil_openings: VentilOpenings
-    ) extends AirSpaceDetailed
+    ) extends AirSpaceDetailed_V1
 
     @Transl(I(_.en13384._air_space_detailed.ventil_direction))
     enum VentilDirection:
@@ -112,4 +112,4 @@ object AirSpaceDetailed:
         @Transl(I(_.en13384._air_space_detailed._ventil_openings.partially_opened_in_accordance_with_dtu_24_1))
         type PartiallyOpened_InAccordanceWith_DTU_24_1 = PartiallyOpened_InAccordanceWith_DTU_24_1.type
 
-    val withoutAirSpace: AirSpaceDetailed.WithoutAirSpace = AirSpaceDetailed.WithoutAirSpace
+    val withoutAirSpace: AirSpaceDetailed_V1.WithoutAirSpace = AirSpaceDetailed_V1.WithoutAirSpace

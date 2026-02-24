@@ -8,6 +8,7 @@ package afpma.firecalc.dto.v4
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
 
 import afpma.firecalc.i18n.*
 
@@ -73,7 +74,7 @@ object SetThermalPipeProp_13384_V3:
     @Transl(I(_.set_prop.SetAirSpaceAfterLayers))
     case class SetAirSpaceAfterLayers(
         @Transl(I(_.en13384.air_space_detailed))
-        air_space_detailed: AirSpaceDetailed
+        air_space_detailed: AirSpaceDetailed_V2
     ) extends SetSingleProp
 
     @Transl(I(_.set_prop.SetPipeLocation))

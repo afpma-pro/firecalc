@@ -11,9 +11,7 @@ object all:
 
     export afpma.firecalc.dto.common.Address
 
-    export afpma.firecalc.dto.common.AirSpaceDetailed
-    export afpma.firecalc.dto.common.AirSpaceDetailed.VentilDirection
-    export afpma.firecalc.dto.common.AirSpaceDetailed.VentilOpenings
+    export afpma.firecalc.dto.common.AirSpaceDetailed_V1
     export afpma.firecalc.dto.common.AppendLayerDescr
     export afpma.firecalc.dto.common.AppendLayerDescr.compute_outer_shape
     export afpma.firecalc.dto.common.AppendLayerDescr.AirSpaceUsingOuterShape
@@ -123,6 +121,9 @@ object all:
     export afpma.firecalc.dto.v3.SetFlowOnlyPipeProp_15544_V2 as SetFlowOnlyPipeProp_15544
 
     // V4
+
+    export afpma.firecalc.dto.v4.AirSpaceDetailed_V2
+    export afpma.firecalc.dto.v4.AirSpaceDetailed_V2 as AirSpaceDetailed
 
     export afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
     export afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3 as ThermalPipeDescr_13384

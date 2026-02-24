@@ -185,8 +185,8 @@ object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_1
                     // lame d'air ventilée selon DTU 24.1 (ouverture de 20cm2 en bas et 5cm2 en haut)
                     AirSpaceUsingOuterShape                     (
                         rectangle(20.cm, 20.cm),
-                        VentilDirection.SameDirAsFlueGas,
-                        VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
+                        AirSpaceDetailed_V2.VentilDirection.SameDirAsFlueGas,
+                        AirSpaceDetailed_V2.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
                     ),
 
                     // boisseau

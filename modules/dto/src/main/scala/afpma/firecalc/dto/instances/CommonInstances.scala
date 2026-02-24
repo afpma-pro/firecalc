@@ -61,9 +61,21 @@ object CommonInstances:
     given encoder_AdjacentBuildings: Encoder[AdjacentBuildings] = semiauto.deriveEncoder[AdjacentBuildings]
 
     // AirSpaceDetailed
+    // Custom decoder: handle YAML round-trip issue where case object WithoutAirSpace
+    // is emitted as "WithoutAirSpace: null" by the YAML printer (instead of "{}"),
+    // causing the default semiauto decoder to fail when reading back.
+    given decoder_AirSpaceDetailed_V1: Decoder[AirSpaceDetailed_V1] =
+        val derived = semiauto.deriveDecoder[AirSpaceDetailed_V1]
+        Decoder.instance { cursor =>
+            cursor.keys.flatMap(_.headOption) match
+                case Some("WithoutAirSpace") =>
+                    // Accept both {} and null payloads for the no-field case object
+                    Right(AirSpaceDetailed_V1.WithoutAirSpace)
+                case _ =>
+                    derived(cursor)
+        }
 
-    given Decoder[AirSpaceDetailed] = semiauto.deriveDecoder[AirSpaceDetailed]
-    given Encoder[AirSpaceDetailed] = semiauto.deriveEncoder[AirSpaceDetailed]
+    given encoder_AirSpaceDetailed_V1: Encoder[AirSpaceDetailed_V1] = semiauto.deriveEncoder[AirSpaceDetailed_V1]
 
     // AppendLayerDescr
 
@@ -439,12 +451,12 @@ object CommonInstances:
     given decoder_UseTuoOverride: Decoder[UseTuoOverride] = Decoder.const(UseTuoOverride)
     given encoder_UseTuoOverride: Encoder[UseTuoOverride] = Encoder.encodeString.contramap(_ => "UseTuoOverride")
 
-    // VentilDirection
+    // AirSpaceDetailed_V1.VentilDirection
 
-    given Decoder[VentilDirection] = deriveDecoderForEnum[VentilDirection](VentilDirection.valueOf)
-    given Encoder[VentilDirection] = deriveEncoderForEnum[VentilDirection]
+    given decoder_AirSpaceDetailed_V1_VentilDirection: Decoder[AirSpaceDetailed_V1.VentilDirection] = deriveDecoderForEnum[AirSpaceDetailed_V1.VentilDirection](AirSpaceDetailed_V1.VentilDirection.valueOf)
+    given encoder_AirSpaceDetailed_V1_VentilDirection: Encoder[AirSpaceDetailed_V1.VentilDirection] = deriveEncoderForEnum[AirSpaceDetailed_V1.VentilDirection]
 
-    // VentilOpenings
+    // AirSpaceDetailed_V1.VentilOpenings
 
-    given Decoder[VentilOpenings] = deriveDecoderForEnum[VentilOpenings](VentilOpenings.valueOf)
-    given Encoder[VentilOpenings] = deriveEncoderForEnum[VentilOpenings]
+    given decoder_AirSpaceDetailed_V1_VentilOpenings: Decoder[AirSpaceDetailed_V1.VentilOpenings] = deriveDecoderForEnum[AirSpaceDetailed_V1.VentilOpenings](AirSpaceDetailed_V1.VentilOpenings.valueOf)
+    given encoder_AirSpaceDetailed_V1_VentilOpenings: Encoder[AirSpaceDetailed_V1.VentilOpenings] = deriveEncoderForEnum[AirSpaceDetailed_V1.VentilOpenings]

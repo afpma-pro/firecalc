@@ -7,6 +7,8 @@ package afpma.firecalc.ui.instances
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilDirection
+import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilOpenings
 import afpma.firecalc.dto.common.NbOfFlows
 
 import afpma.firecalc.i18n.implicits.I18N
@@ -195,12 +197,12 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_AirSpaceDetailed: DaisyUIHorizontalForm[AirSpaceDetailed] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed]
 
-    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace]
+    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace_V2] =
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace_V2]
 
-    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace] =
+    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace_V2] =
         given DaisyUIHorizontalForm[QtyD[Meter]]     = horizontal_form_Length_mm_cm
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace]
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace_V2]
 
     // PipeLocation.AreaName
 
@@ -258,35 +260,35 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     // Ventil Direction
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_UndefinedDir
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.UndefinedDir] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.UndefinedDir]
+        : DaisyUIHorizontalForm[VentilDirection.UndefinedDir] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection.UndefinedDir]
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_SameDirAsFlueGas
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas]
+        : DaisyUIHorizontalForm[VentilDirection.SameDirAsFlueGas] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection.SameDirAsFlueGas]
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_OppositeDirOfFlueGas
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas]
+        : DaisyUIHorizontalForm[VentilDirection.OppositeDirOfFlueGas] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection.OppositeDirOfFlueGas]
 
-    given horizontal_form_AirSpaceDetailed_VentilDirection: DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection]
+    given horizontal_form_AirSpaceDetailed_VentilDirection: DaisyUIHorizontalForm[VentilDirection] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection]
 
     // Ventil Openings
 
-    given horizontal_form_AirSpaceDetailed_VentilOpenings_NoOpening: DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.NoOpening] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.NoOpening]
+    given horizontal_form_AirSpaceDetailed_VentilOpenings_NoOpening: DaisyUIHorizontalForm[VentilOpenings.NoOpening] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings.NoOpening]
 
     given horizontal_form_AirSpaceDetailed_VentilOpenings_AnnularAreaFullyOpened
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened]
+        : DaisyUIHorizontalForm[VentilOpenings.AnnularAreaFullyOpened] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings.AnnularAreaFullyOpened]
 
     given horizontal_form_AirSpaceDetailed_VentilOpenings_PartiallyOpened_InAccordanceWith_DTU_24_1
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1]
+        : DaisyUIHorizontalForm[VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1]
 
-    given horizontal_form_AirSpaceDetailed_VentilOpenings: DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings]
+    given horizontal_form_AirSpaceDetailed_VentilOpenings: DaisyUIHorizontalForm[VentilOpenings] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings]
 
     // TuTemperature
 

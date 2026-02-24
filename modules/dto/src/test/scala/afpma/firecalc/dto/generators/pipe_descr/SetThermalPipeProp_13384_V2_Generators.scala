@@ -79,22 +79,22 @@ trait SetThermalPipeProp_13384_V2_Generators
         genAirSpaceDetailed.map(SetAirSpaceAfterLayers(_))
 
     //Helper for AirSpaceDetailed
-    def genAirSpaceDetailed: Gen[AirSpaceDetailed] =
+    def genAirSpaceDetailed: Gen[AirSpaceDetailed_V1] =
         Gen.oneOf(
-            Gen.const(AirSpaceDetailed.WithoutAirSpace),
+            Gen.const(AirSpaceDetailed_V1.WithoutAirSpace),
             for
                 width <- Gen.choose(0.5, 5.0).map(_.cm)
                 direction <- Gen.oneOf(
-                    AirSpaceDetailed.VentilDirection.UndefinedDir,
-                    AirSpaceDetailed.VentilDirection.SameDirAsFlueGas,
-                    AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas
+                    AirSpaceDetailed_V1.VentilDirection.UndefinedDir,
+                    AirSpaceDetailed_V1.VentilDirection.SameDirAsFlueGas,
+                    AirSpaceDetailed_V1.VentilDirection.OppositeDirOfFlueGas
                 )
                 openings <- Gen.oneOf(
-                    AirSpaceDetailed.VentilOpenings.NoOpening,
-                    AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened,
-                    AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
+                    AirSpaceDetailed_V1.VentilOpenings.NoOpening,
+                    AirSpaceDetailed_V1.VentilOpenings.AnnularAreaFullyOpened,
+                    AirSpaceDetailed_V1.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
                 )
-            yield AirSpaceDetailed.WithAirSpace(width, direction, openings)
+            yield AirSpaceDetailed_V1.WithAirSpace(width, direction, openings)
         )
 
     // SetPipeLocation

@@ -271,7 +271,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def layers(ls: AppendLayerDescr*)            =
         SetLayers(ls.toList)
 
-    def airSpace_afterLayers(asp: AirSpaceDetailed) =
+    def airSpace_afterLayers(asp: AirSpaceDetailed_V2) =
         SetAirSpaceAfterLayers(asp)
 
     export PipeLocation.*

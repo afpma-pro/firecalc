@@ -65,7 +65,7 @@ object SetThermalPipeProp_13384_V1:
     @Transl(I(_.set_prop.SetAirSpaceAfterLayers))
     case class SetAirSpaceAfterLayers(
         @Transl(I(_.en13384.air_space_detailed))
-        air_space_detailed: AirSpaceDetailed
+        air_space_detailed: AirSpaceDetailed_V1
     ) extends SetThermalPipeProp_13384_V1
 
     @Transl(I(_.set_prop.SetPipeLocation))

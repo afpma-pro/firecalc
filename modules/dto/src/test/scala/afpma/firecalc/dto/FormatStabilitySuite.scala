@@ -13,6 +13,7 @@ import afpma.firecalc.dto.generators.AllGenerators
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.dto.v3.FireCalcYAML_V3
+import afpma.firecalc.dto.v4.FireCalcYAML_V4
 import org.scalactic.anyvals.PosInt
 
 class FormatStabilitySuite
@@ -81,6 +82,27 @@ class FormatStabilitySuite
                 decoded.get.shouldBe(v3)
             }
         }
+
+        "V4 format stability" - {
+
+            "should successfully encode and decode" in forAll(
+                AllGenerators.genFireCalcYAML_V4
+            ) { v4 =>
+                val encoded =
+                    FireCalcYAML_V4.encodeToYaml(v4)
+                withClue(s"Encoding failed: ${encoded.failed.toOption}\n") {
+                    encoded.isSuccess.shouldBe(true)
+                }
+
+                val decoded =
+                    FireCalcYAML_V4.decodeFromYaml(encoded.get)
+                withClue(s"Decoding failed: ${decoded.failed.toOption}\n YAML was:\n${encoded.get}\n") {
+                    decoded.isSuccess.shouldBe(true)
+                }
+
+                decoded.get.shouldBe(v4)
+            }
+        }
     }
 
     "FireCalcYAML Encoding Consistency" - {
@@ -110,6 +132,16 @@ class FormatStabilitySuite
         ) { v3 =>
             val yaml =
                 FireCalcYAML_V3.encodeToYaml(v3).get
+            val migration =
+                FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
+            migration.isSuccess.shouldBe(true)
+        }
+
+        "V4 encoded YAML should be parseable" in forAll(
+            AllGenerators.genFireCalcYAML_V4
+        ) { v4 =>
+            val yaml =
+                FireCalcYAML_V4.encodeToYaml(v4).get
             val migration =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
             migration.isSuccess.shouldBe(true)

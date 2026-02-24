@@ -11,7 +11,6 @@ import afpma.firecalc.dto.instances.CommonInstances
 import afpma.firecalc.dto.instances.V3Instances
 import afpma.firecalc.dto.instances.V4Instances
 import afpma.firecalc.dto.v2.*
-import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
 
 import io.circe.Decoder
@@ -24,6 +23,11 @@ import io.taig.babel.Locale
  *
  * Changes from V3:
  * - add SetPropertiesInBatch subtype for ThermalPipeDescr_13384
+ * - use AirSpaceDetailed_V2 (exported as AirSpaceDetailed) in all V4 pipe descriptors:
+ *   - WithoutAirSpace is now encoded as the plain string "WithoutAirSpace"
+ *     (instead of `{"WithoutAirSpace": {}}`) to avoid the YAML null round-trip
+ *     bug where `{}` was emitted as `null` by the YAML printer
+ *   - WithAirSpace is encoded as `{"WithAirSpace": {width, direction, ventil_openings}}`
  * - TODO: SetPropertiesInBatch for FlowOnlyPipeDescr_13384
  * - TODO: SetPropertiesInBatch for ThermalPipeDescr_15544
  */

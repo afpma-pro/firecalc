@@ -25,7 +25,7 @@ object PropsStateOps_Thermal_13384_Instance:
         outer_shape         : Option[PipeShape]              = None,
         roughness           : Option[Roughness]              = None,
         layers              : Option[List[AppendLayerDescr]] = None,
-        airSpace_afterLayers: Option[AirSpaceDetailed]       = Some(AirSpaceDetailed.WithoutAirSpace),
+        airSpace_afterLayers: Option[AirSpaceDetailed]       = Some(AirSpaceDetailed.WithoutAirSpace_V2),
         pipeLoc             : Option[PipeLocation]           = None,
         ductType            : Option[DuctType]               = Some(DuctType.NonConcentricDuctsHighThermalResistance),
         nFlows              : Option[NbOfFlows]              = Some(1.flow)

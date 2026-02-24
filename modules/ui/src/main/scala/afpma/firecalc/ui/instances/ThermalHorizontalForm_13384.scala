@@ -60,7 +60,6 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         val stringForm: DaisyUIHorizontalForm[String] = string_emptyAsDefault_alwaysValid
 
         DaisyUIHorizontalForm.makeFor[SetPropertiesInBatch](d): (v, fc) =>
-            import com.raquo.laminar.api.L.*
             import afpma.firecalc.ui.instances.validatevar.valid_always.given_ValidateVar_AlwaysValid
             import afpma.firecalc.ui.components.SetPropertiesInBatchFormComponent
             import afpma.firecalc.ui.models.HardcodedPipeCatalogDatabase
@@ -273,12 +272,12 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_AirSpaceDetailed: DaisyUIHorizontalForm[AirSpaceDetailed] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed]
 
-    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace]
+    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace_V2] =
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace_V2]
 
-    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace] =
+    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace_V2] =
         given DaisyUIHorizontalForm[QtyD[Meter]]     = horizontal_form_Length_mm_cm
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace]
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace_V2]
 
     // PipeLocation.AreaName
 
