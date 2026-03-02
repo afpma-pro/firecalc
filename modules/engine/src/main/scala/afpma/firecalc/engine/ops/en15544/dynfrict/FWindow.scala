@@ -205,30 +205,30 @@ private[dynfrict] final case class FWindow(
 
     def makeChecks: Either[IllegalStateException, FWindow] =
         for
-            _   <- check("does not start with a direction change")(!(nm3.isEmpty && nm2.isEmpty && nm1.isEmpty))
+            _   <- check("pipe can not start with a direction change")(!(nm3.isEmpty && nm2.isEmpty && nm1.isEmpty))
             _   <- check("pipe can not end with a direction change")(!(nm1.isDefined && np1.isEmpty))
-            _   <- check("two successive 'direction change' should not be allowed")(
+            _   <- check("two successive 'direction change' are not allowed")(
                 !(
                     (nm3.isDirectionChange && nm2.isDirectionChange) ||
-                        (nm2.isDirectionChange && nm1.isDirectionChange) ||
-                        (nm1.isDirectionChange                         ) ||
-                        (np1.isDirectionChange                         ) ||
-                        (np1.isDirectionChange && np2.isDirectionChange) ||
-                        (np2.isDirectionChange && np3.isDirectionChange)
+                    (nm2.isDirectionChange && nm1.isDirectionChange) ||
+                    (nm1.isDirectionChange                         ) ||
+                    (np1.isDirectionChange                         ) ||
+                    (np1.isDirectionChange && np2.isDirectionChange) ||
+                    (np2.isDirectionChange && np3.isDirectionChange)
                 )
             )
             _   <- check("two successive 'straight section' should not be allowed")(
                 !(
                     (nm3.isStraightSection && nm2.isStraightSection) ||
-                        (nm2.isStraightSection && nm1.isStraightSection) ||
-                        (np1.isStraightSection && np2.isStraightSection) ||
-                        (np2.isStraightSection && np3.isStraightSection)
+                    (nm2.isStraightSection && nm1.isStraightSection) ||
+                    (np1.isStraightSection && np2.isStraightSection) ||
+                    (np2.isStraightSection && np3.isStraightSection)
                 )
             )
             _   <- check("holes should not happen")(
                 !(
                     (nm3.isDefined && (nm2.isEmpty || nm1.isEmpty)) ||
-                        (nm2.isDefined && nm1.isEmpty)
+                    (nm2.isDefined && nm1.isEmpty)
                 )
             )
             ret <- this.asRight
