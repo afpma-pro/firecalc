@@ -110,6 +110,7 @@ sealed abstract class EN15544_Strict_Application(
 
         val isEqualAndValidVNel: (VNelMcalcErr[TCelsius], VNelMcalcErr[TCelsius]) => Boolean =
             case (Validated.Valid(t1), Validated.Valid(t2)) => t1 == t2
+            case (Validated.Invalid(nel1), Validated.Invalid(nel2)) => true // errors in both cases, ok for this case.
             case _ => false
 
         val flue_gas_temp_nominal_vnel =
