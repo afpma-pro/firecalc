@@ -21,6 +21,8 @@ import cats.data.Validated.Valid
 import cats.syntax.all.*
 
 import coulomb.ops.standard.all.given
+import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.TwoSuccessDirectionChangeNotAllowed
+import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.MissingSectionGeometryChange
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]]
@@ -30,7 +32,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     // and keep only direction change + straight section elements
     // also keeps original source index so that the computed coefficient for an element in src
     // can be easily computed using this struct
-    private val vcompressed: ValidatedNel[LocalStructError, Vector[(CmprssdIdx, R)]] = {
+    private val vcompressed: ValidatedNel[FluePipeShapeSequenceError, Vector[(CmprssdIdx, R)]] = {
         val filtered =
             pipesConcat
                 .mapFilter[NamedPipeElDescrG[StraightSection | DirectionChange]]: nel =>
@@ -42,8 +44,8 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                             Some(NamedPipeElDescrG(idx, typ, nel.name, el, nf))
                         case _ => None
         val vreduced =
-            val zero: ValidatedNel[LocalStructError, Vector[R]] = Vector.empty[R].validNel
-            filtered.foldLeft[ValidatedNel[LocalStructError, Vector[R]]](zero) { (vacc, nel) =>
+            val zero: ValidatedNel[FluePipeShapeSequenceError, Vector[R]] = Vector.empty[R].validNel
+            filtered.foldLeft[ValidatedNel[FluePipeShapeSequenceError, Vector[R]]](zero) { (vacc, nel) =>
                 vacc match
                     case i @ Validated.Invalid(_) => i
                     case Validated.Valid(acc)     =>
@@ -112,21 +114,25 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                                                         )
                                                         acc.dropRight(1).appended(merged).validNel
                                                     } else
+                                                        import afpma.firecalc.units.coulombutils.showP
+                                                        import afpma.firecalc.units.coulombutils.show_Meters
                                                         // different hydraulic diameter + no section geometry change in between
                                                         // should not happen : section geometry change should be automatically appended if user did not specify them
-                                                        LocalStructError(
-                                                            s"missing section geometry change : current section '${nel.fullRef}' (dh = ${currStraight.geometry.dh}) AND last section '${lastNel.fullRef}' (dh = ${ls.geometry.dh})"
-                                                        ).invalidNel[Vector[R]]
+                                                        MissingSectionGeometryChange(
+                                                            nel.fullRef,
+                                                            currStraight.geometry.dh.showP,
+                                                            lastNel.fullRef,
+                                                            ls.geometry.dh.showP
+                                                        )
+                                                        .invalidNel[Vector[R]]
                                             case dc          : DirectionChange =>
                                                 acc.appended(nel.copy(el = dc)).validNel
 
                                     case _: DirectionChange =>
                                         nel.el match
                                             case _: DirectionChange =>
-                                                LocalStructError(
-                                                    "not allowed : two consecutive turns without an element."
-                                                )
-                                                    .invalidNel[Vector[R]]
+                                                TwoSuccessDirectionChangeNotAllowed(lastNel.name, nel.name)
+                                                .invalidNel[Vector[R]]
                                             case s: StraightSection => acc.appended(nel.copy(el = s)).validNel
             }
         vreduced.map(_.mapWithIndex: (r, idx) =>
@@ -139,7 +145,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
 
     private def findLocalCmprssdIdx(
         ndc: NamedPipeElDescrG[DirectionChange]
-    ): ValidatedNel[LocalStructError, Option[CmprssdIdx]] =
+    ): ValidatedNel[FluePipeShapeSequenceError, Option[CmprssdIdx]] =
         vcompressed.map: compressed =>
             compressed
                 .find: (_, rdc) =>
@@ -153,7 +159,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
         findLocalCmprssdIdx(ndc) match
             case Valid(Some(ridx)) => localComputeCoeff(ridx)
             case Valid(None)       => throw new IllegalStateException(s"DEV ERROR: ${ndc.name} not found in local struct")
-            case Invalid(nel)      => throw new IllegalStateException(nel.head.show)
+            case i @ Invalid(_)    => i
 
     extension (a: NamedPipeElDescrG[DirectionChange])
         def dynamicFrictionCoeff: Result =
@@ -161,7 +167,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
 
     private def getFWindow(
         cmprssdIdx: CmprssdIdx
-    ): ValidatedNel[LocalStructError, FWindow] =
+    ): ValidatedNel[FluePipeShapeSequenceError, FWindow] =
         val cidx = cmprssdIdx.unwrap
 
         def extractNeeded(r: R): Named[S_or_DC] = r.el match
@@ -176,7 +182,8 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                     .map: r =>
                         (r.typ, extractNeeded(r)) match
                             case (sectionTyp, Named(_, _: StraightSection)       ) =>
-                                LocalStructError("getFWindow can only be called on a DirectionChange").invalidNel
+                                // FluePipeShapeSequenceError("getFWindow can only be called on a DirectionChange").invalidNel
+                                throw new IllegalStateException("getFWindow can only be called on a DirectionChange")
                             case (sectionTyp, ndc @ Named(_, dc: DirectionChange)) =>
                                 (sectionTyp, ndc.copy(t = dc)).validNel
                     .getOrElse(throw new IllegalStateException("dev error : missing in index in local struct"))
@@ -195,14 +202,14 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                                     compressed.get(cidx + 3).map(_._2).map(extractNeeded)
                                 )(sectionTyp)
                                 .fold(
-                                    err => LocalStructError(err.getMessage()).invalidNel,
+                                    _.invalidNel,
                                     _.validNel
                                 )
 
     private def localComputeCoeff(cmprssdIdx: CmprssdIdx): DynamicFrictionCoeffOp.Result =
         getFWindow(cmprssdIdx) match
-            case Valid(fw)    => fw.coeffs_curr
-            case Invalid(nel) => throw new IllegalStateException(nel.head.show)
+            case Valid(fw)      => fw.coeffs_curr
+            case i @ Invalid(_) => i
 
             // case FWindow(o_nm2, Some(nm1 @ Named(_, _: StraightSection)), curr, Some(np1 @ Named(_, _: StraightSection)), o_np2) =>
 

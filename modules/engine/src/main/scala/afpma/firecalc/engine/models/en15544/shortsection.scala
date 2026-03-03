@@ -47,7 +47,7 @@ trait ShortSectionAlg:
 
 object ShortSection:
 
-    type VNel[A] = ValidatedNel[SingularFlowResistanceCoeffError, A]
+    type VNel[A] = ValidatedNel[SingularFlowResistanceCoeffErrorI, A]
 
     case class Result private[shortsection] (ζ1: ζ, ζ2: ζ)
     case class IntermediateValues(

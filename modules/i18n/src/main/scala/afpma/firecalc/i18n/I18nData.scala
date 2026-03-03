@@ -818,12 +818,13 @@ object I18nData:
     )
 
     case class IncrementalValidation(
-        _self                   : String,
-        not_defined_yet         : IncrementalValidation.NotDefinedYet,
-        property_must_be_set    : IncrementalValidation.PropertyMustBeSet,
-        property_must_be_defined: IncrementalValidation.PropertyMustBeDefined,
-        prerequisites           : IncrementalValidation.Prerequisites,
-        conflicts               : IncrementalValidation.Conflicts
+        _self                        : String,
+        not_defined_yet              : IncrementalValidation.NotDefinedYet,
+        property_must_be_set         : IncrementalValidation.PropertyMustBeSet,
+        property_must_be_defined     : IncrementalValidation.PropertyMustBeDefined,
+        prerequisites                : IncrementalValidation.Prerequisites,
+        conflicts                    : IncrementalValidation.Conflicts,
+        forbidden_element_position   : IncrementalValidation.ForbiddenElementPosition
     )
 
     object IncrementalValidation:
@@ -861,6 +862,11 @@ object I18nData:
             section_change_requires_circle         : StringFormat1,
             flow_resistance_requires_geometry      : StringFormat1,
             flow_resistance_requires_geometry_15544: StringFormat1
+        )
+
+        case class ForbiddenElementPosition(
+            forbidden_at_start: StringFormat1,
+            forbidden_at_end  : StringFormat1
         )
 
     case class MecaFlu(
@@ -912,7 +918,13 @@ object I18nData:
         invalid_shape_parameter                         : StringFormat2,
         value_out_of_bound                              : StringFormat5,
         could_not_compute_individual_coeff              : StringFormat2,
-        pressure_requirement_display                    : StringFormat3
+        pressure_requirement_display                    : StringFormat3,
+        missing_section_geometry_change                 : StringFormat4,
+        can_not_start_with_a_direction_change           : StringFormat1,
+        can_not_end_with_a_direction_change             : StringFormat1,
+        two_successive_direction_change_not_allowed     : StringFormat2,
+        two_successive_straight_section_not_allowed     : StringFormat2,
+        holes_should_not_happen                         : StringFormat1,
     )
 
     case class BuilderErrors(

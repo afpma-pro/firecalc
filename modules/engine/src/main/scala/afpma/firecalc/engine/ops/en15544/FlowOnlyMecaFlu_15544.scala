@@ -207,16 +207,18 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
 
     private val _crossSectionArea: PositionOpX[Start | End, Area] =
         MecaFluOps
-            .computeCrossSectionArea(last_CrossSectionArea, curr.fullRef, curr.typ)        (
-                getStraightArea         = curr.el match { case s: StraightSection => Some(s.geometry.area); case _ => None },
-                getSectionChangeAreas   = curr.el match {
+            .computeCrossSectionArea(last_CrossSectionArea, curr.fullRef, curr.typ)(
+                getStraightArea         = curr.el match
+                    case s: StraightSection => Some(s.geometry.area)
+                    case _                  => None
+                ,
+                getSectionChangeAreas   = curr.el match
                     case s: SectionGeometryChange => Some((s.from.area, s.to.area))
-                    case _ => None
-                },
-                getSingularCrossSection = curr.el match {
+                    case _                        => None
+                ,
+                getSingularCrossSection = curr.el match
                     case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
                     case _                                             => None
-                }
             )
             .fold(e => throw new Exception(e.toString), identity)
 
@@ -311,7 +313,6 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
                     case el: (SectionGeometryChange | SingularFlowResistance) =>
                         FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor(gip.pipeEl.copy(el = el).el)
                 zeta_vnel
-                    .leftMap(_.map(err => MecaFlu_Error.DynamicFrictionError(err.msg, curr.typ)))
                     .map: zeta =>
                         // See RQ_001
                         // (Some(zeta), en15544.formulas.p_u_calc(zeta, curr_pd))
