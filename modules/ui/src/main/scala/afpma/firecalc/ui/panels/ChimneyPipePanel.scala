@@ -10,8 +10,6 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.ChimneyPipe
 import afpma.firecalc.engine.models.ChimneyPipeT
-import afpma.firecalc.engine.models.LoadQty
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.ui.*
@@ -34,8 +32,7 @@ final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePane
         p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
     val chimney_pipe_vnel3_signal: Signal[VNelMcalcErr[Unit]] = results_en15544_strict_sig.map: strict =>
-        val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(_.validateVelocitiesInChimneyPipe()(using p))
+        strict.andThen(_.primary.validateVelocitiesInChimneyPipe())
 
     lazy val vnel_signal = chimney_pipe_vnel_signal
         .combineWith(chimney_pipe_vnel2_signal)

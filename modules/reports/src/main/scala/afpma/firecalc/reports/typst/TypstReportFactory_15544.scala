@@ -52,8 +52,9 @@ abstract class TypstReportFactory_15544(
 
     val stove_proj_15544_strict: v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 
-    // TODO: remove me => report should now when to use which draft and load condition
-    given params: en15544_app.Params_15544
+    val atParams: en15544_app.AtParams
+    // Derive given for WithParams_13384 methods (pressureRequirements_EN13384, temperatureRequirements_EN13384)
+    given en15544_app.Params_15544 = atParams.params
 
     import TypShow.given
 
@@ -225,7 +226,7 @@ abstract class TypstReportFactory_15544(
             .mkFromShowAsTable[TechnicalSpecficiations](
                 maxWidthForFirstColumn = false
             )
-            .showAsTyp(en15544_app.outputs.technicalSpecs)
+            .showAsTyp(atParams.outputs.technicalSpecs)
 
     def firebox_descr: String =
         en15544_app.inputs.design.firebox.typ
@@ -237,11 +238,11 @@ abstract class TypstReportFactory_15544(
         en15544_app.citedConstraints.typ
 
     def en15544_pressureRequirement: String =
-        en15544_app.pressureRequirement_EN15544.getOrThrow.typ
+        atParams.pressureRequirement_EN15544.getOrThrow.typ
 
     def en15544_t_chimney_wall_top: String =
         given EN15544_V_2023_Formulas_Alg = en15544_app.formulas
-        en15544_app.t_chimney_wall_top.getOrThrow.typ
+        atParams.t_chimney_wall_top.getOrThrow.typ
 
     def en15544_emissions_and_efficiency_values: String =
         given LocalRegulations = stove_proj_15544_strict.localRegulations
@@ -252,16 +253,16 @@ abstract class TypstReportFactory_15544(
             .showAsTyp(en15544_app.emissions_and_efficiency_values)
 
     def en15544_flue_gas_triple_of_variates: String =
-        en15544_app.flue_gas_triple_of_variates.getOrThrow.typ
+        atParams.flue_gas_triple_of_variates.getOrThrow.typ
 
     def en15544_estimated_output_temperatures: String =
-        en15544_app.estimated_output_temperatures.typ
+        atParams.estimated_output_temperatures.typ
 
     def en15544_pipesResult: String =
         s"""|#[
             |  #set page(flipped: true)
             |  #set text(size: 6pt)
-            |  ${en15544_app.outputs.pipesResult_15544.getOrThrow.typ}
+            |  ${atParams.outputs.pipesResult_15544.getOrThrow.typ}
             |]
             |""".stripMargin
 
@@ -288,7 +289,7 @@ abstract class TypstReportFactory_15544(
             .mkFromShowAsTable[ReferenceTemperatures](
                 maxWidthForFirstColumn = false
             )
-            .showAsTyp(en15544_app.outputs.reference_temperatures)
+            .showAsTyp(atParams.outputs.reference_temperatures)
 
     /* Build typst document (string representation) */
     final def build(): String =

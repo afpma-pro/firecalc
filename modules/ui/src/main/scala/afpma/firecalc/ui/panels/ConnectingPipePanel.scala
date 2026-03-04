@@ -10,8 +10,6 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.ConnectorPipe
 import afpma.firecalc.engine.models.ConnectorPipeT
-import afpma.firecalc.engine.models.LoadQty
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.models.*
@@ -32,8 +30,7 @@ final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePa
         p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
     val connector_pipe_vnel3_signal = results_en15544_strict_sig.map: strict =>
-        val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(_.validateVelocitiesInConnectorPipe()(using p))
+        strict.andThen(_.primary.validateVelocitiesInConnectorPipe())
 
     lazy val vnel_signal =
         connector_pipe_vnel_signal

@@ -16,10 +16,8 @@ import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
-import afpma.firecalc.engine.models.LoadQty
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipesResult_15544
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en13384.typedefs.P_L
 import afpma.firecalc.engine.models.en15544.std.Outputs
 import afpma.firecalc.engine.models.en15544.typedefs.EstimatedOutputTemperatures
@@ -206,13 +204,6 @@ val chimney_pipe_mappings_vnel_signal =
 
 // Results for EN15544 Strict
 
-def run_en15544_strict[X](using
-    strict: EN15544_Strict_Application
-)(run: strict.Params_15544 ?=> VNelString[X]): VNelString[X] =
-    val p: strict.Params_15544 =
-        (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-    run(using p)
-
 lazy val results_en15544_strict_sig: Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =
     engineStateHelperVar.signal
         // emits at most once during interval (prevent too much computing)
@@ -255,20 +246,12 @@ lazy val results_en13384_sig: Signal[VNelMcalcErr[EN13384_1_A1_2019_Common_Appli
 
 lazy val results_en15544_pressure_requirements: Signal[VNelMcalcErr[PressureRequirement]] =
     results_en15544_strict_sig.flatMapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.pressureRequirement_EN15544(using p)
+        strict.primary.pressureRequirement_EN15544
     )
 
 lazy val results_en15544_outputs: Signal[VNelMcalcErr[Outputs]] =
     results_en15544_strict_sig.mapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.outputs(using p)
+        strict.primary.outputs
     )
 
 lazy val results_en15544_air_intake_pipe: Signal[VNelMcalcErr[PipeResult]] =
@@ -295,19 +278,14 @@ lazy val results_en15544_chimney_pipe  : Signal[VNelMcalcErr[PipeResult]] =
 
 lazy val results_en15544_estimated_output_temperatures: Signal[VNelMcalcErr[EstimatedOutputTemperatures]] =
     results_en15544_strict_sig.mapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.estimated_output_temperatures(using p)
+        strict.primary.estimated_output_temperatures
     )
 
 lazy val chimney_wall_temp_above_condensation_temp_sig: Signal[Boolean] =
     results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
-            val p = strict.runValidationAtParams
-            strict
-                .validateChimneyWallTempIsAboveCondensationTemp()(using p)
+            strict.primary
+                .validateChimneyWallTempIsAboveCondensationTemp()
                 .map(_ => true)
         ,
         default = false
@@ -315,11 +293,7 @@ lazy val chimney_wall_temp_above_condensation_temp_sig: Signal[Boolean] =
 
 lazy val results_en15544_t_chimney_wall_top: Signal[VNelMcalcErr[t_chimney_wall_top]] =
     results_en15544_strict_sig.flatMapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.t_chimney_wall_top(using p)
+        strict.primary.t_chimney_wall_top
     )
 
 lazy val results_en15544_t_chimney_wall_top_min: Signal[VNelMcalcErr[t_chimney_wall_top_min]] =
@@ -327,11 +301,7 @@ lazy val results_en15544_t_chimney_wall_top_min: Signal[VNelMcalcErr[t_chimney_w
 
 lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
     results_en15544_strict_sig.flatMapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.η(using p)
+        strict.primary.η
     )
 
 lazy val eff_and_min_eff: Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[Percentage]])] =
@@ -343,9 +313,8 @@ lazy val eff_and_min_eff: Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[
 lazy val effInRange_sig: Signal[Boolean] =
     results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
-            val p = strict.runValidationAtParams
-            strict
-                .validateEfficiencyIsAboveMinEfficiency()(using p)
+            strict.primary
+                .validateEfficiencyIsAboveMinEfficiency()
                 .map(_ => true)
         ,
         false

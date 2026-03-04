@@ -14,8 +14,6 @@ import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Labo_Alg
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_Alg
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.en15544.std.Inputs_15544_Alg
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.utils.*
 
@@ -209,13 +207,15 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
             .getOrElse:
                 SimplePreview.forQtyWhenEmpty(ref = searchFor, qtyName = "gas_temp", qtyUnit = "°C")
 
-    private def showForMCEComparisonWithLabData[I <: Inputs_15544_Alg](
-        ex: StoveProjectDescr_Alg, 
-        _en15544: EN15544_V_2023_Common_Application { type Inputs_15544 = I }
-    )(using p: _en15544.Params_15544) = 
+    private def showForMCEComparisonWithLabData(
+        ex: StoveProjectDescr_Alg,
+        _en15544: EN15544_V_2023_Common_Application,
+        ap: _en15544.AtParams
+    ) =
 
         import ex.given_Locale
-        given Option[LoadQty] = Some(p._2)
+        given _en15544.Params_15544 = ap.params
+        given Option[LoadQty] = Some(ap.params._2)
 
         // given LocalRegulations = ex.localRegulations
 
@@ -231,13 +231,13 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         // println(_en15544.inputs.design.firebox.showAsCliTable)
 
         _en15544.airIntake_PipeResult.toValidatedNel.getOrThrow
-        _en15544.combustionAir_PipeResult.toValidatedNel.getOrThrow
-        _en15544.firebox_PipeResult.toValidatedNel.getOrThrow
-        _en15544.flue_PipeResult.toValidatedNel.getOrThrow
-        _en15544.connector_PipeResult.toValidatedNel.getOrThrow
-        _en15544.chimney_PipeResult.toValidatedNel.getOrThrow
+        ap.combustionAir_PipeResult.getOrThrow
+        ap.firebox_PipeResult.getOrThrow
+        ap.flue_PipeResult.getOrThrow
+        ap.connector_PipeResult.getOrThrow
+        ap.chimney_PipeResult.getOrThrow
 
-        val pipesResult_15544 = _en15544.outputs.pipesResult_15544.getOrThrow
+        val pipesResult_15544 = ap.outputs.pipesResult_15544.getOrThrow
         // println(pipesResult_15544.showAsCliTable)
 
         val vecsec: Vector[PipeSectionResult[?]] = Vector(
@@ -333,10 +333,9 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         val config = ex_15544_labo
 
         val out = config.en15544_Alg.map: mce_labo =>
-            given mce_labo.Params_15544 = (DraftCondition.DraftMaxOrPositivePressureMin, LoadQty.Nominal)  // tirage max ?
-            showForMCEComparisonWithLabData(ex_15544_labo, mce_labo)
+            showForMCEComparisonWithLabData(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
         out.fold(
-            nel => nel.toList.foreach(e => fail(e.show)), 
+            nel => nel.toList.foreach(e => fail(e.show)),
             _ => ()
         )
     end run_15544_mce_for_lab_comparison

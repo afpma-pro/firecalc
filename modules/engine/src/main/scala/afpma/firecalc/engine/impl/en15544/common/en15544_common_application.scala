@@ -227,8 +227,250 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     given ssalg: afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
         afpma.firecalc.engine.models.en15544.shortsection.ShortSection.makeImpl(using formulas)
 
-    protected def channel_pipe_last_element_temperature_end: WithParams_15544[VNelMcalcErr[TCelsius]] =
-        flue_PipeResult.map(_.gas_temp_end)
+    // ─── CommonAtParams: params-dependent layer implementation ────────────
+
+    /** Abstract inner class implementing `AtParams` for the common application.
+      * Subclasses (strict/MCE) must extend this to provide pipe result implementations.
+      */
+    abstract class CommonAtParams(override val params: Params_15544) extends AtParams:
+        // Extract DraftCondition and LoadQty from params via intermediate vals
+        // to avoid diverging implicit search through params_15544_to_13384 / params_13384_to_15544
+        private val _dc: DraftCondition  = params._1
+        private val _lq: LoadQty         = params._2
+        private given DraftCondition     = _dc
+        @scala.annotation.nowarn("msg=unused private member")
+        private given LoadQty            = _lq
+        private given Option[LoadQty]    = Some(_lq)
+
+        // Pipe results — abstract ones (defined in strict/MCE subclasses)
+        lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
+        lazy val firebox_PipeResult      : VNelMcalcErr[PipeResult]
+        lazy val flue_PipeResult         : VNelMcalcErr[PipeResult]
+
+        // Pipe results — concrete
+        lazy val connector_PipeResult: VNelMcalcErr[PipeResult] =
+            (
+                en13384_heatingAppliance_powers,
+                en13384_heatingAppliance_efficiency,
+                en13384_heatingAppliance_temperatures
+            )
+                .mapN { case (ha_pow, ha_eff, ha_temp) => (ha_pow, ha_eff, ha_temp) }
+                .andThen: (ha_pow, ha_eff, ha_temp) =>
+                    given HeatingAppliance.Powers       = ha_pow
+                    given HeatingAppliance.Efficiency   = ha_eff
+                    given HeatingAppliance.Temperatures = ha_temp
+                    val p: Params_13384 = params
+                    given Params_13384  = p
+                    en13384_application.connector_PipeResult.toValidatedNel
+
+        lazy val chimney_PipeResult: VNelMcalcErr[PipeResult] =
+            (
+                en13384_heatingAppliance_powers,
+                en13384_heatingAppliance_efficiency,
+                en13384_heatingAppliance_temperatures
+            )
+                .mapN { case (ha_pow, ha_eff, ha_temp) => (ha_pow, ha_eff, ha_temp) }
+                .andThen: (ha_pow, ha_eff, ha_temp) =>
+                    given HeatingAppliance.Powers       = ha_pow
+                    given HeatingAppliance.Efficiency   = ha_eff
+                    given HeatingAppliance.Temperatures = ha_temp
+                    val p: Params_13384 = params
+                    given Params_13384  = p
+                    en13384_application.chimney_PipeResult.toValidatedNel
+
+        // Section "4.8.4", "Flue gas temperature in the connector pipe"
+        lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean] =
+            connector_PipeResult.map(_.gas_temp_mean: t_connector_pipe_mean)
+
+        // Section "4.8.5", "Flue gas temperature at chimney entrance, mean flue gas
+        // temperature of the chimney and temperature of the chimney wall at the top of the chimney"
+        lazy val t_chimney_entrance: VNelMcalcErr[t_chimney_entrance] =
+            chimney_PipeResult.map(_.gas_temp_start: t_chimney_entrance)
+
+        lazy val t_chimney_mean: VNelMcalcErr[t_chimney_mean] =
+            chimney_PipeResult.map(_.gas_temp_mean: t_chimney_mean)
+
+        lazy val t_chimney_out: VNelMcalcErr[t_chimney_out] =
+            chimney_PipeResult.map(_.gas_temp_end: t_chimney_out)
+
+        lazy val t_chimney_wall_top: VNelMcalcErr[t_chimney_wall_top] =
+            chimney_PipeResult.map(_.temperature_iob(_1_Λ_o = SquareMeterKelvinPerWatt(0.0)): t_chimney_wall_top)
+
+        // Section "4.9.2", "Calculation of the standing pressure (p_h)"
+        lazy val Σ_p_R_and_Σ_p_u: VNelMcalcErr[Pressure] =
+            outputs.pipesResult_15544.andThen(_.`Σ_pR+Σ_pu`)
+
+        lazy val Σ_p_h: VNelMcalcErr[Pressure] =
+            outputs.pipesResult_15544.map(_.Σ_ph)
+
+        // Section "4.10.1", "Pressure requirement"
+        lazy val pressureRequirement_EN15544: VNelMcalcErr[PressureRequirement] =
+            outputs.pipesResult_15544.andThen(pr =>
+                (pr.`Σ_pR+Σ_pu`).map: `Σ_pR+Σ_pu` =>
+                    PressureRequirement          (
+                        sum_pr_pu           = `Σ_pR+Σ_pu`,
+                        sum_ph              = pr.Σ_ph,
+                        sum_ph_min_expected = `Σ_pR+Σ_pu`,
+                        sum_ph_max_expected = 1.05 * `Σ_pR+Σ_pu`
+                    )
+            )
+
+        // Section "4.10.3", "Efficiency of the combustion (η)"
+        // TODO: mauvaise traduction allemande ?
+        // TODO: Lors du calcul du rendement de la combustion, les hypothèses suivantes sont retenues : XXX
+        lazy val η: VNelMcalcErr[η] =
+            t_F.map(t_f => formulas.η_calc(t_f))
+
+        /**
+         * In the case of ceramic connector pipes (pottery and ceramic pipes)
+         * it is the temperature that occurs in these up to 50 cm
+         * between the outlet from the fireplace and the chimney pipe.
+         */
+        lazy val t_F: VNelMcalcErr[t_F] =
+            flue_PipeResult.map(_.gas_temp_end: t_F)
+
+        lazy val η_s: VNelMcalcErr[Percentage] =
+            η.map(η =>
+                EN16510_1_2022_Formulas.η_s(
+                    η,
+                    f2 = CorrectionFactor_F2.ControleDeLaPuissanceThermiqueAUnPalier_PasDeControleDeLaTemperatureDeLaPiece,
+                    f3 = CorrectionFactors_F3.noFactors,
+                    f4 = CorrectionFactor_F4.NoAuxilaryElecConsumption
+                )
+            )
+
+        // Section "4.10.4", "Flue gas triple of variates"
+        private lazy val channel_pipe_last_element_temperature_end: VNelMcalcErr[TCelsius] =
+            flue_PipeResult.map(_.gas_temp_end)
+
+        lazy val required_delivery_pressure: VNelMcalcErr[RequiredDeliveryPressure] =
+            (
+                combustionAir_PipeResult.andThen(_.`en13384_pr_all-ph`),
+                firebox_PipeResult.andThen      (_.`en13384_pr_all-ph`),
+                flue_PipeResult.andThen         (_.`en13384_pr_all-ph`)
+            )
+                .mapN: (cci, cc, fp) =>
+                    cci + cc + fp
+
+        lazy val t_fluepipe_end: VNelMcalcErr[TCelsius] =
+            channel_pipe_last_element_temperature_end
+
+        lazy val flue_gas_triple_of_variates: VNelMcalcErr[FlueGasTripleOfVariates] =
+            val mg_vnel: VNelMcalcErr[m_G] = m_G match
+                case None       =>
+                    Validated.invalidNel(UnexpectedDevError("m_G could not be computed, LoadQty not defined / missing ?"))
+                case Some(vnel) => vnel
+            (
+                required_delivery_pressure,
+                t_fluepipe_end,
+                mg_vnel
+            ).mapN: (rdp, t_fluepipe_end, mg) =>
+                FlueGasTripleOfVariates(
+                    rdp,
+                    t_fluepipe_end,
+                    mg
+                )
+
+        lazy val estimated_output_temperatures: EstimatedOutputTemperatures =
+            EstimatedOutputTemperatures             (
+                t_firebox              = t_BR,
+                t_firebox_outlet       = t_burnout,
+                t_stove_out            = t_fluepipe_end,
+                t_chimney_out          = t_chimney_out,
+                t_chimney_wall_top_out = t_chimney_wall_top
+            )
+
+        // Aggregated pipe results — abstract (defined in strict/MCE subclasses)
+        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString
+        lazy val outputs: Outputs
+
+        // Validations
+        def validateVelocitiesInFluePipe(): VNelMcalcErr[Unit] =
+            flue_PipeResult.andThen(validateVelocitiesIn)
+
+        def validateVelocitiesInConnectorPipe(): VNelMcalcErr[Unit] =
+            connector_PipeResult.andThen(validateVelocitiesIn)
+
+        def validateVelocitiesInChimneyPipe(): VNelMcalcErr[Unit] =
+            chimney_PipeResult.andThen(validateVelocitiesIn)
+
+        def validateVelocitiesInPipes(): VNel[Unit] =
+            List(
+                validateVelocitiesInFluePipe(),
+                validateVelocitiesInConnectorPipe(),
+                validateVelocitiesInChimneyPipe()
+            ).sequence[[x] =>> VNelMcalcErr[x], Unit].map(_ => ())
+
+        def validatePressureRequirements_EN15544(): VNelMcalcErr[Unit] =
+            pressureRequirement_EN15544.andThen: preq =>
+                preq.isInValidRange match
+                    case true  => ().validNel
+                    case false => InvalidPressureRequirement(preq).invalidNel
+
+        def validateChimneyWallTempIsAboveCondensationTemp(): VNelMcalcErr[Unit] =
+            estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>
+                if (t >= formulas.t_chimney_wall_top_min)
+                    ().validNel[MecaFlu_Error]
+                else
+                    MecaFlu_Error.InvalidChimneyWallTemperature(t).invalidNel
+
+        def validateEfficiencyIsAboveMinEfficiency(): VNelMcalcErr[Unit] =
+            η.andThen: eff =>
+                emissions_and_efficiency_values.min_efficiency_full_stove_nominal.map:
+                    case Some(min_eff) =>
+                        if (eff.value >= min_eff.value)
+                            ().validNel
+                        else
+                            EfficiencyIsTooLow(eff, min_eff).invalidNel
+                    case None          =>
+                        ().validNel
+
+        override def validateSeasonalEfficiency(countryCode: Country): VNelMcalcErr[Unit] =
+            η_s.andThen: seas_eff =>
+                val lreg = LocalRegulations.findBy(countryCode, inputs.design.firebox.type_of_appliance)
+                lreg.min_seasonal_efficiency match
+                    case Some(min_seas_eff) =>
+                        if (seas_eff.value >= min_seas_eff.value)
+                            ().validNel
+                        else
+                            EfficiencyIsTooLow(seas_eff, min_seas_eff).invalidNel
+                    case None               =>
+                        ().validNel // no min defined, so we're good
+
+        def validateCitedConstraints(): VNelMcalcErr[Unit] =
+            citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
+
+        def validateFireboxSpecificConstraints(): ValidatedNel[FireboxError, Unit] =
+            Validated.fromOption(
+                NonEmptyList.fromList(
+                    fc.firebox_custom_constraints(firebox, m_B, V_L)(using Locales.en)
+                ),
+                ()
+            ).swap
+    end CommonAtParams
+
+    // ─── Pre-built AtParams instances ───────────────────────────────────
+    // Abstract — subclasses (strict/MCE) must instantiate with their own
+    // CommonAtParams subclass that provides pipe result implementations.
+
+    lazy val atDraftMin_LoadNominal: AtParams
+    lazy val atDraftMin_LoadMin   : Option[AtParams]
+    lazy val atDraftMax_LoadNominal: AtParams
+    lazy val atDraftMax_LoadMin   : Option[AtParams]
+
+    def atParamsFor(p: Params_13384): AtParams = p match
+        case Params_13384.DraftMin_LoadNominal => atDraftMin_LoadNominal
+        case Params_13384.DraftMin_LoadMin     =>
+            atDraftMin_LoadMin.getOrElse(
+                throw IllegalStateException(s"No AtParams for DraftMin_LoadMin: m_B_min is not defined")
+            )
+        case Params_13384.DraftMax_LoadNominal => atDraftMax_LoadNominal
+        case Params_13384.DraftMax_LoadMin     =>
+            atDraftMax_LoadMin.getOrElse(
+                throw IllegalStateException(s"No AtParams for DraftMax_LoadMin: m_B_min is not defined")
+            )
+        case other =>
+            throw IllegalStateException(s"Unexpected Params_13384 value: $other")
 
     // Section "3.3"
     // TODO : add constraint on air gap (yes / no) depending on distance between inner & outer shell + more than 50% of surface built this way
@@ -453,24 +695,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 )
         ).degreesCelsius.validNelE
 
-    // Section "4.8.4", "Flue gas temperature in the connector pipe"
-    def t_connector_pipe_mean = connector_PipeResult.map(_.gas_temp_mean: t_connector_pipe_mean)
-
-    // Section "4.8.5",
-
-    // Flue gas temperature at chimney entrance mean flue gas
-    // temperature of the chimney and temperature of the chimney wall
-    // at the top of the chimney
-
-    def t_chimney_entrance = chimney_PipeResult.map(_.gas_temp_start: t_chimney_entrance)
-    def t_chimney_mean     = chimney_PipeResult.map(_.gas_temp_mean: t_chimney_mean)
-    def t_chimney_out      = chimney_PipeResult.map(_.gas_temp_end: t_chimney_out)
-    def t_chimney_wall_top =
-        chimney_PipeResult.map(_.temperature_iob(_1_Λ_o = SquareMeterKelvinPerWatt(0.0)): t_chimney_wall_top)
-
     // Section "4.9", "Calculation of flow mechanics"
-
-    // Section "4.9.2", "Calculation of the standing pressure (p_h)"
 
     def validateFluePipeShape(): ValidatedNel[FluePipeInvalidGeometryRatio, Unit] =
         val checks =
@@ -514,72 +739,9 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         else
             ().validNel[FlueGasVelocityError]
 
-    def validateVelocitiesInFluePipe(): WithParams_15544[VNelMcalcErr[Unit]] =
-        flue_PipeResult.andThen(validateVelocitiesIn)
-
-    def validateVelocitiesInConnectorPipe(): WithParams_15544[VNelMcalcErr[Unit]] =
-        connector_PipeResult.andThen(validateVelocitiesIn)
-
-    def validateVelocitiesInChimneyPipe(): WithParams_15544[VNelMcalcErr[Unit]] =
-        chimney_PipeResult.andThen(validateVelocitiesIn)
-
-    def validateVelocitiesInPipes(): WithParams_15544[VNelMcalcErr[Unit]] =
-        List(
-            validateVelocitiesInFluePipe     (),
-            validateVelocitiesInConnectorPipe(),
-            validateVelocitiesInChimneyPipe  ()
-        ).sequence[[x] =>> VNelMcalcErr[x], Unit].map(_ => ())
-
-    def validatePressureRequirements_EN15544(): WithParams_15544[VNelMcalcErr[Unit]] =
-        pressureRequirement_EN15544.andThen: preq =>
-            preq.isInValidRange match
-                case true  => ().validNel
-                case false => InvalidPressureRequirement(preq).invalidNel
-
-    def validateChimneyWallTempIsAboveCondensationTemp(): WithParams_15544[VNelMcalcErr[Unit]] =
-        estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>
-            if (t >= formulas.t_chimney_wall_top_min)
-                ().validNel[MecaFlu_Error]
-            else
-                MecaFlu_Error.InvalidChimneyWallTemperature(t).invalidNel
-
-    def validateEfficiencyIsAboveMinEfficiency(): WithParams_15544[VNelMcalcErr[Unit]] =
-        η.andThen: eff =>
-            emissions_and_efficiency_values.min_efficiency_full_stove_nominal.map:
-                case Some(min_eff) =>
-                    if (eff.value >= min_eff.value)
-                        ().validNel
-                    else
-                        EfficiencyIsTooLow(eff, min_eff).invalidNel
-                case None          =>
-                    ().validNel
-
-    override def validateSeasonalEfficiency(countryCode: Country): WithParams_15544[VNelMcalcErr[Unit]] =
-        η_s.andThen: seas_eff =>
-            val lreg = LocalRegulations.findBy(countryCode, inputs.design.firebox.type_of_appliance)
-            lreg.min_seasonal_efficiency match
-                case Some(min_seas_eff) =>
-                    if (seas_eff.value >= min_seas_eff.value)
-                        ().validNel
-                    else
-                        EfficiencyIsTooLow(seas_eff, min_seas_eff).invalidNel
-                case None               =>
-                    ().validNel // no min defined, so we're good
-
-    def validateCitedConstraints(): WithParams_15544[VNelMcalcErr[Unit]] =
-        citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
-
-    def validateFireboxSpecificConstraints(): WithParams_15544[ValidatedNel[FireboxError, Unit]] =
-        Validated.fromOption(
-            NonEmptyList.fromList(
-                fc.firebox_custom_constraints(firebox, m_B, V_L)(using Locales.en)
-            ),
-            ()
-        ).swap
-
     protected def validateVelocitiesIn(
         pipeResult: PipeResult
-    ): WithParams_15544[ValidatedNel[FlueGasVelocityError, Unit]] =
+    ): ValidatedNel[FlueGasVelocityError, Unit] =
         pipeResult match
             case pr: PipeResult.WithSections    =>
                 pr.elements
@@ -615,87 +777,23 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     // Section "4.10", "Operation control"
 
-    // Section "4.10.1", "Pressure requirement"
-
-    def Σ_p_R_and_Σ_p_u: WithParams_15544[VNelMcalcErr[Pressure]] =
-        outputs.pipesResult_15544.andThen(_.`Σ_pR+Σ_pu`)
-
-    def Σ_p_h: WithParams_15544[VNelMcalcErr[Pressure]] =
-        outputs.pipesResult_15544.map(_.Σ_ph)
-
-    def pressureRequirement_EN15544: WithParams_15544[VNelMcalcErr[PressureRequirement]] =
-        outputs.pipesResult_15544.andThen(pr =>
-            (pr.`Σ_pR+Σ_pu`).map: `Σ_pR+Σ_pu` =>
-                PressureRequirement          (
-                    sum_pr_pu           = `Σ_pR+Σ_pu`,
-                    sum_ph              = pr.Σ_ph,
-                    sum_ph_min_expected = `Σ_pR+Σ_pu`,
-                    sum_ph_max_expected = 1.05 * `Σ_pR+Σ_pu`
-                )
-        )
-
     // Section "4.10.2", "Dew point condition"
 
-    // Section "4.10.3", "Efficiency of the combustion (η)"
-    // TODO: mauvaise traduction allemande ?
-    // TODO: Lors du calcul du rendement de la combustion, les hypothèses suivantes sont retenues : XXX
-
-    def η: WithParams_15544[VNelMcalcErr[η]] =
-        t_F.map(t_f => formulas.η_calc(t_f))
-
-    /**
-     * In the case of ceramic connector pipes (pottery and ceramic pipes)
-     * it is the temperature that occurs in these up to 50 cm
-     * between the outlet from the fireplace and the chimney pipe.
-     */
-    def t_F: WithParams_15544[VNelMcalcErr[t_F]] =
-        flue_PipeResult.map(_.gas_temp_end: t_F)
-
-    // Section "4.10.4", "Flue gas triple of variates"
-
-    private def Σ_p_h_until_fluepipe_end: WithParams_15544[VNelMcalcErr[Pressure]] =
-        outputs.pipesResult_15544.map(_.Σ_ph_until_fluepipe_end: Pressure)
-
-    def required_delivery_pressure: WithParams_15544[VNelMcalcErr[RequiredDeliveryPressure]] =
-        (
-            combustionAir_PipeResult.andThen(_.`en13384_pr_all-ph`),
-            firebox_PipeResult.andThen      (_.`en13384_pr_all-ph`),
-            flue_PipeResult.andThen         (_.`en13384_pr_all-ph`)
-        )
-            .mapN: (cci, cc, fp) =>
-                cci + cc + fp
-
-    def t_fluepipe_end: WithParams_15544[VNelMcalcErr[TCelsius]] =
-        channel_pipe_last_element_temperature_end
-
-    def flue_gas_triple_of_variates: WithParams_15544[VNelMcalcErr[FlueGasTripleOfVariates]] =
-        val mg_vnel = m_G match
-            case None       =>
-                Validated.invalidNel(UnexpectedDevError("m_G could not be computed, LoadQty not defined / missing ?"))
-            case Some(vnel) => vnel
-        (
-            required_delivery_pressure,
-            t_fluepipe_end,
-            mg_vnel
-        ).mapN: (rdp, t_fluepipe_end, mg) =>
-            FlueGasTripleOfVariates(
-                rdp,
-                t_fluepipe_end,
-                // t_fluepipe_end(using (PressureRequirements.summon, m_B)),
-                mg
-            )
+    // Section "4.10.3 – 4.10.4", "Efficiency and flue gas triple of variates"
+    // Moved to CommonAtParams
 
     private def heatingAppliance_draft_min: VNelMcalcErr[Pressure] =
-        required_delivery_pressure(using runValidationAtParams)
+        atDraftMin_LoadNominal.required_delivery_pressure
 
     private def heatingAppliance_draft_max: VNelMcalcErr[Pressure] =
-        given Params_15544 = runValidationAtParams // tirage min car en15544 calcul tout au min ?
+        given Params_13384 = Params_15544.DraftMin_LoadNominal
+        val ap = atDraftMin_LoadNominal
         (
-            Σ_p_R_and_Σ_p_u,
-            Σ_p_h_until_fluepipe_end,
+            ap.Σ_p_R_and_Σ_p_u,
+            ap.outputs.pipesResult_15544.map(_.Σ_ph_until_fluepipe_end: Pressure),
             airIntake_PipeResult.andThen(_.en13384_pr_all), // FIXME: fast bug fix, rewrite me
-            connector_PipeResult.andThen(_.en13384_pr_all),
-            chimney_PipeResult.andThen  (_.en13384_pr_all)
+            ap.connector_PipeResult.andThen(_.en13384_pr_all),
+            ap.chimney_PipeResult.andThen  (_.en13384_pr_all)
         )
             .mapN:
                 (
@@ -791,43 +889,6 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         fd: CombustionAirPipe_Module.FullDescr
     ): WithParams_15544[VNelMcalcErr[PipeResult]]
 
-    def connector_PipeResult =
-        (
-            en13384_heatingAppliance_powers,
-            en13384_heatingAppliance_efficiency,
-            en13384_heatingAppliance_temperatures
-        )
-            .mapN { case (ha_pow, ha_eff, ha_temp) => (ha_pow, ha_eff, ha_temp) }
-            .andThen: (ha_pow, ha_eff, ha_temp) =>
-                given HeatingAppliance.Powers       = ha_pow
-                given HeatingAppliance.Efficiency   = ha_eff
-                given HeatingAppliance.Temperatures = ha_temp
-                given Params_13384                  = params_15544_to_13384
-                en13384_application.connector_PipeResult.toValidatedNel
-
-    def chimney_PipeResult =
-        (
-            en13384_heatingAppliance_powers,
-            en13384_heatingAppliance_efficiency,
-            en13384_heatingAppliance_temperatures
-        )
-            .mapN { case (ha_pow, ha_eff, ha_temp) => (ha_pow, ha_eff, ha_temp) }
-            .andThen: (ha_pow, ha_eff, ha_temp) =>
-                given HeatingAppliance.Powers       = ha_pow
-                given HeatingAppliance.Efficiency   = ha_eff
-                given HeatingAppliance.Temperatures = ha_temp
-                given Params_13384                  = params_15544_to_13384
-                en13384_application.chimney_PipeResult.toValidatedNel
-
-    def estimated_output_temperatures: WithParams_15544[EstimatedOutputTemperatures] =
-        EstimatedOutputTemperatures             (
-            t_firebox              = t_BR,
-            t_firebox_outlet       = t_burnout,
-            t_stove_out            = t_fluepipe_end,
-            t_chimney_out          = t_chimney_out,
-            t_chimney_wall_top_out = t_chimney_wall_top
-        )
-
     def pressureRequirements_EN13384: WithParams_13384[VNelMcalcErr[PressureRequirements_13384]] =
         (
             en13384_heatingAppliance_powers,
@@ -919,7 +980,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             η                           = CheckableConstraint.makeOption(
                 // efficiency at tirage min or tirage max is not strictly equals
                 // only compute value at tirage min
-                η(using Params_15544.DraftMin_LoadNominal).toOption,
+                atDraftMin_LoadNominal.η.toOption,
                 resolved_η_constraints
             ),
             height_of_lowest_opening    = CheckableConstraint.makeOption(
@@ -933,16 +994,17 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         )
 
     final def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit] =
+        val ap = atDraftMin_LoadNominal
         List(
-            validateFluePipeShape                           (                           ),
-            validateVelocitiesInPipes()                     (using runValidationAtParams),
-            validatePressureRequirements_EN15544()          (using runValidationAtParams),
-            validateChimneyWallTempIsAboveCondensationTemp()(using runValidationAtParams),
+            validateFluePipeShape                    (),
+            ap.validateVelocitiesInPipes             (),
+            ap.validatePressureRequirements_EN15544  (),
+            ap.validateChimneyWallTempIsAboveCondensationTemp(),
             // validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
-            validateSeasonalEfficiency(countryCode)         (using runValidationAtParams),
-            validateCitedConstraints()                      (using runValidationAtParams),
+            ap.validateSeasonalEfficiency(countryCode),
+            ap.validateCitedConstraints              (),
             // Firebox
-            validateFireboxSpecificConstraints()            (using runValidationAtParams)
+            ap.validateFireboxSpecificConstraints    ()
             // TODO: any missing validation ?
             // - extra conditions for EN 13384 ?
         ).sequence[VNel, Unit].map(_ => ())
@@ -962,11 +1024,9 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     override final def efficiencies_values =
         EfficienciesValues(
-            n_nominal = η(using Params_15544.DraftMin_LoadNominal),
-            n_lowest  = η(using Params_15544.DraftMin_LoadMin).map(eff =>
-                m_B_min.map(_ => eff)
-            ), // only compute if m_B_min is defined
-            ns        = η_s(using Params_15544.DraftMin_LoadNominal)
+            n_nominal = atDraftMin_LoadNominal.η,
+            n_lowest  = atDraftMin_LoadMin.traverse(_.η),
+            ns        = atDraftMin_LoadNominal.η_s
         )
 
     override final def emissions_and_efficiency_values: EmissionsAndEfficiencyValues =
@@ -979,14 +1039,5 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     override final def check_emissions_and_efficiency_values_with_local_regulations(lreg: LocalRegulations) =
         lreg.checkFor(emissions_and_efficiency_values)
-
-    override def η_s = η.map(η =>
-        EN16510_1_2022_Formulas.η_s(
-            η,
-            f2 = CorrectionFactor_F2.ControleDeLaPuissanceThermiqueAUnPalier_PasDeControleDeLaTemperatureDeLaPiece,
-            f3 = CorrectionFactors_F3.noFactors,
-            f4 = CorrectionFactor_F4.NoAuxilaryElecConsumption
-        )
-    )
 
 }

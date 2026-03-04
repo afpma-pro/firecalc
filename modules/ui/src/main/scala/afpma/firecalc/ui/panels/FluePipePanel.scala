@@ -14,7 +14,6 @@ import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
@@ -47,8 +46,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
         p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
     val channel_pipe_vnel4_signal = results_en15544_strict_sig.map: strict =>
-        val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(_.validateVelocitiesInFluePipe()(using p))
+        strict.andThen(_.primary.validateVelocitiesInFluePipe())
 
     lazy val vnel_signal =
         fluepipe_vnel_signal

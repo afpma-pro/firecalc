@@ -38,16 +38,12 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
     // contraints / error validation for firebox
 
     val cited_constraints_validation_sig: Signal[VNelMcalcErr[Unit]] =
-        results_en15544_strict_sig.flatMapVNelE: strict => 
-            import strict.Params_15544
-            given Params_15544 = strict.runValidationAtParams
-            strict.validateCitedConstraints()
+        results_en15544_strict_sig.flatMapVNelE: strict =>
+            strict.primary.validateCitedConstraints()
 
     lazy val firebox_custom_constraints_sig: Signal[VNelMcalcErr[Unit]] =
-        results_en15544_strict_sig.flatMapVNelE: strict => 
-            import strict.Params_15544
-            given Params_15544 = strict.runValidationAtParams
-            strict.validateFireboxSpecificConstraints()
+        results_en15544_strict_sig.flatMapVNelE: strict =>
+            strict.primary.validateFireboxSpecificConstraints()
         
 
     /** Sum of pressures available for 'combustion air pipe' and 'firebox pipe' */
