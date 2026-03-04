@@ -382,7 +382,7 @@ object coulombutils:
 
         given ShowUnit[1]               = fromString[1]("")
         given ShowUnit[Celsius]         = fromCoulombUnit[Celsius]
-        given ShowUnit[Centimeter]      = fromCoulombUnit[Centimeter]
+        given showUnit_Centimeter: ShowUnit[Centimeter]      = fromCoulombUnit[Centimeter]
         given ShowUnit[(Centimeter ^ 2)]= fromString("cm²")
         given ShowUnit[Degree]          = fromCoulombUnit[Degree]
         given ShowUnit[Hour]            = fromCoulombUnit[Hour]
@@ -425,6 +425,8 @@ object coulombutils:
             fromString("N.s/m²")
         given showUnit_SquareMeters: ShowUnit[(Meter ^ 2)] = 
             fromString("m²")
+        given showUnit_SquareMeterKelvin_per_Watt_alias: ShowUnit[SquareMeterKelvinPerWatt] = 
+            fromString("m²K/W")
         given showUnit_SquareMeterKelvin_per_Watt: ShowUnit[(Meter ^ 2) * Kelvin / Watt] = 
             fromString("m²K/W")
         given showUnit_Watt_per_MeterKelvin: ShowUnit[Watt / (Meter * Kelvin)] = 

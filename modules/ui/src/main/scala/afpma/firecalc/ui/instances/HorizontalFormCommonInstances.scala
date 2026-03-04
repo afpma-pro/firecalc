@@ -37,6 +37,8 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given dual: DualCommonInstances = new DualCommonInstances()
     import dual.given
 
+    private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
+
     // factory helper
     inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
         import hastranslations.given
@@ -49,39 +51,39 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     val boolean_trueAsDefault_alwaysValid: DaisyUIHorizontalForm[Boolean] =
         import defaultable.boolean.asTrue
-        import validatevar.boolean.valid_Always
+        import ValidateVarCommonInstances.boolean.valid_Always
         DaisyUIHorizontalForm.forBoolean
 
     val boolean_falseAsDefault_alwaysValid: DaisyUIHorizontalForm[Boolean] =
         import defaultable.boolean.asFalse
-        import validatevar.boolean.valid_Always
+        import ValidateVarCommonInstances.boolean.valid_Always
         DaisyUIHorizontalForm.forBoolean
 
     val string_emptyAsDefault_alwaysValid: DaisyUIHorizontalForm[String] =
         import defaultable.string.empty
-        import validatevar.string.validOption_Always
+        import ValidateVarCommonInstances.string.validOption_Always
         DaisyUIHorizontalForm.forString
 
     val int_emptyAsDefault_alwaysValid: DaisyUIHorizontalForm[Int] =
         import defaultable.int.empty
-        import validatevar.int.validOption_Always
+        import ValidateVarCommonInstances.int.validOption_Always
         DaisyUIHorizontalForm.forInt
 
     val double_emptyAsDefault_alwaysValid: DaisyUIHorizontalForm[Double] =
         import defaultable.double.empty
-        import validatevar.double.validOption_Always
+        import ValidateVarCommonInstances.double.validOption_Always
         DaisyUIHorizontalForm.forDouble
 
     // AreaInCm2 + Option[AreaInCm2]
 
     given horizontal_form_AreaInCm2: DisplayUnits => DaisyUIHorizontalForm[AreaInCm2] =
         import defaultable.qty_d.area_in_cm2.zero
-        import validatevar.area_in_cm2.valid_whenPositive
+        import vv.area_in_cm2.valid_whenStrictlyPositive
         given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm
 
     given horizontal_form_Option_AreaInCm2: DisplayUnits => DaisyUIHorizontalForm[Option[AreaInCm2]] =
         import defaultable.qty_d.option.area_in_cm2.zero
-        import validatevar.area_in_cm2.validOption_whenPositive
+        import vv.area_in_cm2.validOption_whenStrictlyPositive
         given_dual_Option_Area.form_DaisyUIHorizontalForm
 
     // given horizontal_form_AddFlowResistance: Locale => DaisyUI5HorizontalForm[AddFlowResistance] =
@@ -107,19 +109,19 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     given horizontal_form_PipeShape_Circle: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Circle] =
         import defaultable.qty_d.meter.zero
-        import validatevar.meter.valid_whenPositive
+        import vv.meter.valid_whenStrictlyPositive
         given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
         autoDeriveAndOverwriteFieldNames[PipeShape.Circle]
 
     given horizontal_form_PipeShape_Square: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Square] =
         import defaultable.qty_d.meter.zero
-        import validatevar.meter.valid_whenPositive
+        import vv.meter.valid_whenStrictlyPositive
         given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
         autoDeriveAndOverwriteFieldNames[PipeShape.Square]
 
     given horizontal_form_PipeShape_Rectangle: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Rectangle] =
         import defaultable.qty_d.meter.zero
-        import validatevar.meter.valid_whenPositive
+        import vv.meter.valid_whenStrictlyPositive
         given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
         autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
 
@@ -152,57 +154,57 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     given horizontal_form_Angle: DaisyUIHorizontalForm[Angle] =
         import defaultable.qty_d.angle.zero
-        import validatevar.angle.validOption_whenPositive
+        import vv.angle.validOption_whenPositive
         DaisyUIHorizontalForm.forQtyD[Degree]
 
     // QtyD[Kilo * Watt]
 
     given horizontal_form_Kilowatt: DaisyUIHorizontalForm[QtyD[Kilo * Watt]] =
         import defaultable.qty_d.kilowatt.zero
-        import validatevar.kilowatt.validOption_whenPositive
+        import vv.kilowatt.validOption_whenStrictlyPositive
         DaisyUIHorizontalForm.forQtyD[Kilo * Watt]
 
     given horizontal_form_Option_Kilowatt: DaisyUIHorizontalForm[Option[QtyD[Kilo * Watt]]] =
-        import validatevar.kilowatt.validOption_whenPositive
+        import vv.kilowatt.validOption_whenStrictlyPositive
         DaisyUIHorizontalForm.forOptionQtyD_default[Kilo * Watt]
 
     // QtyD[Meter]
 
     val horizontal_form_QtyD_Meter: DaisyUIHorizontalForm[QtyD[Meter]] =
-        import validatevar.valid_always.given
+        import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.meter.zero
         DaisyUIHorizontalForm.forQtyD[Meter]
 
     val horizontal_form_Length_cm_m: DaisyUIHorizontalForm[QtyD[Meter]] =
-        import validatevar.valid_always.given
+        import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.meter.zero
         given_dual_Length_cm_m.form_DaisyUIHorizontalForm
 
     val horizontal_form_Length_mm_cm: DaisyUIHorizontalForm[QtyD[Meter]] =
-        import validatevar.valid_always.given
+        import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.meter.zero
         given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
 
     val horizontal_form_QtyD_Pascal: DaisyUIHorizontalForm[QtyD[Pascal]] =
-        import validatevar.valid_always.given
+        import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.pascal.zero
         DaisyUIHorizontalForm.forQtyD[Pascal]
 
     given horizontal_form_QtyD_SquareMeterKelvinPerWatt: DaisyUIHorizontalForm[SquareMeterKelvinPerWatt] =
         given Defaultable[SquareMeterKelvinPerWatt] = defaultable.thermalResistance.map(x => x)
-        import validatevar.square_meter_kelvin_per_watt.validOption_whenPositive
+        import vv.square_meter_kelvin_per_watt.validOption_whenStrictlyPositive
         DaisyUIHorizontalForm.forValidatedQtyD_NoneAsDefault[(Meter ^ 2) * Kelvin / Watt]()(using
             given_forOptionQtyD_default
         )
 
     given horizontal_form_QtyD_Unitless: DaisyUIHorizontalForm[QtyD[1]] =
         given zeta_defaultable: Defaultable[QtyD[1]] = defaultable.zeta.map(z => z: QtyD[1])
-        import validatevar.unitless.validOption_whenPositive
+        import vv.unitless.validOption_whenPositive
         DaisyUIHorizontalForm.forQtyD[1]
 
     given horizontal_form_QtyD_Watt_per_MeterKelvin: DaisyUIHorizontalForm[QtyD[Watt / (Meter * Kelvin)]] =
         given Defaultable[QtyD[Watt / (Meter * Kelvin)]] = defaultable.thermalConductivity.map(x => x)
-        import validatevar.watt_per_meter_kelvin.validOption_whenPositive
+        import vv.watt_per_meter_kelvin.validOption_whenStrictlyPositive
         DaisyUIHorizontalForm.forValidatedQtyD_NoneAsDefault[Watt / (Meter * Kelvin)]()(using
             given_forOptionQtyD_default
         )
@@ -211,13 +213,13 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     val horizontal_form_Roughness: DaisyUIHorizontalForm[QtyD[Meter]] =
         import defaultable.given_Roughness
-        import validatevar.meter.valid_whenPositive
+        import vv.meter.valid_whenStrictlyPositive
         given_dual_Roughness.form_DaisyUIHorizontalForm
             .withFieldName(I18N.terms.roughness)
 
     given horizontal_form_TCelsius: Locale => DaisyUIHorizontalForm[TCelsius] =
         import defaultable.given_TCelsius
-        import validatevar.temp.celsius.validOption_whenPositive
+        import vv.temp.celsius.validOption_whenPositive
         DaisyUIHorizontalForm
             .forTempD[Celsius]
             .withFieldName(I18N.terms.temperature_celsius)
@@ -227,7 +229,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         // import defaultable.pipeShapeInner
         // import defaultable.qty_d.area_in_cm2.zero
         import afpma.firecalc.ui.instances.defaultable.qty_d.area_in_cm2.zero
-        import afpma.firecalc.ui.instances.validatevar.area_in_cm2.valid_whenPositive
+        import vv.area_in_cm2.valid_whenStrictlyPositive
 
         given DaisyUIHorizontalForm[PipeShape]  = horizontal_form_PipeShape
         given DaisyUIHorizontalForm[AreaInCm2]  = given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm
@@ -249,8 +251,8 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     def horizontal_form_Thickness: DaisyUIHorizontalForm[QtyD[Meter]] =
         import defaultable.qty_d.meter.zero
-        // import validatevar.meter.validOption_whenPositive
-        import validatevar.meter.valid_whenPositive
+        // import validatevar.meter.validOption_whenStrictlyPositive
+        import vv.meter.valid_whenStrictlyPositive
         // DaisyUIHorizontalForm.forValidatedQtyD_NoneAsDefault[Meter]()(
         //     using given_forOptionQtyD_default
         // )
@@ -261,7 +263,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     val horizontal_form_zeta: DaisyUIHorizontalForm[ζ] = horizontal_form_ζ
     given horizontal_form_ζ : DaisyUIHorizontalForm[ζ] =
         given zeta_defaultable: Defaultable[QtyD[1]] = defaultable.zeta.map(z => z: QtyD[1])
-        import validatevar.unitless.validOption_whenPositive
+        import vv.unitless.validOption_whenPositive
         given DaisyUIHorizontalForm[QtyD[1]] = DaisyUIHorizontalForm.forQtyD[1]
         DaisyUIHorizontalForm.formConversionOpaque[ζ, QtyD[1]]
 

@@ -28,7 +28,7 @@ import afpma.firecalc.ui.daisyui.DaisyUIInputs.SelectFieldsetLabelAndInput
 import afpma.firecalc.ui.formgen.*
 import afpma.firecalc.ui.formgen.Defaultable.*
 import afpma.firecalc.ui.formgen.Defaultable.given
-import afpma.firecalc.ui.instances.validatevar
+import afpma.firecalc.ui.instances.ValidateVarCommonInstances
 import afpma.firecalc.ui.utils.OptionalField
 import afpma.firecalc.ui.utils.convertToOpaqueVar
 import afpma.firecalc.ui.daisyui.DaisyUIInputs
@@ -115,11 +115,11 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
         makeFor[Option[A]](Defaultable.summon[Option[A]])(factory)
 
     def mk_AlwaysValid[A](factory: (Var[A], FormConfig) => HtmlElement): D_to_DF[A] =
-        given ValidateVar[A] = validatevar.valid_always.given_ValidateVar_AlwaysValid[A]
+        given ValidateVar[A] = ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[A]
         mk[A](factory)
 
     def mkOption_AlwaysValid[A](factory: (Var[Option[A]], FormConfig) => HtmlElement): DOpt_to_DFOpt[A] =
-        given ValidateVar[Option[A]] = validatevar.valid_always.given_ValidateVar_AlwaysValid[Option[A]]
+        given ValidateVar[Option[A]] = ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Option[A]]
         mkOption[A](factory)
 
     def mkFromComponent[A](factory: (Var[A], FormConfig) => Component): D_VV_to_DF[A] =
@@ -386,27 +386,38 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
     )                                      : VVOpt_to_DFOpt[BigDecimal] =
         forOptionNumeric[BigDecimal](updateFieldName, optionalField)
 
-    @nowarn private def forOptionK[F[_], U: SUnit](
+    private def forOptionK[F[_], U: SUnit](
         updateFieldName       : Option[String] => Option[String],
-        optionalField         : OptionalField = OptionalField.No,
+        optionalField         : OptionalField,
         getValueFromF         : F[U] => Double,
         makeFWithUnitFromValue: Double => F[U]
     ): VVOpt_to_DFOpt[F[U]] =
+        val sunits           = List(SUnit[U])
+        val renderingFactory = mkRenderingFactoryForNumberWithUnitsAndValidation(
+            sunitsVar       = Var(sunits),
+            sunitCurrentVar = Var(sunits.head)
+        )
+        forOptionK_withRenderingFactory(
+            updateFieldName,
+            optionalField,
+            getValueFromF,
+            makeFWithUnitFromValue,
+            renderingFactory
+        )
 
-        // val validateDouble: (Option[Double], SUnit[?]) => VNelString[Unit] =
-        //     (od, su) =>
-        //         val oq = od.map(makeFWithUnitFromValue)
-        //         vvof.unwrap(oq)
+    private def forOptionK_withRenderingFactory[F[_], U](
+        updateFieldName       : Option[String] => Option[String],
+        optionalField         : OptionalField,
+        getValueFromF         : F[U] => Double,
+        makeFWithUnitFromValue: Double => F[U],
+        renderingFactory      : CommonRenderingFactory[Double]
+    ): VVOpt_to_DFOpt[F[U]] =
+
         given ValidateVar[Option[Double]] = ValidateVar.Option[F[U]].contramapOpt[Double](makeFWithUnitFromValue)
 
         makeFor(makeOptionWithNoneFor[F[U]]): (variable, formConfig) =>
-            val sunits              = List(SUnit[U])
-            val dVar                = variable.bimap(_.map(getValueFromF))(_.map(makeFWithUnitFromValue))
-            val factory             = mkRenderingFactoryForNumberWithUnitsAndValidation(
-                sunitsVar       = Var(sunits),
-                sunitCurrentVar = Var(sunits.head)
-            )
-            factory.make(
+            val dVar = variable.bimap(_.map(getValueFromF))(_.map(makeFWithUnitFromValue))
+            renderingFactory.make(
                 v             = dVar,
                 label         = updateFieldName(formConfig.shownFieldName),
                 optionalField = optionalField
@@ -421,6 +432,19 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
             optionalField          = optionalField,
             getValueFromF          = _.value,
             makeFWithUnitFromValue = _.withUnit[U]
+        )
+
+    def forOptionQtyD_withRenderingFactory[U: SUnit](
+        updateFieldName       : Option[String] => Option[String],
+        optionalField         : OptionalField = OptionalField.No,
+        renderingFactory      : CommonRenderingFactory[Double]
+    ): VVOpt_to_DFOpt[QtyD[U]] =
+        forOptionK_withRenderingFactory[QtyD, U](
+            updateFieldName        = updateFieldName,
+            optionalField          = optionalField,
+            getValueFromF          = _.value,
+            makeFWithUnitFromValue = _.withUnit[U],
+            renderingFactory       = renderingFactory,
         )
 
     def forOptionTempD[U: SUnit](
@@ -453,6 +477,41 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
     // switch to def ???
     given given_forOptionTempD_default: [U: SUnit] => VVOpt_to_DFOpt[TempD[U]] =
         forOptionTempD_default[U]
+
+    // ========================================
+    // Form with bidirectional sync to linked Var
+
+    /** Creates a form field with bidirectional sync to a linked Var.
+      *
+      * This is useful when you want a form field to stay in sync with another Var,
+      * such as a field in a parent model.
+      *
+      * @param underlying The form to use for rendering the field
+      * @param linkedVar The Var to sync with
+      * @return A form field that automatically syncs with linkedVar
+      */
+    def mkFromUnderlyingWithLinkedVar[U](
+        underlying: DF[Option[QtyD[U]]],
+        linkedVar: Var[Option[QtyD[U]]]
+    ): D_VVOpt_to_DFOpt[QtyD[U]] =
+        val d: Defaultable[Option[QtyD[U]]] = Defaultable.summon[Option[QtyD[U]]]
+
+        makeFor[Option[QtyD[U]]](d): (variable, formConfig) =>
+            // Bidirectional sync: form -> linkedVar
+            // Only update linkedVar if value is Some(x)
+            val syncToLinkedVar = variable.signal
+                .distinct
+                .changes
+                .collect { case Some(v) => Some(v) } --> linkedVar.writer
+
+            // Bidirectional sync: linkedVar -> form
+            val syncFromLinkedVar = linkedVar.signal
+                .distinct
+                .changes --> variable.writer
+
+            underlying
+                .render(variable, formConfig)
+                .amend(syncToLinkedVar, syncFromLinkedVar)
 
     // helper for Option[QtyD[A]] rendering
 

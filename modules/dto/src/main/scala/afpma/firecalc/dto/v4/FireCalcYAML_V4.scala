@@ -10,7 +10,6 @@ import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.instances.CommonInstances
 import afpma.firecalc.dto.instances.V3Instances
 import afpma.firecalc.dto.instances.V4Instances
-import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v4.*
 
 import io.circe.Decoder
@@ -28,6 +27,7 @@ import io.taig.babel.Locale
  *     (instead of `{"WithoutAirSpace": {}}`) to avoid the YAML null round-trip
  *     bug where `{}` was emitted as `null` by the YAML printer
  *   - WithAirSpace is encoded as `{"WithAirSpace": {width, direction, ventil_openings}}`
+ * - introduce MinLoad
  * - TODO: SetPropertiesInBatch for FlowOnlyPipeDescr_13384
  * - TODO: SetPropertiesInBatch for ThermalPipeDescr_15544
  */
@@ -40,7 +40,7 @@ final case class FireCalcYAML_V4(
     local_conditions              : LocalConditions,
     stove_params                  : StoveParams,
     air_intake_descr              : Seq[afpma.firecalc.dto.v3.FlowOnlyPipeDescr_13384_V2], // TODO
-    firebox                       : Firebox_V2,
+    firebox                       : Firebox_V3,
     flue_pipe_descr               : Seq[afpma.firecalc.dto.v3.FlowOnlyPipeDescr_15544_V2], // TODO
     connector_pipe_descr          : Seq[ThermalPipeDescr_13384_V3],
     chimney_pipe_descr            : Seq[ThermalPipeDescr_13384_V3]

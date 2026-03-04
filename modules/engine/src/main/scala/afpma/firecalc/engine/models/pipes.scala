@@ -23,9 +23,9 @@ trait Pipes_13384_WithFlowOnlyAirIntake extends Pipes_13384_Alg with HasPipeModu
 trait Pipes_13384_WithThermalAirIntake extends Pipes_13384_Alg with HasPipeModules_13384_WithThermalAirIntake
 
 sealed trait Pipes_15544_Alg extends Pipes_13384_Alg with HasPipeModules_15544Only_Alg:
-    val combustionAir: CombustionAirPipe_Module.FullDescr
-    val firebox      : FireboxPipe_Module.FullDescr
-    val flue         : FluePipe_Module.FullDescr
+    val combustionAir: CombustionAirPipe_Module.PipeCanBe
+    val firebox      : FireboxPipe_Module.PipeCanBe
+    val flue         : FluePipe_Module.PipeCanBe
 
 // object Pipes_15544_Alg:
 //     given conv: Conversion[Pipes_15544_Alg, Pipes_13384_Alg] =
@@ -34,9 +34,9 @@ sealed trait Pipes_15544_Alg extends Pipes_13384_Alg with HasPipeModules_15544On
 
 case class Pipes_15544_Strict(
     val airIntake    : FlowOnlyAirIntakePipe_13384,
-    val combustionAir: CombustionAirPipe_Module_15544.FullDescr,
-    val firebox      : FireboxPipe_Module_15544.FullDescr,
-    val flue         : FluePipe_Module_15544.FullDescr,
+    val combustionAir: CombustionAirPipe_15544,
+    val firebox      : FireboxPipe_15544,
+    val flue         : FluePipe_15544,
     val connector    : ConnectorPipe,
     val chimney      : ChimneyPipe
 ) extends Pipes_15544_Alg
@@ -45,9 +45,9 @@ case class Pipes_15544_Strict(
 
 case class Pipes_15544_MCE(
     val airIntake    : ThermalAirIntakePipe_13384,
-    val combustionAir: CombustionAirPipe_Module_13384.FullDescr,
-    val firebox      : FireboxPipe_Module_13384.FullDescr,
-    val flue         : FluePipe_Module_13384.FullDescr,
+    val combustionAir: CombustionAirPipe_13384,
+    val firebox      : FireboxPipe_13384,
+    val flue         : FluePipe_13384,
     val connector    : ConnectorPipe,
     val chimney      : ChimneyPipe
 ) extends Pipes_15544_Alg

@@ -262,7 +262,7 @@ object `01_cloche_medianne_entree_haute_config_1`
         .toFullDescr().extractPipe
 
     override lazy val design = Design(
-        firebox = Firebox_15544.OneOff.CustomForLab(
+        firebox = Firebox_15544.Traditional.CustomForLab(
             reference = LocalizedString(_ => "???"),
             type_of_appliance = TypeOfAppliance.WoodLogs,
             emissions_values = firebox_emissions.Standing_Standard_Burning_Firebox,
@@ -275,5 +275,6 @@ object `01_cloche_medianne_entree_haute_config_1`
                 height = 58.3.cm
             ),
             glass_area = 200.cm2, // does not matter here
+            height_of_lowest_opening = 5.cm, // TOCHECK but does not matter
         )
     )

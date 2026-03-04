@@ -29,6 +29,9 @@ extension (tt: TSVTableString)
 
     def toList: List[Map[String, String]] = tt
 
+    def extractHeaders: List[String] = 
+        tt.toList.head.map(_._1).toList
+
     def extractColsAs(
         firstHeader : String,
         secondHeader: String

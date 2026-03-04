@@ -12,7 +12,7 @@ import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.From_CalculPdM_V_0_2_32
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.standard.*
 
 import cats.data.NonEmptyList
@@ -22,8 +22,6 @@ import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 
 import scala.util.*
-
-import io.scalaland.chimney.dsl.*
 
 case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     self =>
@@ -73,8 +71,9 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             override val localConditions = fcProj.local_conditions
             override val stoveParams     = fcProj.stove_params
             override val airIntakePipe   = self.airIntakePipe
-            override val firebox : From_CalculPdM_V_0_2_32                                 =
-                fcProj.firebox.into[en15544.firebox.From_CalculPdM_V_0_2_32].transform
+            override val firebox: Firebox_15544 =
+                import afpma.firecalc.engine.models.en15544.firebox.From_CalculPdM_V_0_2_32.given
+                summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
             override val fluePipe: ValidatedNel[IncrementalValidation_Error, FluePipeType] = self.fluePipe match
                 case v @ Valid(fp)  => if (fp.elems.size == 0) FluePipeNotDefinedYet.invalidNel else v
                 case i @ Invalid(e) => i

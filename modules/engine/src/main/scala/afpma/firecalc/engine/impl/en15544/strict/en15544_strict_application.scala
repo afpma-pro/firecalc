@@ -9,7 +9,6 @@ import cats.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.*
-import afpma.firecalc.engine.alg.en13384.WithLoadQty
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
@@ -26,7 +25,6 @@ import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
 import afpma.firecalc.units.coulombutils.*
 
-import algebra.instances.all.given
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -110,6 +108,7 @@ sealed abstract class EN15544_Strict_Application(
 
         val isEqualAndValidVNel: (VNelMcalcErr[TCelsius], VNelMcalcErr[TCelsius]) => Boolean =
             case (Validated.Valid(t1), Validated.Valid(t2)) => t1 == t2
+            case (Validated.Invalid(nel1), Validated.Invalid(nel2)) => true // errors in both cases, ok for this case.
             case _ => false
 
         val flue_gas_temp_nominal_vnel =
@@ -129,26 +128,11 @@ sealed abstract class EN15544_Strict_Application(
 
     override final lazy val en13384_T_L_override = en13384_T_L_override_default
 
-    def fluegas_σ_CO2_dry: WithLoadQty[Option[σ_CO2]] =
-        val ei: Either[IllegalStateException, Option["OK"]] = inputs.design.firebox match
-            case _ : OneOff => Right("OK".some)
-            case tt: Tested =>
-                val afr_opt = LoadQty.summon match
-                    case LoadQty.Nominal => tt.airFuelRatio_nominal.some
-                    case LoadQty.Reduced => tt.airFuelRatio_lowest
-                afr_opt.fold(Right(None)): afr =>
-                    if (afr < 1.95 || afr > 3.95) // TODO: add constraint instead ? in formulas impl. ?
-                        Left (
-                            new IllegalStateException(
-                                s"ERROR: tested firebox should have air-fuel ratio λ such as 1.95 <= λ <= 3.95, got ${afr.show}"
-                            )
-                        )
-                    else
-                        Right("OK".some)
-        ei.map(o => o.map(_ => formulas.fluegas_σ_CO2_calc)).fold(e => throw e, identity)
+    val fluegas_σ_CO2_dry_nominal: σ_CO2 =
+        inputs.design.firebox.co2_dry_nominal
 
-    val fluegas_σ_CO2_dry_nominal: σ_CO2         = fluegas_σ_CO2_dry(using LoadQty.Nominal).get // should always be defined
-    val fluegas_σ_CO2_dry_lowest : Option[σ_CO2] = fluegas_σ_CO2_dry(using LoadQty.Reduced)
+    val fluegas_σ_CO2_dry_lowest: Option[σ_CO2] =
+        inputs.design.firebox.co2_dry_lowest
 
     val wood_σ_H2O: σ_H2O = formulas.wood_σ_H2O_calc
 
@@ -255,17 +239,24 @@ sealed abstract class EN15544_Strict_Application(
         //     flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_middle)
     end en13384_application
 
-    def combustionAir_PipeResult =
-        airIntake_PipeResult.andThen: _ =>
-            ops_en15544.FlowOnlyMecaFlu_15544
-                .makePipeResult                 (
-                    fd                  = CombustionAirPipe_Module_15544.unwrap(inputs.pipes.combustionAir),
-                    gas                 = CombustionAir,
-                    loadQty             = LoadQty.summon,
-                    z_geodetical_height = z_geodetical_height,
-                    params              = pressReq_from_Params_15544
-                )(using en15544)
-                .toValidatedNel
+    override def combustionAir_PipeResult =
+        CombustionAirPipe_Module_15544.foldPipeCanBe(inputs.pipes.combustionAir)(
+            onWithout   = combustionAir_PipeResult_whenEmpty,
+            onFullDescr = fd => combustionAir_PipeResult_whenExists(fd)
+        )
+
+    override def combustionAir_PipeResult_whenExists(
+        fd: CombustionAirPipe_Module_15544.FullDescr
+    ) =
+        ops_en15544.FlowOnlyMecaFlu_15544
+            .makePipeResult                 (
+                fd                  = CombustionAirPipe_Module_15544.unwrap(fd),
+                gas                 = CombustionAir,
+                loadQty             = LoadQty.summon,
+                z_geodetical_height = z_geodetical_height,
+                params              = pressReq_from_Params_15544
+            )(using en15544)
+            .toValidatedNel
 
     def firebox_PipeResult =
         ops_en15544.FlowOnlyMecaFlu_15544

@@ -28,14 +28,15 @@ object DynamicFrictionCoeffOp:
 
     // ERROR TYPES
     // export afpma.firecalc.engine.standard.PressureLossCoeff_Error
-    export afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
+    export afpma.firecalc.engine.standard.SingularFlowResistanceCoeffErrorI
+    
 
     // according to EN 13384-1:2015+A1:2019
 
-    type Err    = afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
+    type Err    = afpma.firecalc.engine.standard.SingularFlowResistanceCoeffErrorI
     type Result = ValidatedNel[Err, ζ]
 
-    extension (res: Result) def toENelString: ValidatedNel[String, ζ] = res.leftMap(_.map(_.msg))
+    // extension (res: Result) def toENelString: ValidatedNel[String, ζ] = res.leftMap(_.map(_.msg))
 
     // summon helper
     def apply[S](using
@@ -43,7 +44,7 @@ object DynamicFrictionCoeffOp:
     ): DynamicFrictionCoeffOp[S] =
         inst
 
-    import SingularFlowResistanceCoeffError.*
+    import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
 
     val zero: Result = CoefficientOfFlowResistance.zero.validNel
 

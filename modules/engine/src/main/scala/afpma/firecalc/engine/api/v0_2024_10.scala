@@ -12,6 +12,8 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.LocalizedAlg
 
+import afpma.firecalc.engine.impl.en15544.strict.*
+import afpma.firecalc.engine.impl.en15544.mce.*
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
@@ -105,23 +107,23 @@ object v0_2024_10:
         type CombustionAirPipe
         type FireboxPipe
 
-        def combustionAirPipe: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe]
-        def fireboxPipe      : ValidatedNel[IncrementalValidation_Error, FireboxPipe]
+        def combustionAirPipe: VNelMcalcErr[CombustionAirPipe]
+        def fireboxPipe      : VNelMcalcErr[FireboxPipe]
 
     trait Firebox_15544_Strict_Alg extends Firebox_15544_Alg:
-        type CombustionAirPipe = CombustionAirPipe_Module_15544.FullDescr
-        type FireboxPipe       = FireboxPipe_Module_15544.FullDescr
+        type CombustionAirPipe = CombustionAirPipe_15544
+        type FireboxPipe       = FireboxPipe_15544
 
     trait Firebox_15544_MCE_Alg extends Firebox_15544_Alg:
-        type CombustionAirPipe = CombustionAirPipe_Module_13384.FullDescr
-        type FireboxPipe       = FireboxPipe_Module_13384.FullDescr
+        type CombustionAirPipe = CombustionAirPipe_13384
+        type FireboxPipe       = FireboxPipe_13384
 
     // "One Off" Firebox
 
     trait Firebox_15544_OneOff_Alg:
         self: Firebox_15544_Alg =>
 
-        def firebox: en15544.firebox.From_CalculPdM_V_0_2_32
+        def firebox: std.Firebox_15544
 
         lazy val design: Design = Design(
             firebox = self.firebox
@@ -144,45 +146,67 @@ object v0_2024_10:
 
         import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.*
 
-        def combustionAirPipe: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe] =
+        override def combustionAirPipe =
             firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toCombustionAirPipe_15544(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toCombustionAirPipe_15544(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toCombustionAirPipe_15544(f)
+                case f: TraditionalFirebox             =>
+                    TraditionalFirebox_To_FireboxInternalPipes_15544_Strict.toCombustionAirPipe_FullDescr(f)
+                case f: AFPMA_PRSE                     =>
+                    AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_Strict.toCombustionAirPipe_FullDescr(f)
+                case f: EcoLabeled                     =>
+                    EcoLabeled_To_FireboxInternalPipes_15544_Strict.toCombustionAirPipe_FullDescr(f)
+                case f: std.Firebox_15544 =>
+                    // No geometry-based combustion air pipe for these firebox types
+                    // TODO: 'SingleTested' firebox is modelized without a 'CombustionAirPipe' : 
+                    //   - user has to take that into account so that the "AirIntakePipe" goes from 
+                    //     exterior air to the air injector inside the firebox (meaning it 
+                    //     includes the "CombustionAirPipe")
+                    // TODO: Add a warning in the UI so that the user knows this ? 
+                    //   or create a new section when a "SingleTested" firebox is selected ?
+                    GenericFirebox15544ToCombustionAirPipe_15544_Strict.toCombustionAirPipe_FullDescr(f)
 
-        def fireboxPipe: ValidatedNel[IncrementalValidation_Error, FireboxPipe] =
+        override def fireboxPipe =
             firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toFireboxPipe_15544(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toFireboxPipe_15544(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toFireboxPipe_15544(f)
+                case f: TraditionalFirebox             =>
+                    TraditionalFirebox_To_FireboxInternalPipes_15544_Strict.toFireboxPipe_FullDescr(f)
+                case f: AFPMA_PRSE                     =>
+                    AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_Strict.toFireboxPipe_FullDescr(f)
+                case f: EcoLabeled                     =>
+                    EcoLabeled_To_FireboxInternalPipes_15544_Strict.toFireboxPipe_FullDescr(f)
+                case f: std.Firebox_15544 => 
+                    HasFireboxDimensionsToFireboxPipe_15544_Strict.toFireboxPipe_FullDescr(f)
 
     trait Firebox_15544_MCE_OneOff_Alg extends Firebox_15544_OneOff_Alg with Firebox_15544_MCE_Alg:
 
         import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.*
 
-        def combustionAirPipe: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe] =
+        override def combustionAirPipe =
             firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toCombustionAirPipe_13384(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toCombustionAirPipe_13384(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toCombustionAirPipe_13384(f)
+                case f: TraditionalFirebox             =>
+                    TraditionalFirebox_To_FireboxInternalPipes_15544_MCE.toCombustionAirPipe_FullDescr(f)
+                case f: AFPMA_PRSE                     =>
+                    AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE.toCombustionAirPipe_FullDescr(f)
+                case f: EcoLabeled                     =>
+                    EcoLabeled_To_FireboxInternalPipes_15544_MCE.toCombustionAirPipe_FullDescr(f)
+                case f: std.Firebox_15544 =>
+                    // No geometry-based combustion air pipe for these firebox types
+                    // TODO: 'SingleTested' firebox is modelized without a 'CombustionAirPipe' : 
+                    //   - user has to take that into account so that the "AirIntakePipe" goes from 
+                    //     exterior air to the air injector inside the firebox (meaning it 
+                    //     includes the "CombustionAirPipe")
+                    // TODO: Add a warning in the UI so that the user knows this ? 
+                    //   or create a new section when a "SingleTested" firebox is selected ?
+                    GenericFirebox15544ToCombustionAirPipe_15544_MCE.toCombustionAirPipe_FullDescr(f)
 
-        def fireboxPipe: ValidatedNel[IncrementalValidation_Error, FireboxPipe] =
+        override def fireboxPipe =
             firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toFireboxPipe_13384(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toFireboxPipe_13384(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toFireboxPipe_13384(f)
+                case f: TraditionalFirebox             =>
+                    TraditionalFirebox_To_FireboxInternalPipes_15544_MCE.toFireboxPipe_FullDescr(f)
+                case f: AFPMA_PRSE                     =>
+                    AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE.toFireboxPipe_FullDescr(f)
+                case f: EcoLabeled                     =>
+                    EcoLabeled_To_FireboxInternalPipes_15544_MCE.toFireboxPipe_FullDescr(f)
+                case f: std.Firebox_15544 => 
+                    HasFireboxDimensionsToFireboxPipe_15544_MCE.toFireboxPipe_FullDescr(f)
 
     // Stove Project Description
 

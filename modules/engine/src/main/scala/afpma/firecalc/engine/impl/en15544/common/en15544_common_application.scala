@@ -1,11 +1,6 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
- */
-
-/*
- * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
  */
 
 package afpma.firecalc.engine.impl.en15544.common
@@ -16,9 +11,6 @@ import cats.data.Validated.*
 import cats.syntax.all.catsSyntaxOptionId
 import cats.syntax.all.toShow
 import cats.syntax.all.catsSyntaxValidatedId
-import cats.syntax.all.toFunctorOps
-import cats.syntax.all.toFlatMapOps
-import cats.syntax.all.catsSyntaxEitherId
 import cats.syntax.all.toTraverseOps
 import cats.syntax.all.catsSyntaxTuple2Semigroupal
 import cats.syntax.all.catsSyntaxTuple3Semigroupal
@@ -28,8 +20,12 @@ import cats.syntax.all.catsSyntaxTuple5Semigroupal
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.alg.en15544
+import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.StoveConstraintContext
+import afpma.firecalc.engine.alg.en15544.StoveConstraints
 import afpma.firecalc.engine.impl.en16510.EN16510_1_2022_Formulas
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.LoadQty.withLoad
@@ -40,7 +36,6 @@ import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
-import afpma.firecalc.engine.models.en15544.ConstraintSlots
 import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
@@ -48,7 +43,7 @@ import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.{show_Meters, show_SquareMeters, *}
+import afpma.firecalc.units.coulombutils.*
 
 import algebra.instances.all.given
 
@@ -73,7 +68,28 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     // aliases
     // private val en15544_inputs = inputs
-    lazy val firebox: Firebox_15544 = inputs.design.firebox
+    final lazy val firebox: Firebox_15544 = inputs.design.firebox
+
+    /** Type-safe constraints access via the Self-typed member. */
+    private lazy val fc: FireboxConstraints[firebox.Self] =
+        firebox.constraints
+
+    /** Build the stove-level constraint context. */
+    lazy val stoveConstraintContext: StoveConstraintContext =
+        StoveConstraintContext(t_n = t_n)
+
+    /** Build the constraint context from sizing results. */
+    lazy val constraintContext: ConstraintContext =
+        ConstraintContext(
+            m_B      = m_B,
+            O_BR     = firebox_sizing.O_BR,
+            A_BR_min = firebox_sizing.A_BR_min,
+            A_BR_max = firebox_sizing.A_BR_max,
+            A_BR     = firebox_sizing.A_BR,
+            H_BR_min = firebox_sizing.H_BR_min,
+            H_BR     = firebox_sizing.H_BR,
+            n_min    = n_min
+        )
 
     given convertResistanceCoefficientToError: Conversion[PressureLossCoeff.Err, ErrorGen] =
         (err: PressureLossCoeff.Err) => err: ErrorGen
@@ -227,6 +243,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     // Section "4.2.1", "Maximum Load"
 
     export en15544_typedefs.*
+
     def n_min: n_min =
         inputs.stoveParams.min_efficiency
 
@@ -238,36 +255,17 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     def t_n: t_n =
         inputs.stoveParams.heating_cycle
 
-    lazy val default_t_n_constraintSlots: ConstraintSlots.T_n = ConstraintSlots.T_n(
-        minDuration = t_n_constraint_min_duration.some,
-        maxDuration = t_n_constraint_max_duration.some
-    )
-
-    // NOTE 2
-    import StoragePeriod.given
-    lazy val t_n_constraint_min_duration: TermConstraint[t_n] = TermConstraint.Min(8.hours)
-    lazy val t_n_constraint_max_duration: TermConstraint[t_n] = TermConstraint.Max(24.hours)
-
-    lazy val default_m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
-        min = m_B_constraint_min.some,
-        max = m_B_constraint_max.some
-    )
-
-    lazy val m_B_constraint_min: TermConstraint[m_B] = firebox match
-        case _: OneOff => TermConstraint.Min(10.kg)
-        case _: Tested => TermConstraint.Min(5.kg)
-
-    lazy val m_B_constraint_max: TermConstraint[m_B] = TermConstraint.Max(40.kg)
 
     // If tested fireboxs are used, the maximum load at nominal heat output shall be the maximum
     // fuel mass according to the type test.
     def m_B: m_B =
         inputs.design.firebox match
-            case _  : Firebox_15544.OneOff =>
+            case dcc: Firebox_15544.SingleTested => dcc.maximumFuelMass
+            case _  : Firebox_15544 =>
                 inputs.stoveParams.mB_or_pn match
                     case Left(mb) => mb
                     case Right(_) => formulas.m_B_calc(P_n, t_n, n_min)
-            case dcc: Firebox_15544.Tested => dcc.maximumFuelMass
+            
 
     given Conversion[LoadQty, Option[Mass]] = (lq: LoadQty) =>
         lq match
@@ -276,196 +274,39 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     // Section "4.2.2", "Minimum Load"
 
-    lazy val default_m_B_min_constraintSlots: ConstraintSlots.M_B_Min = ConstraintSlots.M_B_Min(
-        min = m_B_min_constraint_min
-    )
-
-    lazy val m_B_min_constraint_min: Option[TermConstraint[m_B_min]] =
-        firebox.ifOneOff(orElse = None)(_ => Some(TermConstraint.Min(5.kg)))
-
     // The definition and calculation of the minimum load is only necessary if a reduced heat output is declared
     // by the manufacturer
     def m_B_min: Option[m_B_min] =
-        import HeatOutputReduced.*
-        inputs.design.firebox match
-            // The minimum load shall be calculated as 50 % of the maximum load
-            case ocd: Firebox_15544.OneOff =>
-                ocd.pn_reduced match
-                    case _: HalfOfNominal => Some(formulas.m_B_min_calc(m_B))
-                    case NotDefined => None
-            // If tested fireboxs are used, the minimum load at reduced heat output shall be the minimum
-            // fuel mass according to the type test.
-            case dcc: Firebox_15544.Tested =>
-                dcc.pn_reduced match
-                    case FromTypeTest(pn_reduced) => dcc.minimumFuelMass.map(x => x: m_B_min)
-                    case NotDefined               => None
+        inputs.design.firebox.pn_reduced match
+            case _: (HeatOutputReduced.HalfOfNominal | HeatOutputReduced.FromTypeTest) =>
+                inputs.design.firebox.min_load match
+                    case MinLoad.NotDefined => None
+                    case MinLoad.HalfOfMaxLoad(Some(min)) => 
+                        // The minimum load shall be calculated as 50 % of the maximum load
+                        require(min == formulas.m_B_min_calc(m_B))
+                        (min: m_B_min).some
+                    case MinLoad.HalfOfMaxLoad(None) => 
+                        formulas.m_B_min_calc(m_B).some
+                    case MinLoad.FromTypeTest(min) =>
+                        // If tested fireboxs are used, the minimum load at reduced heat output shall be the minimum
+                        // fuel mass according to the type test.
+                        (min: m_B_min).some
+            case HeatOutputReduced.NotDefined => None
 
     // Section "4.3", "Design of the essential dimensions"
 
     // Section "4.3.1", "Firebox dimensions"
 
-    // Section "4.3.1.1", "General"
+    // Implementation of FireboxSizing_15544_Alg
+    type FireboxSizingAlg = FireboxSizing_15544_Common
 
-    lazy val default_height_of_lowest_opening_constraintSlots: ConstraintSlots.HeightOfLowestOpening =
-        ConstraintSlots.HeightOfLowestOpening(
-            min = height_of_lowest_opening_constraint_min
+    override lazy val firebox_sizing: FireboxSizingAlg =
+        FireboxSizing_15544_Common(
+            firebox,
+            m_B
         )
 
-    // Clause 4.3.1 does not apply to tested fireboxs
-    // The height of the lowest opening shall be at least 5 cm above the floor of the firebox.
-    private lazy val height_of_lowest_opening_min_value: height_of_lowest_opening = 5.0.cm
-
-    lazy val height_of_lowest_opening_constraint_min: Option[TermConstraint[height_of_lowest_opening]] =
-        firebox.ifNotTested(orElse = None)(
-            Some(TermConstraint.Min(height_of_lowest_opening_min_value))
-        )
-
-    // define constraints for GlassArea
-    lazy val default_glassArea_constraintSlots: ConstraintSlots.GlassAreaSlots = ConstraintSlots.GlassAreaSlots(
-        maxRatio = glassArea_constraint_maxRatio
-    )
-
-    lazy val glassArea_constraint_maxRatio: Option[TermConstraint[GlassArea]] =
-        firebox.ifOneOff(orElse = None) { oneOffDesign =>
-            Some(
-                TermConstraint.GenericTyped  (
-                    value   = oneOffDesign.glass_area,
-                    isValid = glarea =>
-                        if (glarea <= O_BR / 5.0) glarea.asRight
-                        else Left(GlassAreaTooLarge(glarea.showP, (O_BR / 5: GlassArea).showP))
-                )
-            )
-        }
-
-    // Section "4.3.1.2", "Firebox surface"
-
-    def O_BR: O_BR = formulas.O_BR_calc(m_B)
-
-    // Section "4.3.1.3", "Firebox base"
-
-    def U_BR: OneOffOrNotApplicable[U_BR] =
-        firebox.whenOneOff(_.dimensions.base.perimeter)
-
-    def A_BR_min: A_BR = formulas.A_BR_min_calc(m_B)
-
-    def A_BR_max: OneOffOrNotApplicable[A_BR] =
-        U_BR.map(ubr => formulas.A_BR_max_calc(m_B, ubr))
-
-    // A_BR
-    def A_BR: OneOffOrNotApplicable[A_BR] =
-        firebox.whenOneOff(_.dimensions.base.area)
-
-    // define constraints for Dimensions.Base
-    lazy val default_fireboxDimensionsBase_constraintSlots: ConstraintSlots.FireboxDimensionsBase =
-        ConstraintSlots.FireboxDimensionsBase     (
-            surfaceInRange      = fireboxDimensions_Base_constraint_surfaceInRange,
-            ratioWhenSquared    = fireboxDimensions_Base_constraint_ratioWhenSquared,
-            minWidthWhenSquared = fireboxDimensions_Base_constraint_minWidthWhenSquared
-        )
-
-    lazy val fireboxDimensions_Base_constraint_surfaceInRange: Option[TermConstraint[Dimensions.Base]] =
-        firebox.ifOneOff(orElse = None) { oneOffDesign =>
-            A_BR_max.toOption.map { a_br_max =>
-                TermConstraint.GenericTyped  (
-                    value   = oneOffDesign.dimensions.base,
-                    isValid = base =>
-                        if (base.area < A_BR_min)
-                            Left(FireboxBaseSurfaceNotInRange(base.area.showP, A_BR_min.showP, a_br_max.showP))
-                        else if (base.area > a_br_max)
-                            Left(FireboxBaseSurfaceNotInRange(base.area.showP, A_BR_min.showP, a_br_max.showP))
-                        else Right(base)
-                )
-            }
-        }
-
-    def constraint_DimensionsBaseRatio_whenSquared(
-        sqBase  : Dimensions.Base.Squared
-    ): TermConstraint[Dimensions.Base] =
-        TermConstraint.GenericTyped(
-            value   = sqBase,
-            isValid =
-                case sqBase: Dimensions.Base.Squared =>
-                    val (l, w) = (sqBase.depth, sqBase.width)
-                    val ratio: Dimensionless = l / w
-                    ratio.value match
-                        case r if r < 1 || r > 2 =>
-                            Left(
-                                FireboxBaseRatioInvalid(r.showP, l.showP, w.showP)
-                            )
-                        case _                   =>
-                            Right(sqBase)
-        )
-
-    // When the base is square, the proportion of length to width may be varied from 1 to 2
-    lazy val fireboxDimensions_Base_constraint_ratioWhenSquared: Option[TermConstraint[Dimensions.Base]] =
-        firebox.ifOneOff(orElse = None) { oneOffDesign =>
-            oneOffDesign.dimensions.base match
-                case sqBase: Dimensions.Base.Squared =>
-                    Some(constraint_DimensionsBaseRatio_whenSquared(sqBase))
-        }
-
-    // there shall be a minimum width of 23 cm.
-    lazy val fireboxDimensions_Base_constraint_minWidthWhenSquared: Option[TermConstraint[Dimensions.Base]] =
-        firebox.ifOneOff(orElse = None) { oneOffDesign =>
-            oneOffDesign.dimensions.base match
-                case sqBase: Dimensions.Base.Squared =>
-                    Some(
-                        TermConstraint.GenericTyped  (
-                            value   = sqBase,
-                            isValid =
-                                case sqBase: Dimensions.Base.Squared =>
-                                    val w = sqBase.width
-                                    if (w >= 23.cm) Right(sqBase)
-                                    else
-                                        Left(FireboxBaseMinWidthInvalid(w.showP, sqBase.show))
-                        )
-                    )
-        }
-
-    // Section "4.3.1.4", "Firebox height"
-
-    def H_BR_min: H_BR = formulas.H_BR_min_calc(m_B)
-
-    def H_BR: OneOffOrNotApplicable[H_BR] =
-        for
-            abr <- A_BR
-            ubr <- U_BR
-        yield formulas.H_BR_calc(m_B, abr, ubr)
-
-    // The specified firebox height may deviate ± 5,0 %
-    // from the calculated firebox
-    // height from Formula (7) but shall meet the requirement from Formula (6).
-
-    // define constraints for H_BR
-    lazy val default_h_br_constraintSlots: ConstraintSlots.H_BR = ConstraintSlots.H_BR(
-        max5pDev = h_br_constraint_max5pDev,
-        min      = h_br_constraint_min.some
-    )
-
-    lazy val h_br_constraint_max5pDev: Option[TermConstraint[H_BR]] =
-        val constraint = firebox.whenOneOff { oneOffDesign =>
-            for calculatedHeight <- H_BR
-            yield
-                val tol5p: H_BR = calculatedHeight * 5.percent / 100.percent
-                val min = calculatedHeight - tol5p
-                val max = calculatedHeight + tol5p
-
-                // The specified firebox height may deviate ± 5,0 % from the calculated firebox
-                // height from Formula (7)
-                TermConstraint.GenericTyped[H_BR, FireboxHeightOutOfRange]  (
-                    value   = oneOffDesign.dimensions.height,
-                    isValid = specifiedHeight =>
-                        if (min <= specifiedHeight && specifiedHeight <= max)
-                            Right(specifiedHeight)
-                        else
-                            Left(
-                                FireboxHeightOutOfRange((min: H_BR).showP, (max: H_BR).showP, specifiedHeight.showP)
-                            )
-                )
-        }
-        constraint.flatten.map(x => x: TermConstraint[H_BR]).toOption
-
-    lazy val h_br_constraint_min: TermConstraint[H_BR] = TermConstraint.Min(H_BR_min)
+    // Section "4.3.1.1", "General" — constraints now handled by FireboxConstraints typeclass
 
     // Section "4.3.2", "Calculated flue pipe length"
 
@@ -489,18 +330,16 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             case FacingType.WithAirGap    =>
                 formulas.Table_1_Factor_b_opt_calc(n_min).map(Right(_))
 
-    def L_Z_min: OneOffOrNotApplicable[VNel[L_N]] =
+    def L_Z_min: VNel[L_N] =
         table_1_Factor_a_or_b match
             case Some(aorb) =>
-                firebox.whenOneOff(_ => formulas.L_Z_min_calc(aorb, m_B).validNel)
+                formulas.L_Z_min_calc(aorb, m_B).validNel
             case None       =>
-                // interpolation failed
-                firebox.whenOneOff(_ =>
-                    EN15544_ErrorMessage(
-                        "interpolation failed: could not retrieve 'a' or 'b' factor in 'Table 1'",
-                        FireboxPipeT
-                    ).invalidNel
-                )
+                // interpolation failed                
+                EN15544_ErrorMessage(
+                    "interpolation failed: could not retrieve 'a' or 'b' factor in 'Table 1'",
+                    FireboxPipeT
+                ).invalidNel
 
     // Section "4.3.4", "Gas groove profile"
 
@@ -512,15 +351,6 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     // Section "4.5", "Fixing of the air ratio"
     val λ: λ = formulas.λ_calc
-
-    // define constraints for λ
-    lazy val default_λ_constraintSlots: ConstraintSlots.Lambda = ConstraintSlots.Lambda(
-        min = λ_constraint_min.some,
-        max = λ_constraint_max.some
-    )
-
-    lazy val λ_constraint_min: TermConstraint[λ] = TermConstraint.Min(1.95.unitless)
-    lazy val λ_constraint_max: TermConstraint[λ] = TermConstraint.Max(3.95.unitless)
 
     // Section "4.6", "Combustion air flue gas"
 
@@ -740,9 +570,12 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
 
     def validateFireboxSpecificConstraints(): WithParams_15544[ValidatedNel[FireboxError, Unit]] =
-        inputs.design.firebox match
-            case tested: Tested => ().validNel // TODO: recheck standard/norm
-            case oneOff: OneOff => oneOff.validateSpecificConstraints(m_B, V_L)(using Locales.en)
+        Validated.fromOption(
+            NonEmptyList.fromList(
+                fc.firebox_custom_constraints(firebox, m_B, V_L)(using Locales.en)
+            ),
+            ()
+        ).swap
 
     protected def validateVelocitiesIn(
         pipeResult: PipeResult
@@ -806,11 +639,6 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     // Section "4.10.3", "Efficiency of the combustion (η)"
     // TODO: mauvaise traduction allemande ?
     // TODO: Lors du calcul du rendement de la combustion, les hypothèses suivantes sont retenues : XXX
-    lazy val default_η_constraintSlots: ConstraintSlots.Eta = ConstraintSlots.Eta(
-        min = η_constraint_min.some
-    )
-
-    lazy val η_constraint_min: TermConstraint[η] = TermConstraint.Min(n_min)
 
     def η: WithParams_15544[VNelMcalcErr[η]] =
         t_F.map(t_f => formulas.η_calc(t_f))
@@ -950,6 +778,19 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 given HeatingAppliance.Efficiency = ha_eff
                 en13384_application.airIntake_PipeResult.toValidatedNel
 
+    final def combustionAir_PipeResult_whenEmpty: WithParams_15544[VNelMcalcErr[PipeResult]] =
+        PipeResult
+            .useless(
+                pt       = CombustionAirPipeT,
+                pu       = 0.0.pascals,
+                gas_temp = t_combustion_air
+            )
+            .validNel
+
+    def combustionAir_PipeResult_whenExists(
+        fd: CombustionAirPipe_Module.FullDescr
+    ): WithParams_15544[VNelMcalcErr[PipeResult]]
+
     def connector_PipeResult =
         (
             en13384_heatingAppliance_powers,
@@ -1008,34 +849,41 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     // Resolved: firebox overrides take precedence
 
+    // --- Resolved constraints (typeclass dispatch) ---
+
     lazy val resolved_t_n_constraints: Seq[Option[TermConstraint[t_n]]] =
-        default_t_n_constraintSlots.mergeWith(firebox.t_n_constraintSlots).toSeq
+        import afpma.firecalc.engine.impl.en15544.common.defaultStoveConstraints
+        StoveConstraints.summon.t_n_constraints(stoveConstraintContext)
 
     lazy val resolved_m_B_constraints: Seq[Option[TermConstraint[m_B]]] =
-        default_m_B_constraintSlots.mergeWith(firebox.m_B_constraintSlots).toSeq
+        fc.m_B_constraints(firebox, constraintContext)
 
     lazy val resolved_m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]] =
-        default_m_B_min_constraintSlots.mergeWith(firebox.m_B_min_constraintSlots).toSeq
+        fc.m_B_min_constraints(firebox, constraintContext)
 
     lazy val resolved_glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]] =
-        default_glassArea_constraintSlots.mergeWith(firebox.glassArea_constraintSlots).toSeq
+        fc.glassArea_constraints(firebox, constraintContext)
 
     lazy val resolved_fireboxDimensionsBase_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] =
-        default_fireboxDimensionsBase_constraintSlots.mergeWith(firebox.fireboxDimensions_Base_constraintSlots).toSeq
+        fc.fireboxDimensions_Base_constraints(
+            firebox,
+            constraintContext
+        )
 
     lazy val resolved_h_br_constraints: Seq[Option[TermConstraint[H_BR]]] =
-        default_h_br_constraintSlots.mergeWith(firebox.h_br_constraintSlots).toSeq
+        fc.h_br_constraints(firebox, constraintContext)
 
     lazy val resolved_λ_constraints: Seq[Option[TermConstraint[λ]]] =
-        default_λ_constraintSlots.mergeWith(firebox.λ_constraintSlots).toSeq
+        fc.lambda_constraints(firebox, constraintContext)
 
     lazy val resolved_η_constraints: Seq[Option[TermConstraint[η]]] =
-        default_η_constraintSlots.mergeWith(firebox.η_constraintSlots).toSeq
+        fc.eta_constraints(firebox, constraintContext)
 
     lazy val resolved_height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] =
-        default_height_of_lowest_opening_constraintSlots
-            .mergeWith(firebox.height_of_lowest_opening_constraintSlots)
-            .toSeq
+        fc.height_of_lowest_opening_constraints(
+            firebox,
+            constraintContext
+        )
 
     def citedConstraints: CitedConstraints =
         import en15544_typedefs.{given_TermDef_Unit, given_TermDefDetails_Unit}
@@ -1053,15 +901,15 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 resolved_m_B_min_constraints
             ),
             glass_area                  = CheckableConstraint.makeOption(
-                firebox.ifOneOff(orElse = None)(_.glass_area.some),
+                firebox.glass_area.some,
                 resolved_glassArea_constraints
             ),
             fireboxDimensions_Base      = CheckableConstraint.makeOption(
-                firebox.ifOneOff(orElse = None)(_.dimensions.base.some),
+                firebox.dimensions.base.some,
                 resolved_fireboxDimensionsBase_constraints
             ),
             h_br                        = CheckableConstraint.makeOption(
-                firebox.ifOneOff(orElse = None)(_.dimensions.height.some),
+                firebox.dimensions.height.some,
                 resolved_h_br_constraints
             ),
             λ                           = CheckableConstraint.make(
@@ -1075,14 +923,12 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 resolved_η_constraints
             ),
             height_of_lowest_opening    = CheckableConstraint.makeOption(
-                firebox.ifOneOff(orElse = None)(fb =>
-                    Some(fb.height_of_first_row_of_air_injectors: height_of_lowest_opening)
-                ),
+                (firebox.height_of_lowest_opening: height_of_lowest_opening).some,
                 resolved_height_of_lowest_opening_constraints
             ),
             firebox_glass_surface_ratio = CheckableConstraint.makeOption(
-                firebox.firebox_glass_surface_ratio_below_one_fifth_constraint.map(_ => ()                                                       ),
-                Seq                                                               (firebox.firebox_glass_surface_ratio_below_one_fifth_constraint)
+                fc.firebox_glass_surface_ratio_constraint(firebox).map(_ => ()),
+                Seq(fc.firebox_glass_surface_ratio_constraint(firebox))
             )
         )
 

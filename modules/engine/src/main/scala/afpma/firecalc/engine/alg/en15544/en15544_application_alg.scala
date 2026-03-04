@@ -147,25 +147,17 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     // Section "1", "Scope"
 
-    // Section "4.3.1.2", "Firebox surface"
-    def U_BR: OneOffOrNotApplicable[U_BR]
+    // Section "4.3.1", "Firebox sizing"
 
-    def O_BR: O_BR
-
-    // Section "4.3.1.3", "Firebox base"
-    def A_BR_min: A_BR
-    def A_BR_max: OneOffOrNotApplicable[A_BR]
-    def A_BR    : OneOffOrNotApplicable[A_BR]
-
-    // Section "4.3.1.4", "Firebox height"
-    def H_BR: OneOffOrNotApplicable[H_BR]
+    def firebox_sizing: FireboxSizingAlg
+    type FireboxSizingAlg <: FireboxSizing_15544_Alg
 
     // Section "4.3.2", "Calculated flue pipe length"
     def L_Z_calculated: L_N
 
     // Section "4.3.3", "Minimum flue pipe length"
     def table_1_Factor_a_or_b: Option[Table_1_Factor_a_or_b]
-    def L_Z_min              : OneOffOrNotApplicable[VNel[L_N]]
+    def L_Z_min              : VNel[L_N]
 
     // Section "4.3.4", "Gas groove profile"
     def A_GS: A_GS

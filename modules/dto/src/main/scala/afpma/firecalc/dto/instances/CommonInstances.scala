@@ -366,6 +366,28 @@ object CommonInstances:
             case x: HeatOutputReduced.FromTypeTest  => Encoder[HeatOutputReduced.FromTypeTest].apply(x)
         }
 
+    given Decoder[HeatOutputReduced.NotDefined_Or_Tested] =
+        import cats.implicits.toFunctorOps
+        List[Decoder[HeatOutputReduced.NotDefined_Or_Tested]](
+            Decoder[HeatOutputReduced.NotDefined].widen,
+            Decoder[HeatOutputReduced.FromTypeTest].widen
+        ).reduceLeft(_ or _)
+
+    given Encoder[HeatOutputReduced.NotDefined_Or_Tested] =
+        Encoder.instance {
+            case x: HeatOutputReduced.NotDefined   => Encoder[HeatOutputReduced.NotDefined].apply(x)
+            case x: HeatOutputReduced.FromTypeTest => Encoder[HeatOutputReduced.FromTypeTest].apply(x)
+        }
+
+    // EmissionValueU
+    // Encoded as a plain number (value in mg/Nm³) for compact YAML representation.
+
+    given decoder_EmissionValueU: Decoder[EmissionValueU] =
+        Decoder.decodeDouble.map(_.mg_per_Nm3)
+
+    given encoder_EmissionValueU: Encoder[EmissionValueU] =
+        Encoder.encodeDouble.contramap(_.value)
+
     // ProjectDescr
 
     given Decoder[ProjectDescr] = semiauto.deriveDecoder[ProjectDescr]

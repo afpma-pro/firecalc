@@ -8,7 +8,6 @@ package afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32
 import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.units.coulombutils.VolumeFlow
 import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.dto.all.*
@@ -16,35 +15,32 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.FireboxFormulas
 import afpma.firecalc.engine.biblio.kov.firebox_emissions.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
-import afpma.firecalc.engine.models.en15544.ConstraintSlots
 import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
-import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.ShowAsTable
-
-import cats.data.NonEmptyList
-import cats.data.ValidatedNel
-import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
-import scala.collection.mutable.ListBuffer
-
 import io.taig.babel.Locale
 
-sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
-    val emissions_values: EmissionsAndEfficiencyValues = EcoPlus_Combustion_Firebox
-    val pn_reduced                                     : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal
+sealed trait EcoLabeled extends CertifiedDesign:
+    override val emissions_values   = EcoPlus_Combustion_Firebox
+    override val min_load           = MinLoad.HalfOfMaxLoad.makeWithoutValue
+    val pn_reduced                                     : HeatOutputReduced
+    val co2_dry_nominal                                : σ_CO2 = 7.05.percent
+    val co2_dry_lowest                                 : Option[σ_CO2] = None
     val arriveeAirGeometryOpt                          : Option[PipeShape]
-    // val h11_profondeurDuFoyer: QtyD[Meter]
-    // val h12_largeurDuFoyer: QtyD[Meter]
-    // val h13_hauteurDuFoyer: QtyD[Meter]
+    val h11_profondeurDuFoyer                          : QtyD[Meter]
+    val h12_largeurDuFoyer                             : QtyD[Meter]
+    val h13_hauteurDuFoyer                             : QtyD[Meter]
     val h70_largeurPorteDansMaconnerie                 : Length
     val h71_largeurVitre                               : Length
     val h72_hauteurVitre                               : Length
@@ -58,12 +54,17 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
     val h80_largeurRenfortMedianArriere                : Length
     val h81_debordDesRenfortsDansLesAngles             : Length
     val h82_hauteurDesInjecteurs_Z                     : Length
-    val h83_hauteurEntreLaSoleEtLe1erInjecteur: Length = 5.cm
+    val h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
     val version: EcoLabeled.Version
 
-    val area_calc_method = AreaCalcMethod.AutoIfCubic
-    val largeurVitre     = h71_largeurVitre
-    val hauteurVitre     = h72_hauteurVitre
+    override val dimensions: Dimensions = Dimensions(
+        base   = Dimensions.Base.Squared(
+            width = h12_largeurDuFoyer,
+            depth = h11_profondeurDuFoyer
+        ),
+        height = h13_hauteurDuFoyer
+    )
+    override val glass_area: GlassArea = h71_largeurVitre * h72_hauteurVitre
 
     lazy val c2_largeurFoyer               = h12_largeurDuFoyer
     lazy val c3_profondeurFoyer            = h11_profondeurDuFoyer
@@ -77,7 +78,10 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
     lazy val c14_debordDesRenfortsDansLesAngles  = h81_debordDesRenfortsDansLesAngles
 
     lazy val c15_hauterDesInjecteurs       = h82_hauteurDesInjecteurs_Z
+
+    // TODO: Term defined as "Y", should be surfaced / shown in the UI for user
     lazy val c18_hauteurEntreLesInjecteurs =
+        // TOFIX: c7_hauteurDeCendrier seems wrong, h83_hauteurEntreLaSoleEtLe1erInjecteur_X is more likely
         (-0.257142 * c7_hauteurDeCendrier.toUnit[Centi * Meter].value + 10.585714).cm
 
     lazy val c19_largeurDesInjecteursLateraux = c3_profondeurFoyer - 9.cm
@@ -89,165 +93,6 @@ sealed trait EcoLabeled extends From_CalculPdM_V_0_2_32:
         c3_profondeurFoyer - c14_debordDesRenfortsDansLesAngles - c12_largeurRenfortMedianLateraux
     lazy val c25_largeurDesColonnesAirArrieres  =
         c2_largeurFoyer - 2.0 * c14_debordDesRenfortsDansLesAngles - c13_largeurRenfortMedianArriere
-
-    override def validateSpecificConstraints(m_B: m_B, flow_rate: Option[VolumeFlow]) =
-        val mB: Mass = m_B
-        val buf = new ListBuffer[FireboxError]()
-
-        if (h83_hauteurEntreLaSoleEtLe1erInjecteur < 5.cm)
-            buf.append(
-                TermValueShouldBeGreaterOrEqThan(
-                    I18N.en15544.terms_xtra.height_of_the_lowest_opening.name,
-                    h83_hauteurEntreLaSoleEtLe1erInjecteur,
-                    5.cm
-                )
-            )
-
-        if (mB < 6.kg)
-            buf.append(TermValueShouldBeGreaterOrEqThan(I18N.en15544.terms.m_B.name, mB, 6.kg))
-
-        if (mB > 40.kg)
-            buf.append(TermValueShouldBeLessOrEqThan(I18N.en15544.terms.m_B.name, mB, 40.kg))
-
-        val (d1, d2) = (h77_epaisseurParoiInterneFoyer_D1, epaisseurParoiExterneFoyer_D2)
-        val (d1_min, d2_min) =
-            if (6.kg <= mB && mB < 12.9.kg)
-                (4.cm, 5.cm)
-            else
-                (5.cm, 5.cm)
-
-        if (d1 < d1_min)
-            buf.append(
-                TermValueShouldBeGreaterOrEqThan(
-                    I18N.firebox.ecolabeled.inner_wall_thickness_D1,
-                    d1.to_cm,
-                    d1_min.to_cm
-                )
-            )
-        if (d2 < d2_min)
-            buf.append(
-                TermValueShouldBeGreaterOrEqThan(
-                    I18N.firebox.ecolabeled.outer_wall_thickness_D2,
-                    d2.to_cm,
-                    d2_min.to_cm
-                )
-            )
-
-        val w     = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W
-        val w_min = 5.cm
-
-        if (w < w_min)
-            buf.append(
-                TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.air_manifold_height_W, w.to_cm, w_min.to_cm)
-            )
-
-        val A     = h12_largeurDuFoyer
-        val B     = h11_profondeurDuFoyer
-        val ratio = (A / B).value
-        if (!((0.5 <= ratio) && (ratio <= 2.0)))
-            buf.append(
-                TermValueShouldBeBetweenInclusive(
-                    I18N.firebox.traditional.width_to_depth_ratio,
-                    ratio,
-                    minValue = 0.5,
-                    maxValue = 2.0
-                )
-            )
-
-        val AF     = h74_hauteur_de_cendrier_AF
-        val AF_min = 5.cm
-        val AF_max = 12.cm
-        if (AF < AF_min)
-            buf.append(
-                TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.ash_pit_height_AF, AF.to_cm, AF_min.to_cm)
-            )
-        if (AF > AF_max)
-            buf.append(TermValueShouldBeLessOrEqThan(I18N.firebox.ecolabeled.ash_pit_height_AF, AF.to_cm, AF_max.to_cm))
-
-        val H_min = (25.cm.value + mB.toUnit[Kilogram].value).cm
-        val H     = h13_hauteurDuFoyer
-        if (H < H_min)
-            buf.append(TermValueShouldBeGreaterOrEqThan(I18N.firebox.ecolabeled.height, H.to_cm, H_min.to_cm))
-
-        val largeurRenfortMedianLateraux_max = c19_largeurDesInjecteursLateraux * 0.2
-        if (h79_largeurRenfortMedianLateraux > largeurRenfortMedianLateraux_max)
-            buf.append(
-                TermValueShouldBeLessOrEqThan(
-                    I18N.firebox.ecolabeled.width_between_two_air_columns_sides_E,
-                    h79_largeurRenfortMedianLateraux.to_cm,
-                    largeurRenfortMedianLateraux_max.to_cm
-                )
-            )
-
-        val largeurRenfortMedianArriere_max = c20_largeurDesInjecteursArrieres * 0.2
-        if (h80_largeurRenfortMedianArriere > largeurRenfortMedianArriere_max)
-            buf.append(
-                TermValueShouldBeLessOrEqThan(
-                    I18N.firebox.ecolabeled.width_between_two_air_columns_rear_E,
-                    h80_largeurRenfortMedianArriere.to_cm,
-                    largeurRenfortMedianArriere_max.to_cm
-                )
-            )
-
-        val DEBORD_MAX =
-            4.5.cm // pour ne pas que les débords fassent que les colonnes d'air soient moins larges que les injecteurs d'air
-        if (c14_debordDesRenfortsDansLesAngles > DEBORD_MAX)
-            buf.append(
-                TermValueShouldBeLessOrEqThan(
-                    I18N.firebox.ecolabeled.reinforcement_bars_offset_in_corners,
-                    c14_debordDesRenfortsDansLesAngles.to_cm,
-                    DEBORD_MAX.to_cm
-                )
-            )
-
-        // injector height
-        val Z_MIN = 6.mm
-        val Z_MAX = 8.mm
-        if (h82_hauteurDesInjecteurs_Z < Z_MIN)
-            buf.append(
-                TermValueShouldBeGreaterOrEqThan(
-                    I18N.firebox.ecolabeled.injector_height_Z,
-                    h82_hauteurDesInjecteurs_Z.to_mm,
-                    Z_MIN.to_mm
-                )
-            )
-        if (h82_hauteurDesInjecteurs_Z > Z_MAX)
-            buf.append(
-                TermValueShouldBeLessOrEqThan(
-                    I18N.firebox.ecolabeled.injector_height_Z,
-                    h82_hauteurDesInjecteurs_Z.to_mm,
-                    Z_MAX.to_mm
-                )
-            )
-
-        // La somme des surfaces des fentes d'air de combustion bouchées par les barres de renfort ne doit pas
-        // excéder 20% de la surface totale des fentes d'air de combustion..
-        val largeurFenteAirFoyer       = 2 * c19_largeurDesInjecteursLateraux + c20_largeurDesInjecteursArrieres
-        val largeurObstructionAirFoyer = 2 * h79_largeurRenfortMedianLateraux + h80_largeurRenfortMedianArriere
-        val ratioSurfaceFenteAir       = (largeurObstructionAirFoyer / largeurFenteAirFoyer)
-        val ratioSurfaceFenteAir_max   = 0.20
-        if (ratioSurfaceFenteAir > ratioSurfaceFenteAir_max)
-            buf.append(
-                TermValueCustom(
-                    I18N.firebox.ecolabeled.injector_surface_area,
-                    ratioSurfaceFenteAir,
-                    I18N.firebox.ecolabeled
-                        .injector_surface_area_obstructed_max_perc(ratioSurfaceFenteAir.toPercent.showP)
-                )
-            )
-
-        val errors = buf.toList
-        if (errors.size > 0) NonEmptyList.fromListUnsafe(errors).invalid else ().validNel
-    end validateSpecificConstraints
-
-    override def m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
-        min = TermConstraint.Min[m_B](6.kg).some,
-        max = TermConstraint.Max[m_B](40.kg).some
-    )
-
-    override def m_B_min_constraintSlots: ConstraintSlots.M_B_Min = ConstraintSlots.M_B_Min(
-        min = TermConstraint.Min[m_B_min](6.kg).some
-    )
 
 end EcoLabeled
 
@@ -283,9 +128,9 @@ object EcoLabeled:
                 (I18N.firebox.typ                            :: ""                                                 :: I18N.firebox_names.ecolabeled_v1                            :: Nil) ::
                     (I.version                               :: ""                                                 :: version                                                     :: Nil) ::
                     version_details                          ::
-                    (I.width                                 :: "h11 / A"                                          :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
-                    (I.depth                                 :: "h11 / B"                                          :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
-                    (I.height                                :: "h11 / H"                                          :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
+                    (I18N.firebox.firebox_width              :: "h11 / A"                                          :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
+                    (I18N.firebox.firebox_depth              :: "h11 / B"                                          :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
+                    (I18N.firebox.firebox_height             :: "h11 / H"                                          :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
                     (I.door_opening_width                    :: "h70"                                              :: h70_largeurPorteDansMaconnerie.to_cm.showP                  :: Nil) ::
                     (I.glass_width                           :: "h71"                                              :: h71_largeurVitre.to_cm.showP                                :: Nil) ::
                     (I.glass_height                          :: "h72"                                              :: h72_hauteurVitre.to_cm.showP                                :: Nil) ::
@@ -299,11 +144,10 @@ object EcoLabeled:
                     (I.reinforcement_bars_offset_in_corners  :: "h81"                                              :: h81_debordDesRenfortsDansLesAngles.to_cm.showP              :: Nil) ::
                     (I.injector_height_Z                     :: "h82 / Z"                                          :: h82_hauteurDesInjecteurs_Z.to_mm.showP                      :: Nil) ::
                     (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name
-                        :: "h83 / X"                         :: h83_hauteurEntreLaSoleEtLe1erInjecteur.to_cm.showP :: Nil) ::
+                        :: "h83 / X"                         :: h83_hauteurEntreLaSoleEtLe1erInjecteur_X.to_cm.showP :: Nil) ::
                     Nil
             list.filter(_.nonEmpty)
 
-import EcoLabeled.*
 
 object EcoLabeled_V1:
     def apply(
@@ -324,7 +168,7 @@ object EcoLabeled_V1:
         h80_largeurRenfortMedianArriere                : Length,
         h81_debordDesRenfortsDansLesAngles             : Length,
         h82_hauteurDesInjecteurs_Z                     : Length,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur         : Length
+        h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
     ): EcoLabeled_V1 =
         new EcoLabeled_V1_or_V2_Impl(
             pn_reduced,
@@ -345,8 +189,10 @@ object EcoLabeled_V1:
             h80_largeurRenfortMedianArriere,
             h81_debordDesRenfortsDansLesAngles,
             h82_hauteurDesInjecteurs_Z,
-            h83_hauteurEntreLaSoleEtLe1erInjecteur
-        ) with EcoLabeled_V1
+            h83_hauteurEntreLaSoleEtLe1erInjecteur_X
+        ) with EcoLabeled_V1 {
+            override val firebox_type: Locale ?=> String = I18N.firebox_names.ecolabeled_v1
+        }
 
 object EcoLabeled_V2:
     def apply(
@@ -368,7 +214,7 @@ object EcoLabeled_V2:
         h80_largeurRenfortMedianArriere                : Length,
         h81_debordDesRenfortsDansLesAngles             : Length,
         h82_hauteurDesInjecteurs_Z                     : Length,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur         : Length
+        h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
     ): EcoLabeled_V2 =
         new EcoLabeled_V1_or_V2_Impl(
             pn_reduced,
@@ -389,8 +235,10 @@ object EcoLabeled_V2:
             h80_largeurRenfortMedianArriere,
             h81_debordDesRenfortsDansLesAngles,
             h82_hauteurDesInjecteurs_Z,
-            h83_hauteurEntreLaSoleEtLe1erInjecteur
-        ) with EcoLabeled_V2
+            h83_hauteurEntreLaSoleEtLe1erInjecteur_X
+        ) with EcoLabeled_V2 {
+            override val firebox_type: Locale ?=> String = I18N.firebox_names.ecolabeled_v2
+        }
 
 /** 'EcoLabeled' Firebox according to EN15544 */
 private sealed abstract class EcoLabeled_V1_or_V2_Impl(
@@ -412,173 +260,17 @@ private sealed abstract class EcoLabeled_V1_or_V2_Impl(
     val h80_largeurRenfortMedianArriere                : Length,
     val h81_debordDesRenfortsDansLesAngles             : Length,
     val h82_hauteurDesInjecteurs_Z                     : Length,
-    val height_of_first_row_of_air_injectors           : Length
+    val h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
 ) extends EcoLabeled {
-    def heightOfLowestOpening: Length =
-        height_of_first_row_of_air_injectors // DEPRECATED: use height_of_first_row_of_air_injectors
+    type Self = EcoLabeled
+    def height_of_lowest_opening: Length = h74_hauteur_de_cendrier_AF
+
+    override def formulas: FireboxFormulas[Self] =
+        import afpma.firecalc.engine.impl.en15544.common.fireboxFormulas_Strict
+        fireboxFormulas_Strict
+
+    override def constraints: FireboxConstraints[Self] =
+        import afpma.firecalc.engine.impl.en15544.instances.ecoLabeledConstraints
+        ecoLabeledConstraints
 }
 
-object EcoLabeled_Module extends From_CalculPdM_V_0_2_32_Module:
-
-    type FB = EcoLabeled
-
-    extension (firebox: EcoLabeled)
-        def toCombustionAirPipe_15544
-            : ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_15544.FullDescr] =
-            import CombustionAirPipe_Module_15544.*
-            import firebox.*
-
-            CombustionAirPipe_Module_15544.incremental
-                .define(
-                    innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = h11_profondeurDuFoyer - 6.cm)),
-                    roughness           (3.mm                                                           ),
-                    addSectionHorizontal("-", 0.cm                                                      ), // TOFIX
-                    { // angle vif à 90deg si version 1 (chambre de détente), pas d'angle si version 2
-                        version match
-                            case Version.V1 => addSharpAngle_90deg("angle vif 90°")
-                            case Version.V2 => addSectionHorizontal("-", 0.cm)
-                    }, {
-                        val chambre_detente_long = version match
-                            case Version.V1 => 15.cm // pourquoi 15cm ???
-                            case Version.V2 => 0.cm
-                        addSectionVertical(
-                            s"chambre de détente (L = ${chambre_detente_long.showP})",
-                            chambre_detente_long
-                        )
-                    },
-                    addSharpAngle_90deg ("virage 90° vers colonnes d'air", angleN2    = 180.degrees.some),
-                    innerShape(
-                        rectangle(
-                            a = {
-                                version match
-                                    case Version.V1 =>
-                                        c24_largeurDesColonnesAirLaterales * 2.0 + c25_largeurDesColonnesAirArrieres
-                                        // 2 * h12_largeurDuFoyer + 2 * h11_profondeurDuFoyer
-                                    case Version.V2 =>
-                                        arriveeAirGeometryOpt
-                                            .map(_.perimeterWetted)
-                                            .getOrElse(
-                                                throw new IllegalStateException(
-                                                    "dev error: input air geometry should be defined for V2 eco-labeled fireboxs"
-                                                )
-                                            )
-                            },
-                            b = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W
-                        )
-                    ),
-                    addSectionHorizontal(
-                        "vers colonnes d'air",
-                        (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + h77_epaisseurParoiInterneFoyer_D1 + h78_largeurEspaceInterparoisDuFoyer_S / 2.0
-                    ),
-                    addSharpAngle_90deg ("virage au pied des colonnes d'air", angleN2 = Some(0.degrees) ),
-                    innerShape(
-                        rectangle(
-                            a = 2 * c24_largeurDesColonnesAirLaterales + c25_largeurDesColonnesAirArrieres,
-                            b = c11_largeurEspaceInterParoisFoyer_S
-                        )
-                    ),
-                    addSectionVertical  (
-                        "remontée dans les colonnes d'air",
-                        h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0 + h76_epaisseurSole + c18_hauteurEntreLesInjecteurs * 2.0
-                    ),
-                    addSharpAngle_90deg ("virage 90° avant injecteur"                                   ),
-                    innerShape(
-                        rectangle(
-                            a = c19_largeurDesInjecteursLateraux * 4.0 * 2.0
-                                + c20_largeurDesInjecteursArrieres * 4.0
-                                + c21_largeurDesInjecteursSousPorte
-                                - 8.0 * c12_largeurRenfortMedianLateraux
-                                - 4.0 * c13_largeurRenfortMedianArriere,
-                            b = c15_hauterDesInjecteurs
-                        )
-                    ),
-                    addSectionHorizontal(
-                        "injecteurs",
-                        c10_epaisseurParoiInterneDuFoyer + c11_largeurEspaceInterParoisFoyer_S / 2.0
-                    )
-                )
-                .toFullDescr()
-                .extractPipe
-        end toCombustionAirPipe_15544
-
-        def toCombustionAirPipe_13384
-            : ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_Module_13384.FullDescr] =
-            import CombustionAirPipe_Module_13384.*
-            import firebox.*
-
-            CombustionAirPipe_Module_13384.incremental
-                .define(
-                    roughness           (3.mm                               ),
-                    pipeLocation        (PipeLocation.HeatedArea            ), // added for EN13384
-                    innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = h11_profondeurDuFoyer - 6.cm)),
-                    layer               (e = 1.cm, λ = 1.3.W_per_mK         ), // added for EN13384
-                    addSectionHorizontal("-", 0.cm                          ), // TOFIX
-                    { // angle vif à 90deg si version 1 (chambre de détente), pas d'angle si version 2
-                        version match
-                            case Version.V1 => addSharpAngle_90deg("angle vif 90°")
-                            case Version.V2 => addSectionHorizontal("-", 0.cm)
-                    }, {
-                        val chambre_detente_long = version match
-                            case Version.V1 => 15.cm // pourquoi 15cm ???
-                            case Version.V2 => 0.cm
-                        addSectionVertical(
-                            s"chambre de détente (L = ${chambre_detente_long.showP})",
-                            chambre_detente_long
-                        )
-                    },
-                    addSharpAngle_90deg ("virage 90° vers colonnes d'air"   ),
-                    innerShape(
-                        rectangle(
-                            a = {
-                                version match
-                                    case Version.V1 =>
-                                        c24_largeurDesColonnesAirLaterales * 2.0 + c25_largeurDesColonnesAirArrieres
-                                        // 2 * h12_largeurDuFoyer + 2 * h11_profondeurDuFoyer
-                                    case Version.V2 =>
-                                        arriveeAirGeometryOpt
-                                            .map(_.perimeterWetted)
-                                            .getOrElse(
-                                                throw new IllegalStateException(
-                                                    "dev error: input air geometry should be defined for V2 eco-labeled fireboxs"
-                                                )
-                                            )
-                            },
-                            b = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W
-                        )
-                    ),
-                    addSectionHorizontal(
-                        "vers colonnes d'air",
-                        (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + h77_epaisseurParoiInterneFoyer_D1 + h78_largeurEspaceInterparoisDuFoyer_S / 2.0
-                    ),
-                    addSharpAngle_90deg ("virage au pied des colonnes d'air"),
-                    innerShape(
-                        rectangle(
-                            a = 2 * c24_largeurDesColonnesAirLaterales + c25_largeurDesColonnesAirArrieres,
-                            b = c11_largeurEspaceInterParoisFoyer_S
-                        )
-                    ),
-                    addSectionVertical  (
-                        "remontée dans les colonnes d'air",
-                        h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0 + h76_epaisseurSole + c18_hauteurEntreLesInjecteurs * 2.0
-                    ),
-                    addSharpAngle_90deg ("virage 90° avant injecteur"       ),
-                    innerShape(
-                        rectangle(
-                            a = c19_largeurDesInjecteursLateraux * 4.0 * 2.0
-                                + c20_largeurDesInjecteursArrieres * 4.0
-                                + c21_largeurDesInjecteursSousPorte
-                                - 8.0 * c12_largeurRenfortMedianLateraux
-                                - 4.0 * c13_largeurRenfortMedianArriere,
-                            b = c15_hauterDesInjecteurs
-                        )
-                    ),
-                    addSectionHorizontal(
-                        "injecteurs",
-                        c10_epaisseurParoiInterneDuFoyer + c11_largeurEspaceInterParoisFoyer_S / 2.0
-                    )
-                )
-                .toFullDescr()
-                .extractPipe
-        end toCombustionAirPipe_13384
-
-end EcoLabeled_Module

@@ -18,7 +18,6 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.formgen.Defaultable
 
 import io.taig.babel.Locale
-import afpma.firecalc.i18n.I18nData.SetProp
 
 object defaultable_13384:
 

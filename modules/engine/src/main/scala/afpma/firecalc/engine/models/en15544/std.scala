@@ -8,7 +8,6 @@ package afpma.firecalc.engine.models.en15544
 import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils
-import afpma.firecalc.units.coulombutils.VolumeFlow
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
@@ -16,34 +15,41 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.i18n.*
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.FireboxFormulas
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
-import afpma.firecalc.engine.models.en15544.firebox.FireboxHelper_15544
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
-import afpma.firecalc.engine.models.gtypedefs.λ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.ShowAsTable
+import afpma.firecalc.engine.OTypedQtyD
+
 
 import cats.*
-import cats.data.*
 import cats.derived.*
 import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given
+import coulomb.syntax.withUnit
 
 import io.taig.babel.Locale
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog.SB
 
 object std:
 
     import afpma.firecalc.engine.models.en13384.std.*
 
-    export Firebox_15544.*
-    export Firebox_15544.WhenOneOff.wrapWhenOneOff
-    export Firebox_15544.WhenTested.wrapWhenTested
+    export Firebox_15544.Dimensions
+    export Firebox_15544.CertifiedDesign
+    export Firebox_15544.Traditional
+    export Firebox_15544.AreaCalcMethod
+    export Firebox_15544.SingleTested
+    export Firebox_15544.Door15aFirebox_Catalog
+    export Firebox_15544.Door15aFirebox_Catalog_Example
 
     object PressureLossCoeff:
 
@@ -105,50 +111,55 @@ object std:
     )
 
     sealed trait Firebox_15544:
+        /** Self-referential type preserving the concrete firebox type.
+         *
+         * The lower bound `>: this.type` guarantees that `this: Self` holds,
+         * so `formulas` and `constraints` can be called with `this` directly.
+         * Contravariance on [[FireboxFormulas]] / [[FireboxConstraints]]
+         * ensures that a `FireboxFormulas[Firebox_15544]` satisfies
+         * `FireboxFormulas[Self]` for any concrete subtype.
+         */
+        type Self >: this.type <: Firebox_15544
+
+        def firebox_type     : Locale ?=> String // Ecolabeled, 15a, etc...
         def reference        : LocalizedString
         def type_of_appliance: TypeOfAppliance
-        def emissions_values : EmissionsAndEfficiencyValues
 
-        def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]]
+        def dimensions: Dimensions
 
-        def t_n_constraintSlots                     : ConstraintSlots.T_n                   = ConstraintSlots.T_n()
-        def m_B_constraintSlots                     : ConstraintSlots.M_B                   = ConstraintSlots.M_B()
-        def m_B_min_constraintSlots                 : ConstraintSlots.M_B_Min               = ConstraintSlots.M_B_Min()
-        def glassArea_constraintSlots               : ConstraintSlots.GlassAreaSlots        = ConstraintSlots.GlassAreaSlots()
-        def fireboxDimensions_Base_constraintSlots  : ConstraintSlots.FireboxDimensionsBase =
-            ConstraintSlots.FireboxDimensionsBase()
-        def h_br_constraintSlots                    : ConstraintSlots.H_BR                  = ConstraintSlots.H_BR()
-        def λ_constraintSlots                       : ConstraintSlots.Lambda                = ConstraintSlots.Lambda()
-        def η_constraintSlots                       : ConstraintSlots.Eta                   = ConstraintSlots.Eta()
-        def height_of_lowest_opening_constraintSlots: ConstraintSlots.HeightOfLowestOpening =
-            ConstraintSlots.HeightOfLowestOpening()
+        def glass_area: GlassArea
 
-        def t_n_constraints                     : Seq[Option[TermConstraint[t_n]]]                      = t_n_constraintSlots.toSeq
-        def m_B_constraints                     : Seq[Option[TermConstraint[m_B]]]                      = m_B_constraintSlots.toSeq
-        def m_B_min_constraints                 : Seq[Option[TermConstraint[m_B_min]]]                  = m_B_min_constraintSlots.toSeq
-        def glassArea_constraints               : Seq[Option[TermConstraint[GlassArea]]]                = glassArea_constraintSlots.toSeq
-        def h_br_constraints                    : Seq[Option[TermConstraint[H_BR]]]                     = h_br_constraintSlots.toSeq
-        def λ_constraints                       : Seq[Option[TermConstraint[λ]]]                        = λ_constraintSlots.toSeq
-        def η_constraints                       : Seq[Option[TermConstraint[η]]]                        = η_constraintSlots.toSeq
-        def height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] =
-            height_of_lowest_opening_constraintSlots.toSeq
-        def fireboxDimensions_Base_constraints  : Seq[Option[TermConstraint[Dimensions.Base]]]          =
-            fireboxDimensions_Base_constraintSlots.toSeq
+        def height_of_lowest_opening: Length
 
-        /**
-         * Validate constraints NOT related to EN 15544.
-         * Use this method for specific contraints on some family of firebox (e.g: Ecolabeled firebox, 15a doors, or other certified custom designs)
-         *
-         * @param mB
-         * @param flow_rate
-         * @return
-         */
-        def validateSpecificConstraints(
-            mB       : m_B,
-            flow_rate: Option[VolumeFlow]
-        ): Locale ?=> ValidatedNel[FireboxError, Unit]
+        def emissions_values: EmissionsAndEfficiencyValues
 
-    object Firebox_15544 extends FireboxHelper_15544:
+        def min_load       : MinLoad
+        def pn_reduced     : HeatOutputReduced
+        def co2_dry_nominal: σ_CO2
+        def co2_dry_lowest : Option[σ_CO2]
+
+        def formulas   : FireboxFormulas[Self]
+        def constraints: FireboxConstraints[Self]
+
+    object Firebox_15544:
+
+        given showAsTable: Locale => ShowAsTable[Firebox_15544] =
+            ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
+                import x.*
+                val I = I18N.firebox
+                (I18N.firebox.typ                                              :: "" :: firebox_type                                      :: Nil) ::
+                    (I18N.firebox.ref                                          :: "" :: reference.show                                    :: Nil) ::
+                    (I18N.type_of_appliance.descr                              :: "" :: type_of_appliance.show                            :: Nil) ::
+                    (I.base_geometry                                           :: "" :: dimensions.base.showP                             :: Nil) ::
+                    (I18N.en15544.terms.H_BR.name                              :: "" :: dimensions.height.showP                           :: Nil) ::
+                    (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: "" :: height_of_lowest_opening.showP                    :: Nil) ::
+                    (I.firebox_glass_surface_ratio_below_one_fifth             :: "" :: x.formulas.firebox_glass_surface_ratio_below_one_fifth(x).showP :: Nil) ::
+                    (I.glass_area                                              :: "" :: glass_area.showP                                  :: Nil) ::
+                    (I18N.en15544.terms.m_B_min.name                           :: "" :: x.min_load.show                                   :: Nil) ::
+                    (I18N.en15544.terms.P_n_reduced.name                       :: "" :: x.pn_reduced.show                                 :: Nil) ::
+                    (I18N.firebox.tested.co2_perc_by_vol_dry_nominal           :: "" :: x.co2_dry_nominal.showP                           :: Nil) ::
+                    (I18N.firebox.tested.co2_perc_by_vol_dry_reduced           :: "" :: x.co2_dry_lowest.showP                            :: Nil) ::
+                    Nil
 
         case class Dimensions(
             base  : Dimensions.Base,
@@ -187,44 +198,60 @@ object std:
             case AutoIfCubic
             case Manual(value: Area)
 
-        final case class Tested(
+        enum TestStandard:
+            case EN_15250
+            case EN_13229
+            case National(name: String)
+
+        final case class SingleTested(
             override val reference                : LocalizedString,
             override val type_of_appliance        : TypeOfAppliance,
+            test_standard                         : TestStandard,
+            firebox_depth                         : Length,
+            firebox_width                         : Length,
+            firebox_height                        : Length,
+            ash_pit_height                        : Length,
+            is_glass_surface_ratio_below_one_fifth: Boolean,
+            glass_area                            : GlassArea,
+            meanFireboxTemperature                : Option[TCelsius],
+            tBurnout                              : TCelsius,
             efficiency_nominal                    : Percentage,
             efficiency_reduced                    : Option[Percentage],
-            pn_reduced                            : HeatOutputReduced.NotDefined_Or_Tested,
+            pn_reduced                            : HeatOutputReduced,
             minimumFuelMass                       : Option[Mass],
             maximumFuelMass                       : Mass,
             airFuelRatio_nominal                  : Dimensionless,
             airFuelRatio_lowest                   : Option[Dimensionless],
-            co2_dry_nominal                       : Percentage,
-            co2_dry_lowest                        : Option[Percentage],
-            emissions_values                      : EmissionsAndEfficiencyValues,
-            meanFireboxTemperature                : Option[TCelsius],
-            tBurnout                              : TCelsius,
-            height_of_first_row_of_air_injectors  : Option[Length] = None,
-            is_glass_surface_ratio_below_one_fifth: Boolean        = true
+            co2_dry_nominal                       : σ_CO2,
+            co2_dry_lowest                        : Option[σ_CO2],
+            emissions_values                      : EmissionsAndEfficiencyValues
         ) extends Firebox_15544:
-            override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] =
-                import afpma.firecalc.engine.models.en15544.typedefs.given_TermDefDetails_Unit
-                Some(
-                    TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed]  (
-                        value   = (),
-                        isValid = _ =>
-                            if is_glass_surface_ratio_below_one_fifth then Right(())
-                            else Left(GlassSurfaceRatioNotConfirmed())
-                    )
-                )
+            type Self = SingleTested
+            override val firebox_type: Locale ?=> String = I18N.firebox_names.single_tested
 
-            override def m_B_constraintSlots: ConstraintSlots.M_B = ConstraintSlots.M_B(
-                min = minimumFuelMass.map(TermConstraint.Min.apply),
-                max = TermConstraint.Max[m_B](maximumFuelMass).some
+            override def height_of_lowest_opening = ash_pit_height
+
+            override def dimensions = Dimensions(
+                base   = Dimensions.Base.Squared(
+                    width = firebox_width,
+                    depth = firebox_depth
+                ),
+                height = firebox_height
             )
+            override def min_load   = minimumFuelMass match
+                case Some(min) => MinLoad.FromTypeTest(min)
+                case None      => MinLoad.NotDefined
 
-            override def validateSpecificConstraints(m_B: m_B, flow_rate: Option[VolumeFlow]) = ().validNel
+            override def formulas: FireboxFormulas[Self] =
+                import afpma.firecalc.engine.impl.en15544.common.fireboxFormulas_Strict
+                fireboxFormulas_Strict
 
-        object Tested:
-            given showAsTable: Locale => ShowAsTable[Tested] =
+            override def constraints: FireboxConstraints[Self] =
+                import afpma.firecalc.engine.impl.en15544.instances.singleTestedConstraints
+                singleTestedConstraints
+
+        object SingleTested:
+            given showAsTable: Locale => ShowAsTable[SingleTested] =
                 ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
                     import x.*
                     val I = I18N.firebox.tested
@@ -245,28 +272,32 @@ object std:
                         (I.firebox_exit_temperature    :: "" :: tBurnout.showP               :: Nil) ::
                         Nil
 
-        trait OneOff extends Firebox_15544:
-            def pn_reduced                          : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal
-            def dimensions                          : Dimensions
-            def glass_area                          : GlassArea
-            def height_of_first_row_of_air_injectors: Length
+        trait Traditional extends Firebox_15544
 
-        object OneOff:
+        object Traditional:
             final case class CustomForLab(
-                override val reference              : LocalizedString,
-                override val type_of_appliance      : TypeOfAppliance,
-                emissions_values                    : EmissionsAndEfficiencyValues,
-                pn_reduced                          : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
-                dimensions                          : Dimensions,
-                glass_area                          : GlassArea,
-                height_of_first_row_of_air_injectors: Length = 5.cm
-            ) extends OneOff {
-                override def validateSpecificConstraints(
-                    m_B      : m_B,
-                    flow_rate: Option[VolumeFlow]
-                ): Locale ?=> ValidatedNel[FireboxError, Unit] = ().validNel
+                override val reference        : LocalizedString,
+                override val type_of_appliance: TypeOfAppliance,
+                emissions_values              : EmissionsAndEfficiencyValues,
+                pn_reduced                    : HeatOutputReduced,
+                dimensions                    : Dimensions,
+                glass_area                    : GlassArea,
+                height_of_lowest_opening      : Length
+            ) extends Traditional {
+                type Self = CustomForLab
+                override val firebox_type: Locale ?=> String = I18N.firebox_names.custom_lab_tested
+                override val min_load = MinLoad.HalfOfMaxLoad.makeWithoutValue
 
-                override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] = None
+                override def co2_dry_nominal: σ_CO2         = 7.05.percent
+                override def co2_dry_lowest : Option[σ_CO2] = None
+
+                override def formulas: FireboxFormulas[Self] =
+                    import afpma.firecalc.engine.impl.en15544.common.fireboxFormulas_Strict
+                    fireboxFormulas_Strict
+
+                override def constraints: FireboxConstraints[Self] =
+                    import afpma.firecalc.engine.impl.en15544.instances.customForLabConstraints
+                    customForLabConstraints
             }
 
             object CustomForLab:
@@ -274,12 +305,120 @@ object std:
                     ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
                         import x.*
 
-                        (I18N.firebox.typ                                              :: "" :: I18N.firebox_names.custom_lab_tested             :: Nil) ::
-                            (I18N.firebox.traditional.firebox_floor_shape              :: "" :: dimensions.base.showP                            :: Nil) ::
-                            (I18N.firebox.traditional.height                           :: "" :: dimensions.height.to_cm.showP                    :: Nil) ::
-                            (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: "" :: height_of_first_row_of_air_injectors.to_cm.showP :: Nil) ::
-                            (I18N.firebox.traditional.glass_surface_area               :: "" :: glass_area.showP                                 :: Nil) ::
+                        (I18N.firebox.typ                                              :: "" :: I18N.firebox_names.custom_lab_tested :: Nil) ::
+                            (I18N.firebox.traditional.firebox_floor_shape              :: "" :: dimensions.base.showP                :: Nil) ::
+                            (I18N.firebox.firebox_height                               :: "" :: dimensions.height.to_cm.showP        :: Nil) ::
+                            (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: "" :: height_of_lowest_opening.to_cm.showP :: Nil) ::
+                            (I18N.firebox.traditional.glass_surface_area               :: "" :: glass_area.showP                     :: Nil) ::
                             Nil
+
+        /** Placeholder branch for certified designs (e.g. Ecolabeled, AFPMA_PRSE). */
+        trait CertifiedDesign extends Firebox_15544
+
+        // Just output results from supplier datasheet
+        trait Door15aFirebox_Catalog extends Firebox_15544:
+            val uniq_id: String
+            val mb: Option[Mass]
+            val sb: SB
+            def pressure_loss: Option[Pressure]
+
+            lazy val factory: Factory
+
+            trait Factory:
+
+                /** by convention : first col = max load in 'kg', other columns = (sb_01, sb_02, etc...) */
+                def tsv_table: TSVTableString
+
+                def available_sb_values: List[QtyD[Centimeter]]
+
+                /** List("sb_01", "sb_02", ...) */
+                private def available_sb_headers: List[String] = tsv_table.extractHeaders
+
+                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Option[Pressure] = 
+                    available_sb_values.indexOf(sb_value) match
+                        case -1 => None
+                        case sb_header_idx =>
+                            val sb_header = available_sb_headers(sb_header_idx)
+                            val mb_in_kg = mb.toUnit[Kilogram].value
+                            val ploss_in_pa = tsv_table.getUsingLinearInterpolation("kg", sb_header)(mb_in_kg)
+                            ploss_in_pa.map(_.withUnit[Pascal])
+
+        object Door15aFirebox_Catalog:
+            
+            /** supply air slot width (SB) (in cm) */
+            type SB = SupplyAirSlotWidth.Type
+            object SupplyAirSlotWidth extends OTypedQtyD[Centimeter]:
+                def termDef        = TermDef(
+                    "SB",
+                    "15a firebox"
+                )
+                def termDefDetails = TermDefDetails(
+                    I18N.firebox.door_15a_firebox.sb,
+                    I18N.firebox.door_15a_firebox.sb
+                )
+
+            given showAsTable: Locale => ShowAsTable[Door15aFirebox_Catalog] =
+                ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
+                    import x.*
+                    val I               = I18N.firebox.door_15a_firebox
+                    val list            =
+                        (I18N.firebox.typ :: ""   :: I18N.firebox_names.door_15a_firebox :: Nil) ::
+                            (I.load_size_nominal  :: "mB" :: mb.showP                    :: Nil) ::
+                            (I.sb                 :: "SB" :: sb.to_cm.showP              :: Nil) ::
+                            Nil
+                    list.filter(_.nonEmpty)
+
+        case class Door15aFirebox_Catalog_Example(
+            mb: Option[Mass], 
+            sb: SB,
+        )
+            extends Door15aFirebox_Catalog:
+            type Self = Door15aFirebox_Catalog_Example
+            override val uniq_id = "Door15aFirebox_Catalog_Example"
+
+            private val measured_sb_values: List[QtyD[Centimeter]] = 
+                List(1.6.cm.to_cm, 2.4.cm.to_cm, 3.2.cm.to_cm, 4.00.cm.to_cm)
+
+            private val pressure_loss_table_raw: String           = 
+                """|kg  sb_1    sb_2    sb_3    sb_4
+                   |10  4       3       2       1
+                   |25  22      20      18      16
+                   |""".stripMargin
+
+            override lazy val pressure_loss = mb.flatMap: mb =>
+                factory.get_pressure_loss_for_mb_sb(mb, sb)
+
+            override def co2_dry_lowest = None
+            override def co2_dry_nominal = 12.percent
+            override def dimensions: afpma.firecalc.engine.models.en15544.std.Dimensions     = Dimensions(
+                base = Dimensions.Base.Squared(width = 29.cm, depth = 39.cm),
+                height = 100.cm // example, wrong
+            )
+            override def emissions_values                                                    = afpma.firecalc.engine.biblio.kov.firebox_emissions.`15A_Combustion_Firebox`
+            override def firebox_type                                                        = I18N.firebox_names.door_15a_firebox
+            override def glass_area                                                          = 500.cm2
+            override def height_of_lowest_opening                                            = 5.cm
+            override def min_load                                                            = MinLoad.NotDefined
+            override def pn_reduced                                                          = HeatOutputReduced.NotDefined
+            override def reference                                                           = LocalizedString(_ => uniq_id)
+            override def type_of_appliance                                                   = TypeOfAppliance.WoodLogs
+
+            override def formulas: FireboxFormulas[Self] =
+                import afpma.firecalc.engine.impl.en15544.instances.door15aCatalogFormulas
+                door15aCatalogFormulas
+
+            override def constraints: FireboxConstraints[Self] =
+                import afpma.firecalc.engine.impl.en15544.instances.door15aCatalogConstraints
+                door15aCatalogConstraints
+
+            lazy val factory = new Factory:
+                override val available_sb_values = measured_sb_values
+                override val tsv_table = TSVTableString.fromString(pressure_loss_table_raw)
+
+        // TODO: implement MB 17 specs
+        // trait Door15aFirebox_Generic extends Firebox_15544
+
+
     end Firebox_15544
 
     case class Outputs(

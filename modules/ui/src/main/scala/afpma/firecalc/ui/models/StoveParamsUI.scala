@@ -58,6 +58,8 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
     private given vertical_form: VerticalFormCommonInstances = new VerticalFormCommonInstances()
     import vertical_form.given
 
+    private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
+
     type DF[A] = DaisyUIVerticalForm[A]
 
     given conditionalFor_mB: ConditionalFor[StoveParams, QtyD[Kilogram]] =
@@ -67,14 +69,14 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
         ConditionalFor(_.sizing_method == SizingMethod.NominalHeatOutput)
 
     given form_option_mB: DaisyUIVerticalForm[Option[QtyD[Kilogram]]] =
-        import validatevar.kilogram.valid_whenPositive
+        import vv.kilogram.valid_whenStrictlyPositive
         given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form_DaisyUIVerticalForm
         DaisyUIVerticalForm
             .conditionalOn[StoveParams, QtyD[Kilogram]](stove_params_var)
             .withFieldName(I18N.en15544.terms.m_B.name)
 
     given form_option_pn: DaisyUIVerticalForm[Option[QtyD[Kilo * Watt]]] =
-        import validatevar.kilowatt.valid_whenPositive
+        import vv.kilowatt.valid_whenStrictlyPositive
         given DF[Power] = dual.given_dual_Power.form_DaisyUIVerticalForm
         DaisyUIVerticalForm
             .conditionalOn[StoveParams, QtyD[Kilo * Watt]](stove_params_var)

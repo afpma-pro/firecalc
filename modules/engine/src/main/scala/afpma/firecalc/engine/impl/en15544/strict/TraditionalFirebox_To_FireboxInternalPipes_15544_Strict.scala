@@ -1,0 +1,39 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
+ */
+
+package afpma.firecalc.engine.impl.en15544.strict
+
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.all.*
+
+import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
+import afpma.firecalc.engine.impl.en15544.strict.HasFireboxDimensionsToFireboxPipe_15544_Strict
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+
+import coulomb.*
+import coulomb.policy.standard.given
+
+object TraditionalFirebox_To_FireboxInternalPipes_15544_Strict 
+    extends FireboxToInternalPipes_15544_Strict[TraditionalFirebox]
+    with HasFireboxDimensionsToFireboxPipe_15544_Strict[TraditionalFirebox]:
+
+    extension (firebox: TraditionalFirebox)
+        override def toCombustionAirPipe_FullDescr = 
+            import CombustionAirPipe_Module_15544.*
+            import firebox.*
+            CombustionAirPipe_Module_15544.incremental
+                .define(
+                    innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
+                    roughness        (3.mm), // TOFIX: 3mm or 2mm ???
+                    addFlowResistance(
+                        "porte",
+                        h66_coeffPerteDeChargePorte,
+                        cross_section = h67_sectionCumuleeEntreeAirPorte
+                    )
+                )
+                .toFullDescr()
+                .extractPipe

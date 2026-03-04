@@ -40,7 +40,6 @@ object strict_ex00_kachelofen
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                               = 44.cm,
         h12_largeurDuFoyer                                  = 42.cm,
         h13_hauteurDuFoyer                                  = 78.cm,
@@ -48,6 +47,7 @@ object strict_ex00_kachelofen
         h67_sectionCumuleeEntreeAirPorte                    = 170.cm2,
         h71_largeurVitre                                    = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
         h72_hauteurVitre                                    = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                                      = 5.cm,
     )
 
     val fluePipe = 

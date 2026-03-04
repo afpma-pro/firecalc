@@ -7,6 +7,8 @@ package afpma.firecalc.engine.alg
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
+import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
+import afpma.firecalc.engine.standard.ForbiddenAddElementAtStart
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.*
@@ -59,8 +61,48 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     type PT <: PipeType
     def pt: PT
 
+    /**
+     * Whether the given AddElement is forbidden at the
+     * start of the incremental description sequence.
+     */
+    protected def isForbiddenAddElementAtStart(
+        addElement: AddElement
+    ): Boolean
+
+    /**
+     * Whether the given AddElement is forbidden at the
+     * end of the incremental description sequence.
+     */
+    protected def isForbiddenAddElementAtEnd(
+        addElement: AddElement
+    ): Boolean
+
     type ValidatedResult[A]    = ValidatedNel[IncrementalValidation_Error, A]
     type CtxValidatedResult[A] = PropsState ?=> ValidatedNel[IncrementalValidation_Error, A]
+
+    private def validateBoundaryElements(
+        incrDescrs: Vector[Id_IncrDescr]
+    ): ValidatedResult[Unit] =
+        val firstAddElement: Option[(IdIncr, AddElement)] =
+            incrDescrs.collectFirst:
+                case (id, ae: AddElement) => (id, ae)
+        val lastAddElement: Option[(IdIncr, AddElement)] =
+            incrDescrs.reverse.collectFirst:
+                case (id, ae: AddElement) => (id, ae)
+
+        val startCheck: ValidatedResult[Unit] =
+            firstAddElement match
+                case Some((_, ae)) if isForbiddenAddElementAtStart(ae) =>
+                    ForbiddenAddElementAtStart(pt, ae.name).invalidNel
+                case _ => ().validNel
+
+        val endCheck: ValidatedResult[Unit] =
+            lastAddElement match
+                case Some((_, ae)) if isForbiddenAddElementAtEnd(ae) =>
+                    ForbiddenAddElementAtEnd(pt, ae.name).invalidNel
+                case _ => ().validNel
+
+        (startCheck, endCheck).mapN((_, _) => ())
 
     extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr]
@@ -69,6 +111,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             val iPipeFullDescr = mkInitPipeFullDescr(piDescr)
             val iIdsMapping    = IdsMapping.empty
             val iListIncrDescr = piDescr.listIncrDescr()
+            validateBoundaryElements(iListIncrDescr) *>
             buildIncrDescr(
                 iPipeFullDescr,
                 iIdsMapping,

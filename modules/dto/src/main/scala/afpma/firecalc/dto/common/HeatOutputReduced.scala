@@ -40,12 +40,11 @@ object HeatOutputReduced:
     type NotDefined_Or_Tested  = NotDefined | FromTypeTest
 
     given show_NotDefined: Locale => Show[NotDefined] =
-        Show.show(_ => I18N.heat_output_reduced.not_defined)
+        Show.show(_ => I18N.not_defined)
 
     given show_HalfOfNominal: Locale => Show[HalfOfNominal] =
         Show.show(_ =>
             I18N.heat_output_reduced.defined_as_half_of_nominal
-            // I18N.heat_output_reduced.defined_as_default(x.pn_reduced.map(_.showP).getOrElse("???"))
         )
 
     given show_FromTypeTest: Locale => Show[FromTypeTest] =

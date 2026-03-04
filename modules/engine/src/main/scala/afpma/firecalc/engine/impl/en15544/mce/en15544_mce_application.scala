@@ -92,14 +92,14 @@ abstract class EN15544_MCE_Application(
     lazy val en13384_η_WN: VNelMcalcErr[Percentage] =
         Validated.validNel:
             inputs.design.firebox match
-                case _   : OneOff => en13384_η_W_calc(inputs.fluegas_co2_dry_nominal)
-                case tstd: Tested => tstd.efficiency_nominal
+                case tstd: SingleTested         => tstd.efficiency_nominal
+                case _   : Firebox_15544 => en13384_η_W_calc(inputs.fluegas_co2_dry_nominal)
 
     lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] =
         (
             inputs.design.firebox match
-                case _   : OneOff => inputs.fluegas_co2_dry_lowest.map(en13384_η_W_calc)
-                case tstd: Tested => tstd.efficiency_reduced
+                case tstd: SingleTested         => tstd.efficiency_reduced
+                case _   : Firebox_15544 => inputs.fluegas_co2_dry_lowest.map(en13384_η_W_calc)
         ).map(Validated.validNel)
 
     lazy val energy_in_nominal_load = energy_in_wet_wood(m_B)
@@ -107,13 +107,13 @@ abstract class EN15544_MCE_Application(
 
     lazy val en13384_fluegas_σ_CO2_dry_nominal: Percentage =
         inputs.design.firebox match
-            case _ : OneOff => fluegas_σ_CO2_dry_nominal
-            case tt: Tested => tt.co2_dry_nominal
+            case tt: SingleTested         => tt.co2_dry_nominal
+            case _ : Firebox_15544 => fluegas_σ_CO2_dry_nominal
 
     lazy val en13384_fluegas_σ_CO2_dry_lowest: Option[Percentage] =
         inputs.design.firebox match
-            case _ : OneOff => fluegas_σ_CO2_dry_lowest
-            case tt: Tested => tt.co2_dry_lowest
+            case tt: SingleTested         => tt.co2_dry_lowest
+            case _ : Firebox_15544 => fluegas_σ_CO2_dry_lowest
 
     lazy val en13384_fluegas_σ_H2O_nominal: Option[Percentage] = inputs.fluegas_h2o_perc_vol_nominal
     lazy val en13384_fluegas_σ_H2O_lowest : Option[Percentage] = inputs.fluegas_h2o_perc_vol_lowest
@@ -284,6 +284,14 @@ abstract class EN15544_MCE_Application(
                     .some
 
     override def combustionAir_PipeResult =
+        CombustionAirPipe_Module_13384.foldPipeCanBe(inputs.pipes.combustionAir)(
+            onWithout   = combustionAir_PipeResult_whenEmpty,
+            onFullDescr = fd => combustionAir_PipeResult_whenExists(fd)
+        )
+
+    override def combustionAir_PipeResult_whenExists(
+        fd: CombustionAirPipe_Module_13384.FullDescr
+    ) =
         airIntake_PipeResult.andThen: asp =>
             (
                 en13384_heatingAppliance_powers,
@@ -292,7 +300,7 @@ abstract class EN15544_MCE_Application(
                 .mapN_andThen: (ha_pow, ha_eff) =>
                     ops_en13384.ThermalMecaFlu_13384
                         .makePipeResult                (
-                            fd                 = CombustionAirPipe_Module_13384.unwrap(inputs.pipes.combustionAir),
+                            fd                 = CombustionAirPipe_Module_13384.unwrap(fd),
                             hafg               = en13384_heatingAppliance_fluegas,
                             hamf               = en13384_heatingAppliance_massFlows,
                             hapwr              = ha_pow,

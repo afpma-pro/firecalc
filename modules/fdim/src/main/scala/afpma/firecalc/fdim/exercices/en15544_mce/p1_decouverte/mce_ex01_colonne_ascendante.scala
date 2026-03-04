@@ -68,7 +68,6 @@ object mce_ex01_colonne_ascendante
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                               = 33.2.cm,
         h12_largeurDuFoyer                                  = 33.2.cm,
         h13_hauteurDuFoyer                                  = 51.9.cm,
@@ -76,6 +75,7 @@ object mce_ex01_colonne_ascendante
         h67_sectionCumuleeEntreeAirPorte                    = 94.cm2,
         h71_largeurVitre                                    = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
         h72_hauteurVitre                                    = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                                      = 5.cm,
     )
 
     val fluePipe = 

@@ -33,11 +33,11 @@ object Firebox_V2:
     case class Traditional(
         @Transl(I(_.firebox.tested.heat_output_reduced))
         heat_output_reduced                  : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
-        @Transl(I(_.firebox.traditional.depth))
+        @Transl(I(_.firebox.firebox_depth))
         firebox_depth                        : Length,
-        @Transl(I(_.firebox.traditional.width))
+        @Transl(I(_.firebox.firebox_width))
         firebox_width                        : Length,
-        @Transl(I(_.firebox.traditional.height))
+        @Transl(I(_.firebox.firebox_height))
         firebox_height                       : Length,
         @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors))
         height_of_first_row_of_air_injectors : Length,
@@ -59,11 +59,11 @@ object Firebox_V2:
         version                             : Either["Version 1", "Version 2"],
         @Transl(I(_.firebox.ecolabeled.version_2_air_intake_shape))
         air_intake_shape                    : Option[PipeShape], // defined only for V2
-        @Transl(I(_.firebox.traditional.depth))
+        @Transl(I(_.firebox.firebox_depth))
         firebox_depth                       : Length,
-        @Transl(I(_.firebox.traditional.width))
+        @Transl(I(_.firebox.firebox_width))
         firebox_width                       : Length,
-        @Transl(I(_.firebox.traditional.height))
+        @Transl(I(_.firebox.firebox_height))
         firebox_height                      : Length,
         @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors))
         height_of_first_row_of_air_injectors: Length,
@@ -103,11 +103,11 @@ object Firebox_V2:
         outside_air_location_in_heater       : OutsideAirLocationInHeater,
         @Transl(I(_.firebox.afpma_prse.outside_air_conduit_shape))
         outside_air_conduit_shape            : PipeShape,
-        @Transl(I(_.firebox.traditional.depth))
+        @Transl(I(_.firebox.firebox_depth))
         firebox_depth                        : Length,
-        @Transl(I(_.firebox.traditional.width))
+        @Transl(I(_.firebox.firebox_width))
         firebox_width                        : Length,
-        @Transl(I(_.firebox.traditional.height))
+        @Transl(I(_.firebox.firebox_height))
         firebox_height                       : Length,
         @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors))
         height_of_first_row_of_air_injectors : Length,

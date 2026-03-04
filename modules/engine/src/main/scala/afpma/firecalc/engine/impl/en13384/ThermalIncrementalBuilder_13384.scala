@@ -33,7 +33,6 @@ import scala.annotation.targetName
 import scala.reflect.*
 
 import com.softwaremill.quicklens.*
-import magnolia1.Transl
 
 object models:
 
@@ -67,6 +66,15 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override type AddElement = AddThermalPipeElement_13384
 
     extension (addElement: AddElement) override def name: String = addElement.name
+
+    override protected def isForbiddenAddElementAtStart(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
+    override protected def isForbiddenAddElementAtEnd(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
 
     override type PT <: PipeType_EN13384
 

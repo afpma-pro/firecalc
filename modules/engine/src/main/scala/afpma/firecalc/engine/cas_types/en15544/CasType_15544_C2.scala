@@ -58,7 +58,6 @@ object CasType_15544_C2
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        pn_reduced                  = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer       = 44.1.cm,
         h12_largeurDuFoyer          = 42.1.cm,
         h13_hauteurDuFoyer          = 75.0.cm,
@@ -66,7 +65,8 @@ object CasType_15544_C2
             0.3.unitless, // ??? in basic2plus, not specified in EN15544 (what about in some test report ?)
         h67_sectionCumuleeEntreeAirPorte = 250.cm2,
         h71_largeurVitre                 = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        h72_hauteurVitre                 = 0.cm  // TODO: à spécifier (nouveauté EN15544:2023)
+        h72_hauteurVitre                 = 0.cm,  // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                   = 5.cm,
     )
 
     val fluePipe =

@@ -233,7 +233,10 @@ case class Errors(
     failed_to_write_file    : StringFormat1,
     failed_to_save_file     : StringFormat1,
     failed_to_open_dialog   : StringFormat1,
-    failed_to_save_dialog   : StringFormat1
+    failed_to_save_dialog   : StringFormat1,
+    value_ge_0              : StringFormat1,
+    value_gt_0              : StringFormat1,
+    value_is_undefined      : String
 )
 
 case class Placeholders(

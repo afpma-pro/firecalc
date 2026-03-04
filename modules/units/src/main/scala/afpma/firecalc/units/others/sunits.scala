@@ -99,12 +99,22 @@ object sunits:
             val su = mkShowUnitFull[(Meter ^ 2)]
             new SUnit[(Meter ^ 2)](_.square_meter)(using su)
 
+        given sunit_SquareMeter_Kelvin_per_Watt_alias: SUnit[SquareMeterKelvinPerWatt] =
+            val su = ShowUnit.fromString[SquareMeterKelvinPerWatt]("m².K/W")
+            val suf = mkShowUnitFull[SquareMeterKelvinPerWatt]
+            new SUnit[SquareMeterKelvinPerWatt](_.square_meter_kelvin_per_watt)(using suf, su)
+
         given sunit_SquareMeter_Kelvin_per_Watt: SUnit[(Meter ^ 2) * Kelvin / Watt] =
             val su = ShowUnit.fromString[(Meter ^ 2) * Kelvin / Watt]("m².K/W")
             val suf = mkShowUnitFull[(Meter ^ 2) * Kelvin / Watt]
             new SUnit[(Meter ^ 2) * Kelvin / Watt](_.square_meter_kelvin_per_watt)(using suf, su)
 
-        given sunit_Unitless: SUnit[1] = 
+        given sunit_MilligramPerNm3: SUnit[Milli * Gram / (Meter ^ 3)] =
+            val su  = ShowUnit.fromString[Milli * Gram / (Meter ^ 3)]("mg/Nm³")
+            val suf = mkShowUnitFull[Milli * Gram / (Meter ^ 3)]
+            new SUnit[Milli * Gram / (Meter ^ 3)](_.mg_per_Nm3)(using suf, su)
+
+        given sunit_Unitless: SUnit[1] =
             val su = mkShowUnitFull[1]
             new SUnit[1](_.unitless)(using su)
 
@@ -125,12 +135,14 @@ object sunits:
             SUnits.sunit_Kilogram,
             SUnits.sunit_Kilowatt,
             SUnits.sunit_Meter,
+            SUnits.sunit_MilligramPerNm3,
             SUnits.sunit_Millimeter,
             SUnits.sunit_Pascal,
             SUnits.sunit_Percent,
             SUnits.sunit_Pound,
             SUnits.sunit_SquareCentimeter,
             SUnits.sunit_SquareMeter,
+            SUnits.sunit_SquareMeter_Kelvin_per_Watt_alias,
             SUnits.sunit_SquareMeter_Kelvin_per_Watt,
             SUnits.sunit_SquareInch,
             SUnits.sunit_Unitless,

@@ -8,7 +8,7 @@ package afpma.firecalc.dto.generators.schema
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.generators.common.CommonTypes_Generators
 import afpma.firecalc.dto.generators.common.StoveParams_Generators
-import afpma.firecalc.dto.generators.firebox.Firebox_V2_Generators
+import afpma.firecalc.dto.generators.firebox.Firebox_V3_Generators
 import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_13384_V2_Generators
 import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_15544_V2_Generators
 import afpma.firecalc.dto.generators.pipe_descr.SetThermalPipeProp_13384_V3_Generators
@@ -20,7 +20,7 @@ import org.scalacheck.Gen
  * FireCalcYAML_V4_Generators
  *
  * Generates complete FireCalcYAML_V4 instances with:
- * - V2 fireboxes (reused from V2/V3)
+ * - V3 fireboxes (new in V4, adds SingleTested variant)
  * - FlowOnly pipes for air intake (13384 V2 - unchanged from V3)
  * - FlowOnly pipes for flue (15544 V2 - unchanged from V3)
  * - Thermal pipes for connector and chimney (13384 V3 - new in V4, adds SetPropertiesInBatch)
@@ -28,7 +28,7 @@ import org.scalacheck.Gen
 trait FireCalcYAML_V4_Generators
     extends CommonTypes_Generators
     with StoveParams_Generators
-    with Firebox_V2_Generators
+    with Firebox_V3_Generators
     with SetFlowOnlyPipeProp_13384_V2_Generators
     with SetFlowOnlyPipeProp_15544_V2_Generators
     with SetThermalPipeProp_13384_V3_Generators:
@@ -40,7 +40,7 @@ trait FireCalcYAML_V4_Generators
      * - connector and chimney now use ThermalPipeDescr_13384_V3 (adds SetPropertiesInBatch)
      * - air_intake uses FlowOnly (13384 V2) - unchanged from V3
      * - flue_pipe uses FlowOnly (15544 V2) - unchanged from V3
-     * - firebox remains V2 (no changes)
+     * - firebox is V3 (adds SingleTested variant)
      */
     def genFireCalcYAML_V4: Gen[FireCalcYAML_V4] =
         for
@@ -51,7 +51,7 @@ trait FireCalcYAML_V4_Generators
             localConditions <- genLocalConditions
             stoveParams   <- genStoveParams
             airIntake     <- genFlowOnlyPipeDescr_13384_V2_Seq
-            firebox       <- genFirebox_V2
+            firebox       <- genFirebox_V3
             fluePipe      <- genFlowOnlyPipeDescr_15544_V2_Seq
             connector     <- genThermalPipeDescr_13384_V3_Seq
             chimney       <- genThermalPipeDescr_13384_V3_Seq

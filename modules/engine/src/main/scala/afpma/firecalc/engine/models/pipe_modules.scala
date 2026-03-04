@@ -152,13 +152,6 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
     type Without = Without.type
     val without: ConnectorPipe = Without
 
-    given tt_cpWithout: TypeTest[ConnectorPipe, ConnectorPipe_Module.Without] = new:
-        def unapply(x: ConnectorPipe): Option[x.type & ConnectorPipe_Module.Without] =
-            if (x == ConnectorPipe_Module.Without)
-                val xx: x.type & ConnectorPipe_Module.Without = x.asInstanceOf[x.type & Without]
-                Some(xx)
-            else None
-
 type ChimneyPipe = ChimneyPipe_Module.PipeCanBe
 object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.IncrementalPipeDefModule[ChimneyPipeT]:
 
@@ -244,12 +237,30 @@ sealed trait AirIntakePipe_Module_Generic[Params0] extends AirIntakePipe_Common_
 sealed trait CombustionAirPipe_Module_Generic[Params0] extends IncrementalPipeDefModule_Common[CombustionAirPipeT]:
     final type G      = CombustionAir
     final type Params = Params0
+
+    type PipeCanBe = FullDescr | Without
+
+    /** Safely fold over PipeCanBe without exposing abstract type matching */
+    def foldPipeCanBe[A](pipe: PipeCanBe)(
+        onWithout  : => A,
+        onFullDescr: FullDescr => A
+    ): A =
+        pipe match
+            case Without       => onWithout
+            case fd: FullDescr => onFullDescr(fd)
+
+    case object Without
+    type Without = Without.type
+    val without: PipeCanBe = Without
+    
 sealed trait FireboxPipe_Module_Generic[Params0]       extends IncrementalPipeDefModule_Common[FireboxPipeT]      :
     final type G      = FlueGas
     final type Params = Params0
 sealed trait FluePipe_Module_Generic[Params0]          extends IncrementalPipeDefModule_Common[FluePipeT]         :
     final type G      = FlueGas
     final type Params = Params0
+    type PipeCanBe    = FullDescr
+    val gas           = FlueGas
 
 // EN13384
 
@@ -274,7 +285,6 @@ object CombustionAirPipe_Module_13384
     export incremental.{name as _, *}
     export FullDescrResult.*
 
-    type PipeCanBe = FullDescr
     val gas = CombustionAir
 
 type FireboxPipe_13384 = FireboxPipe_Module_13384.PipeCanBe
@@ -298,9 +308,6 @@ object FluePipe_Module_13384
     val incremental = afpma.firecalc.engine.impl.en13384.ThermalIncrementalBuilder_13384.makeFor[FluePipeT]
     export incremental.{name as _, *}
     export FullDescrResult.*
-
-    type PipeCanBe = FullDescr
-    val gas = FlueGas
 
     extension (fp: FluePipe_13384)
         def totalLengthOfSections: QtyD[Meter] =
@@ -327,7 +334,6 @@ object CombustionAirPipe_Module_15544
     export incremental.{name as _, *}
     export FullDescrResult.*
 
-    type PipeCanBe = FullDescr
     val gas = CombustionAir
 
 type FireboxPipe_15544 = FireboxPipe_Module_15544.PipeCanBe
@@ -355,10 +361,6 @@ object FluePipe_Module_15544
     def mkPipeFromIncrDescr(incrSeq: Seq[incremental.IncrDescr]): FullDescrResult =
         // import incremental.*
         incremental.define(incrSeq*).toFullDescr()
-
-    type PipeCanBe = FullDescr
-
-    val gas = FlueGas
 
     extension (fp: FluePipe_15544)
         def totalLengthOfSections: QtyD[Meter] =

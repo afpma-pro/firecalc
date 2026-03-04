@@ -17,7 +17,7 @@ Multiple distinct failures were observed on windows-latest:
 1) Coursier/Ivy cache locking during Scala.js build (ScalablyTyped path)
 
 ```
-sbt.librarymanagement.ResolveException: Error downloading org.scala-lang:scala3-compiler_3:3.8.1
+sbt.librarymanagement.ResolveException: Error downloading org.scala-lang:scala3-compiler_3:3.8.2
 download error: Caught java.nio.channels.OverlappingFileLockException ...
 at org.scalablytyped.converter.internal.ZincCompiler$ ...
 ```
@@ -83,7 +83,7 @@ D:/a/firecalc/firecalc/modules/ui/target/streams/_global/stImport/_global/stream
 - Cached via actions/cache to avoid redownloads across runs.
 
 4) Prefetch scala3-compiler via Coursier CLI (optional)
-- Using cs.exe to fetch org.scala-lang:scala3-compiler_3:3.8.1 into the isolated cache early.
+- Using cs.exe to fetch org.scala-lang:scala3-compiler_3:3.8.2 into the isolated cache early.
 - May reduce initial download contention but not proven essential.
 - Implemented in [`release-staging.yml`](.github/workflows/release-staging.yml).
 
@@ -124,7 +124,7 @@ D:/a/firecalc/firecalc/modules/ui/target/streams/_global/stImport/_global/stream
 - [`.github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
   - Isolated caches on Windows: COURSIER_CACHE, SBT_OPTS with custom dirs
   - actions/cache for .coursier/.ivy2/.sbt-boot/.sbt-global
-  - Optional: cs.exe prefetch scala3-compiler_3:3.8.1 (may not be essential)
+  - Optional: cs.exe prefetch scala3-compiler_3:3.8.2 (may not be essential)
   - ScalablyTyped hack ENABLED (critical - no FIRECALC_CI_NO_ST_HACK variable)
   - All platforms enabled (Linux, Windows, macOS)
   - No pre-warm step (removed - ScalablyTyped triggers too early)
@@ -164,7 +164,7 @@ Optional prefetch (may not be essential):
 
 ```pwsh
 # Prefetch Scala 3 compiler (optional - sbt will download during build anyway)
-& cs.exe fetch org.scala-lang:scala3-compiler_3:3.8.1 --cache "$env:GITHUB_WORKSPACE\.coursier"
+& cs.exe fetch org.scala-lang:scala3-compiler_3:3.8.2 --cache "$env:GITHUB_WORKSPACE\.coursier"
 ```
 
 Enable ST Scala 3 compatibility hack (default - no code needed):

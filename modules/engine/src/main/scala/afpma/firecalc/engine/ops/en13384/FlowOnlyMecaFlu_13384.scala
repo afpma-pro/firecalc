@@ -134,8 +134,6 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     given HeatingAppliance.Powers     = hapwr
     given HeatingAppliance.Efficiency = haeff
 
-    val σ_CO2 = en13384.σ_CO2
-
     private val DEBUG = false
     private inline def debug(msg: String): Unit = if (DEBUG) println(msg) else ()
 
@@ -319,7 +317,6 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
 
     val v_zetaO_dynamicFriction: ValidatedNel[MecaFlu_Error, (Option[ζ], Pressure)] =
         import DynamicFrictionCoeff_13384.given
-        import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.*
         gp.pipeEl.el match
             case _ : StraightSection                                                    =>
                 (None, 0.0.pascals).validNel
@@ -336,7 +333,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                 val zeta_eq: ζ = pu / (pd * se)
                 (Some(zeta_eq), pu).validNel
             case el: (DirectionChange | SectionGeometryChange | SingularFlowResistance) =>
-                import SingularFlowResistanceCoeffError.*
+                import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
                 el.dynamicFrictionCoeff match
                     case Valid(zeta)  =>
                         val pu = MecaFluOps.whenGasType(gp.pipeEl.typ)(
@@ -352,7 +349,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                             )(using pReq)
                         )
                         (Some(zeta), pu).validNel
-                    case Invalid(nel) =>
+                    case inel @ Invalid(nel) =>
                         val urOpt = nel.toList
                             .filter(_.isInstanceOf[UnexpectedRatio_Ld_Dh[?]])
                             .headOption
@@ -365,11 +362,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                                     )
                                     .invalidNel
                             case None | Some(_)                        =>
-                                NonEmptyList
-                                    .fromListUnsafe(
-                                        nel.toList.map(x => MecaFlu_Error.DynamicFrictionError(x.msg, curr.typ))
-                                    )
-                                    .invalid
+                                inel
 
     def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt): Either[MecaFlu_Error, TCelsius] =
         throw new Exception("'temperature_iob' can not be computed for this type of simplified air intake pipe")

@@ -58,6 +58,15 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     extension (addElement: AddElement) override def name: String = addElement.name
 
+    override protected def isForbiddenAddElementAtStart(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
+    override protected def isForbiddenAddElementAtEnd(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
+
     override type PT <: PipeType_EN13384
 
     override def define(iDescrs: IncrDescr*): PipeIncrDescr =

@@ -58,7 +58,7 @@ object strict_ex03_cas_pratique
         h80_largeurRenfortMedianArriere                     = 3.cm,
         h81_debordDesRenfortsDansLesAngles                  = 3.cm,
         h82_hauteurDesInjecteurs_Z                          = 0.8.cm,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur              = 10.cm,
+        h83_hauteurEntreLaSoleEtLe1erInjecteur_X            = 10.cm,
     )
 
     val fluePipe =

@@ -12,6 +12,8 @@ import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
+import afpma.firecalc.dto.v4.Firebox_V3
+import afpma.firecalc.dto.v4.TypeOfAppliance
 
 import io.circe.Decoder
 import io.circe.Encoder
@@ -22,6 +24,10 @@ object V4Instances:
 
     import CommonInstances.given
     import V3Instances.given
+
+    given Decoder[Firebox_V3] = semiauto.deriveDecoder[Firebox_V3]
+    given Encoder[Firebox_V3] = semiauto.deriveEncoder[Firebox_V3]
+
 
     // AirSpaceDetailed_V2
     // WithoutAirSpace_V2 is encoded as the plain string "WithoutAirSpace" so the
@@ -68,3 +74,18 @@ object V4Instances:
 
     // given Decoder[FlowOnlyPipeDescr_15544_V2] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544_V2]
     // given Encoder[FlowOnlyPipeDescr_15544_V2] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544_V2]
+
+    // TypeOfAppliance: encoded as plain strings to avoid the YAML null bug
+    // where `{}` (empty object) is emitted as `null` by the YAML printer.
+    given Decoder[TypeOfAppliance] = Decoder.instance { cursor =>
+        cursor.as[String] match
+            case Right("WoodLogs") => Right(TypeOfAppliance.WoodLogs)
+            case Right("Pellets")  => Right(TypeOfAppliance.Pellets)
+            case other             =>
+                Left(io.circe.DecodingFailure(s"Unknown TypeOfAppliance: $other", cursor.history))
+    }
+
+    given Encoder[TypeOfAppliance] = Encoder.instance {
+        case TypeOfAppliance.WoodLogs => Json.fromString("WoodLogs")
+        case TypeOfAppliance.Pellets  => Json.fromString("Pellets")
+    }

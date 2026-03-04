@@ -55,14 +55,14 @@ object ExampleProject_15544
         mkPipeFromIncrDescr(conduit_air_descr).extractPipe
 
     val foyer_descr = TraditionalFirebox(
-        pn_reduced                       = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer            = 44.cm,
         h12_largeurDuFoyer               = 42.cm,
         h13_hauteurDuFoyer               = 78.cm,
         h66_coeffPerteDeChargePorte      = 0.3.unitless,
         h67_sectionCumuleeEntreeAirPorte = 170.cm2,
         h71_largeurVitre                 = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        h72_hauteurVitre                 = 20.cm  // TODO: à spécifier (nouveauté EN15544:2023)
+        h72_hauteurVitre                 = 20.cm,  // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                   = 5.cm,
     )
 
     val firebox = foyer_descr

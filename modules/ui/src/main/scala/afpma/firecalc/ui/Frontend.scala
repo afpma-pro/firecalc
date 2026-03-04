@@ -22,10 +22,10 @@ object Frontend {
 
     import models.*
 
-    val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
+    lazy val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> appStateSchemaWebStorageVar.writer
 
-    val app: Div = div(cls := "", child <-- router.currentPageSignal.map(renderPage)).amend(
+    lazy val app: Div = div(cls := "", child <-- router.currentPageSignal.map(renderPage)).amend(
         writeUnifiedSchemaSubscription
         // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))
         //     .tapEach(consoleLogVNelStringErrors) --> errorBusConsole

@@ -5,7 +5,6 @@
 
 package afpma.firecalc.ui.models.schema
 
-import afpma.firecalc.ui.models.schema.v3.*
 import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4
 
 // Alias to V4

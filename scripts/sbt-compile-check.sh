@@ -109,13 +109,28 @@ check_status() {
     last_error_line=$(echo "$last_lines" | grep -n "^\[error\]" | tail -1 | cut -d: -f1)
 
     # Case 1: Target module marker found AND [success] appears after it
+    # AND no [error] lines appeared after that [success] (which would mean a subsequent cycle failed)
     if [ -n "$target_marker_line" ] && [ -n "$success_line" ]; then
         if [ "$success_line" -gt "$target_marker_line" ]; then
-            echo "STATUS: SUCCESS"
-            if [ "$ERRORS_ONLY" = false ]; then
-                echo "$last_lines" | grep "^\[success\] Total time:" | tail -1
+            # Guard: if errors appeared after the success line, this success is stale
+            local no_errors_after_success=true
+            if [ -n "$last_error_line" ] && [ "$last_error_line" -gt "$success_line" ]; then
+                no_errors_after_success=false
             fi
-            return 0
+            if [ "$no_errors_after_success" = true ]; then
+                echo "STATUS: SUCCESS"
+                if [ "$ERRORS_ONLY" = false ]; then
+                    echo "$last_lines" | grep "^\[success\] Total time:" | tail -1
+                    # Show warnings from the current cycle (after target module marker)
+                    local warnings
+                    warnings=$(echo "$last_lines" | tail -n +"$target_marker_line" | grep "^\[warn\]")
+                    if [ -n "$warnings" ]; then
+                        echo "---WARNINGS---"
+                        echo "$warnings"
+                    fi
+                fi
+                return 0
+            fi
         fi
     fi
 
@@ -145,14 +160,32 @@ check_status() {
             if [ "$ERRORS_ONLY" = false ]; then
                 echo "---ERRORS---"
             fi
-            # Extract error lines from the current cycle
-            # Show errors that appeared after the last success (if any) to avoid old errors
+            # Extract error and warning lines from the current cycle
+            # Show lines that appeared after the last success (if any) to avoid old output
             if [ -n "$success_line" ] && [ -z "$target_marker_line" ]; then
                 echo "$last_lines" | tail -n +"$success_line" | grep "^\[error\]"
+                local warnings
+                warnings=$(echo "$last_lines" | tail -n +"$success_line" | grep "^\[warn\]")
+                if [ -n "$warnings" ] && [ "$ERRORS_ONLY" = false ]; then
+                    echo "---WARNINGS---"
+                    echo "$warnings"
+                fi
             elif [ -n "$target_marker_line" ]; then
                 echo "$last_lines" | tail -n +"$target_marker_line" | grep "^\[error\]"
+                local warnings
+                warnings=$(echo "$last_lines" | tail -n +"$target_marker_line" | grep "^\[warn\]")
+                if [ -n "$warnings" ] && [ "$ERRORS_ONLY" = false ]; then
+                    echo "---WARNINGS---"
+                    echo "$warnings"
+                fi
             else
                 echo "$last_lines" | grep "^\[error\]"
+                local warnings
+                warnings=$(echo "$last_lines" | grep "^\[warn\]")
+                if [ -n "$warnings" ] && [ "$ERRORS_ONLY" = false ]; then
+                    echo "---WARNINGS---"
+                    echo "$warnings"
+                fi
             fi
             return 1
         fi

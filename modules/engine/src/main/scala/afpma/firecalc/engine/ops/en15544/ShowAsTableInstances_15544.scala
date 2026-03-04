@@ -15,7 +15,7 @@ import afpma.firecalc.engine.models.en15544.*
 import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled
 import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
 import afpma.firecalc.engine.models.en15544.std.*
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.OneOff.CustomForLab
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Traditional.CustomForLab
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top
@@ -40,12 +40,14 @@ class ShowAsTableInstances_15544(using Locale):
 
     given ShowAsTable[Firebox_15544] =
         ShowAsTable.mkLightFor(I18N.headers.firebox_description):
-            case oo: Firebox_15544.OneOff =>
-                oo match
-                    case x: firebox.calcpdm_v_0_2_32.TraditionalFirebox => x.showOnlyRows
-                    case x: firebox.calcpdm_v_0_2_32.EcoLabeled         => x.showOnlyRows
-                    case x: CustomForLab                                => x.showOnlyRows
-            case t : Firebox_15544.Tested => t.showOnlyRows
+            case x: firebox.calcpdm_v_0_2_32.TraditionalFirebox => x.showOnlyRows
+            case x: firebox.calcpdm_v_0_2_32.EcoLabeled         => x.showOnlyRows
+            case x: firebox.calcpdm_v_0_2_32.AFPMA_PRSE         => x.showOnlyRows
+            case x: CustomForLab                                => x.showOnlyRows
+            case x: SingleTested                                => x.showOnlyRows
+            case x: Traditional                                 => x.showOnlyRows
+            case x: CertifiedDesign                             => x.showOnlyRows
+            case x: Door15aFirebox_Catalog                      => x.showOnlyRows
 
     given showAsTable_CitedConstraints: (scc: ShowAsTable[CheckableConstraint[?]]) => ShowAsTable[CitedConstraints] =
         ShowAsTable.mkLightFor    (
@@ -183,23 +185,9 @@ class ShowAsTableInstances_15544(using Locale):
                     case FacingType.WithoutAirGap => "facing type" :: "without air gap" :: Nil
 
                 val design_lines: List[List[String]] = design.firebox match
-                    case oneoff: OneOff =>
-                        ("=> ONE OFF CONSTRUCTION"       :: ""                                               :: Nil) ::
-                            {
-                                val pn_reduced_show = oneoff.pn_reduced match
-                                    case x: HeatOutputReduced.NotDefined    => x.show
-                                    case x: HeatOutputReduced.HalfOfNominal =>
-                                        if (x.pn_reduced.isDefined) x.show
-                                        else HeatOutputReduced.HalfOfNominal.makeFromNominalO(i.stoveParams.pn).show
-                                (I18N.en15544.terms.P_n_reduced.name :: pn_reduced_show :: Nil)
-                            }                            ::
-                            ("- CHAMBRE DE COMBUSTION -" :: "----------"                                     :: Nil) ::
-                            ("base"                      :: oneoff.dimensions.base.show                      :: Nil) ::
-                            ("hauteur"                   :: oneoff.dimensions.height.toUnit[Centimeter].show :: Nil) ::
-                            Nil
-                    case tested: Tested =>
+                    case tested: SingleTested =>
                         import tested.*
-                        ("=> TESTED COMBSTION CHAMBER"     :: "----------"                :: Nil) ::
+                        ("=> SINGLE TESTED COMBUSTION CHAMBER"     :: "----------"                :: Nil) ::
                             ("pn reduced"                  :: pn_reduced.show             :: Nil) ::
                             ("minimum fuel mass"           :: minimumFuelMass.show        :: Nil) ::
                             ("maximum fuel mass"           :: maximumFuelMass.show        :: Nil) ::
@@ -208,6 +196,21 @@ class ShowAsTableInstances_15544(using Locale):
                             ("mean firebox temperature"    :: meanFireboxTemperature.show :: Nil) ::
                             ("temperature burnout"         :: tBurnout.show               :: Nil) ::
                             Nil
+                    case fb: Firebox_15544 =>
+                        ("=> ONE OFF CONSTRUCTION"       :: ""                                               :: Nil) ::
+                            {
+                                val pn_reduced_show = fb.pn_reduced match
+                                    case x: HeatOutputReduced.FromTypeTest  => x.show
+                                    case x: HeatOutputReduced.NotDefined    => x.show
+                                    case x: HeatOutputReduced.HalfOfNominal =>
+                                        if (x.pn_reduced.isDefined) x.show
+                                        else HeatOutputReduced.HalfOfNominal.makeFromNominalO(i.stoveParams.pn).show
+                                (I18N.en15544.terms.P_n_reduced.name :: pn_reduced_show :: Nil)
+                            }                            ::
+                            ("- CHAMBRE DE COMBUSTION -" :: "----------"                                     :: Nil) ::
+                            ("base"                      :: fb.dimensions.base.show                      :: Nil) ::
+                            ("hauteur"                   :: fb.dimensions.height.toUnit[Centimeter].show :: Nil) ::
+                            Nil                    
 
                 ("z"                   :: localConditions.altitude.show :: Nil) ::
                     ("T_uo (override)" :: "Refer to EN 13384-1 section" :: Nil) ::

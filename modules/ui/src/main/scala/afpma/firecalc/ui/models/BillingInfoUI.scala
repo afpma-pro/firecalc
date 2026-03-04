@@ -74,7 +74,7 @@ case class BillingInfoUI()(using DisplayUnits, Locale):
                 input(tpe := "hidden", value <-- variable.signal.map(_.toInt.toString))
 
     given DaisyUIVerticalForm[BillingInfo] =
-        import validatevar.string.validOption_Always
+        import ValidateVarCommonInstances.string.validOption_Always
         given DF[String]         = vertical_form.string_emptyAsDefault_alwaysValid
         given DF[Option[String]] = DaisyUIVerticalForm.forOptionString_default
 

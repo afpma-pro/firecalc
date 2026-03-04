@@ -30,7 +30,7 @@ object EngineState:
     // given Decoder[AppState] = FireCalcYAML.decoder
     // given Encoder[AppState] = FireCalcYAML.encoder
 
-    val example_projet_15544: EngineState = FireCalcYAML_V4(
+    lazy val example_projet_15544: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -50,7 +50,7 @@ object EngineState:
         chimney_pipe_descr             = ExampleProject_15544.conduit_fumees_descr
     )
 
-    val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V4(
+    lazy val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -70,7 +70,7 @@ object EngineState:
         chimney_pipe_descr             = CasType_15544_C3.conduit_fumees_descr
     )
 
-    val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V4(
+    lazy val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -90,7 +90,7 @@ object EngineState:
         chimney_pipe_descr             = CasPratique_15544_FDIM_EX_03.conduit_fumees_descr
     )
 
-    val empty: EngineState = FireCalcYAML_V4(
+    lazy val empty: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -104,7 +104,7 @@ object EngineState:
         chimney_pipe_descr             = Seq.empty
     )
 
-    val minimal: EngineState = FireCalcYAML_V4(
+    lazy val minimal: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -148,6 +148,6 @@ object EngineState:
             )
     )
 
-    val init = minimal
+    lazy val init = minimal
 
 end EngineState

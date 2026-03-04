@@ -22,7 +22,6 @@ import afpma.firecalc.engine.models.PipesResult_15544
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en13384.typedefs.P_L
 import afpma.firecalc.engine.models.en15544.std.Outputs
-import afpma.firecalc.engine.models.en15544.typedefs.CitedConstraints
 import afpma.firecalc.engine.models.en15544.typedefs.EstimatedOutputTemperatures
 import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
 import afpma.firecalc.engine.models.en15544.typedefs.η
@@ -44,7 +43,6 @@ import afpma.firecalc.ui.utils.*
 import cats.data.Validated
 import cats.data.Validated.Valid
 import cats.data.ValidatedNel
-import cats.implicits.catsSyntaxOptionId
 import cats.implicits.catsSyntaxTuple2Semigroupal
 
 import com.raquo.airstream.core.Signal
@@ -66,7 +64,7 @@ import scala.util.*
  * Unified application state schema stored in localStorage as a single atomic unit.
  * Contains: engine_state (sent to backend), sensitive_data (client-only), billing_data (client-only)
  */
-val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
+lazy val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
     WebStorageVar
         .localStorage(key = LocalStorageKeys.APP_STATE_SCHEMA, syncOwner = None)
         .withCodec          (
@@ -88,7 +86,7 @@ val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
             syncDistinctByFn = _ == _
         )
 
-val appStateSchemaVar =
+lazy val appStateSchemaVar =
     Var[AppStateSchema](appStateSchemaWebStorageVar.now())
 
 // ============================================================================
@@ -101,7 +99,7 @@ import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.engine.models.LocalRegulations
 
 // Engine state (sent to backend for PDF generation)
-val engineStateVar = appStateSchemaVar.zoomLazy(_.engine_state)((schema, engine) =>
+lazy val engineStateVar = appStateSchemaVar.zoomLazy(_.engine_state)((schema, engine) =>
     // Migrate engine state to latest version if needed
     val migratedEngine =
         if engine.version < FireCalcYAML.LATEST_VERSION then
@@ -356,6 +354,12 @@ lazy val effInRange_sig: Signal[Boolean] =
 lazy val results_en15544_emissions_and_efficiency_values: Signal[VNelMcalcErr[EmissionsAndEfficiencyValues]] =
     results_en15544_strict_sig.mapVNelE(_.emissions_and_efficiency_values)
 
+extension (d: Double)
+    private def filterNaN: Option[Double] = Option.when(!d.isNaN)(d)
+
+extension (od: Option[Double])
+    private def filterNaN: Option[Double] = od.filter(!_.isNaN)
+
 def makeQuadrionSubtotalForSingle(
     outputsSig: Signal[VNelMcalcErr[Outputs]]
 )(
@@ -367,10 +371,10 @@ def makeQuadrionSubtotalForSingle(
                 case Validated.Valid(pres) =>
                     Some(
                         QuadrionSubtotal   (
-                            ph    = pres.ph.value.some,
-                            pr    = (-1.0 * pres.pR.value).some,
-                            pu    = (pres.pu.map(pu => (-1.0 * pu).value)).toOption,
-                            sigma = pres.`ph-(pR+pu)`.map(_.value).toOption
+                            ph    = pres.ph.value.filterNaN,
+                            pr    = (-1.0 * pres.pR.value).filterNaN,
+                            pu    = pres.pu.map(pu => (-1.0 * pu).value).toOption.filterNaN,
+                            sigma = pres.`ph-(pR+pu)`.map(_.value).toOption.filterNaN
                         )
                     )
                 case _                     => None
@@ -394,15 +398,16 @@ def makeQuadrionSubtotalForFirebox(
                 case (Valid(cc_intlair_pres), Valid(cc_firebox_pres)) =>
                     Some(
                         QuadrionSubtotal   (
-                            ph    = (cc_intlair_pres.ph + cc_firebox_pres.ph).value.some,
-                            pr    = (-1.0 * (cc_intlair_pres.pR + cc_firebox_pres.pR).value).some,
+                            ph    = (cc_intlair_pres.ph + cc_firebox_pres.ph).value.filterNaN,
+                            pr    = (-1.0 * (cc_intlair_pres.pR + cc_firebox_pres.pR).value).filterNaN,
                             pu    = (cc_intlair_pres.pu, cc_firebox_pres.pu)
                                 .mapN((l, r) => -1.0 * (l + r).value)
-                                .toOption,
+                                .toOption
+                                .filterNaN,
                             sigma = (
                                 cc_intlair_pres.`ph-(pR+pu)`,
                                 cc_firebox_pres.`ph-(pR+pu)`
-                            ).mapN((l, r) => (l + r).value).toOption
+                            ).mapN((l, r) => (l + r).value).toOption.filterNaN
                         )
                     )
                 case (l, r                                          ) =>
@@ -418,20 +423,9 @@ val expertModeVar = Var[Boolean](false)
 val expertModeOn  = expertModeVar.signal
 val expertModeOff = expertModeOn.map(!_)
 
-// contraints / error validation for firebox
-
-val citedConstraintsValidation_sig: Signal[VNelMcalcErr[CitedConstraints]] =
-    results_en15544_strict_sig.mapVNelE(_.citedConstraints)
-
 // pour récupérer les erreurs de type AngleN2 missing etc...
 val air_intake_pipe_vnel2_signal = results_en15544_air_intake_pipe.map: p_vnel =>
     p_vnel.andThen(p => p.`ph-(pR+pu)`)
-
-// pressure final calc ok ?
-val firebox_vnel2_signal =
-    results_en15544_combustion_air_pipe
-        .combineWith(results_en15544_firebox_pipe)
-        .map((vp1, vp2) => vp1.map(_.`ph-(pR+pu)`).andThen(_ => vp2.map(_.`ph-(pR+pu)`)))
 
 val en13384_P_L_sig: Signal[VNelMcalcErr[P_L]] =
     results_en13384_sig.map(_.map(_.P_L))

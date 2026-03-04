@@ -10,6 +10,7 @@ import afpma.firecalc.ui.daisyui.{DaisyUIInputs, DaisyUIVerticalForm}
 import afpma.firecalc.ui.formgen.{FormConfig, ValidateVar}
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.instances.ThermalHorizontalForm_13384
+import afpma.firecalc.ui.instances.ValidateVarCommonInstances
 import afpma.firecalc.ui.models.PipeCatalogDatabase
 import afpma.firecalc.ui.utils.OptionalField
 import afpma.firecalc.ui.*
@@ -61,7 +62,7 @@ case class PipeCatalogSelectComponent(
     private val previewPropsVar    : Var[List[SetSingleProp]]   = Var(Nil)
 
     private given ValidateVar[List[SetSingleProp]] =
-        afpma.firecalc.ui.instances.validatevar.valid_always
+        ValidateVarCommonInstances.valid_always
             .given_ValidateVar_AlwaysValid[List[SetSingleProp]]
 
     /** `true` when the search query exactly matches a catalog entry name. */

@@ -80,6 +80,8 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     private given vertical_form: VerticalFormCommonInstances = new VerticalFormCommonInstances()
     import vertical_form.given
 
+    private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
+
     given dual: DualCommonInstances = new DualCommonInstances()
 
     private val FC_I18N_COS = I18N.local_conditions.chimney_termination
@@ -193,7 +195,7 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
 
     given form_z_geodetical_height: DisplayUnits => DaisyUIVerticalForm[QtyD[Meter]] =
         import defaultable.given_z_geodetical_height
-        import validatevar.meter.valid_whenPositive
+        import vv.meter.valid_whenPositive
         dual.given_dual_z_geodetical_height.form_DaisyUIVerticalForm
             .withFieldName(I18N.local_conditions.altitude)
 

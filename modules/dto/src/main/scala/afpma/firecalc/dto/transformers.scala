@@ -8,6 +8,7 @@ package afpma.firecalc.dto
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.*
+import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
 
@@ -78,6 +79,23 @@ object transformers:
         v1 match
             case Material_15544_V1.TuyauxEnChamotte => Material_15544_V2.TuyauxEnChamotte()
             case Material_15544_V1.BlocsDeChamotte  => Material_15544_V2.BlocsDeChamotte()
+
+    // Firebox_V2 -> Firebox_V3
+
+    given firebox_v2_traditional_to_v3: Transformer[v2.Firebox_V2.Traditional, v4.Firebox_V3.Traditional] =
+        Transformer
+            .define[v2.Firebox_V2.Traditional, v4.Firebox_V3.Traditional]
+            .withFieldRenamed(_.height_of_first_row_of_air_injectors, _.height_of_lowest_opening)
+            .buildTransformer
+
+    given firebox_v2_ecolabeled_to_v3: Transformer[v2.Firebox_V2.EcoLabeled, v4.Firebox_V3.EcoLabeled] =
+        Transformer.define[v2.Firebox_V2.EcoLabeled, v4.Firebox_V3.EcoLabeled].buildTransformer
+
+    given firebox_v2_afpma_prse_to_v3: Transformer[v2.Firebox_V2.AFPMA_PRSE, v4.Firebox_V3.AFPMA_PRSE] =
+        Transformer.define[v2.Firebox_V2.AFPMA_PRSE, v4.Firebox_V3.AFPMA_PRSE].buildTransformer
+
+    given firebox_v2_to_v3: Transformer[v2.Firebox_V2, v4.Firebox_V3] =
+        Transformer.define[v2.Firebox_V2, v4.Firebox_V3].buildTransformer
 
     // V3 to V4 Migration
 

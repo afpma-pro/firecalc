@@ -130,6 +130,26 @@ object TermConstraint:
     extension [O](o  : O                     ) def validResult  : ValidatedResult[O] = o.validNel
     extension [O](tce: TermConstraintError[O]) def invalidResult: ValidatedResult[O] = tce.invalidNel
 
+    // extension [U](constraints: Seq[Option[TermConstraint[U]]])
+    //     def checkAll(u: U): Seq[ValidatedResult[U]] =
+    //         constraints.flatten.map(_.validate(u))
+
+    //     def checkAllOpt(ou: Option[U]): Seq[Option[ValidatedResult[U]]] =
+    //         ou match
+    //             case Some(u) =>
+    //                 constraints.map:
+    //                     case Some(tc) => tc.validate(u).some
+    //                     case None     => None
+    //             case None    =>
+    //                 constraints.flatten.map(_ => None)
+
+    //     def checkAllAndCombine(u: U): ValidatedResult[U] =
+    //         given Monoid[ValidatedResult[U]] = ValidatedResult.mkMonoid[U](u)
+    //         checkAll(u).combineAll
+
+    //     def checkAllAndCombineWhenDefined(ou: Option[U]): Option[ValidatedResult[U]] =
+    //         ou.map(checkAllAndCombine)
+
     object ValidatedResult:
 
         extension [O](vr: ValidatedResult[O])
@@ -138,6 +158,15 @@ object TermConstraint:
 
         extension [O](vr: ValidatedResult[O])
             def unwrap: ValidatedNel[TermConstraintError[O], O] = vr
+
+            def leftMapDeep[E](f: TermConstraintError[O] => E): ValidatedNel[E, O] =
+                vr.leftMap(_.map(f))
+
+            def foldToErrDeep[E](f: TermConstraintError[O] => E): List[E] =
+                if (vr.isInvalid)
+                    vr.swap.toOption.get.map(f).toList
+                else
+                    Nil
 
             def foldToErr: Option[List[InvalidConstraint]] =
                 if (vr.isInvalid)

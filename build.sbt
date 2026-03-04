@@ -15,7 +15,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
 // Global / watchForceTriggerOnAnyChange := true
 
-val scala_version = "3.8.1"
+val scala_version = "3.8.2"
 
 // =========
 // Shared i18n Configuration
@@ -106,10 +106,10 @@ ThisBuild / startYear           := Some(2025)
 ThisBuild / licenses            := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage            := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version         = "0.3.0-b10-SNAPSHOT"
-lazy val reports_base_version   = "0.9.0-b10-SNAPSHOT"
-lazy val payments_base_version  = "0.9.0-b10-SNAPSHOT"
-lazy val ui_base_version        = "0.9.0-b10-SNAPSHOT"
+lazy val engine_version         = "0.3.0-b11-SNAPSHOT"
+lazy val reports_base_version   = "0.9.0-b11-SNAPSHOT"
+lazy val payments_base_version  = "0.9.0-b11-SNAPSHOT"
+lazy val ui_base_version        = "0.9.0-b11-SNAPSHOT"
 
 // Repository information (single source of truth)
 lazy val githubOwner            = "afpma-pro"
@@ -134,7 +134,7 @@ val commonSettings = Seq(
     // "-language:existentials",
     // "-language:higherKinds",
     "-language:implicitConversions",
-    // "-unchecked",
+    "-unchecked",
     // "-Wunused:all",
     // "-Wunused:all",
     "-Wunused:imports,privates,locals",

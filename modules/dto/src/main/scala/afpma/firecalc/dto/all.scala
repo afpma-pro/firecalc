@@ -95,8 +95,10 @@ object all:
 
     // Firebox
 
-    export afpma.firecalc.dto.v2.Firebox_V2 as Firebox
     export afpma.firecalc.dto.v2.Firebox_V2
+    export afpma.firecalc.dto.v4.Firebox_V3
+    export afpma.firecalc.dto.v4.Firebox_V3 as Firebox
+    export afpma.firecalc.dto.v4.Firebox_V3.TestStandard
 
     // V3
 
@@ -131,3 +133,5 @@ object all:
     export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3 as SetThermalPipeProp_13384
     export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
     export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3 as AddThermalPipeElement_13384
+
+    export afpma.firecalc.dto.v4.MinLoad

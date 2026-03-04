@@ -5,106 +5,45 @@
 
 package afpma.firecalc.engine.models.en15544.firebox
 
-import algebra.instances.all.given
-
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.ConstraintSlots
-import afpma.firecalc.engine.models.en15544.FireboxModule_15544_MCE
-import afpma.firecalc.engine.models.en15544.FireboxModule_15544_Strict
 import afpma.firecalc.engine.models.en15544.firebox
 import afpma.firecalc.engine.models.en15544.std.*
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.*
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions.Base
-import afpma.firecalc.engine.models.en15544.typedefs.GlassArea
-import afpma.firecalc.engine.standard.FireboxBaseRatioInvalid
-import afpma.firecalc.engine.standard.GlassSurfaceRatioNotConfirmed
-import afpma.firecalc.engine.standard.IncrementalValidation_Error
-
-import cats.data.ValidatedNel
-
-import coulomb.*
-import coulomb.ops.algebra.all.*
-import coulomb.policy.standard.given
 
 import io.scalaland.chimney.*
 import io.scalaland.chimney.dsl.*
 
-trait From_CalculPdM_V_0_2_32 extends OneOff:
-    def h11_profondeurDuFoyer: QtyD[Meter]
-    def h12_largeurDuFoyer   : QtyD[Meter]
-    def h13_hauteurDuFoyer   : QtyD[Meter]
-
-    def largeurVitre: Length
-    def hauteurVitre: Length
-    def surfaceVitre: Area      = largeurVitre * hauteurVitre
-    def glass_area  : GlassArea = surfaceVitre
-    def dimensions = Dimensions(
-        base   = Dimensions.Base.Squared(
-            width = h12_largeurDuFoyer,
-            depth = h11_profondeurDuFoyer
-        ),
-        height = h13_hauteurDuFoyer
-    )
-
-    lazy val fireboxDimensions_Base_constraint_ratioWhenSquared: TermConstraint[Base] =
-        TermConstraint.GenericTyped  (
-            value   = dimensions.base,
-            isValid =
-                case sqBase: Base.Squared =>
-                    val (l, w) = (sqBase.depth, sqBase.width)
-                    val ratio: Dimensionless = l / w
-                    ratio.value match
-                        case r if r < 0.5 || r > 2 =>
-                            Left(
-                                FireboxBaseRatioInvalid(r.showP, l.showP, w.showP)
-                            )
-                        case _                     =>
-                            Right(sqBase)
-        )
-
-    override def fireboxDimensions_Base_constraintSlots: ConstraintSlots.FireboxDimensionsBase =
-        ConstraintSlots.FireboxDimensionsBase(
-            ratioWhenSquared = Some(fireboxDimensions_Base_constraint_ratioWhenSquared)
-        )
-
-    def area_calc_method: AreaCalcMethod
-
-    /** See EN 15544 - Section 4.3.1.2 */
-    def area_O_BR: Area = area_calc_method match
-        case AreaCalcMethod.AutoIfCubic =>
-            val base_or_ceiling = h11_profondeurDuFoyer * h12_largeurDuFoyer
-            val left_or_right   = h13_hauteurDuFoyer * h11_profondeurDuFoyer
-            val front_or_back   = h13_hauteurDuFoyer * h12_largeurDuFoyer
-            2 * (base_or_ceiling + left_or_right + front_or_back)
-        case AreaCalcMethod.Manual(v)   => v
-
-    def firebox_glass_surface_ratio_below_one_fifth: Boolean =
-        (glass_area / area_O_BR) <= (1.0 / 5.0)
-
-    override def firebox_glass_surface_ratio_below_one_fifth_constraint: Option[TermConstraint[Unit]] =
-        import afpma.firecalc.engine.models.en15544.typedefs.given_TermDefDetails_Unit
-        Some(
-            TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed]  (
-                value   = (),
-                isValid = _ =>
-                    if firebox_glass_surface_ratio_below_one_fifth then Right(())
-                    else Left(GlassSurfaceRatioNotConfirmed())
-            )
-        )
-
 object From_CalculPdM_V_0_2_32:
 
-    given transformer_Firebox_From_CalculPdM_V_0_2_32: Transformer[Firebox, From_CalculPdM_V_0_2_32] = { ccui =>
+    given transformer_Firebox_Firebox_15544: Transformer[Firebox, Firebox_15544] = { ccui =>
         ccui match
-            case x: Firebox.Traditional => x.into[firebox.calcpdm_v_0_2_32.TraditionalFirebox].transform
-            case x: Firebox.EcoLabeled  => x.into[firebox.calcpdm_v_0_2_32.EcoLabeled].transform
-            case x: Firebox.AFPMA_PRSE  => x.into[firebox.calcpdm_v_0_2_32.AFPMA_PRSE].transform
+            case x: Firebox.Traditional  =>
+                transformer_Standard_TraditionalFirebox.transform(x)
+            case x: Firebox.EcoLabeled   =>
+                transformer_EcoLabeled_EcoLabeled.transform(x)
+            case x: Firebox.AFPMA_PRSE   =>
+                transformer_AFPMA_PRSE.transform(x)
+            case st: Firebox.SingleTested =>
+                val singleTestedT = afpma.firecalc.engine.models.en15544.firebox.single_tested.transformer_SingleTested
+                singleTestedT.transform(st)
+                // throw new UnsupportedOperationException(
+                //     "SingleTested fireboxes cannot be converted to Firebox_15544 — they use their own test data"
+                // )
+            case x: Firebox.Door15aFirebox_Catalog =>
+                transformer_dto_Door15aFirebox_Catalog_to_Door15aFirebox_Catalog.transform(x)
     }
+
+    // given transformer_Firebox_V3_Firebox_15544: Transformer[Firebox, Firebox_15544] = { dto =>
+    //     val singleTestedT = afpma.firecalc.engine.models.en15544.firebox.single_tested.transformer_SingleTested
+    //     dto match
+    //         case x: Firebox.SingleTested =>
+    //             singleTestedT.transform(x)
+    //         case dimensioned             =>
+    //             transformer_Firebox_Firebox_15544.transform(dimensioned)
+    // }
 
     // mappings to engine model
     given transformer_Standard_TraditionalFirebox
@@ -112,10 +51,10 @@ object From_CalculPdM_V_0_2_32:
         Transformer
             .define[Firebox.Traditional, firebox.calcpdm_v_0_2_32.TraditionalFirebox]
             .enableDefaultValues
-            .withFieldRenamed(_.heat_output_reduced, _.pn_reduced)
             .withFieldRenamed(_.firebox_depth, _.h11_profondeurDuFoyer)
             .withFieldRenamed(_.firebox_width, _.h12_largeurDuFoyer)
             .withFieldRenamed(_.firebox_height, _.h13_hauteurDuFoyer)
+            .withFieldRenamed(_.height_of_lowest_opening, _.ash_pit_height)
             .withFieldRenamed(_.pressure_loss_coefficient_from_door, _.h66_coeffPerteDeChargePorte)
             .withFieldRenamed(_.total_air_intake_surface_area_on_door, _.h67_sectionCumuleeEntreeAirPorte)
             .withFieldRenamed(_.glass_width, _.h71_largeurVitre)
@@ -124,10 +63,16 @@ object From_CalculPdM_V_0_2_32:
 
     given transformer_inv_TraditionalFirebox_Standard
         : Transformer[firebox.calcpdm_v_0_2_32.TraditionalFirebox, Firebox.Traditional] =
+        import HeatOutputReduced.{NotDefined, HalfOfNominal}
         Transformer
             .define[firebox.calcpdm_v_0_2_32.TraditionalFirebox, Firebox.Traditional]
             .enableDefaultValues
-            .withFieldRenamed(_.pn_reduced, _.heat_output_reduced)
+            .withFieldComputed(
+                _.heat_output_reduced, 
+                trad => 
+                    val res: NotDefined | HalfOfNominal = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(trad.pn_reduced)
+                    res
+                )
             .withFieldRenamed(_.h11_profondeurDuFoyer, _.firebox_depth)
             .withFieldRenamed(_.h12_largeurDuFoyer, _.firebox_width)
             .withFieldRenamed(_.h13_hauteurDuFoyer, _.firebox_height)
@@ -159,7 +104,7 @@ object From_CalculPdM_V_0_2_32:
                     h80_largeurRenfortMedianArriere                 = width_between_two_air_columns_rear,
                     h81_debordDesRenfortsDansLesAngles              = reinforcement_bars_offset_in_corners,
                     h82_hauteurDesInjecteurs_Z                      = injector_height,
-                    h83_hauteurEntreLaSoleEtLe1erInjecteur          = height_of_first_row_of_air_injectors
+                    h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = height_of_first_row_of_air_injectors
                 )
             case Right("Version 2") =>
                 firebox.calcpdm_v_0_2_32.EcoLabeled_V2                                     (
@@ -181,15 +126,21 @@ object From_CalculPdM_V_0_2_32:
                     h80_largeurRenfortMedianArriere                 = width_between_two_air_columns_rear,
                     h81_debordDesRenfortsDansLesAngles              = reinforcement_bars_offset_in_corners,
                     h82_hauteurDesInjecteurs_Z                      = injector_height,
-                    h83_hauteurEntreLaSoleEtLe1erInjecteur          = height_of_first_row_of_air_injectors
+                    h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = height_of_first_row_of_air_injectors
                 )
+
+    private def legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(p: HeatOutputReduced): HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal =
+        p match
+            case nd: HeatOutputReduced.NotDefined    => nd
+            case h: HeatOutputReduced.HalfOfNominal  => h
+            case HeatOutputReduced.FromTypeTest(v)   => HeatOutputReduced.HalfOfNominal.makeFromValue(v) // safe default, prevent throwing
 
     given transformer_inv_EcoLabeled: Transformer[firebox.calcpdm_v_0_2_32.EcoLabeled, Firebox.EcoLabeled] = e =>
         import e.*
         e match
             case _: firebox.calcpdm_v_0_2_32.EcoLabeled_V1 =>
                 Firebox.EcoLabeled                 (
-                    heat_output_reduced                  = pn_reduced,
+                    heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                              = Left("Version 1"),
                     air_intake_shape                     = None,
                     firebox_depth                        = h11_profondeurDuFoyer,
@@ -208,11 +159,11 @@ object From_CalculPdM_V_0_2_32:
                     width_between_two_air_columns_rear   = h80_largeurRenfortMedianArriere,
                     reinforcement_bars_offset_in_corners = h81_debordDesRenfortsDansLesAngles,
                     injector_height                      = h82_hauteurDesInjecteurs_Z,
-                    height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur
+                    height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
                 )
             case _: firebox.calcpdm_v_0_2_32.EcoLabeled_V2 =>
                 Firebox.EcoLabeled                 (
-                    heat_output_reduced                  = pn_reduced,
+                    heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                              = Right("Version 2"),
                     air_intake_shape                     = arriveeAirGeometryOpt,
                     firebox_depth                        = h11_profondeurDuFoyer,
@@ -231,7 +182,7 @@ object From_CalculPdM_V_0_2_32:
                     width_between_two_air_columns_rear   = h80_largeurRenfortMedianArriere,
                     reinforcement_bars_offset_in_corners = h81_debordDesRenfortsDansLesAngles,
                     injector_height                      = h82_hauteurDesInjecteurs_Z,
-                    height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur
+                    height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
                 )
             case _ => throw new Exception("not implemented")
 
@@ -263,45 +214,59 @@ object From_CalculPdM_V_0_2_32:
             .withFieldRenamed(_.number_of_air_columns_feeding_door, _.h97_nbColonnesAirPorte)
             .buildTransformer
 
-trait From_CalculPdM_V_0_2_32_Module extends FireboxModule_15544_Strict with FireboxModule_15544_MCE:
-
-    type FB <: From_CalculPdM_V_0_2_32
-
-    // type PipeDescr = en15544.pipedescr.type
-    // val pipeDescr: PipeDescr = en15544.pipedescr
-    // import pipeDescr.*
-
-    extension (firebox: FB)
-        def toFireboxPipe_15544: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_15544.FullDescr] =
-            import FireboxPipe_Module_15544.*
-            FireboxPipe_Module_15544.incremental
-                .define(
-                    innerShape(rectangle(firebox.h12_largeurDuFoyer, firebox.h11_profondeurDuFoyer)),
-                    roughness         (2.mm), // TOFIX: 3mm or 2mm ???
-                    addSectionVertical(
-                        "ascension dans foyer",
-                        // TOFIX: found in CalculPdM-v0.2.30
-                        // - we consider the whole vertical length ? but different injection height...
-                        firebox.h13_hauteurDuFoyer
+    given transformer_dto_Door15aFirebox_Catalog_to_Door15aFirebox_Catalog
+        : Transformer[Firebox.Door15aFirebox_Catalog, en15544.std.Door15aFirebox_Catalog] = dto_fb =>
+            dto_fb.reference match
+                case "Door15aFirebox_Catalog_Example" => 
+                    Door15aFirebox_Catalog_Example(
+                        mb = dto_fb.load_size_nominal,
+                        sb = dto_fb.sb,
                     )
-                )
-                .toFullDescr()
-                .extractPipe
-
-        def toFireboxPipe_13384: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_13384.FullDescr] =
-            import FireboxPipe_Module_13384.*
-            FireboxPipe_Module_13384.incremental
-                .define(
-                    pipeLocation      (PipeLocation.HeatedArea   ), // added for EN13384
-                    innerShape(rectangle(firebox.h12_largeurDuFoyer, firebox.h11_profondeurDuFoyer)),
-                    roughness         (2.mm                      ), // TOFIX: 3mm or 2mm ???
-                    layer             (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
-                    addSectionVertical(
-                        "ascension dans foyer",
-                        // TOFIX: found in CalculPdM-v0.2.30
-                        // - we consider the whole vertical length ? but different injection height...
-                        firebox.h13_hauteurDuFoyer
+                case x => 
+                    Door15aFirebox_Catalog_Example(
+                        mb = None,
+                        sb = 1.cm.to_cm,
                     )
-                )
-                .toFullDescr()
-                .extractPipe
+
+// trait From_CalculPdM_V_0_2_32_Module extends FireboxModule_15544_Strict with FireboxModule_15544_MCE:
+
+//     type FB <: Firebox_15544
+
+//     extension (firebox: FB)
+//         def toFireboxPipe_15544: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_15544.FullDescr] =
+//             import FireboxPipe_Module_15544.*
+//             val (width, depth) = firebox.dimensions.base match
+//                 case Dimensions.Base.Squared(w, d) => (w, d)
+//             FireboxPipe_Module_15544.incremental
+//                 .define(
+//                     innerShape(rectangle(width, depth)),
+//                     roughness         (2.mm), // TOFIX: 3mm or 2mm ???
+//                     addSectionVertical(
+//                         "ascension dans foyer",
+//                         // TOFIX: found in CalculPdM-v0.2.30
+//                         // - we consider the whole vertical length ? but different injection height...
+//                         firebox.dimensions.height
+//                     )
+//                 )
+//                 .toFullDescr()
+//                 .extractPipe
+
+//         def toFireboxPipe_13384: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_13384.FullDescr] =
+//             import FireboxPipe_Module_13384.*
+//             val (width, depth) = firebox.dimensions.base match
+//                 case Dimensions.Base.Squared(w, d) => (w, d)
+//             FireboxPipe_Module_13384.incremental
+//                 .define(
+//                     pipeLocation      (PipeLocation.HeatedArea   ), // added for EN13384
+//                     innerShape(rectangle(width, depth)),
+//                     roughness         (2.mm                      ), // TOFIX: 3mm or 2mm ???
+//                     layer             (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
+//                     addSectionVertical(
+//                         "ascension dans foyer",
+//                         // TOFIX: found in CalculPdM-v0.2.30
+//                         // - we consider the whole vertical length ? but different injection height...
+//                         firebox.dimensions.height
+//                     )
+//                 )
+//                 .toFullDescr()
+//                 .extractPipe

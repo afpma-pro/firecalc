@@ -31,6 +31,8 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
     import horizontal_form.{*, given}
 
+    private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
+
     // SetProp
 
     given horizontal_form_SetInnerShape: DaisyUIHorizontalForm[SetInnerShape] =
@@ -59,9 +61,9 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
             defaultable_15544.defaultable_material_15544_v2
 
         // Provide ValidateVar
-        given ValidateVar[Roughness]         = validatevar.roughness.valid_whenPositive
+        given ValidateVar[Roughness]         = vv.roughness.valid_whenStrictlyPositive
         given ValidateVar[Material_15544_V2] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V2]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V2]
 
         DaisyUIHorizontalForm.forSelectionWithDefaultValue_usingSelectInput[Material_15544_V2, Roughness]   (
             selectOptions    = Material_15544_V2.values,
@@ -75,7 +77,7 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
     given horizontal_form_Material_15544_V1: DaisyUIHorizontalForm[Material_15544_V1] =
         import Material_15544_V1.given
         given ValidateVar[Material_15544_V1] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V1]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V1]
         DaisyUIHorizontalForm
             .forEnumOrSumTypeLike_UsingShowAsId[Material_15544_V1](Material_15544_V1.values.toList)
 
@@ -83,7 +85,7 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
     given horizontal_form_SetNumberOfFlows: DaisyUIHorizontalForm[SetNumberOfFlows] =
-        import validatevar.validOption_always.given
+        import ValidateVarCommonInstances.validOption_always.given
         given DaisyUIHorizontalForm[Int]       = DaisyUIHorizontalForm.forInt
         given DaisyUIHorizontalForm[NbOfFlows] = DaisyUIHorizontalForm.formConversionOpaque[NbOfFlows, Int]
         autoDeriveAndOverwriteFieldNames[SetNumberOfFlows]
@@ -94,7 +96,7 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         import afpma.firecalc.units.all.given
         // given Defaultable[Option[QtyD[Degree]]] = Defaultable(None)
         given ValidateVar[Option[QtyD[Degree]]] =
-            validatevar.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
+            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
         DaisyUIHorizontalForm.forOptionQtyD_default[Degree]
 
     // helper with string field always validated
@@ -123,7 +125,8 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddCircularArc_60]
 
     given horizontal_form_AddSectionShapeChange: DaisyUIHorizontalForm[AddSectionShapeChange] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionShapeChange]
+        given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        autoDeriveAndOverwriteFieldNames[AddSectionShapeChange]
 
     given horizontal_form_AddFlowResistance: DaisyUIHorizontalForm[AddFlowResistance] =
         given DaisyUIHorizontalForm[OptionOfEither[AreaInCm2, PipeShape]] =
