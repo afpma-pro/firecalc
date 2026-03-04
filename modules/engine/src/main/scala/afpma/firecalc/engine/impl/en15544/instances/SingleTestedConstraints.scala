@@ -6,9 +6,9 @@
 package afpma.firecalc.engine.impl.en15544.instances
 
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.units.coulombutils.VolumeFlow
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
+import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.RemovedFireboxSizingConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
@@ -80,7 +80,6 @@ given singleTestedConstraints
 
         // ── No firebox-specific constraints ───────────────────────────────────
         override def firebox_custom_constraints(
-            firebox  : SingleTested,
-            mB       : m_B,
-            flow_rate: Option[VolumeFlow]
+            firebox: SingleTested,
+            ctx    : FireboxConstraintContext
         )(using Locale): List[FireboxError] = Nil

@@ -10,8 +10,11 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
+import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.standard.*
 
@@ -62,27 +65,47 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     // EN15544 Strict
 
     import afpma.firecalc.engine.api.v0_2024_10
+    import afpma.firecalc.engine.impl.en15544.strict.given
     import cats.implicits.catsSyntaxValidatedId
 
-    val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
-        new v0_2024_10.Firebox_15544_Strict_OneOff_Alg with v0_2024_10.StoveProjectDescr_15544_Strict_Alg {
-            override val language        = fcProj.locale.language
-            override val project         = fcProj.project_description
-            override val localConditions = fcProj.local_conditions
-            override val stoveParams     = fcProj.stove_params
-            override val airIntakePipe   = self.airIntakePipe
-            override val firebox: Firebox_15544 =
-                import afpma.firecalc.engine.models.en15544.firebox.From_CalculPdM_V_0_2_32.given
-                summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
-            override val fluePipe: ValidatedNel[IncrementalValidation_Error, FluePipeType] = self.fluePipe match
-                case v @ Valid(fp)  => if (fp.elems.size == 0) FluePipeNotDefinedYet.invalidNel else v
-                case i @ Invalid(e) => i
+    private val fb: Firebox_15544 =
+        import afpma.firecalc.engine.models.en15544.firebox.From_CalculPdM_V_0_2_32.given
+        summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
 
-            override val connectorPipe = self.connectorPipe
-            override val chimneyPipe: ValidatedNel[IncrementalValidation_Error, ChimneyPipe] = self.chimneyPipe match
-                case v @ Valid(p)   => if (p.elems.size == 0) ChimneyPipeNotDefinedYet.invalidNel else v
-                case i @ Invalid(e) => i
-        }
+    private val validatedFluePipe: ValidatedNel[IncrementalValidation_Error, FluePipe_15544] = self.fluePipe match
+        case v @ Valid(fp)  => if (fp.elems.size == 0) FluePipeNotDefinedYet.invalidNel else v
+        case i @ Invalid(e) => i
+
+    private val validatedChimneyPipe: ValidatedNel[IncrementalValidation_Error, ChimneyPipe] = self.chimneyPipe match
+        case v @ Valid(p)   => if (p.elems.size == 0) ChimneyPipeNotDefinedYet.invalidNel else v
+        case i @ Invalid(e) => i
+
+    private def mkStrictAlg[F <: Firebox_15544](
+        fb: F
+    )(using
+        cap: FireboxToCombustionAirPipe_15544_Strict[F],
+        fbp: FireboxToFireboxPipe_15544_Strict[F]
+    ): StoveProjectDescr_15544_Strict_Alg =
+        new v0_2024_10.Firebox_15544_Strict_Alg with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
+            type FB                             = F
+            val firebox                         = fb
+            protected val toCombustionAirPipeTC = cap
+            protected val toFireboxPipeTC       = fbp
+            val language                        = fcProj.locale.language
+            override val project                = fcProj.project_description
+            val localConditions                 = fcProj.local_conditions
+            val stoveParams                     = fcProj.stove_params
+            val airIntakePipe                   = self.airIntakePipe
+            val fluePipe                        = validatedFluePipe
+            val connectorPipe                   = self.connectorPipe
+            val chimneyPipe                     = validatedChimneyPipe
+
+    val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
+        fb match
+            case f: TraditionalFirebox => mkStrictAlg(f)
+            case f: AFPMA_PRSE        => mkStrictAlg(f)
+            case f: EcoLabeled        => mkStrictAlg(f)
+            case f                    => mkStrictAlg(f)
 
     def make_en15544_Strict_Application: ValidatedNel[MCalc_Error, EN15544_Strict_Application] =
         stoveProjectDescr_EN15544_Strict.en15544_Alg

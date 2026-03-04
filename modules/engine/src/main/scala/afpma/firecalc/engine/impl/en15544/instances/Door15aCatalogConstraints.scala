@@ -8,6 +8,7 @@ package afpma.firecalc.engine.impl.en15544.instances
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
+import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.RemovedFireboxSizingConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
@@ -15,8 +16,11 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Door15aFirebox_Catalog
 import afpma.firecalc.engine.models.en15544.std.Door15aFirebox_Catalog.SB
 import afpma.firecalc.engine.models.en15544.typedefs.*
+import afpma.firecalc.engine.standard.AirIntakePipeShapeMismatch
 import afpma.firecalc.engine.standard.FireboxError
 import afpma.firecalc.engine.standard.InvalidFireboxConstraint
+
+import cats.syntax.all.*
 
 import io.taig.babel.Locale
 
@@ -43,28 +47,47 @@ given door15aCatalogConstraints: FireboxConstraints[Door15aFirebox_Catalog] =
         ): Seq[Option[TermConstraint[GlassArea]]] =
             Seq(Some(glassArea_constraint_oneFifth_maxRatio(firebox, ctx)))
 
+        private val DEFAULT_MB_MIN: Mass = 10.kg
+        private val DEFAULT_MB_MAX: Mass = 25.kg
+
         override def m_B_constraints(
             firebox: Door15aFirebox_Catalog,
             ctx    : ConstraintContext
         ): Seq[Option[TermConstraint[m_B]]] =
             Seq(
-                Some(TermConstraint.Min(10.kg)), 
-                Some(TermConstraint.Max(25.kg))
+                Some(TermConstraint.Min(firebox.mb_min.getOrElse(DEFAULT_MB_MIN))),
+                Some(TermConstraint.Max(firebox.mb_max.getOrElse(DEFAULT_MB_MAX)))
             )
 
-        val s_B_min: SB = 1.0.cm.to_cm
-        val s_B_max: SB = 4.0.cm.to_cm
+        private val DEFAULT_SB_MIN: SB = 1.0.cm.to_cm
+        private val DEFAULT_SB_MAX: SB = 4.0.cm.to_cm
 
-        def s_B_constraints(firebox: Door15aFirebox_Catalog): AllTermConstraints[SB] =
+        private def s_B_constraints(firebox: Door15aFirebox_Catalog): AllTermConstraints[SB] =
             AllTermConstraints:
                 Seq(
-                    Some(TermConstraint.Min(s_B_min)),
-                    Some(TermConstraint.Max(s_B_max))
+                    Some(TermConstraint.Min(firebox.sb_min.getOrElse(DEFAULT_SB_MIN))),
+                    Some(TermConstraint.Max(firebox.sb_max.getOrElse(DEFAULT_SB_MAX)))
                 )
 
-        override def firebox_custom_constraints(
-            firebox  : Door15aFirebox_Catalog,
-            mB       : m_B,
-            flow_rate: Option[VolumeFlow]
+        /** Validate that the air intake pipe ends with the shape expected by the firebox. */
+        private def airIntakePipeShapeConstraint(
+            firebox: Door15aFirebox_Catalog,
+            ctx    : FireboxConstraintContext
         )(using Locale): List[FireboxError] =
-            s_B_constraints(firebox).checkAllAndCombine(firebox.sb).foldToErrDeep(InvalidFireboxConstraint.apply)
+            ctx.airIntakePipeShape match
+                case None         => Nil // air intake pipe shape not available, skip check
+                case Some(actual) =>
+                    val expected = firebox.expectedAirIntakePipeShape
+                    if actual == expected then Nil
+                    else List(AirIntakePipeShapeMismatch(
+                        expected = expected.show,
+                        actual   = actual.show
+                    ))
+
+        override def firebox_custom_constraints(
+            firebox: Door15aFirebox_Catalog,
+            ctx    : FireboxConstraintContext
+        )(using Locale): List[FireboxError] =
+            val sbErrors       = s_B_constraints(firebox).checkAllAndCombine(firebox.sb).foldToErrDeep(InvalidFireboxConstraint.apply)
+            val pipeShapeErrors = airIntakePipeShapeConstraint(firebox, ctx)
+            sbErrors ::: pipeShapeErrors

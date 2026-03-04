@@ -36,5 +36,7 @@ trait HasFireboxDimensionsToFireboxPipe_15544_Strict[FB <: Firebox_15544]
                 .extractPipe
 }
 
-object HasFireboxDimensionsToFireboxPipe_15544_Strict 
+given FireboxToFireboxPipe_15544_Strict[Firebox_15544] = HasFireboxDimensionsToFireboxPipe_15544_Strict
+
+object HasFireboxDimensionsToFireboxPipe_15544_Strict
     extends HasFireboxDimensionsToFireboxPipe_15544_Strict[Firebox_15544]

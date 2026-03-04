@@ -24,6 +24,9 @@ import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
+given FireboxToCombustionAirPipe_15544_Strict[EcoLabeled] = EcoLabeled_To_FireboxInternalPipes_15544_Strict
+given FireboxToFireboxPipe_15544_Strict[EcoLabeled]      = EcoLabeled_To_FireboxInternalPipes_15544_Strict
+
 object EcoLabeled_To_FireboxInternalPipes_15544_Strict
     extends FireboxToInternalPipes_15544_Strict[EcoLabeled]
     with HasFireboxDimensionsToFireboxPipe_15544_Strict[EcoLabeled]:

@@ -7,12 +7,12 @@ package afpma.firecalc.engine.impl.en15544.instances
 
 import algebra.instances.all.given
 
-import afpma.firecalc.units.coulombutils.VolumeFlow
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
+import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.*
@@ -58,10 +58,10 @@ given ecoLabeledConstraints: FireboxConstraints[EcoLabeled] =
 
         /** EcoLabeled-specific structural and dimensional constraints. */
         override def firebox_custom_constraints(
-            firebox  : EcoLabeled,
-            mB       : m_B,
-            flow_rate: Option[VolumeFlow]
+            firebox: EcoLabeled,
+            ctx    : FireboxConstraintContext
         )(using Locale): List[FireboxError] =
+            import ctx.*
             val buf = new ListBuffer[FireboxError]()
             val mass: Mass = mB
 

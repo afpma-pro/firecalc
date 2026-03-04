@@ -26,11 +26,16 @@ import io.taig.babel.Languages
 
 object CasType_15544_C2
     extends v2024_10_Alg
-    with v0_2024_10.Firebox_15544_Strict_OneOff_Alg
+    with v0_2024_10.Firebox_15544_Strict_Alg
     with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
+
+    type FB = TraditionalFirebox
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val language = Languages.Fr
 

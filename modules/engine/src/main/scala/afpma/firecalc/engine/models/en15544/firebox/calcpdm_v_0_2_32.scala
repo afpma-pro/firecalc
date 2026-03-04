@@ -216,57 +216,17 @@ object From_CalculPdM_V_0_2_32:
 
     given transformer_dto_Door15aFirebox_Catalog_to_Door15aFirebox_Catalog
         : Transformer[Firebox.Door15aFirebox_Catalog, en15544.std.Door15aFirebox_Catalog] = dto_fb =>
+            import dto_fb.*
             dto_fb.reference match
-                case "Door15aFirebox_Catalog_Example" => 
-                    Door15aFirebox_Catalog_Example(
-                        mb = dto_fb.load_size_nominal,
-                        sb = dto_fb.sb,
+                case _ => 
+                    Door15aFirebox_Catalog_Example.copy(
+                        mb = load_size_nominal,
+                        sb = sb,
+                        dimensions = Dimensions(
+                            base = Dimensions.Base.Squared(
+                                width = firebox_width,
+                                depth = firebox_depth
+                            ),
+                            height = firebox_height
+                        ),
                     )
-                case x => 
-                    Door15aFirebox_Catalog_Example(
-                        mb = None,
-                        sb = 1.cm.to_cm,
-                    )
-
-// trait From_CalculPdM_V_0_2_32_Module extends FireboxModule_15544_Strict with FireboxModule_15544_MCE:
-
-//     type FB <: Firebox_15544
-
-//     extension (firebox: FB)
-//         def toFireboxPipe_15544: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_15544.FullDescr] =
-//             import FireboxPipe_Module_15544.*
-//             val (width, depth) = firebox.dimensions.base match
-//                 case Dimensions.Base.Squared(w, d) => (w, d)
-//             FireboxPipe_Module_15544.incremental
-//                 .define(
-//                     innerShape(rectangle(width, depth)),
-//                     roughness         (2.mm), // TOFIX: 3mm or 2mm ???
-//                     addSectionVertical(
-//                         "ascension dans foyer",
-//                         // TOFIX: found in CalculPdM-v0.2.30
-//                         // - we consider the whole vertical length ? but different injection height...
-//                         firebox.dimensions.height
-//                     )
-//                 )
-//                 .toFullDescr()
-//                 .extractPipe
-
-//         def toFireboxPipe_13384: ValidatedNel[IncrementalValidation_Error, FireboxPipe_Module_13384.FullDescr] =
-//             import FireboxPipe_Module_13384.*
-//             val (width, depth) = firebox.dimensions.base match
-//                 case Dimensions.Base.Squared(w, d) => (w, d)
-//             FireboxPipe_Module_13384.incremental
-//                 .define(
-//                     pipeLocation      (PipeLocation.HeatedArea   ), // added for EN13384
-//                     innerShape(rectangle(width, depth)),
-//                     roughness         (2.mm                      ), // TOFIX: 3mm or 2mm ???
-//                     layer             (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
-//                     addSectionVertical(
-//                         "ascension dans foyer",
-//                         // TOFIX: found in CalculPdM-v0.2.30
-//                         // - we consider the whole vertical length ? but different injection height...
-//                         firebox.dimensions.height
-//                     )
-//                 )
-//                 .toFullDescr()
-//                 .extractPipe

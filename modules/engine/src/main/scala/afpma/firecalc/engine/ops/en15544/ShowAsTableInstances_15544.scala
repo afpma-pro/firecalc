@@ -197,7 +197,7 @@ class ShowAsTableInstances_15544(using Locale):
                             ("temperature burnout"         :: tBurnout.show               :: Nil) ::
                             Nil
                     case fb: Firebox_15544 =>
-                        ("=> ONE OFF CONSTRUCTION"       :: ""                                               :: Nil) ::
+                        ("=> DEFAULT CONSTRUCTION PARAMS"       :: ""                                               :: Nil) ::
                             {
                                 val pn_reduced_show = fb.pn_reduced match
                                     case x: HeatOutputReduced.FromTypeTest  => x.show

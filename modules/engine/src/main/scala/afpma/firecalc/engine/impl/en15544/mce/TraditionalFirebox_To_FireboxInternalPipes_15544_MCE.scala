@@ -17,7 +17,10 @@ import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.Traditional
 import coulomb.*
 import coulomb.policy.standard.given
 
-object TraditionalFirebox_To_FireboxInternalPipes_15544_MCE 
+given FireboxToCombustionAirPipe_15544_MCE[TraditionalFirebox] = TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
+given FireboxToFireboxPipe_15544_MCE[TraditionalFirebox]      = TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
+
+object TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
     extends FireboxToInternalPipes_15544_MCE[TraditionalFirebox]
     with HasFireboxDimensionsToFireboxPipe_15544_MCE[TraditionalFirebox]:
 

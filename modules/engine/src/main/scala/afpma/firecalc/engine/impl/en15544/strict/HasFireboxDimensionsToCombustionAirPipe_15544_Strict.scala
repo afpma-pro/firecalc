@@ -19,5 +19,7 @@ trait GenericFirebox15544ToCombustionAirPipe_15544_Strict[FB <: Firebox_15544]
             CombustionAirPipe_Module_15544.without.validNel
 }
 
-object GenericFirebox15544ToCombustionAirPipe_15544_Strict 
+given FireboxToCombustionAirPipe_15544_Strict[Firebox_15544] = GenericFirebox15544ToCombustionAirPipe_15544_Strict
+
+object GenericFirebox15544ToCombustionAirPipe_15544_Strict
     extends GenericFirebox15544ToCombustionAirPipe_15544_Strict[Firebox_15544]

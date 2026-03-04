@@ -125,26 +125,25 @@ object EcoLabeled:
                     I.version_2_air_intake_shape :: "" :: x.arriveeAirGeometryOpt.map(_.showP).getOrElse("-") :: Nil
                 )
             val list            =
-                (I18N.firebox.typ                            :: ""                                                 :: I18N.firebox_names.ecolabeled_v1                            :: Nil) ::
-                    (I.version                               :: ""                                                 :: version                                                     :: Nil) ::
-                    version_details                          ::
-                    (I18N.firebox.firebox_width              :: "h11 / A"                                          :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
-                    (I18N.firebox.firebox_depth              :: "h11 / B"                                          :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
-                    (I18N.firebox.firebox_height             :: "h11 / H"                                          :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
-                    (I.door_opening_width                    :: "h70"                                              :: h70_largeurPorteDansMaconnerie.to_cm.showP                  :: Nil) ::
-                    (I.glass_width                           :: "h71"                                              :: h71_largeurVitre.to_cm.showP                                :: Nil) ::
-                    (I.glass_height                          :: "h72"                                              :: h72_hauteurVitre.to_cm.showP                                :: Nil) ::
-                    (I.ash_pit_height_AF                     :: "h74 / AF"                                         :: h74_hauteur_de_cendrier_AF.to_cm.showP                      :: Nil) ::
-                    (I.air_manifold_height_W                 :: "h75 / W"                                          :: h75_hauteurArriveeConduitAir_DessousSoleFoyer_W.to_cm.showP :: Nil) ::
-                    (I.firebox_floor_thickness               :: "h76"                                              :: h76_epaisseurSole.to_cm.showP                               :: Nil) ::
-                    (I.inner_wall_thickness_D1               :: "h77 / D1"                                         :: h77_epaisseurParoiInterneFoyer_D1.to_cm.showP               :: Nil) ::
-                    (I.air_column_thickness_S                :: "h78 / S"                                          :: h78_largeurEspaceInterparoisDuFoyer_S.to_cm.showP           :: Nil) ::
-                    (I.width_between_two_air_columns_sides_E :: "h79 / E"                                          :: h79_largeurRenfortMedianLateraux.to_cm.showP                :: Nil) ::
-                    (I.width_between_two_air_columns_rear_E  :: "h80 / E"                                          :: h80_largeurRenfortMedianArriere.to_cm.showP                 :: Nil) ::
-                    (I.reinforcement_bars_offset_in_corners  :: "h81"                                              :: h81_debordDesRenfortsDansLesAngles.to_cm.showP              :: Nil) ::
-                    (I.injector_height_Z                     :: "h82 / Z"                                          :: h82_hauteurDesInjecteurs_Z.to_mm.showP                      :: Nil) ::
-                    (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name
-                        :: "h83 / X"                         :: h83_hauteurEntreLaSoleEtLe1erInjecteur_X.to_cm.showP :: Nil) ::
+                (I18N.firebox.typ                             :: ""           :: I18N.firebox_names.ecolabeled_v1                            :: Nil) ::
+                    (I.version                                :: ""           :: version                                                     :: Nil) ::
+                    version_details                           ::  
+                    (I18N.firebox.firebox_width               :: "h11 / A"    :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
+                    (I18N.firebox.firebox_depth               :: "h11 / B"    :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
+                    (I18N.firebox.firebox_height              :: "h11 / H"    :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
+                    (I.door_opening_width                     :: "h70"        :: h70_largeurPorteDansMaconnerie.to_cm.showP                  :: Nil) ::
+                    (I.glass_width                            :: "h71"        :: h71_largeurVitre.to_cm.showP                                :: Nil) ::
+                    (I.glass_height                           :: "h72"        :: h72_hauteurVitre.to_cm.showP                                :: Nil) ::
+                    (I.ash_pit_height_AF                      :: "h74 / AF"   :: h74_hauteur_de_cendrier_AF.to_cm.showP                      :: Nil) ::
+                    (I.air_manifold_height_W                  :: "h75 / W"    :: h75_hauteurArriveeConduitAir_DessousSoleFoyer_W.to_cm.showP :: Nil) ::
+                    (I.firebox_floor_thickness                :: "h76"        :: h76_epaisseurSole.to_cm.showP                               :: Nil) ::
+                    (I.inner_wall_thickness_D1                :: "h77 / D1"   :: h77_epaisseurParoiInterneFoyer_D1.to_cm.showP               :: Nil) ::
+                    (I.air_column_thickness_S                 :: "h78 / S"    :: h78_largeurEspaceInterparoisDuFoyer_S.to_cm.showP           :: Nil) ::
+                    (I.width_between_two_air_columns_sides_E  :: "h79 / E"    :: h79_largeurRenfortMedianLateraux.to_cm.showP                :: Nil) ::
+                    (I.width_between_two_air_columns_rear_E   :: "h80 / E"    :: h80_largeurRenfortMedianArriere.to_cm.showP                 :: Nil) ::
+                    (I.reinforcement_bars_offset_in_corners   :: "h81"        :: h81_debordDesRenfortsDansLesAngles.to_cm.showP              :: Nil) ::
+                    (I.injector_height_Z                      :: "h82 / Z"    :: h82_hauteurDesInjecteurs_Z.to_mm.showP                      :: Nil) ::
+                    (I.height_of_first_row_of_air_injectors_X :: "h83 / X"    :: h83_hauteurEntreLaSoleEtLe1erInjecteur_X.to_cm.showP        :: Nil) ::
                     Nil
             list.filter(_.nonEmpty)
 

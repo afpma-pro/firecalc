@@ -7,10 +7,10 @@ package afpma.firecalc.engine.impl.en15544.instances
 
 import algebra.instances.all.given
 
-import afpma.firecalc.units.coulombutils.VolumeFlow
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
+import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.*
@@ -45,10 +45,10 @@ given traditionalConstraints: FireboxConstraints[TraditionalFirebox] =
 
         /** Validates that the injector air velocity is within [2, 4] m/s. */
         override def firebox_custom_constraints(
-            firebox  : TraditionalFirebox,
-            mB       : m_B,
-            flow_rate: Option[VolumeFlow]
+            firebox: TraditionalFirebox,
+            ctx    : FireboxConstraintContext
         )(using Locale): List[FireboxError] =
+            import ctx.*
             flow_rate match
                 case None            => MissingFlowRate :: Nil
                 case Some(flow_rate) =>

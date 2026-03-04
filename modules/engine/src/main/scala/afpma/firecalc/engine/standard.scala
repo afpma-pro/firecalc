@@ -163,9 +163,10 @@ object standard {
         case e: FireboxHeightOutOfRange       => Show[FireboxHeightOutOfRange].show(e)
         case e: InjectorVelocityBelowMinimum  => Show[InjectorVelocityBelowMinimum].show(e)
         case e: InjectorVelocityAboveMaximum  => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: MissingFlowRate               => Show[MissingFlowRate].show(e)
-        case e: FireboxErrorCustom            => e.reason
-        case e: InvalidFireboxConstraint      => e.show
+        case e: MissingFlowRate                => Show[MissingFlowRate].show(e)
+        case e: AirIntakePipeShapeMismatch     => e.show
+        case e: FireboxErrorCustom             => e.reason
+        case e: InvalidFireboxConstraint       => e.show
 
     case class InvalidFireboxConstraint(error: TermConstraintError[?]) extends FireboxError
     object InvalidFireboxConstraint:
@@ -217,6 +218,11 @@ object standard {
     case object MissingFlowRate extends FireboxError:
         given ShowUsingLocale[MissingFlowRate] = showUsingLocale: e =>
             I18N.errors.missing_flow_rate
+
+    case class AirIntakePipeShapeMismatch(expected: String, actual: String) extends FireboxError
+    object AirIntakePipeShapeMismatch:
+        given ShowUsingLocale[AirIntakePipeShapeMismatch] = showUsingLocale: e =>
+            I18N.errors.air_intake_pipe_shape_mismatch(e.expected, e.actual)
 
     sealed trait InvalidTermValue[T] extends FireboxError:
         def termName : String
@@ -747,6 +753,7 @@ object standard {
 
     case class SectionGeometryMustBeDefined(sectionTyp: PipeType)   extends PropertyMustBeDefined
     case class NextSectionLengthMustBeDefined(sectionTyp: PipeType) extends PropertyMustBeDefined
+    case class PressureLossMustBeDefined(sectionTyp: PipeType)      extends PropertyMustBeDefined
 
     object PropertyMustBeDefined:
         given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
@@ -754,6 +761,8 @@ object standard {
                 I18N.incremental_validation.property_must_be_defined.section_geometry
             case _: NextSectionLengthMustBeDefined =>
                 I18N.incremental_validation.property_must_be_defined.next_section_length
+            case _: PressureLossMustBeDefined      =>
+                I18N.incremental_validation.property_must_be_defined.pressure_loss
 
     // Prerequisite errors
     sealed trait PrerequisiteNotMet extends IncrementalValidation_Error

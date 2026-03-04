@@ -17,9 +17,14 @@ import cats.syntax.all.*
 
 object strict_ex02_carneau_descendant 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
+    with v0_2024_10.Firebox_15544_Strict_Alg:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.strict.given
+
+    type FB = TraditionalFirebox
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val exercice_name: String = "exercices // p1_decouverte // ex02_carneau_descendant"
 

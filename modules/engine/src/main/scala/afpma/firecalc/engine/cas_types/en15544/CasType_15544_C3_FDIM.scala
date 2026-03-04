@@ -13,6 +13,7 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled
 import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled_V1
 
 import cats.syntax.all.*
@@ -21,11 +22,16 @@ import io.taig.babel.Languages
 
 object CasPratique_15544_FDIM_EX_03
     extends v2024_10_Alg
-    with v0_2024_10.Firebox_15544_Strict_OneOff_Alg
+    with v0_2024_10.Firebox_15544_Strict_Alg
     with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
+
+    type FB = EcoLabeled
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val language = Languages.Fr
 
@@ -87,7 +93,7 @@ object CasPratique_15544_FDIM_EX_03
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = 10.cm
     )
 
-    val firebox = foyer_descr
+    val firebox: EcoLabeled = foyer_descr
 
     val accumulateur_descr =
         import FluePipe_Module_15544.*

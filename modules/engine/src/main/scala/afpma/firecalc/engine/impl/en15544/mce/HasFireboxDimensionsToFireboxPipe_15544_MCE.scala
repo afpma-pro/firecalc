@@ -37,4 +37,6 @@ trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544]
                 .toFullDescr()
                 .extractPipe
 
+given FireboxToFireboxPipe_15544_MCE[Firebox_15544] = HasFireboxDimensionsToFireboxPipe_15544_MCE
+
 object HasFireboxDimensionsToFireboxPipe_15544_MCE extends HasFireboxDimensionsToFireboxPipe_15544_MCE[Firebox_15544]

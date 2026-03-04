@@ -317,9 +317,32 @@ object std:
 
         // Just output results from supplier datasheet
         trait Door15aFirebox_Catalog extends Firebox_15544:
+
+            // ── Input data (provided by each catalog entry / database row) ──
+
             val uniq_id: String
             val mb: Option[Mass]
             val sb: SB
+
+            /** Optional per-entry SB constraint bounds; defaults applied in Door15aCatalogConstraints. */
+            val sb_min: Option[SB]
+            val sb_max: Option[SB]
+
+            /** Optional per-entry fuel mass constraint bounds; defaults applied in Door15aCatalogConstraints. */
+            val mb_min: Option[Mass]
+            val mb_max: Option[Mass]
+
+            /** SB measurement points for pressure-loss interpolation. */
+            val measured_sb_values: List[QtyD[Centimeter]]
+
+            /** TSV table for pressure-loss interpolation (first col = kg, other cols = sb values). */
+            val pressure_loss_table_raw: String
+
+            /** The pipe shape the firebox expects at its air intake (e.g. round 200 mm). */
+            val expectedAirIntakePipeShape: PipeShape
+
+            // ── Computed from input data ────────────────────────────────
+
             def pressure_loss: Option[Pressure]
 
             lazy val factory: Factory
@@ -368,40 +391,64 @@ object std:
                             Nil
                     list.filter(_.nonEmpty)
 
-        case class Door15aFirebox_Catalog_Example(
+        val Door15aFirebox_Catalog_Example: Door15aFirebox_Catalog_DatabaseEntry =
+            Door15aFirebox_Catalog_DatabaseEntry(
+                uniq_id                    = "Door15aFirebox_Catalog_Example",
+                mb                         = None,
+                sb                         = 1.6.cm.to_cm,
+                dimensions                 = Dimensions(
+                    base = Dimensions.Base.Squared(width = 29.cm, depth = 39.cm),
+                    height = 100.cm // example, wrong
+                ),
+                sb_min                     = Some(1.6.cm.to_cm),
+                sb_max                     = Some(4.0.cm.to_cm),
+                mb_min                     = Some(10.kg),
+                mb_max                     = Some(25.kg),
+                measured_sb_values         = List(1.6.cm.to_cm, 2.4.cm.to_cm, 3.2.cm.to_cm, 4.00.cm.to_cm),
+                pressure_loss_table_raw    = 
+                    """|kg sb_1    sb_2    sb_3    sb_4
+                       |10 4       3       2       1 
+                       |25 22      20      18      16
+                       |""".stripMargin,
+                expectedAirIntakePipeShape = PipeShape.Circle(200.mm),
+                co2_dry_nominal            = 12.percent,
+                co2_dry_lowest             = None,
+                emissions_values           = afpma.firecalc.engine.biblio.kov.firebox_emissions.`15A_Combustion_Firebox`,
+                glass_area                 = 500.cm2,
+                height_of_lowest_opening   = 5.cm,
+                pn_reduced                 = HeatOutputReduced.NotDefined,
+            )
+
+        case class Door15aFirebox_Catalog_DatabaseEntry(
+            uniq_id: String,
             mb: Option[Mass], 
             sb: SB,
+            dimensions: Dimensions,
+            sb_min: Option[SB],
+            sb_max: Option[SB],
+            mb_min: Option[Mass],
+            mb_max: Option[Mass],
+            measured_sb_values: List[QtyD[Centimeter]],
+            pressure_loss_table_raw: String,
+            expectedAirIntakePipeShape: PipeShape,
+            co2_dry_nominal: σ_CO2,
+            co2_dry_lowest: Option[σ_CO2],
+            emissions_values: EmissionsAndEfficiencyValues,
+            glass_area: GlassArea,
+            height_of_lowest_opening: Length,
+            pn_reduced: HeatOutputReduced,
         )
             extends Door15aFirebox_Catalog:
-            type Self = Door15aFirebox_Catalog_Example
-            override val uniq_id = "Door15aFirebox_Catalog_Example"
 
-            private val measured_sb_values: List[QtyD[Centimeter]] = 
-                List(1.6.cm.to_cm, 2.4.cm.to_cm, 3.2.cm.to_cm, 4.00.cm.to_cm)
-
-            private val pressure_loss_table_raw: String           = 
-                """|kg  sb_1    sb_2    sb_3    sb_4
-                   |10  4       3       2       1
-                   |25  22      20      18      16
-                   |""".stripMargin
+            type Self = Door15aFirebox_Catalog_DatabaseEntry
 
             override lazy val pressure_loss = mb.flatMap: mb =>
                 factory.get_pressure_loss_for_mb_sb(mb, sb)
 
-            override def co2_dry_lowest = None
-            override def co2_dry_nominal = 12.percent
-            override def dimensions: afpma.firecalc.engine.models.en15544.std.Dimensions     = Dimensions(
-                base = Dimensions.Base.Squared(width = 29.cm, depth = 39.cm),
-                height = 100.cm // example, wrong
-            )
-            override def emissions_values                                                    = afpma.firecalc.engine.biblio.kov.firebox_emissions.`15A_Combustion_Firebox`
-            override def firebox_type                                                        = I18N.firebox_names.door_15a_firebox
-            override def glass_area                                                          = 500.cm2
-            override def height_of_lowest_opening                                            = 5.cm
-            override def min_load                                                            = MinLoad.NotDefined
-            override def pn_reduced                                                          = HeatOutputReduced.NotDefined
-            override def reference                                                           = LocalizedString(_ => uniq_id)
-            override def type_of_appliance                                                   = TypeOfAppliance.WoodLogs
+            override def firebox_type      = I18N.firebox_names.door_15a_firebox
+            override def min_load          = mb_min.fold(MinLoad.NotDefined)(m => MinLoad.FromTypeTest(m))
+            override def reference         = LocalizedString(_ => uniq_id)
+            override def type_of_appliance = TypeOfAppliance.WoodLogs
 
             override def formulas: FireboxFormulas[Self] =
                 import afpma.firecalc.engine.impl.en15544.instances.door15aCatalogFormulas

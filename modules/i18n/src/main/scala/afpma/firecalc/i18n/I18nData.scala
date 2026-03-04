@@ -496,7 +496,8 @@ object I18nData:
         injector_velocity_below_minimum      : StringFormat2,
         injector_velocity_above_maximum      : StringFormat2,
         flue_gas_velocity_error              : StringFormat5,
-        missing_flow_rate                    : String
+        missing_flow_rate                    : String,
+        air_intake_pipe_shape_mismatch       : StringFormat2
     )
 
     case class Headers(
@@ -889,7 +890,8 @@ object I18nData:
 
         case class PropertyMustBeDefined(
             section_geometry   : String,
-            next_section_length: String
+            next_section_length: String,
+            pressure_loss      : String
         )
 
         case class Prerequisites(

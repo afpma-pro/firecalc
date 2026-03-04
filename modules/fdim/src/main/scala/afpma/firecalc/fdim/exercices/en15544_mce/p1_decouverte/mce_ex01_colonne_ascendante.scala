@@ -25,10 +25,15 @@ import coulomb.policy.standard.given
 
 object mce_ex01_colonne_ascendante 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_MCE_Alg
-    with v0_2024_10.Firebox_15544_MCE_OneOff_Alg:
+    with v0_2024_10.Firebox_15544_MCE_Alg:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.mce.given
     import gtypedefs.ζ
+
+    type FB = TraditionalFirebox
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val exercice_name = "exercices // p1_decouverte // mce_ex01_colonne_ascendante"
     

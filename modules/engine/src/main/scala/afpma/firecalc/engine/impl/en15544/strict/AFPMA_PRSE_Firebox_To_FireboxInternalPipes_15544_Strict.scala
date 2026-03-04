@@ -19,6 +19,9 @@ import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
+given FireboxToCombustionAirPipe_15544_Strict[AFPMA_PRSE] = AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_Strict
+given FireboxToFireboxPipe_15544_Strict[AFPMA_PRSE]      = AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_Strict
+
 object AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_Strict
     extends FireboxToInternalPipes_15544_Strict[AFPMA_PRSE]
     with HasFireboxDimensionsToFireboxPipe_15544_Strict[AFPMA_PRSE]:

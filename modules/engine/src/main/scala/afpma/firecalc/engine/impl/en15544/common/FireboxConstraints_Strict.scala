@@ -9,9 +9,10 @@ import cats.syntax.all.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.units.coulombutils.{show_Meters, show_SquareMeters, VolumeFlow, *}
+import afpma.firecalc.units.coulombutils.{show_Meters, show_SquareMeters, *}
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
+import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
@@ -292,9 +293,8 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
     // ── Firebox-specific constraints ──────────────────────────────────────
 
     override def firebox_custom_constraints(
-        firebox  : F,
-        mB       : m_B,
-        flow_rate: Option[VolumeFlow]
+        firebox: F,
+        ctx    : FireboxConstraintContext
     )(using Locale): List[FireboxError] =
         Nil
 

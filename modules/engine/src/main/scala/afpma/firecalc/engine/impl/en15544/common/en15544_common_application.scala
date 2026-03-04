@@ -23,6 +23,7 @@ import afpma.firecalc.engine.alg.en15544
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.StoveConstraintContext
 import afpma.firecalc.engine.alg.en15544.StoveConstraints
@@ -441,9 +442,20 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
 
         def validateFireboxSpecificConstraints(): ValidatedNel[FireboxError, Unit] =
+            val fbCtx = FireboxConstraintContext(
+                mB                = m_B,
+                flow_rate         = V_L,
+                airIntakePipeShape = {
+                    val p = inputs.pipes
+                    p.AirIntakePipe_Module.foldPipeCanBe(p.airIntake)(
+                        onNoVentilation = None,
+                        onFullDescr     = fd => fd.lastInnerGeom
+                    )
+                }
+            )
             Validated.fromOption(
                 NonEmptyList.fromList(
-                    fc.firebox_custom_constraints(firebox, m_B, V_L)(using Locales.en)
+                    fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
                 ),
                 ()
             ).swap

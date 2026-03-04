@@ -91,13 +91,13 @@ object AFPMA_PRSE:
     given showAsTable: io.taig.babel.Locale => ShowAsTable[AFPMA_PRSE] =
         ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
             import x.*
-            (I18N.firebox.typ                    :: "" :: I18N.firebox_names.afpma_prse                                    :: Nil) ::
-                (I18N.firebox.firebox_depth  :: "h11" :: h11_profondeurDuFoyer.to_cm.showP                             :: Nil) ::
-                (I18N.firebox.firebox_width  :: "h12" :: h12_largeurDuFoyer.to_cm.showP                                :: Nil) ::
-                (I18N.firebox.firebox_height :: "h13" :: h13_hauteurDuFoyer.to_cm.showP                                :: Nil) ::
-                ("X (1er injecteur)"             :: "h83" :: h83_hauteurEntreSoleEt1erInjecteur_X.to_cm.showP              :: Nil) ::
-                (I18N.firebox.traditional.glass_width  :: "h88" :: h88_largeurVitre.to_cm.showP                            :: Nil) ::
-                (I18N.firebox.traditional.glass_height :: "h89" :: h89_hauteurVitre.to_cm.showP                            :: Nil) ::
+            (I18N.firebox.typ                                                 :: "" :: I18N.firebox_names.afpma_prse                                    :: Nil) ::
+                (I18N.firebox.firebox_depth                                   :: "h11" :: h11_profondeurDuFoyer.to_cm.showP                             :: Nil) ::
+                (I18N.firebox.firebox_width                                   :: "h12" :: h12_largeurDuFoyer.to_cm.showP                                :: Nil) ::
+                (I18N.firebox.firebox_height                                  :: "h13" :: h13_hauteurDuFoyer.to_cm.showP                                :: Nil) ::
+                (I18N.firebox.afpma_prse.height_of_first_row_of_air_injectors :: "h83" :: h83_hauteurEntreSoleEt1erInjecteur_X.to_cm.showP              :: Nil) ::
+                (I18N.firebox.traditional.glass_width                         :: "h88" :: h88_largeurVitre.to_cm.showP                                  :: Nil) ::
+                (I18N.firebox.traditional.glass_height                        :: "h89" :: h89_hauteurVitre.to_cm.showP                                  :: Nil) ::
                 Nil
 
     enum OutsideAirLocationInHeater  :

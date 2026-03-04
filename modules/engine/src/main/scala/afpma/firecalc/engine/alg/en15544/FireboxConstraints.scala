@@ -7,6 +7,7 @@ package afpma.firecalc.engine.alg.en15544
 
 import afpma.firecalc.units.coulombutils.VolumeFlow
 
+import afpma.firecalc.dto.all.PipeShape
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
@@ -28,7 +29,9 @@ case class ConstraintContext(
     A_BR   : A_BR,
     H_BR_min: Option[H_BR],
     H_BR   : H_BR,
-    n_min  : n_min
+    n_min  : n_min,
+    /** Last inner shape of the air intake pipe, if available. */
+    airIntakePipeShape: Option[PipeShape] = None
 )
 
 /** Typeclass providing EN 15544 constraint sequences for each firebox term.
@@ -85,12 +88,18 @@ trait FireboxConstraints[-F <: Firebox_15544]:
 
     /** Validate firebox-specific constraints not covered by EN 15544. */
     def firebox_custom_constraints(
-        firebox  : F,
-        mB       : m_B,
-        flow_rate: Option[VolumeFlow]
+        firebox: F,
+        ctx    : FireboxConstraintContext
     )(using Locale): List[FireboxError]
 
 end FireboxConstraints
+
+/** Runtime context passed to [[FireboxConstraints.firebox_custom_constraints]]. */
+case class FireboxConstraintContext(
+    mB              : m_B,
+    flow_rate       : Option[VolumeFlow],
+    airIntakePipeShape: Option[PipeShape]
+)
 
 /** Mixin trait that removes all §4.3.1.x firebox sizing constraints.
  *
