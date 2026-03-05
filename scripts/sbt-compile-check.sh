@@ -202,7 +202,7 @@ if [ "$WAIT_MODE" = true ]; then
     DELAY_MS=500
     MAX_DELAY_MS=16000
     TOTAL_WAIT_MS=0
-    MAX_TOTAL_WAIT_MS=120000  # 2 minutes
+    MAX_TOTAL_WAIT_MS=380000  # 6 minutes
 
     while true; do
         check_status
