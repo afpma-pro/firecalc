@@ -15,7 +15,7 @@ import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.From_CalculPdM_V_0_2_32
+import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers
 
 import afpma.firecalc.ui.instances.defaultable
 
@@ -43,7 +43,7 @@ object EngineState:
         stove_params                   = ExampleProject_15544.stoveParams,
         air_intake_descr               = ExampleProject_15544.conduit_air_descr,
         firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional](using
-            From_CalculPdM_V_0_2_32.transformer_inv_TraditionalFirebox_Standard
+            FireboxTransformers.transformer_inv_TraditionalFirebox_Standard
         ),
         flue_pipe_descr                = ExampleProject_15544.accumulateur_descr,
         connector_pipe_descr           = ExampleProject_15544.conduit_raccordement_descr,
@@ -63,7 +63,7 @@ object EngineState:
         stove_params                   = CasType_15544_C3.stoveParams,
         air_intake_descr               = CasType_15544_C3.conduit_air_descr,
         firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.EcoLabeled](using
-            From_CalculPdM_V_0_2_32.transformer_inv_EcoLabeled
+            FireboxTransformers.transformer_inv_EcoLabeled
         ),
         flue_pipe_descr                = CasType_15544_C3.accumulateur_descr,
         connector_pipe_descr           = CasType_15544_C3.conduit_raccordement_descr,
@@ -83,7 +83,7 @@ object EngineState:
         stove_params                   = CasPratique_15544_FDIM_EX_03.stoveParams,
         air_intake_descr               = CasPratique_15544_FDIM_EX_03.conduit_air_descr,
         firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.EcoLabeled](using
-            From_CalculPdM_V_0_2_32.transformer_inv_EcoLabeled
+            FireboxTransformers.transformer_inv_EcoLabeled
         ),
         flue_pipe_descr                = CasPratique_15544_FDIM_EX_03.accumulateur_descr,
         connector_pipe_descr           = CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr,

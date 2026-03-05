@@ -16,7 +16,7 @@ import afpma.firecalc.engine.models.en15544.std.*
 import io.scalaland.chimney.*
 import io.scalaland.chimney.dsl.*
 
-object From_CalculPdM_V_0_2_32:
+object FireboxTransformers:
 
     given transformer_Firebox_Firebox_15544: Transformer[Firebox, Firebox_15544] = { ccui =>
         ccui match
@@ -36,20 +36,11 @@ object From_CalculPdM_V_0_2_32:
                 transformer_dto_Door15aFirebox_Catalog_to_Door15aFirebox_Catalog.transform(x)
     }
 
-    // given transformer_Firebox_V3_Firebox_15544: Transformer[Firebox, Firebox_15544] = { dto =>
-    //     val singleTestedT = afpma.firecalc.engine.models.en15544.firebox.single_tested.transformer_SingleTested
-    //     dto match
-    //         case x: Firebox.SingleTested =>
-    //             singleTestedT.transform(x)
-    //         case dimensioned             =>
-    //             transformer_Firebox_Firebox_15544.transform(dimensioned)
-    // }
-
     // mappings to engine model
     given transformer_Standard_TraditionalFirebox
-        : Transformer[Firebox.Traditional, firebox.calcpdm_v_0_2_32.TraditionalFirebox] =
+        : Transformer[Firebox.Traditional, firebox.TraditionalFirebox] =
         Transformer
-            .define[Firebox.Traditional, firebox.calcpdm_v_0_2_32.TraditionalFirebox]
+            .define[Firebox.Traditional, firebox.TraditionalFirebox]
             .enableDefaultValues
             .withFieldRenamed(_.firebox_depth, _.h11_profondeurDuFoyer)
             .withFieldRenamed(_.firebox_width, _.h12_largeurDuFoyer)
@@ -62,10 +53,10 @@ object From_CalculPdM_V_0_2_32:
             .buildTransformer
 
     given transformer_inv_TraditionalFirebox_Standard
-        : Transformer[firebox.calcpdm_v_0_2_32.TraditionalFirebox, Firebox.Traditional] =
+        : Transformer[firebox.TraditionalFirebox, Firebox.Traditional] =
         import HeatOutputReduced.{NotDefined, HalfOfNominal}
         Transformer
-            .define[firebox.calcpdm_v_0_2_32.TraditionalFirebox, Firebox.Traditional]
+            .define[firebox.TraditionalFirebox, Firebox.Traditional]
             .enableDefaultValues
             .withFieldComputed(
                 _.heat_output_reduced, 
@@ -82,11 +73,11 @@ object From_CalculPdM_V_0_2_32:
             .withFieldRenamed(_.h72_hauteurVitre, _.glass_height)
             .buildTransformer
 
-    given transformer_EcoLabeled_EcoLabeled: Transformer[Firebox.EcoLabeled, firebox.calcpdm_v_0_2_32.EcoLabeled] = e =>
+    given transformer_EcoLabeled_EcoLabeled: Transformer[Firebox.EcoLabeled, firebox.EcoLabeled] = e =>
         import e.*
         e.version match
             case Left("Version 1")  =>
-                firebox.calcpdm_v_0_2_32.EcoLabeled_V1                                     (
+                firebox.EcoLabeled_V1                                     (
                     pn_reduced                                      = heat_output_reduced,
                     h11_profondeurDuFoyer                           = firebox_depth,
                     h12_largeurDuFoyer                              = firebox_width,
@@ -107,7 +98,7 @@ object From_CalculPdM_V_0_2_32:
                     h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = height_of_first_row_of_air_injectors
                 )
             case Right("Version 2") =>
-                firebox.calcpdm_v_0_2_32.EcoLabeled_V2                                     (
+                firebox.EcoLabeled_V2                                     (
                     pn_reduced                                      = heat_output_reduced,
                     arriveeAirGeometry                              = air_intake_shape.getOrElse(Circle(200.mm)),
                     h11_profondeurDuFoyer                           = firebox_depth,
@@ -135,10 +126,10 @@ object From_CalculPdM_V_0_2_32:
             case h: HeatOutputReduced.HalfOfNominal  => h
             case HeatOutputReduced.FromTypeTest(v)   => HeatOutputReduced.HalfOfNominal.makeFromValue(v) // safe default, prevent throwing
 
-    given transformer_inv_EcoLabeled: Transformer[firebox.calcpdm_v_0_2_32.EcoLabeled, Firebox.EcoLabeled] = e =>
+    given transformer_inv_EcoLabeled: Transformer[firebox.EcoLabeled, Firebox.EcoLabeled] = e =>
         import e.*
         e match
-            case _: firebox.calcpdm_v_0_2_32.EcoLabeled_V1 =>
+            case _: firebox.EcoLabeled_V1 =>
                 Firebox.EcoLabeled                 (
                     heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                              = Left("Version 1"),
@@ -161,7 +152,7 @@ object From_CalculPdM_V_0_2_32:
                     injector_height                      = h82_hauteurDesInjecteurs_Z,
                     height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
                 )
-            case _: firebox.calcpdm_v_0_2_32.EcoLabeled_V2 =>
+            case _: firebox.EcoLabeled_V2 =>
                 Firebox.EcoLabeled                 (
                     heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                              = Right("Version 2"),
@@ -186,15 +177,15 @@ object From_CalculPdM_V_0_2_32:
                 )
             case _ => throw new Exception("not implemented")
 
-    given Transformer[OutsideAirLocationInHeater, firebox.calcpdm_v_0_2_32.AFPMA_PRSE.OutsideAirLocationInHeater] =
+    given Transformer[OutsideAirLocationInHeater, firebox.AFPMA_PRSE.OutsideAirLocationInHeater] =
         x =>
             x match
                 case OutsideAirLocationInHeater.FromBottom =>
-                    firebox.calcpdm_v_0_2_32.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom
+                    firebox.AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom
 
-    given transformer_AFPMA_PRSE: Transformer[Firebox.AFPMA_PRSE, firebox.calcpdm_v_0_2_32.AFPMA_PRSE] =
+    given transformer_AFPMA_PRSE: Transformer[Firebox.AFPMA_PRSE, firebox.AFPMA_PRSE] =
         Transformer
-            .define[Firebox.AFPMA_PRSE, firebox.calcpdm_v_0_2_32.AFPMA_PRSE]
+            .define[Firebox.AFPMA_PRSE, firebox.AFPMA_PRSE]
             .enableDefaultValues
             .withFieldRenamed(_.heat_output_reduced, _.pn_reduced)
             .withFieldRenamed(_.outside_air_location_in_heater, _.origineArriveeAir)

@@ -13,7 +13,7 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.Wood
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.wood_combustion.WoodCombustionAlg
 import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl

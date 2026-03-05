@@ -14,7 +14,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToInternalPipes_15544_MCE
 import afpma.firecalc.engine.impl.en15544.mce.HasFireboxDimensionsToFireboxPipe_15544_MCE
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.AFPMA_PRSE
+import afpma.firecalc.engine.models.en15544.firebox.AFPMA_PRSE
 
 import coulomb.*
 import coulomb.ops.algebra.all.*

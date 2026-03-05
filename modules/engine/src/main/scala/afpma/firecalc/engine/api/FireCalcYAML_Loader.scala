@@ -14,7 +14,6 @@ import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_1554
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.standard.*
 
@@ -25,6 +24,7 @@ import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 
 import scala.util.*
+import afpma.firecalc.engine.models.en15544.firebox.*
 
 case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     self =>
@@ -69,7 +69,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     import cats.implicits.catsSyntaxValidatedId
 
     private val fb: Firebox_15544 =
-        import afpma.firecalc.engine.models.en15544.firebox.From_CalculPdM_V_0_2_32.given
+        import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
         summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
 
     private val validatedFluePipe: ValidatedNel[IncrementalValidation_Error, FluePipe_15544] = self.fluePipe match

@@ -15,8 +15,8 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToInternalPipes_15544_MCE
 import afpma.firecalc.engine.impl.en15544.mce.HasFireboxDimensionsToFireboxPipe_15544_MCE
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled.*
+import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled
+import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled.*
 
 import coulomb.*
 import coulomb.ops.algebra.all.*

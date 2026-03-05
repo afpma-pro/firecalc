@@ -12,8 +12,7 @@ import afpma.firecalc.engine.models.CheckableConstraint
 import afpma.firecalc.engine.models.PipesResult_15544
 import afpma.firecalc.engine.models.Preview
 import afpma.firecalc.engine.models.en15544.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Traditional.CustomForLab
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
@@ -40,14 +39,14 @@ class ShowAsTableInstances_15544(using Locale):
 
     given ShowAsTable[Firebox_15544] =
         ShowAsTable.mkLightFor(I18N.headers.firebox_description):
-            case x: firebox.calcpdm_v_0_2_32.TraditionalFirebox => x.showOnlyRows
-            case x: firebox.calcpdm_v_0_2_32.EcoLabeled         => x.showOnlyRows
-            case x: firebox.calcpdm_v_0_2_32.AFPMA_PRSE         => x.showOnlyRows
-            case x: CustomForLab                                => x.showOnlyRows
-            case x: SingleTested                                => x.showOnlyRows
-            case x: Traditional                                 => x.showOnlyRows
-            case x: CertifiedDesign                             => x.showOnlyRows
-            case x: Door15aFirebox_Catalog                      => x.showOnlyRows
+            case x: TraditionalFirebox      => x.showOnlyRows
+            case x: EcoLabeled              => x.showOnlyRows
+            case x: AFPMA_PRSE              => x.showOnlyRows
+            case x: CustomForLab            => x.showOnlyRows
+            case x: SingleTested            => x.showOnlyRows
+            case x: Traditional             => x.showOnlyRows
+            case x: CertifiedDesign         => x.showOnlyRows
+            case x: Door15aFirebox_Catalog  => x.showOnlyRows
 
     given showAsTable_CitedConstraints: (scc: ShowAsTable[CheckableConstraint[?]]) => ShowAsTable[CitedConstraints] =
         ShowAsTable.mkLightFor    (

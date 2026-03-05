@@ -13,7 +13,7 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.api.v0_2024_10.SimpleStoveProjectDescrFr_15544_Alg
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
 

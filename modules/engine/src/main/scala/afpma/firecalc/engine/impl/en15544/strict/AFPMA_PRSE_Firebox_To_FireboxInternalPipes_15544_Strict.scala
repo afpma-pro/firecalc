@@ -13,7 +13,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.AFPMA_PRSE
+import afpma.firecalc.engine.models.en15544.firebox.AFPMA_PRSE
 
 import coulomb.*
 import coulomb.ops.algebra.all.*

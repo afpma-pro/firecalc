@@ -12,8 +12,8 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled_V1
+import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled
+import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled_V1
 
 import cats.syntax.all.*
 

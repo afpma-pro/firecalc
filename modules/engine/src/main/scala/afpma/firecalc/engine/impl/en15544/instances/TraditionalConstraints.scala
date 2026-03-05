@@ -14,7 +14,7 @@ import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.standard.*
 

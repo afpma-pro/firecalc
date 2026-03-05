@@ -10,7 +10,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.AFPMA_PRSE
+import afpma.firecalc.engine.models.en15544.firebox.AFPMA_PRSE
 import afpma.firecalc.engine.standard.*
 
 import io.taig.babel.Locale
