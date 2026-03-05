@@ -32,6 +32,17 @@ extension (tt: TSVTableString)
     def extractHeaders: List[String] = 
         tt.toList.head.map(_._1).toList
 
+
+    def extractColAs(
+        firstHeader : String,
+    ): List[Double] =
+        tt.extractCol(firstHeader).map(str2double)
+        
+    def extractCol(
+        firstHeader : String,
+    ): List[String] =
+        tt.map(_.get(firstHeader)).flatten
+
     def extractColsAs(
         firstHeader : String,
         secondHeader: String
