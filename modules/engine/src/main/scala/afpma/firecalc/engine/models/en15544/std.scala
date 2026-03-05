@@ -34,7 +34,6 @@ import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given
-import coulomb.syntax.withUnit
 
 import io.taig.babel.Locale
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog.SB
@@ -349,22 +348,24 @@ object std:
 
             trait Factory:
 
+                /** The raw TSV string for pressure-loss data. */
+                val rawString: String
+
                 /** by convention : first col = max load in 'kg', other columns = (sb_01, sb_02, etc...) */
-                def tsv_table: TSVTableString
+                lazy val tsv_table: TSVTableString =
+                    TSVTableString.fromString(rawString, sep = "\\s+")
 
-                def available_sb_values: List[QtyD[Centimeter]]
+                val available_sb_values: List[QtyD[Centimeter]]
 
-                /** List("sb_01", "sb_02", ...) */
-                private def available_sb_headers: List[String] = tsv_table.extractHeaders
+                lazy val pressureLossTable: PressureLossTSVTableString =
+                    PressureLossTSVTableString(
+                        rawString         = rawString,
+                        availableSbValues = available_sb_values
+                    )
 
-                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Option[Pressure] = 
-                    available_sb_values.indexOf(sb_value) match
-                        case -1 => None
-                        case sb_header_idx =>
-                            val sb_header = available_sb_headers(sb_header_idx)
-                            val mb_in_kg = mb.toUnit[Kilogram].value
-                            val ploss_in_pa = tsv_table.getUsingLinearInterpolation("kg", sb_header)(mb_in_kg)
-                            ploss_in_pa.map(_.withUnit[Pascal])
+                /** Interpolated pressure loss for any (mb, sb) within table bounds. */
+                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Option[Pressure] =
+                    pressureLossTable.interpolate(mb, sb_value)
 
         object Door15aFirebox_Catalog:
             
@@ -443,9 +444,7 @@ object std:
             type Self = Door15aFirebox_Catalog_DatabaseEntry
 
             override lazy val pressure_loss = mb.flatMap: mb =>
-                val ploss = factory.get_pressure_loss_for_mb_sb(mb, sb)
-                scala.scalajs.js.Dynamic.global.console.log(s"pressure_loss = ${ploss.show} (mb = $mb, sb = $sb)")
-                ploss
+                factory.get_pressure_loss_for_mb_sb(mb, sb)
 
             override def firebox_type      = I18N.firebox_names.door_15a_firebox
             override def min_load          = mb_min.fold(MinLoad.NotDefined)(m => MinLoad.FromTypeTest(m))
@@ -461,8 +460,8 @@ object std:
                 door15aCatalogConstraints
 
             lazy val factory = new Factory:
+                override val rawString          = pressure_loss_table_raw
                 override val available_sb_values = measured_sb_values
-                override val tsv_table = TSVTableString.fromString(pressure_loss_table_raw)
 
         // TODO: implement MB 17 specs
         // trait Door15aFirebox_Generic extends Firebox_15544
