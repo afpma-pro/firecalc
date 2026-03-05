@@ -62,8 +62,8 @@ object EngineState:
         local_conditions               = CasType_15544_C3.localConditions,
         stove_params                   = CasType_15544_C3.stoveParams,
         air_intake_descr               = CasType_15544_C3.conduit_air_descr,
-        firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.EcoLabeled](using
-            FireboxTransformers.transformer_inv_EcoLabeled
+        firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.Ecolabeled](using
+            FireboxTransformers.transformer_inv_Ecolabeled
         ),
         flue_pipe_descr                = CasType_15544_C3.accumulateur_descr,
         connector_pipe_descr           = CasType_15544_C3.conduit_raccordement_descr,
@@ -82,8 +82,8 @@ object EngineState:
         local_conditions               = CasPratique_15544_FDIM_EX_03.localConditions,
         stove_params                   = CasPratique_15544_FDIM_EX_03.stoveParams,
         air_intake_descr               = CasPratique_15544_FDIM_EX_03.conduit_air_descr,
-        firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.EcoLabeled](using
-            FireboxTransformers.transformer_inv_EcoLabeled
+        firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.Ecolabeled](using
+            FireboxTransformers.transformer_inv_Ecolabeled
         ),
         flue_pipe_descr                = CasPratique_15544_FDIM_EX_03.accumulateur_descr,
         connector_pipe_descr           = CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr,

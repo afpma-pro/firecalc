@@ -88,8 +88,11 @@ object transformers:
             .withFieldRenamed(_.height_of_first_row_of_air_injectors, _.height_of_lowest_opening)
             .buildTransformer
 
-    given firebox_v2_ecolabeled_to_v3: Transformer[v2.Firebox_V2.EcoLabeled, v4.Firebox_V3.EcoLabeled] =
-        Transformer.define[v2.Firebox_V2.EcoLabeled, v4.Firebox_V3.EcoLabeled].buildTransformer
+    given firebox_v2_ecolabeled_to_ecolabeled_v3: Transformer[v2.Firebox_V2.EcoLabeled, v4.Firebox_V3.Ecolabeled] =
+        Transformer.define[v2.Firebox_V2.EcoLabeled, v4.Firebox_V3.Ecolabeled].buildTransformer
+    
+    given firebox_v2_ecolabeled_to_firebox_v3: Transformer[v2.Firebox_V2.EcoLabeled, v4.Firebox_V3] =
+        firebox_v2_ecolabeled_to_ecolabeled_v3.transform(_): v4.Firebox_V3
 
     given firebox_v2_afpma_prse_to_v3: Transformer[v2.Firebox_V2.AFPMA_PRSE, v4.Firebox_V3.AFPMA_PRSE] =
         Transformer.define[v2.Firebox_V2.AFPMA_PRSE, v4.Firebox_V3.AFPMA_PRSE].buildTransformer

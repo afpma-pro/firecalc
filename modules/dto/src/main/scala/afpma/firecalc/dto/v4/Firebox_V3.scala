@@ -74,7 +74,7 @@ object Firebox_V3:
     ) extends Firebox_V3
 
     @Transl(I(_.firebox_names.ecolabeled))
-    case class EcoLabeled(
+    case class Ecolabeled(
         @Transl(I(_.firebox.tested.heat_output_reduced))
         heat_output_reduced                 : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
         @Transl(I(_.firebox.ecolabeled.version))

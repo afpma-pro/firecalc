@@ -272,14 +272,14 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             Version
         ]
 
-    private def ecolabeled(default_version: Version): DF[Firebox.EcoLabeled] =
+    private def ecolabeled(default_version: Version): DF[Firebox.Ecolabeled] =
         import com.raquo.laminar.api.enrichSource
         val version_var: Var[Version] = Var(default_version)
 
         // update and bind version_var from app state
         val binder = firebox_var.signal
             .mapLazy {
-                case eco: Firebox.EcoLabeled =>
+                case eco: Firebox.Ecolabeled =>
                     eco.version match
                         case Left("Version 1")  => Some(Version.Version_1)
                         case Right("Version 2") => Some(Version.Version_2)
@@ -306,7 +306,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given DF[Option[PipeShape]] =
             DaisyUIVerticalForm.conditionalOn[Version, PipeShape](version_var, extraBinders = Seq(binder))
 
-        DaisyUIVerticalForm.autoDerived[Firebox.EcoLabeled].autoOverwriteFieldNames
+        DaisyUIVerticalForm.autoDerived[Firebox.Ecolabeled].autoOverwriteFieldNames
 
     given given_AFPMA_PRSE: DF[Firebox.AFPMA_PRSE] =
         given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
@@ -395,7 +395,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
         given DF[Firebox.Traditional]             = given_Firebox_Traditional
         given DF[Firebox.AFPMA_PRSE]              = given_AFPMA_PRSE
-        given DF[Firebox.EcoLabeled]              = ecolabeled(default_version = Version.Version_1)
+        given DF[Firebox.Ecolabeled]              = ecolabeled(default_version = Version.Version_1)
         given DF[Firebox.SingleTested]            = given_Firebox_SingleTested
         given DF[Firebox.Door15aFirebox_Catalog]  = given_Firebox_Door15aFirebox_Catalog
 

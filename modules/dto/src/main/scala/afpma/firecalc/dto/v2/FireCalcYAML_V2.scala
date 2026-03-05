@@ -19,7 +19,7 @@ import io.taig.babel.Locale
  * FireCalcYAML_V2 - Schema version 2
  *
  * Changes from V1:
- * - Added `height_of_first_row_of_air_injectors` field to Traditional and EcoLabeled fireboxes
+ * - Added `height_of_first_row_of_air_injectors` field to Traditional and Ecolabeled fireboxes
  *   (with default value 5.cm for backwards compatibility)
  */
 final case class FireCalcYAML_V2(

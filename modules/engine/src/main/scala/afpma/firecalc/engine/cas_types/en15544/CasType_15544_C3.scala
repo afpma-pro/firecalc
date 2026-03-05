@@ -13,8 +13,8 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled_V1
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
 import cats.syntax.all.*
 
@@ -29,7 +29,7 @@ object CasType_15544_C3
     import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
 
-    type FB = EcoLabeled
+    type FB = Ecolabeled
     protected val toCombustionAirPipeTC = summon
     protected val toFireboxPipeTC       = summon
 
@@ -73,7 +73,7 @@ object CasType_15544_C3
         import AirIntakePipe_Module.*
         define(conduit_air_descr*).toFullDescr().extractPipe
 
-    val foyer_descr = EcoLabeled_V1(
+    val foyer_descr = Ecolabeled_V1(
         pn_reduced                                      = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                           = 54.cm,
         h12_largeurDuFoyer                              = 54.cm,
@@ -95,7 +95,7 @@ object CasType_15544_C3
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = 10.cm
     )
 
-    val firebox: EcoLabeled = foyer_descr
+    val firebox: Ecolabeled = foyer_descr
 
     val accumulateur_descr =
         import FluePipe_Module_15544.*

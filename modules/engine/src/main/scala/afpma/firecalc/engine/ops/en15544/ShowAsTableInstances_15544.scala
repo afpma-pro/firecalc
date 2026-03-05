@@ -40,7 +40,7 @@ class ShowAsTableInstances_15544(using Locale):
     given ShowAsTable[Firebox_15544] =
         ShowAsTable.mkLightFor(I18N.headers.firebox_description):
             case x: TraditionalFirebox      => x.showOnlyRows
-            case x: EcoLabeled              => x.showOnlyRows
+            case x: Ecolabeled              => x.showOnlyRows
             case x: AFPMA_PRSE              => x.showOnlyRows
             case x: CustomForLab            => x.showOnlyRows
             case x: SingleTested            => x.showOnlyRows

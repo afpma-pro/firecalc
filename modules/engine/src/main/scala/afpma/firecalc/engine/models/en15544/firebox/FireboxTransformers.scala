@@ -22,8 +22,8 @@ object FireboxTransformers:
         ccui match
             case x: Firebox.Traditional  =>
                 transformer_Standard_TraditionalFirebox.transform(x)
-            case x: Firebox.EcoLabeled   =>
-                transformer_EcoLabeled_EcoLabeled.transform(x)
+            case x: Firebox.Ecolabeled   =>
+                transformer_Ecolabeled_Ecolabeled.transform(x)
             case x: Firebox.AFPMA_PRSE   =>
                 transformer_AFPMA_PRSE.transform(x)
             case st: Firebox.SingleTested =>
@@ -73,11 +73,11 @@ object FireboxTransformers:
             .withFieldRenamed(_.h72_hauteurVitre, _.glass_height)
             .buildTransformer
 
-    given transformer_EcoLabeled_EcoLabeled: Transformer[Firebox.EcoLabeled, firebox.EcoLabeled] = e =>
+    given transformer_Ecolabeled_Ecolabeled: Transformer[Firebox.Ecolabeled, firebox.Ecolabeled] = e =>
         import e.*
         e.version match
             case Left("Version 1")  =>
-                firebox.EcoLabeled_V1                                     (
+                firebox.Ecolabeled_V1                                     (
                     pn_reduced                                      = heat_output_reduced,
                     h11_profondeurDuFoyer                           = firebox_depth,
                     h12_largeurDuFoyer                              = firebox_width,
@@ -98,7 +98,7 @@ object FireboxTransformers:
                     h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = height_of_first_row_of_air_injectors
                 )
             case Right("Version 2") =>
-                firebox.EcoLabeled_V2                                     (
+                firebox.Ecolabeled_V2                                     (
                     pn_reduced                                      = heat_output_reduced,
                     arriveeAirGeometry                              = air_intake_shape.getOrElse(Circle(200.mm)),
                     h11_profondeurDuFoyer                           = firebox_depth,
@@ -126,11 +126,11 @@ object FireboxTransformers:
             case h: HeatOutputReduced.HalfOfNominal  => h
             case HeatOutputReduced.FromTypeTest(v)   => HeatOutputReduced.HalfOfNominal.makeFromValue(v) // safe default, prevent throwing
 
-    given transformer_inv_EcoLabeled: Transformer[firebox.EcoLabeled, Firebox.EcoLabeled] = e =>
+    given transformer_inv_Ecolabeled: Transformer[firebox.Ecolabeled, Firebox.Ecolabeled] = e =>
         import e.*
         e match
-            case _: firebox.EcoLabeled_V1 =>
-                Firebox.EcoLabeled                 (
+            case _: firebox.Ecolabeled_V1 =>
+                Firebox.Ecolabeled                 (
                     heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                              = Left("Version 1"),
                     air_intake_shape                     = None,
@@ -152,8 +152,8 @@ object FireboxTransformers:
                     injector_height                      = h82_hauteurDesInjecteurs_Z,
                     height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
                 )
-            case _: firebox.EcoLabeled_V2 =>
-                Firebox.EcoLabeled                 (
+            case _: firebox.Ecolabeled_V2 =>
+                Firebox.Ecolabeled                 (
                     heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                              = Right("Version 2"),
                     air_intake_shape                     = arriveeAirGeometryOpt,

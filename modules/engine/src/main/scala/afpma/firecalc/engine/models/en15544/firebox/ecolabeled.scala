@@ -30,7 +30,7 @@ import coulomb.policy.standard.given
 
 import io.taig.babel.Locale
 
-sealed trait EcoLabeled extends CertifiedDesign:
+sealed trait Ecolabeled extends CertifiedDesign:
     override val emissions_values   = EcoPlus_Combustion_Firebox
     override val min_load           = MinLoad.HalfOfMaxLoad.makeWithoutValue
     val pn_reduced                                     : HeatOutputReduced
@@ -54,7 +54,7 @@ sealed trait EcoLabeled extends CertifiedDesign:
     val h81_debordDesRenfortsDansLesAngles             : Length
     val h82_hauteurDesInjecteurs_Z                     : Length
     val h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
-    val version: EcoLabeled.Version
+    val version: Ecolabeled.Version
 
     override val dimensions: Dimensions = Dimensions(
         base   = Dimensions.Base.Squared(
@@ -93,24 +93,24 @@ sealed trait EcoLabeled extends CertifiedDesign:
     lazy val c25_largeurDesColonnesAirArrieres  =
         c2_largeurFoyer - 2.0 * c14_debordDesRenfortsDansLesAngles - c13_largeurRenfortMedianArriere
 
-end EcoLabeled
+end Ecolabeled
 
-sealed trait EcoLabeled_V1 extends EcoLabeled:
+sealed trait Ecolabeled_V1 extends Ecolabeled:
     override val reference         = LocalizedString.from(I18N.firebox_names.ecolabeled_v1)
     override val type_of_appliance = TypeOfAppliance.WoodLogs
-    final val version              = EcoLabeled.Version.V1
+    final val version              = Ecolabeled.Version.V1
 
-sealed trait EcoLabeled_V2 extends EcoLabeled:
+sealed trait Ecolabeled_V2 extends Ecolabeled:
     override val reference         = LocalizedString.from(I18N.firebox_names.ecolabeled_v2)
     override val type_of_appliance = TypeOfAppliance.WoodLogs
-    final val version              = EcoLabeled.Version.V2
+    final val version              = Ecolabeled.Version.V2
 
-object EcoLabeled:
+object Ecolabeled:
 
     enum Version:
         case V1, V2
 
-    given showAsTable: Locale => ShowAsTable[EcoLabeled] =
+    given showAsTable: Locale => ShowAsTable[Ecolabeled] =
         ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
             import x.*
             val I               = I18N.firebox.ecolabeled
@@ -147,7 +147,7 @@ object EcoLabeled:
             list.filter(_.nonEmpty)
 
 
-object EcoLabeled_V1:
+object Ecolabeled_V1:
     def apply(
         pn_reduced                                     : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
         h11_profondeurDuFoyer                          : QtyD[Meter],
@@ -167,8 +167,8 @@ object EcoLabeled_V1:
         h81_debordDesRenfortsDansLesAngles             : Length,
         h82_hauteurDesInjecteurs_Z                     : Length,
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
-    ): EcoLabeled_V1 =
-        new EcoLabeled_V1_or_V2_Impl(
+    ): Ecolabeled_V1 =
+        new Ecolabeled_V1_or_V2_Impl(
             pn_reduced,
             None,
             h11_profondeurDuFoyer,
@@ -188,11 +188,11 @@ object EcoLabeled_V1:
             h81_debordDesRenfortsDansLesAngles,
             h82_hauteurDesInjecteurs_Z,
             h83_hauteurEntreLaSoleEtLe1erInjecteur_X
-        ) with EcoLabeled_V1 {
+        ) with Ecolabeled_V1 {
             override val firebox_type: Locale ?=> String = I18N.firebox_names.ecolabeled_v1
         }
 
-object EcoLabeled_V2:
+object Ecolabeled_V2:
     def apply(
         pn_reduced                                     : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
         arriveeAirGeometry                             : PipeShape,
@@ -213,8 +213,8 @@ object EcoLabeled_V2:
         h81_debordDesRenfortsDansLesAngles             : Length,
         h82_hauteurDesInjecteurs_Z                     : Length,
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
-    ): EcoLabeled_V2 =
-        new EcoLabeled_V1_or_V2_Impl(
+    ): Ecolabeled_V2 =
+        new Ecolabeled_V1_or_V2_Impl(
             pn_reduced,
             Some(arriveeAirGeometry),
             h11_profondeurDuFoyer,
@@ -234,12 +234,12 @@ object EcoLabeled_V2:
             h81_debordDesRenfortsDansLesAngles,
             h82_hauteurDesInjecteurs_Z,
             h83_hauteurEntreLaSoleEtLe1erInjecteur_X
-        ) with EcoLabeled_V2 {
+        ) with Ecolabeled_V2 {
             override val firebox_type: Locale ?=> String = I18N.firebox_names.ecolabeled_v2
         }
 
-/** 'EcoLabeled' Firebox according to EN15544 */
-private sealed abstract class EcoLabeled_V1_or_V2_Impl(
+/** 'Ecolabeled' Firebox according to EN15544 */
+private sealed abstract class Ecolabeled_V1_or_V2_Impl(
     val pn_reduced                                     : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
     val arriveeAirGeometryOpt                          : Option[PipeShape], // defined only for V2
     val h11_profondeurDuFoyer                          : QtyD[Meter],
@@ -259,8 +259,8 @@ private sealed abstract class EcoLabeled_V1_or_V2_Impl(
     val h81_debordDesRenfortsDansLesAngles             : Length,
     val h82_hauteurDesInjecteurs_Z                     : Length,
     val h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
-) extends EcoLabeled {
-    type Self = EcoLabeled
+) extends Ecolabeled {
+    type Self = Ecolabeled
     def height_of_lowest_opening: Length = h74_hauteur_de_cendrier_AF
 
     override def formulas: FireboxFormulas[Self] =

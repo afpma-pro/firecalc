@@ -15,21 +15,21 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToInternalPipes_15544_MCE
 import afpma.firecalc.engine.impl.en15544.mce.HasFireboxDimensionsToFireboxPipe_15544_MCE
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled.*
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.*
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
-given FireboxToCombustionAirPipe_15544_MCE[EcoLabeled] = EcoLabeled_To_FireboxInternalPipes_15544_MCE
-given FireboxToFireboxPipe_15544_MCE[EcoLabeled]      = EcoLabeled_To_FireboxInternalPipes_15544_MCE
+given FireboxToCombustionAirPipe_15544_MCE[Ecolabeled] = Ecolabeled_To_FireboxInternalPipes_15544_MCE
+given FireboxToFireboxPipe_15544_MCE[Ecolabeled]      = Ecolabeled_To_FireboxInternalPipes_15544_MCE
 
-object EcoLabeled_To_FireboxInternalPipes_15544_MCE
-    extends FireboxToInternalPipes_15544_MCE[EcoLabeled]
-    with HasFireboxDimensionsToFireboxPipe_15544_MCE[EcoLabeled]:
+object Ecolabeled_To_FireboxInternalPipes_15544_MCE
+    extends FireboxToInternalPipes_15544_MCE[Ecolabeled]
+    with HasFireboxDimensionsToFireboxPipe_15544_MCE[Ecolabeled]:
 
-    extension (firebox: EcoLabeled)
+    extension (firebox: Ecolabeled)
         override def toCombustionAirPipe_FullDescr = 
             import CombustionAirPipe_Module_13384.*
             import firebox.*

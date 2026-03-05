@@ -81,8 +81,8 @@ object defaultable:
             glass_height                          = 30.cm
         )
 
-    given firebox_ecolabeled_minimal: Defaultable[Firebox.EcoLabeled] = Defaultable:
-        Firebox.EcoLabeled                 (
+    given firebox_ecolabeled_minimal: Defaultable[Firebox.Ecolabeled] = Defaultable:
+        Firebox.Ecolabeled                 (
             heat_output_reduced                  = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
             version                              = Left("Version 1"),
             air_intake_shape                     = None,

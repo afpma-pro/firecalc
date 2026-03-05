@@ -39,11 +39,11 @@ case class FireboxComponent(
     import FireboxComponent.*
 
     val showEcolabeledV1Img = firebox_var.signal.map:
-        case eco: Firebox.EcoLabeled if eco.version == Left("Version 1") => true
+        case eco: Firebox.Ecolabeled if eco.version == Left("Version 1") => true
         case _ => false
 
     val showEcolabeledV2Img = firebox_var.signal.map:
-        case eco: Firebox.EcoLabeled if eco.version == Right("Version 2") => true
+        case eco: Firebox.Ecolabeled if eco.version == Right("Version 2") => true
         case _ => false
 
     val showAFPMAPRSEImg = firebox_var.signal.map:

@@ -10,19 +10,19 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
-import afpma.firecalc.engine.impl.en15544.strict.HasFireboxDimensionsToFireboxPipe_15544_Strict
+import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import coulomb.*
 import coulomb.policy.standard.given
 
-given FireboxToCombustionAirPipe_15544_Strict[TraditionalFirebox] = TraditionalFirebox_To_FireboxInternalPipes_15544_Strict
-given FireboxToFireboxPipe_15544_Strict[TraditionalFirebox]      = TraditionalFirebox_To_FireboxInternalPipes_15544_Strict
+given FireboxToCombustionAirPipe_15544_Strict[TraditionalFirebox] = TraditionalFireboxToFireboxInternalPipes_15544_Strict
+given FireboxToFireboxPipe_15544_Strict[TraditionalFirebox]      = TraditionalFireboxToFireboxInternalPipes_15544_Strict
 
-object TraditionalFirebox_To_FireboxInternalPipes_15544_Strict
+object TraditionalFireboxToFireboxInternalPipes_15544_Strict
     extends FireboxToInternalPipes_15544_Strict[TraditionalFirebox]
-    with HasFireboxDimensionsToFireboxPipe_15544_Strict[TraditionalFirebox]:
+    with GenericFireboxToFireboxPipe_15544_Strict[TraditionalFirebox]:
 
     extension (firebox: TraditionalFirebox)
         override def toCombustionAirPipe_FullDescr = 

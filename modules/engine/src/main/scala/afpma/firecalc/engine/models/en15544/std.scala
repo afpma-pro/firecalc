@@ -443,7 +443,9 @@ object std:
             type Self = Door15aFirebox_Catalog_DatabaseEntry
 
             override lazy val pressure_loss = mb.flatMap: mb =>
-                factory.get_pressure_loss_for_mb_sb(mb, sb)
+                val ploss = factory.get_pressure_loss_for_mb_sb(mb, sb)
+                scala.scalajs.js.Dynamic.global.console.log(s"pressure_loss = ${ploss.show} (mb = $mb, sb = $sb)")
+                ploss
 
             override def firebox_type      = I18N.firebox_names.door_15a_firebox
             override def min_load          = mb_min.fold(MinLoad.NotDefined)(m => MinLoad.FromTypeTest(m))

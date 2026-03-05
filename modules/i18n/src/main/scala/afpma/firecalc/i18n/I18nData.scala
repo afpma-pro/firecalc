@@ -155,7 +155,7 @@ object I18nData:
         glass_area                                 : String,
         ref                                        : String,
         typ                                        : String,
-        ecolabeled                                 : Firebox_15544.EcoLabeled,
+        ecolabeled                                 : Firebox_15544.Ecolabeled,
         tested                                     : Firebox_15544.Tested,
         traditional                                : Firebox_15544.Traditional,
         single_tested                              : Firebox_15544.SingleTested,
@@ -178,7 +178,7 @@ object I18nData:
             number_of_air_columns_feeding_door   : String
         )
 
-        case class EcoLabeled(
+        case class Ecolabeled(
             version                                  : String,
             version_1_with_airbox                    : String,
             version_2_without_airbox                 : String,

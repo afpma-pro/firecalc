@@ -16,7 +16,7 @@ import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.standard.*
 
@@ -31,17 +31,17 @@ import scala.collection.mutable.ListBuffer
 
 import io.taig.babel.Locale
 
-/** EN 15544 constraints for [[EcoLabeled]] fireboxes.
+/** EN 15544 constraints for [[Ecolabeled]] fireboxes.
  *
  * Extends the default constraint set, overriding m_B bounds (min=6kg,
  * max=40kg), m_B_min (min=6kg), and specific constraint validation.
  */
-given ecoLabeledConstraints: FireboxConstraints[EcoLabeled] =
-    new FireboxConstraints_Strict[EcoLabeled]:
+given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
+    new FireboxConstraints_Strict[Ecolabeled]:
 
-        /** EcoLabeled: min=6kg, max=40kg. */
+        /** Ecolabeled: min=6kg, max=40kg. */
         override def m_B_constraints(
-            firebox: EcoLabeled,
+            firebox: Ecolabeled,
             ctx    : ConstraintContext
         ): Seq[Option[TermConstraint[m_B]]] =
             Seq(
@@ -49,16 +49,16 @@ given ecoLabeledConstraints: FireboxConstraints[EcoLabeled] =
                 Some(TermConstraint.Max[m_B](40.kg))
             )
 
-        /** EcoLabeled: min=6kg. */
+        /** Ecolabeled: min=6kg. */
         override def m_B_min_constraints(
-            firebox: EcoLabeled,
+            firebox: Ecolabeled,
             ctx    : ConstraintContext
         ): Seq[Option[TermConstraint[m_B_min]]] =
             Seq(Some(TermConstraint.Min[m_B_min](6.kg)))
 
-        /** EcoLabeled-specific structural and dimensional constraints. */
+        /** Ecolabeled-specific structural and dimensional constraints. */
         override def firebox_custom_constraints(
-            firebox: EcoLabeled,
+            firebox: Ecolabeled,
             ctx    : FireboxConstraintContext
         )(using Locale): List[FireboxError] =
             import ctx.*

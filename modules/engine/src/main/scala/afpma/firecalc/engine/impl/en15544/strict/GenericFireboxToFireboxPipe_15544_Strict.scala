@@ -13,7 +13,16 @@ import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Stri
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
 
-trait HasFireboxDimensionsToFireboxPipe_15544_Strict[FB <: Firebox_15544]
+// Generic Firebox_15544
+
+given FireboxToFireboxPipe_15544_Strict[Firebox_15544] = GenericFireboxToFireboxPipe_15544_Strict.makeFor[Firebox_15544]
+
+// SingleTested
+
+given FireboxToFireboxPipe_15544_Strict[SingleTested] = 
+    GenericFireboxToFireboxPipe_15544_Strict.makeFor[SingleTested]
+
+trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544]
     extends FireboxToFireboxPipe_15544_Strict[FB] {
 
     extension (firebox: FB)
@@ -36,7 +45,6 @@ trait HasFireboxDimensionsToFireboxPipe_15544_Strict[FB <: Firebox_15544]
                 .extractPipe
 }
 
-given FireboxToFireboxPipe_15544_Strict[Firebox_15544] = HasFireboxDimensionsToFireboxPipe_15544_Strict
-
-object HasFireboxDimensionsToFireboxPipe_15544_Strict
-    extends HasFireboxDimensionsToFireboxPipe_15544_Strict[Firebox_15544]
+object GenericFireboxToFireboxPipe_15544_Strict:
+    def makeFor[FB <: Firebox_15544]: GenericFireboxToFireboxPipe_15544_Strict[FB] =
+        new GenericFireboxToFireboxPipe_15544_Strict[FB] {}

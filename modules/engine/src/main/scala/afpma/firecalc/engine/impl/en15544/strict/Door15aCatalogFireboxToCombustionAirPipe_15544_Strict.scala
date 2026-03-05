@@ -3,13 +3,13 @@
  * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
  */
 
-package afpma.firecalc.engine.impl.en15544.instances
+package afpma.firecalc.engine.impl.en15544.strict
 
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
-import afpma.firecalc.engine.impl.en15544.strict.HasFireboxDimensionsToFireboxPipe_15544_Strict
+import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Door15aFirebox_Catalog
 import afpma.firecalc.engine.standard.PressureLossMustBeDefined
@@ -28,7 +28,7 @@ given door15aCatalogFireboxToCombustionAirPipe: FireboxToCombustionAirPipe_15544
     Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
 
 given door15aCatalogFireboxToFireboxPipe: FireboxToFireboxPipe_15544_Strict[Door15aFirebox_Catalog] =
-    new HasFireboxDimensionsToFireboxPipe_15544_Strict[Door15aFirebox_Catalog] {}
+    new GenericFireboxToFireboxPipe_15544_Strict[Door15aFirebox_Catalog] {}
 
 object Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
 

@@ -34,7 +34,7 @@ object implicits {
     given Decoder[I18nData.Errors]                                                                               = deriveDecoder[I18nData.Errors]
     given Decoder[I18nData.Firebox_15544]                                                                        = deriveDecoder[I18nData.Firebox_15544]
     given Decoder[I18nData.Firebox_15544.AFPMA_PRSE]                                                             = deriveDecoder[I18nData.Firebox_15544.AFPMA_PRSE]
-    given Decoder[I18nData.Firebox_15544.EcoLabeled]                                                             = deriveDecoder[I18nData.Firebox_15544.EcoLabeled]
+    given Decoder[I18nData.Firebox_15544.Ecolabeled]                                                             = deriveDecoder[I18nData.Firebox_15544.Ecolabeled]
     given Decoder[I18nData.Firebox_15544.Tested]                                                                 = deriveDecoder[I18nData.Firebox_15544.Tested]
     given Decoder[I18nData.Firebox_15544.Traditional]                                                            = deriveDecoder[I18nData.Firebox_15544.Traditional]
     given Decoder[I18nData.PolluantNames]                                                                        = deriveDecoder[I18nData.PolluantNames]

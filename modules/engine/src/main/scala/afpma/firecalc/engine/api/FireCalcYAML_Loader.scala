@@ -25,6 +25,8 @@ import cats.data.ValidatedNel
 
 import scala.util.*
 import afpma.firecalc.engine.models.en15544.firebox.*
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
 
 case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     self =>
@@ -102,10 +104,13 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
         fb match
-            case f: TraditionalFirebox => mkStrictAlg(f)
-            case f: AFPMA_PRSE        => mkStrictAlg(f)
-            case f: EcoLabeled        => mkStrictAlg(f)
-            case f                    => mkStrictAlg(f)
+            case f: TraditionalFirebox     => mkStrictAlg(f)
+            case f: AFPMA_PRSE             => mkStrictAlg(f)
+            case f: Ecolabeled             => mkStrictAlg(f)
+            case f: SingleTested           => mkStrictAlg(f)
+            case f: Door15aFirebox_Catalog => mkStrictAlg(f)
+            case f                      => 
+                throw new IllegalStateException(s"Unknow firebox type")
 
     def make_en15544_Strict_Application: ValidatedNel[MCalc_Error, EN15544_Strict_Application] =
         stoveProjectDescr_EN15544_Strict.en15544_Alg

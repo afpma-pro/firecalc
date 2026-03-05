@@ -12,8 +12,8 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled_V1
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
 import cats.syntax.all.*
 
@@ -25,7 +25,7 @@ object strict_ex03_cas_pratique
     import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
 
-    type FB = EcoLabeled
+    type FB = Ecolabeled
     protected val toCombustionAirPipeTC = summon
     protected val toFireboxPipeTC       = summon
 
@@ -46,7 +46,7 @@ object strict_ex03_cas_pratique
 
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
-    val firebox: EcoLabeled = EcoLabeled_V1(
+    val firebox: Ecolabeled = Ecolabeled_V1(
         pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                               = 54.cm,
         h12_largeurDuFoyer                                  = 54.cm,

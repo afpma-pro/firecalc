@@ -13,10 +13,10 @@ import afpma.firecalc.units.coulombutils.given
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
-import afpma.firecalc.engine.impl.en15544.strict.HasFireboxDimensionsToFireboxPipe_15544_Strict
+import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled
-import afpma.firecalc.engine.models.en15544.firebox.EcoLabeled.*
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.*
 
 import cats.syntax.all.*
 
@@ -24,14 +24,14 @@ import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
-given FireboxToCombustionAirPipe_15544_Strict[EcoLabeled] = EcoLabeled_To_FireboxInternalPipes_15544_Strict
-given FireboxToFireboxPipe_15544_Strict[EcoLabeled]      = EcoLabeled_To_FireboxInternalPipes_15544_Strict
+given FireboxToCombustionAirPipe_15544_Strict[Ecolabeled] = EcolabeledToFireboxInternalPipes_15544_Strict
+given FireboxToFireboxPipe_15544_Strict[Ecolabeled]      = EcolabeledToFireboxInternalPipes_15544_Strict
 
-object EcoLabeled_To_FireboxInternalPipes_15544_Strict
-    extends FireboxToInternalPipes_15544_Strict[EcoLabeled]
-    with HasFireboxDimensionsToFireboxPipe_15544_Strict[EcoLabeled]:
+object EcolabeledToFireboxInternalPipes_15544_Strict
+    extends FireboxToInternalPipes_15544_Strict[Ecolabeled]
+    with GenericFireboxToFireboxPipe_15544_Strict[Ecolabeled]:
 
-    extension (firebox: EcoLabeled)
+    extension (firebox: Ecolabeled)
         override def toCombustionAirPipe_FullDescr = 
             import CombustionAirPipe_Module_15544.*
             import firebox.*

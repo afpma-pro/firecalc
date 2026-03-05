@@ -11,6 +11,16 @@ import afpma.firecalc.engine.models.en15544.std.*
 
 import cats.syntax.validated.catsSyntaxValidatedId
 
+// Generic Firebox_15544
+
+given FireboxToCombustionAirPipe_15544_Strict[Firebox_15544] = 
+    GenericFirebox15544ToCombustionAirPipe_15544_Strict.makeFor[Firebox_15544]
+
+// SingleTested
+
+given FireboxToCombustionAirPipe_15544_Strict[SingleTested] = 
+    GenericFirebox15544ToCombustionAirPipe_15544_Strict.makeFor[SingleTested]
+
 trait GenericFirebox15544ToCombustionAirPipe_15544_Strict[FB <: Firebox_15544]
     extends FireboxToCombustionAirPipe_15544_Strict[FB] {
 
@@ -19,7 +29,6 @@ trait GenericFirebox15544ToCombustionAirPipe_15544_Strict[FB <: Firebox_15544]
             CombustionAirPipe_Module_15544.without.validNel
 }
 
-given FireboxToCombustionAirPipe_15544_Strict[Firebox_15544] = GenericFirebox15544ToCombustionAirPipe_15544_Strict
-
-object GenericFirebox15544ToCombustionAirPipe_15544_Strict
-    extends GenericFirebox15544ToCombustionAirPipe_15544_Strict[Firebox_15544]
+object GenericFirebox15544ToCombustionAirPipe_15544_Strict:
+    def makeFor[FB <: Firebox_15544]: GenericFirebox15544ToCombustionAirPipe_15544_Strict[FB] =
+        new GenericFirebox15544ToCombustionAirPipe_15544_Strict[FB] {}
