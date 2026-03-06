@@ -21,6 +21,7 @@
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 38615,
     "metals.suggestLatestUpgrade": "on",
+    "metals.shutdownBloopOnEditorClose": true,
     "metals.customRepositories": [
         "sonatype:releases|sonatype:snapshots|jcenter"
     ],
