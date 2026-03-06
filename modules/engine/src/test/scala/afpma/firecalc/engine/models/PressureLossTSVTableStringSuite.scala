@@ -17,15 +17,12 @@ import coulomb.syntax.withUnit
 class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
 
     private val rawTable: String =
-        """|kg sb_1    sb_2    sb_3    sb_4
-           |10 4       3       2       1 
+        """|mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
+           |10 4       3       2       1
            |25 22      20      18      16
            |""".stripMargin
 
-    private val sbValues: List[QtyD[Centimeter]] =
-        List(1.6.cm.to_cm, 2.4.cm.to_cm, 3.2.cm.to_cm, 4.0.cm.to_cm)
-
-    private val table = PressureLossTSVTableString(rawTable, sbValues)
+    private val table = PressureLossTSVTableString(rawTable)
 
     // ── readSingle ──────────────────────────────────────────────────
 
@@ -75,7 +72,7 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         all should have size 8
     }
 
-    it should "contain the correct pressure for (25 kg, sb_4 = 4.0 cm)" in {
+    it should "contain the correct pressure for (25 kg, sb = 4.0 cm)" in {
         // Given / When
         val all = table.readAll
 
@@ -100,7 +97,7 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
     }
 
     it should "interpolate linearly along mb for a known sb" in {
-        // Given: midpoint between mb=10 and mb=25 at sb_1 (1.6 cm)
+        // Given: midpoint between mb=10 and mb=25 at sb=1.6 cm
         //   pressure at (10, 1.6) = 4, at (25, 1.6) = 22
         //   at mb=17.5 → expected = 4 + (22-4)*7.5/15 = 4 + 9 = 13
         val mb = 17.5.withUnit[Kilogram]
@@ -114,7 +111,7 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
     }
 
     it should "interpolate linearly along sb for a known mb" in {
-        // Given: mb=10, midpoint between sb_1 (1.6cm)=4 and sb_3 (3.2cm)=2
+        // Given: mb=10, midpoint between sb=1.6cm (4 Pa) and sb=3.2cm (2 Pa)
         //   at sb=2.4cm → expected = 4 + (2-4)*(2.4-1.6)/(3.2-1.6) = 4 - 1 = 3
         val mb = 10.0.withUnit[Kilogram]
         val sb = 2.4.cm.to_cm

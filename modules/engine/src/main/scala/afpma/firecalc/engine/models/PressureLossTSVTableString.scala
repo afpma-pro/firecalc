@@ -16,43 +16,45 @@ import coulomb.syntax.withUnit
   *
   * The raw TSV format is:
   * {{{
-  * kg\tsb_1\tsb_2\tsb_3\tsb_4
+  * mb_in_kg/sb_in_cm\t1.6\t2.4\t3.2\t4.0
   * 10\t4\t3\t2\t1
   * 25\t22\t20\t18\t16
   * }}}
   *
-  *   - First column (`kg`): wood load (mass) values on the x-axis.
-  *   - Remaining columns (`sb_1`, `sb_2`, …): positionally mapped to
-  *     `availableSbValues` (supply-air slot widths on the y-axis).
+  *   - First column (`mb_in_kg/sb_in_cm`): wood load (mass) values in kg.
+  *   - Remaining columns (`1.6`, `2.4`, …): supply-air slot widths in cm
+  *     (the SB measurement points on the y-axis).
   *   - Each cell value is a pressure loss in Pascal (z-axis).
   *
   * @param rawString
   *   the raw TSV string
-  * @param availableSbValues
-  *   the SB measurement points; `availableSbValues(0)` ↔ `sb_1`, etc.
   */
 final case class PressureLossTSVTableString(
-    rawString: String,
-    availableSbValues: List[QtyD[Centimeter]]
+    rawString: String
 ):
 
     private lazy val tsv: TSVTableString =
         TSVTableString.fromString(rawString, sep = "\\s+")
 
-    /** All sb column headers extracted from the raw string (preserving order). */
+    /** SB column headers extracted from the raw string (preserving order). */
     private lazy val sbHeaders: List[String] =
         val firstLine = rawString.split("\n").head.trim
-        firstLine.split("\\s+").toList.tail // drop "kg" header
+        firstLine.split("\\s+").toList.tail // drop "mb_in_kg/sb_in_cm" header
+
+    /** SB measurement points parsed from the column headers. */
+    lazy val availableSbValues: List[QtyD[Centimeter]] =
+        sbHeaders.map(_.toDouble.withUnit[Centimeter])
 
     /** Resolve the TSV column header for a given SB value.
       *
-      * Uses positional mapping: index of `sbValue` in `availableSbValues` →
-      * same index in `sbHeaders`.
+      * Finds the header whose parsed value matches `sbValue`.
       */
     private def sbHeader(sbValue: QtyD[Centimeter]): Option[String] =
         val idx = availableSbValues.indexOf(sbValue)
         if idx < 0 || idx >= sbHeaders.size then None
         else Some(sbHeaders(idx))
+
+    private val mbHeader = "mb_in_kg/sb_in_cm"
 
     // ── Public API ──────────────────────────────────────────────────
 
@@ -66,7 +68,7 @@ final case class PressureLossTSVTableString(
     def readSingle(mb: Mass, sbValue: QtyD[Centimeter]): Option[Pressure] =
         sbHeader(sbValue).flatMap: header =>
             val mbKg = mb.toUnit[Kilogram].value
-            val rows = tsv.extractColsAs("kg", header)
+            val rows = tsv.extractColsAs(mbHeader, header)
             rows.find(_._1 == mbKg).map(_._2.withUnit[Pascal])
 
     /** Read every data point in the table as typed triples. */
@@ -75,7 +77,7 @@ final case class PressureLossTSVTableString(
             (sbValue, sbIdx) <- availableSbValues.zipWithIndex
             if sbIdx < sbHeaders.size
             header = sbHeaders(sbIdx)
-            (mbKg, pa) <- tsv.extractColsAs("kg", header)
+            (mbKg, pa) <- tsv.extractColsAs(mbHeader, header)
         yield (mbKg.withUnit[Kilogram], sbValue, pa.withUnit[Pascal])
 
     /** Bilinear interpolation of the pressure loss for an arbitrary (mb, sb)

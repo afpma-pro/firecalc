@@ -331,10 +331,7 @@ object std:
             val mb_min: Option[Mass]
             val mb_max: Option[Mass]
 
-            /** SB measurement points for pressure-loss interpolation. */
-            val measured_sb_values: List[QtyD[Centimeter]]
-
-            /** TSV table for pressure-loss interpolation (first col = kg, other cols = sb values). */
+            /** TSV table for pressure-loss interpolation (first col = mb in kg, header cols = sb in cm). */
             val pressure_loss_table_raw: String
 
             /** The pipe shape the firebox expects at its air intake (e.g. round 200 mm). */
@@ -351,17 +348,14 @@ object std:
                 /** The raw TSV string for pressure-loss data. */
                 val rawString: String
 
-                /** by convention : first col = max load in 'kg', other columns = (sb_01, sb_02, etc...) */
                 lazy val tsv_table: TSVTableString =
                     TSVTableString.fromString(rawString, sep = "\\s+")
 
-                val available_sb_values: List[QtyD[Centimeter]]
-
                 lazy val pressureLossTable: PressureLossTSVTableString =
-                    PressureLossTSVTableString(
-                        rawString         = rawString,
-                        availableSbValues = available_sb_values
-                    )
+                    PressureLossTSVTableString(rawString)
+
+                lazy val available_sb_values: List[QtyD[Centimeter]] =
+                    pressureLossTable.availableSbValues
 
                 /** Interpolated pressure loss for any (mb, sb) within table bounds. */
                 def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Option[Pressure] =
@@ -405,10 +399,9 @@ object std:
                 sb_max                     = Some(4.0.cm.to_cm),
                 mb_min                     = Some(10.kg),
                 mb_max                     = Some(25.kg),
-                measured_sb_values         = List(1.6.cm.to_cm, 2.4.cm.to_cm, 3.2.cm.to_cm, 4.00.cm.to_cm),
-                pressure_loss_table_raw    = 
-                    """|kg sb_1    sb_2    sb_3    sb_4
-                       |10 4       3       2       1 
+                pressure_loss_table_raw    =
+                    """|mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
+                       |10 4       3       2       1
                        |25 22      20      18      16
                        |""".stripMargin,
                 expectedAirIntakePipeShape = PipeShape.Circle(200.mm),
@@ -429,7 +422,6 @@ object std:
             sb_max: Option[SB],
             mb_min: Option[Mass],
             mb_max: Option[Mass],
-            measured_sb_values: List[QtyD[Centimeter]],
             pressure_loss_table_raw: String,
             expectedAirIntakePipeShape: PipeShape,
             co2_dry_nominal: σ_CO2,
@@ -460,8 +452,7 @@ object std:
                 door15aCatalogConstraints
 
             lazy val factory = new Factory:
-                override val rawString          = pressure_loss_table_raw
-                override val available_sb_values = measured_sb_values
+                override val rawString = pressure_loss_table_raw
 
         // TODO: implement MB 17 specs
         // trait Door15aFirebox_Generic extends Firebox_15544
