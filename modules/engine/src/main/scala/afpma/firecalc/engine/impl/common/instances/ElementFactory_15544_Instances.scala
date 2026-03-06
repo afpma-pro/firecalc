@@ -218,13 +218,23 @@ object ElementFactory_15544_Instances:
     given pressureDiff15544: ElementFactory[
         AddFlowOnlyPipeElement_15544.AddPressureDiff,
         FlowOnlyPipeDescr_15544.PressureDiff,
-        Unit
+        FlowResistanceCtx_15544
     ] with
         def make(op: AddFlowOnlyPipeElement_15544.AddPressureDiff)(using
-            Unit
+            ctx: FlowResistanceCtx_15544
         ) =
-            FlowOnlyPipeDescr_15544
-                .PressureDiff(
-                    pa = op.pressure_difference
+            ctx.getValidated(
+                _.geometry,
+                PressureDiffRequiresGeometry(
+                    op.name,
+                    "EN15544",
+                    ctx.pipeType
+                )
+            ).andThen { geom =>
+                FlowOnlyPipeDescr_15544
+                    .PressureDiff(
+                    pa = op.pressure_difference,
+                    crossSectionO = ctx.geometry.map(_.area)
                 )
                 .validNel
+            }

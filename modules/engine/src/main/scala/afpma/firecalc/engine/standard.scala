@@ -789,6 +789,8 @@ object standard {
     case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType) extends ConflictDetected
     case class FlowResistanceRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
+    case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
+        extends ConflictDetected
 
     object ConflictDetected:
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
@@ -802,6 +804,8 @@ object standard {
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
             case FlowResistanceRequiresGeometry(op, _, _)         =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
+            case PressureDiffRequiresGeometry(op, _, _)         =>
+                I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
 
     // Forbidden element position errors
     sealed trait ForbiddenElementPosition extends IncrementalValidation_Error

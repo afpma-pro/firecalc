@@ -43,7 +43,7 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
             glass_height = glass_height
         )
 
-    def genEcoLabeled_V3: Gen[Firebox_V3.EcoLabeled] =
+    def genEcolabeled_V3: Gen[Firebox_V3.Ecolabeled] =
         for
             heat_output_reduced <- genHeatOutputReduced
             version <- genVersion
@@ -67,7 +67,7 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
             width_between_air_columns_rear <- Gen.choose(2.0, 5.0).map(_.cm)
             reinforcement_bars_offset <- Gen.choose(2.0, 5.0).map(_.cm)
             injector_height <- Gen.choose(0.5, 2.0).map(_.cm)
-        yield Firebox_V3.EcoLabeled(
+        yield Firebox_V3.Ecolabeled(
             heat_output_reduced = heat_output_reduced,
             version = version,
             air_intake_shape = air_intake_shape,
@@ -198,7 +198,7 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
     def genFirebox_V3: Gen[Firebox_V3] =
         Gen.frequency(
             (4, genTraditional_V3),
-            (3, genEcoLabeled_V3),
+            (3, genEcolabeled_V3),
             (2, genAFPMA_PRSE_V3),
             (1, genSingleTested_V3)
         )

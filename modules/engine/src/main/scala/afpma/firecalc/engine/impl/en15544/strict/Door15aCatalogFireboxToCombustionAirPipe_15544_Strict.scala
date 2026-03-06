@@ -5,8 +5,6 @@
 
 package afpma.firecalc.engine.impl.en15544.strict
 
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
@@ -16,13 +14,10 @@ import afpma.firecalc.engine.standard.PressureLossMustBeDefined
 
 import cats.syntax.validated.*
 
-import coulomb.*
-
 /**
  * Combustion air pipe for [[Door15aFirebox_Catalog]] fireboxes.
  *
  * Models the combustion air path as a single pressure difference element
- * whose value is the negated catalog pressure loss (pressure_difference = −pressure_loss).
  */
 given door15aCatalogFireboxToCombustionAirPipe: FireboxToCombustionAirPipe_15544_Strict[Door15aFirebox_Catalog] =
     Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
@@ -41,7 +36,8 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends FireboxToCom
                 case Some(pl) =>
                     CombustionAirPipe_Module_15544.incremental
                         .define(
-                            addPressureDiff("door_15a_pressure_loss", (-pl.value).pascals)
+                            innerShape(firebox.expectedAirIntakePipeShape),
+                            addPressureDiff("door_15a_pressure_loss", pl)
                         )
                         .toFullDescr()
                         .extractPipe

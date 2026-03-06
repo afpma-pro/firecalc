@@ -97,7 +97,10 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
                         makeQtyAtPositionForGeometryTransition(s.from, s.to)
                     case s: SectionIncrease                                           =>
                         makeQtyAtPositionForGeometryTransition(s.from, s.to)
-                    case _ @SingularFlowResistance(_, Some(crossSection)) =>
+                    case SingularFlowResistance(_, Some(crossSection)) =>
+                        val equivCircle = Circle.fromArea(crossSection)
+                        QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
+                    case PressureDiff(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
                     case _: (SingularFlowResistance | PressureDiff | DirectionChange) =>
@@ -225,4 +228,4 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
         )
 
     case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr derives Show
-    case class PressureDiff(pa: QtyD[Pascal])                               extends PipeElDescr derives Show
+    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr derives Show

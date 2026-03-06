@@ -173,7 +173,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 thermalFlowResistance13384.make(op)
 
             case op: AddPressureDiff =>
-                given Unit = ()
+                given FlowResistanceCtx_13384 =
+                    FlowResistanceCtx_13384(stateOps.getInnerShape(st), pt)
                 thermalPressureDiff13384.make(op)
 
         val elIdx = PipeIdx(prevs.elems.size)

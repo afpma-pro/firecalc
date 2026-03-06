@@ -612,29 +612,53 @@ object ElementFactory_13384_Instances:
     given flowOnlyPressureDiff13384: ElementFactory[
         AddFlowOnlyPipeElement_13384.AddPressureDiff,
         FlowOnlyPipeDescr_13384.PressureDiff,
-        Unit
+        FlowResistanceCtx_13384
     ] with
         def make(op: AddFlowOnlyPipeElement_13384.AddPressureDiff)(using
-            Unit
+            ctx: FlowResistanceCtx_13384
         ) =
-            FlowOnlyPipeDescr_13384
-                .PressureDiff(
-                    pa = op.pressure_difference
+            ctx.getValidated(
+                _.innerShape,
+                FlowResistanceRequiresGeometry(
+                    op.name,
+                    "EN13384",
+                    ctx.pipeType
                 )
-                .validNel
+            ).andThen { geom =>
+                FlowOnlyPipeDescr_13384
+                    .PressureDiff(
+                        pa = op.pressure_difference,
+                        crossSectionO = Some(geom.area)
+                    )
+                    .validNel
+            }
+
+
 
     // ========== Thermal Pressure Diff Factory ==========
 
     given thermalPressureDiff13384: ElementFactory[
         AddThermalPipeElement_13384.AddPressureDiff,
         ThermalPipeDescr_13384.PressureDiff,
-        Unit
+        FlowResistanceCtx_13384
     ] with
         def make(op: AddThermalPipeElement_13384.AddPressureDiff)(using
-            Unit
+            ctx: FlowResistanceCtx_13384
         ) =
-            ThermalPipeDescr_13384
-                .PressureDiff(
-                    pa = op.pressure_difference
+            ctx.getValidated(
+                _.innerShape,
+                FlowResistanceRequiresGeometry(
+                    op.name,
+                    "EN13384",
+                    ctx.pipeType
                 )
-                .validNel
+            ).andThen { geom =>
+                ThermalPipeDescr_13384
+                    .PressureDiff(
+                        pa = op.pressure_difference,
+                        crossSectionO = Some(geom.area)
+                    )
+                    .validNel
+            }
+
+

@@ -156,7 +156,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 flowOnlyFlowResistance13384.make(op)
 
             case op: AddPressureDiff =>
-                given Unit = ()
+                given FlowResistanceCtx_13384 =
+                    FlowResistanceCtx_13384(stateOps.getInnerShape(st), pt)
                 flowOnlyPressureDiff13384.make(op)
 
         val elIdx = PipeIdx(prevs.elems.size)

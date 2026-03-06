@@ -905,6 +905,7 @@ object I18nData:
             cannot_set_geometry_before_change      : String,
             section_change_requires_circle         : StringFormat1,
             flow_resistance_requires_geometry      : StringFormat1,
+            pressure_diff_requires_geometry      : StringFormat1,
             flow_resistance_requires_geometry_15544: StringFormat1
         )
 

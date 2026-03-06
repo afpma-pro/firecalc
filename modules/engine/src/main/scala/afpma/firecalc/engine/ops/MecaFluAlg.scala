@@ -197,7 +197,7 @@ object MecaFluOps:
                                     case None           =>
                                         MecaFlu_Error
                                             .CouldNotDetermineCrossSectionArea(
-                                                s"$elementRef: could not determine 'cross section area'",
+                                                s"$elementRef: could not determine 'cross section area' !!",
                                                 pipeType
                                             )
                                             .asLeft

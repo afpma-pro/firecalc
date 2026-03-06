@@ -162,7 +162,8 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                     flowResistance15544.make(op).asNonEmptyList
 
                 case op: AddPressureDiff =>
-                    given Unit = ()
+                    given FlowResistanceCtx_15544 =
+                        FlowResistanceCtx_15544(stateOps.getInnerShape(st), pt)
                     pressureDiff15544.make(op).asNonEmptyList
 
         vels.map(_.map: (idx, newNameO, el) =>

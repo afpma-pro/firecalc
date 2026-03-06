@@ -325,6 +325,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
             },
             getSingularCrossSection = curr.el match {
                 case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
+                case PressureDiff(_, Some(crossSection))           => Some(crossSection)
                 case _                                             => None
             }
         )
@@ -608,7 +609,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         gp.pipeEl.el match
             case _ : StraightSection                                                    =>
                 (None, 0.0.pascals).validNel
-            case PressureDiff(pa) =>
+            case PressureDiff(pa, _) =>
                 val pd = en13384.P_R_dynamicPressure_calc(
                     density_for_pr_pu_pd,
                     velocity_for_pr_pu_pd
