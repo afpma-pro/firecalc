@@ -234,27 +234,17 @@ object Firebox_V3:
         @Transl(I(_.firebox.door_15a_firebox.pressure_loss_table))
         pressure_loss_table_raw               : String = "",
         @Transl(I(_.firebox.door_15a_firebox.expected_air_intake_pipe_shape))
-        expectedAirIntakePipeShape            : PipeShape = PipeShape.Circle(200.mm),
+        expectedAirIntakePipeShape            : PipeShape,
         @Transl(I(_.firebox.single_tested.co2_dry_nominal))
-        co2_dry_nominal                       : Percentage = 12.percent,
+        co2_dry_nominal                       : Percentage,
         @Transl(I(_.firebox.single_tested.co2_dry_lowest))
         co2_dry_lowest                        : Option[Percentage] = None,
         @Transl(I(_.emissions_and_efficiency_values._self))
-        emissions_values                      : EmissionsAndEfficiencyValues_DTO = EmissionsAndEfficiencyValues_DTO(
-            firebox_name                = "",
-            accredited_or_notified_body = "",
-            test_reports                = Nil,
-            emissions_values            = EmissionValues_DTO(
-                co   = TestEmissionValue_DTO(PolluantName.CO,   None, "", 13.percent),
-                dust = TestEmissionValue_DTO(PolluantName.Dust, None, "", 13.percent),
-                ogc  = TestEmissionValue_DTO(PolluantName.OGC,  None, "", 13.percent),
-                nox  = TestEmissionValue_DTO(PolluantName.NOx,  None, "", 13.percent)
-            )
-        ),
+        emissions_values                      : EmissionsAndEfficiencyValues_DTO,
         @Transl(I(_.firebox.glass_area))
-        glass_area                            : Area = 500.cm2,
+        glass_area                            : Area,
         @Transl(I(_.en15544.terms_xtra.height_of_the_lowest_opening.name))
-        height_of_lowest_opening              : Length = 5.cm,
+        height_of_lowest_opening              : Length,
         @Transl(I(_.firebox.tested.heat_output_reduced))
         pn_reduced                            : HeatOutputReduced = HeatOutputReduced.NotDefined,
     ) extends Firebox_V3
