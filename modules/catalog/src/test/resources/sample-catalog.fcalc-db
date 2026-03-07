@@ -92,7 +92,7 @@ door_15a_fireboxes:
     height_of_lowest_opening:
       value: "0.05"
       unit: "meter"
-    pn_reduced: "NotDefined"
+    heat_output_reduced: "NotDefined"
 
 pipe_presets:
   - batch_name: "POUJOULAT 200mm DPI"

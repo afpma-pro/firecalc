@@ -54,6 +54,10 @@ case class TestEmissionValue_DTO(
     o2ref        : Percentage
 )
 
+/** Per-pollutant emission test values.
+  * Note: `PolluantName.Dust+OGC` has no field here — it is a derived value
+  * computed at runtime by the engine (see `EmissionValues.sum_of_dust_and_ogc`).
+  */
 @Transl(I(_.emission_values._self))
 case class EmissionValues_DTO(
     @Transl(I(_.emission_values.co))

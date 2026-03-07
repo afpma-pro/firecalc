@@ -246,5 +246,5 @@ object Firebox_V3:
         @Transl(I(_.en15544.terms_xtra.height_of_the_lowest_opening.name))
         height_of_lowest_opening              : Length,
         @Transl(I(_.firebox.tested.heat_output_reduced))
-        pn_reduced                            : HeatOutputReduced = HeatOutputReduced.NotDefined,
+        heat_output_reduced                   : HeatOutputReduced = HeatOutputReduced.NotDefined,
     ) extends Firebox_V3

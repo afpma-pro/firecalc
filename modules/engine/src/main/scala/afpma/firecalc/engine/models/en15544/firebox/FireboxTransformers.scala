@@ -248,7 +248,7 @@ object FireboxTransformers:
                 ),
                 glass_area                 = glass_area: GlassArea,
                 height_of_lowest_opening   = height_of_lowest_opening,
-                pn_reduced                 = pn_reduced,
+                pn_reduced                 = heat_output_reduced,
             )
 
     private def toTestEmissionValue(dto: TestEmissionValue_DTO): TestEmissionValue =
