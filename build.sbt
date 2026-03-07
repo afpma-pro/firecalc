@@ -335,8 +335,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     ),
   )
   .jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(dto, i18n)
+  .dependsOn(dto)
 
 // =========
 // engine
