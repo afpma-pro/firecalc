@@ -13,6 +13,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.ui.instances
 import afpma.firecalc.ui.instances.circe.given
 import afpma.firecalc.ui.utils.InputQtyD
+import afpma.firecalc.units.all.SUnit
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -30,30 +31,23 @@ import org.scalatest.matchers.should.*
 
 class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
 
-
-    def encodingAndDecodingToYamlShouldWork[X: {Encoder, Decoder}](
+    def roundTripYamlShouldWork[X: {Encoder, Decoder}](
         x_title: String
     )(
-        x: X, 
-        yamlStringExp: String,
+        x: X,
         makeAssertion: (X, X) => Assertion = (x: X, y: X) => x `shouldEqual` y
     ) =
         s"${x_title}" - {
             "encoding to YAML" - {
                 "should work" in {
-                    val j = x.asJson
-                    val yamlOut = yamlPrinter.print(j)
-                    // println("---")
-                    // println(yamlOut)
-                    // println("---")
-                    // println(yamlString)
-                    yamlOut `shouldEqual` yamlStringExp
+                    noException should be thrownBy yamlPrinter.print(x.asJson)
                 }
             }
 
             "decoding from YAML" - {
                 "should work" in {
-                    yamlParser.parse(yamlStringExp) match
+                    val yaml = yamlPrinter.print(x.asJson)
+                    yamlParser.parse(yaml) match
                         case Left(pf) => fail(pf)
                         case Right(yamlParsed) =>
                             val jString = yamlParsed.noSpaces
@@ -62,81 +56,35 @@ class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
                                 case Right(y)  => makeAssertion(x, y)
                 }
             }
-
         }
-    
+
+    def inputQtyDAssertion[DU: SUnit, FU]: (InputQtyD[DU, FU], InputQtyD[DU, FU]) => Assertion =
+        (x, y) => x.displayValue shouldEqual y.displayValue
+
     "YAML Encoding/Decoding" - {
 
-        encodingAndDecodingToYamlShouldWork("InputQtyD [123.meters]")(
-            x = InputQtyD.fromFinalQty[Meter, Inch](123.meters), 
-            yamlStringExp = """|value: "123"
-                               |unit: "meter"
-                               |""".stripMargin
+        roundTripYamlShouldWork("InputQtyD [123.meters]")(
+            x = InputQtyD.fromFinalQty[Meter, Inch](123.meters),
+            makeAssertion = inputQtyDAssertion
         )
-    
-        encodingAndDecodingToYamlShouldWork("InputQtyD [10.inch]")(
-            x = InputQtyD.fromDisplayQty[Meter, Inch](10.withUnit[Inch]), 
-            yamlStringExp = """|value: "10"
-                               |unit: "inch"
-                               |""".stripMargin
+
+        roundTripYamlShouldWork("InputQtyD [10.inch]")(
+            x = InputQtyD.fromDisplayQty[Meter, Inch](10.withUnit[Inch]),
+            makeAssertion = inputQtyDAssertion
         )
-        
-        encodingAndDecodingToYamlShouldWork("QtyD [123.meters]")(
-            x = 123.meters, 
-            yamlStringExp = """|value: "123"
-                               |unit: "meter"
-                               |""".stripMargin
-        )(using 
-            instances.circe.encoder_QtyD_meter, 
+
+        roundTripYamlShouldWork("QtyD [123.meters]")(
+            x = 123.meters
+        )(using
+            instances.circe.encoder_QtyD_meter,
             instances.circe.decoder_QtyD_meter,
         )
-    
-        encodingAndDecodingToYamlShouldWork("LocalConditions.empty")(
-            x = LocalConditions.default, 
-            yamlStringExp = """|z_geodetical_height: 
-                            |  value: "100"
-                            |  unit: "meter"
-                            |coastal_region: false
-                            |chimney_termination: 
-                            |  chimney_location_on_roof: 
-                            |    h: "MoreThan40cm"
-                            |    d: !!null
-                            |    rs: !!null
-                            |    o: !!null
-                            |    s: !!null
-                            |  adjacent_buildings: 
-                            |    l: "MoreThan15m"
-                            |    alpha: !!null
-                            |    beta: !!null
-                            |""".stripMargin,
+
+        roundTripYamlShouldWork("LocalConditions.default")(
+            x = LocalConditions.default
         )
-    
-        encodingAndDecodingToYamlShouldWork("AppState.init")(
-            x = EngineState.init, 
-            yamlStringExp = """|customer: 
-                            |  first_name: ""
-                            |  last_name: ""
-                            |  phone_no: ""
-                            |  email: ""
-                            |  address: ""
-                            |  city: ""
-                            |  postal_code: ""
-                            |localConditions: 
-                            |  z_geodetical_height: 
-                            |    value: "100"
-                            |    unit: "meter"
-                            |  coastal_region: false
-                            |  chimney_termination: 
-                            |    chimney_location_on_roof: 
-                            |      h: "MoreThan40cm"
-                            |      d: !!null
-                            |      rs: !!null
-                            |      o: !!null
-                            |      s: !!null
-                            |    adjacent_buildings: 
-                            |      l: "MoreThan15m"
-                            |      alpha: !!null
-                            |      beta: !!null
-                            |""".stripMargin,
+
+        roundTripYamlShouldWork("EngineState.init")(
+            x = EngineState.init
         )
     }

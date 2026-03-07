@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.models.schema
 
 import afpma.firecalc.ui.models.AppStateSchemaHelper
+import afpma.firecalc.ui.models.schema.AppStateSchema
 
 import scala.util.Success
 
@@ -58,7 +59,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
     // Then
     result.shouldBe(defined)
-    result.get.version.unwrap.shouldBe(1)
+    result.get.version.unwrap.shouldBe(AppStateSchema.LATEST_VERSION)
   }
 
   it should "return None for data without version field (legacy data)" in {
@@ -107,7 +108,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     result.shouldBe(None)
   }
 
-  it should "handle YAML with missing required fields by returning default schema" in {
+  it should "return None for YAML with missing required fields" in {
     // Given - YAML with version but missing required schema fields
     val incompleteYaml =
       """version: 1
@@ -118,12 +119,9 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     // When
     val result = AppStateSchemaMigrations.migrateToLatest(incompleteYaml)
 
-    // Then
-    // AppStateSchemaHelper.decodeFromYaml is fault-tolerant and returns default schema
-    result.shouldBe(defined)
-    // The returned schema should be the default initial schema
-    val defaultSchema = AppStateSchemaHelper.createInitialSchema()
-    result.get.version.unwrap.shouldBe(defaultSchema.version.unwrap)
+    // Then - decoding as V1 fails because required fields are missing,
+    // so migrateToLatest returns None
+    result.shouldBe(None)
   }
 
   behavior of "SchemaMigrations.validateSchema"
@@ -199,7 +197,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     result.shouldBe(None)
   }
 
-  it should "handle YAML with version as string by falling back to default schema" in {
+  it should "return None for YAML with version as string" in {
     // Given
     val stringVersionYaml =
       """version: "1"
@@ -210,12 +208,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     // When
     val result = AppStateSchemaMigrations.migrateToLatest(stringVersionYaml)
 
-    // Then
-    // detectVersion will fail (returns None), but decodeFromYaml is fault-tolerant
-    // and returns default schema
-    result.shouldBe(defined)
-    val defaultSchema = AppStateSchemaHelper.createInitialSchema()
-    result.get.version.unwrap.shouldBe(defaultSchema.version.unwrap)
+    // Then - detectVersion fails to decode string as Int, returns None
+    result.shouldBe(None)
   }
 
   it should "handle YAML with version as float" in {
@@ -276,7 +270,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
     // Then
     result.shouldBe(defined)
-    result.get.version.unwrap.shouldBe(1)
+    result.get.version.unwrap.shouldBe(AppStateSchema.LATEST_VERSION)
   }
 
   it should "handle YAML with special characters in strings" in {

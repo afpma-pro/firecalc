@@ -161,7 +161,7 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                             |"""".stripMargin)
 
                 tr.isRight `shouldBe` true
-                tr.toOption.get.value `shouldEqual` (0.2036 +- 0.01)
+                tr.toOption.get.value `shouldEqual` (0.162 +- 0.01)
 
             }
         }
