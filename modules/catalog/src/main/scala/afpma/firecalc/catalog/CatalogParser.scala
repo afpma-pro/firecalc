@@ -38,7 +38,7 @@ object CatalogParser:
         if version > CatalogMigrations.CURRENT_VERSION then
             Left(CatalogParseError.VersionTooNew(version, CatalogMigrations.CURRENT_VERSION))
         else if version == CatalogMigrations.CURRENT_VERSION then
-            decodeCurrent(json)
+            decodeCurrent(json, version)
         else
             // Future: apply migration chain here using dto Chimney transformers
             Left(CatalogParseError.MigrationFailed(
@@ -46,29 +46,35 @@ object CatalogParser:
                 s"No migration path from V${version.unwrap} to V${CatalogMigrations.CURRENT_VERSION.unwrap}"
             ))
 
-    private def decodeCurrent(json: Json): Either[CatalogParseError, CatalogFile] =
+    private def decodeCurrent(json: Json, version: FireCalc_Version): Either[CatalogParseError, CatalogFile] =
         val cursor = json.hcursor
 
-        // Decode catalog_name as Map[String, String]
-        val catalogName: Map[String, String] =
-            cursor.downField("catalog_name").as[Map[String, String]].getOrElse(Map.empty)
-
-        // Decode catalog_version (already known, just re-extract)
-        val version = cursor.downField("catalog_version").as[FireCalc_Version].getOrElse(CatalogMigrations.CURRENT_VERSION)
+        // Decode catalog_name as Map[String, String].
+        // Absent is OK (optional), but present-and-malformed is an error.
+        val catalogNameEither: Either[CatalogParseError, Map[String, String]] =
+            cursor.downField("catalog_name").focus match
+                case None       => Right(Map.empty)
+                case Some(json) => json.as[Map[String, String]]
+                    .left.map(e => CatalogParseError.InvalidFile(s"catalog_name: ${e.getMessage}"))
 
         // Decode each category section using the registry.
         // Absent sections are skipped (forward-compatible).
+        // Present sections that are not arrays are surfaced as DecodeError.
         // Present sections that fail to decode are surfaced as DecodeError.
-        val sectionsOrError: Either[CatalogParseError, Map[String, Seq[Any]]] =
+        def decodeSections(): Either[CatalogParseError, Map[String, Seq[Any]]] =
             CatalogCategoryRegistry.all.foldLeft[Either[CatalogParseError, Map[String, Seq[Any]]]](Right(Map.empty)):
                 (accOrErr, cat) =>
                     accOrErr.flatMap: acc =>
                         cursor.downField(cat.yamlKey).focus match
+                            case None => Right(acc)  // section absent — skip (forward-compatible)
                             case Some(sectionJson) if sectionJson.isArray =>
                                 cat.decodeSectionJson(sectionJson) match
                                     case Right(entries) => Right(acc + (cat.yamlKey -> entries))
                                     case Left(failure)  => Left(CatalogParseError.DecodeError(cat.yamlKey, failure.getMessage))
-                            case _ => Right(acc)  // section absent or not an array — skip
+                            case Some(_) =>
+                                Left(CatalogParseError.DecodeError(cat.yamlKey, "expected an array"))
 
-        sectionsOrError.map: sections =>
-            CatalogFile(catalog_version = version, catalog_name = catalogName, sections = sections)
+        for
+            catalogName <- catalogNameEither
+            sections    <- decodeSections()
+        yield CatalogFile(catalog_version = version, catalog_name = catalogName, sections = CatalogSections(sections))

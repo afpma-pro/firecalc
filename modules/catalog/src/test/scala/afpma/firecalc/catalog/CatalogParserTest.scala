@@ -8,6 +8,8 @@ package afpma.firecalc.catalog
 import munit.FunSuite
 import afpma.firecalc.dto.all.*
 
+import scala.util.Using
+
 class CatalogParserTest extends FunSuite:
 
     val minimalYaml = """
@@ -30,7 +32,7 @@ class CatalogParserTest extends FunSuite:
         val result = CatalogParser.parse(minimalYaml)
         assert(result.isRight, s"Expected Right but got: $result")
         val file = result.toOption.get
-        assertEquals(file.sections, Map.empty[String, Seq[Any]])
+        assert(file.sections.isEmpty)
         assertEquals(file.catalog_name.get("fr"), Some("Catalogue Test"))
 
     test("parse catalog with empty sections"):
@@ -38,6 +40,9 @@ class CatalogParserTest extends FunSuite:
         assert(result.isRight, s"Expected Right but got: $result")
         val file = result.toOption.get
         assertEquals(file.catalog_name.get("en"), Some("Test Catalog"))
+        import CatalogCategoryInstances.given
+        assertEquals(file.entriesFor[Firebox.Door15aFirebox_Catalog], Seq.empty)
+        assertEquals(file.entriesFor[SetThermalPipeProp_13384.SetPropertiesInBatch], Seq.empty)
 
     test("parse catalog with version too new"):
         val yaml = """
@@ -106,10 +111,34 @@ class CatalogParserTest extends FunSuite:
         val err = result.left.toOption.get.asInstanceOf[CatalogParseError.DecodeError]
         assertEquals(err.category, "door_15a_fireboxes")
 
+    test("parse catalog with non-array section returns DecodeError"):
+        val yaml = """
+          |catalog_version: 4
+          |catalog_name:
+          |  fr: "Test"
+          |door_15a_fireboxes: "not an array"
+          |""".stripMargin
+        val result = CatalogParser.parse(yaml)
+        assert(result.isLeft, s"Expected Left but got: $result")
+        val err = result.left.toOption.get
+        assert(err.isInstanceOf[CatalogParseError.DecodeError], s"Expected DecodeError but got: $err")
+        assertEquals(err.asInstanceOf[CatalogParseError.DecodeError].category, "door_15a_fireboxes")
+
+    test("parse catalog with malformed catalog_name returns InvalidFile"):
+        val yaml = """
+          |catalog_version: 4
+          |catalog_name: "just a string"
+          |""".stripMargin
+        val result = CatalogParser.parse(yaml)
+        assert(result.isLeft, s"Expected Left but got: $result")
+        assert(
+            result.left.toOption.get.isInstanceOf[CatalogParseError.InvalidFile],
+            s"Expected InvalidFile but got: ${result.left.toOption.get}"
+        )
+
     test("parse sample catalog file"):
-        val stream = getClass.getResourceAsStream("/sample-catalog.fcalc-db")
-        assert(stream != null, "sample-catalog.fcalc-db resource not found")
-        val yaml = scala.io.Source.fromInputStream(stream).mkString
+        val yaml = Using.resource(getClass.getResourceAsStream("/sample-catalog.fcalc-db")): stream =>
+            scala.io.Source.fromInputStream(stream).mkString
         val result = CatalogParser.parse(yaml)
         assert(result.isRight, s"Expected Right but got: $result")
         val file = result.toOption.get

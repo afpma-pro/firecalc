@@ -55,6 +55,12 @@ object CatalogCategoryRegistry:
         CatalogCategoryAny.from[SetThermalPipeProp_13384.SetPropertiesInBatch],
     )
 
+    // Fail fast if two categories share the same yamlKey
+    locally:
+        val keys = all.map(_.yamlKey)
+        val dupes = keys.diff(keys.distinct)
+        require(dupes.isEmpty, s"Duplicate yamlKey(s) in CatalogCategoryRegistry: ${dupes.mkString(", ")}")
+
 /** CatalogCategory instances for V1 categories */
 object CatalogCategoryInstances:
 
