@@ -33,7 +33,7 @@ object FireCalcYAMLMigrations:
     given Transformer[FireCalcYAML_V1, FireCalcYAML_V2] =
         Transformer
             .define[FireCalcYAML_V1, FireCalcYAML_V2]
-            .withFieldConst(_.version, FireCalc_Version(2))
+            .withFieldConst(_.version, FireCalcYAML_V2.VERSION)
             .withFieldComputed(_.firebox, _.firebox.transformInto[v2.Firebox_V2])
             .buildTransformer
 

@@ -66,7 +66,7 @@ class SingleTested_Snapshot_Suite extends AnyFlatSpec with Matchers:
         )
 
     private val yamlV4: FireCalcYAML_V4 = FireCalcYAML_V4(
-        version                        = FireCalc_Version(4),
+        version                        = FireCalcYAML_V4.VERSION,
         locale                         = Locale(Languages.Fr, None),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,

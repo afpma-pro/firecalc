@@ -6,6 +6,7 @@
 package afpma.firecalc.catalog
 
 import afpma.firecalc.dto.all.FireCalc_Version
+import afpma.firecalc.dto.v4.FireCalcYAML_V4
 
 /** Version constants and migration for .fcalc-db catalog files.
   * Versions use the same FireCalc_Version type and numbering as project YAML files.
@@ -13,4 +14,4 @@ import afpma.firecalc.dto.all.FireCalc_Version
   * Future migrations will reuse dto Chimney transformers per category.
   */
 object CatalogMigrations:
-    val CURRENT_VERSION: FireCalc_Version = FireCalc_Version(4)
+    val CURRENT_VERSION: FireCalc_Version = FireCalcYAML_V4.VERSION

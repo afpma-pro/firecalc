@@ -5,8 +5,6 @@
 
 package afpma.firecalc.ui.models
 
-import afpma.firecalc.ui.instances.circe.given
-
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.*

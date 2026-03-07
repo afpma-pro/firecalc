@@ -32,7 +32,7 @@ import io.taig.babel.Locale
  * - TODO: SetPropertiesInBatch for ThermalPipeDescr_15544
  */
 final case class FireCalcYAML_V4(
-    version                       : FireCalc_Version = FireCalc_Version(4),
+    version                       : FireCalc_Version = FireCalcYAML_V4.VERSION,
     locale                        : Locale,
     display_units                 : DisplayUnits,
     standard_or_computation_method: StandardOrComputationMethod,
@@ -47,6 +47,9 @@ final case class FireCalcYAML_V4(
 ) extends FireCalcYAML_Format
 
 trait FireCalcYAML_V4_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V4]:
+
+    type Version = FireCalc_Version
+    final val VERSION = FireCalc_Version(4)
 
     import CommonInstances.given
     import V3Instances.given

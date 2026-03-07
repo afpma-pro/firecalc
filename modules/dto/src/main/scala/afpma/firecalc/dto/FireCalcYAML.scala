@@ -13,4 +13,4 @@ type FireCalcYAML = FireCalcYAML_V4
 
 object FireCalcYAML extends FireCalcYAML_V4_Module:
 
-    val LATEST_VERSION: FireCalc_Version = FireCalc_Version(4)
+    val LATEST_VERSION: FireCalc_Version = FireCalcYAML_V4.VERSION
