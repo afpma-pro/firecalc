@@ -135,4 +135,33 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         result shouldBe a[Right[?, ?]]
     }
 
+    it should "return Left for mb out of range" in {
+        val mb = 100.0.withUnit[Kilogram]
+        val sb = 2.4.cm.to_cm
+
+        val result = table.interpolate(mb, sb)
+
+        result shouldBe a[Left[?, ?]]
+    }
+
+    it should "return Left for sb out of range" in {
+        val mb = 15.0.withUnit[Kilogram]
+        val sb = 10.0.withUnit[Centimeter]
+
+        val result = table.interpolate(mb, sb)
+
+        result shouldBe a[Left[?, ?]]
+    }
+
+    it should "return Left for an empty table" in {
+        val emptyTable = PressureLossTSVTableString("mb_in_kg/sb_in_cm\t1.6\n")
+
+        val mb = 10.0.withUnit[Kilogram]
+        val sb = 1.6.cm.to_cm
+
+        val result = emptyTable.interpolate(mb, sb)
+
+        result shouldBe a[Left[?, ?]]
+    }
+
 end PressureLossTSVTableStringSuite

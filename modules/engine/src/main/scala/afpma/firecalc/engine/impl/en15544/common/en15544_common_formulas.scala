@@ -12,6 +12,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.utils.Log
 import afpma.firecalc.engine.models.en15544.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
@@ -101,25 +102,25 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
 
     override lazy val Table_1_Factor_a_opt_calc =
         nmin =>
-            TSVTableString
+            val result = TSVTableString
                 .fromString(EN15544_2023_TABLE_1_RAW_STRING)
                 .getUsingLinearInterpolation(
                     xHeader = "Efficiency",
                     yHeader = "Factor a"
                 )(xi = nmin.value)
-                .toOption
-                .map(_.unitless)
+            result.left.foreach(err => Log.warning(s"[EN15544] Table 1 Factor a interpolation failed for nmin=${nmin.value}: $err"))
+            result.toOption.map(_.unitless)
 
     override lazy val Table_1_Factor_b_opt_calc =
         nmin =>
-            TSVTableString
+            val result = TSVTableString
                 .fromString(EN15544_2023_TABLE_1_RAW_STRING)
                 .getUsingLinearInterpolation(
                     xHeader = "Efficiency",
                     yHeader = "Factor b"
                 )(xi = nmin.value)
-                .toOption
-                .map(_.unitless)
+            result.left.foreach(err => Log.warning(s"[EN15544] Table 1 Factor b interpolation failed for nmin=${nmin.value}: $err"))
+            result.toOption.map(_.unitless)
 
     override lazy val L_Z_min_calc = (ab: Table_1_Factor_a_or_b, mb: m_B) =>
         val a_or_b_value = ab.fold(_.value, _.value)

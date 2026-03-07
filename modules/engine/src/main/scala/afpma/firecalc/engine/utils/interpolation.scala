@@ -124,8 +124,6 @@ extension (it: IterableOnce[(Double, Double, Double)])
                 if      (x1 == x2) List((y1, z11), (y2, z12)).getWithLinearInterpolation(yi)
                 // only linear interpolation on single y param
                 else if (y1 == y2) List((x1, z12), (x2, z21)).getWithLinearInterpolation(xi)
-                // no interpolation needed
-                else if (x1 == x2 && y1 == y2) Right(z11)
                 // interpolation on both x and y param
                 else
                     val zi = bilinearInterpolation(x1, x2, y1, y2, z11, z12, z21, z22, xi, yi)
