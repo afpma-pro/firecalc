@@ -93,7 +93,7 @@ case class PipeCatalogSelectComponent(
                             input(
                                 cls           := "field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
                                 tpe           := "text",
-                                placeholder   := "Rechercher...",
+                                placeholder   := I18N_UI.placeholders.search,
                                 listAttr      := datalistId,
                                 value <-- searchQueryVar.signal.map(_.getOrElse("")),
                                 onInput.mapToValue

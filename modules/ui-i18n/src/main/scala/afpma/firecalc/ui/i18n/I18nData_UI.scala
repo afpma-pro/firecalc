@@ -25,6 +25,7 @@ final case class I18nData_UI(
     details_columns      : DetailsColumns,
     errors               : Errors,
     footer               : Footer,
+    global_error         : GlobalError,
     indicators           : Indicators,
     local_conditions     : LocalConditions,
     pdf_ordering         : PDFOrdering,
@@ -260,7 +261,15 @@ case class Errors(
     value_is_undefined      : String
 )
 
+case class GlobalError(
+    title          : String,
+    transaction_msg: String,
+    generic_msg    : String,
+    reload_button  : String
+)
+
 case class Placeholders(
+    search     : String,
     select_date: String
 )
 
