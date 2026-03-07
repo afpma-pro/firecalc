@@ -36,16 +36,12 @@ final case class PressureLossTSVTableString(
     rawString: String
 ):
 
-    // Normalize literal escape sequences (\n, \\n, \t, \\t) that may survive JSON round-trips
-    private lazy val normalizedRawString: String =
-        rawString.replaceAll("\\\\+n", "\n").replaceAll("\\\\+t", "\t")
-
     private lazy val tsv: TSVTableString =
-        TSVTableString.fromString(normalizedRawString, sep = "\\s+")
+        TSVTableString.fromString(rawString, sep = "\\s+")
 
     /** SB column headers extracted from the raw string (preserving order). */
     private lazy val sbHeaders: List[String] =
-        val firstLine = normalizedRawString.split("\n").head.trim
+        val firstLine = TSVTableString.normalize(rawString).split("\n").head.trim
         firstLine.split("\\s+").toList.tail // drop "mb_in_kg/sb_in_cm" header
 
     /** SB measurement points parsed from the column headers. */
@@ -107,8 +103,9 @@ final case class PressureLossTSVTableString(
                 case Right(v) => Right(v.withUnit[Pascal])
                 case Left(InterpolationError.EmptyDataSet) =>
                     Left("Empty pressure loss table (no data to interpolate)")
-                case Left(InterpolationError.ValueOutOfRange(xi, yi)) =>
-                    Left(s"Value out of range for interpolation (mB=$xi, SB=$yi)")
+                case Left(InterpolationError.ValueOutOfRange(xi, yiOpt)) =>
+                    val detail = yiOpt.map(yi => s"mB=$xi, SB=$yi").getOrElse(s"mB=$xi")
+                    Left(s"Value out of range for interpolation ($detail)")
                 case Left(InterpolationError.MissingGridPoint(xi, yi)) =>
                     Left(s"Missing grid point for interpolation (mB=$xi, SB=$yi)")
 

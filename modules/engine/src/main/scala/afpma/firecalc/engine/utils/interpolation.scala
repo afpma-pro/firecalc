@@ -11,7 +11,7 @@ import scala.util.boundary.break
 
 enum InterpolationError:
     case EmptyDataSet
-    case ValueOutOfRange(xi: Double, yi: Double)
+    case ValueOutOfRange(xi: Double, yi: Option[Double] = None)
     case MissingGridPoint(xi: Double, yi: Double)
 
 def bilinearInterpolation(
@@ -97,7 +97,7 @@ extension (it: IterableOnce[(Double, Double)])
                         val coeff = (y2 - y1) / (x2 - x1)
                         val y     = y1 + coeff * (xi - x1)
                         Right(y)
-                case _ => Left(InterpolationError.ValueOutOfRange(xi, 0.0))
+                case _ => Left(InterpolationError.ValueOutOfRange(xi))
 
 extension (it: IterableOnce[(Double, Double, Double)])
     def getWithBilinearInterpolation(xi: Double, yi: Double): Either[InterpolationError, Double] =
@@ -109,11 +109,11 @@ extension (it: IterableOnce[(Double, Double, Double)])
             val ys = xyz_list.map(_._2).sorted
 
             boundary:
-                val x1 = xs.filter(_ <= xi).lastOption.getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, yi))))
-                val x2 = xs.find(_ >= xi).getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, yi))))
+                val x1 = xs.filter(_ <= xi).lastOption.getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, Some(yi)))))
+                val x2 = xs.find(_ >= xi).getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, Some(yi)))))
 
-                val y1 = ys.filter(_ <= yi).lastOption.getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, yi))))
-                val y2 = ys.find(_ >= yi).getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, yi))))
+                val y1 = ys.filter(_ <= yi).lastOption.getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, Some(yi)))))
+                val y2 = ys.find(_ >= yi).getOrElse(break(Left(InterpolationError.ValueOutOfRange(xi, Some(yi)))))
 
                 val z11 = xyz_list.find((x, y, _) => x == x1 && y == y1).getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))._3
                 val z12 = xyz_list.find((x, y, _) => x == x1 && y == y2).getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))._3

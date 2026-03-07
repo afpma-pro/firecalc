@@ -17,9 +17,12 @@ private def str2double: Conversion[String, Double] =
 
 object TSVTableString:
 
+    /** Normalize literal escape sequences (\n, \\n, \t, \\t) that may survive JSON round-trips. */
+    def normalize(rawString: String): String =
+        rawString.replaceAll("\\\\+n", "\n").replaceAll("\\\\+t", "\t")
+
     def fromString(rawString: String, sep: String = "\t"): TSVTableString =
-        // Normalize literal escape sequences (\n, \\n, \t, \\t) that may survive JSON round-trips
-        val normalized = rawString.replaceAll("\\\\+n", "\n").replaceAll("\\\\+t", "\t")
+        val normalized = normalize(rawString)
         val lines   = normalized.split("\n")
         val header  = lines.head
         val headers = header.split(sep)
