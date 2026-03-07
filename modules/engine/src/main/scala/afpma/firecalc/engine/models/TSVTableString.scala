@@ -6,6 +6,7 @@
 package afpma.firecalc.engine.models
 
 import afpma.firecalc.engine.utils.*
+import afpma.firecalc.engine.utils.InterpolationError
 
 opaque type TSVTableString = List[Map[String, String]]
 
@@ -17,7 +18,9 @@ private def str2double: Conversion[String, Double] =
 object TSVTableString:
 
     def fromString(rawString: String, sep: String = "\t"): TSVTableString =
-        val lines   = rawString.split("\n")
+        // Normalize literal escape sequences (\n, \\n, \t, \\t) that may survive JSON round-trips
+        val normalized = rawString.replaceAll("\\\\+n", "\n").replaceAll("\\\\+t", "\t")
+        val lines   = normalized.split("\n")
         val header  = lines.head
         val headers = header.split(sep)
         val data    = lines.tail.toList
@@ -83,13 +86,13 @@ extension (tt: TSVTableString)
 
     def getUsingLinearInterpolation(xHeader: String, yHeader: String)(
         xi: Double
-    ): Option[Double] =
+    ): Either[InterpolationError, Double] =
         val it = tt.extractColsAs(xHeader, yHeader)
         it.getWithLinearInterpolation(xi)
 
     def getUsingBilinearInterpolation(xHeader: String, yHeader: String, zHeader: String)(
         xi: Double,
         yi: Double
-    ): Option[Double] =
+    ): Either[InterpolationError, Double] =
         val it = tt.extract3ColsAs(xHeader, yHeader, zHeader)
         it.getWithBilinearInterpolation(xi, yi)

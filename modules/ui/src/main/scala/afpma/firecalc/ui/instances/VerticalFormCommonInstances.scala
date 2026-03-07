@@ -25,9 +25,12 @@ import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
 import afpma.firecalc.ui.formgen.ConditionalFor
 import afpma.firecalc.ui.formgen.Defaultable
 import afpma.firecalc.ui.formgen.ValidateVar
+import afpma.firecalc.ui.components.FireboxCatalogSelectComponent
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.BillableCountry
 import afpma.firecalc.ui.models.BillableCustomerType
 import afpma.firecalc.ui.models.BillingLanguage
+import afpma.firecalc.ui.models.door15aFireboxesSignal
 import afpma.firecalc.ui.models.stove_params_var
 import afpma.firecalc.ui.models.firebox_var
 
@@ -141,9 +144,11 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         DaisyUIVerticalForm.forOptionTempD_default[Celsius]
 
     val vertical_form_EmissionValueU: DaisyUIVerticalForm[EmissionValueU] =
-        import ValidateVarCommonInstances.double.valid_Always
-        double_emptyAsDefault_alwaysValid
-            .bimap[EmissionValueU](_.mg_per_Nm3)(_.value)
+        given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
+        given Defaultable[QtyD[Milli * Gram / (Meter ^ 3)]] = Defaultable(0.0.mg_per_Nm3)
+        given DaisyUIVerticalForm[QtyD[Milli * Gram / (Meter ^ 3)]] =
+            DaisyUIVerticalForm.forQtyD[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
+        DaisyUIVerticalForm.formConversionOpaque[EmissionValueU, QtyD[Milli * Gram / (Meter ^ 3)]]
 
     val given_HeatOutputReduced_NotDefined_Or_Tested
         : DaisyUIVerticalForm[HeatOutputReduced.NotDefined_Or_Tested] =
@@ -372,22 +377,109 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         import defaultable.qty_d.kilogram.ten
         import defaultable.qty_d.centimeter.zero
 
+        // Defaultable for Percent (needed by given_QtyD_Percent context param)
+        given Defaultable[QtyD[Percent]] = defaultable.qty_d.zeroWithUnit[Percent]
+
         // Create a zoomed Var for maximum_load that syncs with stove_params
         val maximumLoadVar: Var[Option[Mass]] =
-            stove_params_var.zoomLazy(_.maximum_load)((sp, m) => if (m.isDefined) sp.with_mB(m.get) else sp)
+            stove_params_var.zoomLazy(_.maximum_load)((sp, m) =>
+                if (m == sp.maximum_load) sp
+                else if (m.isDefined) sp.with_mB(m.get) else sp
+            )
 
         // Standard field definitions
         given DF[String]                           = string_emptyAsDefault_alwaysValid
         given DF[Length]                           = vertical_form_Length_cm
         given DF[QtyD[Centimeter]]                 = given_QtyD_Centimer
+        given percDF: DF[Percentage]               = given_QtyD_Percent
+        given optPerc: DF[Option[Percentage]]      = vertical_form_Option_QtyD_Percent
+
+        // Optional centimeter (sb_min, sb_max)
+        val vertical_form_Option_QtyD_Centimeter: DF[Option[QtyD[Centimeter]]] =
+            import vv.centimeter.validOption_whenStrictlyPositive
+            DaisyUIVerticalForm.forOptionQtyD_default[Centimeter]
+        given optCm: DF[Option[QtyD[Centimeter]]] = vertical_form_Option_QtyD_Centimeter
 
         // Custom Option[Mass] field with bidirectional sync to stove_params using generic method
-        given DF[Option[Mass]]                     = DaisyUIVerticalForm.mkFromUnderlyingWithLinkedVar[Kilogram](
+        val optMassLinkedVal: DF[Option[Mass]] = DaisyUIVerticalForm.mkFromUnderlyingWithLinkedVar[Kilogram](
             underlying = vertical_form_Option_QtyD_Kilogram,
             linkedVar = maximumLoadVar
         )
+        given optMassDF: DF[Option[Mass]] = optMassLinkedVal
 
-        DaisyUIVerticalForm.autoDerived[Firebox.Door15aFirebox_Catalog].autoOverwriteFieldNames
+        // PipeShape (expectedAirIntakePipeShape)
+        given DF[PipeShape] = horizontal_form.horizontal_form_PipeShape.toVerticalForm
+
+        // HeatOutputReduced full enum (pn_reduced)
+        given DF[HeatOutputReduced] =
+            given Defaultable[HeatOutputReduced] = Defaultable(HeatOutputReduced.NotDefined)
+            DaisyUIVerticalForm.mk_AlwaysValid[HeatOutputReduced]: (va, _) =>
+                FieldsetLabelAndContent(
+                    label = I18N.en15544.terms.P_n_reduced.name,
+                    SelectAndOptionsOnly.fromShow[HeatOutputReduced](
+                        selectedVar           = va,
+                        labelAsDisabledOption = None,
+                        options = Seq(
+                            HeatOutputReduced.NotDefined,
+                            HeatOutputReduced.HalfOfNominal.makeWithoutValue,
+                            HeatOutputReduced.FromTypeTest(0.0.kW)
+                        )
+                    )
+                )
+
+        // Area (glass_area)
+        given DF[Area] = vertical_form_Area_cm2_m2
+
+        // EmissionsAndEfficiencyValues_DTO (emissions_values)
+        given DF[EmissionsAndEfficiencyValues_DTO] =
+            // PolluantName select
+            given DF[PolluantName] =
+                import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
+                given Defaultable[PolluantName] = Defaultable(PolluantName.CO)
+                DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
+                    options = PolluantName.values.toList
+                )
+            // Option[EmissionValueU]: map through Option[QtyD] with unit display
+            given DF[Option[EmissionValueU]] =
+                given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
+                val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
+                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
+                underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
+            // TestEmissionValue_DTO
+            given DF[TestEmissionValue_DTO] =
+                DaisyUIVerticalForm.autoDerived[TestEmissionValue_DTO].autoOverwriteFieldNames
+            // TestReport
+            given DF[TestReport] =
+                DaisyUIVerticalForm.autoDerived[TestReport].autoOverwriteFieldNames
+            // List[TestReport]
+            given DF[List[TestReport]] =
+                DaisyUIVerticalForm.forList_WithEphemeralIds[TestReport]
+            // EmissionValues_DTO
+            given DF[EmissionValues_DTO] =
+                DaisyUIVerticalForm.autoDerived[EmissionValues_DTO].autoOverwriteFieldNames
+            DaisyUIVerticalForm.autoDerived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
+
+        val autoDerivedForm = DaisyUIVerticalForm.autoDerived[Firebox.Door15aFirebox_Catalog].autoOverwriteFieldNames
+        val d               = autoDerivedForm.defaultable_instance
+        given ValidateVar[Firebox.Door15aFirebox_Catalog] = autoDerivedForm.validate_var
+
+        DaisyUIVerticalForm
+            .makeFor[Firebox.Door15aFirebox_Catalog](d): (v, fc) =>
+                import com.raquo.laminar.api.L.*
+                val modal = FireboxCatalogSelectComponent(
+                    entriesSignal = door15aFireboxesSignal,
+                    onSelect      = Observer(v.set)
+                )
+                div(
+                    button(
+                        cls     := "btn btn-secondary btn-sm mb-2",
+                        I18N_UI.catalog.select_from_catalog,
+                        onClick --> { _ => modal.open() }
+                    ),
+                    autoDerivedForm.render(v, fc),
+                    modal.node
+                )
+            .withFieldName(I18N.firebox_names.door_15a_firebox)
 
     given given_Firebox: DF[Firebox] =
         // given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =

@@ -135,3 +135,8 @@ object all:
     export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3 as AddThermalPipeElement_13384
 
     export afpma.firecalc.dto.v4.MinLoad
+    export afpma.firecalc.dto.v4.PolluantName
+    export afpma.firecalc.dto.v4.TestReport
+    export afpma.firecalc.dto.v4.TestEmissionValue_DTO
+    export afpma.firecalc.dto.v4.EmissionValues_DTO
+    export afpma.firecalc.dto.v4.EmissionsAndEfficiencyValues_DTO

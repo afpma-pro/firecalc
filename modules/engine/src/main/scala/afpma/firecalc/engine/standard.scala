@@ -751,9 +751,10 @@ object standard {
     // Property must be defined errors (without operation name)
     sealed trait PropertyMustBeDefined extends IncrementalValidation_Error
 
-    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)   extends PropertyMustBeDefined
-    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType) extends PropertyMustBeDefined
-    case class PressureLossMustBeDefined(sectionTyp: PipeType)      extends PropertyMustBeDefined
+    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)                extends PropertyMustBeDefined
+    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)              extends PropertyMustBeDefined
+    case class PressureLossMustBeDefined(sectionTyp: PipeType)                   extends PropertyMustBeDefined
+    case class PressureLossTableError(reason: String, sectionTyp: PipeType)      extends PropertyMustBeDefined
 
     object PropertyMustBeDefined:
         given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
@@ -763,6 +764,8 @@ object standard {
                 I18N.incremental_validation.property_must_be_defined.next_section_length
             case _: PressureLossMustBeDefined      =>
                 I18N.incremental_validation.property_must_be_defined.pressure_loss
+            case e: PressureLossTableError         =>
+                I18N.incremental_validation.property_must_be_defined.pressure_loss_table_error(e.reason)
 
     // Prerequisite errors
     sealed trait PrerequisiteNotMet extends IncrementalValidation_Error

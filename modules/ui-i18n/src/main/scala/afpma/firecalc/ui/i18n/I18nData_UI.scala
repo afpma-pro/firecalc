@@ -39,6 +39,7 @@ object I18nData_UI:
         select                    : String,
         add                       : String,
         cancel                    : String,
+        close                     : String,
         import_catalog            : String,
         load_example_project_15544: String,
         menu                      : String,
@@ -49,9 +50,29 @@ object I18nData_UI:
     )
 
     case class Catalog(
-        _self                : String,
-        select_from_catalog  : String
+        _self               : String,
+        select_from_catalog : String,
+        manager_title       : String,
+        download_section    : String,
+        afpma_catalog_page  : String,
+        loaded_entries      : String,
+        no_catalog_loaded   : String,
+        import_catalog_button    : String,
+        clear_all_button    : String,
+        door_15a_fireboxes  : String,
+        pipe_presets        : String,
+        errors              : Catalog.Errors,
     )
+
+    object Catalog:
+        case class Errors(
+            invalid_file    : String,
+            missing_version : String,
+            version_too_new : String,
+            migration_failed: String,
+            decode_error    : String,
+            storage_full    : String,
+        )
 
     case class ClientProjectData(
         customer       : String,

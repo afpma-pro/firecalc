@@ -48,7 +48,7 @@ object std:
     export Firebox_15544.AreaCalcMethod
     export Firebox_15544.SingleTested
     export Firebox_15544.Door15aFirebox_Catalog
-    export Firebox_15544.Door15aFirebox_Catalog_Example
+    export Firebox_15544.Door15aFirebox_Catalog_DatabaseEntry
 
     object PressureLossCoeff:
 
@@ -339,7 +339,13 @@ object std:
 
             // ── Computed from input data ────────────────────────────────
 
-            def pressure_loss: Option[Pressure]
+            /** Pressure loss for the current (mB, SB) pair.
+              *
+              * - `Right(pressure)` — success
+              * - `Left(None)`      — no mB value set (optional, no error)
+              * - `Left(Some(reason))` — parse/interpolation failure with reason
+              */
+            def pressure_loss: Either[Option[String], Pressure]
 
             lazy val factory: Factory
 
@@ -358,7 +364,7 @@ object std:
                     pressureLossTable.availableSbValues
 
                 /** Interpolated pressure loss for any (mb, sb) within table bounds. */
-                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Option[Pressure] =
+                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Either[String, Pressure] =
                     pressureLossTable.interpolate(mb, sb_value)
 
         object Door15aFirebox_Catalog:
@@ -386,33 +392,6 @@ object std:
                             Nil
                     list.filter(_.nonEmpty)
 
-        val Door15aFirebox_Catalog_Example: Door15aFirebox_Catalog_DatabaseEntry =
-            Door15aFirebox_Catalog_DatabaseEntry(
-                uniq_id                    = "Door15aFirebox_Catalog_Example",
-                mb                         = None,
-                sb                         = 1.6.cm.to_cm,
-                dimensions                 = Dimensions(
-                    base = Dimensions.Base.Squared(width = 29.cm, depth = 39.cm),
-                    height = 100.cm // example, wrong
-                ),
-                sb_min                     = Some(1.6.cm.to_cm),
-                sb_max                     = Some(4.0.cm.to_cm),
-                mb_min                     = Some(10.kg),
-                mb_max                     = Some(25.kg),
-                pressure_loss_table_raw    =
-                    """|mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
-                       |10 4       3       2       1
-                       |25 22      20      18      16
-                       |""".stripMargin,
-                expectedAirIntakePipeShape = PipeShape.Circle(200.mm),
-                co2_dry_nominal            = 12.percent,
-                co2_dry_lowest             = None,
-                emissions_values           = afpma.firecalc.engine.biblio.kov.firebox_emissions.`15A_Combustion_Firebox`,
-                glass_area                 = 500.cm2,
-                height_of_lowest_opening   = 5.cm,
-                pn_reduced                 = HeatOutputReduced.NotDefined,
-            )
-
         case class Door15aFirebox_Catalog_DatabaseEntry(
             uniq_id: String,
             mb: Option[Mass], 
@@ -435,8 +414,12 @@ object std:
 
             type Self = Door15aFirebox_Catalog_DatabaseEntry
 
-            override lazy val pressure_loss = mb.flatMap: mb =>
-                factory.get_pressure_loss_for_mb_sb(mb, sb)
+            override lazy val pressure_loss = mb match
+                case None     => Left(None)
+                case Some(mb) =>
+                    factory.get_pressure_loss_for_mb_sb(mb, sb) match
+                        case Right(p)      => Right(p)
+                        case Left(reason)  => Left(Some(reason))
 
             override def firebox_type      = I18N.firebox_names.door_15a_firebox
             override def min_load          = mb_min.fold(MinLoad.NotDefined)(m => MinLoad.FromTypeTest(m))

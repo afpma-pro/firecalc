@@ -76,16 +76,11 @@ object DynamicFrictionCoeffOp:
                 yHeader <- yHeaderSelectFunc(yCriteria)
                 out     <- data.getUsingLinearInterpolation(xHeader, yHeader)(
                     xi
-                ) match
-                    case Some(coeff) =>
-                        Right(coeff)
-                    case None        =>
-                        Left(
-                            CouldNotComputeIndividualCoefficientForShape[S](
-                                shape,
-                                s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, xi=$xi"
-                            )
-                        )
+                ).left.map: _ =>
+                    CouldNotComputeIndividualCoefficientForShape[S](
+                        shape,
+                        s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, xi=$xi"
+                    )
             yield out.ea: ζ
     }
 

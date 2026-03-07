@@ -171,7 +171,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, engine.js, engine.jvm, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -317,6 +317,26 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(utils, i18n, units)
+
+// =========
+// catalog
+
+lazy val catalog = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/catalog"))
+  .settings(
+    commonSettings,
+    name := "firecalc-catalog",
+    version := engine_version,
+    libraryDependencies ++= Seq(
+        // Testing
+        "org.scalameta" %%% "munit" % "1.0.0" % "test",
+    ),
+  )
+  .jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(dto, i18n)
 
 // =========
 // engine
@@ -700,7 +720,7 @@ lazy val ui = (project in file("modules/ui"))
   )
   .settings(jsSourceMapSettings)
   .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
-  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, ui_i18n.js, payments_shared.js)
+  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, ui_i18n.js, payments_shared.js, catalog.js)
 
 // =========
 // ui-i18n

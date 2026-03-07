@@ -10,6 +10,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.components.CatalogManagerDialog
 import afpma.firecalc.ui.components.FireCalcProjet
 import afpma.firecalc.ui.components.OrderPDFReportModalComponent
 import afpma.firecalc.ui.icons.lucide
@@ -46,6 +47,8 @@ object DaisyUINavBar:
         extends Component:
 
         val disabledAttr: HtmlAttr[Boolean] = htmlAttr("disabled", BooleanAsAttrPresenceCodec)
+
+        private val catalogManagerDialog = CatalogManagerDialog()
 
         val node = div(
             cls := "flex flew-row navbar items-center justify-center bg-(--color-vlight-ocre) shadow-sm gap-x-2",
@@ -88,6 +91,19 @@ object DaisyUINavBar:
                             onClick.mapToUnit --> { _ =>
                                 scala.scalajs.js.Dynamic.global.document.execCommand("redo")
                             }
+                        ),
+                        ttPosition = "tooltip-bottom"
+                    )
+                ),
+                // Catalog Manager button
+                div(
+                    cls := "flex items-center h-6",
+                    DaisyUITooltip(
+                        ttContent  = div(I18N_UI.catalog.manager_title),
+                        element    = div(
+                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                            lucide.database(stroke_width = 1.5, w = 16, h = 16),
+                            onClick --> { _ => catalogManagerDialog.open() }
                         ),
                         ttPosition = "tooltip-bottom"
                     )
@@ -273,5 +289,6 @@ object DaisyUINavBar:
                         )
                     )
                 )
-            )
+            ),
+            catalogManagerDialog.node
         )

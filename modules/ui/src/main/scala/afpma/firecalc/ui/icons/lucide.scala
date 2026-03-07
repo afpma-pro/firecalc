@@ -512,6 +512,22 @@ object lucide:
         path(d := "M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7")
     )
 
+    def database(w: Int = 24, h: Int = 24, stroke_width: Double = 2) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-database-icon lucide-database",
+        ellipse(cx := "12", cy := "5", rx := "9", ry := "3"),
+        path(d := "M3 5V19A9 3 0 0 0 21 19V5"),
+        path(d := "M3 12A9 3 0 0 0 21 12")
+    )
+
     def `book-open-text` = svg(
         xmlns          := "http://www.w3.org/2000/svg",
         width          := "24",

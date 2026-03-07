@@ -88,8 +88,8 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
             convert = _.mB_or_pn,
             revert  = (sp, mB_or_pn) =>
                 mB_or_pn match
-                    case Left(mB)  => sp.with_mB(mB)
-                    case Right(pn) => sp.with_pn(pn)
+                    case Left(mB)  => if (sp.maximum_load.contains(mB)) sp else sp.with_mB(mB)
+                    case Right(pn) => if (sp.nominal_heat_output.contains(pn)) sp else sp.with_pn(pn)
         )
 
     given DaisyUIVerticalForm[StoveParams] =

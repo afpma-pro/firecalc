@@ -79,7 +79,10 @@ final case class I18nData(
     warnings                       : Warnings,
     not_defined                    : String,
     not_respected                  : String,
-    missing_data                   : String
+    missing_data                   : String,
+    test_report                    : TestReportI18n,
+    test_emission_value            : TestEmissionValueI18n,
+    emission_values                : EmissionValuesI18n
 )
 
 object I18nData:
@@ -255,8 +258,14 @@ object I18nData:
         )
 
         case class Door15aFirebox(
-            sb                  : String,
-            load_size_nominal   : String,
+            sb                            : String,
+            sb_min                        : String,
+            sb_max                        : String,
+            mb_min                        : String,
+            mb_max                        : String,
+            load_size_nominal             : String,
+            pressure_loss_table           : String,
+            expected_air_intake_pipe_shape: String,
         )
 
     case class FireboxNames(
@@ -272,6 +281,7 @@ object I18nData:
     )
 
     case class PolluantNames(
+        _self   : String,
         CO      : String,
         Dust    : String,
         OGC     : String,
@@ -285,8 +295,11 @@ object I18nData:
     )
 
     case class EmissionsAndEfficiencyValues(
+        _self                            : String,
         accredited_or_notified_body      : String,
         firebox_name                     : String,
+        test_reports                     : String,
+        emissions_values                 : String,
         min_efficiency_firebox_reduced   : String,
         min_efficiency_firebox_nominal   : String,
         min_efficiency_full_stove_reduced: String,
@@ -889,9 +902,10 @@ object I18nData:
         )
 
         case class PropertyMustBeDefined(
-            section_geometry   : String,
-            next_section_length: String,
-            pressure_loss      : String
+            section_geometry          : String,
+            next_section_length       : String,
+            pressure_loss             : String,
+            pressure_loss_table_error : StringFormat1
         )
 
         case class Prerequisites(
@@ -970,6 +984,28 @@ object I18nData:
         two_successive_direction_change_not_allowed     : StringFormat2,
         two_successive_straight_section_not_allowed     : StringFormat2,
         holes_should_not_happen                         : StringFormat1,
+    )
+
+    case class TestReportI18n(
+        _self: String,
+        name : String,
+        date : String
+    )
+
+    case class TestEmissionValueI18n(
+        _self        : String,
+        polluant_name: String,
+        value        : String,
+        test_method  : String,
+        o2ref        : String
+    )
+
+    case class EmissionValuesI18n(
+        _self: String,
+        co   : String,
+        dust : String,
+        ogc  : String,
+        nox  : String
     )
 
     case class BuilderErrors(

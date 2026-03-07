@@ -7,9 +7,9 @@ package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.SetPropertiesInBatch
 import afpma.firecalc.ui.daisyui.DaisyUIAccordionWithTitleAndButton
-import afpma.firecalc.ui.models.PipeCatalogDatabase
 import afpma.firecalc.ui.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
@@ -23,23 +23,23 @@ import afpma.firecalc.dto.common.DisplayUnits
  *
  * @param v
  *   The reactive variable holding the current batch value
- * @param catalog
- *   Catalog database used to populate the selection modal
+ * @param entriesSignal
+ *   Reactive signal of catalog entries used to populate the selection modal
  * @param titleEl
  *   Pre-rendered element for the accordion title (e.g. the batch_name string form)
  * @param contentEl
  *   Pre-rendered element for the accordion body (e.g. the props list form)
  */
 case class SetPropertiesInBatchFormComponent(
-    v        : Var[SetPropertiesInBatch],
-    catalog  : PipeCatalogDatabase,
-    titleEl  : HtmlElement,
-    contentEl: HtmlElement
+    v            : Var[SetPropertiesInBatch],
+    entriesSignal: Signal[Seq[SetPropertiesInBatch]],
+    titleEl      : HtmlElement,
+    contentEl    : HtmlElement
 )(using Locale, DisplayUnits) extends Component:
 
     private val modal = PipeCatalogSelectComponent(
-        database = catalog,
-        onSelect = Observer(v.set)
+        entriesSignal = entriesSignal,
+        onSelect      = Observer(v.set)
     )
 
     val node: HtmlElement =

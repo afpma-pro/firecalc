@@ -6,15 +6,14 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.{SetPropertiesInBatch, SetSingleProp}
-import afpma.firecalc.ui.daisyui.{DaisyUIInputs, DaisyUIVerticalForm}
+import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
 import afpma.firecalc.ui.formgen.{FormConfig, ValidateVar}
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.instances.ThermalHorizontalForm_13384
 import afpma.firecalc.ui.instances.ValidateVarCommonInstances
-import afpma.firecalc.ui.models.PipeCatalogDatabase
-import afpma.firecalc.ui.utils.OptionalField
 import afpma.firecalc.ui.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
@@ -30,20 +29,17 @@ import afpma.firecalc.dto.common.DisplayUnits
  * the input using [[ThermalHorizontalForm_13384]]. The user confirms the
  * selection with the "Import" button.
  *
- * @param database
- *   The pipe catalog database to select entries from
+ * @param entriesSignal
+ *   Reactive signal of catalog entries to select from
  * @param onSelect
  *   Observer fired when a catalog entry is confirmed for import
  */
 case class PipeCatalogSelectComponent(
-    database: PipeCatalogDatabase,
-    onSelect: Observer[SetPropertiesInBatch]
+    entriesSignal: Signal[Seq[SetPropertiesInBatch]],
+    onSelect     : Observer[SetPropertiesInBatch]
 )(using Locale, DisplayUnits) extends Component:
 
     private val searchQueryVar: Var[Option[String]] = Var(None)
-
-    private val allEntryNames: Seq[String] =
-        database.entries.map(_.batch_name)
 
     private lazy val thermalForm: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
 
@@ -76,13 +72,42 @@ case class PipeCatalogSelectComponent(
 
     private def close(): Unit = dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
 
-    private lazy val searchInput =
-        DaisyUIInputs.TextInputWithDatalist(
-            valueOptVar   = searchQueryVar,
-            datalistId    = "pipe-catalog-datalist",
-            options       = allEntryNames,
-            placeholder   = "Rechercher...",
-            optionalField = OptionalField.No
+    private val datalistId = "pipe-catalog-datalist"
+
+    private val listAttr: HtmlAttr[String] =
+        htmlAttr("list", com.raquo.laminar.codecs.StringAsIsCodec)
+
+    /** Search input with a reactive datalist driven by `entriesSignal`, or an empty-catalog message. */
+    private lazy val searchInputNode: HtmlElement =
+        div(
+            child <-- entriesSignal.map(_.isEmpty).map {
+                case true =>
+                    p(
+                        cls := "text-sm text-warning",
+                        I18N_UI.catalog.no_catalog_loaded
+                    )
+                case false =>
+                    span(
+                        label(
+                            cls := "input input-md",
+                            input(
+                                cls           := "field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
+                                tpe           := "text",
+                                placeholder   := "Rechercher...",
+                                listAttr      := datalistId,
+                                value <-- searchQueryVar.signal.map(_.getOrElse("")),
+                                onInput.mapToValue
+                                    .map(s => if (s.isEmpty()) None else Some(s)) --> searchQueryVar.writer,
+                                onFocus --> Observer[org.scalajs.dom.FocusEvent](_ => searchQueryVar.set(None)),
+                                onClick --> Observer[org.scalajs.dom.MouseEvent](_ => searchQueryVar.set(None))
+                            )
+                        ),
+                        dataList(
+                            idAttr   := datalistId,
+                            children <-- entriesSignal.map(_.map(e => option(value := e.batch_name)))
+                        )
+                    )
+            }
         )
 
     /** Always-mounted preview form for the props of the selected entry. */
@@ -97,19 +122,17 @@ case class PipeCatalogSelectComponent(
                 cls := "font-bold text-lg mb-4",
                 I18N_UI.catalog._self
             ),
-            searchInput.node,
+            searchInputNode,
             // Update preview vars when the search query changes
-            searchQueryVar.signal --> Observer[Option[String]] { queryOpt =>
-                queryOpt match
-                    case None | Some("") =>
-                        hasMatchVar.set(false)
-                    case Some(query)     =>
-                        database.entries.find(_.batch_name == query) match
-                            case None        => hasMatchVar.set(false)
-                            case Some(entry) =>
-                                previewBatchNameVar.set(entry.batch_name)
-                                previewPropsVar.set(entry.props.toList)
-                                hasMatchVar.set(true)
+            searchQueryVar.signal.combineWith(entriesSignal) --> Observer[(Option[String], Seq[SetPropertiesInBatch])] {
+                case (None | Some(""), _)         => hasMatchVar.set(false)
+                case (Some(query), entries)        =>
+                    entries.find(_.batch_name == query) match
+                        case None        => hasMatchVar.set(false)
+                        case Some(entry) =>
+                            previewBatchNameVar.set(entry.batch_name)
+                            previewPropsVar.set(entry.props.toList)
+                            hasMatchVar.set(true)
             },
             div(
                 cls     := "mt-4 overflow-y-auto max-h-96",

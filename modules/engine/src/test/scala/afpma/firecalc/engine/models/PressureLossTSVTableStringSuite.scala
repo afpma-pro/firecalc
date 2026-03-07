@@ -93,7 +93,7 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         val result = table.interpolate(mb, sb)
 
         // Then
-        result.map(_.value) shouldBe Some(18.0)
+        result.map(_.value) shouldBe Right(18.0)
     }
 
     it should "interpolate linearly along mb for a known sb" in {
@@ -107,7 +107,7 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         val result = table.interpolate(mb, sb)
 
         // Then
-        result.map(_.value) shouldBe Some(13.0)
+        result.map(_.value) shouldBe Right(13.0)
     }
 
     it should "interpolate linearly along sb for a known mb" in {
@@ -120,7 +120,7 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         val result = table.interpolate(mb, sb)
 
         // Then
-        result.map(_.value) shouldBe Some(3.0)
+        result.map(_.value) shouldBe Right(3.0)
     }
 
     it should "bilinearly interpolate for (mb, sb) between grid points" in {
@@ -132,7 +132,7 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         val result = table.interpolate(mb, sb)
 
         // Then
-        result shouldBe defined
+        result shouldBe a[Right[?, ?]]
     }
 
 end PressureLossTSVTableStringSuite

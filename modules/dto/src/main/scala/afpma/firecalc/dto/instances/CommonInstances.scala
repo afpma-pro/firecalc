@@ -388,6 +388,34 @@ object CommonInstances:
     given encoder_EmissionValueU: Encoder[EmissionValueU] =
         Encoder.encodeDouble.contramap(_.value)
 
+    // PolluantName — encoded as plain string matching enum case names
+
+    given Decoder[PolluantName] = Decoder.decodeString.emap { s =>
+        try Right(PolluantName.valueOf(s))
+        catch case _: IllegalArgumentException => Left(s"Unknown PolluantName: $s")
+    }
+    given Encoder[PolluantName] = Encoder.encodeString.contramap(_.toString)
+
+    // TestReport
+
+    given Decoder[TestReport] = semiauto.deriveDecoder[TestReport]
+    given Encoder[TestReport] = semiauto.deriveEncoder[TestReport]
+
+    // TestEmissionValue_DTO
+
+    given Decoder[TestEmissionValue_DTO] = semiauto.deriveDecoder[TestEmissionValue_DTO]
+    given Encoder[TestEmissionValue_DTO] = semiauto.deriveEncoder[TestEmissionValue_DTO]
+
+    // EmissionValues_DTO
+
+    given Decoder[EmissionValues_DTO] = semiauto.deriveDecoder[EmissionValues_DTO]
+    given Encoder[EmissionValues_DTO] = semiauto.deriveEncoder[EmissionValues_DTO]
+
+    // EmissionsAndEfficiencyValues_DTO
+
+    given Decoder[EmissionsAndEfficiencyValues_DTO] = semiauto.deriveDecoder[EmissionsAndEfficiencyValues_DTO]
+    given Encoder[EmissionsAndEfficiencyValues_DTO] = semiauto.deriveEncoder[EmissionsAndEfficiencyValues_DTO]
+
     // ProjectDescr
 
     given Decoder[ProjectDescr] = semiauto.deriveDecoder[ProjectDescr]

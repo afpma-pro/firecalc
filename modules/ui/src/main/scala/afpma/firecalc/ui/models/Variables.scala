@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
+import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.FireCalc_Version.<
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
@@ -422,3 +423,35 @@ lazy val all_conditions_and_results_satisfied_sig: Signal[Boolean] =
 
 lazy val all_conditions_and_results_not_satisfied_sig =
     all_conditions_and_results_satisfied_sig.map(!_)
+
+// ============================================================================
+// CATALOG STATE
+// ============================================================================
+
+import afpma.firecalc.ui.models.CatalogState
+import afpma.firecalc.ui.models.CatalogStateCodec.given
+import io.circe.Encoder
+import io.circe.parser
+
+lazy val catalogWebStorageVar: WebStorageVar[CatalogState] =
+    WebStorageVar
+        .localStorage(key = LocalStorageKeys.CATALOG_STATE, syncOwner = None)
+        .withCodec(
+            encode           = (state: CatalogState) =>
+                Encoder[CatalogState].apply(state).noSpaces,
+            decode           = (raw: String) =>
+                parser.decode[CatalogState](raw) match
+                    case Right(state) => Success(state)
+                    case Left(_)      => Success(CatalogState.empty),
+            default          = Success(CatalogState.empty),
+            syncDistinctByFn = _ == _
+        )
+
+lazy val catalogStateVar: Var[CatalogState] = Var(catalogWebStorageVar.now())
+
+// Per-category derived Signals
+lazy val door15aFireboxesSignal: Signal[Seq[Firebox_V3.Door15aFirebox_Catalog]] =
+    catalogStateVar.signal.map(_.door_15a_fireboxes.values.toSeq)
+
+lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+    catalogStateVar.signal.map(_.pipe_presets.values.toSeq)

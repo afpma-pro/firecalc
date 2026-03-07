@@ -11,6 +11,7 @@ import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_155
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Door15aFirebox_Catalog
 import afpma.firecalc.engine.standard.PressureLossMustBeDefined
+import afpma.firecalc.engine.standard.PressureLossTableError
 
 import cats.syntax.validated.*
 
@@ -33,7 +34,7 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends FireboxToCom
             import CombustionAirPipe_Module_15544.*
 
             firebox.pressure_loss match
-                case Some(pl) =>
+                case Right(pl) =>
                     CombustionAirPipe_Module_15544.incremental
                         .define(
                             innerShape(firebox.expectedAirIntakePipeShape),
@@ -41,5 +42,7 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends FireboxToCom
                         )
                         .toFullDescr()
                         .extractPipe
-                case None     =>
+                case Left(None)         =>
                     PressureLossMustBeDefined(CombustionAirPipeT).invalidNel
+                case Left(Some(reason)) =>
+                    PressureLossTableError(reason, CombustionAirPipeT).invalidNel

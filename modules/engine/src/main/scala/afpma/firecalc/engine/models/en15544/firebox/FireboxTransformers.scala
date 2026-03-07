@@ -12,6 +12,8 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox
 import afpma.firecalc.engine.models.en15544.std.*
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog.SB
+import afpma.firecalc.engine.models.en15544.typedefs.{σ_CO2, GlassArea}
 
 import io.scalaland.chimney.*
 import io.scalaland.chimney.dsl.*
@@ -208,16 +210,51 @@ object FireboxTransformers:
     given transformer_dto_Door15aFirebox_Catalog_to_Door15aFirebox_Catalog
         : Transformer[Firebox.Door15aFirebox_Catalog, en15544.std.Door15aFirebox_Catalog] = dto_fb =>
             import dto_fb.*
-            dto_fb.reference match
-                case _ => 
-                    Door15aFirebox_Catalog_Example.copy(
-                        mb = load_size_nominal,
-                        sb = sb,
-                        dimensions = Dimensions(
-                            base = Dimensions.Base.Squared(
-                                width = firebox_width,
-                                depth = firebox_depth
-                            ),
-                            height = firebox_height
-                        ),
+            import cats.data.Validated.valid
+            Door15aFirebox_Catalog_DatabaseEntry(
+                uniq_id                    = reference,
+                mb                         = load_size_nominal,
+                sb                         = sb,
+                dimensions                 = Dimensions(
+                    base = Dimensions.Base.Squared(
+                        width = firebox_width,
+                        depth = firebox_depth
+                    ),
+                    height = firebox_height
+                ),
+                sb_min                     = sb_min.map(v => v: SB),
+                sb_max                     = sb_max.map(v => v: SB),
+                mb_min                     = mb_min,
+                mb_max                     = mb_max,
+                pressure_loss_table_raw    = pressure_loss_table_raw,
+                expectedAirIntakePipeShape = expectedAirIntakePipeShape,
+                co2_dry_nominal            = co2_dry_nominal: σ_CO2,
+                co2_dry_lowest             = co2_dry_lowest.map(v => v: σ_CO2),
+                emissions_values           = EmissionsAndEfficiencyValues(
+                    firebox_name                       = emissions_values.firebox_name,
+                    accredited_or_notified_body        = emissions_values.accredited_or_notified_body,
+                    test_reports                       = emissions_values.test_reports,
+                    min_efficiency_firebox_nominal     = None,
+                    min_efficiency_full_stove_nominal  = valid(None),
+                    min_efficiency_firebox_reduced     = None,
+                    min_efficiency_full_stove_reduced  = valid(None),
+                    min_seasonal_efficiency_full_stove = valid(None),
+                    emissions_values                   = EmissionValues(
+                        co   = toTestEmissionValue(emissions_values.emissions_values.co),
+                        dust = toTestEmissionValue(emissions_values.emissions_values.dust),
+                        ogc  = toTestEmissionValue(emissions_values.emissions_values.ogc),
+                        nox  = toTestEmissionValue(emissions_values.emissions_values.nox)
                     )
+                ),
+                glass_area                 = glass_area: GlassArea,
+                height_of_lowest_opening   = height_of_lowest_opening,
+                pn_reduced                 = pn_reduced,
+            )
+
+    private def toTestEmissionValue(dto: TestEmissionValue_DTO): TestEmissionValue =
+        TestEmissionValue(
+            polluant_name = dto.polluant_name,
+            valueO        = dto.valueO,
+            test_method   = dto.test_method,
+            o2ref         = dto.o2ref
+        )

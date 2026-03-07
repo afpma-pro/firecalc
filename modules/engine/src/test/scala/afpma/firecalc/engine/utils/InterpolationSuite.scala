@@ -19,7 +19,7 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
                 Map(1 -> 10, 3 -> 30, 2 -> 20).map((x, y) =>
                     (x.toDouble, y.toDouble)
                 )
-            m1.getWithLinearInterpolation(2.5).shouldBe(Some(25.0))
+            m1.getWithLinearInterpolation(2.5).shouldBe(Right(25.0))
         }
 
         "works on unordered data" in {
@@ -29,7 +29,7 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
             )
             val xi = 2.5
             val yi = unordered.getWithLinearInterpolation(xi)
-            yi.shouldBe(Some(25.0))
+            yi.shouldBe(Right(25.0))
         }
     }
 }

@@ -1,0 +1,120 @@
+catalog_version: 4
+catalog_name:
+  fr: "Catalogue Test AFPMA 2026"
+  en: "Test AFPMA Catalog 2026"
+
+door_15a_fireboxes:
+  - reference: "Door15aFirebox_Catalog_Example"
+    firebox_depth:
+      value: "0.39"
+      unit: "meter"
+    firebox_width:
+      value: "0.29"
+      unit: "meter"
+    firebox_height:
+      value: "1.0"
+      unit: "meter"
+    sb:
+      value: "1.6"
+      unit: "centimeter"
+    sb_min:
+      value: "1.6"
+      unit: "centimeter"
+    sb_max:
+      value: "4.0"
+      unit: "centimeter"
+    mb_min:
+      value: "10.0"
+      unit: "kilogram"
+    mb_max:
+      value: "25.0"
+      unit: "kilogram"
+    pressure_loss_table_raw: |
+      mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
+      10 4       3       2       1
+      25 22      20      18      16
+    expectedAirIntakePipeShape:
+      Circle:
+        diameter:
+          value: "0.2"
+          unit: "meter"
+    co2_dry_nominal:
+      value: "12.0"
+      unit: "percent"
+    emissions_values:
+      firebox_name: "15a firebox"
+      accredited_or_notified_body: "Test Laboratory for Combustion Systems - Technical University of Vienna"
+      test_reports:
+        - name: "PL-19075-1-P"
+          date: "9.6.2020"
+        - name: "PL-19075-2-P"
+          date: "9.6.2020"
+        - name: "PL-19075-3-P"
+          date: "27.10.2020"
+        - name: "PL-19075-4-P"
+          date: "19.1.2021"
+        - name: "PL-19075-5-P"
+          date: "19.1.2021"
+        - name: "PL-19075-6-P"
+          date: "19.1.2021"
+      emissions_values:
+        co:
+          polluant_name: "CO"
+          valueO: 1154.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        dust:
+          polluant_name: "Dust"
+          valueO: 25.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        ogc:
+          polluant_name: "OGC"
+          valueO: 40.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        nox:
+          polluant_name: "NOx"
+          valueO: 119.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+    glass_area:
+      value: "0.05"
+      unit: "meter^2"
+    height_of_lowest_opening:
+      value: "0.05"
+      unit: "meter"
+    pn_reduced: "NotDefined"
+
+pipe_presets:
+  - batch_name: "POUJOULAT 200mm DPI"
+    props:
+      - SetMaterial:
+          material:
+            WeldedSteel:
+              roughness:
+                value: "0.001"
+                unit: "meter"
+      - SetInnerShape:
+          shape:
+            Circle:
+              diameter:
+                value: "0.2"
+                unit: "meter"
+      - SetLayers:
+          layers:
+            - FromThermalResistanceUsingThickness:
+                thickness:
+                  value: "0.026"
+                  unit: "meter"
+                thermal_resistance:
+                  value: "0.44"
+                  unit: "(meter^2 Kelvin)/watt"

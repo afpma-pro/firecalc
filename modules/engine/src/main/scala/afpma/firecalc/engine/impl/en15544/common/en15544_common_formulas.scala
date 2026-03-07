@@ -107,6 +107,7 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
                     xHeader = "Efficiency",
                     yHeader = "Factor a"
                 )(xi = nmin.value)
+                .toOption
                 .map(_.unitless)
 
     override lazy val Table_1_Factor_b_opt_calc =
@@ -117,6 +118,7 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
                     xHeader = "Efficiency",
                     yHeader = "Factor b"
                 )(xi = nmin.value)
+                .toOption
                 .map(_.unitless)
 
     override lazy val L_Z_min_calc = (ab: Table_1_Factor_a_or_b, mb: m_B) =>

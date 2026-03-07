@@ -7,6 +7,7 @@ package afpma.firecalc.ui
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.ui.components.GlobalErrorDialog
 import afpma.firecalc.ui.services.VersionService
 import afpma.firecalc.ui.views.*
 
@@ -25,8 +26,12 @@ object Frontend {
     lazy val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> appStateSchemaWebStorageVar.writer
 
+    lazy val writeCatalogSubscription = catalogStateVar.signal.changes.distinct
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> catalogWebStorageVar.writer
+
     lazy val app: Div = div(cls := "", child <-- router.currentPageSignal.map(renderPage)).amend(
-        writeUnifiedSchemaSubscription
+        writeUnifiedSchemaSubscription,
+        writeCatalogSubscription
         // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))
         //     .tapEach(consoleLogVNelStringErrors) --> errorBusConsole
     )
@@ -63,6 +68,30 @@ object Frontend {
 
         // Log version information to console on startup
         VersionService.logVersionToConsole()
+
+        // Global error handlers (raw DOM, independent of Laminar)
+        dom.window.addEventListener("error", (e: dom.ErrorEvent) =>
+            val msg = Option(e.message).getOrElse("Unknown error")
+            val title = if msg.contains("Transaction depth exceeded") || msg.contains("maxDepth")
+                then "Reactive Loop Detected"
+                else "Application Error"
+            GlobalErrorDialog.show(title, msg)
+        )
+
+        dom.window.addEventListener("unhandledrejection", (e: dom.Event) =>
+            val reason = e.asInstanceOf[js.Dynamic].reason
+            val msg = if reason != null && !js.isUndefined(reason) then reason.toString else "Unknown error"
+            GlobalErrorDialog.show("Application Error", msg)
+        )
+
+        // Airstream unhandled error callback — catches errors from the reactive graph
+        // (e.g. Transaction depth exceeded) that don't propagate to DOM error events
+        com.raquo.airstream.core.AirstreamError.registerUnhandledErrorCallback: (err: Throwable) =>
+            val msg = Option(err.getMessage).getOrElse("Unknown error")
+            val title = if msg.contains("Transaction depth exceeded") || msg.contains("maxDepth")
+                then "Reactive Loop Detected"
+                else "Application Error"
+            GlobalErrorDialog.show(title, msg)
 
         // com.raquo.airstream.core.Transaction.maxDepth = Int.MaxValue
         com.raquo.airstream.core.Transaction.maxDepth = 1000

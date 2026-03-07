@@ -64,7 +64,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         DaisyUIHorizontalForm.makeFor[SetPropertiesInBatch](d): (v, fc) =>
             import afpma.firecalc.ui.instances.ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
             import afpma.firecalc.ui.components.SetPropertiesInBatchFormComponent
-            import afpma.firecalc.ui.models.HardcodedPipeCatalogDatabase
+            import afpma.firecalc.ui.models.pipePresetsSignal
 
             val titleVar   = v.zoomLazy(_.batch_name)((spb, name) => spb.copy(batch_name = name))
             val contentVar = v.zoomLazy(_.props)((spb, props) => spb.copy(props = props))
@@ -73,10 +73,10 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
             val contentElement = seqForm.render(contentVar, fc)
 
             SetPropertiesInBatchFormComponent(
-                v         = v,
-                catalog   = HardcodedPipeCatalogDatabase,
-                titleEl   = titleElement,
-                contentEl = contentElement
+                v             = v,
+                entriesSignal = pipePresetsSignal,
+                titleEl       = titleElement,
+                contentEl     = contentElement
             ).node
 
     given horizontal_form_SetSingleProp: DaisyUIHorizontalForm[SetSingleProp] =

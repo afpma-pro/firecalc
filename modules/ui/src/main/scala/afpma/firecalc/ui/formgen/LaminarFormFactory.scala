@@ -23,6 +23,7 @@ import afpma.firecalc.engine.utils.VNelString
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
 import afpma.firecalc.ui.daisyui.DaisyUIInputs.CommonRenderingFactory
 import afpma.firecalc.ui.daisyui.DaisyUIInputs.SelectFieldsetLabelAndInput
 import afpma.firecalc.ui.formgen.*
@@ -498,16 +499,25 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
 
         makeFor[Option[QtyD[U]]](d): (variable, formConfig) =>
             // Bidirectional sync: form -> linkedVar
-            // Only update linkedVar if value is Some(x)
+            // Debounced to break synchronous transaction chains that cause
+            // infinite loops when multiple forms write to the same parent Var
+            // (e.g. firebox form + StoveParamsUI both zooming on stove_params_var).
             val syncToLinkedVar = variable.signal
                 .distinct
                 .changes
-                .collect { case Some(v) => Some(v) } --> linkedVar.writer
+                .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                .collect { case Some(v) => Some(v) }
+                .withCurrentValueOf(linkedVar.signal)
+                .collect { case (newVal, curVal) if newVal != curVal => newVal } --> linkedVar.writer
 
             // Bidirectional sync: linkedVar -> form
+            // Debounced for the same reason as above.
             val syncFromLinkedVar = linkedVar.signal
                 .distinct
-                .changes --> variable.writer
+                .changes
+                .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                .withCurrentValueOf(variable.signal)
+                .collect { case (newVal, curVal) if newVal != curVal => newVal } --> variable.writer
 
             underlying
                 .render(variable, formConfig)

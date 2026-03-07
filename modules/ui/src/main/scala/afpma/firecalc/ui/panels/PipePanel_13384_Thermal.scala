@@ -13,7 +13,7 @@ import afpma.firecalc.i18n.implicits.given
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
-import afpma.firecalc.ui.models.HardcodedPipeCatalogDatabase
+import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.i18n.implicits.given
 
 import com.raquo.laminar.api.L.*
@@ -406,7 +406,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         txt = I18N_UI.catalog._self,
         modalContent = (onSelect) =>
             PipeCatalogSelectComponent(
-                database = HardcodedPipeCatalogDatabase,
-                onSelect = onSelect.contramap[SetPropertiesInBatch](identity)
+                entriesSignal = pipePresetsSignal,
+                onSelect      = onSelect.contramap[SetPropertiesInBatch](identity)
             ).node
     )

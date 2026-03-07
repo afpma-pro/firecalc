@@ -74,7 +74,8 @@
             "**/.gitignore",
             "**/.jvmopts.ci",
             "**/Dockerfile",
-            "**/*.json"
+            "**/*.json",
+            "**/*.fcalc-db"
         ]
     },
     "psi-header.variables": [

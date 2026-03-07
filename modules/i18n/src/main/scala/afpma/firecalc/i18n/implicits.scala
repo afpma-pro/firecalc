@@ -37,6 +37,8 @@ object implicits {
     given Decoder[I18nData.Firebox_15544.Ecolabeled]                                                             = deriveDecoder[I18nData.Firebox_15544.Ecolabeled]
     given Decoder[I18nData.Firebox_15544.Tested]                                                                 = deriveDecoder[I18nData.Firebox_15544.Tested]
     given Decoder[I18nData.Firebox_15544.Traditional]                                                            = deriveDecoder[I18nData.Firebox_15544.Traditional]
+    given Decoder[I18nData.Firebox_15544.SingleTested]                                                           = deriveDecoder[I18nData.Firebox_15544.SingleTested]
+    given Decoder[I18nData.Firebox_15544.Door15aFirebox]                                                         = deriveDecoder[I18nData.Firebox_15544.Door15aFirebox]
     given Decoder[I18nData.PolluantNames]                                                                        = deriveDecoder[I18nData.PolluantNames]
     given Decoder[I18nData.FireboxNames]                                                                         = deriveDecoder[I18nData.FireboxNames]
     given Decoder[I18nData.FacingType]                                                                           = deriveDecoder[I18nData.FacingType]
@@ -133,6 +135,9 @@ object implicits {
     given Decoder[I18nData.Units]                                                                                = deriveDecoder[I18nData.Units]
     given Decoder[I18nData.AreaHeatingStatus]                                                                    = deriveDecoder[I18nData.AreaHeatingStatus]
     given Decoder[I18nData.Warnings]                                                                             = deriveDecoder[I18nData.Warnings]
+    given Decoder[I18nData.TestReportI18n]                                                                     = deriveDecoder[I18nData.TestReportI18n]
+    given Decoder[I18nData.TestEmissionValueI18n]                                                                = deriveDecoder[I18nData.TestEmissionValueI18n]
+    given Decoder[I18nData.EmissionValuesI18n]                                                                   = deriveDecoder[I18nData.EmissionValuesI18n]
 
     given Decoder[I18nData.IncrementalValidation]                       = deriveDecoder[I18nData.IncrementalValidation]
     given Decoder[I18nData.IncrementalValidation.NotDefinedYet]         =

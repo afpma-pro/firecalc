@@ -22,4 +22,6 @@ object LocalStorageKeys {
      */
     val APP_STATE_SCHEMA: String = "app_state_schema"
 
+    val CATALOG_STATE: String = "catalog_state"
+
 }
