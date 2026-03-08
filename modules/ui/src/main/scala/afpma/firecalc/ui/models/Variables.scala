@@ -455,3 +455,6 @@ lazy val door15aFireboxesSignal: Signal[Seq[Firebox_V3.Door15aFirebox_Catalog]] 
 
 lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
     catalogStateVar.signal.map(_.pipe_presets.values.toSeq)
+
+lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+    catalogStateVar.signal.map(_.casing_presets.values.toSeq)

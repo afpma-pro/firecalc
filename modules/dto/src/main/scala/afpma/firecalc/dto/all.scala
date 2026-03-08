@@ -131,6 +131,8 @@ object all:
     export afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3 as ThermalPipeDescr_13384
     export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
     export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3 as SetThermalPipeProp_13384
+    export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.extractInnerShape
+    export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.extractLayers
     export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
     export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3 as AddThermalPipeElement_13384
 

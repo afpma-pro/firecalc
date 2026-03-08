@@ -8,6 +8,7 @@ package afpma.firecalc.dto.v4
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.common.AppendLayerDescr
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
 
 import afpma.firecalc.i18n.*
@@ -24,6 +25,17 @@ object SetThermalPipeProp_13384_V3:
     case class SetPropertiesInBatch(
         batch_name: String,
         props: Seq[SetSingleProp]
+    ) extends SetThermalPipeProp_13384_V3
+
+    @Transl(I(_.set_prop.LinedFlue))
+    case class LinedFlue(
+        batch_name: String,
+        @Transl(I(_.set_prop.LinedFlue_liner))
+        liner     : SetPropertiesInBatch,
+        @Transl(I(_.en13384.air_space_detailed))
+        air_space : AirSpaceDetailed_V2,
+        @Transl(I(_.set_prop.LinedFlue_casing))
+        casing    : SetPropertiesInBatch
     ) extends SetThermalPipeProp_13384_V3
 
     sealed trait SetSingleProp extends SetThermalPipeProp_13384_V3
@@ -93,6 +105,18 @@ object SetThermalPipeProp_13384_V3:
         @Transl(I(_.set_prop.SetNumberOfFlows_fieldName))
         n_flows: NbOfFlows
     ) extends SetSingleProp
+
+    extension (props: Seq[SetSingleProp])
+
+        def extractInnerShape: Option[PipeShape] =
+            props.collectFirst { case SetInnerShape(shape) => shape }
+
+        def extractLayers: List[AppendLayerDescr] =
+            props.flatMap:
+                case SetLayers(ls)       => ls
+                case SetLayer(e, lambda) => List(AppendLayerDescr.FromLambdaUsingThickness(e, lambda))
+                case _                   => Nil
+            .toList
 
 sealed trait AddThermalPipeElement_13384_V3 extends ThermalPipeDescr_13384_V3:
     def name: String

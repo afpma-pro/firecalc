@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.impl.en13384
 
-import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 
@@ -33,6 +33,11 @@ import scala.annotation.targetName
 import scala.reflect.*
 
 import com.softwaremill.quicklens.*
+
+import algebra.instances.all.given
+import coulomb.*
+import coulomb.policy.standard.given
+import coulomb.ops.standard.all.{given}
 
 object models:
 
@@ -243,17 +248,74 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     vState.map(_.modify(_.ductType).setTo(duct.some))
                 case SetNumberOfFlows(nf)        =>
                     vState.map(_.modify(_.nFlows).setTo(nf.some))
-                case SetPropertiesInBatch(_, _) => 
+                case SetPropertiesInBatch(_, _) =>
                     throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
+                case _: LinedFlue =>
+                    throw new Exception("DEV ERROR: LinedFlue should not be a possible case here.")
 
         convStep.allSetPropsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (_, atom)) =>
                 atom match
-                    case SetPropertiesInBatch(batch_name, props) => 
+                    case SetPropertiesInBatch(batch_name, props) =>
                         props.foldLeft(vState)(updateVNelState(_)(_))
+                    case lf: LinedFlue =>
+                        expandLinedFlue(vState, lf, updateVNelState)
                     case otherAtom =>
                         updateVNelState(vState)(otherAtom)
             }
+
+    /** Expand a [[LinedFlue]] into equivalent atomic operations.
+      *
+      * A lined flue is a 3-part pipe: liner (tubage) + air space + casing (boisseau).
+      * This method applies the liner's non-layer props (material, inner shape, roughness),
+      * then builds a combined [[SetLayers]] from the liner layers, air space layer, and casing layers.
+      */
+    private def expandLinedFlue(
+        vState       : ValidatedNel[IncrementalValidation_Error, PropsState],
+        lf           : LinedFlue,
+        updateVNelState: ValidatedNel[IncrementalValidation_Error, PropsState] => SetSingleProp => ValidatedNel[IncrementalValidation_Error, PropsState]
+    ): ValidatedNel[IncrementalValidation_Error, PropsState] =
+        val LinedFlue(_, liner, airSpace, casing) = lf
+
+        // Apply liner's non-layer props (material, inner shape, roughness, etc.)
+        val nonLayerLinerProps = liner.props.filterNot(_.isInstanceOf[SetLayers]).filterNot(_.isInstanceOf[SetLayer])
+        val afterLinerProps = nonLayerLinerProps.foldLeft(vState)(updateVNelState(_)(_))
+
+        // Extract layers from liner and casing
+        val linerLayers  = liner.props.extractLayers
+        val casingLayers = casing.props.extractLayers
+
+        // Check that casing is large enough to contain the expanded liner + air space
+        val casingInnerShape = casing.props.extractInnerShape
+        val linerInnerShape  = liner.props.extractInnerShape
+        (linerInnerShape, casingInnerShape) match
+            case (Some(lis), Some(cis)) =>
+                val expandedLinerDh: Length = linerLayers.compute_outer_shape(lis).dh
+                // Account for air space width (applies on both sides of liner)
+                val airSpaceWidthMeters: Length = airSpace match
+                    case AirSpaceDetailed_V2.WithAirSpace_V2(width, _, _) => width * 2.0
+                    case _                                                => 0.0.meters
+                val totalRequiredDh = expandedLinerDh + airSpaceWidthMeters
+                if totalRequiredDh >= cis.dh then
+                    return CasingTooSmallForLiner(s"${totalRequiredDh.show}", cis.dh.show, pt).invalidNel
+            case _ => // cannot check — proceed
+
+        // Build air space layer: use casing's inner shape if available, otherwise width-based
+        val airSpaceLayer: List[AppendLayerDescr] = airSpace match
+            case AirSpaceDetailed_V2.WithoutAirSpace_V2 => Nil
+            case AirSpaceDetailed_V2.WithAirSpace_V2(width, dir, openings) =>
+                casingInnerShape match
+                    case Some(shape) =>
+                        List(AppendLayerDescr.AirSpaceUsingOuterShape(shape, dir, openings))
+                    case None =>
+                        List(AppendLayerDescr.AirSpaceUsingThickness(width, dir, openings))
+
+        // Combine all layers and apply
+        val combinedLayers = linerLayers ++ airSpaceLayer ++ casingLayers
+        if combinedLayers.nonEmpty then
+            updateVNelState(afterLinerProps)(SetLayers(combinedLayers))
+        else
+            afterLinerProps
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
     object ElementFactory extends ElementFactoryModule

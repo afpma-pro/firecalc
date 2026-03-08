@@ -25,7 +25,6 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
 import afpma.firecalc.ui.daisyui.DaisyUIInputs.CommonRenderingFactory
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.SelectFieldsetLabelAndInput
 import afpma.firecalc.ui.formgen.*
 import afpma.firecalc.ui.formgen.Defaultable.*
 import afpma.firecalc.ui.formgen.Defaultable.given
@@ -949,28 +948,24 @@ object LaminarFormFactory:
             var_selected      : Var[String],
             subt_labels       : IArray[String]
         ): L.HtmlElement =
-            // without label above "select"
-
-            // SelectAndOptionsOnly(
-            //     selectedVar,
-            //     options = subtypes_label,
-            //     show = identity,
-            //     makeId = identity,
-            //     getById = identity,
-            //     selectCls = "select",
-            // )
-
-            // with label above "select"
-
-            SelectFieldsetLabelAndInput     (
-                labelOpt      = select_field_label,
-                selectedVar   = var_selected,
-                options       = subt_labels,
-                show          = identity,
-                makeId        = identity,
-                getById       = identity,
-                optionalField = OptionalField.No
+            val selectNode = DaisyUIInputs.SelectAndOptionsOnly(
+                selectedVar           = var_selected,
+                labelAsDisabledOption = select_field_label,
+                options               = subt_labels,
+                show                  = identity,
+                makeId                = identity,
+                getById               = identity,
+                selectCls             = "select"
             )
+            select_field_label match
+                case Some(lbl) =>
+                    L.label(
+                        cls := "floating-label whitespace-nowrap",
+                        selectNode,
+                        span(lbl)
+                    )
+                case None      =>
+                    selectNode
             // debug
             // .amend(
             //     div(text <-- selectedVar.signal.map(_.toString))
@@ -1127,7 +1122,7 @@ object LaminarFormFactory:
                     .selectFirstSubtypeAsDefaultableOrThrow[A](finalFieldName)(
                         sealedTrait.subtypes.map(_.typeclass.defaultable_instance)
                     )
-            ): (variable, _) =>
+            ): (variable, formConfig) =>
 
                 val subt_defaultables: IArray[Defaultable[A]] =
                     sealedTrait.subtypes.map: subt =>
@@ -1159,8 +1154,7 @@ object LaminarFormFactory:
                     variable,
                     var_subt_label_curr,
                     value_to_subt_label = finalFieldNameForSubtype_fromValue(sealedTrait),
-                    // select_field_label = Some(finalFieldNameForSelect),
-                    select_field_label  = None,
+                    select_field_label  = formConfig.shownFieldName,
                     subt_defaultables   = subt_defaultables,
                     subt_labels         = subt_labels,
                     subt_typeclasses    = subt_typeclasses

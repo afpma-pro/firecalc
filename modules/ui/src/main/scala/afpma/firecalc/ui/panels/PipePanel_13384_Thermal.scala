@@ -14,6 +14,7 @@ import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.pipePresetsSignal
+import afpma.firecalc.ui.models.casingPresetsSignal
 import afpma.firecalc.ui.i18n.implicits.given
 
 import com.raquo.laminar.api.L.*
@@ -36,6 +37,11 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                 case (i, aa: SetPropertiesInBatch, x) => (i, aa, x)
             } { (iaax, sig) =>
                 renderElemTyped[SetPropertiesInBatch](iaax._1, I18N.set_prop.SetPropertiesInBatch, iaax._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, LinedFlue, XtraOutputs), HtmlElement] {
+                case (i, aa: LinedFlue, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[LinedFlue](iaax._1, I18N.set_prop.LinedFlue, iaax._2, sig, isProperty = true)
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInnerShape, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInnerShape, x) => (i, aa, x)
@@ -402,11 +408,25 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     )
 
     // catalog
-    lazy val catalog_elements = TagTreeMenu.Modal[ThermalPipeDescr_13384](
-        txt = I18N_UI.catalog._self,
-        modalContent = (onSelect) =>
-            PipeCatalogSelectComponent(
-                entriesSignal = pipePresetsSignal,
-                onSelect      = onSelect.contramap[SetPropertiesInBatch](identity)
-            ).node
+    lazy val catalog_elements = TagTreeMenu.Group(
+        txt  = I18N_UI.catalog._self,
+        next = List(
+            TagTreeMenu.Modal[ThermalPipeDescr_13384](
+                txt = I18N_UI.catalog.simple_pipe,
+                modalContent = (onSelect) =>
+                    PipeCatalogSelectComponent(
+                        entriesSignal = pipePresetsSignal,
+                        onSelect      = onSelect.contramap[SetPropertiesInBatch](identity)
+                    ).node
+            ),
+            TagTreeMenu.Modal[ThermalPipeDescr_13384](
+                txt = I18N_UI.catalog.lined_flue,
+                modalContent = (onSelect) =>
+                    LinedFlueCatalogSelectComponent(
+                        pipePresetsSignal   = pipePresetsSignal,
+                        casingPresetsSignal = casingPresetsSignal,
+                        onSelect            = onSelect.contramap[LinedFlue](identity)
+                    ).node
+            )
+        )
     )

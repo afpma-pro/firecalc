@@ -150,3 +150,6 @@ class CatalogParserTest extends FunSuite:
         assertEquals(fireboxes.head.reference, "Door15aFirebox_Catalog_Example")
         val pipes = file.entriesFor[SetThermalPipeProp_13384.SetPropertiesInBatch]
         assert(pipes.nonEmpty, "Expected at least one pipe preset entry")
+        val casings = file.entriesFor[CasingPreset]
+        assert(casings.nonEmpty, "Expected at least one casing preset entry")
+        assertEquals(casings.head.unwrap.batch_name, "Boisseau terre cuite 20x20")

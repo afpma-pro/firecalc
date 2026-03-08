@@ -79,6 +79,131 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
                 contentEl     = contentElement
             ).node
 
+    given horizontal_form_LinedFlue: DaisyUIHorizontalForm[LinedFlue] =
+        import defaultable_13384.incr_descr_en13384.given
+        val d: Defaultable[LinedFlue] = summon[Defaultable[LinedFlue]]
+        given ValidateVar[LinedFlue] = ValidateVar.valid
+
+        DaisyUIHorizontalForm.makeFor[LinedFlue](d): (v, fc) =>
+            import com.raquo.laminar.api.L.*
+
+            given vv_spb: ValidateVar[SetPropertiesInBatch] =
+                ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetPropertiesInBatch]
+            given vv_asd: ValidateVar[AirSpaceDetailed] =
+                ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AirSpaceDetailed]
+
+            val linerForm  = horizontal_form_SetPropertiesInBatch
+            val casingForm = horizontal_form_SetPropertiesInBatch
+
+            val linerVar  = v.zoomLazy(_.liner)((lf, l) => lf.copy(liner = l))
+            val airVar    = v.zoomLazy(_.air_space)((lf, a) => lf.copy(air_space = a))
+            val casingVar = v.zoomLazy(_.casing)((lf, c) => lf.copy(casing = c))
+
+            // --- Bidirectional linking: airspace width ↔ casing inner shape ---
+
+            import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
+            import afpma.firecalc.ui.components.InfoDialog
+            import coulomb.syntax.*
+
+            val infoDialog = InfoDialog()
+
+            def linerOuterShape(liner: SetPropertiesInBatch): Option[PipeShape] =
+                liner.props.extractInnerShape.map(is => liner.props.extractLayers.compute_outer_shape(is))
+
+            // Adjust the casing inner shape so its smallest dimension matches requiredMinDim.
+            // Preserves the existing shape type; only changes the smallest side.
+            def adjustCasingInnerShape(existing: Option[PipeShape], requiredMinDim: Length): PipeShape =
+                existing match
+                    case Some(Circle(_))                                      => Circle(requiredMinDim)
+                    case Some(Square(_))                                      => Square(requiredMinDim)
+                    case Some(Rectangle(a, b)) if a.value == b.value          => Rectangle(requiredMinDim, requiredMinDim)
+                    case Some(Rectangle(a, b)) if a.value < b.value           => Rectangle(requiredMinDim, b)
+                    case Some(Rectangle(a, b))                                => Rectangle(a, requiredMinDim)
+                    case None                                                 => Square(requiredMinDim)
+
+            def upsertInnerShape(props: Seq[SetSingleProp], newShape: PipeShape): Seq[SetSingleProp] =
+                if props.exists(_.isInstanceOf[SetInnerShape]) then
+                    props.map { case _: SetInnerShape => SetInnerShape(newShape); case other => other }
+                else
+                    SetInnerShape(newShape) +: props
+
+            // Derived signal: liner's outer shape (inner shape expanded through wall layers)
+            val linerOuterSig: Signal[Option[PipeShape]] =
+                linerVar.signal.map(linerOuterShape)
+
+            // Binder 1: (linerOuter + airWidth) → casing inner shape
+            val airToCasingBinder =
+                linerOuterSig.combineWith(airVar.signal)
+                    .distinct
+                    .changes
+                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                    .map {
+                        case (Some(los), AirSpaceDetailed_V2.WithAirSpace_V2(width, _, _)) =>
+                            val requiredMinDim = (los.dh.toUnit[Meter].value + 2.0 * width.toUnit[Meter].value).withUnit[Meter]
+                            Some(requiredMinDim)
+                        case _ => None
+                    }
+                    .withCurrentValueOf(casingVar.signal.map(_.props.extractInnerShape))
+                    .map { case (optDim, curCasingInner) =>
+                        optDim.map(dim => (adjustCasingInnerShape(curCasingInner, dim), curCasingInner))
+                    }
+                    .collect { case Some((newShape, curShape)) if !curShape.contains(newShape) => newShape }
+                    --> Observer[PipeShape](newShape =>
+                        casingVar.update(c => c.copy(props = upsertInnerShape(c.props, newShape)))
+                        infoDialog.show(I18N.set_prop.LinedFlue_sync_casing)
+                    )
+
+            // Binder 2: (linerOuter + casing inner shape) → air width
+            // Observe the full casingVar (not just extractInnerShape) to ensure
+            // changes to PipeShape dimensions propagate even through nested zooms.
+            val casingToAirBinder =
+                linerOuterSig.combineWith(casingVar.signal)
+                    .distinct
+                    .changes
+                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                    .map { case (los, casing) =>
+                        (los, casing.props.extractInnerShape) match
+                            case (Some(l), Some(cis)) =>
+                                val dh = cis match
+                                    case Rectangle(min, b) if min < b   => min
+                                    case Rectangle(a, min) if min < a   => min
+                                    case other                          => other.dh
+                                val airWidthMeters = (dh.toUnit[Meter].value - l.dh.toUnit[Meter].value) / 2.0
+                                if airWidthMeters > 0 then Some(airWidthMeters.withUnit[Meter])
+                                else None
+                            case _ => None
+                    }
+                    .distinct
+                    .withCurrentValueOf(airVar.signal)
+                    .collect {
+                        case (Some(newWidth), AirSpaceDetailed_V2.WithAirSpace_V2(curWidth, _, _))
+                            if math.abs(newWidth.toUnit[Meter].value - curWidth.toUnit[Meter].value) >= 0.001 => 
+                                // equality means diff less than 1mm.
+                                // should be enough to prevent looping because of floating computations
+                                newWidth
+
+                    }
+                    --> Observer[Length](newWidth =>
+                        airVar.update {
+                            case AirSpaceDetailed_V2.WithAirSpace_V2(_, dir, vo) =>
+                                AirSpaceDetailed_V2.WithAirSpace_V2(newWidth, dir, vo)
+                            case other => other
+                        }
+                        infoDialog.show(I18N.set_prop.LinedFlue_sync_airspace)
+                    )
+
+            div(
+                airToCasingBinder,
+                casingToAirBinder,
+                infoDialog.node,
+                h4(cls := "font-semibold text-sm mb-1", I18N.set_prop.LinedFlue_liner),
+                linerForm.render(linerVar, fc),
+                h4(cls := "font-semibold text-sm mb-1 mt-2", I18N.en13384.air_space_detailed),
+                horizontal_form_AirSpaceDetailed.render(airVar, fc),
+                h4(cls := "font-semibold text-sm mb-1 mt-2", I18N.set_prop.LinedFlue_casing),
+                casingForm.render(casingVar, fc)
+            )
+
     given horizontal_form_SetSingleProp: DaisyUIHorizontalForm[SetSingleProp] =
         DaisyUIHorizontalForm.splitViaMatchingOnly[SetSingleProp]
     

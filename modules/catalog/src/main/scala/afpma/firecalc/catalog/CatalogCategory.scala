@@ -47,12 +47,22 @@ object CatalogCategoryAny:
             type Entry = A
             val instance: CatalogCategory[A] = cat
 
+/** Newtype wrapper to distinguish casing presets from pipe presets in the catalog.
+  * Both share the same underlying [[SetThermalPipeProp_13384.SetPropertiesInBatch]] structure,
+  * but are stored under different YAML keys (`casing_presets` vs `pipe_presets`).
+  */
+opaque type CasingPreset = SetThermalPipeProp_13384.SetPropertiesInBatch
+object CasingPreset:
+    def apply(spb: SetThermalPipeProp_13384.SetPropertiesInBatch): CasingPreset = spb
+    extension (cp: CasingPreset) def unwrap: SetThermalPipeProp_13384.SetPropertiesInBatch = cp
+
 /** Registry of all known catalog categories. Adding a new category = adding one entry here + one CatalogCategory given. */
 object CatalogCategoryRegistry:
     import CatalogCategoryInstances.given
     val all: List[CatalogCategoryAny] = List(
         CatalogCategoryAny.from[Firebox.Door15aFirebox_Catalog],
         CatalogCategoryAny.from[SetThermalPipeProp_13384.SetPropertiesInBatch],
+        CatalogCategoryAny.from[CasingPreset],
     )
 
     // Fail fast if two categories share the same yamlKey
@@ -81,3 +91,11 @@ object CatalogCategoryInstances:
         def uniqueKey(entry: SetThermalPipeProp_13384.SetPropertiesInBatch): String = entry.batch_name
         given decoder: Decoder[SetThermalPipeProp_13384.SetPropertiesInBatch] = summon
         given encoder: Encoder[SetThermalPipeProp_13384.SetPropertiesInBatch] = summon
+
+    given CatalogCategory[CasingPreset] with
+        def yamlKey: String = "casing_presets"
+        def uniqueKey(entry: CasingPreset): String = entry.unwrap.batch_name
+        given decoder: Decoder[CasingPreset] =
+            summon[Decoder[SetThermalPipeProp_13384.SetPropertiesInBatch]].map(CasingPreset(_))
+        given encoder: Encoder[CasingPreset] =
+            summon[Encoder[SetThermalPipeProp_13384.SetPropertiesInBatch]].contramap(_.unwrap)

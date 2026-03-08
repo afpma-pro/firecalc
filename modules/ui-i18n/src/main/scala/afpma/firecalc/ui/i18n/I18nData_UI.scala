@@ -62,6 +62,9 @@ object I18nData_UI:
         clear_all_button    : String,
         door_15a_fireboxes  : String,
         pipe_presets        : String,
+        casing_presets      : String,
+        simple_pipe         : String,
+        lined_flue          : String,
         errors              : Catalog.Errors,
     )
 

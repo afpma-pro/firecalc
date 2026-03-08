@@ -147,6 +147,15 @@ trait SetThermalPipeProp_13384_V3_Generators
             props     <- Gen.listOfN(n, genSetSingleProp_Thermal_V3)
         yield SetPropertiesInBatch(batchName, props)
 
+    // LinedFlue (new in V4): liner + air space + casing composite
+    def genLinedFlue_Thermal_V3: Gen[LinedFlue] =
+        for
+            name     <- Gen.alphaNumStr.suchThat(_.nonEmpty)
+            liner    <- genSetPropertiesInBatch_Thermal_V3
+            airSpace <- genAirSpaceDetailed_V2
+            casing   <- genSetPropertiesInBatch_Thermal_V3
+        yield LinedFlue(name, liner, airSpace, casing)
+
     // Composite: generate any SetThermalPipeProp_13384_V3
     def genSetThermalPipeProp_13384_V3: Gen[SetThermalPipeProp_13384_V3] =
         Gen.oneOf(
@@ -161,24 +170,26 @@ trait SetThermalPipeProp_13384_V3_Generators
             genSetPipeLocation_Thermal_V3,
             genSetDuctType_Thermal_V3,
             genSetNumberOfFlows_Thermal_V3,
-            genSetPropertiesInBatch_Thermal_V3
+            genSetPropertiesInBatch_Thermal_V3,
+            genLinedFlue_Thermal_V3
         )
 
-    // Composite: realistic sequence of SetProps (including optional batch) for a pipe
+    // Composite: realistic sequence of SetProps (including optional batch and lined flue) for a pipe
     def genThermalPipeDescr_13384_V3_Seq: Gen[Seq[ThermalPipeDescr_13384_V3]] =
         for
-            innerShape   <- genSetInnerShape_Thermal_V3
-            material     <- genSetMaterial_Thermal_V3
-            roughness    <- genSetRoughness_Thermal_V3
-            maybeLayer   <- Gen.option(genSetLayer_Thermal_V3)
+            innerShape    <- genSetInnerShape_Thermal_V3
+            material      <- genSetMaterial_Thermal_V3
+            roughness     <- genSetRoughness_Thermal_V3
+            maybeLayer    <- Gen.option(genSetLayer_Thermal_V3)
             maybeLocation <- Gen.option(genSetPipeLocation_Thermal_V3)
-            maybeBatch   <- Gen.option(genSetPropertiesInBatch_Thermal_V3)
+            maybeBatch    <- Gen.option(genSetPropertiesInBatch_Thermal_V3)
+            maybeLinedFlue <- Gen.option(genLinedFlue_Thermal_V3)
         yield
             val setProps = List[ThermalPipeDescr_13384_V3](
                 innerShape,
                 material,
                 roughness
-            ) ++ maybeLayer.toList ++ maybeLocation.toList ++ maybeBatch.toList
+            ) ++ maybeLayer.toList ++ maybeLocation.toList ++ maybeBatch.toList ++ maybeLinedFlue.toList
 
             setProps
 

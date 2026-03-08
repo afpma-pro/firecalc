@@ -747,6 +747,11 @@ object I18nData:
         SetNumberOfFlows_fieldName       : String,
         SetNumberOfFlows_NumberOfChannels: String,
         SetNumberOfFlows_Join            : String,
+        LinedFlue                        : String,
+        LinedFlue_liner                  : String,
+        LinedFlue_casing                 : String,
+        LinedFlue_sync_casing            : String,
+        LinedFlue_sync_airspace          : String,
         shortcuts                        : SetProp.Shortcuts
     )
 
@@ -920,7 +925,8 @@ object I18nData:
             section_change_requires_circle         : StringFormat1,
             flow_resistance_requires_geometry      : StringFormat1,
             pressure_diff_requires_geometry      : StringFormat1,
-            flow_resistance_requires_geometry_15544: StringFormat1
+            flow_resistance_requires_geometry_15544: StringFormat1,
+            casing_too_small_for_liner             : StringFormat2
         )
 
         case class ForbiddenElementPosition(

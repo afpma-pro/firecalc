@@ -118,3 +118,25 @@ pipe_presets:
                 thermal_resistance:
                   value: "0.44"
                   unit: "(meter^2 Kelvin)/watt"
+
+casing_presets:
+  - batch_name: "Boisseau terre cuite 20x20"
+    props:
+      - SetInnerShape:
+          shape:
+            Rectangle:
+              a:
+                value: "0.20"
+                unit: "meter"
+              b:
+                value: "0.20"
+                unit: "meter"
+      - SetLayers:
+          layers:
+            - FromThermalResistanceUsingThickness:
+                thickness:
+                  value: "0.115"
+                  unit: "meter"
+                thermal_resistance:
+                  value: "0.12"
+                  unit: "(meter^2 Kelvin)/watt"
