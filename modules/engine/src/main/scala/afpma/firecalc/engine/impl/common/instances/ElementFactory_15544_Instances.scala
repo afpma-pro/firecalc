@@ -14,6 +14,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
+import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.*
 
 import cats.data.Validated
@@ -22,6 +23,7 @@ import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
+import coulomb.syntax.*
 import coulomb.policy.standard.given
 
 object ElementFactory_15544_Instances:
@@ -97,8 +99,10 @@ object ElementFactory_15544_Instances:
     // ========== Direction Change Factory ==========
 
     case class DirectionChangeCtx_15544(
-        geometry: Option[PipeShape],
-        pipeType: PipeType
+        geometry            : Option[PipeShape],
+        pipeType            : PipeType,
+        dirBeforePreviousDC : Option[Vec3]      = None,
+        currentFrame        : Option[PipeFrame] = None
     )
 
     given directionChange15544: ElementFactory[
@@ -113,6 +117,13 @@ object ElementFactory_15544_Instances:
                 _.geometry.map(_.dh),
                 DirectionChangeRequiresSectionGeometry(ctx.pipeType)
             ).map { _ =>
+                // Compute angleN2 from direction tracking if available, otherwise use DTO value
+                val computedAngleN2: Option[QtyD[Degree]] =
+                    (ctx.dirBeforePreviousDC, ctx.currentFrame) match
+                        case (Some(dirBefore), Some(frame)) =>
+                            Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
+                        case _ => None
+
                 op match
                     case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
                             _,
@@ -120,7 +131,7 @@ object ElementFactory_15544_Instances:
                             angleN2
                         ) =>
                         FlowOnlyPipeDescr_15544.DirectionChange
-                            .AngleVifDe0A180(angle, angleN2)
+                            .AngleVifDe0A180(angle, computedAngleN2.orElse(angleN2))
                     case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_) =>
                         FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
             }

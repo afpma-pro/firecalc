@@ -16,6 +16,7 @@ import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
+import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.*
 
 import cats.data.NonEmptyList
@@ -25,6 +26,7 @@ import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
+import coulomb.syntax.*
 import coulomb.policy.standard.given
 
 object ElementFactory_13384_Instances:
@@ -187,9 +189,11 @@ object ElementFactory_13384_Instances:
     // ========== FlowOnly Direction Change Factory ==========
 
     case class DirectionChangeCtx_13384(
-        innerShape       : Option[PipeShape],
-        nextSectionLength: Option[QtyD[Meter]],
-        pipeType         : PipeType
+        innerShape          : Option[PipeShape],
+        nextSectionLength   : Option[QtyD[Meter]],
+        pipeType            : PipeType,
+        dirBeforePreviousDC : Option[Vec3]      = None,
+        currentFrame        : Option[PipeFrame] = None
     )
 
     given flowOnlyDirectionChange13384: ElementFactory[
@@ -213,6 +217,13 @@ object ElementFactory_13384_Instances:
                     )
                 )
 
+            // Compute angleN2 from direction tracking if available
+            val angleN2: Option[QtyD[Degree]] =
+                (ctx.dirBeforePreviousDC, ctx.currentFrame) match
+                    case (Some(dirBefore), Some(frame)) =>
+                        Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
+                    case _ => None
+
             (vDh, vLd).mapN { (dh: QtyD[Meter], ld: QtyD[Meter]) =>
                 op match
                     case AddFlowOnlyPipeElement_13384.AddAngleAdjustable(
@@ -220,7 +231,7 @@ object ElementFactory_13384_Instances:
                             angle,
                             zeta
                         ) =>
-                        FlowOnlyPipeDescr_13384.AngleSpecifique(angle, zeta)
+                        FlowOnlyPipeDescr_13384.AngleSpecifique(angle, zeta, angleN2)
                     case AddFlowOnlyPipeElement_13384.AddSharpeAngle_0_to_90(
                             name,
                             angle
@@ -228,14 +239,16 @@ object ElementFactory_13384_Instances:
                         FlowOnlyPipeDescr_13384.AngleVifDe0A90(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384
                             .AddSharpeAngle_0_to_90_Unsafe(name, angle) =>
                         FlowOnlyPipeDescr_13384.AngleVifDe0A90_Unsafe(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_90(
                             name,
@@ -244,7 +257,8 @@ object ElementFactory_13384_Instances:
                         FlowOnlyPipeDescr_13384.CoudeCourbe90(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_90_Unsafe(
                             name,
@@ -253,7 +267,8 @@ object ElementFactory_13384_Instances:
                         FlowOnlyPipeDescr_13384.CoudeCourbe90_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_60(
                             name,
@@ -262,7 +277,8 @@ object ElementFactory_13384_Instances:
                         FlowOnlyPipeDescr_13384.CoudeCourbe60(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_60_Unsafe(
                             name,
@@ -271,17 +287,20 @@ object ElementFactory_13384_Instances:
                         FlowOnlyPipeDescr_13384.CoudeCourbe60_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddElbows_2x45(name, r) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec2A45(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddElbows_3x30(name, r) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec3A30(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddElbows_4x22p5(
                             name,
@@ -289,7 +308,8 @@ object ElementFactory_13384_Instances:
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec4A22p5(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
             }
 
@@ -316,83 +336,106 @@ object ElementFactory_13384_Instances:
                     )
                 )
 
+            // Compute angleN2 from direction tracking if available
+            val angleN2: Option[QtyD[Degree]] =
+                (ctx.dirBeforePreviousDC, ctx.currentFrame) match
+                    case (Some(dirBefore), Some(frame)) =>
+                        Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
+                    case _ => None
+
             (vDh, vLd).mapN { (dh: QtyD[Meter], ld: QtyD[Meter]) =>
                 op match
                     case AddThermalPipeElement_13384.AddAngleAdjustable(
                             name,
                             angle,
-                            zeta
+                            zeta,
+                            _
                         ) =>
-                        ThermalPipeDescr_13384.AngleSpecifique(angle, zeta)
+                        ThermalPipeDescr_13384.AngleSpecifique(angle, zeta, angleN2)
                     case AddThermalPipeElement_13384.AddSharpeAngle_0_to_90(
                             name,
-                            angle
+                            angle,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.AngleVifDe0A90(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384
-                            .AddSharpeAngle_0_to_90_Unsafe(name, angle) =>
+                            .AddSharpeAngle_0_to_90_Unsafe(name, angle, _) =>
                         ThermalPipeDescr_13384.AngleVifDe0A90_Unsafe(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_90(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe90(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_90_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe90_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_60(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe60(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_60_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe60_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
-                    case AddThermalPipeElement_13384.AddElbows_2x45(name, r) =>
+                    case AddThermalPipeElement_13384.AddElbows_2x45(name, r, _) =>
                         ThermalPipeDescr_13384.CoudeASegment90Avec2A45(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
-                    case AddThermalPipeElement_13384.AddElbows_3x30(name, r) =>
+                    case AddThermalPipeElement_13384.AddElbows_3x30(name, r, _) =>
                         ThermalPipeDescr_13384.CoudeASegment90Avec3A30(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddElbows_4x22p5(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeASegment90Avec4A22p5(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
             }
 

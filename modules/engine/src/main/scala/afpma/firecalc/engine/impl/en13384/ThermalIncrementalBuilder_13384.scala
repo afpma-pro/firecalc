@@ -8,9 +8,11 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.engine.models.geometry.*
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.*
@@ -127,6 +129,14 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
 
+    override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
+        s.currentFrame
+
+    override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
+        // Only apply if the pipe itself did not already define an initial direction
+        if s.initialFrame.isDefined then s
+        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
         convStep: ConversionStep
@@ -156,7 +166,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
                     stateOps.getInnerShape(st),
                     convStep.nextSectionLengthOpt,
-                    pt
+                    pt,
+                    dirBeforePreviousDC = st.dirBeforePreviousDC,
+                    currentFrame        = st.currentFrame
                 )
                 thermalDirectionChange13384.make(op)
 
@@ -183,7 +195,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 thermalPressureDiff13384.make(op)
 
         val elIdx = PipeIdx(prevs.elems.size)
-        el.map(el => NonEmptyList.one((idIncr, el.named(elIdx, pt, addElementOp.name))))
+        el.map: el =>
+            NonEmptyList.one:
+                idIncr -> el.named(elIdx, pt, addElementOp.name)
 
     override protected def updateStateAfterConversionStep(
         propsState: PropsState,
@@ -194,7 +208,21 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             case Some(_ @AddSectionSlopped(_, _, _)) => propsState.validNel
             case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
             case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
-            case Some(_: AddDirectionChange)         => propsState.validNel
+            case Some(addDC: AddDirectionChange)     =>
+                // Update direction tracking if roll is defined and we have a current frame
+                addDC.roll match
+                    case Some(rollAngle) =>
+                        propsState.currentFrame match
+                            case Some(frame) =>
+                                val rollDeg  = rollAngle.toUnit[Degree].value
+                                val deflDeg  = addDC.angle.toUnit[Degree].value
+                                val newFrame = frame.applyBend(deflDeg, rollDeg)
+                                propsState.copy(
+                                    dirBeforePreviousDC = Some(frame.direction),
+                                    currentFrame        = Some(newFrame)
+                                ).validNel
+                            case None => propsState.validNel
+                    case None => propsState.validNel
             case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
             case Some(op: AddSectionChange)          =>
@@ -248,6 +276,16 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     vState.map(_.modify(_.ductType).setTo(duct.some))
                 case SetNumberOfFlows(nf)        =>
                     vState.map(_.modify(_.nFlows).setTo(nf.some))
+                case SetInitialDirection(azimuth, inclination) =>
+                    val dir   = Vec3.fromAzimuthElevation(
+                        azimuth.toUnit[Degree].value,
+                        inclination.toUnit[Degree].value
+                    )
+                    val frame = PipeFrame.initial(dir)
+                    vState.map(_.copy(
+                        initialFrame = Some(frame),
+                        currentFrame = Some(frame)
+                    ))
                 case SetPropertiesInBatch(_, _) =>
                     throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
                 case _: LinedFlue =>

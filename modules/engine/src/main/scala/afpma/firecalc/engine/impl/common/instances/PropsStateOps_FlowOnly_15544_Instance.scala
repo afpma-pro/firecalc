@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.impl.common.typeclasses.*
+import afpma.firecalc.engine.models.geometry.*
 
 object PropsStateOps_FlowOnly_15544_Instance:
 
@@ -19,11 +20,19 @@ object PropsStateOps_FlowOnly_15544_Instance:
      * Note: Uses 'geometry' instead of 'innerShape' to match
      * EN15544 naming conventions. Tracks geometry, roughness,
      * and number of flows for flow-only pipe calculations.
+     *
+     * Direction tracking fields (optional, only set when SetInitialDirection is used):
+     *   - initialFrame: frame set once by SetInitialDirection, never changes
+     *   - currentFrame: updated after each DirectionChange with roll defined
+     *   - dirBeforePreviousDC: direction BEFORE the previous bend, used to compute angleN2
      */
     case class FlowOnlyPropsState_15544(
-        geometry : Option[PipeShape] = None,
-        roughness: Option[Roughness] = None,
-        nFlows   : Option[NbOfFlows] = Some(1.flow)
+        geometry           : Option[PipeShape] = None,
+        roughness          : Option[Roughness] = None,
+        nFlows             : Option[NbOfFlows] = Some(1.flow),
+        initialFrame       : Option[PipeFrame] = None,
+        currentFrame       : Option[PipeFrame] = None,
+        dirBeforePreviousDC: Option[Vec3]      = None
     )
 
     given flowOnlyPropsStateOps15544: PropsStateOps[FlowOnlyPropsState_15544] with

@@ -1,0 +1,111 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
+package afpma.firecalc.engine.models.geometry
+
+/**
+ * 3D unit vector (dimensionless Double components).
+ * Coordinate system (facing the stove):
+ *   +X = right, +Y = rear (away from you), +Z = up (gravity)
+ */
+case class Vec3(x: Double, y: Double, z: Double):
+  def dot(o: Vec3): Double = x * o.x + y * o.y + z * o.z
+  def cross(o: Vec3): Vec3 = Vec3(y * o.z - z * o.y, z * o.x - x * o.z, x * o.y - y * o.x)
+  def norm: Double = math.sqrt(x * x + y * y + z * z)
+  def normalized: Vec3 =
+    val n = norm
+    if n < 1e-12 then Vec3(0, 0, 1) else Vec3(x / n, y / n, z / n)
+  def *(s: Double): Vec3    = Vec3(x * s, y * s, z * s)
+  def +(o: Vec3): Vec3      = Vec3(x + o.x, y + o.y, z + o.z)
+  def -(o: Vec3): Vec3      = Vec3(x - o.x, y - o.y, z - o.z)
+  def unary_- : Vec3        = Vec3(-x, -y, -z)
+
+  /** Angle in degrees between this and another vector */
+  def angleTo(o: Vec3): Double =
+    val cos = (dot(o) / (norm * o.norm)).max(-1.0).min(1.0)
+    math.toDegrees(math.acos(cos))
+
+  /**
+   * Convert to (azimuth, elevation) in degrees.
+   * azimuth: angle in horizontal plane, 0°=rear(+Y), 90°=right(+X), clockwise
+   * elevation: angle from horizontal, +90°=up(+Z), -90°=down
+   */
+  def toAzimuthElevation: (Double, Double) =
+    val n = normalized
+    val elevation = math.toDegrees(math.asin(n.z.max(-1.0).min(1.0)))
+    val azimuth   = math.toDegrees(math.atan2(n.x, n.y)) // atan2(East, North) = atan2(x, y)
+    val azNorm    = ((azimuth % 360) + 360) % 360
+    (azNorm, elevation)
+
+  /**
+   * 3-tier display string for UI:
+   * 1. Exact cardinal name (Up/Down/Rear/Front/Right/Left) when components are exactly 0/±1
+   * 2. Cardinal horizontal + elevation angle when x,y match a cardinal exactly but z != 0
+   * 3. az:X° el:Y° fallback
+   */
+  def toDisplayString: String =
+    val n = normalized
+    // Exact cardinal check: all components within tolerance of 0 or ±1
+    // Using tolerance for robustness after rotations where floating-point error accumulates.
+    def isCard(v: Double) = math.abs(v) < 1e-9 || math.abs(math.abs(v) - 1.0) < 1e-9
+    if isCard(n.x) && isCard(n.y) && isCard(n.z) then
+      (n.x, n.y, n.z) match
+        case (0.0,  0.0,  1.0) => "Up"
+        case (0.0,  0.0, -1.0) => "Down"
+        case (0.0,  1.0,  0.0) => "Rear"
+        case (0.0, -1.0,  0.0) => "Front"
+        case (1.0,  0.0,  0.0) => "Right"
+        case (-1.0, 0.0,  0.0) => "Left"
+        case _                 => azElString(n)
+    // Cardinal horizontal + elevation: x,y give exact cardinal but z is non-zero
+    else if n.z != 0.0 then
+      val horNorm = Vec3(n.x, n.y, 0.0).norm
+      if horNorm == 0.0 then azElString(n)
+      else
+        val horUnit = Vec3(n.x / horNorm, n.y / horNorm, 0.0)
+        def isCard2(v: Double) = math.abs(v) < 1e-9 || math.abs(math.abs(v) - 1.0) < 1e-9
+        if isCard2(horUnit.x) && isCard2(horUnit.y) then
+          val horName = (horUnit.x, horUnit.y) match
+            case (0.0, 1.0)  => "Rear"
+            case (0.0, -1.0) => "Front"
+            case (1.0, 0.0)  => "Right"
+            case (-1.0, 0.0) => "Left"
+            case _           => ""
+          if horName.nonEmpty then
+            val elev = math.toDegrees(math.atan2(n.z, horNorm))
+            val sign = if elev >= 0 then "↑" else "↓"
+            val elevStr = String.format(java.util.Locale.ROOT, "%.1f", math.abs(elev))
+            s"$horName $sign${elevStr}°"
+          else azElString(n)
+        else azElString(n)
+    else azElString(n)
+
+  private def azElString(n: Vec3): String =
+    val (az, el) = n.toAzimuthElevation
+    val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
+    val elStr = String.format(java.util.Locale.ROOT, "%.1f", el)
+    s"az:${azStr}° el:${elStr}°"
+
+object Vec3:
+  // Use lazy val for Scala.js initialization order safety
+  lazy val Up    : Vec3 = Vec3(0, 0, 1)
+  lazy val Down  : Vec3 = Vec3(0, 0, -1)
+  lazy val Rear  : Vec3 = Vec3(0, 1, 0)
+  lazy val Front : Vec3 = Vec3(0, -1, 0)
+  lazy val Right : Vec3 = Vec3(1, 0, 0)
+  lazy val Left  : Vec3 = Vec3(-1, 0, 0)
+
+  /**
+   * Create from azimuth + elevation in degrees.
+   * azimuth 0°=rear(+Y), 90°=right(+X); elevation 0°=horizontal, 90°=up(+Z)
+   */
+  def fromAzimuthElevation(azimuth: Double, elevation: Double): Vec3 =
+    val az  = math.toRadians(azimuth)
+    val el  = math.toRadians(elevation)
+    Vec3(
+      x = math.sin(az) * math.cos(el),
+      y = math.cos(az) * math.cos(el),
+      z = math.sin(el)
+    ).normalized

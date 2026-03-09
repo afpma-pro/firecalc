@@ -16,6 +16,7 @@ import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import cats.data.NonEmptyList
 import cats.data.Validated
@@ -43,12 +44,29 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
 
     val airIntakePipeResult: FlowOnlyAirIntakePipe_Module_13384.FullDescrResult                 =
         FlowOnlyAirIntakePipe_Module_13384.mkPipeFromIncrDescr(fcProj.air_intake_descr)
-    val fluePipeResult     : afpma.firecalc.engine.models.FluePipe_Module_15544.FullDescrResult =
-        FluePipe_Module_15544.mkPipeFromIncrDescr(fcProj.flue_pipe_descr)
-    val connectorPipeResult: afpma.firecalc.engine.models.ConnectorPipe_Module.FullDescrResult  =
-        ConnectorPipe_Module.mkPipeFromIncrDescr(fcProj.connector_pipe_descr)
+
+    // Build flue pipe and capture its final frame for direction inheritance
+    private val (fluePipeResult0, flueFinalFrameV)
+        : (afpma.firecalc.engine.models.FluePipe_Module_15544.FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
+        FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(fcProj.flue_pipe_descr)
+    val fluePipeResult: afpma.firecalc.engine.models.FluePipe_Module_15544.FullDescrResult = fluePipeResult0
+
+    // The flue pipe's final frame seeds the connector's initial direction (if direction tracking is active)
+    private val flueFinalFrame: Option[PipeFrame] =
+        flueFinalFrameV.toOption.flatten
+
+    // Build connector pipe with inherited initial frame from flue pipe, and capture its final frame
+    private val (connectorPipeResult0, connectorFinalFrameV)
+        : (afpma.firecalc.engine.models.ConnectorPipe_Module.FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
+        ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(fcProj.connector_pipe_descr, flueFinalFrame)
+    val connectorPipeResult: afpma.firecalc.engine.models.ConnectorPipe_Module.FullDescrResult = connectorPipeResult0
+
+    // The connector pipe's final frame seeds the chimney's initial direction
+    private val connectorFinalFrame: Option[PipeFrame] =
+        connectorFinalFrameV.toOption.flatten
+
     val chimneyPipeResult  : afpma.firecalc.engine.models.ChimneyPipe_Module.FullDescrResult    =
-        ChimneyPipe_Module.mkPipeFromIncrDescr(fcProj.chimney_pipe_descr)
+        ChimneyPipe_Module.mkPipeFromIncrDescr(fcProj.chimney_pipe_descr, connectorFinalFrame)
 
     val airIntakePipe: ValidatedNel[IncrementalValidation_Error, FlowOnlyAirIntakePipe_13384] =
         FlowOnlyAirIntakePipe_Module_13384.extractPipe(airIntakePipeResult)

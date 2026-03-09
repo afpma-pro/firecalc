@@ -11,6 +11,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.*
@@ -110,6 +111,14 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
 
+    override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
+        s.currentFrame
+
+    override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
+        // Only apply if the pipe itself did not already define an initial direction
+        if s.initialFrame.isDefined then s
+        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
         convStep: ConversionStep
@@ -134,7 +143,9 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
                     stateOps.getInnerShape(st),
                     convStep.nextSectionLengthOpt,
-                    pt
+                    pt,
+                    dirBeforePreviousDC = st.dirBeforePreviousDC,
+                    currentFrame        = st.currentFrame
                 )
                 flowOnlyDirectionChange13384.make(op)
 

@@ -16,10 +16,12 @@ import afpma.firecalc.engine.impl.common.*
 import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.ops.en13384.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.Show
+import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
@@ -133,9 +135,24 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
     val gas = FlueGas
 
     def mkPipeFromIncrDescr(incrSeq: Seq[ThermalPipeDescr_13384]): FullDescrResult =
-        // import incremental.*
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame = None)
+
+    def mkPipeFromIncrDescr(
+        incrSeq             : Seq[ThermalPipeDescr_13384],
+        externalInitialFrame: Option[PipeFrame]
+    ): FullDescrResult =
         if (incrSeq.isEmpty) (IdsMapping.empty, Without).validNel[IncrementalValidation_Error]
-        else incremental.define(incrSeq*).toFullDescr()
+        else incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame).map((ids, fd, _) => (ids, fd))
+
+    def mkPipeFromIncrDescrWithFinalFrame(
+        incrSeq             : Seq[ThermalPipeDescr_13384],
+        externalInitialFrame: Option[PipeFrame] = None
+    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
+        if (incrSeq.isEmpty)
+            ((IdsMapping.empty, Without).validNel[IncrementalValidation_Error], None.validNel)
+        else
+            val result = incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame)
+            (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
 
     type PipeCanBe = FullDescr | Without
 
@@ -163,8 +180,13 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
     val gas = FlueGas
 
     def mkPipeFromIncrDescr(incrSeq: Seq[ThermalPipeDescr_13384]): FullDescrResult =
-        // import incremental.*
-        incremental.define(incrSeq*).toFullDescr()
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame = None)
+
+    def mkPipeFromIncrDescr(
+        incrSeq             : Seq[ThermalPipeDescr_13384],
+        externalInitialFrame: Option[PipeFrame]
+    ): FullDescrResult =
+        incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame).map((ids, fd, _) => (ids, fd))
 
     type PipeCanBe = FullDescr
 
@@ -359,8 +381,14 @@ object FluePipe_Module_15544
     // export en15544.pipedescr.elems
 
     def mkPipeFromIncrDescr(incrSeq: Seq[incremental.IncrDescr]): FullDescrResult =
-        // import incremental.*
         incremental.define(incrSeq*).toFullDescr()
+
+    /** Build the flue pipe and also return its final PipeFrame (Some when direction tracking was active). */
+    def mkPipeFromIncrDescrWithFinalFrame(
+        incrSeq: Seq[incremental.IncrDescr]
+    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
+        val result = incremental.define(incrSeq*).toFullDescrWithFinalFrame()
+        (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
 
     extension (fp: FluePipe_15544)
         def totalLengthOfSections: QtyD[Meter] =

@@ -8,14 +8,20 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 
+import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.daisyui.RollAngleInput
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.models.casingPresetsSignal
 import afpma.firecalc.ui.i18n.implicits.given
+
+import coulomb.policy.standard.given
 
 import com.raquo.laminar.api.L.*
 
@@ -29,6 +35,67 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
 
     private given thermalHorizontalForm_13384: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
     import thermalHorizontalForm_13384.given
+
+    /** Compute PipeFrame per element index by scanning the element list.
+     *  This runs in the UI, independent of engine success, so roll labels
+     *  are available even when the pipe has validation errors.
+     */
+    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+        welems_var.signal.map: elems =>
+            var frame: Option[PipeFrame] = None
+            val builder = Map.newBuilder[Int, PipeFrame]
+            for (idx, elem) <- elems do
+                elem match
+                    case SetInitialDirection(az, incl) =>
+                        frame = Some(PipeFrame.initial(
+                            Vec3.fromAzimuthElevation(az.toUnit[Degree].value, incl.toUnit[Degree].value)
+                        ))
+                    case _ => ()
+                frame.foreach(f => builder += (idx -> f))
+                elem match
+                    case dc: AddDirectionChange =>
+                        for
+                            f <- frame
+                            r <- dc.roll
+                        do frame = Some(f.applyBend(dc.angle.toUnit[Degree].value, r.toUnit[Degree].value))
+                    case _ => ()
+            builder.result()
+
+    /** Get frameBefore for element at index from the UI-side computation. */
+    private def frameBeforeSig(idx: Int): Signal[Option[PipeFrame]] =
+        frameBeforeByIdx.map(_.get(idx))
+
+    /**
+     * Direction AFTER each element, keyed by element index. Used for the direction badge.
+     * - DC with roll: direction after the bend
+     * - DC without roll: no badge entry
+     * - Other elements: direction from the frame before
+     */
+    private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems.flatMap: (idx, elem) =>
+                frameMap.get(idx).flatMap: frameBefore =>
+                    elem match
+                        case dc: AddDirectionChange =>
+                            dc.roll.map: r =>
+                                idx -> frameBefore.applyBend(dc.angle.toUnit[Degree].value, r.toUnit[Degree].value).direction
+                        case _ =>
+                            Some(idx -> frameBefore.direction)
+            .toMap
+
+    override protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
+        directionAfterByIdx.map(_.get(idx))
+
+    /**
+     * Returns the `extra` function for a DC element's roll input.
+     * Reduces the 10 identical RollAngleInput lambdas to one-liners.
+     */
+    private def rollExtra[A <: AddDirectionChange](
+        idx   : Int,
+        getter: A => Option[QtyD[Degree]],
+        setter: (A, Option[QtyD[Degree]]) => A
+    ): Var[A] => HtmlElement =
+        ev => RollAngleInput(ev.zoomLazy(getter)(setter), frameBeforeSig(idx))
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -107,6 +174,11 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             } { (iaax, sig) =>
                 renderElemTyped[SetDuctType](iaax._1, I18N.set_prop.SetDuctType, iaax._2, sig, isProperty = true)
             }
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
+                case (i, aa: SetInitialDirection, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true)
+            }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetNumberOfFlows, XtraOutputs), HtmlElement] {
                 case (i, aa: SetNumberOfFlows, x) => (i, aa, x)
             } { (iaax, sig) =>
@@ -161,7 +233,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddAngleAdjustable,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -174,7 +247,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_90,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -187,7 +261,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_90_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_90, XtraOutputs), HtmlElement] {
@@ -198,7 +273,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_90,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -211,7 +287,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_90_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_60, XtraOutputs), HtmlElement] {
@@ -222,7 +299,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_60,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -235,7 +313,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_60_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_2x45, XtraOutputs), HtmlElement] {
@@ -246,7 +325,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_2x45,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_3x30, XtraOutputs), HtmlElement] {
@@ -257,7 +337,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_3x30,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_4x22p5, XtraOutputs), HtmlElement] {
@@ -268,7 +349,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_4x22p5,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSectionDecrease, XtraOutputs), HtmlElement] {
@@ -381,7 +463,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
 
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
-        next = TagTreeMenu.Leaf[SetMaterial] ::
+        next = TagTreeMenu.Leaf[SetInitialDirection] ::
+            TagTreeMenu.Leaf[SetMaterial]            ::
             TagTreeMenu.Leaf[SetRoughness]           ::
             prop_elements_geom                       ::
             prop_elements_insulation                 ::

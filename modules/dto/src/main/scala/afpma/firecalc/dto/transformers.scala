@@ -35,7 +35,7 @@ object transformers:
             .withFieldConst(_.height_of_first_row_of_air_injectors, 5.cm)
             .buildTransformer
 
-    given Transformer[Seq[ThermalPipeDescr_13384_V1], Seq[FlowOnlyPipeDescr_13384_V1]] =
+    given thermalV1ToFlowOnlyV1: Transformer[Seq[ThermalPipeDescr_13384_V1], Seq[FlowOnlyPipeDescr_13384_V1]] =
         (xs: Seq[ThermalPipeDescr_13384_V1]) =>
             xs.mapFilter[FlowOnlyPipeDescr_13384_V1]: x =>
                 x match
@@ -57,7 +57,62 @@ object transformers:
                         SetFlowOnlyPipeProp_13384_V1.SetNumberOfFlows(n_flows).some
 
     given Transformer[AddThermalPipeElement_13384_V1, AddFlowOnlyPipeElement_13384_V1] =
-        Transformer.define[AddThermalPipeElement_13384_V1, AddFlowOnlyPipeElement_13384_V1].buildTransformer
+        Transformer
+            .define[AddThermalPipeElement_13384_V1, AddFlowOnlyPipeElement_13384_V1]
+            .enableOptionDefaultsToNone
+            .buildTransformer
+
+    // V2 to V3 Migration: FlowOnlyPipeDescr seq transformers
+    // These are needed because SetInitialDirection is new in V1 (current) and doesn't
+    // exist in V2 (historical snapshot), and the roll field was added.
+    // SetInitialDirection is silently dropped (old V2 files never contained it).
+
+    given flowOnly13384V1ToV2: Transformer[Seq[FlowOnlyPipeDescr_13384_V1], Seq[FlowOnlyPipeDescr_13384_V2]] =
+        (xs: Seq[FlowOnlyPipeDescr_13384_V1]) =>
+            import v3.AddFlowOnlyPipeElement_13384_V2 as El
+            import v3.SetFlowOnlyPipeProp_13384_V2 as Prop
+            xs.flatMap:
+                case SetFlowOnlyPipeProp_13384_V1.SetInnerShape(shape)              => Some(Prop.SetInnerShape(shape))
+                case SetFlowOnlyPipeProp_13384_V1.SetRoughness(roughness)           => Some(Prop.SetRoughness(roughness))
+                case SetFlowOnlyPipeProp_13384_V1.SetMaterial(material)             => Some(Prop.SetMaterial(material.transformInto[Material_13384_V2]))
+                case SetFlowOnlyPipeProp_13384_V1.SetNumberOfFlows(n)               => Some(Prop.SetNumberOfFlows(n))
+                case _: SetFlowOnlyPipeProp_13384_V1.SetInitialDirection            => None // new field, not in V2 - drop on migration
+                case AddFlowOnlyPipeElement_13384_V1.AddSectionSlopped(n, l, e)         => Some(El.AddSectionSlopped(n, l, e))
+                case AddFlowOnlyPipeElement_13384_V1.AddSectionHorizontal(n, l)         => Some(El.AddSectionHorizontal(n, l))
+                case AddFlowOnlyPipeElement_13384_V1.AddSectionVertical(n, e)           => Some(El.AddSectionVertical(n, e))
+                case AddFlowOnlyPipeElement_13384_V1.AddAngleAdjustable(n, a, z, _)    => Some(El.AddAngleAdjustable(n, a, z))
+                case AddFlowOnlyPipeElement_13384_V1.AddSharpeAngle_0_to_90(n, a, _)   => Some(El.AddSharpeAngle_0_to_90(n, a))
+                case AddFlowOnlyPipeElement_13384_V1.AddSharpeAngle_0_to_90_Unsafe(n, a, _) => Some(El.AddSharpeAngle_0_to_90_Unsafe(n, a))
+                case AddFlowOnlyPipeElement_13384_V1.AddSmoothCurve_90(n, r, _)        => Some(El.AddSmoothCurve_90(n, r))
+                case AddFlowOnlyPipeElement_13384_V1.AddSmoothCurve_90_Unsafe(n, r, _) => Some(El.AddSmoothCurve_90_Unsafe(n, r))
+                case AddFlowOnlyPipeElement_13384_V1.AddSmoothCurve_60(n, r, _)        => Some(El.AddSmoothCurve_60(n, r))
+                case AddFlowOnlyPipeElement_13384_V1.AddSmoothCurve_60_Unsafe(n, r, _) => Some(El.AddSmoothCurve_60_Unsafe(n, r))
+                case AddFlowOnlyPipeElement_13384_V1.AddElbows_2x45(n, r, _)           => Some(El.AddElbows_2x45(n, r))
+                case AddFlowOnlyPipeElement_13384_V1.AddElbows_3x30(n, r, _)           => Some(El.AddElbows_3x30(n, r))
+                case AddFlowOnlyPipeElement_13384_V1.AddElbows_4x22p5(n, r, _)         => Some(El.AddElbows_4x22p5(n, r))
+                case AddFlowOnlyPipeElement_13384_V1.AddSectionDecrease(n, d)           => Some(El.AddSectionDecrease(n, d))
+                case AddFlowOnlyPipeElement_13384_V1.AddSectionIncrease(n, d)           => Some(El.AddSectionIncrease(n, d))
+                case AddFlowOnlyPipeElement_13384_V1.AddFlowResistance(n, z, cs)        => Some(El.AddFlowResistance(n, z, cs))
+                case AddFlowOnlyPipeElement_13384_V1.AddPressureDiff(n, p)              => Some(El.AddPressureDiff(n, p))
+
+    given flowOnly15544V1ToV2: Transformer[Seq[FlowOnlyPipeDescr_15544_V1], Seq[FlowOnlyPipeDescr_15544_V2]] =
+        (xs: Seq[FlowOnlyPipeDescr_15544_V1]) =>
+            import v3.AddFlowOnlyPipeElement_15544_V2 as El
+            import v3.SetFlowOnlyPipeProp_15544_V2 as Prop
+            xs.flatMap:
+                case SetFlowOnlyPipeProp_15544_V1.SetInnerShape(shape)              => Some(Prop.SetInnerShape(shape))
+                case SetFlowOnlyPipeProp_15544_V1.SetRoughness(roughness)           => Some(Prop.SetRoughness(roughness))
+                case SetFlowOnlyPipeProp_15544_V1.SetMaterial(material)             => Some(Prop.SetMaterial(material.transformInto[Material_15544_V2]))
+                case SetFlowOnlyPipeProp_15544_V1.SetNumberOfFlows(n)               => Some(Prop.SetNumberOfFlows(n))
+                case _: SetFlowOnlyPipeProp_15544_V1.SetInitialDirection            => None // new field, not in V2 - drop on migration
+                case AddFlowOnlyPipeElement_15544_V1.AddSectionSlopped(n, l, e)         => Some(El.AddSectionSlopped(n, l, e))
+                case AddFlowOnlyPipeElement_15544_V1.AddSectionHorizontal(n, l)         => Some(El.AddSectionHorizontal(n, l))
+                case AddFlowOnlyPipeElement_15544_V1.AddSectionVertical(n, e)           => Some(El.AddSectionVertical(n, e))
+                case AddFlowOnlyPipeElement_15544_V1.AddSharpeAngle_0_to_180(n, a, _)   => Some(El.AddSharpeAngle_0_to_180(n, a, None))
+                case AddFlowOnlyPipeElement_15544_V1.AddCircularArc_60(n, _)            => Some(El.AddCircularArc_60(n))
+                case AddFlowOnlyPipeElement_15544_V1.AddSectionShapeChange(n, s)         => Some(El.AddSectionShapeChange(n, s))
+                case AddFlowOnlyPipeElement_15544_V1.AddFlowResistance(n, z, cs)         => Some(El.AddFlowResistance(n, z, cs))
+                case AddFlowOnlyPipeElement_15544_V1.AddPressureDiff(n, p)               => Some(El.AddPressureDiff(n, p))
 
     // V2 to V3 Migration: Material transformers
 
@@ -106,5 +161,16 @@ object transformers:
         v1 match
             case WithoutAirSpace => AirSpaceDetailed_V2.WithoutAirSpace_V2
             case WithAirSpace(width, direction, ventil_openings) => AirSpaceDetailed_V2.WithAirSpace_V2(width, direction, ventil_openings)
+
+    // V3 to V4 Migration: ThermalPipeDescr_13384_V2 → V3
+    // Explicit seq transformer to handle new `roll` field (defaults to None) on
+    // AddDirectionChange subtypes, and new coproduct variants in V3 that can't
+    // appear in old V3 data (SetInitialDirection, LinedFlue, SetPropertiesInBatch).
+
+    given thermalV2ToV3: Transformer[v3.ThermalPipeDescr_13384_V2, v4.ThermalPipeDescr_13384_V3] =
+        Transformer
+            .define[v3.ThermalPipeDescr_13384_V2, v4.ThermalPipeDescr_13384_V3]
+            .enableOptionDefaultsToNone
+            .buildTransformer
         
         

@@ -16,6 +16,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
@@ -122,20 +123,37 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             PipeShape.show_PipeShape_valueIn_noUnit
         )
 
+    /** Direction to show in the element badge. Override in subclasses for UI-side computation. */
+    protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
+        Signal.fromValue(None)
+
     protected def renderElemTyped[AA <: Elem](
         i         : Int,
         title     : String,
         aa        : AA,
         sig       : Signal[(Int, AA, XtraOutputs)],
-        isProperty: Boolean
+        isProperty: Boolean,
+        extra     : Var[AA] => HtmlElement = (_: Var[AA]) => span()
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
-        val node            = elem_v.as_HtmlElement
-        val header_and_node = renderIncrDescr(title, node, isProperty).amend(binders)
-        val summary_node    = wrapLine(title, div(), isProperty)
-        val complexIncrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
+        val extraNode         = extra(elem_v)
+        val node              = div(elem_v.as_HtmlElement, extraNode)
+        val header_and_node   = renderIncrDescr(title, node, isProperty).amend(binders)
+        val xtra_sig        = sig.map(_._3)
 
-        val xtra_sig = sig.map(_._3)
+        val directionBadge: HtmlElement =
+            span(
+                child <-- directionBadgeSig(i, xtra_sig).map:
+                    case None      => emptyNode
+                    case Some(dir) =>
+                        span(
+                            cls := "badge badge-ghost badge-xs ml-1 font-mono",
+                            dir.toDisplayString
+                        )
+            )
+
+        val summary_node    = wrapLine(title, directionBadge, isProperty)
+        val complexIncrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
         given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
         given Show[Pressure]          = Show.show(v => "%.1f Pa".format(v.value))
