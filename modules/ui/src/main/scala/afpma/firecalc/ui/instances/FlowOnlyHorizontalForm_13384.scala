@@ -92,11 +92,26 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         given DaisyUIHorizontalForm[NbOfFlows] = DaisyUIHorizontalForm.formConversionOpaque[NbOfFlows, Int]
         autoDeriveAndOverwriteFieldNames[SetNumberOfFlows]
 
+    given horizontal_form_SetInitialDirection: DaisyUIHorizontalForm[SetInitialDirection] =
+        autoDeriveAndOverwriteFieldNames[SetInitialDirection]
+
     // AddElement
 
     // helper with string field always validated
     inline def autoDeriveAndOverwriteFieldNames_AddElement_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        autoDeriveAndOverwriteFieldNames[A]
+
+    // Like above but suppresses the roll field — roll is rendered separately via RollAngleInput
+    // in PipePanel (via the `extra` callback). Both places must be updated together
+    // when adding a new DC subtype: use this helper here, and add `extra = rollExtra(...)` there.
+    inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
+        import com.raquo.laminar.api.L.span
+        @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[QtyD[Degree]]] =
+            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
+        @nowarn given DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
+            DaisyUIHorizontalForm.makeFor[Option[QtyD[Degree]]](Defaultable(None))((_, _) => span())
         autoDeriveAndOverwriteFieldNames[A]
 
     given horizontal_form_AddSectionSlopped: DaisyUIHorizontalForm[AddSectionSlopped] =
@@ -112,41 +127,41 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionVertical]
 
     given horizontal_form_AddAngleAdjustable: DaisyUIHorizontalForm[AddAngleAdjustable] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddAngleAdjustable]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddAngleAdjustable]
 
     given horizontal_form_AddSharpeAngle_0_to_90: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_90]
 
     given horizontal_form_AddSharpeAngle_0_to_90_Unsafe: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90_Unsafe] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_90_Unsafe]
 
     given horizontal_form_AddSmoothCurve_90: DaisyUIHorizontalForm[AddSmoothCurve_90] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_90]
 
     given horizontal_form_AddSmoothCurve_90_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_90_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_90_Unsafe]
 
     given horizontal_form_AddSmoothCurve_60: DaisyUIHorizontalForm[AddSmoothCurve_60] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_60]
 
     given horizontal_form_AddSmoothCurve_60_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_60_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_60_Unsafe]
 
     given horizontal_form_AddElbows_2x45: DaisyUIHorizontalForm[AddElbows_2x45] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_2x45]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_2x45]
 
     given horizontal_form_AddElbows_3x30: DaisyUIHorizontalForm[AddElbows_3x30] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_3x30]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_3x30]
 
     given horizontal_form_AddElbows_4x22p5: DaisyUIHorizontalForm[AddElbows_4x22p5] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_4x22p5]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_4x22p5]
 
     given horizontal_form_AddSectionDecrease: DaisyUIHorizontalForm[AddSectionDecrease] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m

@@ -90,6 +90,9 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         given DaisyUIHorizontalForm[NbOfFlows] = DaisyUIHorizontalForm.formConversionOpaque[NbOfFlows, Int]
         autoDeriveAndOverwriteFieldNames[SetNumberOfFlows]
 
+    given horizontal_form_SetInitialDirection: DaisyUIHorizontalForm[SetInitialDirection] =
+        autoDeriveAndOverwriteFieldNames[SetInitialDirection]
+
     // AddElement
 
     given horizontal_form_Option_Angle: DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
@@ -106,6 +109,18 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
         autoDeriveAndOverwriteFieldNames[A]
 
+    // Like above but suppresses the roll field — roll is rendered separately via RollAngleInput
+    // in PipePanel (via the `extra` callback). Both places must be updated together
+    // when adding a new DC subtype: use this helper here, and add `extra = rollExtra(...)` there.
+    inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
+        import com.raquo.laminar.api.L.span
+        @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[QtyD[Degree]]] =
+            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
+        @nowarn given DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
+            DaisyUIHorizontalForm.makeFor[Option[QtyD[Degree]]](Defaultable(None))((_, _) => span())
+        autoDeriveAndOverwriteFieldNames[A]
+
     given horizontal_form_AddSectionSlopped: DaisyUIHorizontalForm[AddSectionSlopped] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionSlopped]
@@ -119,10 +134,10 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionVertical]
 
     given horizontal_form_AddSharpeAngle_0_to_180: DaisyUIHorizontalForm[AddSharpeAngle_0_to_180] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_180]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_180]
 
     given horizontal_form_AddCircularArc_60: DaisyUIHorizontalForm[AddCircularArc_60] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddCircularArc_60]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddCircularArc_60]
 
     given horizontal_form_AddSectionShapeChange: DaisyUIHorizontalForm[AddSectionShapeChange] =
         given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid

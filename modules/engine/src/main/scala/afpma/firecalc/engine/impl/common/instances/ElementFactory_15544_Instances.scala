@@ -132,7 +132,7 @@ object ElementFactory_15544_Instances:
                         ) =>
                         FlowOnlyPipeDescr_15544.DirectionChange
                             .AngleVifDe0A180(angle, computedAngleN2.orElse(angleN2))
-                    case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_) =>
+                    case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
             }
 

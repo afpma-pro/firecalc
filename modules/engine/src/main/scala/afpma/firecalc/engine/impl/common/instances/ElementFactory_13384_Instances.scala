@@ -229,12 +229,14 @@ object ElementFactory_13384_Instances:
                     case AddFlowOnlyPipeElement_13384.AddAngleAdjustable(
                             name,
                             angle,
-                            zeta
+                            zeta,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.AngleSpecifique(angle, zeta, angleN2)
                     case AddFlowOnlyPipeElement_13384.AddSharpeAngle_0_to_90(
                             name,
-                            angle
+                            angle,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.AngleVifDe0A90(
                             angle,
@@ -243,7 +245,7 @@ object ElementFactory_13384_Instances:
                             angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384
-                            .AddSharpeAngle_0_to_90_Unsafe(name, angle) =>
+                            .AddSharpeAngle_0_to_90_Unsafe(name, angle, _) =>
                         FlowOnlyPipeDescr_13384.AngleVifDe0A90_Unsafe(
                             angle,
                             Ld = ld,
@@ -252,7 +254,8 @@ object ElementFactory_13384_Instances:
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_90(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe90(
                             r,
@@ -262,7 +265,8 @@ object ElementFactory_13384_Instances:
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_90_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe90_Unsafe(
                             r,
@@ -272,7 +276,8 @@ object ElementFactory_13384_Instances:
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_60(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe60(
                             r,
@@ -282,7 +287,8 @@ object ElementFactory_13384_Instances:
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_60_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe60_Unsafe(
                             r,
@@ -290,13 +296,13 @@ object ElementFactory_13384_Instances:
                             Dh = dh,
                             angleN2 = angleN2
                         )
-                    case AddFlowOnlyPipeElement_13384.AddElbows_2x45(name, r) =>
+                    case AddFlowOnlyPipeElement_13384.AddElbows_2x45(name, r, _) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec2A45(
                             r,
                             Dh = dh,
                             angleN2 = angleN2
                         )
-                    case AddFlowOnlyPipeElement_13384.AddElbows_3x30(name, r) =>
+                    case AddFlowOnlyPipeElement_13384.AddElbows_3x30(name, r, _) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec3A30(
                             r,
                             Dh = dh,
@@ -304,7 +310,8 @@ object ElementFactory_13384_Instances:
                         )
                     case AddFlowOnlyPipeElement_13384.AddElbows_4x22p5(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec4A22p5(
                             r,

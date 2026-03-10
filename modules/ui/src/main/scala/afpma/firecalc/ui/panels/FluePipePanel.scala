@@ -11,15 +11,19 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+
 import afpma.firecalc.i18n.implicits.given
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import afpma.firecalc.engine.models.*
-
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.daisyui.RollAngleInput
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
+
+import coulomb.policy.standard.given
 
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
@@ -76,6 +80,72 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     override lazy val quadrionSubtotal_sig = channel_pipe_quadrions_sig
 
+    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+        welems_var.signal.map: elems =>
+            var frame: Option[PipeFrame] = None
+            val builder = Map.newBuilder[Int, PipeFrame]
+            for (idx, elem) <- elems do
+                elem match
+                    case SetInitialDirection(az, incl) =>
+                        frame = Some(PipeFrame.initial(
+                            Vec3.fromAzimuthElevation(az.toUnit[Degree].value, incl.toUnit[Degree].value)
+                        ))
+                    case _ => ()
+                frame.foreach(f => builder += (idx -> f))
+                elem match
+                    case dc: AddDirectionChange =>
+                        for
+                            f <- frame
+                            r <- dc.roll
+                        do frame = Some(f.applyBend(dc.angle.toUnit[Degree].value, r.toUnit[Degree].value))
+                    case _ => ()
+            builder.result()
+
+    private def frameBeforeSig(idx: Int): Signal[Option[PipeFrame]] =
+        frameBeforeByIdx.map(_.get(idx))
+
+    private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems.flatMap: (idx, elem) =>
+                frameMap.get(idx).flatMap: frameBefore =>
+                    elem match
+                        case dc: AddDirectionChange =>
+                            dc.roll.map: r =>
+                                idx -> frameBefore.applyBend(dc.angle.toUnit[Degree].value, r.toUnit[Degree].value).direction
+                        case _: AddFlowOnlyPipeElement_15544 =>
+                            Some(idx -> frameBefore.direction)
+                        case _ => None
+            .toMap
+
+    override protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
+        directionAfterByIdx.map(_.get(idx))
+
+    override protected def frameBeforeSig_badge(idx: Int): Signal[Option[PipeFrame]] =
+        frameBeforeByIdx.map(_.get(idx))
+
+    private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems
+                .collect { case (idx, _: AddDirectionChange) => idx }
+                .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
+                .toMap
+
+    override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
+        previousDirectionByIdx.map(_.get(idx))
+
+    private def rollExtra[A <: AddDirectionChange](
+        idx   : Int,
+        getter: A => Option[QtyD[Degree]],
+        setter: (A, Option[QtyD[Degree]]) => A
+    ): Var[A] => HtmlElement =
+        ev => RollAngleInput(ev.zoomLazy(getter)(setter), frameBeforeSig(idx))
+
+    private def rollBadgeVar[A <: AddDirectionChange](
+        getter: A => Option[QtyD[Degree]],
+        setter: (A, Option[QtyD[Degree]]) => A
+    ): Var[A] => Option[Var[Option[QtyD[Degree]]]] =
+        ev => Some(ev.zoomLazy(getter)(setter))
+
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig
             .splitMatchSeq(_._1)
@@ -106,6 +176,11 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty = true
                 )
+            }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
+                case (i, incr: SetInitialDirection, x) => (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SetInitialDirection](iix._1, I18N.set_prop.SetInitialDirection, iix._2, sig, isProperty = true)
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
@@ -156,7 +231,9 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_180,
                     iix._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra        = rollExtra(iix._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -169,7 +246,9 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddCircularArc_60,
                     iix._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra        = rollExtra(iix._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -309,6 +388,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
         next = List(
+            TagTreeMenu.Leaf[SetInitialDirection],
             TagTreeMenu.Leaf[SetMaterial],
             TagTreeMenu.Leaf[SetRoughness],
             TagTreeMenu.Leaf[SetInnerShape]

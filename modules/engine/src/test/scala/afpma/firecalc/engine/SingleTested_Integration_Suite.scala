@@ -9,9 +9,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.dto.v3.AddFlowOnlyPipeElement_15544_V2
 import afpma.firecalc.dto.v3.Material_13384_V2
-import afpma.firecalc.dto.v3.SetFlowOnlyPipeProp_15544_V2
 import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
@@ -67,16 +65,16 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         )
 
     private val fluePipeDescr = Seq(
-        SetFlowOnlyPipeProp_15544_V2.SetRoughness(3.0.mm),
-        SetFlowOnlyPipeProp_15544_V2.SetInnerShape(PipeShape.Rectangle(11.1.cm, 12.2.cm)),
-        AddFlowOnlyPipeElement_15544_V2.AddSectionHorizontal("sortie foyer", 28.1.cm),
-        AddFlowOnlyPipeElement_15544_V2.AddSharpeAngle_0_to_180(
+        SetFlowOnlyPipeProp_15544.SetRoughness(3.0.mm),
+        SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 12.2.cm)),
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal("sortie foyer", 28.1.cm),
+        AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
             "virage 90 deg",
             90.0.degrees,
             None
         ),
-        SetFlowOnlyPipeProp_15544_V2.SetInnerShape(PipeShape.Rectangle(11.1.cm, 11.1.cm)),
-        AddFlowOnlyPipeElement_15544_V2.AddSectionVertical("colonne ascendante", 3.20.m)
+        SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 11.1.cm)),
+        AddFlowOnlyPipeElement_15544.AddSectionVertical("colonne ascendante", 3.20.m)
     )
 
     private val connectorPipeDescr = Seq(

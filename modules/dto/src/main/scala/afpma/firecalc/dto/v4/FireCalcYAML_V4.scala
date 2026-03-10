@@ -8,7 +8,6 @@ package afpma.firecalc.dto.v4
 import afpma.firecalc.dto.CustomYAMLEncoderDecoder
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.instances.CommonInstances
-import afpma.firecalc.dto.instances.V3Instances
 import afpma.firecalc.dto.instances.V4Instances
 import afpma.firecalc.dto.v4.*
 
@@ -28,6 +27,8 @@ import io.taig.babel.Locale
  *     bug where `{}` was emitted as `null` by the YAML printer
  *   - WithAirSpace is encoded as `{"WithAirSpace": {width, direction, ventil_openings}}`
  * - introduce MinLoad
+ * - upgrade air_intake_descr to FlowOnlyPipeDescr_13384_V3 (adds roll + SetInitialDirection)
+ * - upgrade flue_pipe_descr to FlowOnlyPipeDescr_15544_V3 (adds roll + SetInitialDirection)
  * - TODO: SetPropertiesInBatch for FlowOnlyPipeDescr_13384
  * - TODO: SetPropertiesInBatch for ThermalPipeDescr_15544
  */
@@ -39,9 +40,9 @@ final case class FireCalcYAML_V4(
     project_description           : ProjectDescr,
     local_conditions              : LocalConditions,
     stove_params                  : StoveParams,
-    air_intake_descr              : Seq[afpma.firecalc.dto.v3.FlowOnlyPipeDescr_13384_V2], // TODO
+    air_intake_descr              : Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3],
     firebox                       : Firebox_V3,
-    flue_pipe_descr               : Seq[afpma.firecalc.dto.v3.FlowOnlyPipeDescr_15544_V2], // TODO
+    flue_pipe_descr               : Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3],
     connector_pipe_descr          : Seq[ThermalPipeDescr_13384_V3],
     chimney_pipe_descr            : Seq[ThermalPipeDescr_13384_V3]
 ) extends FireCalcYAML_Format
@@ -52,7 +53,6 @@ trait FireCalcYAML_V4_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V4]:
     final val VERSION = FireCalc_Version(4)
 
     import CommonInstances.given
-    import V3Instances.given
     import V4Instances.given
 
     override given decoder: Decoder[FireCalcYAML_V4] = semiauto.deriveDecoder[FireCalcYAML_V4]

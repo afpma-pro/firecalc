@@ -10,6 +10,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
+import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3
+import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
 import afpma.firecalc.dto.v4.FlowResistanceCatalogEntry
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
@@ -69,15 +71,15 @@ object V4Instances:
     given Decoder[ThermalPipeDescr_13384_V3] = semiauto.deriveDecoder[ThermalPipeDescr_13384_V3]
     given Encoder[ThermalPipeDescr_13384_V3] = semiauto.deriveEncoder[ThermalPipeDescr_13384_V3]
 
-    // FlowOnlyPipeDescr_13384_V3 (TODO)
+    // FlowOnlyPipeDescr_13384_V3
 
-    // given Decoder[FlowOnlyPipeDescr_13384_V2] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384_V2]
-    // given Encoder[FlowOnlyPipeDescr_13384_V2] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384_V2]
+    given Decoder[FlowOnlyPipeDescr_13384_V3] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384_V3]
+    given Encoder[FlowOnlyPipeDescr_13384_V3] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384_V3]
 
-    // FlowOnlyPipeDescr_15544_V3 (TODO)
+    // FlowOnlyPipeDescr_15544_V3
 
-    // given Decoder[FlowOnlyPipeDescr_15544_V2] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544_V2]
-    // given Encoder[FlowOnlyPipeDescr_15544_V2] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544_V2]
+    given Decoder[FlowOnlyPipeDescr_15544_V3] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544_V3]
+    given Encoder[FlowOnlyPipeDescr_15544_V3] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544_V3]
 
     // TypeOfAppliance: encoded as plain strings to avoid the YAML null bug
     // where `{}` (empty object) is emitted as `null` by the YAML printer.

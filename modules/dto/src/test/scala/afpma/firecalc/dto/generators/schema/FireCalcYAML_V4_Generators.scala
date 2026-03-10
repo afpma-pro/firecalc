@@ -8,8 +8,8 @@ package afpma.firecalc.dto.generators.schema
 import afpma.firecalc.dto.generators.common.CommonTypes_Generators
 import afpma.firecalc.dto.generators.common.StoveParams_Generators
 import afpma.firecalc.dto.generators.firebox.Firebox_V3_Generators
-import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_13384_V2_Generators
-import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_15544_V2_Generators
+import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_13384_V3_Generators
+import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_15544_V3_Generators
 import afpma.firecalc.dto.generators.pipe_descr.SetThermalPipeProp_13384_V3_Generators
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
 
@@ -20,25 +20,25 @@ import org.scalacheck.Gen
  *
  * Generates complete FireCalcYAML_V4 instances with:
  * - V3 fireboxes (new in V4, adds SingleTested variant)
- * - FlowOnly pipes for air intake (13384 V2 - unchanged from V3)
- * - FlowOnly pipes for flue (15544 V2 - unchanged from V3)
- * - Thermal pipes for connector and chimney (13384 V3 - new in V4, adds SetPropertiesInBatch)
+ * - FlowOnly pipes for air intake (13384 V3 - adds roll + SetInitialDirection)
+ * - FlowOnly pipes for flue (15544 V3 - adds roll + SetInitialDirection)
+ * - Thermal pipes for connector and chimney (13384 V3 - adds SetPropertiesInBatch)
  */
 trait FireCalcYAML_V4_Generators
     extends CommonTypes_Generators
     with StoveParams_Generators
     with Firebox_V3_Generators
-    with SetFlowOnlyPipeProp_13384_V2_Generators
-    with SetFlowOnlyPipeProp_15544_V2_Generators
+    with SetFlowOnlyPipeProp_13384_V3_Generators
+    with SetFlowOnlyPipeProp_15544_V3_Generators
     with SetThermalPipeProp_13384_V3_Generators:
 
     /**
      * Generate a complete FireCalcYAML_V4 instance
      *
      * Composes all components with V4 changes:
-     * - connector and chimney now use ThermalPipeDescr_13384_V3 (adds SetPropertiesInBatch)
-     * - air_intake uses FlowOnly (13384 V2) - unchanged from V3
-     * - flue_pipe uses FlowOnly (15544 V2) - unchanged from V3
+     * - connector and chimney use ThermalPipeDescr_13384_V3 (adds SetPropertiesInBatch)
+     * - air_intake uses FlowOnly 13384 V3 (adds roll + SetInitialDirection)
+     * - flue_pipe uses FlowOnly 15544 V3 (adds roll + SetInitialDirection)
      * - firebox is V3 (adds SingleTested variant)
      */
     def genFireCalcYAML_V4: Gen[FireCalcYAML_V4] =
@@ -49,9 +49,9 @@ trait FireCalcYAML_V4_Generators
             projectDescr  <- genProjectDescr
             localConditions <- genLocalConditions
             stoveParams   <- genStoveParams
-            airIntake     <- genFlowOnlyPipeDescr_13384_V2_Seq
+            airIntake     <- genFlowOnlyPipeDescr_13384_V3_Seq
             firebox       <- genFirebox_V3
-            fluePipe      <- genFlowOnlyPipeDescr_15544_V2_Seq
+            fluePipe      <- genFlowOnlyPipeDescr_15544_V3_Seq
             connector     <- genThermalPipeDescr_13384_V3_Seq
             chimney       <- genThermalPipeDescr_13384_V3_Seq
         yield FireCalcYAML_V4(

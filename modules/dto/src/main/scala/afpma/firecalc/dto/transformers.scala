@@ -172,5 +172,62 @@ object transformers:
             .define[v3.ThermalPipeDescr_13384_V2, v4.ThermalPipeDescr_13384_V3]
             .enableOptionDefaultsToNone
             .buildTransformer
+
+    // V3 to V4 Migration: FlowOnlyPipeDescr_13384_V2 → V3
+    // V3 adds `roll: Option[Angle]` to all AddDirectionChange subtypes (defaults None)
+    // and adds `SetInitialDirection` (never present in V2 data).
+
+    given flowOnly13384V2ToV3: Transformer[v3.FlowOnlyPipeDescr_13384_V2, v4.FlowOnlyPipeDescr_13384_V3] =
+        import v3.SetFlowOnlyPipeProp_13384_V2 as Prop2
+        import v3.AddFlowOnlyPipeElement_13384_V2 as El2
+        import v4.SetFlowOnlyPipeProp_13384_V3 as Prop3
+        import v4.AddFlowOnlyPipeElement_13384_V3 as El3
+        (x: v3.FlowOnlyPipeDescr_13384_V2) => x match
+            case Prop2.SetInnerShape(shape)       => Prop3.SetInnerShape(shape)
+            case Prop2.SetRoughness(roughness)    => Prop3.SetRoughness(roughness)
+            case Prop2.SetMaterial(material)      => Prop3.SetMaterial(material)
+            case Prop2.SetNumberOfFlows(n)        => Prop3.SetNumberOfFlows(n)
+            case El2.AddSectionSlopped(n, l, e)   => El3.AddSectionSlopped(n, l, e)
+            case El2.AddSectionHorizontal(n, l)   => El3.AddSectionHorizontal(n, l)
+            case El2.AddSectionVertical(n, e)     => El3.AddSectionVertical(n, e)
+            case El2.AddAngleAdjustable(n, a, z)  => El3.AddAngleAdjustable(n, a, z, None)
+            case El2.AddSharpeAngle_0_to_90(n, a) => El3.AddSharpeAngle_0_to_90(n, a, None)
+            case El2.AddSharpeAngle_0_to_90_Unsafe(n, a) => El3.AddSharpeAngle_0_to_90_Unsafe(n, a, None)
+            case El2.AddSmoothCurve_90(n, r)      => El3.AddSmoothCurve_90(n, r, None)
+            case El2.AddSmoothCurve_90_Unsafe(n, r) => El3.AddSmoothCurve_90_Unsafe(n, r, None)
+            case El2.AddSmoothCurve_60(n, r)      => El3.AddSmoothCurve_60(n, r, None)
+            case El2.AddSmoothCurve_60_Unsafe(n, r) => El3.AddSmoothCurve_60_Unsafe(n, r, None)
+            case El2.AddElbows_2x45(n, r)         => El3.AddElbows_2x45(n, r, None)
+            case El2.AddElbows_3x30(n, r)         => El3.AddElbows_3x30(n, r, None)
+            case El2.AddElbows_4x22p5(n, r)       => El3.AddElbows_4x22p5(n, r, None)
+            case El2.AddSectionDecrease(n, d)     => El3.AddSectionDecrease(n, d)
+            case El2.AddSectionIncrease(n, d)     => El3.AddSectionIncrease(n, d)
+            case El2.AddFlowResistance(n, z, cs)  => El3.AddFlowResistance(n, z, cs)
+            case El2.AddPressureDiff(n, p)        => El3.AddPressureDiff(n, p)
+
+    // V3 to V4 Migration: FlowOnlyPipeDescr_15544_V2 → V3
+    // V3 adds `roll: Option[Angle]` to all AddDirectionChange subtypes (defaults None)
+    // and adds `SetInitialDirection` (never present in V2 data).
+    // The `angle_to_original_direction` field in V2 AddSharpeAngle_0_to_180 is preserved as-is
+    // (it maps to the same V3 field which uses the same optional angle concept).
+
+    given flowOnly15544V2ToV3: Transformer[v3.FlowOnlyPipeDescr_15544_V2, v4.FlowOnlyPipeDescr_15544_V3] =
+        import v3.SetFlowOnlyPipeProp_15544_V2 as Prop2
+        import v3.AddFlowOnlyPipeElement_15544_V2 as El2
+        import v4.SetFlowOnlyPipeProp_15544_V3 as Prop3
+        import v4.AddFlowOnlyPipeElement_15544_V3 as El3
+        (x: v3.FlowOnlyPipeDescr_15544_V2) => x match
+            case Prop2.SetInnerShape(shape)    => Prop3.SetInnerShape(shape)
+            case Prop2.SetRoughness(roughness) => Prop3.SetRoughness(roughness)
+            case Prop2.SetMaterial(material)   => Prop3.SetMaterial(material)
+            case Prop2.SetNumberOfFlows(n)     => Prop3.SetNumberOfFlows(n)
+            case El2.AddSectionSlopped(n, l, e)  => El3.AddSectionSlopped(n, l, e)
+            case El2.AddSectionHorizontal(n, l)  => El3.AddSectionHorizontal(n, l)
+            case El2.AddSectionVertical(n, e)    => El3.AddSectionVertical(n, e)
+            case El2.AddSharpeAngle_0_to_180(n, a, angleN2) => El3.AddSharpeAngle_0_to_180(n, a, None)
+            case El2.AddCircularArc_60(n)        => El3.AddCircularArc_60(n, None)
+            case El2.AddSectionShapeChange(n, s) => El3.AddSectionShapeChange(n, s)
+            case El2.AddFlowResistance(n, z, cs) => El3.AddFlowResistance(n, z, cs)
+            case El2.AddPressureDiff(n, p)       => El3.AddPressureDiff(n, p)
         
         

@@ -11,6 +11,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.*
@@ -35,6 +36,8 @@ import scala.annotation.targetName
 import scala.reflect.*
 
 import com.softwaremill.quicklens.*
+
+import coulomb.policy.standard.given
 
 trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
@@ -192,7 +195,20 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
             case Some(_ @AddSectionSlopped(_, _, _)) => propsState.validNel
             case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
             case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
-            case Some(_: AddDirectionChange)         => propsState.validNel
+            case Some(addDC: AddDirectionChange) =>
+                addDC.roll match
+                    case Some(rollAngle) =>
+                        propsState.currentFrame match
+                            case Some(frame) =>
+                                val rollDeg  = rollAngle.toUnit[Degree].value
+                                val deflDeg  = addDC.angle.toUnit[Degree].value
+                                val newFrame = frame.applyBend(deflDeg, rollDeg)
+                                propsState.copy(
+                                    dirBeforePreviousDC = Some(frame.direction),
+                                    currentFrame        = Some(newFrame)
+                                ).validNel
+                            case None => propsState.validNel
+                    case None => propsState.validNel
             case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
             case Some(obj: AddSectionShapeChange)    => propsState.modify(_.geometry).setTo(obj.to_shape.some).validNel
@@ -212,6 +228,16 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case SetNumberOfFlows(nf) =>
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
+                    case SetInitialDirection(azimuth, inclination) =>
+                        val dir   = Vec3.fromAzimuthElevation(
+                            azimuth.toUnit[Degree].value,
+                            inclination.toUnit[Degree].value
+                        )
+                        val frame = PipeFrame.initial(dir)
+                        vState.map(_.copy(
+                            initialFrame = Some(frame),
+                            currentFrame = Some(frame)
+                        ))
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances

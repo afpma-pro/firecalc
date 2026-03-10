@@ -33,6 +33,11 @@ object FlowOnlyDefaultable_13384:
         def default = SetMaterial(defaultable_Material_13384.default)
     given Defaultable[SetNumberOfFlows]                       :
         def default = SetNumberOfFlows(divideFlowIn.default)
+    given Defaultable[SetInitialDirection]                    :
+        def default = SetInitialDirection(
+            azimuth     = 0.0.degrees,
+            inclination = 90.0.degrees
+        )
     given Locale => Defaultable[AddSectionSlopped]            :
         def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters, 0.meters)
     given Locale => Defaultable[AddSectionHorizontal]         :
