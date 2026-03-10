@@ -28,6 +28,7 @@ LOGS_DIR=".logs"
 LOG_FILE="$LOGS_DIR/sbt-compile.log"
 PID_FILE="$LOGS_DIR/sbt-compile.pid"
 SCOPE_FILE="$LOGS_DIR/sbt-compile.scope"
+CLIENT_FILE="$LOGS_DIR/sbt-compile.client"
 
 WAIT_MODE=false
 ERRORS_ONLY=false
@@ -71,7 +72,7 @@ check_status() {
     if ! kill -0 "$PID" 2>/dev/null; then
         echo "STATUS: NOT_RUNNING"
         echo "Process stopped unexpectedly. Check $LOG_FILE for errors."
-        rm "$PID_FILE"
+        rm -f "$PID_FILE" "$CLIENT_FILE"
         return 3
     fi
 
