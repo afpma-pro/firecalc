@@ -16,7 +16,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
@@ -127,32 +127,39 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
         Signal.fromValue(None)
 
+    /** PipeFrame before the element at `idx`. Override in subclasses that track frame state. */
+    protected def frameBeforeSig_badge(idx: Int): Signal[Option[PipeFrame]] =
+        Signal.fromValue(None)
+
+    /** Direction before the element at `idx`. Some only for direction-change elements. */
+    protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
+        Signal.fromValue(None)
+
     protected def renderElemTyped[AA <: Elem](
-        i         : Int,
-        title     : String,
-        aa        : AA,
-        sig       : Signal[(Int, AA, XtraOutputs)],
-        isProperty: Boolean,
-        extra     : Var[AA] => HtmlElement = (_: Var[AA]) => span()
+        i            : Int,
+        title        : String,
+        aa           : AA,
+        sig          : Signal[(Int, AA, XtraOutputs)],
+        isProperty   : Boolean,
+        extra        : Var[AA] => HtmlElement                        = (_: Var[AA]) => span(),
+        badgeRollVar : Var[AA] => Option[Var[Option[QtyD[Degree]]]] = (_: Var[AA]) => None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode         = extra(elem_v)
-        val node              = div(elem_v.as_HtmlElement, extraNode)
-        val header_and_node   = renderIncrDescr(title, node, isProperty).amend(binders)
-        val xtra_sig        = sig.map(_._3)
+        val xtra_sig          = sig.map(_._3)
 
-        val directionBadge: HtmlElement =
-            span(
-                child <-- directionBadgeSig(i, xtra_sig).map:
-                    case None      => emptyNode
-                    case Some(dir) =>
-                        span(
-                            cls := "badge badge-ghost badge-xs ml-1 font-mono",
-                            dir.toDisplayString
-                        )
-            )
+        def mkBadge() = DirectionBadgeComponent(
+            finalDirection    = directionBadgeSig(i, xtra_sig),
+            previousDirection = previousDirectionSig_badge(i),
+            frameBefore       = frameBeforeSig_badge(i),
+            rollVar           = badgeRollVar(elem_v)
+        ).node
 
-        val summary_node    = wrapLine(title, directionBadge, isProperty)
+        // Badge shown both in the expanded header (full node) and the collapsed summary row.
+        // Two separate instances are required — a single Laminar node can only be mounted once.
+        val node            = div(elem_v.as_HtmlElement, extraNode)
+        val header_and_node = renderIncrDescr(title, div(cls := "flex flex-row items-start gap-2", div(cls := "flex-1", node), mkBadge()), isProperty).amend(binders)
+        val summary_node    = wrapLine(title, mkBadge(), isProperty)
         val complexIncrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
         given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))

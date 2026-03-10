@@ -308,7 +308,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
         given ValidateVar[Option[QtyD[Degree]]] =
             ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
-        given DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
+        @nowarn given DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
             DaisyUIHorizontalForm.makeFor[Option[QtyD[Degree]]](Defaultable(None))((_, _) => span())
         autoDeriveAndOverwriteFieldNames[A]
 

@@ -67,9 +67,11 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
 
     /**
      * Direction AFTER each element, keyed by element index. Used for the direction badge.
+     * Only populated for AddThermalPipeElement_13384 subtypes (geometric elements);
+     * property setters (SetThermalPipeProp_13384) are excluded — no badge for them.
      * - DC with roll: direction after the bend
      * - DC without roll: no badge entry
-     * - Other elements: direction from the frame before
+     * - Straight sections: direction from the frame before
      */
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
@@ -79,12 +81,30 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                         case dc: AddDirectionChange =>
                             dc.roll.map: r =>
                                 idx -> frameBefore.applyBend(dc.angle.toUnit[Degree].value, r.toUnit[Degree].value).direction
-                        case _ =>
+                        case _: AddThermalPipeElement_13384 =>
                             Some(idx -> frameBefore.direction)
+                        case _ => None
             .toMap
 
     override protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
         directionAfterByIdx.map(_.get(idx))
+
+    override protected def frameBeforeSig_badge(idx: Int): Signal[Option[PipeFrame]] =
+        frameBeforeByIdx.map(_.get(idx))
+
+    /**
+     * Direction coming INTO the element, only for direction-change elements.
+     * Used by DirectionBadgeComponent to determine editable vs read-only mode.
+     */
+    private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems
+                .collect { case (idx, _: AddDirectionChange) => idx }
+                .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
+                .toMap
+
+    override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
+        previousDirectionByIdx.map(_.get(idx))
 
     /**
      * Returns the `extra` function for a DC element's roll input.
@@ -96,6 +116,16 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         setter: (A, Option[QtyD[Degree]]) => A
     ): Var[A] => HtmlElement =
         ev => RollAngleInput(ev.zoomLazy(getter)(setter), frameBeforeSig(idx))
+
+    /**
+     * Returns the `badgeRollVar` factory for a DC element.
+     * The derived Var shares the same underlying state as the RollAngleInput.
+     */
+    private def rollBadgeVar[A <: AddDirectionChange](
+        getter: A => Option[QtyD[Degree]],
+        setter: (A, Option[QtyD[Degree]]) => A
+    ): Var[A] => Option[Var[Option[QtyD[Degree]]]] =
+        ev => Some(ev.zoomLazy(getter)(setter))
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -234,7 +264,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -248,7 +279,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -262,7 +294,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_90, XtraOutputs), HtmlElement] {
@@ -274,7 +307,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -288,7 +322,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_60, XtraOutputs), HtmlElement] {
@@ -300,7 +335,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[
@@ -314,7 +350,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_2x45, XtraOutputs), HtmlElement] {
@@ -326,7 +363,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_3x30, XtraOutputs), HtmlElement] {
@@ -338,7 +376,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_4x22p5, XtraOutputs), HtmlElement] {
@@ -350,7 +389,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r))
+                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
+                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSectionDecrease, XtraOutputs), HtmlElement] {

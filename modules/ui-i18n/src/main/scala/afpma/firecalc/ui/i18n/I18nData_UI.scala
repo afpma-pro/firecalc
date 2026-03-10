@@ -23,6 +23,7 @@ final case class I18nData_UI(
     default_element_names: DefaultElementNames,
     default_names        : DefaultNames,
     details_columns      : DetailsColumns,
+    direction_badge      : DirectionBadge,
     errors               : Errors,
     footer               : Footer,
     global_error         : GlobalError,
@@ -220,6 +221,17 @@ object I18nData_UI:
             }
         }
     }
+
+    case class DirectionBadge(
+        label                        : String,
+        tooltip_direction            : String,
+        tooltip_azimuth              : StringFormat1,
+        tooltip_elevation            : StringFormat1,
+        tooltip_roll                 : StringFormat1,
+        tooltip_convention_up        : String,
+        tooltip_convention_horizontal: String,
+        tooltip_convention_down      : String,
+    )
 
     case class Tooltips(
         load_project                      : StringFormat1,
