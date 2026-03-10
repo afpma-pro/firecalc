@@ -47,11 +47,17 @@ case class Vec3(x: Double, y: Double, z: Double):
    */
   def toDisplayString: String =
     val n = normalized
-    // Exact cardinal check: all components within tolerance of 0 or ±1
-    // Using tolerance for robustness after rotations where floating-point error accumulates.
-    def isCard(v: Double) = math.abs(v) < 1e-9 || math.abs(math.abs(v) - 1.0) < 1e-9
-    if isCard(n.x) && isCard(n.y) && isCard(n.z) then
-      (n.x, n.y, n.z) match
+    // Snap components near 0 or ±1 to exact values for robust pattern matching
+    // after rotations where floating-point error accumulates.
+    def snap(v: Double): Double =
+      if math.abs(v) < 1e-9 then 0.0
+      else if math.abs(v - 1.0) < 1e-9 then 1.0
+      else if math.abs(v + 1.0) < 1e-9 then -1.0
+      else v
+    val sx = snap(n.x); val sy = snap(n.y); val sz = snap(n.z)
+    def isExact(v: Double) = v == 0.0 || v == 1.0 || v == -1.0
+    if isExact(sx) && isExact(sy) && isExact(sz) then
+      (sx, sy, sz) match
         case (0.0,  0.0,  1.0) => "Up"
         case (0.0,  0.0, -1.0) => "Down"
         case (0.0,  1.0,  0.0) => "Rear"
@@ -65,9 +71,9 @@ case class Vec3(x: Double, y: Double, z: Double):
       if horNorm == 0.0 then azElString(n)
       else
         val horUnit = Vec3(n.x / horNorm, n.y / horNorm, 0.0)
-        def isCard2(v: Double) = math.abs(v) < 1e-9 || math.abs(math.abs(v) - 1.0) < 1e-9
-        if isCard2(horUnit.x) && isCard2(horUnit.y) then
-          val horName = (horUnit.x, horUnit.y) match
+        val hx = snap(horUnit.x); val hy = snap(horUnit.y)
+        if isExact(hx) && isExact(hy) then
+          val horName = (hx, hy) match
             case (0.0, 1.0)  => "Rear"
             case (0.0, -1.0) => "Front"
             case (1.0, 0.0)  => "Right"

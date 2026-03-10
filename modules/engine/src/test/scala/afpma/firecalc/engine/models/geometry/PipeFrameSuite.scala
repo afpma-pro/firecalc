@@ -108,6 +108,16 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     assertApprox(el, -45.0)
   }
 
+  it should "return elevation=90 for Vec3.Up regardless of azimuth" in {
+    val (_, el) = Vec3.Up.toAzimuthElevation
+    assertApprox(el, 90.0)
+  }
+
+  it should "return elevation=-90 for Vec3.Down regardless of azimuth" in {
+    val (_, el) = Vec3.Down.toAzimuthElevation
+    assertApprox(el, -90.0)
+  }
+
   // ── Vec3.toDisplayString ───────────────────────────────────────────────────
 
   "Vec3.toDisplayString" should "return 'Up' for Vec3.Up" in {
@@ -265,6 +275,38 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     val k = Vec3(0, 1, 0)
     val rotated = PipeFrame.rodriguesRotate(v, k, 2 * math.Pi)
     assertVec3Approx(rotated, v)
+  }
+
+  // ── Direction display after 90° bend to vertical ──────────────────────────
+
+  "90° bend from diagonal to Up" should "produce exact Vec3.Up and display 'Up'" in {
+    // Start: pipe at az=45°, el=0° (diagonal horizontal, between Rear and Right)
+    val startDir = Vec3.fromAzimuthElevation(45.0, 0.0)
+    val frame0   = PipeFrame.initial(startDir)
+    // For horizontal pipe: upRef = Up, rightRef = dir × Up
+    // roll=0° bends toward Up → new direction = Up
+    val frame1   = frame0.applyBend(deflectionDeg = 90.0, rollDeg = 0.0)
+    assertVec3Approx(frame1.direction, Vec3.Up)
+    frame1.direction.toDisplayString shouldBe "Up"
+  }
+
+  it should "suppress azimuth for vertical Up in toAzimuthElevation (elevation ≈ 90°)" in {
+    val startDir = Vec3.fromAzimuthElevation(45.0, 0.0)
+    val frame0   = PipeFrame.initial(startDir)
+    val frame1   = frame0.applyBend(deflectionDeg = 90.0, rollDeg = 0.0)
+    val (_, el)  = frame1.direction.toAzimuthElevation
+    assertApprox(el, 90.0, "elevation should be 90° for Up")
+  }
+
+  it should "show 'Up' for near-vertical vector with tiny x,y residuals (snap robustness)" in {
+    // Simulate floating-point residuals after accumulated rotations
+    val nearUp = Vec3(1e-10, 1e-10, 1.0).normalized
+    nearUp.toDisplayString shouldBe "Up"
+  }
+
+  it should "show 'Down' for near-vertical-down vector with tiny x,y residuals" in {
+    val nearDown = Vec3(-1e-10, 1e-10, -1.0).normalized
+    nearDown.toDisplayString shouldBe "Down"
   }
 
   // ── reachableCardinals with tracked frame vs initial ──────────────────────

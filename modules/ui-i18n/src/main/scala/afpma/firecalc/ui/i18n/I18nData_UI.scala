@@ -232,6 +232,12 @@ object I18nData_UI:
         tooltip_convention_up        : String,
         tooltip_convention_horizontal: String,
         tooltip_convention_down      : String,
+        cardinal_up                  : String,
+        cardinal_down                : String,
+        cardinal_rear                : String,
+        cardinal_front               : String,
+        cardinal_right               : String,
+        cardinal_left                : String,
     )
 
     case class Tooltips(

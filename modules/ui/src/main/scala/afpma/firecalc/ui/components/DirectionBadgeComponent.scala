@@ -51,18 +51,41 @@ case class DirectionBadgeComponent(
     private val details = htmlTag("details")
     private val summary = htmlTag("summary")
 
-    /** Convert a Vec3 to compact arrow notation: ↻az° ↑el° or ↻az° ↓el° */
+    /** Translate an English cardinal name from Vec3.toDisplayString to the current locale. */
+    private def translateCardinal(english: String): String =
+        val i18n = I18N_UI.direction_badge
+        english match
+            case "Up"    => i18n.cardinal_up
+            case "Down"  => i18n.cardinal_down
+            case "Rear"  => i18n.cardinal_rear
+            case "Front" => i18n.cardinal_front
+            case "Right" => i18n.cardinal_right
+            case "Left"  => i18n.cardinal_left
+            case other   => other
+
+    /** Translate a full display string: translates cardinal names in T1 and T2 formats. */
+    private def translateDisplayString(s: String): String =
+        val cardinals = List("Up", "Down", "Rear", "Front", "Right", "Left")
+        cardinals.find(c => s == c || s.startsWith(s"$c ")) match
+            case Some(c) => s.replaceFirst(c, translateCardinal(c))
+            case None    => s
+
+    /** Convert a Vec3 to compact arrow notation: ↻az° ↑el° or ↻az° ↓el°.
+      * For vertical directions (|el| ≈ 90°), azimuth is undefined and suppressed. */
     private def toArrowString(dir: Vec3): String =
         val (az, el) = dir.toAzimuthElevation
-        val elSign   = if el >= 0 then "↑" else "↓"
-        val azStr    = String.format(java.util.Locale.ROOT, "%.1f", az)
-        val elStr    = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
-        s"↻${azStr}° ${elSign}${elStr}°"
+        val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
+        val elSign     = if el >= 0 then "↑" else "↓"
+        val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
+        if isVertical then s"${elSign}${elStr}°"
+        else
+            val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
+            s"↻${azStr}° ${elSign}${elStr}°"
 
-    /** Display string for the badge: reuse toDisplayString for T1/T2, arrow notation for T3. */
+    /** Display string for the badge: translates T1/T2 cardinal names, arrow notation for T3. */
     private def badgeText(dir: Vec3): String =
         val s = dir.toDisplayString
-        if s.startsWith("az:") then toArrowString(dir) else s
+        if s.startsWith("az:") then toArrowString(dir) else translateDisplayString(s)
 
     /** Convention line text based on the frame's current direction. */
     private def conventionLine(frameOpt: Option[PipeFrame]): String =
@@ -85,12 +108,16 @@ case class DirectionBadgeComponent(
                 dirOpt match
                     case None      => emptyNode
                     case Some(dir) =>
-                        val (az, el) = dir.toAzimuthElevation
-                        val azStr    = String.format(java.util.Locale.ROOT, "%.1f", az)
-                        val elStr    = String.format(java.util.Locale.ROOT, "%.1f", el)
-                        val azElLine = s"${i18n.tooltip_azimuth(azStr)} · ${i18n.tooltip_elevation(elStr)}"
+                        val (az, el)   = dir.toAzimuthElevation
+                        val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
+                        val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
+                        val azElLine   =
+                            if isVertical then i18n.tooltip_elevation(if el > 0 then elStr else s"-$elStr")
+                            else
+                                val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
+                                s"${i18n.tooltip_azimuth(azStr)} · ${i18n.tooltip_elevation(elStr)}"
                         div(
-                            p(s"${i18n.tooltip_direction} ${dir.toDisplayString}"),
+                            p(s"${i18n.tooltip_direction} ${translateDisplayString(dir.toDisplayString)}"),
                             p(azElLine),
                             rollVar match
                                 case None     => emptyNode
@@ -135,7 +162,7 @@ case class DirectionBadgeComponent(
                     ul(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
                         presets.map: (cardinalVec, rollDeg) =>
-                            val label = s"${math.round(rollDeg)}°  ${cardinalVec.toDisplayString}"
+                            val label = s"${math.round(rollDeg)}°  ${translateCardinal(cardinalVec.toDisplayString)}"
                             li(
                                 a(
                                     cls <-- rv.signal.map: cur =>
@@ -165,6 +192,6 @@ case class DirectionBadgeComponent(
                     DaisyUITooltip(
                         ttContent  = tooltipContent,
                         element    = badgeEl,
-                        ttPosition = "tooltip-bottom"
+                        ttPosition = "tooltip-top"
                     ).node
         )

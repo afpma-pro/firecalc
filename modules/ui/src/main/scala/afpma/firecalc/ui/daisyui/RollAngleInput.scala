@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.daisyui
 
 import afpma.firecalc.engine.models.geometry.PipeFrame     // scalafix:ok
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.units.coulombutils.*
 
 import com.raquo.airstream.state.Var
@@ -13,6 +14,8 @@ import com.raquo.laminar.api.L.*
 
 import coulomb.*
 import coulomb.syntax.*
+
+import io.taig.babel.Locale
 
 /**
  * Context-aware roll preset buttons for direction change elements.
@@ -26,16 +29,27 @@ object RollAngleInput:
     private val staticPresets: List[(String, Double)] =
         List("0°" -> 0.0, "90°" -> 90.0, "180°" -> 180.0, "270°" -> 270.0)
 
+    private def translateCardinal(english: String)(using Locale): String =
+        val i18n = I18N_UI.direction_badge
+        english match
+            case "Up"    => i18n.cardinal_up
+            case "Down"  => i18n.cardinal_down
+            case "Rear"  => i18n.cardinal_rear
+            case "Front" => i18n.cardinal_front
+            case "Right" => i18n.cardinal_right
+            case "Left"  => i18n.cardinal_left
+            case other   => other
+
     def apply(
         rollVar : Var[Option[QtyD[Degree]]],
         frameSig: Signal[Option[PipeFrame]]
-    ): HtmlElement =
+    )(using Locale): HtmlElement =
 
         val presetsSig: Signal[List[(String, Double)]] =
             frameSig.map:
                 case None        => staticPresets
                 case Some(frame) =>
-                    frame.reachableCardinals.map((vec, roll) => (vec.toDisplayString, roll))
+                    frame.reachableCardinals.map((vec, roll) => (translateCardinal(vec.toDisplayString), roll))
 
         val customVisible: Var[Boolean] = Var(false)
 
