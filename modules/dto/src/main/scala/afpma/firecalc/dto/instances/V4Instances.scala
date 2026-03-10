@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
+import afpma.firecalc.dto.v4.FlowResistanceCatalogEntry
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
 import afpma.firecalc.dto.v4.Firebox_V3
@@ -92,3 +93,7 @@ object V4Instances:
         case TypeOfAppliance.WoodLogs => Json.fromString("WoodLogs")
         case TypeOfAppliance.Pellets  => Json.fromString("Pellets")
     }
+
+    // FlowResistanceCatalogEntry
+    given Decoder[FlowResistanceCatalogEntry] = semiauto.deriveDecoder
+    given Encoder[FlowResistanceCatalogEntry] = semiauto.deriveEncoder

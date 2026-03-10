@@ -10,7 +10,9 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.instances.*
+import afpma.firecalc.ui.models.flowResistancePresetsSignal
 
 import com.raquo.laminar.api.L.*
 
@@ -290,6 +292,16 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     lazy val grids = TagTreeMenu.Group(
         txt  = I18N.add_element.AddFlowResistance,
         next = List(
+            TagTreeMenu.Modal[FlowOnlyPipeDescr_13384](
+                txt = I18N_UI.catalog.flow_resistance_presets,
+                modalContent = (onSelect) =>
+                    FlowResistanceCatalogSelectComponent(
+                        entriesSignal = flowResistancePresetsSignal,
+                        onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                            AddFlowResistance(e.name, e.zeta, e.cross_section)
+                        )
+                    ).node
+            ),
             TagTreeMenu.Leaf[AddFlowResistance]("ζ")
         )
     )

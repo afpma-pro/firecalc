@@ -63,6 +63,7 @@ object CatalogCategoryRegistry:
         CatalogCategoryAny.from[Firebox.Door15aFirebox_Catalog],
         CatalogCategoryAny.from[SetThermalPipeProp_13384.SetPropertiesInBatch],
         CatalogCategoryAny.from[CasingPreset],
+        CatalogCategoryAny.from[FlowResistanceCatalogEntry],
     )
 
     // Fail fast if two categories share the same yamlKey
@@ -99,3 +100,9 @@ object CatalogCategoryInstances:
             summon[Decoder[SetThermalPipeProp_13384.SetPropertiesInBatch]].map(CasingPreset(_))
         given encoder: Encoder[CasingPreset] =
             summon[Encoder[SetThermalPipeProp_13384.SetPropertiesInBatch]].contramap(_.unwrap)
+
+    given CatalogCategory[FlowResistanceCatalogEntry] with
+        def yamlKey: String = "flow_resistance_presets"
+        def uniqueKey(entry: FlowResistanceCatalogEntry): String = entry.name
+        given decoder: Decoder[FlowResistanceCatalogEntry] = summon
+        given encoder: Encoder[FlowResistanceCatalogEntry] = summon

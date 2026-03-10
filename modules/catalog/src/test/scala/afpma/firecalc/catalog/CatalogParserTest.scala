@@ -153,3 +153,6 @@ class CatalogParserTest extends FunSuite:
         val casings = file.entriesFor[CasingPreset]
         assert(casings.nonEmpty, "Expected at least one casing preset entry")
         assertEquals(casings.head.unwrap.batch_name, "Boisseau terre cuite 20x20")
+        val flowResistances = file.entriesFor[FlowResistanceCatalogEntry]
+        assert(flowResistances.nonEmpty, "Expected at least one flow resistance preset entry")
+        assertEquals(flowResistances.head.name, "Wire mesh screen")

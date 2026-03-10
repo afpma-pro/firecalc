@@ -19,6 +19,7 @@ import afpma.firecalc.ui.daisyui.RollAngleInput
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.models.casingPresetsSignal
+import afpma.firecalc.ui.models.flowResistancePresetsSignal
 import afpma.firecalc.ui.i18n.implicits.given
 
 import coulomb.policy.standard.given
@@ -549,6 +550,16 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                         pipePresetsSignal   = pipePresetsSignal,
                         casingPresetsSignal = casingPresetsSignal,
                         onSelect            = onSelect.contramap[LinedFlue](identity)
+                    ).node
+            ),
+            TagTreeMenu.Modal[ThermalPipeDescr_13384](
+                txt = I18N_UI.catalog.flow_resistance_presets,
+                modalContent = (onSelect) =>
+                    FlowResistanceCatalogSelectComponent(
+                        entriesSignal = flowResistancePresetsSignal,
+                        onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                            AddFlowResistance(e.name, e.zeta, e.cross_section)
+                        )
                     ).node
             )
         )

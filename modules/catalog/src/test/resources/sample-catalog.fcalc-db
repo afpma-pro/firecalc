@@ -140,3 +140,29 @@ casing_presets:
                 thermal_resistance:
                   value: "0.12"
                   unit: "(meter^2 Kelvin)/watt"
+
+flow_resistance_presets:
+  - name: "Wire mesh screen"
+    zeta:
+      value: "0.61"
+      unit: "1"
+    cross_section:
+      type: option_of_either
+      none_or_left_or_right: none
+      value: null
+  - name: "Butterfly damper (open)"
+    zeta:
+      value: "0.25"
+      unit: "1"
+    cross_section:
+      type: option_of_either
+      none_or_left_or_right: none
+      value: null
+  - name: "Rain cap (standard)"
+    zeta:
+      value: "1.5"
+      unit: "1"
+    cross_section:
+      type: option_of_either
+      none_or_left_or_right: none
+      value: null

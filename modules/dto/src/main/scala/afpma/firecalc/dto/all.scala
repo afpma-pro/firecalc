@@ -142,3 +142,5 @@ object all:
     export afpma.firecalc.dto.v4.TestEmissionValue_DTO
     export afpma.firecalc.dto.v4.EmissionValues_DTO
     export afpma.firecalc.dto.v4.EmissionsAndEfficiencyValues_DTO
+
+    export afpma.firecalc.dto.v4.FlowResistanceCatalogEntry

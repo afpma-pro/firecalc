@@ -458,3 +458,6 @@ lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetProperties
 
 lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
     catalogStateVar.signal.map(_.casing_presets.values.toSeq)
+
+lazy val flowResistancePresetsSignal: Signal[Seq[FlowResistanceCatalogEntry]] =
+    catalogStateVar.signal.map(_.flow_resistance_presets.values.toSeq)

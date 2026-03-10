@@ -12,6 +12,7 @@ import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 
 import afpma.firecalc.i18n.implicits.given
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.engine.models.*
 
@@ -242,6 +243,16 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val grids = TagTreeMenu.Group(
         txt  = I18N.add_element.AddFlowResistance,
         next = List(
+            TagTreeMenu.Modal[FlowOnlyPipeDescr_15544](
+                txt = I18N_UI.catalog.flow_resistance_presets,
+                modalContent = (onSelect) =>
+                    FlowResistanceCatalogSelectComponent(
+                        entriesSignal = flowResistancePresetsSignal,
+                        onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                            AddFlowResistance(e.name, e.zeta, e.cross_section)
+                        )
+                    ).node
+            ),
             TagTreeMenu.Leaf                   (
                 I18N.add_element.AddFlowResistance_wire_mesh_screen,
                 AddFlowResistance(
