@@ -203,6 +203,23 @@ val chimney_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.chimne
 val chimney_pipe_mappings_vnel_signal =
     engineStateHelperVar.signal.map(_.chimneyPipeMappings)
 
+// Final frames: flue pipe's final frame seeds the connector, connector's seeds the chimney.
+// These are derived from the incremental descriptions directly (no engine run needed).
+
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.FluePipe_Module_15544
+import afpma.firecalc.engine.models.ConnectorPipe_Module
+
+lazy val fluepipe_finalFrame_sig: Signal[Option[PipeFrame]] =
+    fluepipe_incrdescr_var.signal.map: descr =>
+        val (_, finalFrameV) = FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr)
+        finalFrameV.toOption.flatten
+
+lazy val connectorpipe_finalFrame_sig: Signal[Option[PipeFrame]] =
+    connector_pipe_incrdescr_var.signal.combineWith(fluepipe_finalFrame_sig).map: (descr, flueFinalFrame) =>
+        val (_, finalFrameV) = ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(descr, flueFinalFrame)
+        finalFrameV.toOption.flatten
+
 // Results for EN15544 Strict
 
 lazy val results_en15544_strict_sig: Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =

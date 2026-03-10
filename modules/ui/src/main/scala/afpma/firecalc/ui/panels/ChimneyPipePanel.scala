@@ -10,6 +10,7 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.ChimneyPipe
 import afpma.firecalc.engine.models.ChimneyPipeT
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.ui.*
@@ -45,6 +46,8 @@ final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePane
         )
 
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] = chimney_pipe_incrdescr_var
+
+    override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] = connectorpipe_finalFrame_sig
 
     type PipeIdsMapping = afpma.firecalc.engine.models.ChimneyPipe_Module.IdsMapping
 

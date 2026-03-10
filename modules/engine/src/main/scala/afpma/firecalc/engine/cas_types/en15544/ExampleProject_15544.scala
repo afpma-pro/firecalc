@@ -15,7 +15,8 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import io.taig.babel.Languages
-import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.{SetInitialDirection, SetPropertiesInBatch}
+import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
+import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3.SetInitialDirection
 
 object ExampleProject_15544
     extends v2024_10_Alg
@@ -75,6 +76,7 @@ object ExampleProject_15544
     val accumulateur_descr =
         import FluePipe_Module_15544.*
         Seq(
+            SetInitialDirection(azimuth = 0.degrees, inclination = 90.degrees),
             roughness           (3.mm                        ),
             innerShape(rectangle(251.mm, 230.mm)),
             addSectionHorizontal("sortie foyer", 317.mm      ),
@@ -105,7 +107,6 @@ object ExampleProject_15544
     val conduit_raccordement_descr =
         import ConnectorPipe_Module.*
         Seq (
-            SetInitialDirection(azimuth = 0.degrees, inclination = 90.degrees),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)              ),
             layer                     (e                                               = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
@@ -124,7 +125,6 @@ object ExampleProject_15544
     val conduit_fumees_descr =
         import ChimneyPipe_Module.*
         Seq (
-            SetInitialDirection(azimuth = 0.degrees, inclination = 90.degrees),
             SetPropertiesInBatch(
                 batch_name = "POUJOULAT 200mm DPI",
                 Seq(

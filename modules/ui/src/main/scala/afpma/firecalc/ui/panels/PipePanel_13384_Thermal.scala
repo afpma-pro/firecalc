@@ -37,13 +37,20 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     private given thermalHorizontalForm_13384: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
     import thermalHorizontalForm_13384.given
 
+    /** Override to supply an inherited PipeFrame from the previous pipe.
+     *  Defaults to no external frame (first pipe in a sequence, or direction tracking inactive).
+     */
+    protected def externalInitialFrameSig: Signal[Option[PipeFrame]] = Signal.fromValue(None)
+
     /** Compute PipeFrame per element index by scanning the element list.
      *  This runs in the UI, independent of engine success, so roll labels
      *  are available even when the pipe has validation errors.
+     *  When `externalInitialFrameSig` provides a frame, that frame seeds the
+     *  computation for pipes that have no `SetInitialDirection` of their own.
      */
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
-        welems_var.signal.map: elems =>
-            var frame: Option[PipeFrame] = None
+        welems_var.signal.combineWith(externalInitialFrameSig).map: (elems, externalFrame) =>
+            var frame: Option[PipeFrame] = externalFrame
             val builder = Map.newBuilder[Int, PipeFrame]
             for (idx, elem) <- elems do
                 elem match

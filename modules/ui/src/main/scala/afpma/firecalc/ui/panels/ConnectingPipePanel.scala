@@ -10,10 +10,12 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.ConnectorPipe
 import afpma.firecalc.engine.models.ConnectorPipeT
+import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.models.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
 import io.taig.babel.Locale
@@ -44,6 +46,8 @@ final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePa
             )
 
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] = connector_pipe_incrdescr_var
+
+    override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] = fluepipe_finalFrame_sig
 
     type PipeIdsMapping = afpma.firecalc.engine.models.ConnectorPipe_Module.IdsMapping
 
