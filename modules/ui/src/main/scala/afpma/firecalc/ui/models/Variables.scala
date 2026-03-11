@@ -220,6 +220,33 @@ lazy val connectorpipe_finalFrame_sig: Signal[Option[PipeFrame]] =
         val (_, finalFrameV) = ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(descr, flueFinalFrame)
         finalFrameV.toOption.flatten
 
+// Position tracking: cumulative XYZ coordinates for each pipe's physical segments.
+// Chained: connector starts at flue's finalPoint, chimney starts at connector's finalPoint.
+// Air intake and flue pipe both start at origin (firebox outlet not modeled spatially).
+
+import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
+import afpma.firecalc.engine.models.geometry.Vec3
+
+lazy val fluepipe_positions_sig: Signal[PipePositionResult] =
+    fluepipe_incrdescr_var.signal.map: descr =>
+        PositionTracker.computeFlowOnly15544(descr, externalFrame = None, startPoint = Vec3(0, 0, 0))
+
+lazy val connectorpipe_positions_sig: Signal[PipePositionResult] =
+    connector_pipe_incrdescr_var.signal
+        .combineWith(fluepipe_finalFrame_sig, fluepipe_positions_sig)
+        .map: (descr, flueFinalFrame, fluePositions) =>
+            PositionTracker.computeThermal13384(descr, flueFinalFrame, fluePositions.finalPoint)
+
+lazy val chimneypipe_positions_sig: Signal[PipePositionResult] =
+    chimney_pipe_incrdescr_var.signal
+        .combineWith(connectorpipe_finalFrame_sig, connectorpipe_positions_sig)
+        .map: (descr, connFinalFrame, connPositions) =>
+            PositionTracker.computeThermal13384(descr, connFinalFrame, connPositions.finalPoint)
+
+lazy val airintake_positions_sig: Signal[PipePositionResult] =
+    air_intake_incrdescr_var.signal.map: descr =>
+        PositionTracker.computeFlowOnly13384(descr, externalFrame = None, startPoint = Vec3(0, 0, 0))
+
 // Results for EN15544 Strict
 
 lazy val results_en15544_strict_sig: Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =
