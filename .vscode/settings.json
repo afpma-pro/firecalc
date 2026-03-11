@@ -69,6 +69,7 @@
             "**/*.{svg,png,jpg,jpeg,gif,ico,pdf}",
             "**/*.{md}",
             "**/.*/**/*.md",
+            "**/.*/**/*.json",
             "**/.vscode/settings.json",
             "**/web/electron-app/resources/fontconfig/**",
             "**/.gitignore",
