@@ -45,9 +45,10 @@ object ElementFactory_13384_Instances:
     // ========== Flow-Only Straight Section Factory ==========
 
     case class FlowOnlyStraightSectionCtx_13384(
-        innerShape: Option[PipeShape],
-        roughness : Option[Roughness],
-        pipeType  : PipeType
+        innerShape  : Option[PipeShape],
+        roughness   : Option[Roughness],
+        pipeType    : PipeType,
+        currentFrame: Option[PipeFrame] = None
     )
 
     given flowOnlyStraightSection13384: ElementFactory[
@@ -90,12 +91,16 @@ object ElementFactory_13384_Instances:
                         else elev_gain
                     (len, elev_gain)
 
+            val finalElevGain = ctx.currentFrame match
+                case Some(frame) => (len.value * frame.direction.z).m
+                case None        => elev_gain
+
             (vig, vr).mapN { (ig, r) =>
                 FlowOnlyPipeDescr_13384.StraightSection        (
                     length         = len,
                     innerShape     = ig,
                     roughness      = r,
-                    elevation_gain = elev_gain
+                    elevation_gain = finalElevGain
                 )
             }
 
@@ -109,7 +114,8 @@ object ElementFactory_13384_Instances:
         airSpace_afterLayers: Option[AirSpaceDetailed],
         pipeLoc             : Option[PipeLocation],
         ductType            : Option[DuctType],
-        pipeType            : PipeType
+        pipeType            : PipeType,
+        currentFrame        : Option[PipeFrame] = None
     )
 
     given thermalStraightSection13384: ElementFactory[
@@ -172,6 +178,10 @@ object ElementFactory_13384_Instances:
                         else elev_gain
                     (len, elev_gain)
 
+            val finalElevGain = ctx.currentFrame match
+                case Some(frame) => (len.value * frame.direction.z).m
+                case None        => elev_gain
+
             (vig, vog, vr, vlayers, vasp, vpl, vduct).mapN { (ig, og, r, layers, asp, pl, duct) =>
                 ThermalPipeDescr_13384.StraightSection          (
                     length           = len,
@@ -179,7 +189,7 @@ object ElementFactory_13384_Instances:
                     outer_shape      = og,
                     roughness        = r,
                     layers           = layers,
-                    elevation_gain   = elev_gain,
+                    elevation_gain   = finalElevGain,
                     airSpaceDetailed = asp,
                     pipeLoc          = pl,
                     ductType         = duct

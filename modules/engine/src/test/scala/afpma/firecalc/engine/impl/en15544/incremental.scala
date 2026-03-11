@@ -124,6 +124,30 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     }
                 }
 
+                "case direction-tracked : SetInitialDirection(vertical up) + addSectionSlopped with 0 elev_gain" - {
+
+                    "elevation_gain is auto-computed from direction (should be 2m for 2m vertical section)" in {
+                        given NbOfFlows = 1.flow
+                        val d0 = 100.mm
+                        val p =
+                            builder.define(
+                                setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees),
+                                innerShape(circle(d0)),
+                                roughness(2.mm),
+                                addSectionSlopped("s1", 2.meters, 0.meters)
+                            )
+
+                        val vRepr = p.toFullDescr().map(_._2)
+
+                        vRepr.isValid.shouldBe(true)
+
+                        val section = vRepr.toOption.get.elems.head.el.asInstanceOf[StraightSection]
+                        // direction.z = sin(90°) = 1.0, so finalElevGain = 2m * 1.0 = 2m
+                        section.elevation_gain.shouldEqual(2.meters)
+                        section.length.shouldEqual(2.meters)
+                    }
+                }
+
                 "case 3 : straight + angle + straight (short) + angle + straight" - {
 
                     "returns proper pipe" in {

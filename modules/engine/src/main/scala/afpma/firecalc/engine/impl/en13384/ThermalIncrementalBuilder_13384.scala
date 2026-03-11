@@ -158,7 +158,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         stateOps.getAirSpace  (st),
                         stateOps.getPipeLoc   (st),
                         stateOps.getDuctType  (st),
-                        pt
+                        pt,
+                        currentFrame = st.currentFrame
                     )
                 thermalStraightSection13384.make(op)
 
@@ -372,6 +373,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def material(lm: Material_13384) =
         SetMaterial(lm)
 
+    def setInitialDirection(azimuth: Angle, inclination: Angle) =
+        SetInitialDirection(azimuth, inclination)
+
     def layer(e: Length, tr: SquareMeterKelvinPerWatt) =
         layers(AppendLayerDescr.FromThermalResistanceUsingThickness(e, tr))
 
@@ -464,11 +468,13 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         elevation_gain: QtyD[Meter]
     ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(
         name             : String,
         horizontal_length: QtyD[Meter]
     ) = sectionDSL.addSectionHorizontal(name, horizontal_length)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionVertical(
         name          : String,
         elevation_gain: QtyD[Meter]

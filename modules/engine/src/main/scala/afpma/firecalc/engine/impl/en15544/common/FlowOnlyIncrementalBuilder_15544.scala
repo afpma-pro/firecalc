@@ -136,7 +136,8 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                         FlowOnlyStraightSectionCtx_15544(
                             stateOps.getInnerShape(st),
                             stateOps.getRoughness (st),
-                            pt
+                            pt,
+                            currentFrame = st.currentFrame
                         )
                     flowOnlyStraightSection15544.make(op).andThen { s =>
                         prevInnerGeomO match
@@ -253,6 +254,9 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     def material(material: Material_15544) =
         SetMaterial(material)
 
+    def setInitialDirection(azimuth: Angle, inclination: Angle) =
+        SetInitialDirection(azimuth, inclination)
+
     // Delegate to ChannelsDSL typeclass
     def channelsSplit(n: Int) =
         summon[ChannelsDSL[FlowOnlyPipeDescr_15544]].channelsSplit(n)
@@ -294,11 +298,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         elevation_gain: Length
     ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(
         name             : String,
         horizontal_length: Length
     ) = sectionDSL.addSectionHorizontal(name, horizontal_length)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionVertical(
         name          : String,
         elevation_gain: Length

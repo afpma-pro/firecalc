@@ -371,8 +371,6 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val straight_elements = TagTreeMenu.Group(
         txt  = I18N.add_element.add_section_element,
         next = List(
-            TagTreeMenu.Leaf[AddSectionVertical],
-            TagTreeMenu.Leaf[AddSectionHorizontal],
             TagTreeMenu.Leaf[AddSectionSlopped]
         )
     )

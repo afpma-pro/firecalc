@@ -18,11 +18,13 @@ trait SectionDSL[Descr]:
         elevation_gain: Length
     ): Descr
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(
         name             : String,
         horizontal_length: Length
     ): Descr
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionVertical(name: String, elevation_gain: Length): Descr
 
 object SectionDSL:

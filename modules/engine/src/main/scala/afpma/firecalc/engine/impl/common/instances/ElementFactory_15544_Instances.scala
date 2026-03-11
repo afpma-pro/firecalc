@@ -42,9 +42,10 @@ object ElementFactory_15544_Instances:
     // ========== Flow-Only Straight Section Factory ==========
 
     case class FlowOnlyStraightSectionCtx_15544(
-        geometry : Option[PipeShape],
-        roughness: Option[Roughness],
-        pipeType : PipeType
+        geometry    : Option[PipeShape],
+        roughness   : Option[Roughness],
+        pipeType    : PipeType,
+        currentFrame: Option[PipeFrame] = None
     )
 
     given flowOnlyStraightSection15544: ElementFactory[
@@ -87,12 +88,16 @@ object ElementFactory_15544_Instances:
                         else elev_gain
                     (len, elev_gain)
 
+            val finalElevGain = ctx.currentFrame match
+                case Some(frame) => (len.value * frame.direction.z).m
+                case None        => elev_gain
+
             (vg, vr).mapN { (g, r) =>
                 FlowOnlyPipeDescr_15544.StraightSection        (
                     length         = len,
                     geometry       = g,
                     roughness      = r,
-                    elevation_gain = elev_gain
+                    elevation_gain = finalElevGain
                 )
             }
 

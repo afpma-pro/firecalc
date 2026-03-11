@@ -26,6 +26,7 @@ object SectionDSL_15544_Instances:
                 elevation_gain
             )
 
+        @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionHorizontal(
             name             : String,
             horizontal_length: QtyD[Meter]
@@ -35,6 +36,7 @@ object SectionDSL_15544_Instances:
                 horizontal_length
             )
 
+        @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionVertical(
             name          : String,
             elevation_gain: QtyD[Meter]
