@@ -171,7 +171,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, viz, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, viz, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -922,6 +922,18 @@ lazy val reports = (project in file("modules/reports"))
   )
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine.jvm, utils.jvm)
+
+lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
+  .settings(
+    name := "firecalc-xlsx-catalog",
+    version := engine_version,
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.apache.poi" % "poi"       % "5.3.0",
+      "org.apache.poi" % "poi-ooxml" % "5.3.0",
+    ),
+  )
+  .dependsOn(catalog.jvm)
 
 lazy val payments = (project in file("modules/payments"))
   .enablePlugins(MoleculePlugin)

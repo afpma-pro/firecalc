@@ -40,6 +40,10 @@ trait CatalogCategoryAny:
             entries.foldLeft[Either[DecodingFailure, Seq[Entry]]](Right(Seq.empty)): (acc, entryJson) =>
                 acc.flatMap(seq => instance.decoder.decodeJson(entryJson).map(seq :+ _))
     def encodeEntries(entries: Seq[Entry]): Json = Encoder.encodeSeq(using instance.encoder)(entries)
+    def encodeSectionIfPresent(sections: CatalogSections): Option[(String, Json)] =
+        val entries = sections.rawData.getOrElse(yamlKey, Seq.empty).asInstanceOf[Seq[Entry]]
+        if entries.isEmpty then None
+        else Some(yamlKey -> encodeEntries(entries))
 
 object CatalogCategoryAny:
     def from[A](using cat: CatalogCategory[A]): CatalogCategoryAny =
