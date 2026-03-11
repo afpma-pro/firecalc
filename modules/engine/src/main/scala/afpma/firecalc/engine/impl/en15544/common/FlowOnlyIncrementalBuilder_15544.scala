@@ -4,14 +4,14 @@
  */
 
 package afpma.firecalc.engine.impl.en15544.common
+import algebra.instances.all.given
+
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.*
@@ -24,6 +24,8 @@ import afpma.firecalc.engine.impl.common.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
@@ -32,12 +34,12 @@ import cats.Show
 import cats.data.*
 import cats.syntax.all.*
 
+import coulomb.policy.standard.given
+
 import scala.annotation.targetName
 import scala.reflect.*
 
 import com.softwaremill.quicklens.*
-
-import coulomb.policy.standard.given
 
 trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
@@ -269,19 +271,19 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     given directionDSL: DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544] =
         summon[DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544]]
 
-    def addSharpAngle_0_to_180deg(name: String, angle: Angle, angleN2: Option[Angle] = None) =
-        directionDSL.addSharpAngle_0_to_180deg(name, angle, angleN2)
-    def addSharpAngle_30deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_30deg(name, angleN2)
-    def addSharpAngle_45deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_45deg(name, angleN2)
-    def addSharpAngle_60deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_60deg(name, angleN2)
-    def addSharpAngle_90deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_90deg(name, angleN2)
+    def addSharpAngle_0_to_180deg(name: String, angle: Angle, roll: Option[Angle] = None) =
+        directionDSL.addSharpAngle_0_to_180deg(name, angle, roll)
+    def addSharpAngle_30deg(name: String, roll: Option[Angle] = None)                     =
+        directionDSL.addSharpAngle_30deg(name, roll)
+    def addSharpAngle_45deg(name: String, roll: Option[Angle] = None)                     =
+        directionDSL.addSharpAngle_45deg(name, roll)
+    def addSharpAngle_60deg(name: String, roll: Option[Angle] = None)                     =
+        directionDSL.addSharpAngle_60deg(name, roll)
+    def addSharpAngle_90deg(name: String, roll: Option[Angle] = None)                     =
+        directionDSL.addSharpAngle_90deg(name, roll)
 
-    def addCircularArc60(name: String) =
-        directionDSL.addCircularArc60(name)
+    def addCircularArc60(name: String, roll: Option[Angle] = None) =
+        directionDSL.addCircularArc60(name, roll)
 
     def addSectionShapeChange(
         name    : String,
@@ -302,13 +304,17 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     def addSectionHorizontal(
         name             : String,
         horizontal_length: Length
-    ) = sectionDSL.addSectionHorizontal(name, horizontal_length)
+    ) = sectionDSL.addSectionSlopped(name, horizontal_length, 0.meters)
 
     @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionVertical(
         name          : String,
         elevation_gain: Length
-    ) = sectionDSL.addSectionVertical(name, elevation_gain)
+    ) = sectionDSL.addSectionSlopped(
+        name, 
+        if (elevation_gain) >= 0.meters then elevation_gain else elevation_gain * -1.0, 
+        elevation_gain
+    )
 
     // Delegate to FlowResistanceDSL typeclass
     given flowResistanceDSL: FlowResistanceDSL[FlowOnlyPipeDescr_15544] =

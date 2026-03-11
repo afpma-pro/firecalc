@@ -54,7 +54,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                             chambre_detente_long
                         )
                     },
-                    addSharpAngle_90deg ("virage 90° vers colonnes d'air", angleN2    = 180.degrees.some),
+                    addSharpAngle_90deg ("virage 90° vers colonnes d'air", roll = 180.degrees.some),
                     innerShape(
                         rectangle(
                             a = {
@@ -78,7 +78,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                         "vers colonnes d'air",
                         (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + h77_epaisseurParoiInterneFoyer_D1 + h78_largeurEspaceInterparoisDuFoyer_S / 2.0
                     ),
-                    addSharpAngle_90deg ("virage au pied des colonnes d'air", angleN2 = Some(0.degrees) ),
+                    addSharpAngle_90deg ("virage au pied des colonnes d'air", roll = Some(0.degrees)),
                     innerShape(
                         rectangle(
                             a = 2 * c24_largeurDesColonnesAirLaterales + c25_largeurDesColonnesAirArrieres,

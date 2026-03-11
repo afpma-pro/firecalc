@@ -12,37 +12,37 @@ import afpma.firecalc.units.coulombutils.*
  */
 trait DirectionChangeDSL_15544[Descr]:
     def addSharpAngle_0_to_180deg(
-        name   : String,
-        angle  : Angle,
-        angleN2: Option[Angle] = None
+        name: String,
+        angle: Angle,
+        roll: Option[Angle] = None
     ): Descr
 
-    def addCircularArc60(name: String): Descr
+    def addCircularArc60(name: String, roll: Option[Angle] = None): Descr
 
     // Convenience methods
     def addSharpAngle_30deg(
-        name   : String,
-        angleN2: Option[Angle] = None
+        name: String,
+        roll: Option[Angle] = None
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 30.degrees, angleN2)
+        addSharpAngle_0_to_180deg(name, 30.degrees, roll)
 
     def addSharpAngle_45deg(
-        name   : String,
-        angleN2: Option[Angle] = None
+        name: String,
+        roll: Option[Angle] = None
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 45.degrees, angleN2)
+        addSharpAngle_0_to_180deg(name, 45.degrees, roll)
 
     def addSharpAngle_60deg(
-        name   : String,
-        angleN2: Option[Angle] = None
+        name: String,
+        roll: Option[Angle] = None
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 60.degrees, angleN2)
+        addSharpAngle_0_to_180deg(name, 60.degrees, roll)
 
     def addSharpAngle_90deg(
-        name   : String,
-        angleN2: Option[Angle] = None
+        name: String,
+        roll: Option[Angle] = None
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 90.degrees, angleN2)
+        addSharpAngle_0_to_180deg(name, 90.degrees, roll)
 
 object DirectionChangeDSL_15544:
     def apply[D](using

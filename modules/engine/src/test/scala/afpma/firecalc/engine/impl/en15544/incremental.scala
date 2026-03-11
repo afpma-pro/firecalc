@@ -127,7 +127,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                 "case direction-tracked : SetInitialDirection(vertical up) + addSectionSlopped with 0 elev_gain" - {
 
                     "elevation_gain is auto-computed from direction (should be 2m for 2m vertical section)" in {
-                        given NbOfFlows = 1.flow
+                        // given NbOfFlows = 1.flow
                         val d0 = 100.mm
                         val p =
                             builder.define(

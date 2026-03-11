@@ -52,7 +52,7 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                 "longueur jusqu'au milieu des colonnes d'air",
                                 (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0           ) / 4.0 + 7.1.cm
                             ),
-                            addSharpAngle_90deg ("virage au pied des colonnes d'air", angleN2 = Some(0.degrees)),
+                            addSharpAngle_90deg ("virage au pied des colonnes d'air", roll = Some(0.degrees)),
                             roughness           (2.mm                                                          ),
                             innerShape(
                                 rectangle(

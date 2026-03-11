@@ -40,19 +40,19 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                     innerShape(rectangle(24.cm, 20.cm)),
                     addSectionHorizontal("Car. 3", 179.2.cm),
 
-                    addSharpAngle_90deg("virage 90° 3-4", angleN2 = 90.degrees.some),
+                    addSharpAngle_90deg("virage 90° 3-4", roll = 90.degrees.some),
 
                     addSectionHorizontal("Car. 4", 22.cm),
 
-                    addSharpAngle_90deg("virage 90° 4-5", angleN2 = 0.degrees.some),
+                    addSharpAngle_90deg("virage 90° 4-5", roll = 0.degrees.some),
 
                     addSectionHorizontal("Car. 5", 8.cm),
 
-                    addSharpAngle_90deg("virage 90° 5-6", angleN2 = 0.degrees.some),
+                    addSharpAngle_90deg("virage 90° 5-6", roll = 0.degrees.some),
 
                     addSectionHorizontal("Car. 6", 22.cm),
 
-                    addSharpAngle_90deg("virage 90° 6-7", angleN2 = 180.degrees.some),
+                    addSharpAngle_90deg("virage 90° 6-7", roll = 180.degrees.some),
 
                     innerShape(rectangle(24.cm, 19.cm)),
                     addSectionHorizontal("Car. 7", 190.cm),
@@ -99,7 +99,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                     addSectionHorizontal("debut carneau", 1.meters),
                     addSharpAngle_90deg("virage 1"),
                     addSectionHorizontal("tronçon court", 10.cm),
-                    addSharpAngle_90deg("virage 2", angleN2 = Some(0.degrees)),
+                    addSharpAngle_90deg("virage 2", roll = Some(0.degrees)),
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -141,7 +141,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                     addSectionHorizontal("debut carneau", 1.meters),
                     addSharpAngle_90deg("virage 1"),
                     addSectionHorizontal("tronçon court", 5.cm),
-                    addSharpAngle_90deg("virage 2", angleN2 = Some(0.degrees)),
+                    addSharpAngle_90deg("virage 2", roll = Some(0.degrees)),
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -183,7 +183,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                     addSectionHorizontal("debut carneau", 1.meters),
                     addSharpAngle_45deg("virage 1"),
                     addSectionHorizontal("tronçon court", 10.cm),
-                    addSharpAngle_45deg("virage 2", angleN2 = Some(90.degrees)),
+                    addSharpAngle_45deg("virage 2", roll = Some(90.degrees)),
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -228,9 +228,9 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                     addSectionHorizontal("debut carneau", 1.meters),
                     addSharpAngle_30deg("virage 1"),
                     addSectionHorizontal("tronçon court 12", 10.cm),
-                    addSharpAngle_30deg("virage 2", angleN2 = Some(60.degrees)),
+                    addSharpAngle_30deg("virage 2", roll = Some(60.degrees)),
                     addSectionHorizontal("tronçon court 23", 10.cm),
-                    addSharpAngle_30deg("virage 3", angleN2 = Some(60.degrees)),
+                    addSharpAngle_30deg("virage 3", roll = Some(60.degrees)),
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()

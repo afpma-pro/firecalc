@@ -122,7 +122,7 @@ object ElementFactory_15544_Instances:
                 _.geometry.map(_.dh),
                 DirectionChangeRequiresSectionGeometry(ctx.pipeType)
             ).map { _ =>
-                // Compute angleN2 from direction tracking if available, otherwise use DTO value
+                // Compute angleN2 from direction tracking (auto-derived from tracked frames)
                 val computedAngleN2: Option[QtyD[Degree]] =
                     (ctx.dirBeforePreviousDC, ctx.currentFrame) match
                         case (Some(dirBefore), Some(frame)) =>
@@ -130,13 +130,12 @@ object ElementFactory_15544_Instances:
                         case _ => None
 
                 op match
-                    case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
-                            _,
-                            angle,
-                            angleN2
-                        ) =>
+                    case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(_, angle, legacyAngleN2) =>
+                        // legacyAngleN2 comes from the DTO roll field — historically used as
+                        // a manual angleN2 override before direction tracking existed.
+                        // Prefer computed value from direction tracking when available.
                         FlowOnlyPipeDescr_15544.DirectionChange
-                            .AngleVifDe0A180(angle, computedAngleN2.orElse(angleN2))
+                            .AngleVifDe0A180(angle, computedAngleN2.orElse(legacyAngleN2))
                     case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
             }
