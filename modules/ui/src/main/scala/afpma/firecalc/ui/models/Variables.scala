@@ -437,6 +437,11 @@ val expertModeVar = Var[Boolean](false)
 val expertModeOn  = expertModeVar.signal
 val expertModeOff = expertModeOn.map(!_)
 
+// 3D visualization panel
+val viz3DPanelVar  = Var[Boolean](false)
+val viz3DPanelOn   = viz3DPanelVar.signal
+val viz3DPanelOff  = viz3DPanelOn.map(!_)
+
 // pour récupérer les erreurs de type AngleN2 missing etc...
 val air_intake_pipe_vnel2_signal = results_en15544_air_intake_pipe.map: p_vnel =>
     p_vnel.andThen(p => p.`ph-(pR+pu)`)

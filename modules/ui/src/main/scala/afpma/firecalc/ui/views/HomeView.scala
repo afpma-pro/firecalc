@@ -13,7 +13,9 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.Footer
 import afpma.firecalc.ui.daisyui.DaisyUINavBar
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
+import afpma.firecalc.ui.models.viz3DPanelOn
 import afpma.firecalc.ui.tailwind.Indicators
+import afpma.firecalc.ui.viz.Viz3DPanel
 
 import com.raquo.laminar.api.L.*
 
@@ -45,9 +47,21 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                     )
                 ),
                 div(
-                    cls := "relative top-42",
-                    DaisyUIVerticalAccordionAndJoin(),
-                    Footer                         ()
+                    cls := "relative top-42 flex flex-row",
+                    // Left: accordion (full width or half when 3D panel open)
+                    div(
+                        cls <-- viz3DPanelOn.map(on => if on then "w-1/2 overflow-y-auto" else "w-full"),
+                        DaisyUIVerticalAccordionAndJoin(),
+                        Footer()
+                    ),
+                    // Right: 3D panel (fixed, only when visible)
+                    child.maybe <-- viz3DPanelOn.map: on =>
+                        Option.when(on)(
+                            div(
+                                cls := "w-1/2 fixed right-0 top-42 bottom-0 p-2",
+                                Viz3DPanel().node
+                            )
+                        )
                 )
             )
         )

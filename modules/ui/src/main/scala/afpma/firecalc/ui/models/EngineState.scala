@@ -22,6 +22,7 @@ import afpma.firecalc.ui.instances.defaultable
 import io.scalaland.chimney.dsl.*
 import io.taig.babel.Languages
 import io.taig.babel.Locale
+import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3.SetInitialDirection
 
 type EngineState = FireCalcYAML
 
@@ -116,6 +117,7 @@ object EngineState:
         flue_pipe_descr                =
             import FluePipe_Module_15544.*
             Seq(
+                SetInitialDirection (azimuth = 90.degrees, inclination = 0.degrees),
                 roughness           (3.mm                         ),
                 innerShape(rectangle(18.cm, 18.cm)),
                 addSectionHorizontal("sortie de foyer", 30.cm     ),

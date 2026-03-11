@@ -171,7 +171,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, viz, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -378,6 +378,25 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
 
 
 // =========
+// viz (3D visualization library - framework-agnostic, Scala.js only)
+
+lazy val viz = (project in file("modules/viz"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "firecalc-viz",
+    version := ui_version,
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+    ),
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
+
+// =========
 // fdim
 
 lazy val fdim = (project in file("modules/fdim"))
@@ -545,7 +564,7 @@ lazy val ui = (project in file("modules/ui"))
   .settings(
     name := "firecalc-ui",
     version := ui_version,
-    stIgnore += "@tailwindcss/vite",
+    stIgnore := List("@tailwindcss/vite", "three"),
     maybeHackScalablyTypedRemoveSourceFuture,
     
     // Generate .env.electron file with repository and version information
@@ -719,7 +738,7 @@ lazy val ui = (project in file("modules/ui"))
   )
   .settings(jsSourceMapSettings)
   .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
-  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, ui_i18n.js, payments_shared.js, catalog.js)
+  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, ui_i18n.js, payments_shared.js, catalog.js, viz)
 
 // =========
 // ui-i18n

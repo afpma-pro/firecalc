@@ -55,6 +55,19 @@ export default defineConfig(({ mode }) => {
         exclude: ['scalajs:main.js'],
     },
     plugins: [
+        // Resolve 'three' and 'three/addons/*' imports originating from the aliased
+        // filaire-viz.js (which lives outside this project root at modules/viz/...).
+        // Without this, vite:import-analysis cannot find 'three' because node_modules
+        // is only at modules/ui/, not on the ancestor path of modules/viz/.
+        {
+            name: 'resolve-filaire-three',
+            resolveId(id, importer) {
+                if (importer && importer.includes('filaire-viz') &&
+                    (id === 'three' || id.startsWith('three/'))) {
+                    return this.resolve(id, resolve(__dirname, './package.json'));
+                }
+            }
+        },
         // Only use viteSingleFile for production builds (Electron packaging)
         // In dev mode, this plugin defeats HMR and forces full page reloads
         ...(process.env.NODE_ENV === 'production' ? [viteSingleFile()] : []),
@@ -155,6 +168,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
         alias: {
             'firecalc-ui': resolve(__dirname, './firecalc-ui.js'),
-        }
+            // In dev, Vite compiles TypeScript natively — point directly at the source.
+            // For production (fullLinkJS), run `npm run build:viz` to generate the .js resource.
+            '/afpma/firecalc/filaire/filaire-viz.js': resolve(
+                __dirname, '../viz/src/ts/filaire-viz.ts'
+            ),
+        },
     },
 }});

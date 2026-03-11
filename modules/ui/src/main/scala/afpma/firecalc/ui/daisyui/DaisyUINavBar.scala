@@ -15,6 +15,7 @@ import afpma.firecalc.ui.components.FireCalcProjet
 import afpma.firecalc.ui.components.OrderPDFReportModalComponent
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.models.{viz3DPanelVar, viz3DPanelOn, viz3DPanelOff}
 
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
@@ -104,6 +105,23 @@ object DaisyUINavBar:
                             cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
                             lucide.database(stroke_width = 1.5, w = 16, h = 16),
                             onClick --> { _ => catalogManagerDialog.open() }
+                        ),
+                        ttPosition = "tooltip-bottom"
+                    )
+                ),
+                // 3D visualization toggle
+                div(
+                    cls := "flex items-center h-6",
+                    DaisyUITooltip(
+                        ttContent  = div("3D"),
+                        element    = div(
+                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                            cls("text-base-content") <-- viz3DPanelOn,
+                            cls("text-base-content/40 hover:text-base-content") <-- viz3DPanelOff,
+                            lucide.box(stroke_width = 1.5, w = 16, h = 16),
+                            onClick.mapToUnit --> { _ =>
+                                viz3DPanelVar.set(!viz3DPanelVar.now())
+                            }
                         ),
                         ttPosition = "tooltip-bottom"
                     )
