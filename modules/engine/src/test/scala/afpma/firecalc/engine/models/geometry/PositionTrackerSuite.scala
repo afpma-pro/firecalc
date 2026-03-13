@@ -8,6 +8,7 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
@@ -45,7 +46,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
-            SetInitialDirection(0.0.degrees, 0.0.degrees),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
             AddSectionHorizontal("h", 2.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
@@ -58,7 +59,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
-            SetInitialDirection(0.0.degrees, 0.0.degrees),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
             AddSectionSlopped("s", 5.0.meters, 3.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
@@ -74,8 +75,8 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
-            SetInitialDirection(0.0.degrees, 0.0.degrees),  // Rear direction
-            AddSharpeAngle_0_to_180("dc", 90.0.degrees, Some(90.0.degrees)),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),  // Rear direction
+            AddSharpeAngle_0_to_180("dc", 90.0.degrees, Some(FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))),
             AddSectionHorizontal("h", 2.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
@@ -91,7 +92,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
-            SetInitialDirection(0.0.degrees, 0.0.degrees),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
             AddSectionVertical("v", 1.0.meters),
             AddSectionHorizontal("h", 2.0.meters)
         )
@@ -108,9 +109,9 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
-            SetInitialDirection(0.0.degrees, 0.0.degrees),   // az=0=Rear
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),   // az=0=Rear
             AddSectionHorizontal("h1", 1.0.meters),          // goes to (0,1,0)
-            SetInitialDirection(90.0.degrees, 0.0.degrees),  // az=90=Right
+            SetInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal),  // az=90=Right
             AddSectionHorizontal("h2", 1.0.meters)           // goes to (1,1,0)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
@@ -125,7 +126,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
-            SetInitialDirection(0.0.degrees, 90.0.degrees),  // Up direction (el=90°)
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),  // Up direction (el=90°)
             AddSectionHorizontal("h", 1.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))

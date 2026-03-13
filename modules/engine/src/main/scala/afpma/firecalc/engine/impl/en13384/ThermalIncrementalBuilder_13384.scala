@@ -8,6 +8,7 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 import afpma.firecalc.engine.models.geometry.*
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
@@ -213,14 +214,15 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
             case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
             case Some(addDC: AddDirectionChange)     =>
-                // Update direction tracking if roll is defined and we have a current frame
-                addDC.roll match
-                    case Some(rollAngle) =>
+                // Update direction tracking if finalDir is defined and we have a current frame
+                addDC.finalDir match
+                    case Some(fd) =>
                         propsState.currentFrame match
                             case Some(frame) =>
-                                val rollDeg  = rollAngle.toUnit[Degree].value
-                                val deflDeg  = addDC.angle.toUnit[Degree].value
-                                val newFrame = frame.applyBend(deflDeg, rollDeg)
+                                val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                val deflDeg   = addDC.angle.toUnit[Degree].value
+                                val newFrame  = frame.applyBendForFinalDir(deflDeg, targetVec)
                                 propsState.copy(
                                     dirBeforePreviousDC = Some(frame.direction),
                                     currentFrame        = Some(newFrame)
@@ -282,8 +284,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     vState.map(_.modify(_.nFlows).setTo(nf.some))
                 case SetInitialDirection(azimuth, inclination) =>
                     val dir   = Vec3.fromAzimuthElevation(
-                        azimuth.toUnit[Degree].value,
-                        inclination.toUnit[Degree].value
+                        AzimuthDirection.toDegrees(azimuth),
+                        InclinationDirection.toDegrees(inclination)
                     )
                     val frame = PipeFrame.initial(dir)
                     vState.map(_.copy(
@@ -376,7 +378,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def material(lm: Material_13384) =
         SetMaterial(lm)
 
-    def setInitialDirection(azimuth: Angle, inclination: Angle) =
+    def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
         SetInitialDirection(azimuth, inclination)
 
     def layer(e: Length, tr: SquareMeterKelvinPerWatt) =
@@ -408,49 +410,49 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     given directionDSL: DirectionChangeDSL_13384[ThermalPipeDescr_13384] =
         summon[DirectionChangeDSL_13384[ThermalPipeDescr_13384]]
 
-    def addAngleVifDe0A90(name: String, angle: QtyD[Degree], roll: Angle) =
-        directionDSL.addAngleVifDe0A90(name, angle, roll)
-    def addSharpAngle_30deg(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_30deg(name, roll)
-    def addSharpAngle_45deg(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_45deg(name, roll)
-    def addSharpAngle_60deg(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_60deg(name, roll)
-    def addSharpAngle_90deg(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_90deg(name, roll)
+    def addAngleVifDe0A90(name: String, angle: QtyD[Degree], finalDir: FinalDirection) =
+        directionDSL.addAngleVifDe0A90(name, angle, finalDir)
+    def addSharpAngle_30deg(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_30deg(name, finalDir)
+    def addSharpAngle_45deg(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_45deg(name, finalDir)
+    def addSharpAngle_60deg(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_60deg(name, finalDir)
+    def addSharpAngle_90deg(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_90deg(name, finalDir)
 
     // __INTERPRETATION__
-    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree], roll: Angle) =
-        directionDSL.addAngleVifDe0A90_unsafe(name, angle, roll)
-    def addSharpAngle_30deg_unsafe(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_30deg_unsafe(name, roll)
-    def addSharpAngle_45deg_unsafe(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_45deg_unsafe(name, roll)
-    def addSharpAngle_60deg_unsafe(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_60deg_unsafe(name, roll)
-    def addSharpAngle_90deg_unsafe(name: String, roll: Angle)                    =
-        directionDSL.addSharpAngle_90deg_unsafe(name, roll)
+    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree], finalDir: FinalDirection) =
+        directionDSL.addAngleVifDe0A90_unsafe(name, angle, finalDir)
+    def addSharpAngle_30deg_unsafe(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_30deg_unsafe(name, finalDir)
+    def addSharpAngle_45deg_unsafe(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_45deg_unsafe(name, finalDir)
+    def addSharpAngle_60deg_unsafe(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_60deg_unsafe(name, finalDir)
+    def addSharpAngle_90deg_unsafe(name: String, finalDir: FinalDirection)                    =
+        directionDSL.addSharpAngle_90deg_unsafe(name, finalDir)
 
-    def addCoudeCourbe90(name: String, R: QtyD[Meter], roll: Angle) =
-        directionDSL.addCoudeCourbe90(name, R, roll)
-    def addCoudeCourbe60(name: String, R: QtyD[Meter], roll: Angle) =
-        directionDSL.addCoudeCourbe60(name, R, roll)
+    def addCoudeCourbe90(name: String, R: QtyD[Meter], finalDir: FinalDirection) =
+        directionDSL.addCoudeCourbe90(name, R, finalDir)
+    def addCoudeCourbe60(name: String, R: QtyD[Meter], finalDir: FinalDirection) =
+        directionDSL.addCoudeCourbe60(name, R, finalDir)
 
     // __INTERPRETATION__
-    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter], roll: Angle) =
-        directionDSL.addCoudeCourbe90_unsafe(name, R, roll)
-    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter], roll: Angle) =
-        directionDSL.addCoudeCourbe60_unsafe(name, R, roll)
+    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter], finalDir: FinalDirection) =
+        directionDSL.addCoudeCourbe90_unsafe(name, R, finalDir)
+    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter], finalDir: FinalDirection) =
+        directionDSL.addCoudeCourbe60_unsafe(name, R, finalDir)
 
-    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter], roll: Angle)   =
-        directionDSL.addCoudeASegment90Avec2A45(name, R, roll)
-    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter], roll: Angle)   =
-        directionDSL.addCoudeASegment90Avec3A30(name, R, roll)
-    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter], roll: Angle) =
-        directionDSL.addCoudeASegment90Avec4A22p5(name, R, roll)
+    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter], finalDir: FinalDirection)   =
+        directionDSL.addCoudeASegment90Avec2A45(name, R, finalDir)
+    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter], finalDir: FinalDirection)   =
+        directionDSL.addCoudeASegment90Avec3A30(name, R, finalDir)
+    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter], finalDir: FinalDirection) =
+        directionDSL.addCoudeASegment90Avec4A22p5(name, R, finalDir)
 
-    def addAngleSpecifique(name: String, angle: Angle, zeta: Double, roll: Angle) =
-        directionDSL.addAngleSpecifique(name, angle, zeta, roll)
+    def addAngleSpecifique(name: String, angle: Angle, zeta: Double, finalDir: FinalDirection) =
+        directionDSL.addAngleSpecifique(name, angle, zeta, finalDir)
 
     // def addSectionChange(
     //     name: String,

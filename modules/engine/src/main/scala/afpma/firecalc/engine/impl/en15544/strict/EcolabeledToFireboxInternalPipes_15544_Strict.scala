@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
@@ -38,7 +39,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
             // val DEFAULT_LAYER = layer(e = 1.cm, λ = 1.3.W_per_mK) // added for EN13384, not applicable to EN 15544
 
             val start_00_common = Seq(
-                setInitialDirection (azimuth = 180.degrees, inclination = 0.degrees), // Front (abitrary, Rear, Right, Left should do)
+                setInitialDirection (azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // Front (arbitrary)
                 roughness           (3.mm                               ),
                 // pipeLocation        (PipeLocation.HeatedArea            ), // added for EN13384, not applicable for EN 15544
             )
@@ -57,7 +58,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 // innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = TOFIX_ARBITRARY_LENGTH * 2.0)), // switch width to depth if Right or Left
                 // addSectionHorizontal("-", (h11_profondeurDuFoyer - 6.cm) / 2.0)
 
-                addSharpAngle_90deg("angle vif 90°", roll = 0.degrees), // Up
+                addSharpAngle_90deg("angle vif 90°", FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)), // Up
 
                 // center of chambre de détente | down limit of chambre de détente -> floor / red-line
                 CHAMBRE_DETENTE_INNER_SHAPE,
@@ -80,7 +81,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 addSectionVertical("vers centre chambre de détente", h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0),
 
                 // Turn 90°
-                addSharpAngle_90deg("angle vif 90°", roll = 90.degrees), // Left
+                addSharpAngle_90deg("angle vif 90°", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
 
                 innerShape(rectangle(
                     a = c24_largeurDesColonnesAirLaterales * 2.0 + c25_largeurDesColonnesAirArrieres,
@@ -91,7 +92,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                     (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + h77_epaisseurParoiInterneFoyer_D1 + h78_largeurEspaceInterparoisDuFoyer_S / 2.0
                 ),
 
-                addSharpAngle_90deg ("virage au pied des colonnes d'air", roll = 0.degrees), // Up
+                addSharpAngle_90deg ("virage au pied des colonnes d'air", FinalDirection(AzimuthDirection.Left, InclinationDirection.Up)), // Up
                 
                 innerShape(
                     rectangle(
@@ -104,7 +105,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                     h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0 + h76_epaisseurSole + c18_hauteurEntreLesInjecteurs * 2.0
                 ),
 
-                addSharpAngle_90deg ("virage 90° avant injecteur", roll = -90.degrees), // Right
+                addSharpAngle_90deg ("virage 90° avant injecteur", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
                 
                 innerShape(
                     rectangle(

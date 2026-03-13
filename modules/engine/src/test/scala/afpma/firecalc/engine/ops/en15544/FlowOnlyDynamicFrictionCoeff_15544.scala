@@ -9,6 +9,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.units.coulombutils.conversions.meters
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
@@ -36,25 +37,25 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
-                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                    setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                     roughness(3.mm),
 
                     innerShape(rectangle(24.cm, 20.cm)),
                     addSectionHorizontal("Car. 3", 179.2.cm),
 
-                    addSharpAngle_90deg("virage 90° 3-4", roll = 90.degrees), // Right
+                    addSharpAngle_90deg("virage 90° 3-4", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
 
                     addSectionHorizontal("Car. 4", 22.cm),
 
-                    addSharpAngle_90deg("virage 90° 4-5", roll = -90.degrees), // 
+                    addSharpAngle_90deg("virage 90° 4-5", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
 
                     addSectionHorizontal("Car. 5", 8.cm),
 
-                    addSharpAngle_90deg("virage 90° 5-6", roll = 90.degrees),
+                    addSharpAngle_90deg("virage 90° 5-6", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
 
                     addSectionHorizontal("Car. 6", 22.cm),
 
-                    addSharpAngle_90deg("virage 90° 6-7", roll = 90.degrees),
+                    addSharpAngle_90deg("virage 90° 6-7", FinalDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front
 
                     innerShape(rectangle(24.cm, 19.cm)),
                     addSectionHorizontal("Car. 7", 190.cm),
@@ -95,14 +96,14 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
-                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                    setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
 
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_90deg("virage 1", roll = 90.degrees), // Right
+                    addSharpAngle_90deg("virage 1", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
                     addSectionHorizontal("tronçon court", 10.cm),
-                    addSharpAngle_90deg("virage 2", roll = -90.degrees), // Rear
+                    addSharpAngle_90deg("virage 2", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -138,14 +139,14 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
-                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                    setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
 
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_90deg("virage 1", roll = 90.degrees), //
+                    addSharpAngle_90deg("virage 1", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
                     addSectionHorizontal("tronçon court", 5.cm),
-                    addSharpAngle_90deg("virage 2", roll = -90.degrees),
+                    addSharpAngle_90deg("virage 2", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -181,14 +182,14 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
-                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                    setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
 
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_45deg("virage 1", roll = 90.degrees),
+                    addSharpAngle_45deg("virage 1", FinalDirection(AzimuthDirection.RearRight, InclinationDirection.Horizontal)), // RearRight (45° from Rear towards Right)
                     addSectionHorizontal("tronçon court", 10.cm),
-                    addSharpAngle_45deg("virage 2", roll = 90.degrees),
+                    addSharpAngle_45deg("virage 2", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -227,16 +228,16 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
-                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                    setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
 
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_30deg("virage 1", roll = 90.degrees),
+                    addSharpAngle_30deg("virage 1", FinalDirection(AzimuthDirection.Custom(30.degrees), InclinationDirection.Horizontal)), // 30° from Rear towards Right
                     addSectionHorizontal("tronçon court 12", 10.cm),
-                    addSharpAngle_30deg("virage 2", roll = 90.degrees),
+                    addSharpAngle_30deg("virage 2", FinalDirection(AzimuthDirection.Custom(60.degrees), InclinationDirection.Horizontal)), // 60°
                     addSectionHorizontal("tronçon court 23", 10.cm),
-                    addSharpAngle_30deg("virage 3", roll = 90.degrees),
+                    addSharpAngle_30deg("virage 3", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right (90°)
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()

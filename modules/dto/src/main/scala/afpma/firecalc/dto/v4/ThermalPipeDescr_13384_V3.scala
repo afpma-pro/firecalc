@@ -109,9 +109,9 @@ object SetThermalPipeProp_13384_V3:
     @Transl(I(_.set_prop.SetInitialDirection))
     case class SetInitialDirection(
         @Transl(I(_.terms.azimuth))
-        azimuth    : Angle,
+        azimuth    : AzimuthDirection,
         @Transl(I(_.terms.inclination))
-        inclination: Angle
+        inclination: InclinationDirection
     ) extends SetThermalPipeProp_13384_V3
 
     extension (props: Seq[SetSingleProp])
@@ -169,87 +169,87 @@ object AddThermalPipeElement_13384_V3:
 
     sealed abstract class AddDirectionChange(
         @Transl(I(_.terms.name))
-        val name : String,
+        val name    : String,
         @Transl(I(_.terms.angle))
-        val angle: Angle,
-        @Transl(I(_.terms.roll))
-        val roll : Option[Angle] = None
+        val angle   : Angle,
+        @Transl(I(_.terms.final_direction))
+        val finalDir: Option[FinalDirection] = None
     ) extends AddThermalPipeElement_13384_V3
 
     @Transl(I(_.add_element.AddAngleAdjustable))
     case class AddAngleAdjustable(
         @Transl(I(_.terms.name))
-        override val name : String,
+        override val name    : String,
         @Transl(I(_.terms.angle))
-        override val angle: Angle,
+        override val angle   : Angle,
         @Transl(I(_.terms.zeta_ζ))
-        val zeta          : QtyD[1],
-        @Transl(I(_.terms.roll))
-        override val roll : Option[Angle] = None
-    ) extends AddDirectionChange(name, angle, roll)
+        val zeta             : QtyD[1],
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, angle, finalDir)
 
     @Transl(I(_.add_element.AddSharpeAngle_0_to_90))
     case class AddSharpeAngle_0_to_90(
         @Transl(I(_.terms.name))
-        override val name : String,
+        override val name    : String,
         @Transl(I(_.terms.angle))
-        override val angle: Angle,
-        @Transl(I(_.terms.roll))
-        override val roll : Option[Angle] = None
-    ) extends AddDirectionChange(name, angle, roll)
+        override val angle   : Angle,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, angle, finalDir)
 
     // __INTERPRETATION__
     @Transl(I(_.add_element.AddSharpeAngle_0_to_90_Unsafe))
     case class AddSharpeAngle_0_to_90_Unsafe(
         @Transl(I(_.terms.name))
-        override val name : String,
+        override val name    : String,
         @Transl(I(_.terms.angle))
-        override val angle: Angle,
-        @Transl(I(_.terms.roll))
-        override val roll : Option[Angle] = None
-    ) extends AddDirectionChange(name, angle, roll)
+        override val angle   : Angle,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, angle, finalDir)
 
     @Transl(I(_.add_element.AddSmoothCurve_90))
     case class AddSmoothCurve_90(
         @Transl(I(_.terms.name))
-        override val name: String,
+        override val name    : String,
         @Transl(I(_.terms.curvature_radius))
-        curvature_radius : Length,
-        @Transl(I(_.terms.roll))
-        override val roll: Option[Angle] = None
-    ) extends AddDirectionChange(name, 90.degrees, roll)
+        curvature_radius     : Length,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, 90.degrees, finalDir)
 
     // __INTERPRETATION__
     @Transl(I(_.add_element.AddSmoothCurve_90_Unsafe))
     case class AddSmoothCurve_90_Unsafe(
         @Transl(I(_.terms.name))
-        override val name: String,
+        override val name    : String,
         @Transl(I(_.terms.curvature_radius))
-        curvature_radius : Length,
-        @Transl(I(_.terms.roll))
-        override val roll: Option[Angle] = None
-    ) extends AddDirectionChange(name, 90.degrees, roll)
+        curvature_radius     : Length,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, 90.degrees, finalDir)
 
     @Transl(I(_.add_element.AddSmoothCurve_60))
     case class AddSmoothCurve_60(
         @Transl(I(_.terms.name))
-        override val name: String,
+        override val name    : String,
         @Transl(I(_.terms.curvature_radius))
-        curvature_radius : Length,
-        @Transl(I(_.terms.roll))
-        override val roll: Option[Angle] = None
-    ) extends AddDirectionChange(name, 60.degrees, roll)
+        curvature_radius     : Length,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, 60.degrees, finalDir)
 
     // __INTERPRETATION__
     @Transl(I(_.add_element.AddSmoothCurve_60_Unsafe))
     case class AddSmoothCurve_60_Unsafe(
         @Transl(I(_.terms.name))
-        override val name: String,
+        override val name    : String,
         @Transl(I(_.terms.curvature_radius))
-        curvature_radius : Length,
-        @Transl(I(_.terms.roll))
-        override val roll: Option[Angle] = None
-    ) extends AddDirectionChange(name, 60.degrees, roll)
+        curvature_radius     : Length,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, 60.degrees, finalDir)
 
     // coudes à segments
     sealed abstract class CoudeASegment90(
@@ -259,9 +259,9 @@ object AddThermalPipeElement_13384_V3:
         val number_of_segments: 2 | 3 | 4,
         @Transl(I(_.terms.curvature_radius))
         val curvature_radius  : Length,
-        @Transl(I(_.terms.roll))
-        override val roll     : Option[Angle] = None
-    ) extends AddDirectionChange(name, 90.degrees, roll)
+        @Transl(I(_.terms.final_direction))
+        override val finalDir : Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, 90.degrees, finalDir)
 
     @Transl(I(_.add_element.AddElbows_2x45))
     case class AddElbows_2x45(
@@ -269,9 +269,9 @@ object AddThermalPipeElement_13384_V3:
         override val name            : String,
         @Transl(I(_.terms.curvature_radius))
         override val curvature_radius: Length,
-        @Transl(I(_.terms.roll))
-        override val roll            : Option[Angle] = None
-    ) extends CoudeASegment90(name, 2, curvature_radius, roll)
+        @Transl(I(_.terms.final_direction))
+        override val finalDir        : Option[FinalDirection] = None
+    ) extends CoudeASegment90(name, 2, curvature_radius, finalDir)
 
     @Transl(I(_.add_element.AddElbows_3x30))
     case class AddElbows_3x30(
@@ -279,9 +279,9 @@ object AddThermalPipeElement_13384_V3:
         override val name            : String,
         @Transl(I(_.terms.curvature_radius))
         override val curvature_radius: Length,
-        @Transl(I(_.terms.roll))
-        override val roll            : Option[Angle] = None
-    ) extends CoudeASegment90(name, 3, curvature_radius, roll)
+        @Transl(I(_.terms.final_direction))
+        override val finalDir        : Option[FinalDirection] = None
+    ) extends CoudeASegment90(name, 3, curvature_radius, finalDir)
 
     @Transl(I(_.add_element.AddElbows_4x22p5))
     case class AddElbows_4x22p5(
@@ -289,9 +289,9 @@ object AddThermalPipeElement_13384_V3:
         override val name            : String,
         @Transl(I(_.terms.curvature_radius))
         override val curvature_radius: Length,
-        @Transl(I(_.terms.roll))
-        override val roll            : Option[Angle] = None
-    ) extends CoudeASegment90(name, 4, curvature_radius, roll)
+        @Transl(I(_.terms.final_direction))
+        override val finalDir        : Option[FinalDirection] = None
+    ) extends CoudeASegment90(name, 4, curvature_radius, finalDir)
 
     // TODO: rename to AddSectionShapeChange
     sealed abstract class AddSectionChange(

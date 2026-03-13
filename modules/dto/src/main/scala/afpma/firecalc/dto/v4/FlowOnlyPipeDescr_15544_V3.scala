@@ -46,9 +46,9 @@ object SetFlowOnlyPipeProp_15544_V3:
     @Transl(I(_.set_prop.SetInitialDirection))
     case class SetInitialDirection(
         @Transl(I(_.terms.azimuth))
-        azimuth    : Angle,
+        azimuth    : AzimuthDirection,
         @Transl(I(_.terms.inclination))
-        inclination: Angle
+        inclination: InclinationDirection
     ) extends SetFlowOnlyPipeProp_15544_V3
 
 sealed trait AddFlowOnlyPipeElement_15544_V3 extends FlowOnlyPipeDescr_15544_V3:
@@ -98,27 +98,27 @@ object AddFlowOnlyPipeElement_15544_V3:
         override val name : String,
         @Transl(I(_.terms.angle))
         val angle         : Angle,
-        @Transl(I(_.terms.roll))
-        val roll          : Option[Angle] = None
+        @Transl(I(_.terms.final_direction))
+        val finalDir      : Option[FinalDirection] = None
     ) extends AddFlowOnlyPipeElement_15544_V3
 
     @Transl(I(_.add_element.AddSharpeAngle_0_to_180))
     case class AddSharpeAngle_0_to_180(
         @Transl(I(_.terms.name))
-        override val name : String,
+        override val name    : String,
         @Transl(I(_.terms.angle))
-        override val angle: Angle,
-        @Transl(I(_.terms.roll))
-        override val roll : Option[Angle] = None
-    ) extends AddDirectionChange(name, angle, roll)
+        override val angle   : Angle,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, angle, finalDir)
 
     @Transl(I(_.add_element.AddCircularArc_60))
     case class AddCircularArc_60(
         @Transl(I(_.terms.name))
-        override val name: String,
-        @Transl(I(_.terms.roll))
-        override val roll: Option[Angle] = None
-    ) extends AddDirectionChange(name, 60.degrees, roll)
+        override val name    : String,
+        @Transl(I(_.terms.final_direction))
+        override val finalDir: Option[FinalDirection] = None
+    ) extends AddDirectionChange(name, 60.degrees, finalDir)
 
     @Transl(I(_.add_element.AddSectionShapeChange))
     case class AddSectionShapeChange(

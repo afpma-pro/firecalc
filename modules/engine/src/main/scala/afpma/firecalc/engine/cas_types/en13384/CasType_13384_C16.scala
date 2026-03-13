@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -124,7 +125,7 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
     val airIntakePipe = // "Tube Flexible en Inox"
         import AirIntakePipe_Module.*
         define(
-            setInitialDirection(azimuth = 180.degrees, inclination = 0.degrees), // Front
+            setInitialDirection(azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // Front
 
             pipeLocation(PipeLocation.HeatedArea), // to check
 
@@ -140,16 +141,16 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
             layer                          (e                 = 0.2.mm, tr = 0.0.m2_K_per_W),
             addSectionHorizontal           ("hz", 25.cm                                    ),
             // turn right - final direction = 'Left'
-            addCoudeCourbe90               ("coude 90° #1", R = 50.mm, roll = 90.degrees   ),
+            addCoudeCourbe90               ("coude 90° #1", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
             // turn left - final direction = 'Front'
-            addCoudeCourbe90               ("coude 90° #2", R = 50.mm, roll = 270.degrees  ),
+            addCoudeCourbe90               ("coude 90° #2", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
             // turn upwards - final direction = 'Up'
-            addCoudeCourbe90               ("coude 90° #3", R = 50.mm, roll = 0.degrees    ),
+            addCoudeCourbe90               ("coude 90° #3", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)),
             addSectionVertical             ("vertical", 35.cm                              ),
             // turn - final direction = 'Right'
-            addCoudeCourbe90               ("coude 90° #4", R = 50.mm, roll = -90.degrees  ), 
+            addCoudeCourbe90               ("coude 90° #4", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
             addSectionHorizontal           ("hz", 25.cm                                    )
         ).toFullDescr().extractPipe
@@ -158,7 +159,7 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
             .define (
-                setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                 roughness (Material_13384.WeldedSteel()),
                 innerShape(circle(100.mm)              ),
                 layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
@@ -169,11 +170,11 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
                 // tel que H utile = 2.10 et L developée = 2.18 m
 
                 addSectionHorizontal("avant té ?",         8.cm                                   ),
-                addSharpAngle_90deg ("té 90°",             roll = 0.degrees                       ), // Up
+                addSharpAngle_90deg ("té 90°",             FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
                 addSectionVertical  ("montée",             70.cm                                  ),
-                addSharpAngle_45deg ("dévoiement 45°",     roll = 0.degrees                       ), // Rear-Up (azimiuth=0° inclination=45°)
+                addSharpAngle_45deg ("dévoiement 45°",     FinalDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))), // Rear-Up (azimuth=0° inclination=45°)
                 addSectionSlopped   ("dévoiement",         70.cm,           elevation_gain = 70.cm, auto_compute_elev_gain = false), // approx to match C16 (50cm otherwise)
-                addSharpAngle_45deg ("fin dévoiement 45°", roll = 0.degrees                       ), // Up
+                addSharpAngle_45deg ("fin dévoiement 45°", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
                 addSectionVertical  ("avant plafond",      70.cm)
             )
             .toFullDescr()

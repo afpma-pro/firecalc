@@ -8,6 +8,7 @@ package afpma.firecalc.engine.cas_types.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -90,11 +91,11 @@ object CasType_15544_C1
         FluePipe_Module_15544.incremental
             .define(
                 // arbitrary direction "Right"
-                setInitialDirection(azimuth = 90.degrees, inclination = 0.degrees), // "Right"
+                setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
                 roughness           (3.mm                        ),
                 innerShape(rectangle(11.1.cm, 12.2.cm)),
                 addSectionHorizontal("sortie foyer", 28.1.cm     ),
-                addSharpAngle_90deg ("virage 90 deg", roll = 0.degrees  ), // final direction = "Up"
+                addSharpAngle_90deg ("virage 90 deg", FinalDirection(AzimuthDirection.Right, InclinationDirection.Up)), // final direction = "Up"
                 innerShape(rectangle(11.1.cm, 11.1.cm)),
                 addSectionVertical  ("colonne ascendante", 3.20.m)
             )

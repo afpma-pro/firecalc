@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -127,7 +128,7 @@ object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_1
         import AirIntakePipe_Module.*
         define(
             // arbitrary defined, not specified in reference example for engine validation
-            setInitialDirection(azimuth = 180.degrees, inclination = 0.degrees ), // "Front"
+            setInitialDirection(azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // "Front"
             pipeLocation(PipeLocation.HeatedArea),
             roughness   (5.mm                   ), // TubeFlexEnPE = 5.mm
 
@@ -149,7 +150,7 @@ object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_1
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
             .define (
-                setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees ), // "Up"
+                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // "Up"
                 roughness (Material_13384.WeldedSteel()),
                 innerShape(circle(100.mm)              ),
                 layer             (

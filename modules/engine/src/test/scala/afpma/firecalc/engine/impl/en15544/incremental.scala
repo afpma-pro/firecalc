@@ -8,6 +8,7 @@ package afpma.firecalc.engine.impl.en15544
 import cats.data.Validated.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.units.coulombutils.*
 
@@ -76,11 +77,11 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val a = 100.mm
                         val p = 
                             builder.define(
-                                setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                                 innerShape(square(a)),
                                 roughness(2.mm),
                                 addSectionHorizontal("first", 2.meters),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees, roll = 90.degrees), // towards Right
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, FinalDirection(AzimuthDirection.RearRight, InclinationDirection.Horizontal)), // towards Right-ish
                                 addSectionHorizontal("second", 1.meters)
                             )
     
@@ -113,7 +114,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val d0 = 100.mm
                         val p =
                             builder.define(
-                                setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees),
+                                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
                                 innerShape(circle(d0)),
                                 roughness(2.mm),
                                 addSectionSlopped("s1", 2.meters, 0.meters)
@@ -137,13 +138,13 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val diam = 20.cm
                         val p = 
                             builder.define(
-                                setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
+                                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                                 innerShape(circle(diam)),
                                 roughness(2.mm),
                                 addSectionHorizontal("straight-0", 50.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees, -90.degrees), // Towards Left
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, FinalDirection(AzimuthDirection.RearLeft, InclinationDirection.Horizontal)), // Towards RearLeft
                                 addSectionHorizontal("straight-1-short", 10.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees, -90.degrees), // Towards Left
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Towards Left
                                 addSectionHorizontal("straight-2", 50.cm),
                             )
 
