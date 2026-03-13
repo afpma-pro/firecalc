@@ -15,7 +15,10 @@ import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
 import afpma.firecalc.dto.v4.FlowResistanceCatalogEntry
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
+import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.Firebox_V3
+import afpma.firecalc.dto.v4.FinalDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.TypeOfAppliance
 
 import io.circe.Decoder
@@ -99,3 +102,53 @@ object V4Instances:
     // FlowResistanceCatalogEntry
     given Decoder[FlowResistanceCatalogEntry] = semiauto.deriveDecoder
     given Encoder[FlowResistanceCatalogEntry] = semiauto.deriveEncoder
+
+    // AzimuthDirection: named cases as plain strings, Custom as {"Custom": <angle>}
+    given Decoder[AzimuthDirection] = Decoder.instance { cursor =>
+        cursor.as[String] match
+            case Right("Rear")       => Right(AzimuthDirection.Rear)
+            case Right("RearRight")  => Right(AzimuthDirection.RearRight)
+            case Right("Right")      => Right(AzimuthDirection.Right)
+            case Right("FrontRight") => Right(AzimuthDirection.FrontRight)
+            case Right("Front")      => Right(AzimuthDirection.Front)
+            case Right("FrontLeft")  => Right(AzimuthDirection.FrontLeft)
+            case Right("Left")       => Right(AzimuthDirection.Left)
+            case Right("RearLeft")   => Right(AzimuthDirection.RearLeft)
+            case _ =>
+                cursor.downField("Custom").as[Angle].map(AzimuthDirection.Custom(_))
+    }
+
+    given Encoder[AzimuthDirection] = Encoder.instance {
+        case AzimuthDirection.Rear       => Json.fromString("Rear")
+        case AzimuthDirection.RearRight  => Json.fromString("RearRight")
+        case AzimuthDirection.Right      => Json.fromString("Right")
+        case AzimuthDirection.FrontRight => Json.fromString("FrontRight")
+        case AzimuthDirection.Front      => Json.fromString("Front")
+        case AzimuthDirection.FrontLeft  => Json.fromString("FrontLeft")
+        case AzimuthDirection.Left       => Json.fromString("Left")
+        case AzimuthDirection.RearLeft   => Json.fromString("RearLeft")
+        case AzimuthDirection.Custom(az) =>
+            Json.obj("Custom" -> Encoder[Angle].apply(az))
+    }
+
+    // InclinationDirection: named cases as plain strings, Custom as {"Custom": <angle>}
+    given Decoder[InclinationDirection] = Decoder.instance { cursor =>
+        cursor.as[String] match
+            case Right("Up")         => Right(InclinationDirection.Up)
+            case Right("Down")       => Right(InclinationDirection.Down)
+            case Right("Horizontal") => Right(InclinationDirection.Horizontal)
+            case _ =>
+                cursor.downField("Custom").as[Angle].map(InclinationDirection.Custom(_))
+    }
+
+    given Encoder[InclinationDirection] = Encoder.instance {
+        case InclinationDirection.Up         => Json.fromString("Up")
+        case InclinationDirection.Down       => Json.fromString("Down")
+        case InclinationDirection.Horizontal => Json.fromString("Horizontal")
+        case InclinationDirection.Custom(el) =>
+            Json.obj("Custom" -> Encoder[Angle].apply(el))
+    }
+
+    // FinalDirection: derive from the above
+    given Decoder[FinalDirection] = semiauto.deriveDecoder[FinalDirection]
+    given Encoder[FinalDirection] = semiauto.deriveEncoder[FinalDirection]
