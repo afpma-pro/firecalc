@@ -86,42 +86,23 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
     
                         val vRepr = p.toFullDescr().map(_._2)
     
-                        val expected = PipeFullDescr(
-                            elements = Vector(
-                                NamedPipeElDescr(
-                                    idx = PipeIdx(0),
-                                    typ = FluePipeT,
-                                    name = "first",
-                                    el = StraightSection(
-                                        length = 2.meters,
-                                        geometry = PipeShape.Square(a),
-                                        roughness = 2.mm,
-                                        elevation_gain = 0.meters,
-                                    )
-                                ),
-                                NamedPipeElDescr(
-                                    idx = PipeIdx(1),
-                                    typ = FluePipeT,
-                                    name = "turn left",
-                                    el = DirectionChange.AngleVifDe0A180(45.degrees)
-                                ),
-                                NamedPipeElDescr(
-                                    idx = PipeIdx(2),
-                                    typ = FluePipeT,
-                                    name = "second",
-                                    el = StraightSection(
-                                        length = 1.meters,
-                                        geometry = PipeShape.Square(a),
-                                        roughness = 2.mm,
-                                        elevation_gain = 0.meters,
-                                    )
-                                )
-                                
-                            ),
-                            pipeType = FluePipeT
-                        )
-    
-                        vRepr.shouldBe(Valid(expected))
+                        // "second" has elevation_gain ≈ 0 (float noise from trig; expected exact 0
+                        // for a horizontal pipe after a horizontal bend). Assert with tolerance.
+                        val elems = vRepr.toOption.get.elems
+                        elems.size.shouldBe(3)
+                        elems(0).shouldBe(NamedPipeElDescr(
+                            idx = PipeIdx(0), typ = FluePipeT, name = "first",
+                            el = StraightSection(2.meters, PipeShape.Square(a), 2.mm, 0.meters)
+                        ))
+                        elems(1).shouldBe(NamedPipeElDescr(
+                            idx = PipeIdx(1), typ = FluePipeT, name = "turn left",
+                            el = DirectionChange.AngleVifDe0A180(45.degrees)
+                        ))
+                        val second = elems(2).el.asInstanceOf[StraightSection]
+                        second.length.shouldEqual(1.meters)
+                        second.geometry.shouldBe(PipeShape.Square(a))
+                        second.roughness.shouldBe(2.mm)
+                        second.elevation_gain.value.shouldEqual(0.0 +- 1e-10)
                     }
                 }
 

@@ -49,7 +49,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
             val CHAMBRE_DETENTE_INNER_SHAPE = 
                 innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = h11_profondeurDuFoyer - 6.cm))
             
-            val start_01_version_1 = Seq(
+            lazy val start_01_version_1 = Seq(
                 // just a 90° turn before going up in chambre de détente
                 CHAMBRE_DETENTE_INNER_SHAPE,
                 // DEFAULT_LAYER, // not applicable en EN 15544
@@ -67,13 +67,13 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 addSectionVertical("chambre de détente (-> Haut)", TOFIX_ARBITRARY_LENGTH), // TOFIX (source: CalculPdM v0.2.34)
             )
 
-            val air_intake_equivalent_shape = 
+            lazy val air_intake_equivalent_shape =
                 circle(
                     arriveeAirGeometryOpt.map(_.perimeterWetted)
-                    .getOrElse(throw new IllegalStateException("dev error: input air geometry should be defined for V2 eco-labeled fireboxs"))
+                        .getOrElse(throw new IllegalStateException("dev error: input air geometry should be defined for V2 eco-labeled fireboxs"))
                 )
 
-            val start_01_version_2 = Seq(
+            lazy val start_01_version_2 = Seq(
                 innerShape(air_intake_equivalent_shape),
                 // DEFAULT_LAYER, // not applicable en EN 15544
             )
@@ -125,7 +125,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 )
             )
 
-            val recombined_incr_descr = version match
+            lazy val recombined_incr_descr = version match
                 case Version.V1 => (start_00_common ++ start_01_version_1 ++ end_common)
                 case Version.V2 => (start_00_common ++ start_01_version_2 ++ end_common)
 
