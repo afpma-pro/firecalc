@@ -247,18 +247,25 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
 
   // ── angleN2 simulation ─────────────────────────────────────────────────────
 
-  "angleN2 simulation" should "produce 180° between H1 and H3 via H1→DC1→H2→DC2→H3" in {
-    // H1: horizontal Rear (dir=+Y, upRef=Up=+Z)
-    //   rightRef = +Y×+Z = +X = Right
-    //   roll=0° → bendAxis = rightRef = Right(+X); rotate +Y around +X by 90° → +Z = Up
-    //   DC1 direction = Up(+Z), upRef after bend = rotate +Z around +X by 90° → -Y = Front
-    // DC2: Up (dir=+Z, upRef=Front(-Y)):
-    //   rightRef = +Z×(-Y) = -(+Z×+Y) = -(-X) = +X = Right
-    //   roll=0° → bendAxis = rightRef = Right(+X); rotate +Z around +X by 90° → -Y = Front
-    //   DC2 direction = Front(-Y) which is antiparallel to H1 direction Rear(+Y) → angle = 180°
+  "angleN2 simulation" should "produce 0° between H1 and H3 via H1→DC1(roll=0)→H2→DC2(roll=0)→H3" in {
+    // With gravity-convention upRef re-normalization:
+    // H1: Rear (dir=+Y, upRef=Up=+Z)
+    //   DC1: roll=0° → bend Up → dir=Up, upRef re-normalized to Rear
+    // DC2: Up (dir=+Z, upRef=Rear=+Y):
+    //   roll=0° → bendAxis = Left(-X); rotate Up around Left → Rear(+Y)
+    //   DC2 direction = Rear(+Y) = same as H1 → angle = 0°
     val h1 = PipeFrame.initial(Vec3.Rear)
     val dc1 = h1.applyBend(90.0, 0.0)
     val dc2 = dc1.applyBend(90.0, 0.0)
+    val angle = h1.direction.angleTo(dc2.direction)
+    assertApprox(angle, 0.0)
+  }
+
+  it should "produce 180° via H1→DC1(roll=0)→H2→DC2(roll=180)→H3" in {
+    // To get antiparallel: second bend uses roll=180° to reverse direction
+    val h1 = PipeFrame.initial(Vec3.Rear)
+    val dc1 = h1.applyBend(90.0, 0.0)
+    val dc2 = dc1.applyBend(90.0, 180.0)
     val angle = h1.direction.angleTo(dc2.direction)
     assertApprox(angle, 180.0)
   }
@@ -311,26 +318,50 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
 
   // ── reachableCardinals with tracked frame vs initial ──────────────────────
 
-  "PipeFrame.reachableCardinals" should "differ between tracked frame and PipeFrame.initial after a bend" in {
-    // Start vertical up → bend at roll=0° → now horizontal Rear with upRef=Down
+  "PipeFrame.reachableCardinals" should "match between tracked frame and PipeFrame.initial after a bend" in {
+    // With gravity-convention re-normalization, tracked frame = PipeFrame.initial(newDir)
     val frame0  = PipeFrame.initial(Vec3.Up)
-    val tracked = frame0.applyBend(90.0, 0.0)
-    // tracked: direction=Rear, upRef=Down
-    // initial: direction=Rear, upRef=Up (gravity convention)
+    val tracked = frame0.applyBend(90.0, 0.0) // → Rear
     val fromInitial = PipeFrame.initial(Vec3.Rear)
 
     assertVec3Approx(tracked.direction, fromInitial.direction)
-    // upRef should differ (tracked=Down, initial=Up — antiparallel)
-    val trackedUpRef = tracked.upRef
-    val initialUpRef = fromInitial.upRef
-    assert(trackedUpRef.dot(initialUpRef) < -0.99,
-      s"upRef should be antiparallel: tracked=$trackedUpRef vs initial=$initialUpRef")
+    // upRef should now be identical (both follow gravity convention)
+    assertVec3Approx(tracked.upRef, fromInitial.upRef)
 
-    // Roll angle for "Up" should differ: tracked frame gives 180°, initial gives 0°
+    // Roll angles should be identical too
     val trackedRollForUp = tracked.rollAngleForOutputDirection(Vec3.Up).get
     val initialRollForUp = fromInitial.rollAngleForOutputDirection(Vec3.Up).get
-    assert(math.abs(trackedRollForUp - initialRollForUp) > 1.0,
-      s"roll for Up should differ: tracked=$trackedRollForUp vs initial=$initialRollForUp")
+    assertApprox(trackedRollForUp, initialRollForUp, "roll for Up")
+  }
+
+  // ── upRef gravity convention after bends ──────────────────────────────────
+
+  "PipeFrame.applyBend upRef convention" should "set upRef = Rear after bending to Up" in {
+    // Rear → 90° roll=0° → Up; gravity convention: vertical Up → upRef = Rear
+    val frame0 = PipeFrame.initial(Vec3.Rear)
+    val frame1 = frame0.applyBend(90.0, 0.0)
+    assertVec3Approx(frame1.direction, Vec3.Up)
+    assertVec3Approx(frame1.upRef, Vec3.Rear)
+  }
+
+  it should "set upRef = Up (Gram-Schmidt) after bending to non-vertical direction" in {
+    // Up → 45° roll=0° → Rear ↑45°; gravity convention: non-vertical → upRef from Gram-Schmidt ≈ Up
+    val frame0 = PipeFrame.initial(Vec3.Up)
+    val frame1 = frame0.applyBend(45.0, 0.0)
+    // direction should be Rear ↑45°
+    val expectedDir = Vec3(0, 1, 1).normalized
+    assertVec3Approx(frame1.direction, expectedDir)
+    // upRef should be Gram-Schmidt of +Z onto plane perp to direction (projects to roughly Up)
+    val expectedFrame = PipeFrame.initial(expectedDir)
+    assertVec3Approx(frame1.upRef, expectedFrame.upRef)
+  }
+
+  it should "set upRef = Rear after bending to Down" in {
+    // Rear → 90° roll=180° → Down; gravity convention: vertical Down → upRef = Rear
+    val frame0 = PipeFrame.initial(Vec3.Rear)
+    val frame1 = frame0.applyBend(90.0, 180.0)
+    assertVec3Approx(frame1.direction, Vec3.Down)
+    assertVec3Approx(frame1.upRef, Vec3.Rear)
   }
 
 end PipeFrameSuite

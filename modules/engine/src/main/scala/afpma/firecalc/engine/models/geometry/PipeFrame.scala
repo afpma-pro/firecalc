@@ -8,7 +8,12 @@ package afpma.firecalc.engine.models.geometry
 /**
  * Local frame that rides along a pipe.
  * direction: unit vector in the direction of flow
- * upRef: unit vector perpendicular to direction, tracking the "up" reference for roll measurement
+ * upRef: unit vector perpendicular to direction, derived from gravity convention
+ *
+ * After every bend, upRef is re-normalized to the gravity convention (same as PipeFrame.initial):
+ *   - Vertical Up/Down → upRef = Rear (+Y)
+ *   - Otherwise → Gram-Schmidt projection of +Z onto plane perpendicular to direction
+ * This ensures roll angles are always interpreted relative to gravity, not to a carried-forward frame.
  *
  * Roll convention (right-hand rule around pipe axis):
  *   Positive roll = counterclockwise when looking INTO the pipe from outside (in direction of flow).
@@ -35,13 +40,11 @@ case class PipeFrame(direction: Vec3, upRef: Vec3):
     val bendAxis = (rightRef * math.cos(rollRad) - upRef * math.sin(rollRad)).normalized
 
     // Step 2: rotate direction around bendAxis by deflectionDeg
-    val deflRad     = math.toRadians(deflectionDeg)
-    val newDir      = PipeFrame.rodriguesRotate(direction, bendAxis, deflRad).normalized
+    val deflRad = math.toRadians(deflectionDeg)
+    val newDir  = PipeFrame.rodriguesRotate(direction, bendAxis, deflRad).normalized.snap
 
-    // Step 3: rotate upRef around bendAxis by same deflection to keep frame consistent
-    val newUpRef    = PipeFrame.rodriguesRotate(upRef, bendAxis, deflRad).normalized
-
-    PipeFrame(newDir.snap, newUpRef.snap)
+    // Step 3: re-normalize upRef to gravity convention (same as PipeFrame.initial)
+    PipeFrame.initial(newDir)
 
   /** Returns (azimuth, elevation) of direction in absolute coordinates (degrees) */
   def directionAsAbsolute: (Double, Double) = direction.toAzimuthElevation

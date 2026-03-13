@@ -105,7 +105,7 @@ object ElementFactory_13384_Instances:
             val finalElevGain = ctx.currentFrame match
                 case Some(frame) => 
                     if auto_compute_elev_gain 
-                    then (len.value * frame.direction.z).m
+                    then (math.abs(len.value) * frame.direction.z).m
                     else elev_gain
                 case None        => elev_gain
 
@@ -205,7 +205,7 @@ object ElementFactory_13384_Instances:
             val finalElevGain = ctx.currentFrame match
                 case Some(frame) => 
                     if auto_compute_elev_gain 
-                    then (len.value * frame.direction.z).m
+                    then (math.abs(len.value) * frame.direction.z).m
                     else elev_gain
                 case None        => elev_gain
 
