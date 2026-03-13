@@ -53,32 +53,85 @@ case class PipeFrame(direction: Vec3, upRef: Vec3):
   def directionDisplayString: String = direction.toDisplayString
 
   /**
-   * Compute the roll angle (degrees) such that `applyBend(90, roll)` produces `targetDir`.
-   * Returns None if `targetDir` is not perpendicular to `direction` (not reachable at 90°).
+   * Compute the roll angle (degrees) such that `applyBend(deflectionDeg, roll)` produces `targetDir`.
+   * Returns None if the angle between `direction` and `targetDir` is not approximately `deflectionDeg`
+   * (within ~1° tolerance), meaning the target is not reachable at the given deflection.
+   *
+   * Algorithm:
+   *   1. Check that direction.angleTo(targetDir) ≈ deflectionDeg.
+   *   2. Find the bend axis that would produce targetDir: the unique axis perpendicular to
+   *      direction that rotates it toward targetDir.
+   *   3. Decompose the bend axis into (rightRef, upRef) components to recover roll via atan2.
    *
    * Used to compute context-aware preset button labels in the UI.
    */
-  def rollAngleForOutputDirection(targetDir: Vec3): Option[Double] =
-    val dot = direction.dot(targetDir.normalized)
-    if math.abs(dot) > 1e-6 then None
+  def rollAngleForOutputDirection(targetDir: Vec3, deflectionDeg: Double): Option[Double] =
+    val tgt       = targetDir.normalized
+    val actualDeg = direction.angleTo(tgt)
+    // Tolerance: ~1° for reachability check
+    if math.abs(actualDeg - deflectionDeg) > 1.0 then None
+    else if deflectionDeg < 1e-6 then
+      // Near-zero deflection: any roll gives same result; return 0
+      Some(0.0)
     else
-      // For 90° bend: newDir = bendAxis × direction → bendAxis = direction × targetDir
-      val bendAxis = direction.cross(targetDir).normalized
-      val rightRef = direction.cross(upRef).normalized
-      val cosR     = rightRef.dot(bendAxis)
-      val sinR     = -upRef.dot(bendAxis)
-      Some(math.toDegrees(math.atan2(sinR, cosR)))
+      // Find the bend axis from direction & targetDir:
+      // bendAxis = direction.cross(targetDir).normalized
+      // (unique perpendicular axis that rotates direction toward targetDir)
+      val crossVec  = direction.cross(tgt)
+      val crossNorm = crossVec.norm
+      if crossNorm < 1e-12 then
+        // direction ≈ targetDir (deflection ≈ 0°) or opposite (≈ 180°)
+        Some(0.0)
+      else
+        val bendAxis = crossVec * (1.0 / crossNorm)
+        val rightRef = direction.cross(upRef).normalized
+        val cosR     = rightRef.dot(bendAxis)
+        val sinR     = -upRef.dot(bendAxis)
+        Some(math.toDegrees(math.atan2(sinR, cosR)))
 
   /**
-   * All cardinal directions reachable via a 90° bend from this frame,
+   * 1-arg overload: compute roll for a 90° bend (original behavior).
+   */
+  def rollAngleForOutputDirection(targetDir: Vec3): Option[Double] =
+    rollAngleForOutputDirection(targetDir, 90.0)
+
+  /**
+   * Compute the deflection angle (degrees) required to reach `targetDir` from the current direction.
+   * Returns `direction.angleTo(targetDir.normalized)`.
+   */
+  def computeRequiredDeflection(targetDir: Vec3): Double =
+    direction.angleTo(targetDir.normalized)
+
+  /**
+   * All cardinal directions reachable via a bend at the given deflection angle from this frame,
    * each paired with the required roll angle (degrees). Sorted by roll angle.
+   *
+   * Includes the 6 axis-aligned cardinals plus 4 intermediate horizontal directions
+   * (RearRight, FrontRight, FrontLeft, RearLeft).
    *
    * Use this to build context-aware roll preset buttons in the UI.
    */
-  def reachableCardinals: List[(Vec3, Double)] =
-    List(Vec3.Up, Vec3.Down, Vec3.Rear, Vec3.Front, Vec3.Right, Vec3.Left)
-      .flatMap(t => rollAngleForOutputDirection(t).map(r => (t, r)))
+  def reachableCardinals(deflectionDeg: Double = 90.0): List[(Vec3, Double)] =
+    val cardinals = List(
+      Vec3.Up, Vec3.Down, Vec3.Rear, Vec3.Front, Vec3.Right, Vec3.Left,
+      // Intermediate horizontal directions (diagonal, normalized)
+      Vec3(1, 1, 0).normalized,   // RearRight
+      Vec3(1, -1, 0).normalized,  // FrontRight
+      Vec3(-1, -1, 0).normalized, // FrontLeft
+      Vec3(-1, 1, 0).normalized   // RearLeft
+    )
+    cardinals
+      .flatMap(t => rollAngleForOutputDirection(t, deflectionDeg).map(r => (t, r)))
       .sortBy(_._2)
+
+  /**
+   * Apply a bend that aims for a specific target direction.
+   * Computes the required roll angle internally from the target direction and deflection angle.
+   * If the target is not reachable at the given deflection, falls back to roll = 0°.
+   */
+  def applyBendForFinalDir(deflectionDeg: Double, targetDir: Vec3): PipeFrame =
+    val rollDeg = rollAngleForOutputDirection(targetDir, deflectionDeg).getOrElse(0.0)
+    applyBend(deflectionDeg, rollDeg)
 
 object PipeFrame:
 

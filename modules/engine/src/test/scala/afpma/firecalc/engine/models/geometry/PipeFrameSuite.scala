@@ -25,6 +25,14 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     assertApprox(a.y, b.y, s"y component")
     assertApprox(a.z, b.z, s"z component")
 
+  /** Looser tolerance for direction comparisons after trigonometric round-trips */
+  def assertVec3Close(a: Vec3, b: Vec3, tolerance: Double = 1e-6): Unit =
+    withClue(s"expected $b but got $a") {
+      math.abs(a.x - b.x) should be < tolerance
+      math.abs(a.y - b.y) should be < tolerance
+      math.abs(a.z - b.z) should be < tolerance
+    }
+
   // ── Vec3 basic operations ──────────────────────────────────────────────────
 
   "Vec3.dot" should "return 0 for perpendicular vectors" in {
@@ -362,6 +370,178 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     val frame1 = frame0.applyBend(90.0, 180.0)
     assertVec3Approx(frame1.direction, Vec3.Down)
     assertVec3Approx(frame1.upRef, Vec3.Rear)
+  }
+
+  // ── rollAngleForOutputDirection with non-90° deflection ───────────────────
+
+  "rollAngleForOutputDirection(target, 45°)" should "find roll for 45° bend from vertical Up toward Rear↑45°" in {
+    val frame  = PipeFrame.initial(Vec3.Up)
+    // A 45° deflection from Up should reach Rear↑45° = normalized(0,1,1)
+    val target = Vec3(0, 1, 1).normalized
+    val result = frame.rollAngleForOutputDirection(target, 45.0)
+    result shouldBe defined
+    // Verify by applying the bend
+    val after = frame.applyBend(45.0, result.get)
+    assertVec3Close(after.direction, target)
+  }
+
+  it should "find roll for 45° bend from vertical Up toward Left↑45°" in {
+    val frame  = PipeFrame.initial(Vec3.Up)
+    val target = Vec3(-1, 0, 1).normalized
+    val result = frame.rollAngleForOutputDirection(target, 45.0)
+    result shouldBe defined
+    val after = frame.applyBend(45.0, result.get)
+    assertVec3Close(after.direction, target)
+  }
+
+  it should "return None when target is not reachable at 45°" in {
+    val frame  = PipeFrame.initial(Vec3.Up)
+    // Vec3.Down is 180° from Up, not reachable at 45°
+    val result = frame.rollAngleForOutputDirection(Vec3.Down, 45.0)
+    result shouldBe None
+  }
+
+  "rollAngleForOutputDirection(target, 60°)" should "find roll for 60° bend from horizontal Rear" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    // 60° from Rear toward Up+Rear → target at elevation 60° in Rear direction
+    val target = Vec3.fromAzimuthElevation(0.0, 60.0)
+    val result = frame.rollAngleForOutputDirection(target, 60.0)
+    result shouldBe defined
+    val after = frame.applyBend(60.0, result.get)
+    assertVec3Close(after.direction, target)
+  }
+
+  it should "find roll for 60° bend from horizontal Rear toward Right↑some°" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    // First compute a target that's 60° from Rear: az=90°(Right), el adjusted
+    // direction.angleTo(target) must be ≈ 60°
+    // Rear = (0,1,0). Right = (1,0,0). angleTo = 90° — not 60°.
+    // Use applyBend to create a known-good target at 60° deflection
+    val knownFrame = frame.applyBend(60.0, 90.0) // 60° bend with roll=90°
+    val target     = knownFrame.direction
+    val result     = frame.rollAngleForOutputDirection(target, 60.0)
+    result shouldBe defined
+    val after = frame.applyBend(60.0, result.get)
+    assertVec3Close(after.direction, target)
+  }
+
+  // ── computeRequiredDeflection ─────────────────────────────────────────────
+
+  "computeRequiredDeflection" should "return 90° for perpendicular target" in {
+    val frame = PipeFrame.initial(Vec3.Up)
+    assertApprox(frame.computeRequiredDeflection(Vec3.Rear), 90.0)
+  }
+
+  it should "return 0° for same direction" in {
+    val frame = PipeFrame.initial(Vec3.Up)
+    assertApprox(frame.computeRequiredDeflection(Vec3.Up), 0.0)
+  }
+
+  it should "return 180° for opposite direction" in {
+    val frame = PipeFrame.initial(Vec3.Up)
+    assertApprox(frame.computeRequiredDeflection(Vec3.Down), 180.0)
+  }
+
+  it should "return 45° for diagonal from Up" in {
+    val frame  = PipeFrame.initial(Vec3.Up)
+    val target = Vec3(0, 1, 1).normalized // Rear↑45°
+    assertApprox(frame.computeRequiredDeflection(target), 45.0)
+  }
+
+  // ── applyBendForFinalDir round-trip ───────────────────────────────────────
+
+  "applyBendForFinalDir" should "reach target direction (90° bend, cardinal targets)" in {
+    val frame = PipeFrame.initial(Vec3.Up)
+    val targets = List(Vec3.Rear, Vec3.Front, Vec3.Right, Vec3.Left)
+    targets.foreach { target =>
+      val after = frame.applyBendForFinalDir(90.0, target)
+      withClue(s"target=$target") {
+        assertVec3Close(after.direction, target)
+      }
+    }
+  }
+
+  it should "reach target direction (45° bend from vertical Up)" in {
+    val frame  = PipeFrame.initial(Vec3.Up)
+    val target = Vec3(0, 1, 1).normalized // Rear↑45°
+    val after  = frame.applyBendForFinalDir(45.0, target)
+    assertVec3Close(after.direction, target)
+  }
+
+  it should "reach target direction (60° bend from horizontal Rear)" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    // Create a known-good target at 60° from Rear using applyBend
+    val target = frame.applyBend(60.0, 45.0).direction
+    val after  = frame.applyBendForFinalDir(60.0, target)
+    assertVec3Close(after.direction, target)
+  }
+
+  it should "round-trip: applyBendForFinalDir(defl, target).direction ≈ target for various angles" in {
+    val deflections = List(30.0, 45.0, 60.0, 90.0, 120.0)
+    val startDirs   = List(Vec3.Up, Vec3.Rear, Vec3.Right, Vec3(1, 1, 0).normalized)
+
+    for
+      startDir   <- startDirs
+      deflection <- deflections
+    do
+      val frame = PipeFrame.initial(startDir)
+      // Generate a valid target by applying a bend with known roll
+      val rollAngles = List(0.0, 45.0, 90.0, 135.0, 180.0, -90.0)
+      rollAngles.foreach { roll =>
+        val target = frame.applyBend(deflection, roll).direction
+        val after  = frame.applyBendForFinalDir(deflection, target)
+        withClue(s"startDir=$startDir, defl=$deflection, roll=$roll") {
+          assertVec3Close(after.direction, target)
+        }
+      }
+  }
+
+  // ── reachableCardinals with non-90° deflection ────────────────────────────
+
+  "reachableCardinals(45°)" should "return empty from vertical Up (no cardinal at 45° from Up)" in {
+    val frame   = PipeFrame.initial(Vec3.Up)
+    val results = frame.reachableCardinals(45.0)
+    // No axis-aligned or horizontal-diagonal cardinal is at 45° from vertical Up
+    // (they're all at 90° or 0°/180°)
+    results shouldBe empty
+  }
+
+  it should "find Up from Rear↑45° at 45° deflection" in {
+    // Rear↑45° is 45° from both Up and Rear
+    val startDir = Vec3(0, 1, 1).normalized
+    val frame    = PipeFrame.initial(startDir)
+    val results  = frame.reachableCardinals(45.0)
+    results should not be empty
+    // Up and Rear should both be reachable at 45° from Rear↑45°
+    val dirs = results.map(_._1)
+    dirs should contain(Vec3.Up)
+    dirs should contain(Vec3.Rear)
+    // Each result should be a valid 45° deflection
+    results.foreach { (vec, roll) =>
+      val angle = frame.direction.angleTo(vec)
+      withClue(s"vec=$vec, roll=$roll, angle=$angle") {
+        math.abs(angle - 45.0) should be < 1.0
+      }
+    }
+  }
+
+  "reachableCardinals(90°)" should "include intermediate diagonal directions" in {
+    val frame   = PipeFrame.initial(Vec3.Up)
+    val results = frame.reachableCardinals(90.0)
+    // Should include the 4 axis-aligned horizontal cardinals + 4 diagonals (all at 90° from Up)
+    // All horizontal directions are 90° from vertical Up, so we expect 8 results
+    results.length shouldBe 8
+  }
+
+  it should "be backward-compatible with no-arg reachableCardinals" in {
+    val frame     = PipeFrame.initial(Vec3.Rear)
+    val withArg   = frame.reachableCardinals(90.0)
+    val withoutArg = frame.reachableCardinals()
+    withArg.length shouldBe withoutArg.length
+    withArg.zip(withoutArg).foreach { case ((v1, r1), (v2, r2)) =>
+      assertVec3Approx(v1, v2)
+      assertApprox(r1, r2, s"roll for $v1")
+    }
   }
 
 end PipeFrameSuite
