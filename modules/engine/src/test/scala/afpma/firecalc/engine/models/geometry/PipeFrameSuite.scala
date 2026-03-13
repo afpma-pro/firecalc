@@ -299,13 +299,13 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
   }
 
   it should "show 'Up' for near-vertical vector with tiny x,y residuals (snap robustness)" in {
-    // Simulate floating-point residuals after accumulated rotations
-    val nearUp = Vec3(1e-10, 1e-10, 1.0).normalized
+    // Simulate IEEE 754 residuals after trig — snapped by Vec3.snap at 1e-12
+    val nearUp = Vec3(1e-16, 1e-16, 1.0).normalized.snap
     nearUp.toDisplayString shouldBe "Up"
   }
 
   it should "show 'Down' for near-vertical-down vector with tiny x,y residuals" in {
-    val nearDown = Vec3(-1e-10, 1e-10, -1.0).normalized
+    val nearDown = Vec3(-1e-16, 1e-16, -1.0).normalized.snap
     nearDown.toDisplayString shouldBe "Down"
   }
 

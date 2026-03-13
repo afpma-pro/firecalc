@@ -41,7 +41,7 @@ case class PipeFrame(direction: Vec3, upRef: Vec3):
     // Step 3: rotate upRef around bendAxis by same deflection to keep frame consistent
     val newUpRef    = PipeFrame.rodriguesRotate(upRef, bendAxis, deflRad).normalized
 
-    PipeFrame(newDir, newUpRef)
+    PipeFrame(newDir.snap, newUpRef.snap)
 
   /** Returns (azimuth, elevation) of direction in absolute coordinates (degrees) */
   def directionAsAbsolute: (Double, Double) = direction.toAzimuthElevation

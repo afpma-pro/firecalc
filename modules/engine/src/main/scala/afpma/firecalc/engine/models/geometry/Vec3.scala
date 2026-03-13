@@ -22,6 +22,15 @@ case class Vec3(x: Double, y: Double, z: Double):
   def -(o: Vec3): Vec3      = Vec3(x - o.x, y - o.y, z - o.z)
   def unary_- : Vec3        = Vec3(-x, -y, -z)
 
+  /** Snap components near 0 or ±1 to exact values (IEEE 754 trig cleanup, ε = 1e-12). */
+  def snap: Vec3 =
+    def s(v: Double): Double =
+      if math.abs(v) < 1e-12 then 0.0
+      else if math.abs(v - 1.0) < 1e-12 then 1.0
+      else if math.abs(v + 1.0) < 1e-12 then -1.0
+      else v
+    Vec3(s(x), s(y), s(z))
+
   /** Angle in degrees between this and another vector */
   def angleTo(o: Vec3): Double =
     val cos = (dot(o) / (norm * o.norm)).max(-1.0).min(1.0)
@@ -47,17 +56,9 @@ case class Vec3(x: Double, y: Double, z: Double):
    */
   def toDisplayString: String =
     val n = normalized
-    // Snap components near 0 or ±1 to exact values for robust pattern matching
-    // after rotations where floating-point error accumulates.
-    def snap(v: Double): Double =
-      if math.abs(v) < 1e-9 then 0.0
-      else if math.abs(v - 1.0) < 1e-9 then 1.0
-      else if math.abs(v + 1.0) < 1e-9 then -1.0
-      else v
-    val sx = snap(n.x); val sy = snap(n.y); val sz = snap(n.z)
     def isExact(v: Double) = v == 0.0 || v == 1.0 || v == -1.0
-    if isExact(sx) && isExact(sy) && isExact(sz) then
-      (sx, sy, sz) match
+    if isExact(n.x) && isExact(n.y) && isExact(n.z) then
+      (n.x, n.y, n.z) match
         case (0.0,  0.0,  1.0) => "Up"
         case (0.0,  0.0, -1.0) => "Down"
         case (0.0,  1.0,  0.0) => "Rear"
@@ -71,9 +72,8 @@ case class Vec3(x: Double, y: Double, z: Double):
       if horNorm == 0.0 then azElString(n)
       else
         val horUnit = Vec3(n.x / horNorm, n.y / horNorm, 0.0)
-        val hx = snap(horUnit.x); val hy = snap(horUnit.y)
-        if isExact(hx) && isExact(hy) then
-          val horName = (hx, hy) match
+        if isExact(horUnit.x) && isExact(horUnit.y) then
+          val horName = (horUnit.x, horUnit.y) match
             case (0.0, 1.0)  => "Rear"
             case (0.0, -1.0) => "Front"
             case (1.0, 0.0)  => "Right"
@@ -114,4 +114,4 @@ object Vec3:
       x = math.sin(az) * math.cos(el),
       y = math.cos(az) * math.cos(el),
       z = math.sin(el)
-    ).normalized
+    ).normalized.snap
