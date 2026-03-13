@@ -197,6 +197,14 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs      ),
+                HtmlElement
+            ] { case (i, incr: AddSectionSloppedForceManualElevationGain, x) => (i, incr, x) } { (iix, sig) =>
+                // should never happen, only allowed internally in engine
+                ???
+            }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
                 (Int, AddSectionHorizontal, XtraOutputs   ),
                 HtmlElement
             ] { case (i, incr: AddSectionHorizontal, x) => (i, incr, x) } { (iix, sig) =>
