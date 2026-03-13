@@ -42,8 +42,8 @@ object defaultable_15544:
             def default = SetNumberOfFlows(divideFlowIn.default)
         given Defaultable[SetInitialDirection]        :
             def default = SetInitialDirection(
-                azimuth     = 0.0.degrees,
-                inclination = 90.0.degrees
+                azimuth     = AzimuthDirection.Rear,
+                inclination = InclinationDirection.Up
             )
         given Locale => Defaultable[AddSectionSlopped]:
             def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters, 0.meters)

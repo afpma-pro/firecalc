@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.all.FinalDirection
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -135,24 +136,29 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
         Signal.fromValue(None)
 
+    /** Deflection angle for the element at `idx`. Override in subclasses that track deflection. */
+    protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
+        Signal.fromValue(None)
+
     protected def renderElemTyped[AA <: Elem](
-        i            : Int,
-        title        : String,
-        aa           : AA,
-        sig          : Signal[(Int, AA, XtraOutputs)],
-        isProperty   : Boolean,
-        extra        : Var[AA] => HtmlElement                        = (_: Var[AA]) => span(),
-        badgeRollVar : Var[AA] => Option[Var[Option[QtyD[Degree]]]] = (_: Var[AA]) => None
+        i               : Int,
+        title           : String,
+        aa              : AA,
+        sig             : Signal[(Int, AA, XtraOutputs)],
+        isProperty      : Boolean,
+        extra           : Var[AA] => HtmlElement                              = (_: Var[AA]) => span(),
+        badgeFinalDirVar: Var[AA] => Option[Var[Option[FinalDirection]]] = (_: Var[AA]) => None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode         = extra(elem_v)
         val xtra_sig          = sig.map(_._3)
 
         def mkBadge() = DirectionBadgeComponent(
-            finalDirection    = directionBadgeSig(i, xtra_sig),
+            finalDirection  = directionBadgeSig(i, xtra_sig),
             previousDirection = previousDirectionSig_badge(i),
-            frameBefore       = frameBeforeSig_badge(i),
-            rollVar           = badgeRollVar(elem_v)
+            frameBefore     = frameBeforeSig_badge(i),
+            finalDirVar     = badgeFinalDirVar(elem_v),
+            deflectionAngle = deflectionAngleSig(i)
         ).node
 
         // Badge shown both in the expanded header (full node) and the collapsed summary row.

@@ -278,4 +278,41 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_AreaHeatingStatus_NotHeated: Locale => DaisyUIHorizontalForm[AreaHeatingStatus.NotHeated] =
         autoDeriveAndOverwriteFieldNames[AreaHeatingStatus.NotHeated]
 
+    // AzimuthDirection — select over named cases
+
+    given horizontal_form_AzimuthDirection: Locale => DaisyUIHorizontalForm[AzimuthDirection] =
+        import cats.Show
+        import afpma.firecalc.ui.i18n.implicits.I18N_UI
+        given Show[AzimuthDirection] = Show.show:
+            case AzimuthDirection.Rear       => I18N_UI.direction_badge.cardinal_rear
+            case AzimuthDirection.RearRight  => s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_right}"
+            case AzimuthDirection.Right      => I18N_UI.direction_badge.cardinal_right
+            case AzimuthDirection.FrontRight => s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_right}"
+            case AzimuthDirection.Front      => I18N_UI.direction_badge.cardinal_front
+            case AzimuthDirection.FrontLeft  => s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_left}"
+            case AzimuthDirection.Left       => I18N_UI.direction_badge.cardinal_left
+            case AzimuthDirection.RearLeft   => s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_left}"
+            case AzimuthDirection.Custom(az) => s"${az.value}\u00b0"
+        given Defaultable[AzimuthDirection] = Defaultable(AzimuthDirection.Rear)
+        given ValidateVar[AzimuthDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AzimuthDirection]
+        DaisyUIHorizontalForm
+            .forEnumOrSumTypeLike_UsingShowAsId[AzimuthDirection](AzimuthDirection.namedCases)
+
+    // InclinationDirection — select over named cases
+
+    given horizontal_form_InclinationDirection: Locale => DaisyUIHorizontalForm[InclinationDirection] =
+        import cats.Show
+        import afpma.firecalc.ui.i18n.implicits.I18N_UI
+        given Show[InclinationDirection] = Show.show:
+            case InclinationDirection.Up         => I18N_UI.direction_badge.cardinal_up
+            case InclinationDirection.Down       => I18N_UI.direction_badge.cardinal_down
+            case InclinationDirection.Horizontal => "Horizontal"
+            case InclinationDirection.Custom(el) => s"${el.value}\u00b0"
+        given Defaultable[InclinationDirection] = Defaultable(InclinationDirection.Up)
+        given ValidateVar[InclinationDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[InclinationDirection]
+        DaisyUIHorizontalForm
+            .forEnumOrSumTypeLike_UsingShowAsId[InclinationDirection](InclinationDirection.namedCases)
+
 end HorizontalFormCommonInstances

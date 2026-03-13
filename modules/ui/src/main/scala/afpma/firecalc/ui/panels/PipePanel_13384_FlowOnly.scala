@@ -13,7 +13,6 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
-import afpma.firecalc.ui.daisyui.RollAngleInput
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
@@ -43,17 +42,20 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             for (idx, elem) <- elems do
                 elem match
                     case SetInitialDirection(az, incl) =>
-                        frame = Some(PipeFrame.initial(
-                            Vec3.fromAzimuthElevation(az.toUnit[Degree].value, incl.toUnit[Degree].value)
-                        ))
+                        val azDeg  = AzimuthDirection.toDegrees(az)
+                        val elDeg  = InclinationDirection.toDegrees(incl)
+                        frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
                     case _ => ()
                 frame.foreach(f => builder += (idx -> f))
                 elem match
                     case dc: AddDirectionChange =>
                         for
-                            f <- frame
-                            r <- dc.roll
-                        do frame = Some(f.applyBend(dc.angle.toUnit[Degree].value, r.toUnit[Degree].value))
+                            f  <- frame
+                            fd <- dc.finalDir
+                        do
+                            val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                     case _ => ()
             builder.result()
 
@@ -66,8 +68,10 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                 frameMap.get(idx).flatMap: frameBefore =>
                     elem match
                         case dc: AddDirectionChange =>
-                            dc.roll.map: r =>
-                                idx -> frameBefore.applyBend(dc.angle.toUnit[Degree].value, r.toUnit[Degree].value).direction
+                            dc.finalDir.map: fd =>
+                                val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                idx -> frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
                         case _: AddFlowOnlyPipeElement_13384 =>
                             Some(idx -> frameBefore.direction)
                         case _ => None
@@ -89,18 +93,16 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
         previousDirectionByIdx.map(_.get(idx))
 
-    private def rollExtra[A <: AddDirectionChange](
-        idx   : Int,
-        getter: A => Option[QtyD[Degree]],
-        setter: (A, Option[QtyD[Degree]]) => A
-    ): Var[A] => HtmlElement =
-        ev => RollAngleInput(ev.zoomLazy(getter)(setter), frameBeforeSig(idx))
-
-    private def rollBadgeVar[A <: AddDirectionChange](
-        getter: A => Option[QtyD[Degree]],
-        setter: (A, Option[QtyD[Degree]]) => A
-    ): Var[A] => Option[Var[Option[QtyD[Degree]]]] =
+    private def finalDirBadgeVar[A <: AddDirectionChange](
+        getter: A => Option[FinalDirection],
+        setter: (A, Option[FinalDirection]) => A
+    ): Var[A] => Option[Var[Option[FinalDirection]]] =
         ev => Some(ev.zoomLazy(getter)(setter))
+
+    override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
+        welems_var.signal.map: elems =>
+            elems.collectFirst:
+                case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -186,8 +188,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[
@@ -201,8 +202,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[
@@ -216,8 +216,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_90, XtraOutputs), HtmlElement] {
@@ -229,8 +228,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[
@@ -244,8 +242,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_60, XtraOutputs), HtmlElement] {
@@ -257,8 +254,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[
@@ -272,8 +268,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddElbows_2x45, XtraOutputs), HtmlElement] {
@@ -285,8 +280,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddElbows_3x30, XtraOutputs), HtmlElement] {
@@ -298,8 +292,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddElbows_4x22p5, XtraOutputs), HtmlElement] {
@@ -311,8 +304,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty = false,
-                    extra        = rollExtra(iaax._1, _.roll, (a, r) => a.copy(roll = r)),
-                    badgeRollVar = rollBadgeVar(_.roll, (a, r) => a.copy(roll = r))
+                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
             .handleCase[

@@ -64,8 +64,8 @@ object defaultable_13384:
             def default = SetDuctType(DuctType.NonConcentricDuctsHighThermalResistance)
         given Defaultable[SetInitialDirection]        :
             def default = SetInitialDirection(
-                azimuth     = 0.0.degrees,
-                inclination = 90.0.degrees
+                azimuth     = AzimuthDirection.Rear,
+                inclination = InclinationDirection.Up
             )
         given Defaultable[SetNumberOfFlows]           :
             def default = SetNumberOfFlows(divideFlowIn.default)

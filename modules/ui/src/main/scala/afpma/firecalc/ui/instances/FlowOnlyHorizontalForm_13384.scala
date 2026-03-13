@@ -102,16 +102,15 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
         autoDeriveAndOverwriteFieldNames[A]
 
-    // Like above but suppresses the roll field — roll is rendered separately via RollAngleInput
-    // in PipePanel (via the `extra` callback). Both places must be updated together
-    // when adding a new DC subtype: use this helper here, and add `extra = rollExtra(...)` there.
+    // Like above but suppresses the finalDir field — finalDir is set via the DirectionBadge dropdown.
+    // Both places must be updated together when adding a new DC subtype.
     inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
         import com.raquo.laminar.api.L.span
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
-        given ValidateVar[Option[QtyD[Degree]]] =
-            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
-        @nowarn given DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
-            DaisyUIHorizontalForm.makeFor[Option[QtyD[Degree]]](Defaultable(None))((_, _) => span())
+        given ValidateVar[Option[FinalDirection]] =
+            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[FinalDirection]
+        @nowarn given DaisyUIHorizontalForm[Option[FinalDirection]] =
+            DaisyUIHorizontalForm.makeFor[Option[FinalDirection]](Defaultable(None))((_, _) => span())
         autoDeriveAndOverwriteFieldNames[A]
 
     given horizontal_form_AddSectionSlopped: DaisyUIHorizontalForm[AddSectionSlopped] =
