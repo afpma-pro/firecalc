@@ -7,6 +7,7 @@ package afpma.firecalc.engine.cas_types.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -15,8 +16,6 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import io.taig.babel.Languages
-import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
-import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3.SetInitialDirection
 
 object ExampleProject_15544
     extends v2024_10_Alg

@@ -13,7 +13,6 @@ import afpma.firecalc.dto.v4.FireCalcYAML_V4
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
-import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers
 

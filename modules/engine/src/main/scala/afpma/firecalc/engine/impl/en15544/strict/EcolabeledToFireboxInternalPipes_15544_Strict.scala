@@ -8,7 +8,6 @@ package afpma.firecalc.engine.impl.en15544.strict
 import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.dto.all.*
 
@@ -17,8 +16,6 @@ import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_155
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.*
-
-import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.ops.algebra.all.*

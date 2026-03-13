@@ -16,8 +16,6 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
-import cats.syntax.all.*
-
 import io.taig.babel.Languages
 
 object CasType_15544_C3
