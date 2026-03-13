@@ -183,7 +183,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                     idx = PipeIdx(3),
                                     typ = FluePipeT,
                                     name = "turn left",
-                                    el = DirectionChange.AngleVifDe0A180(45.degrees)
+                                    el = DirectionChange.AngleVifDe0A180(45.degrees, angleN2 = Some(90.degrees))
                                 ),
                                 NamedPipeElDescr(
                                     idx = PipeIdx(4),

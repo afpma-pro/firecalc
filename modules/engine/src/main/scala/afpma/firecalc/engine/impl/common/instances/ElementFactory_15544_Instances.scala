@@ -122,11 +122,17 @@ object ElementFactory_15544_Instances:
                 _.geometry.map(_.dh),
                 DirectionChangeRequiresSectionGeometry(ctx.pipeType)
             ).map { _ =>
-                // Compute angleN2 from direction tracking (auto-derived from tracked frames)
+                // angleN2 = angle between direction BEFORE the previous bend and direction AFTER the current bend.
+                // The factory runs before updateStateAfterConversionStep, so currentFrame still holds
+                // the pre-bend frame. We must apply the current bend here to get the post-bend direction.
                 val computedAngleN2: Option[QtyD[Degree]] =
-                    (ctx.dirBeforePreviousDC, ctx.currentFrame) match
-                        case (Some(dirBefore), Some(frame)) =>
-                            Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
+                    (ctx.dirBeforePreviousDC, ctx.currentFrame, op.roll) match
+                        case (Some(dirBefore), Some(frame), Some(roll)) =>
+                            val postBendFrame = frame.applyBend(
+                                op.angle.toUnit[Degree].value,
+                                roll.toUnit[Degree].value
+                            )
+                            Some(dirBefore.angleTo(postBendFrame.direction).withUnit[Degree])
                         case _ => None
 
                 op match
