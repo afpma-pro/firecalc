@@ -782,6 +782,7 @@ object I18nData:
         azimuth                 : String,
         curvature_radius        : String,
         diameter                : String,
+        final_direction         : String,
         height                  : String,
         horizontal_length       : String,
         inclination             : String,
