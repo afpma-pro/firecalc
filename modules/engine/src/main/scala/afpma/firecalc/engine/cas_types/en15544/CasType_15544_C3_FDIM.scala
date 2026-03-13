@@ -59,11 +59,12 @@ object CasPratique_15544_FDIM_EX_03
     val conduit_air_descr =
         import AirIntakePipe_Module.*
         Seq  (
+            setInitialDirection       (azimuth = 180.degrees, inclination = 0.degrees            ), // "Front"
             addFlowResistance         ("1. grille", 1.23.unitless: ζ, hydraulic_diameter = 154.mm),
-            material  (Material_13384.WeldedSteel()),
-            innerShape(circle(154.mm)              ),
+            material  (Material_13384.WeldedSteel()                                              ),
+            innerShape(circle(154.mm)                                                            ),
             addSectionHorizontal      ("Car. 2", 253.cm                                          ),
-            addSharpAngle_90deg_unsafe("vers remontée"                                           ),
+            addSharpAngle_90deg_unsafe("vers droite", roll = 180.degrees                         ), // "Right"
             addSectionHorizontal      ("Car. 4", 40.cm                                           )
         )
 
@@ -98,30 +99,31 @@ object CasPratique_15544_FDIM_EX_03
     val accumulateur_descr =
         import FluePipe_Module_15544.*
         Seq(
-            roughness           (3.mm                                         ),
-            innerShape(rectangle(37.cm, 37.cm)),
-            addSectionHorizontal("Car. 1", 34.8.cm                            ),
-            addSharpAngle_90deg ("virage 90° 1-2"                             ),
-            addSectionVertical  ("Car. 2", -109.cm                            ),
-            addSectionVertical  ("Car. 3", -244.cm                            ),
-            addSharpAngle_90deg ("virage 90° 3-4",  roll = 0.degrees.some   ),
-            innerShape(rectangle(27.cm, 40.cm)),
-            addSectionHorizontal("Car. 4", 50.cm                           ),
-            addSharpAngle_90deg ("virage 90° 4-5",  roll = 90.degrees.some ),
-            innerShape(rectangle(27.cm, 27.cm)),
-            addSectionHorizontal("Car. 5", 5.cm                            ),
-            addSharpAngle_90deg ("virage 90° 5-6",  roll = 0.degrees.some  ),
-            addSectionHorizontal("Car. 6", 50.cm                           ),
-            addSharpAngle_90deg ("virage 90° 6-7",  roll = 0.degrees.some  ),
-            addSectionHorizontal("Car. 7", 34.cm                           ),
-            addSharpAngle_45deg ("virage 45° 7-8",  roll = 135.degrees.some),
-            addSectionHorizontal("Car. 8", 14.1.cm                         ),
-            addSharpAngle_45deg ("virage 45° 8-9",  roll = 90.degrees.some ),
-            addSectionHorizontal("Car. 9", 100.cm                          ),
-            addSharpAngle_90deg ("virage 90° 9-10", roll = 90.degrees.some ),
-            innerShape(rectangle(21.cm, 32.cm)),
-            addSectionVertical  ("Car. 10", 244.cm                            ),
-            addSectionVertical  ("Car. 11", 128.cm                            )
+            setInitialDirection (azimuth = 90.degrees, inclination = 0.degrees         ), // "Right"
+            roughness           (3.mm                                                  ),
+            innerShape(rectangle(37.cm, 37.cm)                                         ),
+            addSectionHorizontal("Car. 1", 34.8.cm                                     ),
+            addSharpAngle_90deg ("virage 90° 1-2 (-> Bas)",  roll = 180.degrees        ), // "Down"
+            addSectionVertical  ("Car. 2", -109.cm                                     ),
+            addSectionVertical  ("Car. 3", -244.cm                                     ),
+            addSharpAngle_90deg ("virage 90° 3-4 (-> Droite)", roll = 90.degrees       ), // Right
+            innerShape(rectangle(27.cm, 40.cm)                                         ),
+            addSectionHorizontal("Car. 4", 50.cm                                       ), 
+            addSharpAngle_90deg ("virage 90° 4-5 (-> Avant)",  roll = 90.degrees       ), // Front
+            innerShape(rectangle(27.cm, 27.cm)                                         ),
+            addSectionHorizontal("Car. 5", 5.cm                                        ),
+            addSharpAngle_90deg ("virage 90° 5-6 (-> Droite)", roll = 180.degrees      ), // Right
+            addSectionHorizontal("Car. 6", 50.cm                                       ),
+            addSharpAngle_90deg ("virage 90° 6-7 (-> Avant)",  roll = 90.degrees       ), // Front
+            addSectionHorizontal("Car. 7", 34.cm                                       ),
+            addSharpAngle_45deg ("virage 45° 7-8 (-> Avant+Gauche)",  roll = 90.degrees), // Front-Left
+            addSectionHorizontal("Car. 8", 14.1.cm                                     ),
+            addSharpAngle_45deg ("virage 45° 8-9 (-> Gauche)",  roll = 90.degrees      ), // Left
+            addSectionHorizontal("Car. 9", 100.cm                                      ),
+            addSharpAngle_90deg ("virage 90° 9-10 (-> Haut)", roll = 90.degrees        ), // "Up"
+            innerShape(rectangle(21.cm, 32.cm)                                         ),
+            addSectionVertical  ("Car. 10", 244.cm                                     ),
+            addSectionVertical  ("Car. 11", 128.cm                                     )
         )
 
     val fluePipe =

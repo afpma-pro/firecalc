@@ -35,24 +35,25 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
+                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                     roughness(3.mm),
 
                     innerShape(rectangle(24.cm, 20.cm)),
                     addSectionHorizontal("Car. 3", 179.2.cm),
 
-                    addSharpAngle_90deg("virage 90° 3-4", roll = 90.degrees.some),
+                    addSharpAngle_90deg("virage 90° 3-4", roll = 90.degrees), // Right
 
                     addSectionHorizontal("Car. 4", 22.cm),
 
-                    addSharpAngle_90deg("virage 90° 4-5", roll = 0.degrees.some),
+                    addSharpAngle_90deg("virage 90° 4-5", roll = -90.degrees), // 
 
                     addSectionHorizontal("Car. 5", 8.cm),
 
-                    addSharpAngle_90deg("virage 90° 5-6", roll = 0.degrees.some),
+                    addSharpAngle_90deg("virage 90° 5-6", roll = 90.degrees),
 
                     addSectionHorizontal("Car. 6", 22.cm),
 
-                    addSharpAngle_90deg("virage 90° 6-7", roll = 180.degrees.some),
+                    addSharpAngle_90deg("virage 90° 6-7", roll = 90.degrees),
 
                     innerShape(rectangle(24.cm, 19.cm)),
                     addSectionHorizontal("Car. 7", 190.cm),
@@ -93,36 +94,37 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
+                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
-    
+
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_90deg("virage 1"),
+                    addSharpAngle_90deg("virage 1", roll = 90.degrees), // Right
                     addSectionHorizontal("tronçon court", 10.cm),
-                    addSharpAngle_90deg("virage 2", roll = Some(0.degrees)),
+                    addSharpAngle_90deg("virage 2", roll = -90.degrees), // Rear
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
                 .toOption
                 .get
                 ._2
-    
+
             val inst = afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
-    
+
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
-    
+
             accu.elems.foreach(println)
-            
+
             val cv1 = inst.dynamicFrictionCoeff(v1.get)
             cv1.should(beValid)
-    
+
             val c1 = cv1.toOption.get
             c1.unwrap.shouldBe(0.6.unitless)
-    
+
             val cv2 = inst.dynamicFrictionCoeff(v2.get)
             cv2.should(beValid)
-    
+
             val c2 = cv2.toOption.get
             c2.unwrap.shouldBe(0.6.unitless)
         }
@@ -135,13 +137,14 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
+                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
 
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_90deg("virage 1"),
+                    addSharpAngle_90deg("virage 1", roll = 90.degrees), //
                     addSectionHorizontal("tronçon court", 5.cm),
-                    addSharpAngle_90deg("virage 2", roll = Some(0.degrees)),
+                    addSharpAngle_90deg("virage 2", roll = -90.degrees),
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -177,13 +180,14 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
+                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
 
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_45deg("virage 1"),
+                    addSharpAngle_45deg("virage 1", roll = 90.degrees),
                     addSectionHorizontal("tronçon court", 10.cm),
-                    addSharpAngle_45deg("virage 2", roll = Some(90.degrees)),
+                    addSharpAngle_45deg("virage 2", roll = 90.degrees),
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()
@@ -222,15 +226,16 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 FluePipe_Module_15544
                 .incremental
                 .define(
+                    setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                     roughness(3.mm),
                     innerShape(rectangle(20.cm, 20.cm)),
 
                     addSectionHorizontal("debut carneau", 1.meters),
-                    addSharpAngle_30deg("virage 1"),
+                    addSharpAngle_30deg("virage 1", roll = 90.degrees),
                     addSectionHorizontal("tronçon court 12", 10.cm),
-                    addSharpAngle_30deg("virage 2", roll = Some(60.degrees)),
+                    addSharpAngle_30deg("virage 2", roll = 90.degrees),
                     addSectionHorizontal("tronçon court 23", 10.cm),
-                    addSharpAngle_30deg("virage 3", roll = Some(60.degrees)),
+                    addSharpAngle_30deg("virage 3", roll = 90.degrees),
                     addSectionHorizontal("fin carneau", 1.meters)
                 )
                 .toFullDescr()

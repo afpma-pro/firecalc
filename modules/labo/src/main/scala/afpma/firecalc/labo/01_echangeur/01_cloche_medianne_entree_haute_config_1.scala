@@ -93,6 +93,7 @@ object `01_cloche_medianne_entree_haute_config_1`
     val airIntakePipe = 
         import AirIntakePipe_Module.*
         define(
+            setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees), // Up
             addFlowResistance("grille", 1.2.unitless, hydraulic_diameter = 154.mm),
 
             pipeLocation(Area.Exterieure),
@@ -102,7 +103,7 @@ object `01_cloche_medianne_entree_haute_config_1`
 
             addSectionVertical("entrée verticale", 114.5.cm + 12.2.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm), 
+            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm, roll = 180.degrees), // Front (TOCHECK)
 
             pipeLocation(Area.NonChauffee),
             addSectionHorizontal("traversée mur", 62.8.cm), // non cohérent sur sketchup
@@ -110,14 +111,14 @@ object `01_cloche_medianne_entree_haute_config_1`
             addSectionHorizontal("horizontal en combles", 0.0.cm),
 
             pipeLocation(Area.DansLaPieceDuPoele),
-            addCoudeCourbe90_unsafe("vertical en combles", 12.2.cm), 
+            addCoudeCourbe90_unsafe("vertical en combles", 12.2.cm, roll = 180.degrees), // Down (TOCHECK)
             
             addSectionVertical("P01", -196.1.cm),
             addSectionVertical("anémomètre", -39.5.cm),
             addSectionVertical("capteur humidité", -104.cm),
             addSectionVertical("descente 4", -38.7.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm),
+            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm, roll = 180.degrees), // Front (TOCHECK)
 
             addSectionHorizontal("avt clapet", 23.7.cm),
             addFlowResistance("clapet zeta = 0.3!", 0.3.unitless: ζ),
@@ -138,24 +139,24 @@ object `01_cloche_medianne_entree_haute_config_1`
             layer(e = 1.cm, λ = 1.3.W_per_mK),
             addSectionHorizontal("entrée P03 TC03", 18.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
+            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 0.degrees), // Up
 
             innerShape(rectangle(36.cm, 36.cm)),
             addSectionVertical("montée", 7.3.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
-            
+            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 90.degrees), // Left (TOCHECK / arbitrary)
+
             channelsSplit(11),
 
             innerShape(rectangle(6.6.cm, 8.7.cm)),
             addSectionHorizontal("sous sole", 25.cm),
 
-            addSharpAngle_90deg("angle vif 90°"),
+            addSharpAngle_90deg("angle vif 90°", roll = 0.degrees), // Up
 
             innerShape(rectangle(6.6.cm, 3.3.cm)),
             addSectionVertical("montée", 27.3.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
+            addSharpAngle_90deg_unsafe("angle vif 90°", roll = -90.degrees), // Right (TOCHECK / arbitrary)
             
             innerShape(rectangle(26.4.cm, 1.8.cm)),
             addSectionHorizontal("injecteurs", 2.cm),
@@ -188,6 +189,8 @@ object `01_cloche_medianne_entree_haute_config_1`
         FluePipe_Module_13384
         .incremental
         .define(
+            setInitialDirection(azimuth = 270.degrees, inclination = 0.degrees), // Left (TOCHECK)
+
             pipeLocation(Area.Accumulateur),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
@@ -209,18 +212,18 @@ object `01_cloche_medianne_entree_haute_config_1`
             addSectionHorizontal("horizontal carneaux TC31", 34.3.cm),
             addSectionHorizontal("horizontal milieu de cloche", 33.2.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm),
+            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm, roll = 180.degrees), // Down
 
             innerShape(rectangle(55.4.cm, 55.5.cm)),
 
             addSectionVertical("descente dans la cloche TC30", -11.cm),
             addSectionVertical("descente dans la cloche", 77.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm),
+            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm, roll = -90.degrees), // Left (TOCHECK)
 
             addSectionHorizontal("vers colonne", 28.7.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
+            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 0.degrees), // Up
 
             addSectionVertical("colonne P09", 77.7.cm),
             addSectionVertical("colonne", 113.7.cm),

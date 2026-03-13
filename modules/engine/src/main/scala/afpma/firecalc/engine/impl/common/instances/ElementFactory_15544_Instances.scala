@@ -130,12 +130,9 @@ object ElementFactory_15544_Instances:
                         case _ => None
 
                 op match
-                    case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(_, angle, legacyAngleN2) =>
-                        // legacyAngleN2 comes from the DTO roll field — historically used as
-                        // a manual angleN2 override before direction tracking existed.
-                        // Prefer computed value from direction tracking when available.
+                    case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(_, angle, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange
-                            .AngleVifDe0A180(angle, computedAngleN2.orElse(legacyAngleN2))
+                            .AngleVifDe0A180(angle, computedAngleN2)
                     case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
             }

@@ -119,9 +119,13 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
         )
     ).validNel
 
+    // specific TURNS were not specified when defining the reference examples for the engine
+    // only number of 90° turn (x4), total length 2m35 and vertical length 0,35m
     val airIntakePipe = // "Tube Flexible en Inox"
         import AirIntakePipe_Module.*
         define(
+            setInitialDirection(azimuth = 180.degrees, inclination = 0.degrees), // Front
+
             pipeLocation(PipeLocation.HeatedArea), // to check
 
             roughness(5.mm), // ConduitFlexibleInox = 5mm
@@ -135,14 +139,18 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
             innerShape(circle(50.mm)),
             layer                          (e                 = 0.2.mm, tr = 0.0.m2_K_per_W),
             addSectionHorizontal           ("hz", 25.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #1", R = 50.mm                      ), // ???
+            // turn right - final direction = 'Left'
+            addCoudeCourbe90               ("coude 90° #1", R = 50.mm, roll = 90.degrees   ),
             addSectionHorizontal           ("hz", 50.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #2", R = 50.mm                      ),
+            // turn left - final direction = 'Front'
+            addCoudeCourbe90               ("coude 90° #2", R = 50.mm, roll = 270.degrees  ),
             addSectionHorizontal           ("hz", 50.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #3", R = 50.mm                      ),
+            // turn upwards - final direction = 'Up'
+            addCoudeCourbe90               ("coude 90° #3", R = 50.mm, roll = 0.degrees    ),
             addSectionVertical             ("vertical", 35.cm                              ),
+            // turn - final direction = 'Right'
+            addCoudeCourbe90               ("coude 90° #4", R = 50.mm, roll = -90.degrees  ), 
             addSectionHorizontal           ("hz", 50.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #4", R = 50.mm                      ),
             addSectionHorizontal           ("hz", 25.cm                                    )
         ).toFullDescr().extractPipe
 
@@ -150,6 +158,7 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
             .define (
+                setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                 roughness (Material_13384.WeldedSteel()),
                 innerShape(circle(100.mm)              ),
                 layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
@@ -159,14 +168,13 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
                 // car sinon impossible d'avoir un enchainement horizontal + coude 90 + dévoiement à 45°
                 // tel que H utile = 2.10 et L developée = 2.18 m
 
-                addSectionHorizontal("avant té ?", 8.cm                         ),
-                addSharpAngle_90deg ("té 90°"                                   ),
-                addSectionVertical  ("montée", 70.cm                            ),
-                addSharpAngle_45deg ("dévoiement 45°"                           ),
-                addSectionSlopped   ("dévoiement", 70.cm, elevation_gain = 70.cm), // approx to match C16 (50cm otherwise)
-
-                addSharpAngle_45deg("fin dévoiement 45°"  ),
-                addSectionVertical ("avant plafond", 70.cm)
+                addSectionHorizontal("avant té ?",         8.cm                                   ),
+                addSharpAngle_90deg ("té 90°",             roll = 0.degrees                       ), // Up
+                addSectionVertical  ("montée",             70.cm                                  ),
+                addSharpAngle_45deg ("dévoiement 45°",     roll = 0.degrees                       ), // Rear-Up (azimiuth=0° inclination=45°)
+                addSectionSlopped   ("dévoiement",         70.cm,           elevation_gain = 70.cm),                // approx to match C16 (50cm otherwise)
+                addSharpAngle_45deg ("fin dévoiement 45°", roll = 0.degrees                       ), // Up
+                addSectionVertical  ("avant plafond",      70.cm)
             )
             .toFullDescr()
             .extractPipe
@@ -175,6 +183,7 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
         import ChimneyPipe_Module.*
         ChimneyPipe_Module
             .define (
+                // initial direction inherited from last connector pipe element = Up
                 roughness (Material_13384.WeldedSteel()),
                 innerShape(circle(100.mm)              ),
                 layer(

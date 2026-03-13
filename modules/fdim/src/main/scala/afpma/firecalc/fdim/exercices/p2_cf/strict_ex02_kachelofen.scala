@@ -61,37 +61,38 @@ object strict_ex02_kachelofen
         FluePipe_Module_15544
         .incremental
         .define(
+            setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
             roughness(3.mm),
             
             innerShape(rectangle(25.1.cm, 23.cm)),
             addSectionHorizontal("sortie foyer", 32.cm),
             
-            addSharpAngle_90deg("virage avant descente"),
+            addSharpAngle_90deg("virage avant descente", roll = 180.degrees), // Down
             
             innerShape(rectangle(25.1.cm, 22.cm)),
             addSectionVertical("descente", -81.cm),
 
-            addSharpAngle_90deg("virage avant banc avant"),
+            addSharpAngle_90deg("virage avant banc avant", roll = -90.degrees),  // Left
             
             innerShape(rectangle(22.cm, 24.cm)),
             addSectionHorizontal("banc avant", 1.79.meters),
 
-            addSharpAngle_90deg("virage avant bout du banc"),
+            addSharpAngle_90deg("virage avant bout du banc", roll = -90.degrees),  // Rear
             
             innerShape(rectangle(20.cm, 24.cm)),
             addSectionHorizontal("bout du banc", 44.cm),
 
-            addSharpAngle_90deg("virage avant banc arrière"),
+            addSharpAngle_90deg("virage avant banc arrière", roll = 90.degrees),  // Right
 
             innerShape(rectangle(19.cm, 24.cm)),
             addSectionHorizontal("arrière banc", 2.07.meters),
 
-            addSharpAngle_90deg("virage avant vers remontée"),
+            addSharpAngle_90deg("virage avant vers remontée", roll = 90.degrees),  // Front
 
             innerShape(rectangle(21.cm, 24.cm)),
             addSectionHorizontal("vers remontée", 44.cm),
 
-            addSharpAngle_90deg("virage avant remontée"),
+            addSharpAngle_90deg("virage avant remontée", roll = 0.degrees),  // Up
 
             innerShape(rectangle(21.cm, 22.cm)),
             addSectionVertical("remontée", 98.cm),
@@ -109,11 +110,11 @@ object strict_ex02_kachelofen
             
             addSectionVertical("conduit simple peau 1 ", 39.cm),
 
-            addSharpAngle_30deg("coude angle vif 30°"),
+            addSharpAngle_30deg("coude angle vif 30°", roll = 180.degrees), // twoards Front
 
             addSectionSlopped("conduit simple peau 2", 58.cm, elevation_gain = 48.8.cm),
 
-            addSharpAngle_30deg_unsafe("coude angle vif 30°"),
+            addSharpAngle_30deg_unsafe("coude angle vif 30°", roll = 0.degrees), // towards Rear
 
             addSectionVertical("conduit simple peau 2", 26.cm)
         )

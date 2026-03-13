@@ -89,10 +89,12 @@ object CasType_15544_C1
         import FluePipe_Module_15544.*
         FluePipe_Module_15544.incremental
             .define(
+                // arbitrary direction "Right"
+                setInitialDirection(azimuth = 90.degrees, inclination = 0.degrees), // "Right"
                 roughness           (3.mm                        ),
                 innerShape(rectangle(11.1.cm, 12.2.cm)),
                 addSectionHorizontal("sortie foyer", 28.1.cm     ),
-                addSharpAngle_90deg ("virage 90 deg"             ),
+                addSharpAngle_90deg ("virage 90 deg", roll = 0.degrees  ), // final direction = "Up"
                 innerShape(rectangle(11.1.cm, 11.1.cm)),
                 addSectionVertical  ("colonne ascendante", 3.20.m)
             )

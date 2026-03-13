@@ -76,10 +76,11 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val a = 100.mm
                         val p = 
                             builder.define(
+                                setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                                 innerShape(square(a)),
                                 roughness(2.mm),
                                 addSectionHorizontal("first", 2.meters),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees),
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, roll = 90.degrees), // towards Right
                                 addSectionHorizontal("second", 1.meters)
                             )
     
@@ -155,12 +156,13 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val diam = 20.cm
                         val p = 
                             builder.define(
+                                setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // Rear
                                 innerShape(circle(diam)),
                                 roughness(2.mm),
                                 addSectionHorizontal("straight-0", 50.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees),
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, -90.degrees), // Towards Left
                                 addSectionHorizontal("straight-1-short", 10.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees),
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, -90.degrees), // Towards Left
                                 addSectionHorizontal("straight-2", 50.cm),
                             )
 

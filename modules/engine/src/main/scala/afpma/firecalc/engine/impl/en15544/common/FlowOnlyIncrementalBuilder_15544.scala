@@ -271,18 +271,18 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     given directionDSL: DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544] =
         summon[DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544]]
 
-    def addSharpAngle_0_to_180deg(name: String, angle: Angle, roll: Option[Angle] = None) =
+    def addSharpAngle_0_to_180deg(name: String, angle: Angle, roll: Angle) =
         directionDSL.addSharpAngle_0_to_180deg(name, angle, roll)
-    def addSharpAngle_30deg(name: String, roll: Option[Angle] = None)                     =
+    def addSharpAngle_30deg(name: String, roll: Angle)                     =
         directionDSL.addSharpAngle_30deg(name, roll)
-    def addSharpAngle_45deg(name: String, roll: Option[Angle] = None)                     =
+    def addSharpAngle_45deg(name: String, roll: Angle)                     =
         directionDSL.addSharpAngle_45deg(name, roll)
-    def addSharpAngle_60deg(name: String, roll: Option[Angle] = None)                     =
+    def addSharpAngle_60deg(name: String, roll: Angle)                     =
         directionDSL.addSharpAngle_60deg(name, roll)
-    def addSharpAngle_90deg(name: String, roll: Option[Angle] = None)                     =
+    def addSharpAngle_90deg(name: String, roll: Angle)                     =
         directionDSL.addSharpAngle_90deg(name, roll)
 
-    def addCircularArc60(name: String, roll: Option[Angle] = None) =
+    def addCircularArc60(name: String, roll: Angle) =
         directionDSL.addCircularArc60(name, roll)
 
     def addSectionShapeChange(

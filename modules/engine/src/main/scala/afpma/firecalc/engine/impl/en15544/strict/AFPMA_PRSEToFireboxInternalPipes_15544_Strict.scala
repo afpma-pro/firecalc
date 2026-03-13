@@ -35,13 +35,14 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom =>
                     CombustionAirPipe_Module_15544.incremental
                         .define(
+                            setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees                  ), // Up
                             innerShape          (arriveeAirGeometry                                            ),
                             roughness           (3.mm                                                          ),
                             addSectionVertical  (
                                 "remontée dans chambre de détente",
                                 (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U) / 2.0
                             ),
-                            addSharpAngle_90deg ("virage vers colonnes d'air"                                  ),
+                            addSharpAngle_90deg ("virage vers colonnes d'air", roll = 90.degrees               ), // Left
                             innerShape(
                                 rectangle(
                                     a = arriveeAirGeometry.perimeterWetted,
@@ -50,9 +51,9 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                             ),
                             addSectionHorizontal(
                                 "longueur jusqu'au milieu des colonnes d'air",
-                                (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0           ) / 4.0 + 7.1.cm
+                                (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + 7.1.cm
                             ),
-                            addSharpAngle_90deg ("virage au pied des colonnes d'air", roll = Some(0.degrees)),
+                            addSharpAngle_90deg ("virage au pied des colonnes d'air", roll = 0.degrees         ), // Up
                             roughness           (2.mm                                                          ),
                             innerShape(
                                 rectangle(
@@ -69,7 +70,7 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                 "remontée dans les colonnes d'air",
                                 h91_hauteurDuCendrier_AF + h92_epaisseurSole_S + h93_hauteurEmbaseDessousSoleFoyer_V - h95_hauteurPassageVersColonneAir_W / 2.0 + 13.5.cm
                             ),
-                            addSharpAngle_90deg ("virage avant canal horizontal injecteur"                     ),
+                            addSharpAngle_90deg ("virage avant canal horizontal injecteur", -90.degrees        ), // Right
                             roughness           (1.mm                                                          ),
                             innerShape(
                                 rectangle(

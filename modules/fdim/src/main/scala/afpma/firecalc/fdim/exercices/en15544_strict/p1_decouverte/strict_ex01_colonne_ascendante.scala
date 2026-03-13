@@ -63,11 +63,12 @@ object strict_ex01_colonne_ascendante
         FluePipe_Module_15544
         .incremental
         .define(
+            setInitialDirection(azimuth = 90.degrees, inclination = 0.degrees), // "Right"
             roughness(3.mm),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
             addSectionHorizontal("sortie foyer", 28.1.cm),
 
-            addSharpAngle_90deg("virage 90 deg"),
+            addSharpAngle_90deg ("virage 90 deg", roll = 0.degrees  ), // "Up"
             
             innerShape(rectangle(11.1.cm, 11.1.cm)),
             addSectionVertical("colonne ascendante", 3.737.m)

@@ -59,21 +59,23 @@ object strict_ex02_carneau_descendant
         FluePipe_Module_15544
         .incremental
         .define(
+            setInitialDirection(azimuth = 90.degrees, inclination = 0.degrees), // "Right"
+
             roughness(3.mm),
             
             innerShape(rectangle(16.1.cm, 15.3.cm)),
             addSectionHorizontal("sortie foyer", 28.6.cm),
             
-            addSharpAngle_90deg("virage avant descente"),
+            addSharpAngle_90deg("virage avant descente",  roll = 180.degrees), // Down
             
             innerShape(rectangle(16.1.cm, 11.1.cm)),
             addSectionVertical("descente", -36.7.cm),
 
-            addSharpAngle_90deg("virage 90° avant colonne"),
+            addSharpAngle_90deg("virage 90° avant colonne", roll = 0.degrees), // Rear
 
             addSectionHorizontal("vers colonne", 22.6.cm),
 
-            addSharpAngle_90deg("virage 90°"),
+            addSharpAngle_90deg("virage 90°", roll = 0.degrees), // Up
             
             addSectionVertical("colonne", 4.134.m)
         )

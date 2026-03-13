@@ -126,6 +126,8 @@ object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_1
     val airIntakePipe =
         import AirIntakePipe_Module.*
         define(
+            // arbitrary defined, not specified in reference example for engine validation
+            setInitialDirection(azimuth = 180.degrees, inclination = 0.degrees ), // "Front"
             pipeLocation(PipeLocation.HeatedArea),
             roughness   (5.mm                   ), // TubeFlexEnPE = 5.mm
 
@@ -147,6 +149,7 @@ object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_1
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
             .define (
+                setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees ), // "Up"
                 roughness (Material_13384.WeldedSteel()),
                 innerShape(circle(100.mm)              ),
                 layer             (
@@ -165,6 +168,7 @@ object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_1
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental
             .define(
+                // "Up" direction inherited from last element of connector pipe
                 roughness(2.mm),
                 innerShape(circle(100.mm)),
 

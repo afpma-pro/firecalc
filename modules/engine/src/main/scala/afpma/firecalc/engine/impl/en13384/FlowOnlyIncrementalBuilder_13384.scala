@@ -260,48 +260,48 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     given directionDSL: DirectionChangeDSL_13384[FlowOnlyPipeDescr_13384] =
         summon[DirectionChangeDSL_13384[FlowOnlyPipeDescr_13384]]
 
-    def addAngleVifDe0A90(name: String, angle: QtyD[Degree], roll: Option[Angle] = None) =
+    def addAngleVifDe0A90(name: String, angle: QtyD[Degree], roll: Angle) =
         directionDSL.addAngleVifDe0A90(name, angle, roll)
-    def addSharpAngle_30deg(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_30deg(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_30deg(name, roll)
-    def addSharpAngle_45deg(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_45deg(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_45deg(name, roll)
-    def addSharpAngle_60deg(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_60deg(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_60deg(name, roll)
-    def addSharpAngle_90deg(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_90deg(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_90deg(name, roll)
 
     // __INTERPRETATION__
-    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree], roll: Option[Angle] = None) =
+    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree], roll: Angle) =
         directionDSL.addAngleVifDe0A90_unsafe(name, angle, roll)
-    def addSharpAngle_30deg_unsafe(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_30deg_unsafe(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_30deg_unsafe(name, roll)
-    def addSharpAngle_45deg_unsafe(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_45deg_unsafe(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_45deg_unsafe(name, roll)
-    def addSharpAngle_60deg_unsafe(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_60deg_unsafe(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_60deg_unsafe(name, roll)
-    def addSharpAngle_90deg_unsafe(name: String, roll: Option[Angle] = None)                    =
+    def addSharpAngle_90deg_unsafe(name: String, roll: Angle)                    =
         directionDSL.addSharpAngle_90deg_unsafe(name, roll)
 
-    def addCoudeCourbe90(name: String, R: QtyD[Meter], roll: Option[Angle] = None) =
+    def addCoudeCourbe90(name: String, R: QtyD[Meter], roll: Angle) =
         directionDSL.addCoudeCourbe90(name, R, roll)
-    def addCoudeCourbe60(name: String, R: QtyD[Meter], roll: Option[Angle] = None) =
+    def addCoudeCourbe60(name: String, R: QtyD[Meter], roll: Angle) =
         directionDSL.addCoudeCourbe60(name, R, roll)
 
     // __INTERPRETATION__
-    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter], roll: Option[Angle] = None) =
+    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter], roll: Angle) =
         directionDSL.addCoudeCourbe90_unsafe(name, R, roll)
-    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter], roll: Option[Angle] = None) =
+    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter], roll: Angle) =
         directionDSL.addCoudeCourbe60_unsafe(name, R, roll)
 
-    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter], roll: Option[Angle] = None)   =
+    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter], roll: Angle)   =
         directionDSL.addCoudeASegment90Avec2A45(name, R, roll)
-    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter], roll: Option[Angle] = None)   =
+    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter], roll: Angle)   =
         directionDSL.addCoudeASegment90Avec3A30(name, R, roll)
-    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter], roll: Option[Angle] = None) =
+    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter], roll: Angle) =
         directionDSL.addCoudeASegment90Avec4A22p5(name, R, roll)
 
-    def addAngleSpecifique(name: String, angle: Angle, zeta: Double, roll: Option[Angle] = None) =
+    def addAngleSpecifique(name: String, angle: Angle, zeta: Double, roll: Angle) =
         directionDSL.addAngleSpecifique(name, angle, zeta, roll)
 
     // def addSectionChange(

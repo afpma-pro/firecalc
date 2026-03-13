@@ -78,30 +78,32 @@ object CasType_15544_C2
         import FluePipe_Module_15544.*
         FluePipe_Module_15544.incremental
             .define(
+                // direction "Rear"
+                setInitialDirection(azimuth = 0.degrees, inclination = 0.degrees), // "Rear"
                 roughness                (3.mm                                                ),
                 innerShape(rectangle(23.cm, 25.1.cm)),
                 addSectionHorizontal     ("Car. 1", 31.7.cm                                   ),
-                addSharpAngle_90deg      ("virage 90° 1-2"                                    ),
+                addSharpAngle_90deg      ("virage 90° 1-2 (descente)", roll = -90.degrees     ), // Down
                 innerShape(rectangle(25.1.cm, 22.cm)),
                 addSectionVertical       ("Car. 2", -81.5.cm                                  ),
-                addSharpAngle_90deg      ("virage 90° 2-3"                                    ),
+                addSharpAngle_90deg      ("virage 90° 2-3 (-> gauche)", roll = 90.degrees     ), // Left
                 innerShape(rectangle(24.cm, 20.cm)  ),
                 addSectionHorizontal     ("Car. 3", 179.2.cm                                  ),
-                addSharpAngle_90deg      ("virage 90° 3-4", roll = 90.degrees.some              ),
+                addSharpAngle_90deg      ("virage 90° 3-4", roll = 0.degrees                  ), // Rear
                 addSectionHorizontal     ("Car. 4", 22.cm                                     ),
-                addSharpAngle_90deg      ("virage 90° 4-5", roll = 0.degrees.some             ),
+                addSharpAngle_90deg      ("virage 90° 4-5", roll = 90.degrees                 ), // Left
                 addSectionHorizontal     ("Car. 5", 8.cm                                      ),
-                addSharpAngle_90deg      ("virage 90° 5-6", roll = 0.degrees.some             ),
+                addSharpAngle_90deg      ("virage 90° 5-6", roll = 0.degrees                  ), // Rear
                 addSectionHorizontal     ("Car. 6", 22.cm                                     ),
-                addSharpAngle_90deg      ("virage 90° 6-7", roll = 180.degrees.some           ),
+                addSharpAngle_90deg      ("virage 90° 6-7", roll = -90.degrees                ), // Right
                 innerShape(rectangle(24.cm, 19.cm)  ),
                 addSectionHorizontal     ("Car. 7", 190.cm                                    ),
-                addSharpAngle_0_to_180deg("virage 20°", 20.degrees                            ),
+                addSharpAngle_0_to_180deg("virage 20°", 20.degrees, roll = 0.degrees          ), // towards Rear = roll 0° (azimuth=90°-20°=70°, inclination=0°)
                 addSectionHorizontal     ("Car. 8", 30.cm                                     ),
-                addSharpAngle_0_to_180deg("virage 70°", 70.degrees, roll = 90.degrees.some     ),
+                addSharpAngle_0_to_180deg("virage 70°", 70.degrees, roll = 0.degrees          ), // towards Rear = roll 0° (azimuth=0°, inclination=0°)
                 innerShape(rectangle(24.cm, 21.cm)  ),
                 addSectionHorizontal     ("Car. 9", 33.7.cm                                   ),
-                addSharpAngle_90deg      ("virage 90° 9-10"                                   ),
+                addSharpAngle_90deg      ("virage 90° 9-10", 0.degrees                        ), // "Up"
                 innerShape(rectangle(21.cm, 22.cm)  ),
                 addSectionVertical       ("Car. 10", 98.cm                                    )
             )
@@ -112,14 +114,16 @@ object CasType_15544_C2
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
             .define (
+                // "Up" inherited from last element of flue pipe
                 roughness (Material_13384.WeldedSteel()),
                 innerShape(circle(200.mm)              ),
                 layer              (e                                = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
                 pipeLocation       (PipeLocation.HeatedArea                                                    ),
                 addSectionVertical ("Car. 11", 60.cm                                                           ),
-                addSharpAngle_45deg("virage 45° 11-12"                                                         ),
+                // arbitrary
+                addSharpAngle_45deg("virage 45° 11-12", roll = 180.degrees                                     ), // towards Front
                 addSectionSlopped  ("Car. 12", 50.cm, elevation_gain = 50.cm * math.cos(math.Pi / 4)           ),
-                addSharpAngle_45deg("virage 45° 12-13"                                                         ),
+                addSharpAngle_45deg("virage 45° 12-13", roll = 0.degrees                                       ), // towards Up
                 addSectionVertical ("Car. 13", 60.cm                                                           )
             )
             .toFullDescr()
@@ -129,6 +133,7 @@ object CasType_15544_C2
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental
             .define(
+                // "Up" inherited from last element of connector pipe
                 roughness         (0.1.mm                                        ), // 0.1mm de rugosité pour le EKA selon Basic2+ ??
                 innerShape(circle(200.mm)),
                 layer             (e = 25.mm, tr = SquareMeterKelvinPerWatt(0.44)),

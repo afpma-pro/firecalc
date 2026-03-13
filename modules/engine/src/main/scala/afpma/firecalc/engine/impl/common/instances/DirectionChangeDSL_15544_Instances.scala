@@ -18,13 +18,13 @@ object DirectionChangeDSL_15544_Instances:
         def addSharpAngle_0_to_180deg(
             name : String,
             angle: QtyD[Degree],
-            roll : Option[QtyD[Degree]] = None
+            roll : QtyD[Degree]
         ) =
             AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
                 name,
                 angle,
-                roll
+                Some(roll)
             )
 
-        def addCircularArc60(name: String, roll: Option[QtyD[Degree]] = None) =
-            AddFlowOnlyPipeElement_15544.AddCircularArc_60(name, roll)
+        def addCircularArc60(name: String, roll: QtyD[Degree]) =
+            AddFlowOnlyPipeElement_15544.AddCircularArc_60(name, Some(roll))

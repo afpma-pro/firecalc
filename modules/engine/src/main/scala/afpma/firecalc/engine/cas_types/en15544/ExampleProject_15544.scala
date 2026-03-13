@@ -76,26 +76,26 @@ object ExampleProject_15544
     val accumulateur_descr =
         import FluePipe_Module_15544.*
         Seq(
-            SetInitialDirection(azimuth = 0.degrees, inclination = 90.degrees),
+            setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees), // Left
             roughness           (3.mm                        ),
             innerShape(rectangle(251.mm, 230.mm)),
             addSectionHorizontal("sortie foyer", 317.mm      ),
-            addSharpAngle_90deg ("virage avant descente"     ),
+            addSharpAngle_90deg ("virage avant descente"     , roll = 180.degrees), // Down
             innerShape(rectangle(251.mm, 220.mm)),
             addSectionVertical  ("descente", -815.mm         ),
-            addSharpAngle_90deg ("virage avant banc avant"   ),
+            addSharpAngle_90deg ("virage avant banc avant"   , roll = -90.degrees), // Left
             innerShape(rectangle(220.mm, 240.mm)),
             addSectionHorizontal("banc avant", 1792.mm       ),
-            addSharpAngle_90deg ("virage avant bout du banc" ),
+            addSharpAngle_90deg ("virage avant bout du banc" , roll = 90.degrees), // Rear
             innerShape(rectangle(200.mm, 240.mm)),
             addSectionHorizontal("bout du banc", 437.mm      ),
-            addSharpAngle_90deg ("virage avant banc arrière" ),
+            addSharpAngle_90deg ("virage avant banc arrière" , roll = -90.degrees), // Right
             innerShape(rectangle(190.mm, 240.mm)),
             addSectionHorizontal("arrière banc", 2073.mm     ),
-            addSharpAngle_90deg ("virage avant vers remontée"),
+            addSharpAngle_90deg ("virage avant vers remontée", roll = -90.degrees), // Rear
             innerShape(rectangle(210.mm, 240.mm)),
             addSectionHorizontal("vers remontée", 437.mm     ),
-            addSharpAngle_90deg ("virage avant remontée"     ),
+            addSharpAngle_90deg ("virage avant remontée"     , roll = 0.degrees), // Up
             innerShape(rectangle(210.mm, 220.mm)),
             addSectionVertical  ("remontée", 980.mm          )
         )
@@ -109,13 +109,13 @@ object ExampleProject_15544
         Seq (
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)              ),
-            layer                     (e                                               = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
-            pipeLocation              (PipeLocation.HeatedArea                                                                     ),
-            addSectionVertical        ("conduit simple peau 1 ", 409.mm                                                            ),
-            addSharpAngle_30deg       ("coude angle vif 30°"                                                                       ),
-            addSectionSlopped         ("conduit simple peau 2", 707.mm, elevation_gain = 500.mm                                    ),
-            addSharpAngle_30deg_unsafe("coude angle vif 30°"                                                                       ),
-            addSectionVertical        ("conduit simple peau 2", 241.mm                                                             )
+            layer                     (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
+            pipeLocation              (PipeLocation.HeatedArea                                    ),
+            addSectionVertical        ("conduit simple peau 1 ", 409.mm                           ),
+            addSharpAngle_30deg       ("coude angle vif 30°"          , roll = 180.degrees        ), // towards Front
+            addSectionSlopped         ("conduit simple peau 2", 707.mm, elevation_gain = 500.mm   ),
+            addSharpAngle_30deg_unsafe("coude angle vif 30°"          , roll = 0.degrees          ), // towards Rear
+            addSectionVertical        ("conduit simple peau 2", 241.mm                            )
         )
 
     val connectorPipe =

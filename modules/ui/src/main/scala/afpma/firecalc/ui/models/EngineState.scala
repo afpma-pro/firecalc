@@ -116,16 +116,16 @@ object EngineState:
         flue_pipe_descr                =
             import FluePipe_Module_15544.*
             Seq(
-                setInitialDirection (azimuth = 90.degrees, inclination = 0.degrees),
-                roughness           (3.mm                         ),
-                innerShape(rectangle(18.cm, 18.cm)),
-                addSectionHorizontal("sortie de foyer", 30.cm     ),
-                addSharpAngle_90deg ("vers descente"              ),
-                addSectionVertical  ("descente", -100.cm          ),
-                addSharpAngle_90deg ("vers section horizontale"   ),
-                addSectionHorizontal("section horizontale", 200.cm),
-                addSharpAngle_90deg ("vers remontée"              ),
-                addSectionVertical  ("remontée", 200.cm           )
+                setInitialDirection (azimuth = 90.degrees, inclination = 0.degrees ), // Right
+                roughness           (3.mm                                          ),
+                innerShape(rectangle(18.cm, 18.cm)                                 ),
+                addSectionHorizontal("sortie de foyer", 30.cm                      ),
+                addSharpAngle_90deg ("vers descente", roll = 180.degrees           ), // Down
+                addSectionVertical  ("descente", -100.cm                           ),
+                addSharpAngle_90deg ("vers section horizontale", roll = 90.degrees ), // Right
+                addSectionHorizontal("section horizontale", 200.cm                 ),
+                addSharpAngle_90deg ("vers remontée", roll = 0.degrees             ), // Up
+                addSectionVertical  ("remontée", 200.cm                            )
             )
         ,
         connector_pipe_descr           =

@@ -14,33 +14,33 @@ trait DirectionChangeDSL_15544[Descr]:
     def addSharpAngle_0_to_180deg(
         name: String,
         angle: Angle,
-        roll: Option[Angle] = None
+        roll: Angle
     ): Descr
 
-    def addCircularArc60(name: String, roll: Option[Angle] = None): Descr
+    def addCircularArc60(name: String, roll: Angle): Descr
 
     // Convenience methods
     def addSharpAngle_30deg(
         name: String,
-        roll: Option[Angle] = None
+        roll: Angle
     ): Descr =
         addSharpAngle_0_to_180deg(name, 30.degrees, roll)
 
     def addSharpAngle_45deg(
         name: String,
-        roll: Option[Angle] = None
+        roll: Angle
     ): Descr =
         addSharpAngle_0_to_180deg(name, 45.degrees, roll)
 
     def addSharpAngle_60deg(
         name: String,
-        roll: Option[Angle] = None
+        roll: Angle
     ): Descr =
         addSharpAngle_0_to_180deg(name, 60.degrees, roll)
 
     def addSharpAngle_90deg(
         name: String,
-        roll: Option[Angle] = None
+        roll: Angle
     ): Descr =
         addSharpAngle_0_to_180deg(name, 90.degrees, roll)
 
