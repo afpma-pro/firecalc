@@ -64,7 +64,7 @@ object CasType_15544_C3
             roughness           (2.mm                                                     ),
             innerShape(circle(20.cm)),
             addSectionHorizontal("Car. 2", 253.cm                                         ),
-            addAngleSpecifique  ("3. angle 90° (ζ=0.9)", 90.degrees, zeta = 0.9, roll = 180.degrees), // Right
+            addAngleSpecifique  ("3. angle 90° (ζ=0.9)", 90.degrees, zeta = 0.9, roll = -90.degrees), // Right
             innerShape(circle(20.cm)), // why ???
             addSectionHorizontal("Car. 4", 40.cm                                          ),
             addFlowResistance   ("5. clapet", 0.25.unitless: ζ, hydraulic_diameter = 20.cm)
@@ -114,7 +114,7 @@ object CasType_15544_C3
             addSharpAngle_90deg ("virage 90° 4-5 (-> Avant)",  roll = 90.degrees       ), // Front
             innerShape(rectangle(27.cm, 27.cm)                                         ),
             addSectionHorizontal("Car. 5", 5.cm                                        ),
-            addSharpAngle_90deg ("virage 90° 5-6 (-> Droite)", roll = 180.degrees      ), // Right
+            addSharpAngle_90deg ("virage 90° 5-6 (-> Droite)", roll = -90.degrees      ), // Right
             addSectionHorizontal("Car. 6", 50.cm                                       ),
             addSharpAngle_90deg ("virage 90° 6-7 (-> Avant)",  roll = 90.degrees       ), // Front
             addSectionHorizontal("Car. 7", 34.cm                                       ),
@@ -122,7 +122,7 @@ object CasType_15544_C3
             addSectionHorizontal("Car. 8", 14.1.cm                                     ),
             addSharpAngle_45deg ("virage 45° 8-9 (-> Gauche)",  roll = 90.degrees      ), // Left
             addSectionHorizontal("Car. 9", 100.cm                                      ),
-            addSharpAngle_90deg ("virage 90° 9-10 (-> Haut)", roll = 90.degrees        ), // "Up"
+            addSharpAngle_90deg ("virage 90° 9-10 (-> Haut)", roll = 0.degrees        ), // "Up"
             innerShape(rectangle(21.cm, 32.cm)                                         ),
             addSectionVertical  ("Car. 10", 244.cm                                     ),
             addSectionVertical  ("Car. 11", 128.cm                                     )

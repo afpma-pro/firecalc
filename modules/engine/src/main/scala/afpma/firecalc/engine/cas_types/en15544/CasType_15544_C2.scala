@@ -83,24 +83,24 @@ object CasType_15544_C2
                 roughness                (3.mm                                                ),
                 innerShape(rectangle(23.cm, 25.1.cm)),
                 addSectionHorizontal     ("Car. 1", 31.7.cm                                   ),
-                addSharpAngle_90deg      ("virage 90° 1-2 (descente)", roll = -90.degrees     ), // Down
+                addSharpAngle_90deg      ("virage 90° 1-2 (descente)", roll = 180.degrees     ), // Down
                 innerShape(rectangle(25.1.cm, 22.cm)),
                 addSectionVertical       ("Car. 2", -81.5.cm                                  ),
                 addSharpAngle_90deg      ("virage 90° 2-3 (-> gauche)", roll = 90.degrees     ), // Left
                 innerShape(rectangle(24.cm, 20.cm)  ),
                 addSectionHorizontal     ("Car. 3", 179.2.cm                                  ),
-                addSharpAngle_90deg      ("virage 90° 3-4", roll = 0.degrees                  ), // Rear
+                addSharpAngle_90deg      ("virage 90° 3-4", roll = -90.degrees                ), // Rear
                 addSectionHorizontal     ("Car. 4", 22.cm                                     ),
                 addSharpAngle_90deg      ("virage 90° 4-5", roll = 90.degrees                 ), // Left
                 addSectionHorizontal     ("Car. 5", 8.cm                                      ),
-                addSharpAngle_90deg      ("virage 90° 5-6", roll = 0.degrees                  ), // Rear
+                addSharpAngle_90deg      ("virage 90° 5-6", roll = -90.degrees                ), // Rear
                 addSectionHorizontal     ("Car. 6", 22.cm                                     ),
-                addSharpAngle_90deg      ("virage 90° 6-7", roll = -90.degrees                ), // Right
+                addSharpAngle_90deg      ("virage 90° 6-7", roll = 90.degrees                 ), // Right
                 innerShape(rectangle(24.cm, 19.cm)  ),
                 addSectionHorizontal     ("Car. 7", 190.cm                                    ),
-                addSharpAngle_0_to_180deg("virage 20°", 20.degrees, roll = 0.degrees          ), // towards Rear = roll 0° (azimuth=90°-20°=70°, inclination=0°)
+                addSharpAngle_0_to_180deg("virage 20°", 20.degrees, roll = -90.degrees        ), // towards Rear = roll 0° (azimuth=90°-20°=70°, inclination=0°)
                 addSectionHorizontal     ("Car. 8", 30.cm                                     ),
-                addSharpAngle_0_to_180deg("virage 70°", 70.degrees, roll = 0.degrees          ), // towards Rear = roll 0° (azimuth=0°, inclination=0°)
+                addSharpAngle_0_to_180deg("virage 70°", 70.degrees, roll = -90.degrees        ), // towards Rear = roll 0° (azimuth=0°, inclination=0°)
                 innerShape(rectangle(24.cm, 21.cm)  ),
                 addSectionHorizontal     ("Car. 9", 33.7.cm                                   ),
                 addSharpAngle_90deg      ("virage 90° 9-10", 0.degrees                        ), // "Up"
