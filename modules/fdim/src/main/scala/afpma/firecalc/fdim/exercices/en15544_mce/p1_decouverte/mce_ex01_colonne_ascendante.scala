@@ -8,6 +8,7 @@ package afpma.firecalc.fdim.exercices.en15544_mce.p1_decouverte
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
@@ -88,13 +89,13 @@ object mce_ex01_colonne_ascendante
         FluePipe_Module_13384
         .incremental
         .define(
-            setInitialDirection(azimuth = 90.degrees, inclination = 0.degrees), // "Right"
+            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
             pipeLocation(PipeLocation.HeatedArea), // added for EN13384
             roughness(3.mm),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
             layer(e = 1.cm, λ = 0.89.W_per_mK), // added for EN13384
             addSectionHorizontal("sortie foyer", 28.1.cm),
-            addSharpAngle_90deg ("virage 90 deg", roll = 0.degrees  ), // "Up"
+            addSharpAngle_90deg ("virage 90 deg", FinalDirection(AzimuthDirection.Right, InclinationDirection.Up)), // "Up"
             innerShape(rectangle(11.1.cm, 11.1.cm)),
             addSectionVertical("colonne ascendante", 3.737.m)
         )

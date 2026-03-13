@@ -8,6 +8,7 @@ package afpma.firecalc.fdim.exercices.en15544_strict.p5_application
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
@@ -72,35 +73,35 @@ object strict_ex03_cas_pratique
         FluePipe_Module_15544
         .incremental
         .define(
-            setInitialDirection(azimuth = 90.degrees, inclination = 0.degrees), // "Right"
+            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
 
             roughness(3.mm),
             innerShape(rectangle(37.1.cm, 32.0.cm)),
-            
+
             addSectionHorizontal("sortie foyer", 34.8.cm),
 
-            addSharpAngle_90deg("virage 90 deg (1)", 180.degrees), // Down
+            addSharpAngle_90deg("virage 90 deg (1)", FinalDirection(AzimuthDirection.Right, InclinationDirection.Down)), // Down
 
             addSectionVertical("colonne étage", -1.09.m),
 
             addSectionVertical("colonne rdc", -2.44.m),
 
-            addSharpAngle_90deg("virage 90 deg (2)", 90.degrees), // Right
+            addSharpAngle_90deg("virage 90 deg (2)", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
 
             innerShape(rectangle(32.1.cm, 27.cm)),
             addSectionHorizontal("allez banc", 1.m),
 
-            addSharpAngle_90deg("virage 90 deg (3)", 90.degrees), // Avant
+            addSharpAngle_90deg("virage 90 deg (3)", FinalDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Avant
 
             innerShape(rectangle(26.cm, 27.cm)),
             addSectionHorizontal("demi tour banc", 34.cm),
 
-            addSharpAngle_90deg("virage 90 deg (4)", 90.degrees), // Gauche
+            addSharpAngle_90deg("virage 90 deg (4)", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Gauche
 
             innerShape(rectangle(26.cm, 27.cm)),
             addSectionHorizontal("retour banc", 1.m),
 
-            addSharpAngle_90deg("virage 90 deg (5)", 0.degrees), // Haut
+            addSharpAngle_90deg("virage 90 deg (5)", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Haut
             
             innerShape(rectangle(21.cm, 32.cm)),
             addSectionVertical("colonne montant RdC", 2.44.m),

@@ -8,6 +8,7 @@ package afpma.firecalc.labo.`01_echangeur`
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -91,7 +92,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
     val airIntakePipe = 
         import AirIntakePipe_Module.*
         define(
-            setInitialDirection(azimuth = 0.degrees, inclination = 90.degrees), // Up
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // Up
 
             addFlowResistance("grille", 1.680.unitless, hydraulic_diameter = 11.9.cm),
 
@@ -102,7 +103,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
 
             addSectionVertical("entrée verticale", -120.5.cm),
 
-            addCoudeCourbe90_unsafe("H", 9.6.cm, roll = 180.degrees), // Front (TOCHECK)
+            addCoudeCourbe90_unsafe("H", 9.6.cm, finalDir = FinalDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front (TOCHECK)
 
             pipeLocation(Area.NonChauffee),
             addSectionHorizontal("traversée mur", 68.8.cm),
@@ -110,8 +111,8 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
             addSectionHorizontal("horizontal en combles", 0.0.cm),
 
             pipeLocation(Area.DansLaPieceDuPoele),
-            addCoudeCourbe90_unsafe("vertical en combles", 9.6.cm, roll = 180.degrees), // Down (TOCHECK)
-            
+            addCoudeCourbe90_unsafe("vertical en combles", 9.6.cm, finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down (TOCHECK)
+
             addSectionVertical("P01", -196.1.cm),
             addSectionVertical("anémomètre", -39.5.cm),
             addSectionVertical("capteur humidité", -104.cm),
@@ -120,7 +121,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
             // addCoudeCourbe90_unsafe("coude courbe 90 avt descente 4", 9.6.cm, roll = 180.degrees), // ERROR TOFIX
 
             addSectionVertical("descente 4", -38.7.cm),
-            addCoudeCourbe90_unsafe("coude courbe 90 après descente 4", 9.6.cm, roll = 0.degrees), // Up (TOCHECK)
+            addCoudeCourbe90_unsafe("coude courbe 90 après descente 4", 9.6.cm, finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up (TOCHECK)
             // addFlowResistance("clapet zeta = 0.3!", 0.3.unitless: ζ), // déjà avec la grille à supprimer car déjà dans la grille
             addSectionVertical("clapet zeta = 0.3!", 23.7.cm),
 
@@ -133,7 +134,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
         import CombustionAirPipe_Module_13384.*
         define(
             // addPressureDiff("dispositif de réglage d'air", 3.2.unitless: ζ), // ???
-            setInitialDirection(azimuth = 180.degrees, inclination = 0.degrees), // Front
+            setInitialDirection(azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // Front
 
             pipeLocation(Area.AirDansLePoele),
             roughness(Material_13384.WeldedSteel()),
@@ -141,24 +142,24 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
             layer(e = 1.cm, λ = 1.3.W_per_mK),
             addSectionHorizontal("entrée P03 TC03", 18.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 0.degrees), // Up
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             innerShape(rectangle(36.cm, 36.cm)),
             addSectionVertical("montée", 7.3.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 90.degrees), // Left
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
 
             channelsSplit(11),
 
             innerShape(rectangle(6.6.cm, 8.7.cm)),
             addSectionHorizontal("sous sole", 25.cm),
 
-            addSharpAngle_90deg("angle vif 90°", roll = 0.degrees), // Up
+            addSharpAngle_90deg("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             innerShape(rectangle(6.6.cm, 3.3.cm)),
             addSectionVertical("montée", 27.3.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = -90.degrees), // Right
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
             
             innerShape(rectangle(26.4.cm, 1.8.cm)),
             addSectionHorizontal("injecteurs", 2.cm),
@@ -191,7 +192,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
         FluePipe_Module_13384
         .incremental
         .define(
-            setInitialDirection(azimuth = -90.degrees, inclination = 0.degrees), // Left
+            setInitialDirection(azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left
 
             pipeLocation(Area.Accumulateur),
             roughness(Material_13384.WeldedSteel()),
@@ -205,7 +206,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
 
             addSectionHorizontal("horizontal vers échangeur", 30.9.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 180.degrees), // Down
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
 
             roughness(Refractory_Bricks),
             pipeLocation(Area.Accumulateur),
@@ -215,7 +216,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
 
             addSectionVertical("descente", -44.4.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = -90.degrees), // Left (TOCHECK)
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left (TOCHECK)
 
             innerShape(rectangle(18.2.cm, 22.2.cm)),
             addSectionHorizontal("horizontal vers cloche", 7.6.cm),
@@ -223,35 +224,35 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
             innerShape(rectangle(16.2.cm, 22.1.cm)),
             addSectionVertical("horizontal vers colonne", 28.2.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 0.degrees), // Up
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             innerShape(rectangle(16.1.cm, 16.1.cm)),
             addSectionVertical("colonne T30", 88.8.cm),
 
             addSectionVertical("colonne", 49.9.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 90.degrees), // Left (TOCHECK)
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left (TOCHECK)
 
             innerShape(rectangle(11.1.cm, 64.4.cm)),
             addSectionHorizontal("haut de cloche", 18.1.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 180.degrees), // Down
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
 
             innerShape(rectangle(136.6.cm, 8.6.cm)),
-            addSectionVertical("descente cloche", -88.8.cm), 
+            addSectionVertical("descente cloche", -88.8.cm),
 
             addSectionVertical("descente cloche", -44.4.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = -90.degrees), // Left (TOCHECK)
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left (TOCHECK)
 
             innerShape(rectangle(16.1.cm, 22.2.cm)),
             addSectionHorizontal("horizontal sortie cloche", 18.1.cm),
-            
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 0.degrees), // Up
+
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             addSectionVertical("vers colonne", 42.8.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°", roll = 90.degrees), // Left (TOCHECK)
+            addSharpAngle_90deg_unsafe("angle vif 90°", finalDir = FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left (TOCHECK)
 
             innerShape(rectangle(16.1.cm, 16.1.cm)),
 

@@ -8,6 +8,7 @@ package afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.api.v0_2024_10.SimpleStoveProjectDescrFr_15544_Alg
@@ -63,12 +64,12 @@ object strict_ex01_colonne_ascendante
         FluePipe_Module_15544
         .incremental
         .define(
-            setInitialDirection(azimuth = 90.degrees, inclination = 0.degrees), // "Right"
+            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
             roughness(3.mm),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
             addSectionHorizontal("sortie foyer", 28.1.cm),
 
-            addSharpAngle_90deg ("virage 90 deg", roll = 0.degrees  ), // "Up"
+            addSharpAngle_90deg ("virage 90 deg", FinalDirection(AzimuthDirection.Right, InclinationDirection.Up)), // "Up"
             
             innerShape(rectangle(11.1.cm, 11.1.cm)),
             addSectionVertical("colonne ascendante", 3.737.m)
