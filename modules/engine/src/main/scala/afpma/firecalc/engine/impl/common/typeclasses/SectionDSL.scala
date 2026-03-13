@@ -12,10 +12,12 @@ import afpma.firecalc.units.coulombutils.*
  * @tparam Descr The incremental descriptor ADT type
  */
 trait SectionDSL[Descr]:
+    
     def addSectionSlopped(
         name          : String,
         length        : Length,
-        elevation_gain: Length
+        elevation_gain: Length,
+        auto_compute_elev_gain: Boolean = true
     ): Descr
 
     @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")

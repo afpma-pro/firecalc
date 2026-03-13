@@ -95,15 +95,16 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     .map(_._2)
                     .find:
                         case _: SetProp                                                                       => false
-                        case _: AddSectionSlopped                                                             => true
+                        case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain)               => true
                         case _: AddSectionHorizontal                                                          => true
                         case _: AddSectionVertical                                                            => true
                         case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => false
                     .map(_.asInstanceOf[AddElement])
             nextAddSectionsOps.headOption.flatMap:
-                case _ @AddSectionSlopped(_, l, _) => l.some
-                case _ @AddSectionHorizontal(_, l) => l.some
-                case _ @AddSectionVertical(_, l)   => l.some
+                case _ @AddSectionSlopped(_, l, _)                         => l.some
+                case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
+                case _ @AddSectionHorizontal(_, l)                         => l.some
+                case _ @AddSectionVertical(_, l)                           => l.some
                 case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
 
     extension (piDescr: PipeIncrDescr) override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
@@ -133,7 +134,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         val st = summon[PropsState]
 
         val el = addElementOp match
-            case op @ (_: AddSectionSlopped | _: AddSectionHorizontal | _: AddSectionVertical) =>
+            case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal | _: AddSectionVertical) =>
                 given FlowOnlyStraightSectionCtx_13384 =
                     FlowOnlyStraightSectionCtx_13384(
                         stateOps.getInnerShape(st),
@@ -183,10 +184,11 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _, _)) => propsState.validNel
-            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
+            case None                                                        => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _, _))                         => propsState.validNel
+            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
+            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
+            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
             case Some(addDC: AddDirectionChange) =>
                 addDC.roll match
                     case Some(rollAngle) =>

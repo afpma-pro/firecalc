@@ -113,6 +113,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                 .map(_._2)
                 .flatMap:
                     case _ @AddSectionSlopped(_, l, _) => l.some
+                    case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
                     case _ @AddSectionHorizontal(_, l) => l.some
                     case _ @AddSectionVertical(_, l)   => l.some
                     case _: (AddSectionShapeChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
@@ -133,7 +134,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
         val vels: ValidatedNel[IncrementalValidation_Error, NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] =
             addElementOp match
-                case op @ (_: AddSectionSlopped | _: AddSectionHorizontal | _: AddSectionVertical) =>
+                case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal | _: AddSectionVertical) =>
                     given FlowOnlyStraightSectionCtx_15544 =
                         FlowOnlyStraightSectionCtx_15544(
                             stateOps.getInnerShape(st),
@@ -194,10 +195,11 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _, _)) => propsState.validNel
-            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
+            case None                                                        => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _, _))                         => propsState.validNel
+            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
+            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
+            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
             case Some(addDC: AddDirectionChange) =>
                 addDC.roll match
                     case Some(rollAngle) =>

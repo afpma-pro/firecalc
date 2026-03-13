@@ -18,13 +18,21 @@ object SectionDSL_15544_Instances:
         def addSectionSlopped(
             name          : String,
             length        : QtyD[Meter],
-            elevation_gain: QtyD[Meter]
+            elevation_gain: QtyD[Meter],
+            auto_compute_elev_gain: Boolean = true,
         ) =
-            AddFlowOnlyPipeElement_15544.AddSectionSlopped(
-                name,
-                length,
-                elevation_gain
-            )
+            if (auto_compute_elev_gain)
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped(
+                    name,
+                    length,
+                    elevation_gain
+                )
+            else
+                AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain(
+                    name,
+                    length,
+                    elevation_gain
+                )
 
         @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionHorizontal(

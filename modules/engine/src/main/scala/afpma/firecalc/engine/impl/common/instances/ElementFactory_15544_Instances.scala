@@ -49,14 +49,18 @@ object ElementFactory_15544_Instances:
     )
 
     given flowOnlyStraightSection15544: ElementFactory[
-        AddFlowOnlyPipeElement_15544.AddSectionSlopped | AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
-            AddFlowOnlyPipeElement_15544.AddSectionVertical,
+        AddFlowOnlyPipeElement_15544.AddSectionSlopped | 
+        AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
+        AddFlowOnlyPipeElement_15544.AddSectionVertical,
         FlowOnlyPipeDescr_15544.StraightSection,
         FlowOnlyStraightSectionCtx_15544
     ] with
         def make(
-            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped | AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
-                AddFlowOnlyPipeElement_15544.AddSectionVertical
+            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped | 
+            AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
+            AddFlowOnlyPipeElement_15544.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_15544) =
             val vg = ctx.getValidated(
                 _.geometry,
@@ -67,18 +71,24 @@ object ElementFactory_15544_Instances:
                 RoughnessMustBeSet(op.name, ctx.pipeType)
             )
 
-            val (len, elev_gain) = op match
+            val (len, elev_gain, auto_compute_elev_gain) = op match
+                case AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain(
+                        _,
+                        len,
+                        elev_gain
+                    ) =>
+                    (len, elev_gain, false)
                 case AddFlowOnlyPipeElement_15544.AddSectionSlopped(
                         _,
                         len,
                         elev_gain
                     ) =>
-                    (len, elev_gain)
+                    (len, elev_gain, true)
                 case AddFlowOnlyPipeElement_15544.AddSectionHorizontal(
                         _,
                         len
                     ) =>
-                    (len, 0.0.m)
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_15544.AddSectionVertical(
                         _,
                         elev_gain
@@ -86,10 +96,13 @@ object ElementFactory_15544_Instances:
                     val len =
                         if (elev_gain < 0.meters) -elev_gain
                         else elev_gain
-                    (len, elev_gain)
+                    (len, elev_gain, true)
 
             val finalElevGain = ctx.currentFrame match
-                case Some(frame) => (len.value * frame.direction.z).m
+                case Some(frame) => 
+                    if auto_compute_elev_gain 
+                    then (len.value * frame.direction.z).m
+                    else elev_gain
                 case None        => elev_gain
 
             (vg, vr).mapN { (g, r) =>

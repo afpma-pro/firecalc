@@ -66,6 +66,16 @@ object AddFlowOnlyPipeElement_13384_V3:
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_13384_V3
 
+    @Transl(I(_.add_element.AddSectionSlopped))
+    case class AddSectionSloppedForceManualElevationGain(
+        @Transl(I(_.terms.name))
+        name          : String,
+        @Transl(I(_.terms.length))
+        length        : Length,
+        @Transl(I(_.terms.elevation_gain))
+        elevation_gain: Length
+    ) extends AddFlowOnlyPipeElement_13384_V3
+
     @Transl(I(_.add_element.AddSectionHorizontal))
     case class AddSectionHorizontal(
         @Transl(I(_.terms.name))

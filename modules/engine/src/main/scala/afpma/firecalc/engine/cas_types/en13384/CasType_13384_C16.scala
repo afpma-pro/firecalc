@@ -172,7 +172,7 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
                 addSharpAngle_90deg ("té 90°",             roll = 0.degrees                       ), // Up
                 addSectionVertical  ("montée",             70.cm                                  ),
                 addSharpAngle_45deg ("dévoiement 45°",     roll = 0.degrees                       ), // Rear-Up (azimiuth=0° inclination=45°)
-                addSectionSlopped   ("dévoiement",         70.cm,           elevation_gain = 70.cm),                // approx to match C16 (50cm otherwise)
+                addSectionSlopped   ("dévoiement",         70.cm,           elevation_gain = 70.cm, auto_compute_elev_gain = false), // approx to match C16 (50cm otherwise)
                 addSharpAngle_45deg ("fin dévoiement 45°", roll = 0.degrees                       ), // Up
                 addSectionVertical  ("avant plafond",      70.cm)
             )

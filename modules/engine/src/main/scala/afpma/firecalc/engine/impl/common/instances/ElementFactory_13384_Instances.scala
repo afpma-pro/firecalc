@@ -52,13 +52,18 @@ object ElementFactory_13384_Instances:
     )
 
     given flowOnlyStraightSection13384: ElementFactory[
-        AddFlowOnlyPipeElement_13384.AddSectionSlopped | AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
-            AddFlowOnlyPipeElement_13384.AddSectionVertical,
+        AddFlowOnlyPipeElement_13384.AddSectionSlopped | 
+        AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+        AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
+        AddFlowOnlyPipeElement_13384.AddSectionVertical,
         FlowOnlyPipeDescr_13384.StraightSection,
         FlowOnlyStraightSectionCtx_13384
     ] with
         def make(
-            op: AddFlowOnlyPipeElement_13384.AddSectionSlopped | AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
+            op: 
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped | 
+                AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+                AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
                 AddFlowOnlyPipeElement_13384.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_13384) =
             val vig = ctx.getValidated(
@@ -70,18 +75,24 @@ object ElementFactory_13384_Instances:
                 RoughnessMustBeSet(op.name, ctx.pipeType)
             )
 
-            val (len, elev_gain) = op match
+            val (len, elev_gain, auto_compute_elev_gain) = op match
+                case AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain(
+                        _,
+                        len,
+                        elev_gain,
+                    ) =>
+                    (len, elev_gain, false)
                 case AddFlowOnlyPipeElement_13384.AddSectionSlopped(
                         _,
                         len,
-                        elev_gain
+                        elev_gain,
                     ) =>
-                    (len, elev_gain)
+                    (len, elev_gain, true)
                 case AddFlowOnlyPipeElement_13384.AddSectionHorizontal(
                         _,
                         len
                     ) =>
-                    (len, 0.0.m)
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_13384.AddSectionVertical(
                         _,
                         elev_gain
@@ -89,10 +100,13 @@ object ElementFactory_13384_Instances:
                     val len =
                         if (elev_gain < 0.meters) -elev_gain
                         else elev_gain
-                    (len, elev_gain)
+                    (len, elev_gain, true)
 
             val finalElevGain = ctx.currentFrame match
-                case Some(frame) => (len.value * frame.direction.z).m
+                case Some(frame) => 
+                    if auto_compute_elev_gain 
+                    then (len.value * frame.direction.z).m
+                    else elev_gain
                 case None        => elev_gain
 
             (vig, vr).mapN { (ig, r) =>
@@ -119,14 +133,18 @@ object ElementFactory_13384_Instances:
     )
 
     given thermalStraightSection13384: ElementFactory[
-        AddThermalPipeElement_13384.AddSectionSlopped | AddThermalPipeElement_13384.AddSectionHorizontal |
-            AddThermalPipeElement_13384.AddSectionVertical,
+        AddThermalPipeElement_13384.AddSectionSlopped | 
+        AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+        AddThermalPipeElement_13384.AddSectionHorizontal |
+        AddThermalPipeElement_13384.AddSectionVertical,
         ThermalPipeDescr_13384.StraightSection,
         ThermalStraightSectionCtx_13384
     ] with
         def make(
-            op: AddThermalPipeElement_13384.AddSectionSlopped | AddThermalPipeElement_13384.AddSectionHorizontal |
-                AddThermalPipeElement_13384.AddSectionVertical
+            op: AddThermalPipeElement_13384.AddSectionSlopped | 
+            AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+            AddThermalPipeElement_13384.AddSectionHorizontal |
+            AddThermalPipeElement_13384.AddSectionVertical
         )(using ctx: ThermalStraightSectionCtx_13384) =
             val vig     = ctx.getValidated(
                 _.innerShape,
@@ -157,18 +175,24 @@ object ElementFactory_13384_Instances:
                 DuctTypeMustBeSet(op.name, ctx.pipeType)
             )
 
-            val (len, elev_gain) = op match
+            val (len, elev_gain, auto_compute_elev_gain) = op match
+                case AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain(
+                        _,
+                        len,
+                        elev_gain
+                    ) =>
+                    (len, elev_gain, false)
                 case AddThermalPipeElement_13384.AddSectionSlopped(
                         _,
                         len,
                         elev_gain
                     ) =>
-                    (len, elev_gain)
+                    (len, elev_gain, true)
                 case AddThermalPipeElement_13384.AddSectionHorizontal(
                         _,
                         len
                     ) =>
-                    (len, 0.0.m)
+                    (len, 0.0.m, true)
                 case AddThermalPipeElement_13384.AddSectionVertical(
                         _,
                         elev_gain
@@ -176,10 +200,13 @@ object ElementFactory_13384_Instances:
                     val len =
                         if (elev_gain < 0.meters) -elev_gain
                         else elev_gain
-                    (len, elev_gain)
+                    (len, elev_gain, true)
 
             val finalElevGain = ctx.currentFrame match
-                case Some(frame) => (len.value * frame.direction.z).m
+                case Some(frame) => 
+                    if auto_compute_elev_gain 
+                    then (len.value * frame.direction.z).m
+                    else elev_gain
                 case None        => elev_gain
 
             (vig, vog, vr, vlayers, vasp, vpl, vduct).mapN { (ig, og, r, layers, asp, pl, duct) =>

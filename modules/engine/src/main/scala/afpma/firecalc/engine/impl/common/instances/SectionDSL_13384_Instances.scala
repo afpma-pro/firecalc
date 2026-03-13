@@ -18,13 +18,22 @@ object SectionDSL_13384_Instances:
         def addSectionSlopped(
             name          : String,
             length        : QtyD[Meter],
-            elevation_gain: QtyD[Meter]
+            elevation_gain: QtyD[Meter],
+            auto_compute_elev_gain: Boolean = true,
         ) =
-            AddThermalPipeElement_13384.AddSectionSlopped(
-                name,
-                length,
-                elevation_gain
-            )
+            if (auto_compute_elev_gain)
+                AddThermalPipeElement_13384.AddSectionSlopped(
+                    name,
+                    length,
+                    elevation_gain
+                )
+            else
+                AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain(
+                    name,
+                    length,
+                    elevation_gain
+                )
+            
 
         @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionHorizontal(
@@ -48,16 +57,25 @@ object SectionDSL_13384_Instances:
 
     // Instance for FlowOnlyPipeDescr_13384
     given flowOnly13384: SectionDSL[FlowOnlyPipeDescr_13384] with
+
         def addSectionSlopped(
             name          : String,
             length        : QtyD[Meter],
-            elevation_gain: QtyD[Meter]
+            elevation_gain: QtyD[Meter],
+            auto_compute_elev_gain: Boolean = true,
         ) =
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped(
-                name,
-                length,
-                elevation_gain
-            )
+            if (auto_compute_elev_gain)
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped(
+                    name,
+                    length,
+                    elevation_gain
+                )
+            else
+                AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain(
+                    name,
+                    length,
+                    elevation_gain
+                )
 
         @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionHorizontal(

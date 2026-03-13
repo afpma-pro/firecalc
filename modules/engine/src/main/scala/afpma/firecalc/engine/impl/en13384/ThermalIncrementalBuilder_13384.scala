@@ -107,13 +107,14 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     .map(_._2)
                     .find:
                         case _: SetProp                                                                       => false
-                        case _: AddSectionSlopped                                                             => true
+                        case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain)               => true
                         case _: AddSectionHorizontal                                                          => true
                         case _: AddSectionVertical                                                            => true
                         case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => false
                     .map(_.asInstanceOf[AddElement])
             nextAddSectionsOps.headOption.flatMap:
                 case _ @AddSectionSlopped(_, l, _) => l.some
+                case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
                 case _ @AddSectionHorizontal(_, l) => l.some
                 case _ @AddSectionVertical(_, l)   => l.some
                 case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
@@ -148,7 +149,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         val st = summon[PropsState]
 
         val el = addElementOp match
-            case op @ (_: AddSectionSlopped | _: AddSectionHorizontal | _: AddSectionVertical) =>
+            case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal | _: AddSectionVertical) =>
                 given ThermalStraightSectionCtx_13384 =
                     ThermalStraightSectionCtx_13384(
                         stateOps.getInnerShape(st),
@@ -205,10 +206,12 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _, _)) => propsState.validNel
-            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
+            case None                                                        => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _, _))                         => propsState.validNel
+            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
+            
+            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
+            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
             case Some(addDC: AddDirectionChange)     =>
                 // Update direction tracking if roll is defined and we have a current frame
                 addDC.roll match
@@ -465,8 +468,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def addSectionSlopped(
         name          : String,
         length        : QtyD[Meter],
-        elevation_gain: QtyD[Meter]
-    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
+        elevation_gain: QtyD[Meter],
+        auto_compute_elev_gain: Boolean = true,
+    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain, auto_compute_elev_gain)
 
     @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(
