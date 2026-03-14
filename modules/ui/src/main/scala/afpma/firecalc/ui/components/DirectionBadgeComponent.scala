@@ -134,7 +134,7 @@ case class DirectionBadgeComponent(
     private def readOnlyBadge(dir: Vec3): HtmlElement =
         span(
             cls := "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono",
-            span(cls := "text-xs opacity-60", I18N_UI.direction_badge.label),
+            span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label),
             badgeText(dir)
         )
 
@@ -148,7 +148,7 @@ case class DirectionBadgeComponent(
             cls := "dropdown",
             summary(
                 cls := "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono cursor-pointer list-none",
-                span(cls := "text-xs opacity-60", I18N_UI.direction_badge.label),
+                span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label),
                 badgeText(dir),
                 span(cls := "text-xs opacity-60", "\u25be")
             ),

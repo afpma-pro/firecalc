@@ -107,7 +107,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     }
                 }
 
-                "case direction-tracked : SetInitialDirection(vertical up) + addSectionSlopped with 0 elev_gain" - {
+                "case direction-tracked : SetInitialDirection(vertical up) + addSectionSlopped" - {
 
                     "elevation_gain is auto-computed from direction (should be 2m for 2m vertical section)" in {
                         // given NbOfFlows = 1.flow
@@ -117,7 +117,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
                                 innerShape(circle(d0)),
                                 roughness(2.mm),
-                                addSectionSlopped("s1", 2.meters, 0.meters)
+                                addSectionSlopped("s1", 2.meters)
                             )
 
                         val vRepr = p.toFullDescr().map(_._2)

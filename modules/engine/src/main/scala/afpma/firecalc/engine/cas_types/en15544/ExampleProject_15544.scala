@@ -113,7 +113,7 @@ object ExampleProject_15544
             pipeLocation              (PipeLocation.HeatedArea                                    ),
             addSectionVertical        ("conduit simple peau 1 ", 409.mm                           ),
             addSharpAngle_30deg       ("coude angle vif 30°"          , FinalDirection(AzimuthDirection.Front, InclinationDirection.Custom(60.degrees))), // towards Front-Up at 60°
-            addSectionSlopped         ("conduit simple peau 2", 707.mm, elevation_gain = 500.mm   ),
+            addSectionSlopped         ("conduit simple peau 2", 707.mm                             ),
             addSharpAngle_30deg_unsafe("coude angle vif 30°"          , FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
             addSectionVertical        ("conduit simple peau 2", 241.mm                            )
         )

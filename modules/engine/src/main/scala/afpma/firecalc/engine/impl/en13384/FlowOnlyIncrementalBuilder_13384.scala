@@ -102,7 +102,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => false
                     .map(_.asInstanceOf[AddElement])
             nextAddSectionsOps.headOption.flatMap:
-                case _ @AddSectionSlopped(_, l, _)                         => l.some
+                case _ @AddSectionSlopped(_, l)                             => l.some
                 case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
                 case _ @AddSectionHorizontal(_, l)                         => l.some
                 case _ @AddSectionVertical(_, l)                           => l.some
@@ -186,7 +186,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
             case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _, _))                         => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _))                             => propsState.validNel
             case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
             case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
             case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
@@ -322,10 +322,15 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         summon[SectionDSL[FlowOnlyPipeDescr_13384]]
 
     def addSectionSlopped(
+        name  : String,
+        length: QtyD[Meter]
+    ) = sectionDSL.addSectionSlopped(name, length)
+
+    def addSectionSloppedForceManualElevationGain(
         name          : String,
         length        : QtyD[Meter],
         elevation_gain: QtyD[Meter]
-    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
+    ) = sectionDSL.addSectionSloppedForceManualElevationGain(name, length, elevation_gain)
 
     @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(

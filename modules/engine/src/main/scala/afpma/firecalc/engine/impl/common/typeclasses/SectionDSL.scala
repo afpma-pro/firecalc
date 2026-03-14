@@ -14,10 +14,14 @@ import afpma.firecalc.units.coulombutils.*
 trait SectionDSL[Descr]:
     
     def addSectionSlopped(
+        name  : String,
+        length: Length
+    ): Descr
+
+    def addSectionSloppedForceManualElevationGain(
         name          : String,
         length        : Length,
-        elevation_gain: Length,
-        auto_compute_elev_gain: Boolean = true
+        elevation_gain: Length
     ): Descr
 
     @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")

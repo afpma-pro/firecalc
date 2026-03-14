@@ -113,7 +113,7 @@ object strict_ex02_kachelofen
 
             addSharpAngle_30deg("coude angle vif 30°", FinalDirection(AzimuthDirection.Front, InclinationDirection.Custom(60.degrees))), // towards Front-Up at 60°
 
-            addSectionSlopped("conduit simple peau 2", 58.cm, elevation_gain = 48.8.cm),
+            addSectionSlopped("conduit simple peau 2", 58.cm),
 
             addSharpAngle_30deg_unsafe("coude angle vif 30°", FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
 

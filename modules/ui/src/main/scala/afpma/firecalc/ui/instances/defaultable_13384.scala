@@ -70,7 +70,7 @@ object defaultable_13384:
         given Defaultable[SetNumberOfFlows]           :
             def default = SetNumberOfFlows(divideFlowIn.default)
         given Locale => Defaultable[AddSectionSlopped]:
-            def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters, 0.meters)
+            def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
 
         given Locale => Defaultable[AddSectionHorizontal]         :
             def default = AddSectionHorizontal(I18N_UI.default_element_names.horizontal_straight_element, 1.meters)

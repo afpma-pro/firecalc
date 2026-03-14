@@ -163,8 +163,13 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
         // Badge shown both in the expanded header (full node) and the collapsed summary row.
         // Two separate instances are required — a single Laminar node can only be mounted once.
-        val node            = div(elem_v.as_HtmlElement, extraNode)
-        val header_and_node = renderIncrDescr(title, div(cls := "flex flex-row items-start gap-2", div(cls := "flex-1", node), mkBadge()), isProperty).amend(binders)
+        val node = div(
+            cls := "flex flex-row items-center gap-2",
+            div(cls := "flex-1", elem_v.as_HtmlElement),
+            extraNode,
+            mkBadge()
+        )
+        val header_and_node = renderIncrDescr(title, node, isProperty).amend(binders)
         val summary_node    = wrapLine(title, mkBadge(), isProperty)
         val complexIncrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 

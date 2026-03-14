@@ -151,59 +151,87 @@ case class PipeFrame(direction: Vec3, upRef: Vec3):
       Vec3(h.y, -h.x, 0)
 
   /**
-   * Compute the target direction for a relative bend.
+   * Viewer-intuitive "up" direction: unit vector perpendicular to both
+   * the pipe direction and localRight, forming a right-handed (localRight, localUp, direction) frame.
    *
-   * @param side +1.0 for right, -1.0 for left (relative to `localRight`)
-   * @param thetaDeg rotation of the bend plane around the pipe axis, in degrees.
-   *                 0° = pure left/right. Range: [-90°, +90°].
+   * For horizontal pipes: `localUp = (0, 0, 1)` (world Up).
+   * For vertical Up pipe: `localUp = (0, -1, 0)` (Front-ish, by convention).
+   */
+  def localUp: Vec3 =
+    localRight.cross(direction).normalized
+
+  /**
+   * Compute the target direction for a relative bend using 4-quadrant parameterization.
+   *
+   * The bend plane is determined by the quadrant (Right/Up/Left/Down) and theta rotation
+   * within that quadrant. No `sideSign` — the direction of the bend is fully encoded
+   * in the quadrant's base vectors.
+   *
+   * @param side which quadrant the bend aims toward
+   * @param thetaDeg rotation within the quadrant, in degrees. Range: [0°, 90°].
    * @param deflectionDeg deflection angle of the bend (how much the pipe turns)
    * @return target direction as a unit Vec3 in absolute coordinates
    */
-  def relativeTarget(side: Double, thetaDeg: Double, deflectionDeg: Double): Vec3 =
-    val lr       = localRight
-    val thetaRad = math.toRadians(thetaDeg)
-    val bentRight = PipeFrame.rodriguesRotate(lr, direction, thetaRad).normalized
-    val bendAxis  = direction.cross(bentRight).normalized
-    val deflRad   = math.toRadians(side * deflectionDeg)
+  def relativeTarget(side: PipeFrame.RelativeSide, thetaDeg: Double, deflectionDeg: Double): Vec3 =
+    val lr              = localRight
+    val lu              = localUp
+    val (base, nextBase) = side.bases(lr, lu)
+    val thetaRad        = math.toRadians(thetaDeg)
+    val bentRight       = (base * math.cos(thetaRad) + nextBase * math.sin(thetaRad)).normalized
+    val bendAxis        = direction.cross(bentRight).normalized
+    val deflRad         = math.toRadians(deflectionDeg)
     PipeFrame.rodriguesRotate(direction, bendAxis, deflRad).normalized.snap
 
   /**
    * Recover the relative (side, thetaDeg) from an absolute target direction.
    *
    * Inverse of `relativeTarget`: given a target direction and deflection angle, find which
-   * (side, theta) pair would produce it.
+   * (RelativeSide, theta) pair would produce it.
    *
-   * @return (side, thetaDeg) where side is +1.0 (right) or -1.0 (left), theta ∈ [-90°, +90°].
-   *         Returns (1.0, 0.0) for degenerate cases (target ≈ direction or opposite).
+   * @return (side, thetaDeg) where side is a RelativeSide quadrant, theta ∈ [0°, 90°].
+   *         Returns (Right, 0.0) for degenerate cases (target ≈ direction or opposite).
    */
-  def recoverRelative(targetDir: Vec3, deflectionDeg: Double): (Double, Double) =
+  def recoverRelative(targetDir: Vec3, deflectionDeg: Double): (PipeFrame.RelativeSide, Double) =
+    import PipeFrame.RelativeSide
     val tgt      = targetDir.normalized
     val crossVec = direction.cross(tgt)
-    if crossVec.norm < 1e-10 then return (1.0, 0.0) // degenerate: target ≈ direction or opposite
+    if crossVec.norm < 1e-10 then return (RelativeSide.Right, 0.0) // degenerate
 
     val bendAxis  = crossVec.normalized
-    // Forward path: bendAxis = direction × bentRight, so bentRight = bendAxis × direction
     val bentRight = bendAxis.cross(direction).normalized
     val lr        = localRight
+    val lu        = localUp
 
-    // Compute signed angle from localRight to bentRight around direction axis.
-    // rodriguesRotate(lr, direction, theta) is the forward rotation. At 90°:
-    //   result = direction × lr (counterclockwise by right-hand rule).
-    // So positive theta rotates lr toward (direction × lr).
-    // sinA > 0 when bentRight has a component along (direction × lr).
-    val cosA     = lr.dot(bentRight)
-    val sinA     = direction.dot(lr.cross(bentRight))
-    val rawTheta = math.toDegrees(math.atan2(sinA, cosA))
+    // Project bentRight onto the local frame basis
+    val rightComp = bentRight.dot(lr)
+    val upComp    = bentRight.dot(lu)
 
-    // If rawTheta ∈ [-90°, +90°], the bend is toward the "right" side
-    if rawTheta >= -90.0 && rawTheta <= 90.0 then
-      (1.0, rawTheta)
-    else
-      // Flip side: the bend is toward "left"; normalize theta back to [-90°, +90°]
-      val flipped = if rawTheta > 90.0 then rawTheta - 180.0 else rawTheta + 180.0
-      (-1.0, flipped)
+    // Full angle α ∈ [0°, 360°) measured counterclockwise from localRight
+    val rawAlpha = math.toDegrees(math.atan2(upComp, rightComp))
+    val alpha    = if rawAlpha < 0.0 then rawAlpha + 360.0 else rawAlpha
+
+    // Determine quadrant and local theta
+    if alpha < 90.0 then (RelativeSide.Right, alpha)
+    else if alpha < 180.0 then (RelativeSide.Up, alpha - 90.0)
+    else if alpha < 270.0 then (RelativeSide.Left, alpha - 180.0)
+    else (RelativeSide.Down, alpha - 270.0)
 
 object PipeFrame:
+
+  /**
+   * Side of a relative bend in the local frame perpendicular to the pipe.
+   * The 4 quadrants span the full 360° circle around the pipe axis:
+   *   Right [0°, 90°), Up [90°, 180°), Left [180°, 270°), Down [270°, 360°).
+   */
+  enum RelativeSide:
+    case Right, Up, Left, Down
+
+    /** Base and next-base vectors for this quadrant in the local frame. */
+    def bases(localRight: Vec3, localUp: Vec3): (Vec3, Vec3) = this match
+      case Right => (localRight, localUp)
+      case Up    => (localUp, localRight * -1.0)
+      case Left  => (localRight * -1.0, localUp * -1.0)
+      case Down  => (localUp * -1.0, localRight)
 
   /**
    * Create initial frame from a direction vector.

@@ -59,11 +59,9 @@ object AddFlowOnlyPipeElement_15544_V3:
     @Transl(I(_.add_element.AddSectionSlopped))
     case class AddSectionSlopped(
         @Transl(I(_.terms.name))
-        name          : String,
+        name  : String,
         @Transl(I(_.terms.length))
-        length        : Length,
-        @Transl(I(_.terms.elevation_gain))
-        elevation_gain: Length
+        length: Length
     ) extends AddFlowOnlyPipeElement_15544_V3
 
     @Transl(I(_.add_element.AddSectionSlopped))

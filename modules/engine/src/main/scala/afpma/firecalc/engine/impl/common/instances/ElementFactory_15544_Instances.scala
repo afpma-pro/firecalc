@@ -81,10 +81,9 @@ object ElementFactory_15544_Instances:
                     (len, elev_gain, false)
                 case AddFlowOnlyPipeElement_15544.AddSectionSlopped(
                         _,
-                        len,
-                        elev_gain
+                        len
                     ) =>
-                    (len, elev_gain, true)
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_15544.AddSectionHorizontal(
                         _,
                         len

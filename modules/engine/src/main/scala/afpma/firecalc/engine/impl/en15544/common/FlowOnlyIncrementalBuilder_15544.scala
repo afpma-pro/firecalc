@@ -113,7 +113,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
             convStep.nextOpIfAddElement
                 .map(_._2)
                 .flatMap:
-                    case _ @AddSectionSlopped(_, l, _) => l.some
+                    case _ @AddSectionSlopped(_, l) => l.some
                     case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
                     case _ @AddSectionHorizontal(_, l) => l.some
                     case _ @AddSectionVertical(_, l)   => l.some
@@ -197,7 +197,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
             case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _, _))                         => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _))                             => propsState.validNel
             case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
             case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
             case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
@@ -299,25 +299,29 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         summon[SectionDSL[FlowOnlyPipeDescr_15544]]
 
     def addSectionSlopped(
+        name  : String,
+        length: Length
+    ) = sectionDSL.addSectionSlopped(name, length)
+
+    def addSectionSloppedForceManualElevationGain(
         name          : String,
         length        : Length,
         elevation_gain: Length
-    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
+    ) = sectionDSL.addSectionSloppedForceManualElevationGain(name, length, elevation_gain)
 
     @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(
         name             : String,
         horizontal_length: Length
-    ) = sectionDSL.addSectionSlopped(name, horizontal_length, 0.meters)
+    ) = sectionDSL.addSectionSlopped(name, horizontal_length)
 
     @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionVertical(
         name          : String,
         elevation_gain: Length
     ) = sectionDSL.addSectionSlopped(
-        name, 
-        if (elevation_gain) >= 0.meters then elevation_gain else elevation_gain * -1.0, 
-        elevation_gain
+        name,
+        if (elevation_gain) >= 0.meters then elevation_gain else elevation_gain * -1.0
     )
 
     // Delegate to FlowResistanceDSL typeclass

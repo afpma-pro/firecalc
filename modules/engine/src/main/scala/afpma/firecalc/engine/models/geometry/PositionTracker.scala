@@ -75,7 +75,24 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionSlopped(_, length, elevGain) =>
+                case AddSectionSlopped(_, length) =>
+                    val l  = length.toUnit[Meter].value
+                    val eg = frame.map(f => l * f.direction.z).getOrElse(0.0)
+                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
+                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
+                    val dir   = disp.normalized
+                    val endPt = currentPosition + disp
+                    segments += PipeSegmentPosition(
+                        elementIndex = idx,
+                        startPoint   = currentPosition,
+                        endPoint     = endPt,
+                        direction    = dir,
+                        length       = l,
+                        innerShape   = currentInnerShape,
+                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                    )
+                    currentPosition = endPt
+                case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
                     val l   = length.toUnit[Meter].value
                     val eg  = elevGain.toUnit[Meter].value
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
@@ -155,7 +172,24 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionSlopped(_, length, elevGain) =>
+                case AddSectionSlopped(_, length) =>
+                    val l  = length.toUnit[Meter].value
+                    val eg = frame.map(f => l * f.direction.z).getOrElse(0.0)
+                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
+                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
+                    val dir   = disp.normalized
+                    val endPt = currentPosition + disp
+                    segments += PipeSegmentPosition(
+                        elementIndex = idx,
+                        startPoint   = currentPosition,
+                        endPoint     = endPt,
+                        direction    = dir,
+                        length       = l,
+                        innerShape   = currentInnerShape,
+                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                    )
+                    currentPosition = endPt
+                case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
                     val l   = length.toUnit[Meter].value
                     val eg  = elevGain.toUnit[Meter].value
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
@@ -241,7 +275,24 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionSlopped(_, length, elevGain) =>
+                case AddSectionSlopped(_, length) =>
+                    val l  = length.toUnit[Meter].value
+                    val eg = frame.map(f => l * f.direction.z).getOrElse(0.0)
+                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
+                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
+                    val dir   = disp.normalized
+                    val endPt = currentPosition + disp
+                    segments += PipeSegmentPosition(
+                        elementIndex = idx,
+                        startPoint   = currentPosition,
+                        endPoint     = endPt,
+                        direction    = dir,
+                        length       = l,
+                        innerShape   = currentInnerShape,
+                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                    )
+                    currentPosition = endPt
+                case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
                     val l   = length.toUnit[Meter].value
                     val eg  = elevGain.toUnit[Meter].value
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))

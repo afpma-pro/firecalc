@@ -5,8 +5,6 @@
 
 package afpma.firecalc.engine.cas_types.en15544.v20241001
 
-import algebra.instances.all.given
-
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
@@ -19,9 +17,6 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
-
-import coulomb.*
-import coulomb.policy.standard.given
 
 import io.taig.babel.Languages
 
@@ -123,7 +118,7 @@ object CasType_15544_C2
                 addSectionVertical ("Car. 11", 60.cm                                                           ),
                 // arbitrary
                 addSharpAngle_45deg("virage 45° 11-12", FinalDirection(AzimuthDirection.Front, InclinationDirection.Custom(45.degrees))), // towards Front-Up at 45°
-                addSectionSlopped  ("Car. 12", 50.cm, elevation_gain = 50.cm * math.cos(math.Pi / 4)           ),
+                addSectionSlopped  ("Car. 12", 50.cm                                                            ),
                 addSharpAngle_45deg("virage 45° 12-13", FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
                 addSectionVertical ("Car. 13", 60.cm                                                           )
             )

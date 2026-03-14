@@ -84,10 +84,9 @@ object ElementFactory_13384_Instances:
                     (len, elev_gain, false)
                 case AddFlowOnlyPipeElement_13384.AddSectionSlopped(
                         _,
-                        len,
-                        elev_gain,
+                        len
                     ) =>
-                    (len, elev_gain, true)
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_13384.AddSectionHorizontal(
                         _,
                         len
@@ -184,10 +183,9 @@ object ElementFactory_13384_Instances:
                     (len, elev_gain, false)
                 case AddThermalPipeElement_13384.AddSectionSlopped(
                         _,
-                        len,
-                        elev_gain
+                        len
                     ) =>
-                    (len, elev_gain, true)
+                    (len, 0.0.m, true)
                 case AddThermalPipeElement_13384.AddSectionHorizontal(
                         _,
                         len

@@ -60,7 +60,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-            AddSectionSlopped("s", 5.0.meters, 3.0.meters)
+            AddSectionSloppedForceManualElevationGain("s", 5.0.meters, 3.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         // horizontal distance = sqrt(25 - 9) = 4, elevation = 3 → (0, 4, 3)
