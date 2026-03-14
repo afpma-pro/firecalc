@@ -238,6 +238,9 @@ object I18nData_UI:
         cardinal_front               : String,
         cardinal_right               : String,
         cardinal_left                : String,
+        relative_left                : String,
+        relative_right               : String,
+        relative_theta               : String,
     )
 
     case class Tooltips(

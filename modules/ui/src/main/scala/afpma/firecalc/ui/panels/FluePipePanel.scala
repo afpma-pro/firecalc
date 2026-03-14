@@ -140,6 +140,19 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     ): Var[A] => Option[Var[Option[FinalDirection]]] =
         ev => Some(ev.zoomLazy(getter)(setter))
 
+    private def relativeDirectionExtra[A <: AddDirectionChange](
+        idx   : Int,
+        getter: A => Option[FinalDirection],
+        setter: (A, Option[FinalDirection]) => A
+    ): Var[A] => HtmlElement =
+        ev =>
+            val fdVar = ev.zoomLazy(getter)(setter)
+            RelativeDirectionInput(
+                frameBefore     = frameBeforeSig_badge(idx),
+                deflectionAngle = deflectionAngleSig(idx),
+                finalDirVar     = fdVar
+            ).node
+
     override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
         welems_var.signal.map: elems =>
             elems.collectFirst:
@@ -239,6 +252,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     iix._2,
                     sig,
                     isProperty      = false,
+                    extra            = relativeDirectionExtra(iix._1, _.finalDir, (a, fd) => a.copy(finalDir = fd)),
                     badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }
@@ -253,6 +267,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     iix._2,
                     sig,
                     isProperty      = false,
+                    extra            = relativeDirectionExtra(iix._1, _.finalDir, (a, fd) => a.copy(finalDir = fd)),
                     badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
                 )
             }

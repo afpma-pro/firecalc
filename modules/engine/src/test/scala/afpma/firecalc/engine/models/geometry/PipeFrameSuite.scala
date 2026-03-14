@@ -544,4 +544,196 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     }
   }
 
+  // ── localRight ───────────────────────────────────────────────────────────
+
+  "localRight" should "return Right(+X) for Rear-facing pipe" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    assertVec3Approx(frame.localRight, Vec3.Right)
+  }
+
+  it should "return Front(-Y) for Right-facing pipe" in {
+    val frame = PipeFrame.initial(Vec3.Right)
+    assertVec3Approx(frame.localRight, Vec3.Front)
+  }
+
+  it should "return Left(-X) for Front-facing pipe" in {
+    val frame = PipeFrame.initial(Vec3.Front)
+    assertVec3Approx(frame.localRight, Vec3.Left)
+  }
+
+  it should "return Rear(+Y) for Left-facing pipe" in {
+    val frame = PipeFrame.initial(Vec3.Left)
+    assertVec3Approx(frame.localRight, Vec3.Rear)
+  }
+
+  it should "return Right(+X) for vertical Up pipe" in {
+    val frame = PipeFrame.initial(Vec3.Up)
+    assertVec3Approx(frame.localRight, Vec3.Right)
+  }
+
+  it should "return Right(+X) for vertical Down pipe" in {
+    val frame = PipeFrame.initial(Vec3.Down)
+    assertVec3Approx(frame.localRight, Vec3.Right)
+  }
+
+  it should "be horizontal and perpendicular to direction for diagonal pipe" in {
+    val dir   = Vec3(1, 1, 1).normalized
+    val frame = PipeFrame.initial(dir)
+    val lr    = frame.localRight
+    // localRight should be horizontal (z=0)
+    assertApprox(lr.z, 0.0, "localRight.z should be 0")
+    // localRight should be perpendicular to horizontal projection of direction
+    val hProj = Vec3(dir.x, dir.y, 0).normalized
+    assertApprox(hProj.dot(lr), 0.0, "localRight perpendicular to horizontal heading")
+    // localRight should be unit vector
+    assertApprox(lr.norm, 1.0, "localRight norm")
+  }
+
+  it should "point 90° CW from heading for az=45° pipe" in {
+    // az=45° heading → localRight should be at az=135° (FrontRight direction)
+    val dir   = Vec3.fromAzimuthElevation(45.0, 0.0)
+    val frame = PipeFrame.initial(dir)
+    val lr    = frame.localRight
+    val (az, el) = lr.toAzimuthElevation
+    assertApprox(el, 0.0, "elevation")
+    assertApprox(az, 135.0, "azimuth should be heading+90°")
+  }
+
+  // ── relativeTarget ──────────────────────────────────────────────────────
+
+  "relativeTarget" should "bend toward localRight for side=+1, theta=0°" in {
+    val frame  = PipeFrame.initial(Vec3.Rear)
+    // From Rear, localRight=Right. 90° bend right → should reach Right
+    val target = frame.relativeTarget(1.0, 0.0, 90.0)
+    assertVec3Close(target, Vec3.Right)
+  }
+
+  it should "bend toward -localRight for side=-1, theta=0°" in {
+    val frame  = PipeFrame.initial(Vec3.Rear)
+    // From Rear, localRight=Right. 90° bend left → should reach Left
+    val target = frame.relativeTarget(-1.0, 0.0, 90.0)
+    assertVec3Close(target, Vec3.Left)
+  }
+
+  it should "produce horizontal result for horizontal pipe with theta=0°" in {
+    val frame  = PipeFrame.initial(Vec3.Right)
+    // From Right, localRight=Front. 65° bend right → az≈155° el=0°
+    val target = frame.relativeTarget(1.0, 0.0, 65.0)
+    val (_, el) = target.toAzimuthElevation
+    assertApprox(el, 0.0, "elevation should be 0° for horizontal theta=0°")
+  }
+
+  it should "produce correct az for 65° right from Right Horizontal" in {
+    val frame  = PipeFrame.initial(Vec3.Right)
+    val target = frame.relativeTarget(1.0, 0.0, 65.0)
+    val (az, _) = target.toAzimuthElevation
+    // From Right(az=90°), localRight=Front(az=180°). Bend 65° toward Front:
+    // target = cos(65°)*Right + sin(65°)*Front → az≈155°
+    assertApprox(az, 155.0, "azimuth for 65° right from Right")
+  }
+
+  it should "produce correct az for 65° left from Right Horizontal" in {
+    val frame  = PipeFrame.initial(Vec3.Right)
+    val target = frame.relativeTarget(-1.0, 0.0, 65.0)
+    val (az, _) = target.toAzimuthElevation
+    // Bend 65° toward -Front = Rear → az≈25°
+    assertApprox(az, 25.0, "azimuth for 65° left from Right")
+  }
+
+  it should "produce Right for 45° right from vertical Up with theta=0°" in {
+    val frame  = PipeFrame.initial(Vec3.Up)
+    // From Up, localRight=Right. 45° bend right → Right↑45°
+    val target = frame.relativeTarget(1.0, 0.0, 45.0)
+    val (az, el) = target.toAzimuthElevation
+    assertApprox(az, 90.0, "azimuth should be 90° (Right)")
+    assertApprox(el, 45.0, "elevation should be 45°")
+  }
+
+  it should "produce Left for 45° left from vertical Up with theta=0°" in {
+    val frame  = PipeFrame.initial(Vec3.Up)
+    val target = frame.relativeTarget(-1.0, 0.0, 45.0)
+    val (az, el) = target.toAzimuthElevation
+    assertApprox(az, 270.0, "azimuth should be 270° (Left)")
+    assertApprox(el, 45.0, "elevation should be 45°")
+  }
+
+  it should "produce non-trivial direction with theta=30°" in {
+    val frame  = PipeFrame.initial(Vec3.Rear)
+    // theta=30° rotates the bend plane, so result should not be horizontal
+    val target = frame.relativeTarget(1.0, 30.0, 90.0)
+    val (_, el) = target.toAzimuthElevation
+    // With theta=30°, the result should have non-zero elevation
+    math.abs(el) should be > 1.0
+  }
+
+  it should "preserve deflection angle" in {
+    val frame = PipeFrame.initial(Vec3.Right)
+    val sides = List(1.0, -1.0)
+    val thetas = List(0.0, 15.0, -30.0, 45.0, -60.0, 90.0)
+    val defls  = List(30.0, 45.0, 65.0, 90.0, 120.0)
+    for
+      side  <- sides
+      theta <- thetas
+      defl  <- defls
+    do
+      val target = frame.relativeTarget(side, theta, defl)
+      val angle  = frame.direction.angleTo(target)
+      withClue(s"side=$side, theta=$theta, defl=$defl") {
+        math.abs(angle - defl) should be < 0.01
+      }
+  }
+
+  // ── recoverRelative ─────────────────────────────────────────────────────
+
+  "recoverRelative" should "round-trip with relativeTarget for various parameters" in {
+    val startDirs = List(Vec3.Rear, Vec3.Right, Vec3.Up, Vec3.Down, Vec3(1, 1, 0).normalized)
+    val sides     = List(1.0, -1.0)
+    val thetas    = List(0.0, 15.0, -30.0, 45.0, -60.0, 80.0, -80.0)
+    val defls     = List(30.0, 45.0, 65.0, 90.0)
+
+    for
+      startDir <- startDirs
+      side     <- sides
+      theta    <- thetas
+      defl     <- defls
+    do
+      val frame  = PipeFrame.initial(startDir)
+      val target = frame.relativeTarget(side, theta, defl)
+      val (recSide, recTheta) = frame.recoverRelative(target, defl)
+      withClue(s"startDir=$startDir, side=$side, theta=$theta, defl=$defl → target=$target") {
+        recSide shouldBe side
+        math.abs(recTheta - theta) should be < 0.1
+      }
+  }
+
+  it should "return (1.0, 0.0) for degenerate case (target ≈ direction)" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    val (side, theta) = frame.recoverRelative(Vec3.Rear, 90.0)
+    side shouldBe 1.0
+    theta shouldBe 0.0
+  }
+
+  it should "recover side=Right for cardinal Right from Rear pipe" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    val (side, theta) = frame.recoverRelative(Vec3.Right, 90.0)
+    side shouldBe 1.0
+    assertApprox(theta, 0.0, "theta should be 0° for pure right from Rear")
+  }
+
+  it should "recover side=Left for cardinal Left from Rear pipe" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    val (side, theta) = frame.recoverRelative(Vec3.Left, 90.0)
+    side shouldBe -1.0
+    assertApprox(theta, 0.0, "theta should be 0° for pure left from Rear")
+  }
+
+  it should "recover side=Right, theta=-90° for cardinal Up from Rear pipe" in {
+    val frame = PipeFrame.initial(Vec3.Rear)
+    // From Rear: localRight=Right. rodriguesRotate(Right, Rear, -90°)=Up, then bendAxis=Right,
+    // rotate Rear around Right by +90° → Up. So reaching Up requires side=+1, theta=-90°.
+    val (side, theta) = frame.recoverRelative(Vec3.Up, 90.0)
+    side shouldBe 1.0
+    assertApprox(theta, -90.0, "theta should be -90° for Up from Rear")
+  }
+
 end PipeFrameSuite
