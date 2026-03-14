@@ -95,13 +95,6 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
 
     // AddElement
 
-    given horizontal_form_Option_Angle: DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
-        import afpma.firecalc.units.all.given
-        // given Defaultable[Option[QtyD[Degree]]] = Defaultable(None)
-        given ValidateVar[Option[QtyD[Degree]]] =
-            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
-        DaisyUIHorizontalForm.forOptionQtyD_default[Degree]
-
     // helper with string field always validated
     inline def autoDeriveAndOverwriteFieldNames_AddElement_Subtype[A](using
         inline m: Mirror.Of[A]

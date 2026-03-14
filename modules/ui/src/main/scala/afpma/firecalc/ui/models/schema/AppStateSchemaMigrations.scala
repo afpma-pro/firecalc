@@ -65,7 +65,7 @@ object AppStateSchemaMigrations:
     import afpma.firecalc.dto.transformers.given
 
     /** Current schema version - increment when adding new schema versions */
-    val CURRENT_SCHEMA_VERSION = 3
+    val CURRENT_SCHEMA_VERSION = 4
 
     /**
      * Chimney transformer from AppStateSchema_V1 to AppStateSchema_V2.
