@@ -60,30 +60,6 @@ object V4Instances:
             Json.obj("WithAirSpace" -> semiauto.deriveEncoder[AirSpaceDetailed_V2.WithAirSpace_V2].apply(w))
     }
 
-    // ThermalPipeDescr_13384_V3
-
-    given Decoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveDecoder[SetThermalPipeProp_13384_V3.SetSingleProp]
-    given Encoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveEncoder[SetThermalPipeProp_13384_V3.SetSingleProp]
-
-    given Decoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveDecoder
-    given Encoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveEncoder
-
-    given Decoder[SetThermalPipeProp_13384_V3.LinedFlue] = semiauto.deriveDecoder
-    given Encoder[SetThermalPipeProp_13384_V3.LinedFlue] = semiauto.deriveEncoder
-
-    given Decoder[ThermalPipeDescr_13384_V3] = semiauto.deriveDecoder[ThermalPipeDescr_13384_V3]
-    given Encoder[ThermalPipeDescr_13384_V3] = semiauto.deriveEncoder[ThermalPipeDescr_13384_V3]
-
-    // FlowOnlyPipeDescr_13384_V3
-
-    given Decoder[FlowOnlyPipeDescr_13384_V3] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384_V3]
-    given Encoder[FlowOnlyPipeDescr_13384_V3] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384_V3]
-
-    // FlowOnlyPipeDescr_15544_V3
-
-    given Decoder[FlowOnlyPipeDescr_15544_V3] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544_V3]
-    given Encoder[FlowOnlyPipeDescr_15544_V3] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544_V3]
-
     // TypeOfAppliance: encoded as plain strings to avoid the YAML null bug
     // where `{}` (empty object) is emitted as `null` by the YAML printer.
     given Decoder[TypeOfAppliance] = Decoder.instance { cursor =>
@@ -104,6 +80,9 @@ object V4Instances:
     given Encoder[FlowResistanceCatalogEntry] = semiauto.deriveEncoder
 
     // AzimuthDirection: named cases as plain strings, Custom as {"Custom": <angle>}
+    // IMPORTANT: must be defined BEFORE the sealed trait codecs that reference them
+    // (ThermalPipeDescr_13384_V3, FlowOnlyPipeDescr_*) so that semiauto.derive*
+    // picks up these explicit codecs rather than falling back to encoder_QtyD.
     given Decoder[AzimuthDirection] = Decoder.instance { cursor =>
         cursor.as[String] match
             case Right("Rear")       => Right(AzimuthDirection.Rear)
@@ -149,6 +128,31 @@ object V4Instances:
             Json.obj("Custom" -> Encoder[Angle].apply(el))
     }
 
-    // FinalDirection: derive from the above
+    // FinalDirection: derive from the above AzimuthDirection/InclinationDirection codecs
     given Decoder[FinalDirection] = semiauto.deriveDecoder[FinalDirection]
     given Encoder[FinalDirection] = semiauto.deriveEncoder[FinalDirection]
+
+    // ThermalPipeDescr_13384_V3
+    // NOTE: sealed trait codecs must come AFTER all leaf-type codecs they depend on
+
+    given Decoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveDecoder[SetThermalPipeProp_13384_V3.SetSingleProp]
+    given Encoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveEncoder[SetThermalPipeProp_13384_V3.SetSingleProp]
+
+    given Decoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveDecoder
+    given Encoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveEncoder
+
+    given Decoder[SetThermalPipeProp_13384_V3.LinedFlue] = semiauto.deriveDecoder
+    given Encoder[SetThermalPipeProp_13384_V3.LinedFlue] = semiauto.deriveEncoder
+
+    given Decoder[ThermalPipeDescr_13384_V3] = semiauto.deriveDecoder[ThermalPipeDescr_13384_V3]
+    given Encoder[ThermalPipeDescr_13384_V3] = semiauto.deriveEncoder[ThermalPipeDescr_13384_V3]
+
+    // FlowOnlyPipeDescr_13384_V3
+
+    given Decoder[FlowOnlyPipeDescr_13384_V3] = semiauto.deriveDecoder[FlowOnlyPipeDescr_13384_V3]
+    given Encoder[FlowOnlyPipeDescr_13384_V3] = semiauto.deriveEncoder[FlowOnlyPipeDescr_13384_V3]
+
+    // FlowOnlyPipeDescr_15544_V3
+
+    given Decoder[FlowOnlyPipeDescr_15544_V3] = semiauto.deriveDecoder[FlowOnlyPipeDescr_15544_V3]
+    given Encoder[FlowOnlyPipeDescr_15544_V3] = semiauto.deriveEncoder[FlowOnlyPipeDescr_15544_V3]
