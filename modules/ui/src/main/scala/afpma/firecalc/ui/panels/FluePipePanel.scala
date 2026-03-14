@@ -103,9 +103,6 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     case _ => ()
             builder.result()
 
-    private def frameBeforeSig(idx: Int): Signal[Option[PipeFrame]] =
-        frameBeforeByIdx.map(_.get(idx))
-
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
             elems.flatMap: (idx, elem) =>

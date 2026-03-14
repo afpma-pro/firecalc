@@ -158,7 +158,7 @@ case class DirectionBadgeComponent(
                     val presets = frame.reachableCardinals(deflDeg)
                     ul(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
-                        presets.map: (cardinalVec, _rollDeg) =>
+                        presets.map: (cardinalVec, _) =>
                             val fd = vec3ToFinalDirection(cardinalVec)
                             val label = translateCardinal(cardinalVec.toDisplayString)
                             li(

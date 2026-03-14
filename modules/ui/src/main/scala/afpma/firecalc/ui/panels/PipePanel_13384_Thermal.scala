@@ -71,10 +71,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     case _ => ()
             builder.result()
 
-    /** Get frameBefore for element at index from the UI-side computation. */
-    private def frameBeforeSig(idx: Int): Signal[Option[PipeFrame]] =
-        frameBeforeByIdx.map(_.get(idx))
-
     /**
      * Direction AFTER each element, keyed by element index. Used for the direction badge.
      * Only populated for AddThermalPipeElement_13384 subtypes (geometric elements);
@@ -236,6 +232,14 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty = false
                 )
+            }
+            .handleCase[
+                (Int, ThermalPipeDescr_13384, XtraOutputs),
+                (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs),
+                HtmlElement
+            ] { case (i, aa: AddSectionSloppedForceManualElevationGain, x) => (i, aa, x) } { (_, _) =>
+                // should never happen, only allowed internally in engine
+                ???
             }
             .handleCase[
                 (Int, ThermalPipeDescr_13384, XtraOutputs),

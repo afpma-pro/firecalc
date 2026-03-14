@@ -59,9 +59,6 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     case _ => ()
             builder.result()
 
-    private def frameBeforeSig(idx: Int): Signal[Option[PipeFrame]] =
-        frameBeforeByIdx.map(_.get(idx))
-
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
             elems.flatMap: (idx, elem) =>
@@ -150,6 +147,14 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty = false
                 )
+            }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_13384, XtraOutputs),
+                (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs),
+                HtmlElement
+            ] { case (i, aa: AddSectionSloppedForceManualElevationGain, x) => (i, aa, x) } { (_, _) =>
+                // should never happen, only allowed internally in engine
+                ???
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_13384, XtraOutputs),
