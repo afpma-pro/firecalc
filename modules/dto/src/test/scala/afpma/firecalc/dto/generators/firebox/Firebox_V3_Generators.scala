@@ -7,9 +7,14 @@ package afpma.firecalc.dto.generators.firebox
 
 import org.scalacheck.Gen
 import afpma.firecalc.dto.v4.Firebox_V3
+import afpma.firecalc.dto.v4.TypeOfAppliance
+import afpma.firecalc.dto.v4.EmissionsAndEfficiencyValues_DTO
+import afpma.firecalc.dto.v4.EmissionValues_DTO
+import afpma.firecalc.dto.v4.TestEmissionValue_DTO
+import afpma.firecalc.dto.v4.TestReport
+import afpma.firecalc.dto.v4.PolluantName
 import afpma.firecalc.dto.common.HeatOutputReduced
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.dto.v4.TypeOfAppliance
 
 trait Firebox_V3_Generators extends Firebox_V2_Generators:
 
@@ -138,6 +143,35 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
     def genEmissionValueU: Gen[EmissionValueU] =
         Gen.choose(10.0, 3000.0).map(_.mg_per_Nm3)
 
+    def genTestReport: Gen[TestReport] =
+        for
+            name <- Gen.alphaNumStr.suchThat(_.nonEmpty)
+            date <- Gen.alphaNumStr
+        yield TestReport(name, date)
+
+    def genTestEmissionValue_DTO(polluant: PolluantName): Gen[TestEmissionValue_DTO] =
+        for
+            value       <- Gen.option(genEmissionValueU)
+            test_method <- Gen.alphaNumStr
+            o2ref       <- Gen.choose(6.0, 13.0).map(_.percent)
+        yield TestEmissionValue_DTO(polluant, value, test_method, o2ref)
+
+    def genEmissionsAndEfficiencyValues_DTO: Gen[EmissionsAndEfficiencyValues_DTO] =
+        for
+            firebox_name     <- Gen.alphaNumStr.suchThat(_.nonEmpty)
+            accredited_body  <- Gen.alphaNumStr
+            test_reports     <- Gen.listOfN(Gen.choose(0, 2).sample.getOrElse(0), genTestReport)
+            co               <- genTestEmissionValue_DTO(PolluantName.CO)
+            dust             <- genTestEmissionValue_DTO(PolluantName.Dust)
+            ogc              <- genTestEmissionValue_DTO(PolluantName.OGC)
+            nox              <- genTestEmissionValue_DTO(PolluantName.NOx)
+        yield EmissionsAndEfficiencyValues_DTO(
+            firebox_name                = firebox_name,
+            accredited_or_notified_body = accredited_body,
+            test_reports                = test_reports,
+            emissions_values            = EmissionValues_DTO(co = co, dust = dust, ogc = ogc, nox = nox)
+        )
+
     def genSingleTested_V3: Gen[Firebox_V3.SingleTested] =
         for
             test_standard              <- genTestStandard
@@ -161,12 +195,7 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
             t_burnout                  <- Gen.choose(500.0, 900.0).map(_.degreesCelsius)
             is_glass_below_one_fifth   <- Gen.oneOf(true, false)
             glass_area                 <- Gen.choose(500.0, 2000.0).map(_.cm2)
-            emissions_firebox_name     <- Gen.alphaNumStr.suchThat(_.nonEmpty)
-            emissions_accredited_body  <- Gen.alphaNumStr
-            emissions_co               <- genEmissionValueU
-            emissions_dust             <- genEmissionValueU
-            emissions_ogc              <- genEmissionValueU
-            emissions_nox              <- genEmissionValueU
+            emissions_values           <- genEmissionsAndEfficiencyValues_DTO
         yield Firebox_V3.SingleTested(
             test_standard                          = test_standard,
             reference                              = reference,
@@ -189,12 +218,7 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
             t_burnout                              = t_burnout,
             is_glass_surface_ratio_below_one_fifth = is_glass_below_one_fifth,
             glass_area                             = glass_area,
-            emissions_firebox_name                 = emissions_firebox_name,
-            emissions_accredited_body              = emissions_accredited_body,
-            emissions_co                           = emissions_co,
-            emissions_dust                         = emissions_dust,
-            emissions_ogc                          = emissions_ogc,
-            emissions_nox                          = emissions_nox
+            emissions_values                       = emissions_values
         )
 
     def genFirebox_V3: Gen[Firebox_V3] =

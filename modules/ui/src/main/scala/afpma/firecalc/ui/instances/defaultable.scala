@@ -106,9 +106,10 @@ object defaultable:
         )
 
     given firebox_single_tested_minimal: Defaultable[Firebox.SingleTested] = Defaultable:
+        import afpma.firecalc.dto.v4.*
         Firebox.SingleTested(
             reference                             = "",
-            type_of_appliance                     = afpma.firecalc.dto.v4.TypeOfAppliance.WoodLogs,
+            type_of_appliance                     = TypeOfAppliance.WoodLogs,
             test_standard                         = Firebox.TestStandard.EN_15250,
             firebox_depth                         = 0.cm,
             firebox_width                         = 0.cm,
@@ -128,12 +129,17 @@ object defaultable:
             co2_dry_nominal                       = 12.0.percent,
             co2_dry_lowest                        = None,
             pellets_load_burn_duration            = None,
-            emissions_firebox_name                = "",
-            emissions_accredited_body             = "",
-            emissions_co                          = 0.0.mg_per_Nm3,
-            emissions_dust                        = 0.0.mg_per_Nm3,
-            emissions_ogc                         = 0.0.mg_per_Nm3,
-            emissions_nox                         = 0.0.mg_per_Nm3
+            emissions_values                      = EmissionsAndEfficiencyValues_DTO(
+                firebox_name                = "",
+                accredited_or_notified_body = "",
+                test_reports                = Nil,
+                emissions_values            = EmissionValues_DTO(
+                    co   = TestEmissionValue_DTO(PolluantName.CO,   Some(0.0.mg_per_Nm3), "", 13.0.percent),
+                    dust = TestEmissionValue_DTO(PolluantName.Dust, Some(0.0.mg_per_Nm3), "", 13.0.percent),
+                    ogc  = TestEmissionValue_DTO(PolluantName.OGC,  Some(0.0.mg_per_Nm3), "", 13.0.percent),
+                    nox  = TestEmissionValue_DTO(PolluantName.NOx,  Some(0.0.mg_per_Nm3), "", 13.0.percent)
+                )
+            )
         )
 
     given given_Firebox: Defaultable[Firebox] = firebox_traditional_minimal

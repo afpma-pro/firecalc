@@ -27,41 +27,27 @@ object single_tested:
         _.transformInto[Firebox_15544.TestStandard]
 
     /**
-     * Builds [[EmissionsAndEfficiencyValues]] from the flat DTO fields.
+     * Builds [[EmissionsAndEfficiencyValues]] from the nested [[EmissionsAndEfficiencyValues_DTO]].
      * Efficiency placeholder fields are set to None.validNel — overwritten by the engine
      * during calculation.
      */
     private def buildEmissionsValues(dto: Firebox_V3.SingleTested): EmissionsAndEfficiencyValues =
+        import FireboxTransformers.toTestEmissionValue
+        val ev = dto.emissions_values
         EmissionsAndEfficiencyValues(
-            firebox_name                       = dto.emissions_firebox_name,
-            accredited_or_notified_body        = dto.emissions_accredited_body,
-            test_reports                       = Nil,
+            firebox_name                       = ev.firebox_name,
+            accredited_or_notified_body        = ev.accredited_or_notified_body,
+            test_reports                       = ev.test_reports,
             min_efficiency_firebox_nominal     = None,
             min_efficiency_full_stove_nominal  = None.validNel,
             min_efficiency_firebox_reduced     = None,
             min_efficiency_full_stove_reduced  = None.validNel,
             min_seasonal_efficiency_full_stove = None.validNel,
             emissions_values                   = EmissionValues(
-                co   = TestEmissionValue.defineAt13pO2(
-                    PolluantName.CO,
-                    Some(dto.emissions_co),
-                    test_method = ""
-                ),
-                dust = TestEmissionValue.defineAt13pO2(
-                    PolluantName.Dust,
-                    Some(dto.emissions_dust),
-                    test_method = ""
-                ),
-                ogc  = TestEmissionValue.defineAt13pO2(
-                    PolluantName.OGC,
-                    Some(dto.emissions_ogc),
-                    test_method = ""
-                ),
-                nox  = TestEmissionValue.defineAt13pO2(
-                    PolluantName.NOx,
-                    Some(dto.emissions_nox),
-                    test_method = ""
-                )
+                co   = toTestEmissionValue(ev.emissions_values.co),
+                dust = toTestEmissionValue(ev.emissions_values.dust),
+                ogc  = toTestEmissionValue(ev.emissions_values.ogc),
+                nox  = toTestEmissionValue(ev.emissions_values.nox)
             )
         )
 

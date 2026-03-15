@@ -413,7 +413,16 @@ object CommonInstances:
 
     // EmissionsAndEfficiencyValues_DTO
 
-    given Decoder[EmissionsAndEfficiencyValues_DTO] = semiauto.deriveDecoder[EmissionsAndEfficiencyValues_DTO]
+    // Custom decoder: YAML encodes empty List as null, so we treat null test_reports as Nil
+    given Decoder[EmissionsAndEfficiencyValues_DTO] = Decoder.instance { c =>
+        for
+            firebox_name                <- c.downField("firebox_name").as[String]
+            accredited_or_notified_body <- c.downField("accredited_or_notified_body").as[String]
+            test_reports                <- c.downField("test_reports").as[List[TestReport]]
+                                            .orElse(Right(Nil))
+            emissions_values            <- c.downField("emissions_values").as[EmissionValues_DTO]
+        yield EmissionsAndEfficiencyValues_DTO(firebox_name, accredited_or_notified_body, test_reports, emissions_values)
+    }
     given Encoder[EmissionsAndEfficiencyValues_DTO] = semiauto.deriveEncoder[EmissionsAndEfficiencyValues_DTO]
 
     // ProjectDescr

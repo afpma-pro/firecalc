@@ -12,6 +12,10 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
 import afpma.firecalc.dto.v4.Firebox_V3
 import afpma.firecalc.dto.v4.TypeOfAppliance
+import afpma.firecalc.dto.v4.EmissionsAndEfficiencyValues_DTO
+import afpma.firecalc.dto.v4.EmissionValues_DTO
+import afpma.firecalc.dto.v4.TestEmissionValue_DTO
+import afpma.firecalc.dto.v4.PolluantName
 
 import io.taig.babel.Locale
 import io.taig.babel.Languages
@@ -58,12 +62,17 @@ class SingleTested_Snapshot_Suite extends AnyFlatSpec with Matchers:
             mean_firebox_temperature               = Some(350.0.degreesCelsius),
             t_burnout                              = 700.0.degreesCelsius,
             is_glass_surface_ratio_below_one_fifth = true,
-            emissions_firebox_name                 = "Firebox Model A",
-            emissions_accredited_body              = "Lab XYZ",
-            emissions_co                           = 1200.0.mg_per_Nm3,
-            emissions_dust                         = 40.0.mg_per_Nm3,
-            emissions_ogc                          = 120.0.mg_per_Nm3,
-            emissions_nox                          = 80.0.mg_per_Nm3
+            emissions_values                       = EmissionsAndEfficiencyValues_DTO(
+                firebox_name                = "Firebox Model A",
+                accredited_or_notified_body = "Lab XYZ",
+                test_reports                = Nil,
+                emissions_values            = EmissionValues_DTO(
+                    co   = TestEmissionValue_DTO(PolluantName.CO,   Some(1200.0.mg_per_Nm3), "", 13.0.percent),
+                    dust = TestEmissionValue_DTO(PolluantName.Dust, Some(40.0.mg_per_Nm3),   "", 13.0.percent),
+                    ogc  = TestEmissionValue_DTO(PolluantName.OGC,  Some(120.0.mg_per_Nm3),  "", 13.0.percent),
+                    nox  = TestEmissionValue_DTO(PolluantName.NOx,  Some(80.0.mg_per_Nm3),   "", 13.0.percent)
+                )
+            )
         )
 
     private val yamlV4: FireCalcYAML_V4 = FireCalcYAML_V4(

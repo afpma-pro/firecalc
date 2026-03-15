@@ -57,12 +57,17 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
             mean_firebox_temperature               = Some(350.0.degreesCelsius),
             t_burnout                              = 700.0.degreesCelsius,
             is_glass_surface_ratio_below_one_fifth = true,
-            emissions_firebox_name                 = "Firebox Integration Model",
-            emissions_accredited_body              = "Lab ABC",
-            emissions_co                           = 1200.0.mg_per_Nm3,
-            emissions_dust                         = 40.0.mg_per_Nm3,
-            emissions_ogc                          = 120.0.mg_per_Nm3,
-            emissions_nox                          = 80.0.mg_per_Nm3
+            emissions_values                       = EmissionsAndEfficiencyValues_DTO(
+                firebox_name                = "Firebox Integration Model",
+                accredited_or_notified_body = "Lab ABC",
+                test_reports                = Nil,
+                emissions_values            = EmissionValues_DTO(
+                    co   = TestEmissionValue_DTO(PolluantName.CO,   Some(1200.0.mg_per_Nm3), "", 13.0.percent),
+                    dust = TestEmissionValue_DTO(PolluantName.Dust, Some(40.0.mg_per_Nm3),   "", 13.0.percent),
+                    ogc  = TestEmissionValue_DTO(PolluantName.OGC,  Some(120.0.mg_per_Nm3),  "", 13.0.percent),
+                    nox  = TestEmissionValue_DTO(PolluantName.NOx,  Some(80.0.mg_per_Nm3),   "", 13.0.percent)
+                )
+            )
         )
 
     private val fluePipeDescr = Seq(

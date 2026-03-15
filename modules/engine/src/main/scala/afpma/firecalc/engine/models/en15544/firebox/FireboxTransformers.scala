@@ -251,7 +251,7 @@ object FireboxTransformers:
                 pn_reduced                 = heat_output_reduced,
             )
 
-    private def toTestEmissionValue(dto: TestEmissionValue_DTO): TestEmissionValue =
+    private[firebox] def toTestEmissionValue(dto: TestEmissionValue_DTO): TestEmissionValue =
         TestEmissionValue(
             polluant_name = dto.polluant_name,
             valueO        = dto.valueO,

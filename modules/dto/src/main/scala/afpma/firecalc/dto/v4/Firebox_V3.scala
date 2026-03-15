@@ -197,18 +197,8 @@ object Firebox_V3:
         co2_dry_lowest                        : Option[Percentage],
         @Transl(I(_.firebox.single_tested.pellets_load_burn_duration))
         pellets_load_burn_duration            : Option[QtyD[Minute]],
-        @Transl(I(_.firebox.single_tested.emissions_firebox_name))
-        emissions_firebox_name                : String,
-        @Transl(I(_.firebox.single_tested.emissions_accredited_body))
-        emissions_accredited_body             : String,
-        @Transl(I(_.firebox.single_tested.emissions_co))
-        emissions_co                          : EmissionValueU,
-        @Transl(I(_.firebox.single_tested.emissions_dust))
-        emissions_dust                        : EmissionValueU,
-        @Transl(I(_.firebox.single_tested.emissions_ogc))
-        emissions_ogc                         : EmissionValueU,
-        @Transl(I(_.firebox.single_tested.emissions_nox))
-        emissions_nox                         : EmissionValueU
+        @Transl(I(_.emissions_and_efficiency_values._self))
+        emissions_values                      : EmissionsAndEfficiencyValues_DTO
     ) extends Firebox_V3
 
     @Transl(I(_.firebox_names.door_15a_firebox))

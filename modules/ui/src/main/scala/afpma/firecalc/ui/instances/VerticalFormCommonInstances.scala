@@ -378,7 +378,28 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given tempDF: DF[TCelsius]                       = given_TCelsius
         given optTemp: DF[Option[TCelsius]]              = vertical_form_Option_TCelsius
         given DF[HeatOutputReduced.NotDefined_Or_Tested] = given_HeatOutputReduced_NotDefined_Or_Tested
-        given DF[EmissionValueU]                         = vertical_form_EmissionValueU
+        // EmissionsAndEfficiencyValues_DTO (emissions_values)
+        given DF[EmissionsAndEfficiencyValues_DTO] =
+            given DF[PolluantName] =
+                import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
+                given Defaultable[PolluantName] = Defaultable(PolluantName.CO)
+                DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
+                    options = PolluantName.values.toList
+                )
+            given DF[Option[EmissionValueU]] =
+                given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
+                val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
+                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
+                underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
+            given DF[TestEmissionValue_DTO] =
+                DaisyUIVerticalForm.autoDerived[TestEmissionValue_DTO].autoOverwriteFieldNames
+            given DF[TestReport] =
+                DaisyUIVerticalForm.autoDerived[TestReport].autoOverwriteFieldNames
+            given DF[List[TestReport]] =
+                DaisyUIVerticalForm.forList_WithEphemeralIds[TestReport]
+            given DF[EmissionValues_DTO] =
+                DaisyUIVerticalForm.autoDerived[EmissionValues_DTO].autoOverwriteFieldNames
+            DaisyUIVerticalForm.autoDerived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
         DaisyUIVerticalForm.autoDerived[Firebox.SingleTested].autoOverwriteFieldNames
 
     given given_Firebox_Door15aFirebox_Catalog: DF[Firebox.Door15aFirebox_Catalog] =
