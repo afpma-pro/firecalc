@@ -69,6 +69,10 @@ object FilaireTypes:
     val Eggplant: LineColor = "#636"
     val Gold: LineColor = "#EA0"
     val Blue: LineColor = "#19F"
+    val Red: LineColor = "#BC2132"
+    val OrangeYellow: LineColor = "#F59331"
+    val Yellow: LineColor = "#FFDC38"
+    val Brown: LineColor = "#3B2416"
     extension (c: LineColor)
       def value: String = c
 
@@ -209,5 +213,16 @@ object FilaireTypes:
 
   /** Type alias for a collection of lines */
   type FireCalcFilaireLines = List[FireCalcFilaireLine]
+
+  /** A group of spatially-connected pipe lines. Miter joints only form between
+    * consecutive pipes within the same group — group boundaries get flat ends.
+    */
+  case class FireCalcFilaireGroup(
+      lines: FireCalcFilaireLines,
+      name: Option[String] = None
+  )
+
+  /** Type alias for a collection of pipe groups */
+  type FireCalcFilaireGroups = List[FireCalcFilaireGroup]
 
 end FilaireTypes

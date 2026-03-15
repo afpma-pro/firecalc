@@ -28,7 +28,7 @@ private[filaire] object ThreeVizFacade extends js.Object:
     */
   def apply(
     container: dom.HTMLElement,
-    pipes: js.Array[PipeDataJS],
+    pipeGroups: js.Array[PipeGroupJS],
     config: VizConfigJS,
     onPipeClick: js.UndefOr[js.Function1[Int, Unit]] = js.undefined
   ): FilaireVizHandleJS = js.native

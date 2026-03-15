@@ -101,6 +101,18 @@ object PipeDataJS:
       name = name
     ).asInstanceOf[PipeDataJS]
 
+/** A group of spatially-connected pipes (miter joints only within the group) */
+trait PipeGroupJS extends js.Object:
+  var pipes: js.Array[PipeDataJS]
+  var name: js.UndefOr[String]
+
+object PipeGroupJS:
+  def apply(
+    pipes: js.Array[PipeDataJS],
+    name: js.UndefOr[String] = js.undefined
+  ): PipeGroupJS =
+    js.Dynamic.literal(pipes = pipes, name = name).asInstanceOf[PipeGroupJS]
+
 /** Visualization configuration */
 trait VizConfigJS extends js.Object:
   var canvasWidth: Int
@@ -117,6 +129,7 @@ trait VizConfigJS extends js.Object:
   var displayNameInModes: js.UndefOr[js.Array[String]]
   var nameVerticalOffset: js.UndefOr[Double]
   var watermark: js.UndefOr[String]
+  var _cameraState: js.UndefOr[CameraStateJS]
 
 object VizConfigJS:
   def apply(
@@ -133,7 +146,8 @@ object VizConfigJS:
     displayName: js.UndefOr[Boolean] = js.undefined,
     displayNameInModes: js.UndefOr[js.Array[String]] = js.undefined,
     nameVerticalOffset: js.UndefOr[Double] = js.undefined,
-    watermark: js.UndefOr[String] = js.undefined
+    watermark: js.UndefOr[String] = js.undefined,
+    _cameraState: js.UndefOr[CameraStateJS] = js.undefined
   ): VizConfigJS =
     js.Dynamic.literal(
       canvasWidth = canvasWidth,
@@ -149,10 +163,19 @@ object VizConfigJS:
       displayName = displayName,
       displayNameInModes = displayNameInModes,
       nameVerticalOffset = nameVerticalOffset,
-      watermark = watermark
+      watermark = watermark,
+      _cameraState = _cameraState
     ).asInstanceOf[VizConfigJS]
+
+/** Camera state returned by getCameraState() */
+@js.native
+trait CameraStateJS extends js.Object:
+    val position: js.Array[Double] = js.native
+    val up: js.Array[Double] = js.native
+    val target: js.Array[Double] = js.native
 
 /** Handle returned by initFilaireViz for lifecycle management */
 @js.native
 trait FilaireVizHandleJS extends js.Object:
   def dispose(): Unit = js.native
+  def getCameraState(): js.UndefOr[CameraStateJS] = js.native

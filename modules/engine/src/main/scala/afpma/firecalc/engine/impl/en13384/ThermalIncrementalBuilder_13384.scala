@@ -292,6 +292,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         initialFrame = Some(frame),
                         currentFrame = Some(frame)
                     ))
+                case _: SetInitialPosition => vState
+                case _: SetFinalPosition   => vState
                 case SetPropertiesInBatch(_, _) =>
                     throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
                 case _: LinedFlue =>
@@ -380,6 +382,12 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
         SetInitialDirection(azimuth, inclination)
+
+    def setInitialPosition(x: Length, y: Length, z: Length) =
+        SetInitialPosition(x, y, z)
+
+    def setFinalPosition(x: Length, y: Length, z: Length) =
+        SetFinalPosition(x, y, z)
 
     def layer(e: Length, tr: SquareMeterKelvinPerWatt) =
         layers(AppendLayerDescr.FromThermalResistanceUsingThickness(e, tr))

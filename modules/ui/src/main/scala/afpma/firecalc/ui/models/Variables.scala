@@ -228,8 +228,11 @@ import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResul
 import afpma.firecalc.engine.models.geometry.Vec3
 
 lazy val fluepipe_positions_sig: Signal[PipePositionResult] =
-    fluepipe_incrdescr_var.signal.map: descr =>
-        PositionTracker.computeFlowOnly15544(descr, externalFrame = None, startPoint = Vec3(0, 0, 0))
+    fluepipe_incrdescr_var.signal
+        .combineWith(firebox_var.signal)
+        .map: (descr, firebox) =>
+            val fbHeightM = firebox.firebox_height.value
+            PositionTracker.computeFlowOnly15544(descr, externalFrame = None, startPoint = Vec3(0, 0, fbHeightM + 1.0))
 
 lazy val connectorpipe_positions_sig: Signal[PipePositionResult] =
     connector_pipe_incrdescr_var.signal
@@ -245,7 +248,12 @@ lazy val chimneypipe_positions_sig: Signal[PipePositionResult] =
 
 lazy val airintake_positions_sig: Signal[PipePositionResult] =
     air_intake_incrdescr_var.signal.map: descr =>
-        PositionTracker.computeFlowOnly13384(descr, externalFrame = None, startPoint = Vec3(0, 0, 0))
+        PositionTracker.computeFlowOnly13384(
+            descr,
+            externalFrame = None,
+            startPoint = Vec3(0, 0, 0),
+            finalPoint = Some(Vec3(0, 0, -1.0))
+        )
 
 // Results for EN15544 Strict
 

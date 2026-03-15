@@ -24,4 +24,6 @@ object LocalStorageKeys {
 
     val CATALOG_STATE: String = "catalog_state"
 
+    val VIZ_CAMERA_STATE: String = "viz_camera_state"
+
 }

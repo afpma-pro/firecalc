@@ -247,6 +247,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                             initialFrame = Some(frame),
                             currentFrame = Some(frame)
                         ))
+                    case _: SetInitialPosition => vState
+                    case _: SetFinalPosition   => vState
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
@@ -264,6 +266,12 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
         SetInitialDirection(azimuth, inclination)
+
+    def setInitialPosition(x: Length, y: Length, z: Length) =
+        SetInitialPosition(x, y, z)
+
+    def setFinalPosition(x: Length, y: Length, z: Length) =
+        SetFinalPosition(x, y, z)
 
     // Delegate to ChannelsDSL typeclass
     def channelsSplit(n: Int) =

@@ -114,6 +114,14 @@ object SetThermalPipeProp_13384_V3:
         inclination: InclinationDirection
     ) extends SetThermalPipeProp_13384_V3
 
+    case class SetInitialPosition(
+        x: Length, y: Length, z: Length
+    ) extends SetThermalPipeProp_13384_V3
+
+    case class SetFinalPosition(
+        x: Length, y: Length, z: Length
+    ) extends SetThermalPipeProp_13384_V3
+
     extension (props: Seq[SetSingleProp])
 
         def extractInnerShape: Option[PipeShape] =

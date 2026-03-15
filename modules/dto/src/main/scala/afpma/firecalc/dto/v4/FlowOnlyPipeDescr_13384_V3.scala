@@ -51,6 +51,14 @@ object SetFlowOnlyPipeProp_13384_V3:
         inclination: InclinationDirection
     ) extends SetFlowOnlyPipeProp_13384_V3
 
+    case class SetInitialPosition(
+        x: Length, y: Length, z: Length
+    ) extends SetFlowOnlyPipeProp_13384_V3
+
+    case class SetFinalPosition(
+        x: Length, y: Length, z: Length
+    ) extends SetFlowOnlyPipeProp_13384_V3
+
 sealed trait AddFlowOnlyPipeElement_13384_V3 extends FlowOnlyPipeDescr_13384_V3:
     def name: String
 

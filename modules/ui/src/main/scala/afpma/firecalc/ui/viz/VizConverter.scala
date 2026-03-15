@@ -39,17 +39,43 @@ object VizConverter:
     result.segments.toList.map(segmentToLine(_, color, pipeName))
 
   val FlueColor      : LineColor = LineColor.Orange
-  val ConnectorColor : LineColor = LineColor.Garnet
-  val ChimneyColor   : LineColor = LineColor.Eggplant
+  val ConnectorColor : LineColor = LineColor.OrangeYellow
+  val ChimneyColor   : LineColor = LineColor.Yellow
   val AirIntakeColor : LineColor = LineColor.Blue
+  val FireboxColor   : LineColor = LineColor.Red
 
-  def allPipesToLines(
-    flue     : PipePositionResult,
-    connector: PipePositionResult,
-    chimney  : PipePositionResult,
-    airIntake: PipePositionResult
-  ): FireCalcFilaireLines =
-    pipeToLines(flue, FlueColor, "Flue") ++
-    pipeToLines(connector, ConnectorColor, "Connector") ++
-    pipeToLines(chimney, ChimneyColor, "Chimney") ++
-    pipeToLines(airIntake, AirIntakeColor, "Air Intake")
+  /** Build a single FireCalcFilaireLine representing the firebox as a rectangular box.
+    * @param widthCm  firebox width in cm (Left-Right axis)
+    * @param depthCm  firebox depth in cm (Front-Rear axis)
+    * @param heightCm firebox height in cm (Down-Up axis)
+    */
+  def fireboxToLine(widthCm: Double, depthCm: Double, heightCm: Double): FireCalcFilaireLine =
+    FireCalcFilaireLine(
+      origin    = Origin(0.0, 0.0, 0.0),
+      direction = Vector(0.0, 0.0, 1.0),
+      length    = Length(heightCm),
+      color     = FireboxColor,
+      shape     = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
+      name      = Some("Firebox")
+    )
+
+  def allPipesToGroups(
+      flue       : PipePositionResult,
+      connector  : PipePositionResult,
+      chimney    : PipePositionResult,
+      airIntake  : PipePositionResult,
+      fireboxLine: FireCalcFilaireLine
+  ): FireCalcFilaireGroups =
+    List(
+      FireCalcFilaireGroup(List(fireboxLine), Some("Firebox")),
+      FireCalcFilaireGroup(
+        pipeToLines(flue, FlueColor, "Flue") ++
+        pipeToLines(connector, ConnectorColor, "Connector") ++
+        pipeToLines(chimney, ChimneyColor, "Chimney"),
+        Some("Exhaust")
+      ),
+      FireCalcFilaireGroup(
+        pipeToLines(airIntake, AirIntakeColor, "Air Intake"),
+        Some("Air Intake")
+      )
+    )

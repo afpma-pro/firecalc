@@ -25,5 +25,6 @@ case class FilaireVizConfig(
   displayName: Boolean = false,
   displayNameInModes: List[DisplayType] = List(DisplayType.CenterLine),
   nameVerticalOffset: Double = 3.0,
-  watermark: Option[String] = Some("FireCalc AFPMA ©")
+  watermark: Option[String] = Some("FireCalc AFPMA ©"),
+  _cameraState: Option[CameraStateJS] = None
 )

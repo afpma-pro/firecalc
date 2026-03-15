@@ -5,6 +5,8 @@
 
 package afpma.firecalc.dto.generators.pipe_descr
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.generators.base.*
 import afpma.firecalc.dto.v3.Material_15544_V2
@@ -34,12 +36,28 @@ trait SetFlowOnlyPipeProp_15544_V3_Generators
     def genSetNumberOfFlows_FlowOnly_15544_V3: Gen[SetNumberOfFlows] =
         Gen.choose(1, 4).map(n => SetNumberOfFlows(NbOfFlows(n)))
 
+    def genSetInitialPosition_FlowOnly_15544_V3: Gen[SetInitialPosition] =
+        for
+            x <- Gen.choose(-10.0, 10.0).map(_.meters)
+            y <- Gen.choose(-10.0, 10.0).map(_.meters)
+            z <- Gen.choose(-10.0, 10.0).map(_.meters)
+        yield SetInitialPosition(x, y, z)
+
+    def genSetFinalPosition_FlowOnly_15544_V3: Gen[SetFinalPosition] =
+        for
+            x <- Gen.choose(-10.0, 10.0).map(_.meters)
+            y <- Gen.choose(-10.0, 10.0).map(_.meters)
+            z <- Gen.choose(-10.0, 10.0).map(_.meters)
+        yield SetFinalPosition(x, y, z)
+
     def genSetFlowOnlyPipeProp_15544_V3: Gen[SetFlowOnlyPipeProp_15544_V3] =
         Gen.oneOf(
             genSetInnerShape_FlowOnly_15544_V3,
             genSetRoughness_FlowOnly_15544_V3,
             genSetMaterial_FlowOnly_15544_V3,
-            genSetNumberOfFlows_FlowOnly_15544_V3
+            genSetNumberOfFlows_FlowOnly_15544_V3,
+            genSetInitialPosition_FlowOnly_15544_V3,
+            genSetFinalPosition_FlowOnly_15544_V3
         )
 
     def genFlowOnlyPipeDescr_15544_V3_Seq: Gen[Seq[FlowOnlyPipeDescr_15544_V3]] =

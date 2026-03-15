@@ -16,16 +16,55 @@ import coulomb.policy.standard.given
 
 object PositionTracker:
 
+    private sealed trait PositionOverride
+    private case class InitialOverride(pos: Vec3) extends PositionOverride
+    private case class FinalOverride(pos: Vec3)   extends PositionOverride
+
+    private def toVec3(x: Length, y: Length, z: Length): Vec3 =
+        Vec3(x.toUnit[Meter].value, y.toUnit[Meter].value, z.toUnit[Meter].value)
+
+    /** Scan a descriptor sequence for SetInitialPosition / SetFinalPosition.
+      * The last positional instruction (by index) wins; the two are mutually exclusive.
+      * Returns the effective (startPoint, finalPoint) to use.
+      */
+    private def resolvePositionOverrides[A](
+        elems     : Seq[A],
+        startPoint: Vec3,
+        finalPoint: Option[Vec3]
+    )(
+        extract: PartialFunction[(A, Int), (PositionOverride, Int)]
+    ): (Vec3, Option[Vec3]) =
+        val positionOverride: Option[PositionOverride] =
+            elems.zipWithIndex.collect(extract).maxByOption(_._2).map(_._1)
+        positionOverride match
+            case Some(InitialOverride(pos)) => (pos, None)
+            case Some(FinalOverride(pos))   => (startPoint, Some(pos))
+            case None                       => (startPoint, finalPoint)
+
+    /** Apply the final-position translate post-processing if needed. */
+    private def applyFinalTranslate(result: PipePositionResult, effectiveFinal: Option[Vec3]): PipePositionResult =
+        effectiveFinal match
+            case Some(target) =>
+                val offset = target - result.finalPoint
+                result.translate(offset)
+            case None => result
+
     def computeFlowOnly13384(
         elems        : Seq[FlowOnlyPipeDescr_13384],
         externalFrame: Option[PipeFrame],
-        startPoint   : Vec3
+        startPoint   : Vec3,
+        finalPoint   : Option[Vec3] = None
     ): PipePositionResult =
         import SetFlowOnlyPipeProp_13384_V3.*
         import AddFlowOnlyPipeElement_13384_V3.*
 
+        val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
+            case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
+            case (SetFinalPosition(x, y, z), idx)   => (FinalOverride(toVec3(x, y, z)), idx)
+        }
+
         var frame             : Option[PipeFrame] = externalFrame
-        var currentPosition   : Vec3              = startPoint
+        var currentPosition   : Vec3              = effectiveStart
         var currentInnerShape : Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
@@ -111,18 +150,25 @@ object PositionTracker:
                     currentPosition = endPt
                 case _ => ()
 
-        PipePositionResult(segments.result(), currentPosition, frame)
+        val result = PipePositionResult(segments.result(), currentPosition, frame)
+        applyFinalTranslate(result, effectiveFinal)
 
     def computeFlowOnly15544(
         elems        : Seq[FlowOnlyPipeDescr_15544],
         externalFrame: Option[PipeFrame],
-        startPoint   : Vec3
+        startPoint   : Vec3,
+        finalPoint   : Option[Vec3] = None
     ): PipePositionResult =
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
 
+        val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
+            case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
+            case (SetFinalPosition(x, y, z), idx)   => (FinalOverride(toVec3(x, y, z)), idx)
+        }
+
         var frame             : Option[PipeFrame] = externalFrame
-        var currentPosition   : Vec3              = startPoint
+        var currentPosition   : Vec3              = effectiveStart
         var currentInnerShape : Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
@@ -208,18 +254,25 @@ object PositionTracker:
                     currentPosition = endPt
                 case _ => ()
 
-        PipePositionResult(segments.result(), currentPosition, frame)
+        val result = PipePositionResult(segments.result(), currentPosition, frame)
+        applyFinalTranslate(result, effectiveFinal)
 
     def computeThermal13384(
         elems        : Seq[ThermalPipeDescr_13384],
         externalFrame: Option[PipeFrame],
-        startPoint   : Vec3
+        startPoint   : Vec3,
+        finalPoint   : Option[Vec3] = None
     ): PipePositionResult =
         import SetThermalPipeProp_13384_V3.*
         import AddThermalPipeElement_13384_V3.*
 
+        val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
+            case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
+            case (SetFinalPosition(x, y, z), idx)   => (FinalOverride(toVec3(x, y, z)), idx)
+        }
+
         var frame             : Option[PipeFrame] = externalFrame
-        var currentPosition   : Vec3              = startPoint
+        var currentPosition   : Vec3              = effectiveStart
         var currentInnerShape : Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
@@ -311,7 +364,8 @@ object PositionTracker:
                     currentPosition = endPt
                 case _ => ()
 
-        PipePositionResult(segments.result(), currentPosition, frame)
+        val result = PipePositionResult(segments.result(), currentPosition, frame)
+        applyFinalTranslate(result, effectiveFinal)
 
     private def horizontalDirection(frame: Option[PipeFrame]): Vec3 =
         frame match

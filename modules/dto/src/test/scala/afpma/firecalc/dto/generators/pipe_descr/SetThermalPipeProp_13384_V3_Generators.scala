@@ -156,6 +156,21 @@ trait SetThermalPipeProp_13384_V3_Generators
             casing   <- genSetPropertiesInBatch_Thermal_V3
         yield LinedFlue(name, liner, airSpace, casing)
 
+    // SetInitialPosition / SetFinalPosition
+    def genSetInitialPosition_Thermal_V3: Gen[SetInitialPosition] =
+        for
+            x <- Gen.choose(-10.0, 10.0).map(_.meters)
+            y <- Gen.choose(-10.0, 10.0).map(_.meters)
+            z <- Gen.choose(-10.0, 10.0).map(_.meters)
+        yield SetInitialPosition(x, y, z)
+
+    def genSetFinalPosition_Thermal_V3: Gen[SetFinalPosition] =
+        for
+            x <- Gen.choose(-10.0, 10.0).map(_.meters)
+            y <- Gen.choose(-10.0, 10.0).map(_.meters)
+            z <- Gen.choose(-10.0, 10.0).map(_.meters)
+        yield SetFinalPosition(x, y, z)
+
     // Composite: generate any SetThermalPipeProp_13384_V3
     def genSetThermalPipeProp_13384_V3: Gen[SetThermalPipeProp_13384_V3] =
         Gen.oneOf(
@@ -171,7 +186,9 @@ trait SetThermalPipeProp_13384_V3_Generators
             genSetDuctType_Thermal_V3,
             genSetNumberOfFlows_Thermal_V3,
             genSetPropertiesInBatch_Thermal_V3,
-            genLinedFlue_Thermal_V3
+            genLinedFlue_Thermal_V3,
+            genSetInitialPosition_Thermal_V3,
+            genSetFinalPosition_Thermal_V3
         )
 
     // Composite: realistic sequence of SetProps (including optional batch and lined flue) for a pipe

@@ -39,6 +39,11 @@ export interface PipeData {
   name?: string
 }
 
+export interface PipeGroup {
+  pipes: PipeData[]
+  name?: string
+}
+
 export interface VizConfig {
   canvasWidth: number
   canvasHeight: number
@@ -59,7 +64,7 @@ export interface VizConfig {
 
 export interface FilaireVizHandle {
   dispose(): void
-  // Future: updatePipes(), resize(), etc.
+  getCameraState(): VizConfig['_cameraState']
 }
 
 // =============================================================================
@@ -454,7 +459,7 @@ function renderFullShape(
   )
   
   const material = new THREE.MeshStandardMaterial({
-    color: config.shapeColor
+    color: pipe.color
   })
   const mesh = new THREE.Mesh(geometry, material)
 
@@ -817,7 +822,7 @@ class LabeledViewHelper {
 
 export function initFilaireViz(
   container: HTMLElement,
-  pipes: PipeData[],
+  pipeGroups: PipeGroup[],
   config: VizConfig,
   onPipeClick?: (lineIndex: number) => void
 ): FilaireVizHandle {
@@ -885,30 +890,33 @@ export function initFilaireViz(
     const isMixed = config.displayType === 'Mixed'
     const shapeOpacity = isMixed ? (config.mixedShapeOpacity ?? 0.3) : 1.0
 
-    for (let i = 0; i < pipes.length; i++) {
-      const pipe = pipes[i]
-      const prevPipe = i > 0 ? pipes[i - 1] : null
-      const nextPipe = i < pipes.length - 1 ? pipes[i + 1] : null
-      const mesh = renderFullShape(pipe, config, prevPipe, nextPipe)
+    for (const group of pipeGroups) {
+      const pipes = group.pipes
+      for (let i = 0; i < pipes.length; i++) {
+        const pipe = pipes[i]
+        const prevPipe = i > 0 ? pipes[i - 1] : null
+        const nextPipe = i < pipes.length - 1 ? pipes[i + 1] : null
+        const mesh = renderFullShape(pipe, config, prevPipe, nextPipe)
 
-      if (isMixed) {
-        const mat = mesh.material as THREE.MeshStandardMaterial
-        mat.transparent = true
-        mat.opacity = shapeOpacity
-        mat.depthWrite = false
+        if (isMixed) {
+          const mat = mesh.material as THREE.MeshStandardMaterial
+          mat.transparent = true
+          mat.opacity = shapeOpacity
+          mat.depthWrite = false
+        }
+
+        scene.add(mesh)
+        pipeMeshes.push(mesh)
+
+        // Add visible edges using a darker shade of the pipe color
+        const edgeColor = new THREE.Color(pipe.color).multiplyScalar(0.3)
+        const edges = new THREE.EdgesGeometry(mesh.geometry, 15)
+        const edgeLine = new THREE.LineSegments(
+          edges,
+          new THREE.LineBasicMaterial({ color: edgeColor })
+        )
+        scene.add(edgeLine)
       }
-
-      scene.add(mesh)
-      pipeMeshes.push(mesh)
-
-      // Add visible edges using a darker shade of the shape color
-      const edgeColor = new THREE.Color(config.shapeColor).multiplyScalar(0.3)
-      const edges = new THREE.EdgesGeometry(mesh.geometry, 15)
-      const edgeLine = new THREE.LineSegments(
-        edges,
-        new THREE.LineBasicMaterial({ color: edgeColor })
-      )
-      scene.add(edgeLine)
     }
   }
 
@@ -919,16 +927,18 @@ export function initFilaireViz(
     const sphereRadius = config.centerLineSphereRadius ?? 1
     const lineWidth = config.centerLineStrokeWidth ?? 1
 
-    for (const pipe of pipes) {
-      const group = renderCenterLine(pipe, sphereRadius, lineWidth)
-      // Tag Line objects with lineIndex for raycasting (not spheres)
-      group.traverse((child) => {
-        if (child instanceof THREE.Line) {
-          child.userData = { lineIndex: pipe.lineIndex }
-          centerLineObjects.push(child)
-        }
-      })
-      scene.add(group)
+    for (const group of pipeGroups) {
+      for (const pipe of group.pipes) {
+        const clGroup = renderCenterLine(pipe, sphereRadius, lineWidth)
+        // Tag Line objects with lineIndex for raycasting (not spheres)
+        clGroup.traverse((child) => {
+          if (child instanceof THREE.Line) {
+            child.userData = { lineIndex: pipe.lineIndex }
+            centerLineObjects.push(child)
+          }
+        })
+        scene.add(clGroup)
+      }
     }
   }
 
@@ -1073,7 +1083,7 @@ export function initFilaireViz(
     renderer.dispose()
     viewHelper.dispose()
     container.innerHTML = ''
-    initFilaireViz(container, pipes, newConfig, onPipeClick)
+    initFilaireViz(container, pipeGroups, newConfig, onPipeClick)
   })
 
   resetBtn.addEventListener('click', () => {
@@ -1168,57 +1178,59 @@ export function initFilaireViz(
       labelParent.style.position = 'relative'
     }
 
-    for (const pipe of pipes) {
-      if (!pipe.name) continue
+    for (const group of pipeGroups) {
+      for (const pipe of group.pipes) {
+        if (!pipe.name) continue
 
-      // Compute midpoint of pipe in Three.js coords
-      const start = toThreePos(pipe.origin)
-      const dir = toThreeDir(pipe.direction)
-      const mid = start.clone().add(dir.clone().multiplyScalar(pipe.length / 2))
+        // Compute midpoint of pipe in Three.js coords
+        const start = toThreePos(pipe.origin)
+        const dir = toThreeDir(pipe.direction)
+        const mid = start.clone().add(dir.clone().multiplyScalar(pipe.length / 2))
 
-      // Compute an orthogonal offset vector that is axis-aligned.
-      const candidates: THREE.Vector3[] = [
-        new THREE.Vector3(0, 1, 0),  // up
-        new THREE.Vector3(0, -1, 0), // down
-        new THREE.Vector3(0, 0, 1),  // right
-        new THREE.Vector3(0, 0, -1), // left
-      ]
-      let bestAxis = candidates[0]
-      let bestDot = Math.abs(dir.dot(candidates[0]))
-      for (let c = 1; c < candidates.length; c++) {
-        const d = Math.abs(dir.dot(candidates[c]))
-        if (d < bestDot) {
-          bestDot = d
-          bestAxis = candidates[c]
+        // Compute an orthogonal offset vector that is axis-aligned.
+        const candidates: THREE.Vector3[] = [
+          new THREE.Vector3(0, 1, 0),  // up
+          new THREE.Vector3(0, -1, 0), // down
+          new THREE.Vector3(0, 0, 1),  // right
+          new THREE.Vector3(0, 0, -1), // left
+        ]
+        let bestAxis = candidates[0]
+        let bestDot = Math.abs(dir.dot(candidates[0]))
+        for (let c = 1; c < candidates.length; c++) {
+          const d = Math.abs(dir.dot(candidates[c]))
+          if (d < bestDot) {
+            bestDot = d
+            bestAxis = candidates[c]
+          }
         }
+        mid.add(bestAxis.clone().multiplyScalar(nameOffset))
+
+        const label = document.createElement('div')
+        label.textContent = pipe.name
+        label.style.position = 'absolute'
+        label.style.pointerEvents = 'auto'
+        label.style.userSelect = 'none'
+        label.style.fontFamily = 'Roboto, Arial, sans-serif'
+        label.style.fontSize = '12px'
+        label.style.fontWeight = 'bold'
+        label.style.color = pipe.color
+        label.style.whiteSpace = 'nowrap'
+        label.style.transform = 'translate(-50%, -50%)'
+        label.style.zIndex = '999'
+        label.style.cursor = 'pointer'
+        label.style.background = '#f5f5f5'
+        label.style.border = '1px solid #bbb'
+        label.style.borderRadius = '3px'
+        label.style.padding = '3px 8px'
+
+        const lineIndex = pipe.lineIndex
+        label.addEventListener('click', () => {
+          if (onPipeClick) onPipeClick(lineIndex)
+        })
+
+        labelParent.appendChild(label)
+        nameLabels.push({ element: label, worldPos: mid })
       }
-      mid.add(bestAxis.clone().multiplyScalar(nameOffset))
-
-      const label = document.createElement('div')
-      label.textContent = pipe.name
-      label.style.position = 'absolute'
-      label.style.pointerEvents = 'auto'
-      label.style.userSelect = 'none'
-      label.style.fontFamily = 'Roboto, Arial, sans-serif'
-      label.style.fontSize = '12px'
-      label.style.fontWeight = 'bold'
-      label.style.color = pipe.color
-      label.style.whiteSpace = 'nowrap'
-      label.style.transform = 'translate(-50%, -50%)'
-      label.style.zIndex = '999'
-      label.style.cursor = 'pointer'
-      label.style.background = '#f5f5f5'
-      label.style.border = '1px solid #bbb'
-      label.style.borderRadius = '3px'
-      label.style.padding = '3px 8px'
-
-      const lineIndex = pipe.lineIndex
-      label.addEventListener('click', () => {
-        if (onPipeClick) onPipeClick(lineIndex)
-      })
-
-      labelParent.appendChild(label)
-      nameLabels.push({ element: label, worldPos: mid })
     }
   }
 
@@ -1328,6 +1340,13 @@ export function initFilaireViz(
       renderer.dispose()
       viewHelper.dispose()
       container.innerHTML = ''
+    },
+    getCameraState() {
+      return {
+        position: [camera.position.x, camera.position.y, camera.position.z],
+        up: [camera.up.x, camera.up.y, camera.up.z],
+        target: [controls.target.x, controls.target.y, controls.target.z]
+      }
     }
   }
 }

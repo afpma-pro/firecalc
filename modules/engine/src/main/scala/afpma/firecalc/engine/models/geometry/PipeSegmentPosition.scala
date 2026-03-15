@@ -39,4 +39,11 @@ case class PipePositionResult(
     segments  : Seq[PipeSegmentPosition],
     finalPoint: Vec3,
     finalFrame: Option[PipeFrame]
-)
+):
+    /** Translate all spatial positions by the given offset vector. */
+    def translate(offset: Vec3): PipePositionResult =
+        PipePositionResult(
+          segments.map(s => s.copy(startPoint = s.startPoint + offset, endPoint = s.endPoint + offset)),
+          finalPoint + offset,
+          finalFrame
+        )
