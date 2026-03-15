@@ -386,6 +386,7 @@ object coulombutils:
         given ShowUnit[(Centimeter ^ 2)]= fromString("cm²")
         given ShowUnit[Degree]          = fromCoulombUnit[Degree]
         given ShowUnit[Hour]            = fromCoulombUnit[Hour]
+        given ShowUnit[Minute]          = fromCoulombUnit[Minute]
         given ShowUnit[Kelvin]          = fromCoulombUnit[Kelvin]
         given ShowUnit[Kilogram]        = fromCoulombUnit[Kilogram]
         given ShowUnit[Kilo * Watt]     = fromString("kW")
@@ -544,6 +545,8 @@ object coulombutils:
             val show_Milligram_per_Nm3: Show[QtyD[Milli * Gram / (Meter ^ 3)]] =                 
                 given ShowUnit[Milli * Gram / (Meter ^ 3)] = ShowUnit.showUnit_Milligram_per_NormalCubicMeter
                 mkShowForQtyD[Milli * Gram / (Meter ^ 3)]("%.0f")
+            given show_Minutes: Show[QtyD[Minute]] = 
+                mkShowPrettyForQtyD[Minute, Minute]("%.0f")
             given show_Moles: Show[QtyD[Mole]] = 
                 mkShowForQtyD[Mole]("%.1f")
             private val show_Millimeters_0: Show[QtyD[Millimeter]] =                 

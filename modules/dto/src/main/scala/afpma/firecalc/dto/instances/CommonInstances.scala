@@ -440,6 +440,9 @@ object CommonInstances:
                 ("unit", Json.fromString(SUnit[U].showUnitFull))
             )
 
+    given decoder_QtyD_minute: Decoder[QtyD[Minute]] = decoder_QtyD[Minute]
+    given encoder_QtyD_minute: Encoder[QtyD[Minute]] = encoder_QtyD[Minute]
+
     given decoder_QtyD_meter: Decoder[QtyD[Meter]] = decoder_QtyD[Meter]
     given encoder_QtyD_meter: Encoder[QtyD[Meter]] = encoder_QtyD[Meter]
 

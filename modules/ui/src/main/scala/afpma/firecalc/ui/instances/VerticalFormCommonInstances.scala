@@ -103,6 +103,14 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         import vv.hour.validOption_whenStrictlyPositive
         DaisyUIVerticalForm.forQtyD[Hour]
 
+    val vertical_form_Option_QtyD_Minute: DaisyUIVerticalForm[Option[QtyD[Minute]]] =
+        import vv.minute.validOption_whenStrictlyPositive
+        DaisyUIVerticalForm.forOptionQtyD_default[Minute]
+
+    given given_QtyD_Minute: Defaultable[QtyD[Minute]] => DaisyUIVerticalForm[QtyD[Minute]] =
+        import vv.minute.validOption_whenStrictlyPositive
+        DaisyUIVerticalForm.forQtyD[Minute]
+
     given given_QtyD_Kilogram: Defaultable[QtyD[Kilogram]] => DaisyUIVerticalForm[QtyD[Kilogram]] =
         import vv.kilogram.validOption_whenStrictlyPositive
         DaisyUIVerticalForm.forQtyD[Kilogram]
@@ -363,6 +371,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given percDF: DF[Percentage]                     = given_QtyD_Percent
         given optPerc: DF[Option[Percentage]]            = vertical_form_Option_QtyD_Percent
         given massDF: DF[Mass]                           = given_QtyD_Kilogram
+        given minuteDF: DF[Option[QtyD[Minute]]]         = vertical_form_Option_QtyD_Minute
         given optMass: DF[Option[Mass]]                  = vertical_form_Option_QtyD_Kilogram
         given dimDF: DF[Dimensionless]                   = given_QtyD_Dimensionless
         given optDim: DF[Option[Dimensionless]]          = vertical_form_Option_QtyD_Dimensionless

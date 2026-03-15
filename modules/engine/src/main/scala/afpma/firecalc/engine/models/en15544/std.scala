@@ -18,7 +18,6 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.FireboxFormulas
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
@@ -223,6 +222,7 @@ object std:
             airFuelRatio_lowest                   : Option[Dimensionless],
             co2_dry_nominal                       : σ_CO2,
             co2_dry_lowest                        : Option[σ_CO2],
+            pellets_load_burn_duration            : Option[t_BU],
             emissions_values                      : EmissionsAndEfficiencyValues
         ) extends Firebox_15544:
             type Self = SingleTested

@@ -7,6 +7,8 @@ package afpma.firecalc.engine.impl.en15544.instances
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.v4.TypeOfAppliance
+
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
@@ -57,6 +59,17 @@ given singleTestedConstraints
                 Some(TermConstraint.Max(3.95.unitless))
             )
 
+        def pellets_load_burn_duration_constraints(
+            firebox: SingleTested
+        ): Seq[Option[TermConstraint[t_BU]]] =
+            if (firebox.type_of_appliance == TypeOfAppliance.Pellets)
+                Seq(
+                    Some(TermConstraint.Min(58.minutes)),
+                    Some(TermConstraint.Max(98.minutes))
+                )
+            else
+                Seq.empty
+
         // ── 4.10.3 – η: same as default (empty, application layer handles it)
         override def eta_constraints(
             firebox: SingleTested,
@@ -82,4 +95,10 @@ given singleTestedConstraints
         override def firebox_custom_constraints(
             firebox: SingleTested,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] = Nil
+        )(using Locale): List[FireboxError] = 
+            AllTermConstraints(pellets_load_burn_duration_constraints(firebox))
+                .checkAllAndCombineWhenDefined(firebox.pellets_load_burn_duration)
+                .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
+                match
+                    case Some(xs) => xs
+                    case None => Nil

@@ -246,6 +246,7 @@ object I18nData:
             air_fuel_ratio_lowest               : String,
             co2_dry_nominal                     : String,
             co2_dry_lowest                      : String,
+            pellets_load_burn_duration          : String,
             mean_firebox_temperature            : String,
             t_burnout                           : String,
             is_glass_surface_ratio_below_one_fifth: String,
@@ -484,7 +485,8 @@ object I18nData:
         t_chimney_out               : EN15544_TermDef,
         t_stove_out                 : EN15544_TermDef,
         necessary_delivery_pressure : EN15544_TermDef,
-        flue_gas_mass_rate          : EN15544_TermDef
+        flue_gas_mass_rate          : EN15544_TermDef,
+        t_BU                        : EN15544_TermDef,
     )
 
     case class EN16510(
@@ -832,6 +834,7 @@ object I18nData:
         degree                      : String,
         foot                        : String,
         hour                        : String,
+        minute                      : String,
         inch                        : String,
         kelvin                      : String,
         kilogram                    : String,

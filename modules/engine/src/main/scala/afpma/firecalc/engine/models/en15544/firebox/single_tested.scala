@@ -11,7 +11,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.i18n.LocalizedString
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 
 import cats.syntax.validated.*
@@ -19,6 +18,7 @@ import cats.syntax.validated.*
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import afpma.firecalc.engine.models.en15544.typedefs.GlassArea
+import afpma.firecalc.engine.models.en15544.typedefs.t_BU
 
 object single_tested:
 
@@ -73,7 +73,7 @@ object single_tested:
             .enableDefaultValues
             .withFieldComputed(_.reference, dto => LocalizedString(_ => dto.reference))
             .withFieldComputed(_.glass_area, _.glass_area: GlassArea)
-            .withFieldConst(_.type_of_appliance, TypeOfAppliance.WoodLogs)
+            .withFieldComputed(_.type_of_appliance, _.type_of_appliance)
             .withFieldRenamed(_.test_standard, _.test_standard)
             .withFieldRenamed(_.heat_output_reduced, _.pn_reduced)
             .withFieldRenamed(_.minimum_fuel_mass, _.minimumFuelMass)
@@ -82,6 +82,7 @@ object single_tested:
             .withFieldRenamed(_.air_fuel_ratio_lowest, _.airFuelRatio_lowest)
             .withFieldComputed(_.co2_dry_nominal, _.co2_dry_nominal: σ_CO2)
             .withFieldComputed(_.co2_dry_lowest, _.co2_dry_lowest.map(x => x: σ_CO2))
+            .withFieldComputed(_.pellets_load_burn_duration, _.pellets_load_burn_duration.map(x => x: t_BU))
             .withFieldComputed(_.emissions_values, buildEmissionsValues)
             .withFieldRenamed(_.mean_firebox_temperature, _.meanFireboxTemperature)
             .withFieldRenamed(_.t_burnout, _.tBurnout)

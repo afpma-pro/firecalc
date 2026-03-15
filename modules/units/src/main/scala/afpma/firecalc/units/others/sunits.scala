@@ -47,6 +47,10 @@ object sunits:
             val su = mkShowUnitFull[Hour]
             new SUnit[Hour](_.hour)(using su)
 
+        given sunit_Minute: SUnit[Minute] = 
+            val su = mkShowUnitFull[Minute]
+            new SUnit[Minute](_.minute)(using su)
+
         given sunit_Inch: SUnit[Inch] = 
             val su = ShowUnit.fromCoulombUnit[Inch]
             val suf = mkShowUnitFull[Inch]
@@ -130,6 +134,7 @@ object sunits:
             SUnits.sunit_Degree,
             SUnits.sunit_Foot,
             SUnits.sunit_Hour,
+            SUnits.sunit_Minute,
             SUnits.sunit_Inch,
             SUnits.sunit_Kelvin,
             SUnits.sunit_Kilogram,

@@ -18,7 +18,6 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.cas_types.en13384.*
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 

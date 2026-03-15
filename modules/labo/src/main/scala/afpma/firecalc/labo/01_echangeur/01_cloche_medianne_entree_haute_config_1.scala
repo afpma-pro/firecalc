@@ -18,7 +18,6 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.biblio.kov.firebox_emissions
 import afpma.firecalc.engine.impl.en15544.labo.*
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en13384.std.Wood
 import afpma.firecalc.engine.models.en15544.std

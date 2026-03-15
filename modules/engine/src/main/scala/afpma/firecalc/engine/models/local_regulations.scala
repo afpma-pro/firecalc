@@ -15,9 +15,7 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.engine.models.LocalRegulations.*
 
@@ -32,7 +30,7 @@ import io.taig.babel.Locale
 case class LocalRegulations(
     regulation_ref         : String,
     country                : Country,
-    type_of_appliance      : LocalRegulations.TypeOfAppliance,
+    type_of_appliance      : TypeOfAppliance,
     min_efficiency         : Option[Percentage],
     min_seasonal_efficiency: Option[Percentage],
     max_co                 : Option[TestEmissionValue],
@@ -213,13 +211,6 @@ object LocalRegulations:
                         o2ref.showP(using show_Percent_0)
                     )
     }
-
-    enum TypeOfAppliance:
-        case Pellets, WoodLogs
-
-    given ShowUsingLocale[TypeOfAppliance] = showUsingLocale:
-        case TypeOfAppliance.Pellets  => I18N.type_of_appliance.pellets
-        case TypeOfAppliance.WoodLogs => I18N.type_of_appliance.woodlogs
 
     lazy val all = fr.all
 

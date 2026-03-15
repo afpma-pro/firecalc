@@ -127,6 +127,7 @@ object defaultable:
             air_fuel_ratio_lowest                 = None,
             co2_dry_nominal                       = 12.0.percent,
             co2_dry_lowest                        = None,
+            pellets_load_burn_duration            = None,
             emissions_firebox_name                = "",
             emissions_accredited_body             = "",
             emissions_co                          = 0.0.mg_per_Nm3,

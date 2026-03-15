@@ -53,6 +53,7 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
             air_fuel_ratio_lowest                  = Some(2.5.unitless),
             co2_dry_nominal                        = 12.0.percent,
             co2_dry_lowest                         = Some(9.0.percent),
+            pellets_load_burn_duration             = None,
             mean_firebox_temperature               = Some(350.0.degreesCelsius),
             t_burnout                              = 700.0.degreesCelsius,
             is_glass_surface_ratio_below_one_fifth = true,

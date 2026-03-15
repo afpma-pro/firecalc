@@ -21,7 +21,6 @@ import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.FireboxFormulas
 import afpma.firecalc.engine.biblio.kov.firebox_emissions.*
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.utils.ShowAsTable

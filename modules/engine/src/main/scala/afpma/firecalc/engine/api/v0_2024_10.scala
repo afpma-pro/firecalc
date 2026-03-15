@@ -32,7 +32,6 @@ import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithThermalAirIntake

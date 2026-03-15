@@ -96,6 +96,10 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
         extends ValidOptionQtyD_WhenPositive_Factory[Hour]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Hour]
 
+    object minute
+        extends ValidOptionQtyD_WhenPositive_Factory[Minute]
+        with ValidOptionQtyD_WhenStrictlyPositive_Factory[Minute]
+
     object meter 
         extends ValidOptionQtyD_WhenPositive_Factory[Meter]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Meter]

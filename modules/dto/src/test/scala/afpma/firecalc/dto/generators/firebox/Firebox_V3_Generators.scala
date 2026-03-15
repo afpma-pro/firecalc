@@ -156,6 +156,7 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
             air_fuel_ratio_lowest      <- Gen.option(Gen.choose(2.0, 5.0).map(_.unitless))
             co2_dry_nominal            <- Gen.choose(8.0, 16.0).map(_.percent)
             co2_dry_lowest             <- Gen.option(Gen.choose(6.0, 12.0).map(_.percent))
+            pellets_load_burn_duration <- Gen.option(Gen.choose(20.0, 120.0).map(_.minutes))
             mean_firebox_temperature   <- Gen.option(Gen.choose(200.0, 600.0).map(_.degreesCelsius))
             t_burnout                  <- Gen.choose(500.0, 900.0).map(_.degreesCelsius)
             is_glass_below_one_fifth   <- Gen.oneOf(true, false)
@@ -183,6 +184,7 @@ trait Firebox_V3_Generators extends Firebox_V2_Generators:
             air_fuel_ratio_lowest                  = air_fuel_ratio_lowest,
             co2_dry_nominal                        = co2_dry_nominal,
             co2_dry_lowest                         = co2_dry_lowest,
+            pellets_load_burn_duration             = pellets_load_burn_duration,
             mean_firebox_temperature               = mean_firebox_temperature,
             t_burnout                              = t_burnout,
             is_glass_surface_ratio_below_one_fifth = is_glass_below_one_fifth,

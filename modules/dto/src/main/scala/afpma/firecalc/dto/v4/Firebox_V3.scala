@@ -158,7 +158,7 @@ object Firebox_V3:
         @Transl(I(_.firebox.single_tested.reference))
         reference                             : String,
         @Transl(I(_.type_of_appliance.descr))
-        type_of_appliance                    : TypeOfAppliance,
+        type_of_appliance                     : TypeOfAppliance,
         @Transl(I(_.firebox.single_tested.test_standard))
         test_standard                         : TestStandard,
         @Transl(I(_.firebox.firebox_depth))
@@ -195,6 +195,8 @@ object Firebox_V3:
         co2_dry_nominal                       : Percentage,
         @Transl(I(_.firebox.single_tested.co2_dry_lowest))
         co2_dry_lowest                        : Option[Percentage],
+        @Transl(I(_.firebox.single_tested.pellets_load_burn_duration))
+        pellets_load_burn_duration            : Option[QtyD[Minute]],
         @Transl(I(_.firebox.single_tested.emissions_firebox_name))
         emissions_firebox_name                : String,
         @Transl(I(_.firebox.single_tested.emissions_accredited_body))

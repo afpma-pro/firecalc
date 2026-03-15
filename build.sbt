@@ -732,7 +732,7 @@ lazy val ui = (project in file("modules/ui"))
   .settings(
     commonSettings,
     scalacOptions ++= Seq(
-      "-Xmax-inlines:32", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
+      "-Xmax-inlines:40", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
     //   "--explain-cyclic",
     ),
   )

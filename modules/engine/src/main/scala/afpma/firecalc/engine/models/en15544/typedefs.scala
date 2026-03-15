@@ -109,6 +109,14 @@ object typedefs:
             I18N.en15544.terms.m_BU.descr
         )
 
+    type t_BU = BurningDuration.Type
+    object BurningDuration extends OTypedQtyD[Minute]:
+        def termDef        = TermDef("t_BU")
+        def termDefDetails = TermDefDetails(
+            I18N.en15544.terms_xtra.t_BU.name,
+            I18N.en15544.terms_xtra.t_BU.descr
+        )
+
     // Section "3.10"
 
     type U_BR = FireboxAdmeasurement.Type
