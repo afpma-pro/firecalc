@@ -925,7 +925,8 @@ object I18nData:
             thickness_requires_inner_geometry         : String,
             layer_requires_section_geometry           : String,
             layers_require_inner_shape                : String,
-            direction_change_requires_section_geometry: String
+            direction_change_requires_section_geometry: String,
+            final_dir_without_initial_direction       : String
         )
 
         case class Conflicts(

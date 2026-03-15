@@ -140,7 +140,9 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             iPropsState,
             opsDone = Vector.empty,
             opsLeft = iListIncrDescr
-        ).map((ids, fd, finalState) => (ids, fd, currentFrameFromPropsState(finalState)))
+        ).andThen: (ids, fd, finalState) =>
+            postBuildValidation(iListIncrDescr, finalState) *>
+            (ids, fd, currentFrameFromPropsState(finalState)).validNel
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
 
@@ -157,6 +159,16 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      * Concrete builders that support direction tracking override this.
      */
     protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] = None
+
+    /**
+     * Hook for post-build validation. Called after all incremental descriptions have been
+     * processed. Override in concrete builders to add pipe-specific validations.
+     * Default: no validation (always valid).
+     */
+    protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] = ().validNel
 
     /**
      * Apply an external initial frame to a freshly-created PropsState, but ONLY if

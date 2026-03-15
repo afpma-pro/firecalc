@@ -774,6 +774,7 @@ object standard {
     case class LayerRequiresSectionGeometry(sectionTyp: PipeType)           extends PrerequisiteNotMet
     case class LayersRequireInnerShape(sectionTyp: PipeType)                extends PrerequisiteNotMet
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
+    case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
@@ -784,6 +785,8 @@ object standard {
             case _: LayersRequireInnerShape                => I18N.incremental_validation.prerequisites.layers_require_inner_shape
             case _: DirectionChangeRequiresSectionGeometry =>
                 I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
+            case _: FinalDirWithoutInitialDirection        =>
+                I18N.incremental_validation.prerequisites.final_dir_without_initial_direction
 
     // Conflict errors
     sealed trait ConflictDetected extends IncrementalValidation_Error

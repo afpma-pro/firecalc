@@ -27,6 +27,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
+import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
 
 import cats.data.*
 import cats.syntax.all.*
@@ -123,6 +124,17 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         // Only apply if the pipe itself did not already define an initial direction
         if s.initialFrame.isDefined then s
         else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
+    override protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] =
+        val hasFinalDir = incrDescrs.exists:
+            case (_, dc: AddDirectionChange) => dc.finalDir.isDefined
+            case _                           => false
+        if hasFinalDir && finalState.initialFrame.isEmpty then
+            FinalDirWithoutInitialDirection(pt).invalidNel
+        else ().validNel
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
