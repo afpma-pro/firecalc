@@ -76,6 +76,7 @@ object ExampleProject_15544
     val accumulateur_descr =
         import FluePipe_Module_15544.*
         Seq(
+            setInitialPosition(-21.cm, (44/2-25/2).cm, (78-15).cm),
             setInitialDirection(azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left
             roughness           (3.mm                        ),
             innerShape(rectangle(251.mm, 230.mm)),

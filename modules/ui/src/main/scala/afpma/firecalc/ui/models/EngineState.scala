@@ -115,6 +115,7 @@ object EngineState:
         flue_pipe_descr                =
             import FluePipe_Module_15544.*
             Seq(
+                setInitialPosition((+33.0/2).cm, (33.0/2-18.0/2).cm, (52-18.0/2).cm),
                 setInitialDirection (azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // Right
                 roughness           (3.mm                                          ),
                 innerShape(rectangle(18.cm, 18.cm)                                 ),
