@@ -81,13 +81,24 @@ object InclinationDirection:
 /**
  * A complete direction specification: azimuth in horizontal plane + inclination from horizontal.
  * Used to replace the raw `roll` angle on direction-change DTOs.
+ *
+ * Azimuth is `None` for vertical directions (Up/Down) where it is physically meaningless.
  */
 case class FinalDirection(
-    azimuth    : AzimuthDirection,
+    azimuth    : Option[AzimuthDirection],
     inclination: InclinationDirection
 )
 
 object FinalDirection:
-    /** Convert to (azimuthDeg, elevationDeg) pair. */
+    /** Convenience constructor that normalizes vertical directions to azimuth=None. */
+    def apply(azimuth: AzimuthDirection, inclination: InclinationDirection): FinalDirection =
+        val az = inclination match
+            case InclinationDirection.Up | InclinationDirection.Down => None
+            case _ => Some(azimuth)
+        new FinalDirection(az, inclination)
+
+    /** Convert to (azimuthDeg, elevationDeg) pair. Returns 0.0 azimuth when None. */
     def toAzimuthElevationDeg(fd: FinalDirection): (Double, Double) =
-        (AzimuthDirection.toDegrees(fd.azimuth), InclinationDirection.toDegrees(fd.inclination))
+        val azDeg = fd.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0)
+        val elDeg = InclinationDirection.toDegrees(fd.inclination)
+        (azDeg, elDeg)

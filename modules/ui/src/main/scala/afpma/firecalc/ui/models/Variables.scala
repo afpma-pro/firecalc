@@ -214,11 +214,13 @@ lazy val fluepipe_finalFrame_sig: Signal[Option[PipeFrame]] =
     fluepipe_incrdescr_var.signal.map: descr =>
         val (_, finalFrameV) = FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr)
         finalFrameV.toOption.flatten
+    .distinct
 
 lazy val connectorpipe_finalFrame_sig: Signal[Option[PipeFrame]] =
     connector_pipe_incrdescr_var.signal.combineWith(fluepipe_finalFrame_sig).map: (descr, flueFinalFrame) =>
         val (_, finalFrameV) = ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(descr, flueFinalFrame)
         finalFrameV.toOption.flatten
+    .distinct
 
 // Position tracking: cumulative XYZ coordinates for each pipe's physical segments.
 // Chained: connector starts at flue's finalPoint, chimney starts at connector's finalPoint.
@@ -233,18 +235,21 @@ lazy val fluepipe_positions_sig: Signal[PipePositionResult] =
         .map: (descr, firebox) =>
             val fbHeightM = firebox.firebox_height.value
             PositionTracker.computeFlowOnly15544(descr, externalFrame = None, startPoint = Vec3(0, 0, fbHeightM + 1.0))
+        .distinct
 
 lazy val connectorpipe_positions_sig: Signal[PipePositionResult] =
     connector_pipe_incrdescr_var.signal
         .combineWith(fluepipe_finalFrame_sig, fluepipe_positions_sig)
         .map: (descr, flueFinalFrame, fluePositions) =>
             PositionTracker.computeThermal13384(descr, flueFinalFrame, fluePositions.finalPoint)
+        .distinct
 
 lazy val chimneypipe_positions_sig: Signal[PipePositionResult] =
     chimney_pipe_incrdescr_var.signal
         .combineWith(connectorpipe_finalFrame_sig, connectorpipe_positions_sig)
         .map: (descr, connFinalFrame, connPositions) =>
             PositionTracker.computeThermal13384(descr, connFinalFrame, connPositions.finalPoint)
+        .distinct
 
 lazy val airintake_positions_sig: Signal[PipePositionResult] =
     air_intake_incrdescr_var.signal.map: descr =>
@@ -254,6 +259,7 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
             startPoint = Vec3(0, 0, 0),
             finalPoint = Some(Vec3(0, 0, -1.0))
         )
+    .distinct
 
 // Results for EN15544 Strict
 

@@ -136,7 +136,7 @@ object ExampleProject_15544
             pipeLocation      (PipeLocation.OutsideOrExterior                  ), // plutot NON CHAUFFEE car combles ???
             addSectionVertical("combles", 560.mm                               ),
             pipeLocation      (PipeLocation.OutsideOrExterior                  ),
-            addSectionVertical("extérieur", 990.mm                             ),
+            addSectionVertical("extérieur", 900.mm                             ),
             pipeLocation      (PipeLocation.OutsideOrExterior                  ),
             addSectionVertical(
                 "extérieur (ajout)",

@@ -55,10 +55,12 @@ case class RelativeDirectionInput(
 
     private def vec3ToFinalDirection(v: Vec3): FinalDirection =
         val (az, el) = v.toAzimuthElevation
-        FinalDirection(
-            azimuth     = AzimuthDirection.fromDegrees(az),
-            inclination = InclinationDirection.fromDegrees(el)
-        )
+        val incl = InclinationDirection.fromDegrees(el)
+        incl match
+            case InclinationDirection.Up | InclinationDirection.Down =>
+                new FinalDirection(None, incl)
+            case _ =>
+                FinalDirection(AzimuthDirection.fromDegrees(az), incl)
 
     private def computeFinalDir(side: RelativeSide, theta: Double, frame: PipeFrame, deflDeg: Double): Option[FinalDirection] =
         Some(vec3ToFinalDirection(frame.relativeTarget(side, theta, deflDeg)))
@@ -70,6 +72,20 @@ case class RelativeDirectionInput(
 
     private def clampTheta(v: Double): Double =
         math.max(0.0, math.min(90.0, v))
+
+    /** Compare FinalDirections by Vec3 geometry, not enum representation.
+      * Prevents lossy write-backs where e.g. (Left, Up) and (Rear, Up)
+      * produce the same Vec3(0,0,1) but differ as enums. */
+    private def fdGeometryEqual(a: Option[FinalDirection], b: Option[FinalDirection]): Boolean =
+        (a, b) match
+            case (Some(fa), Some(fb)) =>
+                val (azA, elA) = FinalDirection.toAzimuthElevationDeg(fa)
+                val (azB, elB) = FinalDirection.toAzimuthElevationDeg(fb)
+                val va = Vec3.fromAzimuthElevation(azA, elA)
+                val vb = Vec3.fromAzimuthElevation(azB, elB)
+                (va - vb).norm < 1e-6
+            case (None, None) => true
+            case _            => false
 
     lazy val node: HtmlElement =
         val i18n = I18N_UI.direction_badge
@@ -92,7 +108,7 @@ case class RelativeDirectionInput(
                 .changes
                 .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                 .withCurrentValueOf(finalDirVar.signal)
-                .collect { case (newFd, curFd) if newFd != curFd => newFd }
+                .collect { case (newFd, curFd) if !fdGeometryEqual(newFd, curFd) => newFd }
                 --> finalDirVar.writer
 
         // Derived signal combining finalDirVar + context into an Option[(side, theta)]
@@ -118,6 +134,23 @@ case class RelativeDirectionInput(
                 --> Observer[((RelativeSide, Double))] { st =>
                     sideVar.set(st._1)
                     thetaVar.set(st._2)
+                }
+
+        // One-time initial sync: populate sideVar/thetaVar from finalDirVar
+        // when context (frameBefore, deflectionAngle) becomes available.
+        // Needed because .changes in reverseSync skips the initial value.
+        // Signal --> Observer fires for the initial value at mount time, plus
+        // .composeChanges(_.take(1)) lets through at most 1 subsequent change.
+        // Net effect: fires for initial value, plus up to 1 change (in case
+        // context signals aren't ready at mount but arrive shortly after).
+        val initialSync =
+            externalStSig
+                .composeChanges(_.take(1))
+                --> Observer[Option[(RelativeSide, Double)]] {
+                    case Some((side, theta)) =>
+                        sideVar.set(side)
+                        thetaVar.set(theta)
+                    case None => ()
                 }
 
         div(
@@ -159,7 +192,8 @@ case class RelativeDirectionInput(
                 )
             ),
 
-            // Bidirectional sync binders
+            // Sync binders
+            initialSync,
             forwardSync,
             reverseSync
         )

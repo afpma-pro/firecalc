@@ -11,6 +11,7 @@ import afpma.firecalc.ui.models.schema.LocalStorageKeys
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.filaire.*
 
+import afpma.firecalc.ui.LAMINAR_VIZ_DEBOUNCE_MS
 import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
 
@@ -52,6 +53,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
   private lazy val allPositionsSig =
     fluepipe_positions_sig
       .combineWith(connectorpipe_positions_sig, chimneypipe_positions_sig, airintake_positions_sig, firebox_var.signal)
+      .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
   lazy val node: HtmlElement =
     div(

@@ -97,10 +97,12 @@ case class DirectionBadgeComponent(
     /** Convert a Vec3 direction to a FinalDirection by snapping to named enum cases. */
     private def vec3ToFinalDirection(v: Vec3): FinalDirection =
         val (az, el) = v.toAzimuthElevation
-        FinalDirection(
-            azimuth     = AzimuthDirection.fromDegrees(az),
-            inclination = InclinationDirection.fromDegrees(el)
-        )
+        val incl = InclinationDirection.fromDegrees(el)
+        incl match
+            case InclinationDirection.Up | InclinationDirection.Down =>
+                new FinalDirection(None, incl)
+            case _ =>
+                FinalDirection(AzimuthDirection.fromDegrees(az), incl)
 
     private def tooltipContent: HtmlElement =
         val i18n = I18N_UI.direction_badge
