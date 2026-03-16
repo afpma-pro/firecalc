@@ -45,8 +45,8 @@ export interface PipeGroup {
 }
 
 export interface VizConfig {
-  canvasWidth: number
-  canvasHeight: number
+  canvasWidth?: number // fallback if container has no intrinsic size (default 750)
+  canvasHeight?: number // fallback if container has no intrinsic size (default 600)
   shapeColor: string // e.g. "#FF6600"
   hoverColor: string // e.g. "#FFAA44"
   backgroundColor: string // e.g. "#F0F0F0"
@@ -60,6 +60,9 @@ export interface VizConfig {
   nameVerticalOffset?: number // vertical offset in scene units for name labels (default 3)
   watermark?: string // optional watermark text to display at bottom center
   _cameraState?: { position: [number, number, number]; up: [number, number, number]; target: [number, number, number] }
+  labelResetView?: string // label for reset view button (default 'reset view')
+  labelViewMode?: string // label for view mode button (default 'view mode')
+  labelAnnotations?: string // label for annotations button (default 'annotations')
 }
 
 export interface FilaireVizHandle {
@@ -832,8 +835,12 @@ export function initFilaireViz(
   // Ensure container has relative positioning for watermark placement
   container.style.position = 'relative'
 
+  // Measure container size, fall back to config values, fall back to defaults
+  const containerWidth = container.clientWidth || config.canvasWidth || 750
+  const containerHeight = container.clientHeight || config.canvasHeight || 600
+
   const renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setSize(config.canvasWidth, config.canvasHeight)
+  renderer.setSize(containerWidth, containerHeight)
   renderer.setClearColor(new THREE.Color(config.backgroundColor))
   container.appendChild(renderer.domElement)
 
@@ -857,7 +864,7 @@ export function initFilaireViz(
 
   const scene = new THREE.Scene()
 
-  const aspectRatio = config.canvasWidth / config.canvasHeight
+  const aspectRatio = containerWidth / containerHeight
   const camera = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 10000)
 
   const controls = new OrbitControls(camera, renderer.domElement)
@@ -952,7 +959,23 @@ export function initFilaireViz(
   const viewPadding = config.viewPadding ?? 1.5
   const distance = maxDim * viewPadding || 100 // Fallback if no objects
 
-  // Restore camera state if provided (e.g. from view mode toggle), otherwise compute default
+  // Always compute the default camera position (azimuth=225°, elevation=45°)
+  const azimuth = Math.PI + Math.PI / 4  // 5τ/8 = π + π/4
+  const elevation = Math.PI / 4           // τ/8
+  const defaultCameraPos = new THREE.Vector3(
+    center.x + distance * Math.cos(elevation) * Math.sin(azimuth),
+    center.y + distance * Math.sin(elevation),
+    center.z + distance * Math.cos(elevation) * Math.cos(azimuth)
+  )
+  const defaultCameraUp = new THREE.Vector3(0, 1, 0)
+  const defaultTarget = center.clone()
+
+  // Save default state for reset button (before any persisted override)
+  const initialCameraPos = defaultCameraPos.clone()
+  const initialCameraUp = defaultCameraUp.clone()
+  const initialTarget = defaultTarget.clone()
+
+  // Restore camera state if provided (e.g. from view mode toggle), otherwise use default
   if (config._cameraState) {
     const cs = config._cameraState
     camera.position.set(cs.position[0], cs.position[1], cs.position[2])
@@ -961,23 +984,12 @@ export function initFilaireViz(
     camera.lookAt(controls.target)
     controls.update()
   } else {
-    // Initial view: azimuth = 5τ/8 (225°), elevation = τ/8 (45°)
-    const azimuth = Math.PI + Math.PI / 4  // 5τ/8 = π + π/4
-    const elevation = Math.PI / 4           // τ/8
-    camera.position.set(
-      center.x + distance * Math.cos(elevation) * Math.sin(azimuth),
-      center.y + distance * Math.sin(elevation),
-      center.z + distance * Math.cos(elevation) * Math.cos(azimuth)
-    )
-    camera.lookAt(center)
-    controls.target.copy(center)
+    camera.position.copy(defaultCameraPos)
+    camera.up.copy(defaultCameraUp)
+    camera.lookAt(defaultTarget)
+    controls.target.copy(defaultTarget)
     controls.update()
   }
-
-  // Save initial camera state for reset
-  const initialCameraPos = camera.position.clone()
-  const initialCameraUp = camera.up.clone()
-  const initialTarget = controls.target.clone()
 
   // ---------------------------------------------------------------------------
   // ViewHelper (CAD-style orientation gizmo with labels)
@@ -994,7 +1006,7 @@ export function initFilaireViz(
   // Reset View Button (positioned above the gizmo)
   // ---------------------------------------------------------------------------
   const resetBtn = document.createElement('button')
-  resetBtn.textContent = 'reset view'
+  resetBtn.textContent = config.labelResetView ?? 'reset view'
   resetBtn.style.position = 'absolute'
   resetBtn.style.zIndex = '1001'
   resetBtn.style.padding = '3px 8px'
@@ -1035,7 +1047,7 @@ export function initFilaireViz(
   // View Mode Button (positioned at top-right, aligned with reset button)
   // ---------------------------------------------------------------------------
   const viewModeBtn = document.createElement('button')
-  viewModeBtn.textContent = 'view mode'
+  viewModeBtn.textContent = config.labelViewMode ?? 'view mode'
   viewModeBtn.style.position = 'absolute'
   viewModeBtn.style.zIndex = '1001'
   viewModeBtn.style.padding = '3px 8px'
@@ -1080,6 +1092,7 @@ export function initFilaireViz(
     const newConfig = { ...config, displayType: newDisplayType, _cameraState: cameraState }
     // Stop current animation loop and clear container
     disposed = true
+    resizeObserver.disconnect()
     renderer.dispose()
     viewHelper.dispose()
     container.innerHTML = ''
@@ -1238,7 +1251,7 @@ export function initFilaireViz(
   // Annotations Toggle Button
   // ---------------------------------------------------------------------------
   const annotationsBtn = document.createElement('button')
-  annotationsBtn.textContent = 'annotations'
+  annotationsBtn.textContent = config.labelAnnotations ?? 'annotations'
   annotationsBtn.style.position = 'absolute'
   annotationsBtn.style.zIndex = '1001'
   annotationsBtn.style.padding = '3px 8px'
@@ -1333,10 +1346,29 @@ export function initFilaireViz(
   }
   animate()
 
+  // ---------------------------------------------------------------------------
+  // ResizeObserver: react to container size changes
+  // ---------------------------------------------------------------------------
+  const resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const { width, height } = entry.contentRect
+      if (width > 0 && height > 0) {
+        renderer.setSize(width, height)
+        camera.aspect = width / height
+        camera.updateProjectionMatrix()
+        positionResetButton()
+        positionViewModeButton()
+        positionAnnotationsButton()
+      }
+    }
+  })
+  resizeObserver.observe(container)
+
   // Return handle for lifecycle management
   return {
     dispose() {
       disposed = true
+      resizeObserver.disconnect()
       renderer.dispose()
       viewHelper.dispose()
       container.innerHTML = ''

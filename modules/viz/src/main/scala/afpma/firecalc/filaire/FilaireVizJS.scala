@@ -115,8 +115,8 @@ object PipeGroupJS:
 
 /** Visualization configuration */
 trait VizConfigJS extends js.Object:
-  var canvasWidth: Int
-  var canvasHeight: Int
+  var canvasWidth: js.UndefOr[Int]
+  var canvasHeight: js.UndefOr[Int]
   var shapeColor: String
   var hoverColor: String
   var backgroundColor: String
@@ -130,11 +130,14 @@ trait VizConfigJS extends js.Object:
   var nameVerticalOffset: js.UndefOr[Double]
   var watermark: js.UndefOr[String]
   var _cameraState: js.UndefOr[CameraStateJS]
+  var labelResetView: js.UndefOr[String]
+  var labelViewMode: js.UndefOr[String]
+  var labelAnnotations: js.UndefOr[String]
 
 object VizConfigJS:
   def apply(
-    canvasWidth: Int,
-    canvasHeight: Int,
+    canvasWidth: js.UndefOr[Int] = js.undefined,
+    canvasHeight: js.UndefOr[Int] = js.undefined,
     shapeColor: String,
     hoverColor: String,
     backgroundColor: String,
@@ -147,7 +150,10 @@ object VizConfigJS:
     displayNameInModes: js.UndefOr[js.Array[String]] = js.undefined,
     nameVerticalOffset: js.UndefOr[Double] = js.undefined,
     watermark: js.UndefOr[String] = js.undefined,
-    _cameraState: js.UndefOr[CameraStateJS] = js.undefined
+    _cameraState: js.UndefOr[CameraStateJS] = js.undefined,
+    labelResetView: js.UndefOr[String] = js.undefined,
+    labelViewMode: js.UndefOr[String] = js.undefined,
+    labelAnnotations: js.UndefOr[String] = js.undefined
   ): VizConfigJS =
     js.Dynamic.literal(
       canvasWidth = canvasWidth,
@@ -164,7 +170,10 @@ object VizConfigJS:
       displayNameInModes = displayNameInModes,
       nameVerticalOffset = nameVerticalOffset,
       watermark = watermark,
-      _cameraState = _cameraState
+      _cameraState = _cameraState,
+      labelResetView = labelResetView,
+      labelViewMode = labelViewMode,
+      labelAnnotations = labelAnnotations
     ).asInstanceOf[VizConfigJS]
 
 /** Camera state returned by getCameraState() */

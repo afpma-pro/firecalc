@@ -32,7 +32,8 @@ final case class I18nData_UI(
     pdf_ordering         : PDFOrdering,
     placeholders         : Placeholders,
     tooltips             : Tooltips,
-    ui_messages          : UiMessages
+    ui_messages          : UiMessages,
+    viz                  : Viz
 )
 
 object I18nData_UI:
@@ -304,4 +305,11 @@ case class Placeholders(
 
 case class UiMessages(
     not_implemented_yet: String
+)
+
+case class Viz(
+    reset_view  : String,
+    view_mode   : String,
+    annotations : String,
+    no_pipe_data: String
 )

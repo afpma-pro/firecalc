@@ -8,15 +8,17 @@ package afpma.firecalc.ui.viz
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.schema.LocalStorageKeys
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.filaire.*
 
 import com.raquo.laminar.api.L.*
+import io.taig.babel.Locale
 
 import org.scalajs.dom
 import scala.scalajs.js
 import scala.scalajs.js.JSON
 
-final case class Viz3DPanel() extends Component:
+final case class Viz3DPanel()(using Locale) extends Component:
 
   private val M_TO_CM = 100.0
 
@@ -77,17 +79,20 @@ final case class Viz3DPanel() extends Component:
           if groups.forall(_.lines.isEmpty) then
             div(
               cls := "flex items-center justify-center h-full text-base-content/40",
-              "No pipe data to visualize"
+              I18N_UI.viz.no_pipe_data
             )
           else
             val vizResult = FilaireLinesViz.render(
               groups,
               FilaireVizConfig(
-                viewPadding     = 1.5,
-                displayName     = false,
-                backgroundColor = "#F5F5F5",
-                hoverColor      = "#3B2416",
-                _cameraState    = loadCameraState()
+                viewPadding      = 1.5,
+                displayName      = false,
+                backgroundColor  = "#F5F5F5",
+                hoverColor       = "#3B2416",
+                _cameraState     = loadCameraState(),
+                labelResetView   = Some(I18N_UI.viz.reset_view),
+                labelViewMode    = Some(I18N_UI.viz.view_mode),
+                labelAnnotations = Some(I18N_UI.viz.annotations)
               ),
               DisplayType.FullShape,
               None

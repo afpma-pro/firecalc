@@ -138,24 +138,28 @@ object FilaireLinesViz:
             case DisplayType.CenterLine => "CenterLine"
             case DisplayType.FullShape  => "FullShape"
             case DisplayType.Mixed      => "Mixed"
-        
+
         val displayNameInModesJs = js.Array(config.displayNameInModes.map {
             case DisplayType.CenterLine => "CenterLine"
             case DisplayType.FullShape  => "FullShape"
             case DisplayType.Mixed      => "Mixed"
         }*)
-        
-        val watermarkJs = config.watermark match
-            case Some(w) => w: js.UndefOr[String]
-            case None => js.undefined
-        
+
+        def optIntToJs(v: Option[Int]): js.UndefOr[Int] = v match
+            case Some(i) => i
+            case None    => js.undefined
+
+        def optStrToJs(v: Option[String]): js.UndefOr[String] = v match
+            case Some(s) => s
+            case None    => js.undefined
+
         val cameraStateJs: js.UndefOr[CameraStateJS] = config._cameraState match
             case Some(cs) => cs
             case None => js.undefined
 
         VizConfigJS(
-          canvasWidth = config.canvasWidth,
-          canvasHeight = config.canvasHeight,
+          canvasWidth = optIntToJs(config.canvasWidth),
+          canvasHeight = optIntToJs(config.canvasHeight),
           shapeColor = config.shapeColor,
           hoverColor = config.hoverColor,
           backgroundColor = config.backgroundColor,
@@ -167,6 +171,9 @@ object FilaireLinesViz:
           displayName = config.displayName,
           displayNameInModes = displayNameInModesJs,
           nameVerticalOffset = config.nameVerticalOffset,
-          watermark = watermarkJs,
-          _cameraState = cameraStateJs
+          watermark = optStrToJs(config.watermark),
+          _cameraState = cameraStateJs,
+          labelResetView = optStrToJs(config.labelResetView),
+          labelViewMode = optStrToJs(config.labelViewMode),
+          labelAnnotations = optStrToJs(config.labelAnnotations)
         )

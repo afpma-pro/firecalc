@@ -13,8 +13,8 @@ enum DisplayType:
 
 /** Configuration for the Filaire 3D visualization */
 case class FilaireVizConfig(
-  canvasWidth: Int = 750,
-  canvasHeight: Int = 600,
+  canvasWidth: Option[Int] = None,
+  canvasHeight: Option[Int] = None,
   shapeColor: String = "#FF6600",
   hoverColor: String = "#FFAA44",
   backgroundColor: String = "#F0F0F0",
@@ -26,5 +26,8 @@ case class FilaireVizConfig(
   displayNameInModes: List[DisplayType] = List(DisplayType.CenterLine),
   nameVerticalOffset: Double = 3.0,
   watermark: Option[String] = Some("FireCalc AFPMA ©"),
-  _cameraState: Option[CameraStateJS] = None
+  _cameraState: Option[CameraStateJS] = None,
+  labelResetView: Option[String] = None,
+  labelViewMode: Option[String] = None,
+  labelAnnotations: Option[String] = None
 )
