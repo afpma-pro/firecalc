@@ -23,7 +23,8 @@ import io.taig.babel.Languages
 object CasType_15544_C2
     extends v2024_10_Alg
     with v0_2024_10.Firebox_15544_Strict_Alg
-    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
+    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+    with v0_2024_10.WithPipeChain_15544_Strict:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given
@@ -70,78 +71,69 @@ object CasType_15544_C2
         ash_pit_height                   = 5.cm,
     )
 
-    val fluePipe =
+    val fluePipeDescr =
         import FluePipe_Module_15544.*
-        FluePipe_Module_15544.incremental
-            .define(
-                // direction "Rear"
-                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // "Rear"
-                roughness                (3.mm                                                ),
-                innerShape(rectangle(23.cm, 25.1.cm)),
-                addSectionHorizontal     ("Car. 1", 31.7.cm                                   ),
-                addSharpAngle_90deg      ("virage 90° 1-2 (descente)", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
-                innerShape(rectangle(25.1.cm, 22.cm)),
-                addSectionVertical       ("Car. 2", -81.5.cm                                  ),
-                addSharpAngle_90deg      ("virage 90° 2-3 (-> gauche)", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
-                innerShape(rectangle(24.cm, 20.cm)  ),
-                addSectionHorizontal     ("Car. 3", 179.2.cm                                  ),
-                addSharpAngle_90deg      ("virage 90° 3-4", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
-                addSectionHorizontal     ("Car. 4", 22.cm                                     ),
-                addSharpAngle_90deg      ("virage 90° 4-5", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
-                addSectionHorizontal     ("Car. 5", 8.cm                                      ),
-                addSharpAngle_90deg      ("virage 90° 5-6", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
-                addSectionHorizontal     ("Car. 6", 22.cm                                     ),
-                addSharpAngle_90deg      ("virage 90° 6-7", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
-                innerShape(rectangle(24.cm, 19.cm)  ),
-                addSectionHorizontal     ("Car. 7", 190.cm                                    ),
-                addSharpAngle_0_to_180deg("virage 20°", 20.degrees, FinalDirection(AzimuthDirection.Custom(70.degrees), InclinationDirection.Horizontal)), // azimuth=90°-20°=70°
-                addSectionHorizontal     ("Car. 8", 30.cm                                     ),
-                addSharpAngle_0_to_180deg("virage 70°", 70.degrees, FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // towards Rear
-                innerShape(rectangle(24.cm, 21.cm)  ),
-                addSectionHorizontal     ("Car. 9", 33.7.cm                                   ),
-                addSharpAngle_90deg      ("virage 90° 9-10", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // "Up"
-                innerShape(rectangle(21.cm, 22.cm)  ),
-                addSectionVertical       ("Car. 10", 98.cm                                    )
-            )
-            .toFullDescr()
-            .extractPipe
+        Seq(
+            // direction "Rear"
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // "Rear"
+            roughness                (3.mm                                                ),
+            innerShape(rectangle(23.cm, 25.1.cm)),
+            addSectionHorizontal     ("Car. 1", 31.7.cm                                   ),
+            addSharpAngle_90deg      ("virage 90° 1-2 (descente)", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
+            innerShape(rectangle(25.1.cm, 22.cm)),
+            addSectionVertical       ("Car. 2", -81.5.cm                                  ),
+            addSharpAngle_90deg      ("virage 90° 2-3 (-> gauche)", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+            innerShape(rectangle(24.cm, 20.cm)  ),
+            addSectionHorizontal     ("Car. 3", 179.2.cm                                  ),
+            addSharpAngle_90deg      ("virage 90° 3-4", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
+            addSectionHorizontal     ("Car. 4", 22.cm                                     ),
+            addSharpAngle_90deg      ("virage 90° 4-5", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+            addSectionHorizontal     ("Car. 5", 8.cm                                      ),
+            addSharpAngle_90deg      ("virage 90° 5-6", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
+            addSectionHorizontal     ("Car. 6", 22.cm                                     ),
+            addSharpAngle_90deg      ("virage 90° 6-7", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+            innerShape(rectangle(24.cm, 19.cm)  ),
+            addSectionHorizontal     ("Car. 7", 190.cm                                    ),
+            addSharpAngle_0_to_180deg("virage 20°", 20.degrees, FinalDirection(AzimuthDirection.Custom(70.degrees), InclinationDirection.Horizontal)), // azimuth=90°-20°=70°
+            addSectionHorizontal     ("Car. 8", 30.cm                                     ),
+            addSharpAngle_0_to_180deg("virage 70°", 70.degrees, FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // towards Rear
+            innerShape(rectangle(24.cm, 21.cm)  ),
+            addSectionHorizontal     ("Car. 9", 33.7.cm                                   ),
+            addSharpAngle_90deg      ("virage 90° 9-10", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // "Up"
+            innerShape(rectangle(21.cm, 22.cm)  ),
+            addSectionVertical       ("Car. 10", 98.cm                                    )
+        )
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental
-            .define (
-                // "Up" inherited from last element of flue pipe
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(circle(200.mm)              ),
-                layer              (e                                = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-                pipeLocation       (PipeLocation.HeatedArea                                                    ),
-                addSectionVertical ("Car. 11", 60.cm                                                           ),
-                // arbitrary
-                addSharpAngle_45deg("virage 45° 11-12", FinalDirection(AzimuthDirection.Front, InclinationDirection.Custom(45.degrees))), // towards Front-Up at 45°
-                addSectionSlopped  ("Car. 12", 50.cm                                                            ),
-                addSharpAngle_45deg("virage 45° 12-13", FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
-                addSectionVertical ("Car. 13", 60.cm                                                           )
-            )
-            .toFullDescr()
-            .extractPipe
+        Seq(
+            // "Up" inherited from last element of flue pipe
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(200.mm)              ),
+            layer              (e                                = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
+            pipeLocation       (PipeLocation.HeatedArea                                                    ),
+            addSectionVertical ("Car. 11", 60.cm                                                           ),
+            // arbitrary
+            addSharpAngle_45deg("virage 45° 11-12", FinalDirection(AzimuthDirection.Front, InclinationDirection.Custom(45.degrees))), // towards Front-Up at 45°
+            addSectionSlopped  ("Car. 12", 50.cm                                                            ),
+            addSharpAngle_45deg("virage 45° 12-13", FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
+            addSectionVertical ("Car. 13", 60.cm                                                           )
+        )
 
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental
-            .define(
-                // "Up" inherited from last element of connector pipe
-                roughness         (0.1.mm                                        ), // 0.1mm de rugosité pour le EKA selon Basic2+ ??
-                innerShape(circle(200.mm)),
-                layer             (e = 25.mm, tr = SquareMeterKelvinPerWatt(0.44)),
-                pipeLocation      (PipeLocation.HeatedArea                       ),
-                addSectionVertical("chauff.", 120.cm                             ),
-                pipeLocation      (PipeLocation.UnheatedInside                   ),
-                addSectionVertical("non-chauff", 50.cm                           ),
-                pipeLocation      (PipeLocation.OutsideOrExterior                ),
-                addSectionVertical("ext.", 150.cm                                ),
-                addFlowResistance ("element terminal", 1.0.unitless: ζ)
-            )
-            .toFullDescr()
-            .extractPipe
+        Seq(
+            // "Up" inherited from last element of connector pipe
+            roughness         (0.1.mm                                        ), // 0.1mm de rugosité pour le EKA selon Basic2+ ??
+            innerShape(circle(200.mm)),
+            layer             (e = 25.mm, tr = SquareMeterKelvinPerWatt(0.44)),
+            pipeLocation      (PipeLocation.HeatedArea                       ),
+            addSectionVertical("chauff.", 120.cm                             ),
+            pipeLocation      (PipeLocation.UnheatedInside                   ),
+            addSectionVertical("non-chauff", 50.cm                           ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                ),
+            addSectionVertical("ext.", 150.cm                                ),
+            addFlowResistance ("element terminal", 1.0.unitless: ζ)
+        )
 
 end CasType_15544_C2

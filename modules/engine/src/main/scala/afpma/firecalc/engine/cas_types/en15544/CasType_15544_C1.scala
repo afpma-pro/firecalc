@@ -23,7 +23,8 @@ import io.taig.babel.Languages
 object CasType_15544_C1
     extends v2024_10_Alg
     with v0_2024_10.Firebox_15544_Strict_Alg
-    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
+    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+    with v0_2024_10.WithPipeChain_15544_Strict:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given
@@ -86,49 +87,40 @@ object CasType_15544_C1
         ash_pit_height                   = 5.cm,
     )
 
-    val fluePipe =
+    val fluePipeDescr =
         import FluePipe_Module_15544.*
-        FluePipe_Module_15544.incremental
-            .define(
-                // arbitrary direction "Right"
-                setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
-                roughness           (3.mm                        ),
-                innerShape(rectangle(11.1.cm, 12.2.cm)),
-                addSectionHorizontal("sortie foyer", 28.1.cm     ),
-                addSharpAngle_90deg ("virage 90 deg", FinalDirection(AzimuthDirection.Right, InclinationDirection.Up)), // final direction = "Up"
-                innerShape(rectangle(11.1.cm, 11.1.cm)),
-                addSectionVertical  ("colonne ascendante", 3.20.m)
-            )
-            .toFullDescr()
-            .extractPipe
+        Seq(
+            // arbitrary direction "Right"
+            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
+            roughness           (3.mm                        ),
+            innerShape(rectangle(11.1.cm, 12.2.cm)),
+            addSectionHorizontal("sortie foyer", 28.1.cm     ),
+            addSharpAngle_90deg ("virage 90 deg", FinalDirection(AzimuthDirection.Right, InclinationDirection.Up)), // final direction = "Up"
+            innerShape(rectangle(11.1.cm, 11.1.cm)),
+            addSectionVertical  ("colonne ascendante", 3.20.m)
+        )
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental
-            .define (
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(circle(130.mm)              ),
-                layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-                pipeLocation      (PipeLocation.HeatedArea                     ),
-                addSectionVertical("buse", 5.cm                                )
-            )
-            .toFullDescr()
-            .extractPipe
+        Seq(
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(130.mm)              ),
+            layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
+            pipeLocation      (PipeLocation.HeatedArea                     ),
+            addSectionVertical("buse", 5.cm                                )
+        )
 
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental
-            .define(
-                roughness         (1.mm                                           ),
-                innerShape(circle(130.mm)),
-                layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.260)),
-                pipeLocation      (PipeLocation.HeatedArea                        ),
-                addSectionVertical("etage", 90.cm                                 ),
-                pipeLocation      (PipeLocation.OutsideOrExterior                 ),
-                addSectionVertical("sortie de toit", 60.cm                        ),
-                addFlowResistance ("element terminal", 1.461.unitless: ζ) // cf fichier .k10
-            )
-            .toFullDescr()
-            .extractPipe
+        Seq(
+            roughness         (1.mm                                           ),
+            innerShape(circle(130.mm)),
+            layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.260)),
+            pipeLocation      (PipeLocation.HeatedArea                        ),
+            addSectionVertical("etage", 90.cm                                 ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                 ),
+            addSectionVertical("sortie de toit", 60.cm                        ),
+            addFlowResistance ("element terminal", 1.461.unitless: ζ) // cf fichier .k10
+        )
 
 end CasType_15544_C1

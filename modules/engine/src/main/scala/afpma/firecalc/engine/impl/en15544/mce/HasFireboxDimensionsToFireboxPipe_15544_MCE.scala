@@ -8,21 +8,28 @@ package afpma.firecalc.engine.impl.en15544.mce
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToFireboxPipe_15544_MCE
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
 
-trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544] 
+trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544]
     extends FireboxToFireboxPipe_15544_MCE[FB]:
+
+    /** Default direction for firebox pipe. Override to change the initial direction. */
+    protected def fireboxInitialDirection: (AzimuthDirection, InclinationDirection) =
+        (AzimuthDirection.Rear, InclinationDirection.Up)
 
     extension (firebox: FB)
         override def toFireboxPipe_FullDescr =
             import FireboxPipe_Module_13384.*
             val (width, depth) = firebox.dimensions.base match
                 case Dimensions.Base.Squared(w, d) => (w, d)
+            val (az, incl) = fireboxInitialDirection
             FireboxPipe_Module_13384.incremental
                 .define(
+                    setInitialDirection(az, incl),
                     pipeLocation      (PipeLocation.HeatedArea   ), // added for EN13384
                     innerShape(rectangle(width, depth)),
                     roughness         (2.mm                      ), // TOFIX: 3mm or 2mm ???

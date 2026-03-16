@@ -22,7 +22,8 @@ import io.taig.babel.Languages
 object CasPratique_15544_FDIM_EX_03
     extends v2024_10_Alg
     with v0_2024_10.Firebox_15544_Strict_Alg
-    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
+    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+    with v0_2024_10.WithPipeChain_15544_Strict:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given
@@ -125,9 +126,7 @@ object CasPratique_15544_FDIM_EX_03
             addSectionVertical  ("Car. 11", 128.cm                                     )
         )
 
-    val fluePipe =
-        import FluePipe_Module_15544.*
-        define(accumulateur_descr*).toFullDescr().extractPipe
+    val fluePipeDescr = accumulateur_descr
 
     val conduit_raccordement_descr =
         import ConnectorPipe_Module.*
@@ -139,9 +138,7 @@ object CasPratique_15544_FDIM_EX_03
             addSectionVertical("Car. 12", 5.cm                             )
         )
 
-    val connectorPipe =
-        import ConnectorPipe_Module.*
-        define(conduit_raccordement_descr*).toFullDescr().extractPipe
+    val connectorPipeDescr = conduit_raccordement_descr
 
     val conduit_fumees_descr =
         import ChimneyPipe_Module.*
@@ -158,8 +155,6 @@ object CasPratique_15544_FDIM_EX_03
             addFlowResistance ("element terminal", 1.48.unitless: ζ) // cf fichier .k10
         )
 
-    val chimneyPipe =
-        import ChimneyPipe_Module.*
-        define(conduit_fumees_descr*).toFullDescr().extractPipe
+    val chimneyPipeDescr = conduit_fumees_descr
 
 end CasPratique_15544_FDIM_EX_03

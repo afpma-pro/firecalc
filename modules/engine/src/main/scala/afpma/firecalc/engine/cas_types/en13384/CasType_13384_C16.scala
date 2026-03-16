@@ -28,7 +28,10 @@ import coulomb.policy.standard.given
 
 import io.taig.babel.Languages
 
-object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg:
+object CasType_13384_C16
+    extends v2024_10_Alg
+    with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg
+    with v0_2024_10.WithPipeChain_13384:
 
     val language = Languages.Fr
 
@@ -154,51 +157,45 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
             addSectionHorizontal           ("hz", 25.cm                                    )
         ).toFullDescr().extractPipe
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental
-            .define (
-                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(circle(100.mm)              ),
-                layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
-                pipeLocation(PipeLocation.HeatedArea      ),
+        Seq(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(100.mm)              ),
+            layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
+            pipeLocation(PipeLocation.HeatedArea      ),
 
-                // pb: sortie arrière sans longueur horizontale ???
-                // car sinon impossible d'avoir un enchainement horizontal + coude 90 + dévoiement à 45°
-                // tel que H utile = 2.10 et L developée = 2.18 m
+            // pb: sortie arrière sans longueur horizontale ???
+            // car sinon impossible d'avoir un enchainement horizontal + coude 90 + dévoiement à 45°
+            // tel que H utile = 2.10 et L developée = 2.18 m
 
-                addSectionHorizontal("avant té ?",         8.cm                                   ),
-                addSharpAngle_90deg ("té 90°",             FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
-                addSectionVertical  ("montée",             70.cm                                  ),
-                addSharpAngle_45deg ("dévoiement 45°",     FinalDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))), // Rear-Up (azimuth=0° inclination=45°)
-                addSectionSloppedForceManualElevationGain("dévoiement", 70.cm, 70.cm), // approx to match C16 (50cm otherwise)
-                addSharpAngle_45deg ("fin dévoiement 45°", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
-                addSectionVertical  ("avant plafond",      70.cm)
-            )
-            .toFullDescr()
-            .extractPipe
+            addSectionHorizontal("avant té ?",         8.cm                                   ),
+            addSharpAngle_90deg ("té 90°",             FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSectionVertical  ("montée",             70.cm                                  ),
+            addSharpAngle_45deg ("dévoiement 45°",     FinalDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))), // Rear-Up (azimuth=0° inclination=45°)
+            addSectionSloppedForceManualElevationGain("dévoiement", 70.cm, 70.cm), // approx to match C16 (50cm otherwise)
+            addSharpAngle_45deg ("fin dévoiement 45°", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSectionVertical  ("avant plafond",      70.cm)
+        )
 
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module
-            .define (
-                // initial direction inherited from last connector pipe element = Up
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(circle(100.mm)              ),
-                layer(
-                    // T450 N1 W V3 L50040 G50 (source: Therminox TI on https://legal.poujoulat.com/fr)
-                    e = 0.4.mm * 2.0 + 30.0.mm,
+        Seq(
+            // initial direction inherited from last connector pipe element = Up
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(100.mm)              ),
+            layer(
+                // T450 N1 W V3 L50040 G50 (source: Therminox TI on https://legal.poujoulat.com/fr)
+                e = 0.4.mm * 2.0 + 30.0.mm,
 
-                    // 0.523 selon fiche technique qui ne dissocie pas Rth selon si ep=25mm ou ep=30mm
-                    // 0.45 dans QC2
-                    tr = 0.45.m2_K_per_W
-                ),
-                pipeLocation                               (PipeLocation.HeatedArea                                 ),
-                addSectionVertical                         ("partie en ambiance chaude", 2.93.m * 63.percent.asRatio),
-                pipeLocation                               (PipeLocation.OutsideOrExterior                          ),
-                addSectionVertical                         ("partie en extérieur", 2.93.m * 38.percent.asRatio      ),
-                addRainCapEN13384_withHeightEquals2Diameter("element terminal"                                      )
-            )
-            .toFullDescr()
-            .extractPipe
+                // 0.523 selon fiche technique qui ne dissocie pas Rth selon si ep=25mm ou ep=30mm
+                // 0.45 dans QC2
+                tr = 0.45.m2_K_per_W
+            ),
+            pipeLocation                               (PipeLocation.HeatedArea                                 ),
+            addSectionVertical                         ("partie en ambiance chaude", 2.93.m * 63.percent.asRatio),
+            pipeLocation                               (PipeLocation.OutsideOrExterior                          ),
+            addSectionVertical                         ("partie en extérieur", 2.93.m * 38.percent.asRatio      ),
+            addRainCapEN13384_withHeightEquals2Diameter("element terminal"                                      )
+        )

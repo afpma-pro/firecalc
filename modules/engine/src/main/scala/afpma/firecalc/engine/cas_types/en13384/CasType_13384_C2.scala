@@ -29,7 +29,10 @@ import coulomb.policy.standard.given
 
 import io.taig.babel.Languages
 
-object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg:
+object CasType_13384_C2
+    extends v2024_10_Alg
+    with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg
+    with v0_2024_10.WithPipeChain_13384:
 
     val language = Languages.Fr
 
@@ -145,69 +148,63 @@ object CasType_13384_C2 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_1
             addSectionHorizontal           ("hz", 30.cm)
         ).toFullDescr().extractPipe
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental
-            .define (
-                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // "Up"
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(circle(100.mm)              ),
-                layer             (
-                    e  = 1.mm, // 1mm in QC2
-                    tr = 0.0.m2_K_per_W // R = 0 car conduit métallique non isolé
-                ),
-                pipeLocation      (PipeLocation.HeatedArea),
-                addSectionVertical("montée", 1.34.m       )
-            )
-            .toFullDescr()
-            .extractPipe
+        Seq(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // "Up"
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(100.mm)              ),
+            layer             (
+                e  = 1.mm, // 1mm in QC2
+                tr = 0.0.m2_K_per_W // R = 0 car conduit métallique non isolé
+            ),
+            pipeLocation      (PipeLocation.HeatedArea),
+            addSectionVertical("montée", 1.34.m       )
+        )
 
     // T450 N1 W Vm L50012 G
     // (source: https://www.poujoulat.be/wp-content/uploads/2023/10/10-03-069_V7_DI001615_UKCA_FLEXIBLES_POUJOULAT_juillet23.pdf)
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental
-            .define(
-                // "Up" direction inherited from last element of connector pipe
-                roughness(2.mm),
-                innerShape(circle(100.mm)),
+        Seq(
+            // "Up" direction inherited from last element of connector pipe
+            roughness(2.mm),
+            innerShape(circle(100.mm)),
 
-                // uncomment to match QC2
-                // layer(
-                //     e = 4.mm + 5.cm + 5.cm,
-                //     tr = 0.177.m2_K_per_W,
-                //     // tr = 0.18.m2_K_per_W,
-                // ),
+            // uncomment to match QC2
+            // layer(
+            //     e = 4.mm + 5.cm + 5.cm,
+            //     tr = 0.177.m2_K_per_W,
+            //     // tr = 0.18.m2_K_per_W,
+            // ),
 
-                layers   (
-                    // tubaginox
-                    FromThermalResistanceUsingThickness         (
-                        thickness          = 2.4.mm,
-                        thermal_resistance = 0.0.m2_K_per_W
-                    ),
-
-                    // lame d'air ventilée selon DTU 24.1 (ouverture de 20cm2 en bas et 5cm2 en haut)
-                    AirSpaceUsingOuterShape                     (
-                        rectangle(20.cm, 20.cm),
-                        AirSpaceDetailed_V2.VentilDirection.SameDirAsFlueGas,
-                        AirSpaceDetailed_V2.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
-                    ),
-
-                    // boisseau
-                    FromThermalResistanceUsingThickness         (
-                        thickness          = 11.5.cm,
-                        thermal_resistance = 0.12.m2_K_per_W
-                    )
+            layers   (
+                // tubaginox
+                FromThermalResistanceUsingThickness         (
+                    thickness          = 2.4.mm,
+                    thermal_resistance = 0.0.m2_K_per_W
                 ),
-                pipeLocation      (PipeLocation.HeatedArea                                  ),
-                addSectionVertical("partie en ambiance chaude", 4.505.m * 54.percent.asRatio),
-                pipeLocation      (PipeLocation.UnheatedInside                              ),
-                addSectionVertical("partie en ambiance froide", 4.505.m * 22.percent.asRatio),
-                pipeLocation      (PipeLocation.OutsideOrExterior                           ),
-                addSectionVertical("partie en extérieur", 4.505.m * 24.percent.asRatio      ),
 
-                // zeta = 0.81 dans KESA (selon note de calcul)
-                addRainCapEN13384_withHeightEquals2Diameter("element terminal (ζ = 1.5)") // ζ = 1.5 (QC2)
-            )
-            .toFullDescr()
-            .extractPipe
+                // lame d'air ventilée selon DTU 24.1 (ouverture de 20cm2 en bas et 5cm2 en haut)
+                AirSpaceUsingOuterShape                     (
+                    rectangle(20.cm, 20.cm),
+                    AirSpaceDetailed_V2.VentilDirection.SameDirAsFlueGas,
+                    AirSpaceDetailed_V2.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
+                ),
+
+                // boisseau
+                FromThermalResistanceUsingThickness         (
+                    thickness          = 11.5.cm,
+                    thermal_resistance = 0.12.m2_K_per_W
+                )
+            ),
+            pipeLocation      (PipeLocation.HeatedArea                                  ),
+            addSectionVertical("partie en ambiance chaude", 4.505.m * 54.percent.asRatio),
+            pipeLocation      (PipeLocation.UnheatedInside                              ),
+            addSectionVertical("partie en ambiance froide", 4.505.m * 22.percent.asRatio),
+            pipeLocation      (PipeLocation.OutsideOrExterior                           ),
+            addSectionVertical("partie en extérieur", 4.505.m * 24.percent.asRatio      ),
+
+            // zeta = 0.81 dans KESA (selon note de calcul)
+            addRainCapEN13384_withHeightEquals2Diameter("element terminal (ζ = 1.5)") // ζ = 1.5 (QC2)
+        )

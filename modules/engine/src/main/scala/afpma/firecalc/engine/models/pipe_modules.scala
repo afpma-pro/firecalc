@@ -331,6 +331,13 @@ object FluePipe_Module_13384
     export incremental.{name as _, *}
     export FullDescrResult.*
 
+    def mkPipeFromIncrDescrWithFinalFrame(
+        incrSeq             : Seq[ThermalPipeDescr_13384],
+        externalInitialFrame: Option[PipeFrame] = None
+    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
+        val result = incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame)
+        (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
+
     extension (fp: FluePipe_13384)
         def totalLengthOfSections: QtyD[Meter] =
             import en13384.ThermalPipeDescr_13384.{elems as _, *}

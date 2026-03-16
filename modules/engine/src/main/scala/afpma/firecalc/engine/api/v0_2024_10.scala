@@ -501,6 +501,51 @@ object v0_2024_10:
                 val wComb = new WoodCombustionImpl
                 EN15544_Labo_Application.make(f, bs845, wComb, labcond)(i)
 
+    // ---- Pipe-chain mixin traits (frame inheritance) ----
+
+    trait WithPipeChain_15544_Strict:
+        self: StoveProjectDescr_15544_Strict_Alg =>
+
+        def fluePipeDescr     : Seq[FluePipe_Module_15544.incremental.IncrDescr]
+        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
+        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+
+        private lazy val pipeChain = PipeChain_15544_Strict.build(
+            PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+        )
+
+        override lazy val fluePipe      = pipeChain.fluePipe
+        override lazy val connectorPipe = pipeChain.connectorPipe
+        override lazy val chimneyPipe   = pipeChain.chimneyPipe
+
+    trait WithPipeChain_15544_MCE:
+        self: StoveProjectDescr_15544_MCE_Alg =>
+
+        def fluePipeDescr     : Seq[FluePipe_Module_13384.incremental.IncrDescr]
+        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
+        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+
+        private lazy val pipeChain = PipeChain_15544_MCE.build(
+            PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+        )
+
+        override lazy val fluePipe      = pipeChain.fluePipe
+        override lazy val connectorPipe = pipeChain.connectorPipe
+        override lazy val chimneyPipe   = pipeChain.chimneyPipe
+
+    trait WithPipeChain_13384:
+        self: StoveProjectDescr_13384_Alg =>
+
+        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
+        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+
+        private lazy val pipeChain = PipeChain_13384.build(
+            PipeChain_13384.Descriptors(connectorPipeDescr, chimneyPipeDescr)
+        )
+
+        override lazy val connectorPipe = pipeChain.connectorPipe
+        override lazy val chimneyPipe   = pipeChain.chimneyPipe
+
     object StoveProjectDescr:
 
         def makeFor_EN15544_Strict(fc: FireCalcYAML): StoveProjectDescr_15544_Strict_Alg =

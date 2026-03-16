@@ -26,8 +26,9 @@ import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
 import coulomb.*
 import coulomb.ops.standard.all.given
 
-object `01_cloche_medianne_entree_haute_config_1` 
-    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Labo_Alg:
+object `01_cloche_medianne_entree_haute_config_1`
+    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Labo_Alg
+    with v0_2024_10.WithPipeChain_15544_MCE:
     self =>
 
     import std.*
@@ -184,11 +185,9 @@ object `01_cloche_medianne_entree_haute_config_1`
 
     val firebox_output_temp = 785.degreesCelsius
 
-    val fluePipe = 
+    val fluePipeDescr =
         import FluePipe_Module_13384.*
-        FluePipe_Module_13384
-        .incremental
-        .define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left (TOCHECK)
 
             pipeLocation(Area.Accumulateur),
@@ -228,11 +227,10 @@ object `01_cloche_medianne_entree_haute_config_1`
             addSectionVertical("colonne P09", 77.7.cm),
             addSectionVertical("colonne", 113.7.cm),
         )
-        .toFullDescr().extractPipe
 
-    val connectorPipe = 
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental.define(
+        Seq(
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
             layer(e = 0.1.cm, λ = 15.W_per_mK),
@@ -240,11 +238,10 @@ object `01_cloche_medianne_entree_haute_config_1`
 
             addSectionVertical("raccord", 4.cm)
         )
-        .toFullDescr().extractPipe
 
-    val chimneyPipe = 
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental.define(
+        Seq(
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
             layer(e = 2.5.cm, λ = 0.096.W_per_mK),
@@ -262,7 +259,6 @@ object `01_cloche_medianne_entree_haute_config_1`
 
             addFlowResistance("element terminal", 1.2.unitless: ζ)
         )
-        .toFullDescr().extractPipe
 
     override lazy val design = Design(
         firebox = Firebox_15544.Traditional.CustomForLab(
