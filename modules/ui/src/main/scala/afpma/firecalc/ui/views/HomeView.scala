@@ -50,7 +50,7 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                     cls := "relative top-42 flex flex-row",
                     // Left: accordion (full width or half when 3D panel open)
                     div(
-                        cls <-- viz3DPanelOn.map(on => if on then "w-1/2 overflow-y-auto" else "w-full"),
+                        cls <-- viz3DPanelOn.map(on => if on then "w-2/3 overflow-y-auto" else "w-full"),
                         DaisyUIVerticalAccordionAndJoin(),
                         Footer()
                     ),
@@ -58,7 +58,7 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                     child.maybe <-- viz3DPanelOn.map: on =>
                         Option.when(on)(
                             div(
-                                cls := "w-1/2 fixed right-0 top-42 bottom-0 p-2",
+                                cls := "w-1/3 fixed right-0 top-42 bottom-0 p-2",
                                 Viz3DPanel().node
                             )
                         )
