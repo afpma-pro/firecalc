@@ -51,12 +51,18 @@ object SetFlowOnlyPipeProp_15544_V3:
         inclination: InclinationDirection
     ) extends SetFlowOnlyPipeProp_15544_V3
 
+    @Transl(I(_.set_prop.SetInitialPosition))
     case class SetInitialPosition(
-        x: Length, y: Length, z: Length
+        @Transl(I(_.terms.x)) x: Length,
+        @Transl(I(_.terms.y)) y: Length,
+        @Transl(I(_.terms.z)) z: Length
     ) extends SetFlowOnlyPipeProp_15544_V3
 
+    @Transl(I(_.set_prop.SetFinalPosition))
     case class SetFinalPosition(
-        x: Length, y: Length, z: Length
+        @Transl(I(_.terms.x)) x: Length,
+        @Transl(I(_.terms.y)) y: Length,
+        @Transl(I(_.terms.z)) z: Length
     ) extends SetFlowOnlyPipeProp_15544_V3
 
 sealed trait AddFlowOnlyPipeElement_15544_V3 extends FlowOnlyPipeDescr_15544_V3:

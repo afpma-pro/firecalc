@@ -194,6 +194,16 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
             } { (iix, sig) =>
                 renderElemTyped[SetInitialDirection](iix._1, I18N.set_prop.SetInitialDirection, iix._2, sig, isProperty = true)
             }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
+                case (i, incr: SetInitialPosition, x) => (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SetInitialPosition](iix._1, I18N.set_prop.SetInitialPosition, iix._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
+                case (i, incr: SetFinalPosition, x) => (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SetFinalPosition](iix._1, I18N.set_prop.SetFinalPosition, iix._2, sig, isProperty = true)
+            }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
                 (Int, AddSectionSlopped, XtraOutputs      ),
@@ -407,6 +417,8 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
         txt  = I18N.set_prop._self,
         next = List(
             TagTreeMenu.Leaf[SetInitialDirection],
+            TagTreeMenu.Leaf[SetInitialPosition],
+            TagTreeMenu.Leaf[SetFinalPosition],
             TagTreeMenu.Leaf[SetMaterial],
             TagTreeMenu.Leaf[SetRoughness],
             TagTreeMenu.Leaf[SetInnerShape]

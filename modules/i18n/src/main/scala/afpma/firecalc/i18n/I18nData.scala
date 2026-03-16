@@ -751,6 +751,8 @@ object I18nData:
         SetNumberOfFlows_NumberOfChannels: String,
         SetNumberOfFlows_Join            : String,
         SetInitialDirection              : String,
+        SetInitialPosition               : String,
+        SetFinalPosition                 : String,
         LinedFlue                        : String,
         LinedFlue_liner                  : String,
         LinedFlue_casing                 : String,
@@ -812,6 +814,9 @@ object I18nData:
         elevation_gain          : String,
         width                   : String,
         width_to_height_ratio   : String,
+        x                       : String,
+        y                       : String,
+        z                       : String,
         zeta                    : String,
         zeta_ζ                  : String
     )
