@@ -150,6 +150,16 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             } { (iaax, sig) =>
                 renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true)
             }
+            .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
+                case (i, aa: SetInitialPosition, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
+                case (i, aa: SetFinalPosition, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true)
+            }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSectionSlopped, XtraOutputs), HtmlElement] {
                 case (i, aa: AddSectionSlopped, x) => (i, aa, x)
             } { (iaax, sig) =>
@@ -456,6 +466,8 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
         txt  = I18N.set_prop._self,
         next = List(
             TagTreeMenu.Leaf[SetInitialDirection],
+            TagTreeMenu.Leaf[SetInitialPosition],
+            TagTreeMenu.Leaf[SetFinalPosition],
             TagTreeMenu.Leaf[SetMaterial],
             TagTreeMenu.Leaf[SetRoughness],
             TagTreeMenu.Leaf[SetInnerShape]

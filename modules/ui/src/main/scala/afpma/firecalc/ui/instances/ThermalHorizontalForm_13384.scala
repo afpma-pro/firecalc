@@ -287,6 +287,14 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_SetInitialDirection: DaisyUIHorizontalForm[SetInitialDirection] =
         autoDeriveAndOverwriteFieldNames[SetInitialDirection]
 
+    given horizontal_form_SetInitialPosition: DaisyUIHorizontalForm[SetInitialPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetInitialPosition]
+
+    given horizontal_form_SetFinalPosition: DaisyUIHorizontalForm[SetFinalPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetFinalPosition]
+
     given horizontal_form_SetNumberOfFlows: DaisyUIHorizontalForm[SetNumberOfFlows] =
         import ValidateVarCommonInstances.validOption_always.given
         given DaisyUIHorizontalForm[Int]       = DaisyUIHorizontalForm.forInt

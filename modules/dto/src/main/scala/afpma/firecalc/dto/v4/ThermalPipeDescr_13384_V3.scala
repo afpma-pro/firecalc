@@ -114,12 +114,18 @@ object SetThermalPipeProp_13384_V3:
         inclination: InclinationDirection
     ) extends SetThermalPipeProp_13384_V3
 
+    @Transl(I(_.set_prop.SetInitialPosition))
     case class SetInitialPosition(
-        x: Length, y: Length, z: Length
+        @Transl(I(_.terms.x)) x: Length,
+        @Transl(I(_.terms.y)) y: Length,
+        @Transl(I(_.terms.z)) z: Length
     ) extends SetThermalPipeProp_13384_V3
 
+    @Transl(I(_.set_prop.SetFinalPosition))
     case class SetFinalPosition(
-        x: Length, y: Length, z: Length
+        @Transl(I(_.terms.x)) x: Length,
+        @Transl(I(_.terms.y)) y: Length,
+        @Transl(I(_.terms.z)) z: Length
     ) extends SetThermalPipeProp_13384_V3
 
     extension (props: Seq[SetSingleProp])

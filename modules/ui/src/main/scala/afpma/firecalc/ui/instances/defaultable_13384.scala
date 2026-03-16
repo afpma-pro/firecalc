@@ -67,6 +67,10 @@ object defaultable_13384:
                 azimuth     = AzimuthDirection.Rear,
                 inclination = InclinationDirection.Up
             )
+        given Defaultable[SetInitialPosition]         :
+            def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
+        given Defaultable[SetFinalPosition]           :
+            def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
         given Defaultable[SetNumberOfFlows]           :
             def default = SetNumberOfFlows(divideFlowIn.default)
         given Locale => Defaultable[AddSectionSlopped]:
