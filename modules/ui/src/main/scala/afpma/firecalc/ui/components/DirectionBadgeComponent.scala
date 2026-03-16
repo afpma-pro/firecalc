@@ -44,7 +44,8 @@ case class DirectionBadgeComponent(
     previousDirection: Signal[Option[Vec3]],
     frameBefore     : Signal[Option[PipeFrame]],
     finalDirVar     : Option[Var[Option[FinalDirection]]],
-    deflectionAngle : Signal[Option[Double]] = Signal.fromValue(None)
+    deflectionAngle : Signal[Option[Double]] = Signal.fromValue(None),
+    compact         : Boolean = false
 )(using Locale) extends Component:
 
     private val details = htmlTag("details")
@@ -54,19 +55,27 @@ case class DirectionBadgeComponent(
     private def translateCardinal(english: String): String =
         val i18n = I18N_UI.direction_badge
         english match
-            case "Up"    => i18n.cardinal_up
-            case "Down"  => i18n.cardinal_down
-            case "Rear"  => i18n.cardinal_rear
-            case "Front" => i18n.cardinal_front
-            case "Right" => i18n.cardinal_right
-            case "Left"  => i18n.cardinal_left
-            case other   => other
+            case "Up"          => i18n.cardinal_up
+            case "Down"        => i18n.cardinal_down
+            case "Rear"        => i18n.cardinal_rear
+            case "Front"       => i18n.cardinal_front
+            case "Right"       => i18n.cardinal_right
+            case "Left"        => i18n.cardinal_left
+            case "Rear+Right"  => i18n.cardinal_rear_right
+            case "Front+Right" => i18n.cardinal_front_right
+            case "Front+Left"  => i18n.cardinal_front_left
+            case "Rear+Left"   => i18n.cardinal_rear_left
+            case other         => other
 
     /** Translate a full display string: translates cardinal names in T1 and T2 formats. */
     private def translateDisplayString(s: String): String =
-        val cardinals = List("Up", "Down", "Rear", "Front", "Right", "Left")
+        // Compound cardinals first (longer match), then simple cardinals
+        val cardinals = List(
+            "Rear+Right", "Front+Right", "Front+Left", "Rear+Left",
+            "Up", "Down", "Rear", "Front", "Right", "Left"
+        )
         cardinals.find(c => s == c || s.startsWith(s"$c ")) match
-            case Some(c) => s.replaceFirst(c, translateCardinal(c))
+            case Some(c) => s.replaceFirst(java.util.regex.Pattern.quote(c), translateCardinal(c))
             case None    => s
 
     /** Convert a Vec3 to compact arrow notation: az deg el deg or just el for vertical. */
@@ -85,19 +94,6 @@ case class DirectionBadgeComponent(
         val s = dir.toDisplayString
         if s.startsWith("az:") then toArrowString(dir) else translateDisplayString(s)
 
-    /** Convention line text based on the frame's current direction. */
-    private def conventionLine(frameOpt: Option[PipeFrame]): String =
-        frameOpt match
-            case None => I18N_UI.direction_badge.tooltip_convention_horizontal
-            case Some(frame) =>
-                val dir = frame.direction
-                if dir.angleTo(Vec3.Up) < 1e-6 then
-                    I18N_UI.direction_badge.tooltip_convention_up
-                else if dir.angleTo(Vec3.Down) < 1e-6 then
-                    I18N_UI.direction_badge.tooltip_convention_down
-                else
-                    I18N_UI.direction_badge.tooltip_convention_horizontal
-
     /** Convert a Vec3 direction to a FinalDirection by snapping to named enum cases. */
     private def vec3ToFinalDirection(v: Vec3): FinalDirection =
         val (az, el) = v.toAzimuthElevation
@@ -109,34 +105,38 @@ case class DirectionBadgeComponent(
     private def tooltipContent: HtmlElement =
         val i18n = I18N_UI.direction_badge
         div(
-            cls := "text-xs space-y-0.5",
-            child <-- finalDirection.combineWith(frameBefore).map: (dirOpt, frameOpt) =>
-                dirOpt match
-                    case None      => emptyNode
-                    case Some(dir) =>
-                        val (az, el)   = dir.toAzimuthElevation
-                        val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
-                        val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
-                        val azElLine   =
-                            if isVertical then i18n.tooltip_elevation(if el > 0 then elStr else s"-$elStr")
-                            else
-                                val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
-                                s"${i18n.tooltip_azimuth(azStr)} \u00b7 ${i18n.tooltip_elevation(elStr)}"
-                        div(
-                            p(s"${i18n.tooltip_direction} ${translateDisplayString(dir.toDisplayString)}"),
-                            p(azElLine),
-                            hr(cls := "my-0.5 border-base-content/20"),
-                            p(cls := "opacity-70", conventionLine(frameOpt))
-                        )
+            cls := "text-xs",
+            child <-- finalDirection.map:
+                case None      => emptyNode
+                case Some(dir) =>
+                    val (az, el)   = dir.toAzimuthElevation
+                    val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
+                    val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
+                    val azElLine   =
+                        if isVertical then i18n.tooltip_elevation(if el > 0 then elStr else s"-$elStr")
+                        else
+                            val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
+                            s"${i18n.tooltip_azimuth(azStr)} \u00b7 ${i18n.tooltip_elevation(elStr)}"
+                    p(azElLine)
         )
 
     /** Read-only badge span (no chevron, no interactivity). */
     private def readOnlyBadge(dir: Vec3): HtmlElement =
-        span(
-            cls := "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono",
-            span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label),
-            badgeText(dir)
-        )
+        if compact then
+            span(
+                cls := "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono",
+                span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label),
+                badgeText(dir)
+            )
+        else
+            div(
+                cls := "flex flex-col",
+                label(cls := "fieldset-label", I18N_UI.direction_badge.final_dir_label),
+                span(
+                    cls := "select select-xs pointer-events-none",
+                    badgeText(dir)
+                )
+            )
 
     /**
      * Editable badge with DaisyUI details/summary dropdown.
@@ -144,13 +144,13 @@ case class DirectionBadgeComponent(
      * Selecting an item writes to finalDirVar and closes the dropdown.
      */
     private def editableBadge(dir: Vec3, fdVar: Var[Option[FinalDirection]]): HtmlElement =
-        details(
+        val dropdown = details(
             cls := "dropdown",
             summary(
-                cls := "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono cursor-pointer list-none",
-                span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label),
-                badgeText(dir),
-                span(cls := "text-xs opacity-60", "\u25be")
+                cls := (if compact then "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono cursor-pointer list-none"
+                        else "select select-xs cursor-pointer list-none"),
+                when(compact)(span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label)),
+                badgeText(dir)
             ),
             child <-- frameBefore.combineWith(deflectionAngle).map:
                 case (None, _) | (_, None) => emptyNode
@@ -160,16 +160,15 @@ case class DirectionBadgeComponent(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
                         presets.map: (cardinalVec, _) =>
                             val fd = vec3ToFinalDirection(cardinalVec)
-                            val label = translateCardinal(cardinalVec.toDisplayString)
+                            val lbl = translateCardinal(cardinalVec.toDisplayString)
                             li(
                                 a(
                                     cls <-- fdVar.signal.map: cur =>
                                         val active = cur.contains(fd)
                                         if active then "active" else "",
-                                    label,
+                                    lbl,
                                     onClick --> { _ =>
                                         fdVar.set(Some(fd))
-                                        // Close the details dropdown by removing open attribute
                                         org.scalajs.dom.document
                                             .querySelectorAll("details[open]")
                                             .foreach(el => el.removeAttribute("open"))
@@ -178,6 +177,13 @@ case class DirectionBadgeComponent(
                             )
                     )
         )
+        if compact then dropdown
+        else
+            div(
+                cls := "flex flex-col",
+                label(cls := "fieldset-label", I18N_UI.direction_badge.final_dir_label),
+                dropdown
+            )
 
     lazy val node: HtmlElement =
         span(

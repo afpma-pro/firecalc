@@ -167,9 +167,11 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     s should startWith("Right ↓")
   }
 
-  it should "use az/el fallback for diagonal direction" in {
-    val v = Vec3(1, 1, 0).normalized
-    v.toDisplayString should startWith("az:")
+  it should "return compound cardinal for diagonal direction" in {
+    Vec3(1, 1, 0).normalized.toDisplayString shouldBe "Rear+Right"
+    Vec3(1, -1, 0).normalized.toDisplayString shouldBe "Front+Right"
+    Vec3(-1, -1, 0).normalized.toDisplayString shouldBe "Front+Left"
+    Vec3(-1, 1, 0).normalized.toDisplayString shouldBe "Rear+Left"
   }
 
   // ── PipeFrame.initial ──────────────────────────────────────────────────────

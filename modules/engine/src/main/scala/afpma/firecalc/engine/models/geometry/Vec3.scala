@@ -50,7 +50,8 @@ case class Vec3(x: Double, y: Double, z: Double):
 
   /**
    * 3-tier display string for UI:
-   * 1. Exact cardinal name (Up/Down/Rear/Front/Right/Left) when components are exactly 0/±1
+   * 1. Exact cardinal name (Up/Down/Rear/Front/Right/Left) or compound diagonal
+   *    (Rear+Right, Front+Right, Front+Left, Rear+Left) when horizontal and z ≈ 0
    * 2. Cardinal horizontal + elevation angle when x,y match a cardinal exactly but z != 0
    * 3. az:X° el:Y° fallback
    */
@@ -66,27 +67,38 @@ case class Vec3(x: Double, y: Double, z: Double):
         case (1.0,  0.0,  0.0) => "Right"
         case (-1.0, 0.0,  0.0) => "Left"
         case _                 => azElString(n)
-    // Cardinal horizontal + elevation: x,y give exact cardinal but z is non-zero
-    else if n.z != 0.0 then
+    // Horizontal diagonal: recognize compound cardinals (±0.707, ±0.707, ~0)
+    else if math.abs(n.z) < 1e-6 then
+      horizontalName(n).getOrElse(azElString(n))
+    // Cardinal horizontal + elevation: x,y give exact cardinal or diagonal but z != 0
+    else
       val horNorm = Vec3(n.x, n.y, 0.0).norm
       if horNorm == 0.0 then azElString(n)
       else
         val horUnit = Vec3(n.x / horNorm, n.y / horNorm, 0.0)
-        if isExact(horUnit.x) && isExact(horUnit.y) then
-          val horName = (horUnit.x, horUnit.y) match
-            case (0.0, 1.0)  => "Rear"
-            case (0.0, -1.0) => "Front"
-            case (1.0, 0.0)  => "Right"
-            case (-1.0, 0.0) => "Left"
-            case _           => ""
-          if horName.nonEmpty then
+        horizontalName(horUnit) match
+          case Some(horName) =>
             val elev = math.toDegrees(math.atan2(n.z, horNorm))
-            val sign = if elev >= 0 then "↑" else "↓"
+            val sign = if elev >= 0 then "\u2191" else "\u2193"
             val elevStr = String.format(java.util.Locale.ROOT, "%.1f", math.abs(elev))
-            s"$horName $sign${elevStr}°"
-          else azElString(n)
-        else azElString(n)
-    else azElString(n)
+            s"$horName $sign${elevStr}\u00b0"
+          case None => azElString(n)
+
+  /** Match a horizontal unit vector to a cardinal or compound cardinal name. */
+  private def horizontalName(h: Vec3): Option[String] =
+    val eps = 1e-6
+    def near(a: Double, b: Double) = math.abs(a - b) < eps
+    if near(h.x, 0.0) && near(h.y, 1.0)  then Some("Rear")
+    else if near(h.x, 0.0) && near(h.y, -1.0) then Some("Front")
+    else if near(h.x, 1.0) && near(h.y, 0.0)  then Some("Right")
+    else if near(h.x, -1.0) && near(h.y, 0.0) then Some("Left")
+    else
+      val d = math.sqrt(0.5)
+      if near(h.x, d) && near(h.y, d)    then Some("Rear+Right")
+      else if near(h.x, d) && near(h.y, -d)   then Some("Front+Right")
+      else if near(h.x, -d) && near(h.y, -d)  then Some("Front+Left")
+      else if near(h.x, -d) && near(h.y, d)   then Some("Rear+Left")
+      else None
 
   private def azElString(n: Vec3): String =
     val (az, el) = n.toAzimuthElevation

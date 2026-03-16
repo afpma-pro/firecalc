@@ -19,8 +19,6 @@ import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
 
-import org.scalajs.dom
-
 /**
  * Relative direction input for direction-change elements.
  *
@@ -37,9 +35,6 @@ case class RelativeDirectionInput(
     deflectionAngle: Signal[Option[Double]],
     finalDirVar    : Var[Option[FinalDirection]]
 )(using Locale) extends Component:
-
-    private val details = htmlTag("details")
-    private val summary = htmlTag("summary")
 
     // Internal state: quadrant side and theta in degrees [0, 90]
     private val sideVar  = Var[RelativeSide](RelativeSide.Right)
@@ -126,58 +121,42 @@ case class RelativeDirectionInput(
                 }
 
         div(
-            cls := "flex flex-row items-center gap-2 mt-1",
+            cls := "flex flex-row items-end gap-2 mt-1",
 
-            // Relative dir. label + quadrant dropdown
+            // Relative dir. label above quadrant select
             div(
-                cls := "flex items-center gap-1",
-                span(cls := "text-xs opacity-60", i18n.relative_dir_label),
-                details(
-                    cls := "dropdown",
-                    summary(
-                        cls := "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono cursor-pointer list-none",
-                        child.text <-- sideVar.signal.map(sideLabel),
-                        span(cls := "text-xs opacity-60", "\u25be")
-                    ),
-                    ul(
-                        cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
-                        allSides.map: side =>
-                            li(
-                                a(
-                                    cls <-- sideVar.signal.map: cur =>
-                                        if cur == side then "active" else "",
-                                    sideLabel(side),
-                                    onClick --> { _ =>
-                                        sideVar.set(side)
-                                        // Close the details dropdown
-                                        dom.document
-                                            .querySelectorAll("details[open]")
-                                            .foreach(el => el.removeAttribute("open"))
-                                    }
-                                )
-                            )
-                    )
+                cls := "flex flex-col",
+                label(cls := "fieldset-label", i18n.relative_dir_label),
+                select(
+                    cls := "select select-xs",
+                    value <-- sideVar.signal.map(_.toString),
+                    onChange.mapToValue.map(v => RelativeSide.valueOf(v)) --> sideVar.writer,
+                    allSides.map: side =>
+                        option(sideLabel(side), value := side.toString)
                 )
             ),
 
-            // Theta rotation input
-            label(
-                cls := "flex items-center gap-1 text-xs",
-                span(cls := "opacity-60", i18n.relative_theta),
-                input(
-                    tpe         := "number",
-                    cls         := "input input-xs input-bordered w-20 text-right font-mono",
-                    stepAttr    := "5",
-                    minAttr     := "0",
-                    maxAttr     := "90",
-                    controlled(
-                        value <-- thetaVar.signal.map(t => String.format(java.util.Locale.ROOT, "%.0f", t)),
-                        onInput.mapToValue.map { s =>
-                            s.toDoubleOption.map(clampTheta).getOrElse(0.0)
-                        } --> thetaVar.writer
-                    )
-                ),
-                span(cls := "opacity-60", "\u00b0")
+            // Rotation label above theta input
+            div(
+                cls := "flex flex-col",
+                label(cls := "fieldset-label", i18n.relative_theta),
+                label(
+                    cls := "input input-xs",
+                    input(
+                        tpe      := "number",
+                        cls      := "field-sizing-content w-fit min-w-[4ch]",
+                        stepAttr := "5",
+                        minAttr  := "0",
+                        maxAttr  := "90",
+                        controlled(
+                            value <-- thetaVar.signal.map(t => String.format(java.util.Locale.ROOT, "%.0f", t)),
+                            onInput.mapToValue.map { s =>
+                                s.toDoubleOption.map(clampTheta).getOrElse(0.0)
+                            } --> thetaVar.writer
+                        )
+                    ),
+                    span(cls := "label", "\u00b0")
+                )
             ),
 
             // Bidirectional sync binders
