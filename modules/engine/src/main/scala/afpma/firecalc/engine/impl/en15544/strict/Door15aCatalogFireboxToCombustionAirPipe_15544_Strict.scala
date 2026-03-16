@@ -37,7 +37,7 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends FireboxToCom
                 case Right(pl) =>
                     CombustionAirPipe_Module_15544.incremental
                         .define(
-                            innerShape(firebox.expectedAirIntakePipeShape),
+                            innerShape(firebox.actualAirIntakePipeShape),
                             addPressureDiff("door_15a_pressure_loss", pl)
                         )
                         .toFullDescr()

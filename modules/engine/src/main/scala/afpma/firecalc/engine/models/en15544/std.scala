@@ -334,8 +334,11 @@ object std:
             /** TSV table for pressure-loss interpolation (first col = mb in kg, header cols = sb in cm). */
             val pressure_loss_table_raw: String
 
-            /** The pipe shape the firebox expects at its air intake (e.g. round 200 mm). */
-            val expectedAirIntakePipeShape: PipeShape
+            /** The pipe shapes the firebox accepts at its air intake (e.g. round 200 mm). */
+            val expectedAirIntakePipeShapes: List[PipeShape]
+
+            /** The pipe shape actually connected to this firebox's air intake. */
+            val actualAirIntakePipeShape: PipeShape
 
             // ── Computed from input data ────────────────────────────────
 
@@ -402,7 +405,8 @@ object std:
             mb_min: Option[Mass],
             mb_max: Option[Mass],
             pressure_loss_table_raw: String,
-            expectedAirIntakePipeShape: PipeShape,
+            expectedAirIntakePipeShapes: List[PipeShape],
+            actualAirIntakePipeShape: PipeShape,
             co2_dry_nominal: σ_CO2,
             co2_dry_lowest: Option[σ_CO2],
             emissions_values: EmissionsAndEfficiencyValues,

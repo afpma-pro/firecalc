@@ -225,8 +225,10 @@ object Firebox_V3:
         mb_max                                : Option[Mass] = None,
         @Transl(I(_.firebox.door_15a_firebox.pressure_loss_table))
         pressure_loss_table_raw               : String = "",
-        @Transl(I(_.firebox.door_15a_firebox.expected_air_intake_pipe_shape))
-        expectedAirIntakePipeShape            : PipeShape,
+        @Transl(I(_.firebox.door_15a_firebox.expected_air_intake_pipe_shapes))
+        expectedAirIntakePipeShapes           : List[PipeShape],
+        @Transl(I(_.firebox.door_15a_firebox.actual_air_intake_pipe_shape))
+        actualAirIntakePipeShape              : PipeShape,
         @Transl(I(_.firebox.single_tested.co2_dry_nominal))
         co2_dry_nominal                       : Percentage,
         @Transl(I(_.firebox.single_tested.co2_dry_lowest))

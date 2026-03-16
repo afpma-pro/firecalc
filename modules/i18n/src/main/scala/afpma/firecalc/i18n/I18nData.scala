@@ -266,7 +266,8 @@ object I18nData:
             mb_max                        : String,
             load_size_nominal             : String,
             pressure_loss_table           : String,
-            expected_air_intake_pipe_shape: String,
+            expected_air_intake_pipe_shapes: String,
+            actual_air_intake_pipe_shape  : String,
         )
 
     case class FireboxNames(

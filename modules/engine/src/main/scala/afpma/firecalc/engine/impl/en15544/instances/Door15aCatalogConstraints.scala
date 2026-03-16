@@ -69,25 +69,22 @@ given door15aCatalogConstraints: FireboxConstraints[Door15aFirebox_Catalog] =
                     Some(TermConstraint.Max(firebox.sb_max.getOrElse(DEFAULT_SB_MAX)))
                 )
 
-        /** Validate that the air intake pipe ends with the shape expected by the firebox. */
+        /** Validate that the actual air intake pipe shape is among the expected shapes. */
         private def airIntakePipeShapeConstraint(
-            firebox: Door15aFirebox_Catalog,
-            ctx    : FireboxConstraintContext
+            firebox: Door15aFirebox_Catalog
         )(using Locale): List[FireboxError] =
-            ctx.airIntakePipeShape match
-                case None         => Nil // air intake pipe shape not available, skip check
-                case Some(actual) =>
-                    val expected = firebox.expectedAirIntakePipeShape
-                    if actual == expected then Nil
-                    else List(AirIntakePipeShapeMismatch(
-                        expected = expected.show,
-                        actual   = actual.show
-                    ))
+            val actual   = firebox.actualAirIntakePipeShape
+            val expected = firebox.expectedAirIntakePipeShapes
+            if expected.contains(actual) then Nil
+            else List(AirIntakePipeShapeMismatch(
+                expected = expected.map(_.show).mkString(", "),
+                actual   = actual.show
+            ))
 
         override def firebox_custom_constraints(
             firebox: Door15aFirebox_Catalog,
             ctx    : FireboxConstraintContext
         )(using Locale): List[FireboxError] =
             val sbErrors       = s_B_constraints(firebox).checkAllAndCombine(firebox.sb).foldToErrDeep(InvalidFireboxConstraint.apply)
-            val pipeShapeErrors = airIntakePipeShapeConstraint(firebox, ctx)
+            val pipeShapeErrors = airIntakePipeShapeConstraint(firebox)
             sbErrors ::: pipeShapeErrors

@@ -227,7 +227,8 @@ object FireboxTransformers:
                 mb_min                     = mb_min,
                 mb_max                     = mb_max,
                 pressure_loss_table_raw    = pressure_loss_table_raw,
-                expectedAirIntakePipeShape = expectedAirIntakePipeShape,
+                expectedAirIntakePipeShapes = expectedAirIntakePipeShapes,
+                actualAirIntakePipeShape   = actualAirIntakePipeShape,
                 co2_dry_nominal            = co2_dry_nominal: σ_CO2,
                 co2_dry_lowest             = co2_dry_lowest.map(v => v: σ_CO2),
                 emissions_values           = EmissionsAndEfficiencyValues(

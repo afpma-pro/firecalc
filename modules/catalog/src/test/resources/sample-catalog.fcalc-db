@@ -33,7 +33,12 @@ door_15a_fireboxes:
       mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
       10 4       3       2       1
       25 22      20      18      16
-    expectedAirIntakePipeShape:
+    expectedAirIntakePipeShapes:
+      - Circle:
+          diameter:
+            value: "0.2"
+            unit: "meter"
+    actualAirIntakePipeShape:
       Circle:
         diameter:
           value: "0.2"

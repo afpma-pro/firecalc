@@ -437,8 +437,10 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         )
         given optMassDF: DF[Option[Mass]] = optMassLinkedVal
 
-        // PipeShape (expectedAirIntakePipeShape)
+        // PipeShape (actualAirIntakePipeShape)
         given DF[PipeShape] = horizontal_form.horizontal_form_PipeShape.toVerticalForm
+        // List[PipeShape] (expectedAirIntakePipeShapes)
+        given DF[List[PipeShape]] = DaisyUIVerticalForm.forList_WithEphemeralIds[PipeShape]
 
         // HeatOutputReduced full enum (pn_reduced)
         given DF[HeatOutputReduced] =
