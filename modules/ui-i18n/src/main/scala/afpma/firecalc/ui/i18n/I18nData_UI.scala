@@ -248,9 +248,10 @@ object I18nData_UI:
         relative_right               : String,
         relative_up                  : String,
         relative_down                : String,
-        relative_theta               : String,
-        relative_dir_label           : String,
-        final_dir_label              : String,
+        relative_theta                  : String,
+        relative_dir_label              : String,
+        final_dir_label                 : String,
+        direction_incompatible_warning  : String,
     )
 
     case class Tooltips(

@@ -7,6 +7,7 @@ package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.{AzimuthDirection, FinalDirection, InclinationDirection}
 import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
@@ -50,6 +51,25 @@ case class DirectionBadgeComponent(
 
     private val details = htmlTag("details")
     private val summary = htmlTag("summary")
+
+    /** True when fd is geometrically reachable from frame at the given deflection (tolerance 1°). */
+    private def isReachable(fd: FinalDirection, frame: PipeFrame, deflDeg: Double): Boolean =
+        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+        val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
+        frame.rollAngleForOutputDirection(targetVec, deflDeg).isDefined
+
+    /** Signal: whether the current finalDir is reachable from frameBefore at the bend deflection.
+      * None when context (frame or deflection) is not yet available. */
+    private lazy val isCompatibleSig: Signal[Option[Boolean]] =
+        finalDirVar match
+            case None => Signal.fromValue(None)
+            case Some(fdVar) =>
+                fdVar.signal
+                    .combineWith(frameBefore, deflectionAngle)
+                    .map { case (fdOpt, frameOpt, deflOpt) =>
+                        for fd <- fdOpt; frame <- frameOpt; defl <- deflOpt
+                        yield isReachable(fd, frame, defl)
+                    }
 
     /** Translate an English cardinal name from Vec3.toDisplayString to the current locale. */
     private def translateCardinal(english: String): String =
@@ -108,9 +128,9 @@ case class DirectionBadgeComponent(
         val i18n = I18N_UI.direction_badge
         div(
             cls := "text-xs",
-            child <-- finalDirection.map:
-                case None      => emptyNode
-                case Some(dir) =>
+            child <-- finalDirection.combineWith(isCompatibleSig).map:
+                case (None, _) => emptyNode
+                case (Some(dir), compat) =>
                     val (az, el)   = dir.toAzimuthElevation
                     val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
                     val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
@@ -119,14 +139,23 @@ case class DirectionBadgeComponent(
                         else
                             val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
                             s"${i18n.tooltip_azimuth(azStr)} \u00b7 ${i18n.tooltip_elevation(elStr)}"
-                    p(azElLine)
+                    div(
+                        p(azElLine),
+                        if compat.contains(false) then p(cls := "text-warning mt-1", i18n.direction_incompatible_warning)
+                        else emptyNode
+                    )
         )
 
     /** Read-only badge span (no chevron, no interactivity). */
     private def readOnlyBadge(dir: Vec3): HtmlElement =
         if compact then
             span(
-                cls := "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono",
+                cls <-- isCompatibleSig.map:
+                    case Some(false) => "inline-flex items-center gap-1 badge badge-warning badge-sm font-mono"
+                    case _           => "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono",
+                child <-- isCompatibleSig.map:
+                    case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
+                    case _           => emptyNode,
                 span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label),
                 badgeText(dir)
             )
@@ -135,7 +164,9 @@ case class DirectionBadgeComponent(
                 cls := "flex flex-col",
                 label(cls := "fieldset-label", I18N_UI.direction_badge.final_dir_label),
                 span(
-                    cls := "select select-xs pointer-events-none",
+                    cls <-- isCompatibleSig.map:
+                        case Some(false) => "select select-xs pointer-events-none text-warning"
+                        case _           => "select select-xs pointer-events-none",
                     badgeText(dir)
                 )
             )
@@ -149,8 +180,17 @@ case class DirectionBadgeComponent(
         val dropdown = details(
             cls := "dropdown",
             summary(
-                cls := (if compact then "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono cursor-pointer list-none"
-                        else "select select-xs cursor-pointer list-none"),
+                if compact then
+                    cls <-- isCompatibleSig.map:
+                        case Some(false) => "inline-flex items-center gap-1 badge badge-warning badge-sm font-mono cursor-pointer list-none"
+                        case _           => "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono cursor-pointer list-none"
+                else
+                    cls <-- isCompatibleSig.map:
+                        case Some(false) => "select select-xs cursor-pointer list-none text-warning"
+                        case _           => "select select-xs cursor-pointer list-none",
+                child <-- isCompatibleSig.map:
+                    case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
+                    case _           => emptyNode,
                 when(compact)(span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label)),
                 badgeText(dir)
             ),

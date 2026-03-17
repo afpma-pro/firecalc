@@ -73,6 +73,12 @@ case class RelativeDirectionInput(
     private def clampTheta(v: Double): Double =
         math.max(0.0, math.min(90.0, v))
 
+    /** True when fd is geometrically reachable from frame at the given deflection angle (tolerance 1°). */
+    private def isReachable(fd: FinalDirection, frame: PipeFrame, deflDeg: Double): Boolean =
+        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+        val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
+        frame.rollAngleForOutputDirection(targetVec, deflDeg).isDefined
+
     /** Compare FinalDirections by Vec3 geometry, not enum representation.
       * Prevents lossy write-backs where e.g. (Left, Up) and (Rear, Up)
       * produce the same Vec3(0,0,1) but differ as enums. */
@@ -90,7 +96,8 @@ case class RelativeDirectionInput(
     lazy val node: HtmlElement =
         val i18n = I18N_UI.direction_badge
 
-        // Derived signal combining local state + context into an Option[FinalDirection]
+        // Derived signal: what FinalDirection the current (side, theta, frame, deflection) produces.
+        // Depends on all 4 inputs, but is only sampled (not subscribed) by the forward sync.
         val localFdSig: Signal[Option[FinalDirection]] =
             sideVar.signal
                 .combineWith(thetaVar.signal, frameBefore, deflectionAngle)
@@ -101,12 +108,17 @@ case class RelativeDirectionInput(
                 .map(_.flatten)
 
         // Forward sync: (side, theta) → finalDirVar
-        // .distinct.changes.debounce breaks the synchronous transaction chain.
+        // Only triggers when the USER changes side/theta — NOT when frameBefore changes.
+        // The user-action stream (.changes on side+theta) gates which emissions reach
+        // the writer; localFdSig and finalDirVar are sampled for their current values.
         val forwardSync =
-            localFdSig
+            sideVar.signal
+                .combineWith(thetaVar.signal)
                 .distinct
                 .changes
                 .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                .mapTo(()) // discard payload; we only need the timing
+                .withCurrentValueOf(localFdSig)
                 .withCurrentValueOf(finalDirVar.signal)
                 .collect { case (newFd, curFd) if !fdGeometryEqual(newFd, curFd) => newFd }
                 --> finalDirVar.writer
@@ -135,6 +147,48 @@ case class RelativeDirectionInput(
                     sideVar.set(st._1)
                     thetaVar.set(st._2)
                 }
+
+        // Signal: true when current finalDir is geometrically unreachable from frameBefore.
+        // Uses the proven 2-arg combineWith → 3-tuple pattern to avoid type erasure.
+        val isIncompatibleSig: Signal[Boolean] =
+            finalDirVar.signal
+                .combineWith(frameBefore, deflectionAngle)
+                .map { case (fdOpt, frameOpt, deflOpt) =>
+                    (for fd <- fdOpt; frame <- frameOpt; defl <- deflOpt
+                     yield !isReachable(fd, frame, defl)).getOrElse(false)
+                }
+
+        // Signal: what finalDir we would cascade to (from current side/theta + new frame).
+        // Uses the same proven 3-arg combineWith → 4-tuple pattern as localFdSig.
+        val cascadedFdSig: Signal[Option[FinalDirection]] =
+            sideVar.signal
+                .combineWith(thetaVar.signal, frameBefore, deflectionAngle)
+                .map { case (side, theta, frameOpt, deflOpt) =>
+                    for frame <- frameOpt; defl <- deflOpt
+                    yield computeFinalDir(side, theta, frame, defl)
+                }
+                .map(_.flatten)
+
+        // Combined: Some(newFd) when cascade is needed, None otherwise.
+        val cascadeNeededSig: Signal[Option[Option[FinalDirection]]] =
+            isIncompatibleSig
+                .combineWith(cascadedFdSig)
+                .map { case (incompatible, newFd) =>
+                    if incompatible then Some(newFd) else None
+                }
+
+        // Cascade sync: fires on frameBefore/deflectionAngle changes, samples cascadeNeededSig.
+        // Only writes when isReachable is false — no-op when finalDir is still compatible.
+        val cascadeSync =
+            frameBefore
+                .combineWith(deflectionAngle)
+                .distinct
+                .changes
+                .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                .mapTo(())
+                .withCurrentValueOf(cascadeNeededSig)
+                .collect { case Some(newFd) => newFd }
+                --> finalDirVar.writer
 
         // One-time initial sync: populate sideVar/thetaVar from finalDirVar
         // when context (frameBefore, deflectionAngle) becomes available.
@@ -195,5 +249,6 @@ case class RelativeDirectionInput(
             // Sync binders
             initialSync,
             forwardSync,
-            reverseSync
+            reverseSync,
+            cascadeSync
         )

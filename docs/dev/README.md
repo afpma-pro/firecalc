@@ -42,6 +42,7 @@ Core architectural patterns and design decisions:
 
 - **[SCHEMA_VERSIONING_ARCHITECTURE.md](SCHEMA_VERSIONING_ARCHITECTURE.md)** - ⭐ Data schema versioning architecture (AppState, BillingInfo, etc.)
 - **[TRANSLATION_AUTOMATION_SPEC.md](TRANSLATION_AUTOMATION_SPEC.md)** - Automated translation discovery system
+- **[guides/DIRECTION_PROPAGATION.md](guides/DIRECTION_PROPAGATION.md)** - Direction propagation in pipe panels (PipeFrame, RelativeDirectionInput, cascade sync)
 
 ## 🏗️ Architecture Documentation
 
