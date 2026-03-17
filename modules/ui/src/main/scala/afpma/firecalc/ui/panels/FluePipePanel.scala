@@ -342,7 +342,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val geom_elements = TagTreeMenu.Group(
         txt  = I18N.add_element._self,
         next = List(
-            straight_elements,
+            TagTreeMenu.Leaf[AddSectionSlopped],
             direction_change_elements,
             split_group,
             grids
@@ -398,12 +398,12 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
         )
     )
 
-    lazy val straight_elements = TagTreeMenu.Group(
-        txt  = I18N.add_element.add_section_element,
-        next = List(
-            TagTreeMenu.Leaf[AddSectionSlopped]
-        )
-    )
+    // lazy val straight_elements = TagTreeMenu.Group(
+    //     txt  = I18N.add_element.add_section_element,
+    //     next = List(
+    //         TagTreeMenu.Leaf[AddSectionSlopped]
+    //     )
+    // )
 
     lazy val direction_change_elements = TagTreeMenu.Group(
         txt  = I18N.add_element.add_direction_change_element,
@@ -416,11 +416,21 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
         next = List(
-            TagTreeMenu.Leaf[SetInitialDirection],
-            TagTreeMenu.Leaf[SetInitialPosition],
-            TagTreeMenu.Leaf[SetFinalPosition],
-            TagTreeMenu.Leaf[SetMaterial],
-            TagTreeMenu.Leaf[SetRoughness],
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._position_and_direction,
+                next = List(
+                    TagTreeMenu.Leaf[SetInitialPosition],
+                    TagTreeMenu.Leaf[SetInitialDirection],
+                    TagTreeMenu.Leaf[SetFinalPosition]
+                )
+            ),
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._material_and_roughness,
+                next = List(
+                    TagTreeMenu.Leaf[SetMaterial],
+                    TagTreeMenu.Leaf[SetRoughness]
+                )
+            ),
             TagTreeMenu.Leaf[SetInnerShape]
         )
     )

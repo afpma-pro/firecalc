@@ -734,6 +734,8 @@ object I18nData:
     case class SetProp(
         _self                            : String,
         _geometric_properties            : String,
+        _position_and_direction          : String,
+        _material_and_roughness          : String,
         define_layers                    : String,
         SetPropertiesInBatch             : String,
         SetInnerShape                    : String,
