@@ -252,6 +252,9 @@ object I18nData_UI:
         relative_dir_label              : String,
         final_dir_label                 : String,
         direction_incompatible_warning  : String,
+        cardinal_horizontal             : String,
+        custom_btn                      : String,
+        custom_dialog_title             : String,
     )
 
     case class Tooltips(

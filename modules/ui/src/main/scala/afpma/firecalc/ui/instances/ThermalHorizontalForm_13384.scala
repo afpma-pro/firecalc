@@ -285,7 +285,14 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[SetDuctType]
 
     given horizontal_form_SetInitialDirection: DaisyUIHorizontalForm[SetInitialDirection] =
-        autoDeriveAndOverwriteFieldNames[SetInitialDirection]
+        given Defaultable[SetInitialDirection] =
+            Defaultable(SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
+        given ValidateVar[SetInitialDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetInitialDirection]
+        DaisyUIHorizontalForm.makeFor[SetInitialDirection](summon[Defaultable[SetInitialDirection]]): (variable, _) =>
+            val azVar   = variable.zoomLazy(_.azimuth)((sid, az) => sid.copy(azimuth = az))
+            val inclVar = variable.zoomLazy(_.inclination)((sid, incl) => sid.copy(inclination = incl))
+            horizontal_form.renderInitialDirectionForm(azVar, inclVar)
 
     given horizontal_form_SetInitialPosition: DaisyUIHorizontalForm[SetInitialPosition] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m

@@ -307,12 +307,69 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         given Show[InclinationDirection] = Show.show:
             case InclinationDirection.Up         => I18N_UI.direction_badge.cardinal_up
             case InclinationDirection.Down       => I18N_UI.direction_badge.cardinal_down
-            case InclinationDirection.Horizontal => "Horizontal"
+            case InclinationDirection.Horizontal => I18N_UI.direction_badge.cardinal_horizontal
             case InclinationDirection.Custom(el) => s"${el.value}\u00b0"
         given Defaultable[InclinationDirection] = Defaultable(InclinationDirection.Up)
         given ValidateVar[InclinationDirection] =
             ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[InclinationDirection]
         DaisyUIHorizontalForm
             .forEnumOrSumTypeLike_UsingShowAsId[InclinationDirection](InclinationDirection.namedCases)
+
+    // SetInitialDirection — shared rendering helper for all pipe types.
+    // Each pipe-specific HorizontalForm class calls this with zoomed Vars.
+
+    def renderInitialDirectionForm(
+        azVar  : com.raquo.airstream.state.Var[AzimuthDirection],
+        inclVar: com.raquo.airstream.state.Var[InclinationDirection]
+    ): com.raquo.laminar.api.L.HtmlElement =
+        import com.raquo.laminar.api.L.*
+        import afpma.firecalc.ui.i18n.implicits.I18N_UI
+        import afpma.firecalc.ui.components.CustomDirectionDialog
+        import com.raquo.airstream.core.Observer
+
+        given ValidateVar[AzimuthDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AzimuthDirection]
+        given ValidateVar[InclinationDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[InclinationDirection]
+
+        val azForm   = horizontal_form_AzimuthDirection.render(azVar, FormConfig(fieldName = Some(I18N.terms.azimuth)))
+        val inclForm = horizontal_form_InclinationDirection.render(inclVar, FormConfig(fieldName = Some(I18N.terms.inclination)))
+
+        val dialog = CustomDirectionDialog(
+            onApply = Observer[(AzimuthDirection, InclinationDirection)]: (az, incl) =>
+                azVar.set(az)
+                inclVar.set(incl)
+        )
+
+        // Badge showing custom degree values when not a named case
+        val isCustom = azVar.signal
+            .combineWith(inclVar.signal)
+            .map: (az, incl) =>
+                az.isInstanceOf[AzimuthDirection.Custom] || incl.isInstanceOf[InclinationDirection.Custom]
+
+        val customBadge = span(
+            cls := "badge badge-ghost badge-sm font-mono text-xs",
+            display <-- isCustom.map(if _ then "inline-flex" else "none"),
+            child.text <-- azVar.signal.combineWith(inclVar.signal).map: (az, incl) =>
+                val azDeg   = AzimuthDirection.toDegrees(az)
+                val inclDeg = InclinationDirection.toDegrees(incl)
+                s"${azDeg}\u00b0 / ${inclDeg}\u00b0"
+        )
+
+        val customBtn = button(
+            cls := "btn btn-xs btn-outline",
+            tpe := "button",
+            I18N_UI.direction_badge.custom_btn,
+            onClick --> { _ => dialog.open(azVar.now(), inclVar.now()) }
+        )
+
+        div(
+            cls := "flex flex-row gap-1 items-center",
+            div(cls := "flex-auto", azForm),
+            div(cls := "flex-auto", inclForm),
+            customBadge,
+            customBtn,
+            dialog.node
+        )
 
 end HorizontalFormCommonInstances
