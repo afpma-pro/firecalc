@@ -72,12 +72,15 @@ final case class Viz3DPanel()(using Locale) extends Component:
         onUnmountCallback { _ => disposeCurrentViz() },
         child <-- allPositionsSig.map { (flue, connector, chimney, airIntake, firebox) =>
           disposeCurrentViz()
+          val fbWidthCm = firebox.firebox_width.value * M_TO_CM
+          val fbDepthCm = firebox.firebox_depth.value * M_TO_CM
           val fireboxLine = VizConverter.fireboxToLine(
-            firebox.firebox_width.value * M_TO_CM,
-            firebox.firebox_depth.value * M_TO_CM,
+            fbWidthCm,
+            fbDepthCm,
             firebox.firebox_height.value * M_TO_CM
           )
-          val groups = VizConverter.allPipesToGroups(flue, connector, chimney, airIntake, fireboxLine)
+          val airDistribLine = VizConverter.airDistribToLine(fbWidthCm, fbDepthCm)
+          val groups = VizConverter.allPipesToGroups(flue, connector, chimney, airIntake, fireboxLine, airDistribLine)
           if groups.forall(_.lines.isEmpty) then
             div(
               cls := "flex items-center justify-center h-full text-base-content/40",

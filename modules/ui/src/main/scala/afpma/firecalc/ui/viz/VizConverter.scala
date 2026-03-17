@@ -41,8 +41,9 @@ object VizConverter:
   val FlueColor      : LineColor = LineColor.Orange
   val ConnectorColor : LineColor = LineColor.OrangeYellow
   val ChimneyColor   : LineColor = LineColor.Yellow
-  val AirIntakeColor : LineColor = LineColor.Blue
-  val FireboxColor   : LineColor = LineColor.Red
+  val AirIntakeColor  : LineColor = LineColor.Blue
+  val AirDistribColor : LineColor = LineColor("#58B8FF")
+  val FireboxColor    : LineColor = LineColor.Red
 
   /** Build a single FireCalcFilaireLine representing the firebox as a rectangular box.
     * @param widthCm  firebox width in cm (Left-Right axis)
@@ -59,14 +60,32 @@ object VizConverter:
       name      = Some("Firebox")
     )
 
+  /** Build a single FireCalcFilaireLine representing the air distribution box.
+    * Same width/depth as the firebox, positioned directly below it.
+    * @param widthCm  firebox width in cm (Left-Right axis)
+    * @param depthCm  firebox depth in cm (Front-Rear axis)
+    */
+  def airDistribToLine(widthCm: Double, depthCm: Double): FireCalcFilaireLine =
+    val heightCm = 20.0
+    FireCalcFilaireLine(
+      origin    = Origin(0.0, 0.0, -heightCm),
+      direction = Vector(0.0, 0.0, 1.0),
+      length    = Length(heightCm),
+      color     = AirDistribColor,
+      shape     = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
+      name      = Some("Air Distribution")
+    )
+
   def allPipesToGroups(
-      flue       : PipePositionResult,
-      connector  : PipePositionResult,
-      chimney    : PipePositionResult,
-      airIntake  : PipePositionResult,
-      fireboxLine: FireCalcFilaireLine
+      flue          : PipePositionResult,
+      connector     : PipePositionResult,
+      chimney       : PipePositionResult,
+      airIntake     : PipePositionResult,
+      fireboxLine   : FireCalcFilaireLine,
+      airDistribLine: FireCalcFilaireLine
   ): FireCalcFilaireGroups =
     List(
+      FireCalcFilaireGroup(List(airDistribLine), Some("Air Distribution")),
       FireCalcFilaireGroup(List(fireboxLine), Some("Firebox")),
       FireCalcFilaireGroup(
         pipeToLines(flue, FlueColor, "Flue") ++
