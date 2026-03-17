@@ -30,9 +30,37 @@ object Frontend {
     lazy val writeCatalogSubscription = catalogStateVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> catalogWebStorageVar.writer
 
+    private val undoSnapshotObserver = Observer[schema.AppStateSchema](undoManager.pushSnapshot(_))
+
+    lazy val undoSnapshotSubscription =
+        appStateSchemaVar.signal.changes
+            .distinct
+            .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+            --> undoSnapshotObserver
+
+    lazy val undoRedoKeyboardSubscription =
+        documentEvents(_.onKeyDown)
+            .filter { ev =>
+                val dyn = ev.asInstanceOf[scala.scalajs.js.Dynamic]
+                val ctrl = dyn.ctrlKey
+                val meta = dyn.metaKey
+                // Guard: some events processed during Airstream transactions lack KeyboardEvent properties
+                if scala.scalajs.js.isUndefined(ctrl) || scala.scalajs.js.isUndefined(meta) then false
+                else (ctrl.asInstanceOf[Boolean] || meta.asInstanceOf[Boolean]) &&
+                    !scala.scalajs.js.isUndefined(dyn.key) &&
+                    dyn.key.asInstanceOf[String].toLowerCase == "z"
+            }
+            --> Observer[dom.KeyboardEvent] { ev =>
+                ev.preventDefault()
+                if ev.shiftKey then performRedo()
+                else performUndo()
+            }
+
     lazy val app: Div = div(cls := "", child <-- router.currentPageSignal.map(renderPage)).amend(
         writeUnifiedSchemaSubscription,
-        writeCatalogSubscription
+        writeCatalogSubscription,
+        undoSnapshotSubscription,
+        undoRedoKeyboardSubscription
         // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))
         //     .tapEach(consoleLogVNelStringErrors) --> errorBusConsole
     )

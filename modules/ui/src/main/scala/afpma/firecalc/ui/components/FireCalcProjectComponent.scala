@@ -42,6 +42,7 @@ object FireCalcProjet:
                         ),
                         onClick --> { _ =>
                             engineStateVar.set(nextEngineState)
+                            undoManager.reset()
                         }
                     ),
                     ttPosition = "tooltip-bottom"
@@ -59,6 +60,7 @@ object FireCalcProjet:
                         lucide.`file`(stroke_width = 1),
                         onClick --> { _ =>
                             engineStateVar.set(EngineState.init)
+                            undoManager.reset()
                         }
                     ),
                     ttPosition = "tooltip-bottom"
@@ -150,6 +152,7 @@ object FireCalcProjet:
                 case Success(nextEngineState) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
                     engineStateVar.set                         (nextEngineState              )
+                    undoManager.reset()
                     isLoadingVar.set                           (false                        )
 
         /** Open file using Electron native dialog */

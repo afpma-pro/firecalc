@@ -461,6 +461,19 @@ val graphPanelVar = Var[Boolean](false)
 val graphPanelOn  = graphPanelVar.signal
 val graphPanelOff = graphPanelOn.map(!_)
 
+// Undo / Redo
+lazy val undoManager = UndoManager(maxDepth = 1000)
+
+def performUndo(): Unit =
+    undoManager.undo(appStateSchemaVar.now()).foreach { state =>
+        undoManager.withRestoring { appStateSchemaVar.set(state) }
+    }
+
+def performRedo(): Unit =
+    undoManager.redo(appStateSchemaVar.now()).foreach { state =>
+        undoManager.withRestoring { appStateSchemaVar.set(state) }
+    }
+
 // pour récupérer les erreurs de type AngleN2 missing etc...
 val air_intake_pipe_vnel2_signal = results_en15544_air_intake_pipe.map: p_vnel =>
     p_vnel.andThen(p => p.`ph-(pR+pu)`)
