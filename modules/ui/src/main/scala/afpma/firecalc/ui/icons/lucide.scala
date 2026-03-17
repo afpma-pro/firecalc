@@ -545,6 +545,21 @@ object lucide:
         path(d := "M3 12A9 3 0 0 0 21 12")
     )
 
+    def `chart-line`(w: Int = 24, h: Int = 24, stroke_width: Double = 2) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-chart-line-icon lucide-chart-line",
+        path(d := "M3 3v16a2 2 0 0 0 2 2h16"),
+        path(d := "m19 9-5 5-4-4-3 3"        )
+    )
+
     def `book-open-text` = svg(
         xmlns          := "http://www.w3.org/2000/svg",
         width          := "24",

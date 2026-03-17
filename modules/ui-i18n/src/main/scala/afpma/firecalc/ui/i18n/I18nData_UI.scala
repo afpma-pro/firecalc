@@ -33,7 +33,8 @@ final case class I18nData_UI(
     placeholders         : Placeholders,
     tooltips             : Tooltips,
     ui_messages          : UiMessages,
-    viz                  : Viz
+    viz                  : Viz,
+    graph                : Graph
 )
 
 object I18nData_UI:
@@ -316,4 +317,14 @@ case class Viz(
     view_mode   : String,
     annotations : String,
     no_pipe_data: String
+)
+
+case class Graph(
+    title      : String,
+    no_data    : String,
+    temperature: String,
+    velocity   : String,
+    elevation  : String,
+    pressure   : String,
+    length     : String
 )

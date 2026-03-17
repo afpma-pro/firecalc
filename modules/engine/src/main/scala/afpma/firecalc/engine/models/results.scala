@@ -66,6 +66,75 @@ trait PipeSectionResult[+PipeElDescr <: Matchable]:
     def section_full_descr: String = s"${section_typ.toString} #${section_id.show} = '${section_name.show}'"
 
 object PipeSectionResult:
+
+    def makeFrom[PipeElDescr <: Matchable](
+        _section_id          : PipeIdx,
+        _section_name        : String,
+        _section_typ         : PipeType,
+        _section_length      : Length = 0.m,
+        _effective_height    : Length = 0.m,
+        _descr               : PipeElDescr,
+        _n_flows             : NbOfFlows = 1.flow,
+        _air_space_detailed  : Option[AirSpaceDetailed] = None,
+        _temperature_amb     : Option[TCelsius] = None,
+        _thermal_resistance  : Option[SquareMeterKelvinPerWatt] = None,
+        _gas_temp_start      : TCelsius = 0.degreesCelsius,
+        _gas_temp_middle     : TCelsius = 0.degreesCelsius,
+        _gas_temp_mean       : Option[TCelsius] = None,
+        _gas_temp_end        : TCelsius = 0.degreesCelsius,
+        _v_start             : FlowVelocity = 0.m_per_s,
+        _v_middle            : Option[FlowVelocity] = None,
+        _v_mean              : Option[FlowVelocity] = None,
+        _v_end               : FlowVelocity = 0.m_per_s,
+        _density_mean        : Option[Density] = None,
+        _density_middle      : Option[Density] = None,
+        _mass_flow           : MassFlow = 0.g_per_s,
+        _innerShape_middle   : PipeShape,
+        _innerShape_end      : PipeShape,
+        _crossSectionArea_end: Area,
+        _pu                  : ValidatedNel[MecaFlu_Error, Pressure] = 0.pascals.validNel,
+        _zeta                : Option[ζ] = None,
+        _pd                  : Option[Pressure] = None,
+        _roughness           : Option[Roughness] = None,
+        _pRs                 : Pressure = 0.pascals,
+        _pRg                 : Pressure = 0.pascals,
+        _ph                  : Pressure = 0.pascals,
+    ) = new PipeSectionResult[PipeElDescr]:
+        val section_id            = _section_id
+        val section_name          = _section_name
+        val section_typ           = _section_typ
+        val section_length        = _section_length
+        val effective_height      = _effective_height
+        val descr                 = _descr
+        val n_flows               = _n_flows
+        val air_space_detailed    = _air_space_detailed
+        val temperature_amb       = _temperature_amb
+        val thermal_resistance    = _thermal_resistance
+        val gas_temp_start        = _gas_temp_start
+        val gas_temp_middle       = _gas_temp_middle
+        val gas_temp_mean         = _gas_temp_mean
+        val gas_temp_end          = _gas_temp_end
+        val v_start               = _v_start
+        val v_middle              = _v_middle
+        val v_mean                = _v_mean
+        val v_end                 = _v_end
+        val density_mean          = _density_mean
+        val density_middle        = _density_middle
+        val mass_flow             = _mass_flow
+        val innerShape_middle     = _innerShape_middle
+        val innerShape_end        = _innerShape_end
+        val crossSectionArea_end  = _crossSectionArea_end
+        val pu                    = _pu
+        val zeta                  = _zeta
+        val pd                    = _pd
+        val roughness             = _roughness
+        val pRs                   = _pRs
+        val pRg                   = _pRg
+        val ph                    = _ph
+        override def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt) =
+            throw new Exception("unexpected call to 'temperature_iob'")
+    
+
     given showPipeSectionResult: [PipeElDescr <: Matchable] => Show[PipeSectionResult[PipeElDescr]] = Show.show: r =>
         import r.*
         extension [A: Show](a: A)

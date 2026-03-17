@@ -107,7 +107,7 @@ sync-build-config:
 ## SETUP TARGETS (run these first)
 ## ================================
 
-setup-all: ui-setup electron-setup sync-build-config build-viz
+setup-all: ui-setup electron-setup sync-build-config build-viz build-graph
 	@echo "All dependencies installed successfully!"
 	@echo "Run 'make dev-env-setup' to verify configuration files"
 
@@ -118,6 +118,10 @@ ui-setup:
 build-viz:
 	@echo "Building viz bundle (filaire-viz.ts → filaire-viz.js)..."
 	@cd modules/ui && npm run build:viz
+
+build-graph:
+	@echo "Building graph bundle (graph-viz.ts → graph-viz.js)..."
+	@cd modules/ui && npm run build:graph
 
 electron-setup:
 	@echo "Installing Electron dependencies..."
@@ -358,13 +362,13 @@ dev-electron-ui-build:
 	@cd modules/ui && npm run build
 
 # Shared target for optimized staging builds
-staging-electron-ui-build: build-viz
+staging-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,staging)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:staging
 
 # Shared target for optimized production builds
-prod-electron-ui-build: build-viz
+prod-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:production

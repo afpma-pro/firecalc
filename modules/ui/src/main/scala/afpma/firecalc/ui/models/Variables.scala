@@ -456,6 +456,11 @@ val viz3DPanelVar  = Var[Boolean](false)
 val viz3DPanelOn   = viz3DPanelVar.signal
 val viz3DPanelOff  = viz3DPanelOn.map(!_)
 
+// Graph (2D chart) panel
+val graphPanelVar = Var[Boolean](false)
+val graphPanelOn  = graphPanelVar.signal
+val graphPanelOff = graphPanelOn.map(!_)
+
 // pour récupérer les erreurs de type AngleN2 missing etc...
 val air_intake_pipe_vnel2_signal = results_en15544_air_intake_pipe.map: p_vnel =>
     p_vnel.andThen(p => p.`ph-(pR+pu)`)

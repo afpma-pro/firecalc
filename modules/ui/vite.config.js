@@ -68,6 +68,15 @@ export default defineConfig(({ mode }) => {
                 }
             }
         },
+        {
+            name: 'resolve-graph-chartjs',
+            resolveId(id, importer) {
+                if (importer && importer.includes('graph-viz') &&
+                    (id === 'chart.js' || id.startsWith('chart.js/'))) {
+                    return this.resolve(id, resolve(__dirname, './package.json'));
+                }
+            }
+        },
         // Only use viteSingleFile for production builds (Electron packaging)
         // In dev mode, this plugin defeats HMR and forces full page reloads
         ...(process.env.NODE_ENV === 'production' ? [viteSingleFile()] : []),
@@ -172,6 +181,9 @@ export default defineConfig(({ mode }) => {
             // For production (fullLinkJS), run `npm run build:viz` to generate the .js resource.
             '/afpma/firecalc/filaire/filaire-viz.js': resolve(
                 __dirname, '../viz/src/ts/filaire-viz.ts'
+            ),
+            '/afpma/firecalc/graph/graph-viz.js': resolve(
+                __dirname, '../graph/src/ts/graph-viz.ts'
             ),
         },
     },

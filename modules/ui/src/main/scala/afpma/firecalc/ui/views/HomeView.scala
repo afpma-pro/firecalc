@@ -13,9 +13,9 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.Footer
 import afpma.firecalc.ui.daisyui.DaisyUINavBar
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
-import afpma.firecalc.ui.models.viz3DPanelOn
+import afpma.firecalc.ui.models.{viz3DPanelOn, graphPanelOn}
 import afpma.firecalc.ui.tailwind.Indicators
-import afpma.firecalc.ui.viz.Viz3DPanel
+import afpma.firecalc.ui.viz.{Viz3DPanel, GraphPanel}
 
 import com.raquo.laminar.api.L.*
 
@@ -48,20 +48,32 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                 ),
                 div(
                     cls := "relative top-42 flex flex-row",
-                    // Left: accordion (full width or half when 3D panel open)
+                    // Left: accordion (full width or 2/3 when right panel open)
                     div(
-                        cls <-- viz3DPanelOn.map(on => if on then "w-2/3 overflow-y-auto" else "w-full"),
+                        cls <-- viz3DPanelOn.combineWith(graphPanelOn).map: (v, g) =>
+                            {
+                                if v then
+                                    "w-2/3 overflow-y-auto" 
+                                else if g then
+                                    "w-1/2 overflow-y-auto" 
+                                else "w-full"
+                            },
                         DaisyUIVerticalAccordionAndJoin(),
                         Footer()
                     ),
-                    // Right: 3D panel (fixed, only when visible)
-                    child.maybe <-- viz3DPanelOn.map: on =>
-                        Option.when(on)(
-                            div(
+                    // Right: 3D or Graph panel (only one at a time due to mutual exclusion)
+                    child.maybe <-- viz3DPanelOn.combineWith(graphPanelOn).map:
+                        case (true, _) =>
+                            Some(div(
                                 cls := "w-1/3 fixed right-0 top-42 bottom-0 p-2",
                                 Viz3DPanel().node
-                            )
-                        )
+                            ))
+                        case (_, true) =>
+                            Some(div(
+                                cls := "w-1/2 fixed right-0 top-42 bottom-0 p-2",
+                                GraphPanel().node
+                            ))
+                        case _ => None
                 )
             )
         )

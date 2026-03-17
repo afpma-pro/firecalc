@@ -27,11 +27,13 @@
         "build:production": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode production --emptyOutDir",
         "serve": "vite preview",
         "build:viz": "esbuild ../viz/src/ts/filaire-viz.ts --bundle --format=esm --external:three --banner:js='/* SPDX-License-Identifier: AGPL-3.0-or-later | Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal */' --outfile=../viz/src/main/resources/afpma/firecalc/filaire/filaire-viz.js",
+        "build:graph": "esbuild ../graph/src/ts/graph-viz.ts --bundle --format=esm --external:chart.js --banner:js='/* SPDX-License-Identifier: AGPL-3.0-or-later | Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal */' --outfile=../graph/src/main/resources/afpma/firecalc/graph/graph-viz.js",
         "clean": "rm -rf node_modules"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.1.18",
         "daisyui": "^5.5.18",
+        "chart.js": "^4.4.7",
         "three": "^0.182.0"
     }
 }

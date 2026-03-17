@@ -16,6 +16,7 @@ import afpma.firecalc.ui.components.OrderPDFReportModalComponent
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.{viz3DPanelVar, viz3DPanelOn, viz3DPanelOff}
+import afpma.firecalc.ui.models.{graphPanelVar, graphPanelOn, graphPanelOff}
 
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
@@ -120,7 +121,28 @@ object DaisyUINavBar:
                             cls("text-base-content/40 hover:text-base-content") <-- viz3DPanelOff,
                             lucide.box(stroke_width = 1.5, w = 16, h = 16),
                             onClick.mapToUnit --> { _ =>
-                                viz3DPanelVar.set(!viz3DPanelVar.now())
+                                val wasOn = viz3DPanelVar.now()
+                                viz3DPanelVar.set(!wasOn)
+                                if !wasOn then graphPanelVar.set(false)
+                            }
+                        ),
+                        ttPosition = "tooltip-bottom"
+                    )
+                ),
+                // Graph (2D chart) toggle
+                div(
+                    cls := "flex items-center h-6",
+                    DaisyUITooltip(
+                        ttContent  = div(I18N_UI.graph.title),
+                        element    = div(
+                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                            cls("text-base-content") <-- graphPanelOn,
+                            cls("text-base-content/40 hover:text-base-content") <-- graphPanelOff,
+                            lucide.`chart-line`(stroke_width = 1.5, w = 16, h = 16),
+                            onClick.mapToUnit --> { _ =>
+                                val wasOn = graphPanelVar.now()
+                                graphPanelVar.set(!wasOn)
+                                if !wasOn then viz3DPanelVar.set(false)
                             }
                         ),
                         ttPosition = "tooltip-bottom"
