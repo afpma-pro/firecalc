@@ -35,6 +35,7 @@ import afpma.firecalc.ui.models.door15aFireboxesSignal
 import afpma.firecalc.ui.models.singleTestedFireboxesSignal
 import afpma.firecalc.ui.models.stove_params_var
 import afpma.firecalc.ui.models.firebox_var
+import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
 
 import cats.Show
 
@@ -433,13 +434,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         // Defaultable for Percent (needed by given_QtyD_Percent context param)
         given Defaultable[QtyD[Percent]] = defaultable.qty_d.zeroWithUnit[Percent]
 
-        // Create a zoomed Var for maximum_load that syncs with stove_params
-        val maximumLoadVar: Var[Option[Mass]] =
-            stove_params_var.zoomLazy(_.maximum_load)((sp, m) =>
-                if (m == sp.maximum_load) sp
-                else if (m.isDefined) sp.with_mB(m.get) else sp
-            )
-
         // Standard field definitions
         given DF[String]                           = string_emptyAsDefault_alwaysValid
         given DF[Length]                           = vertical_form_Length_cm
@@ -453,12 +447,9 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             DaisyUIVerticalForm.forOptionQtyD_default[Centimeter]
         given optCm: DF[Option[QtyD[Centimeter]]] = vertical_form_Option_QtyD_Centimeter
 
-        // Custom Option[Mass] field with bidirectional sync to stove_params using generic method
-        val optMassLinkedVal: DF[Option[Mass]] = DaisyUIVerticalForm.mkFromUnderlyingWithLinkedVar[Kilogram](
-            underlying = vertical_form_Option_QtyD_Kilogram,
-            linkedVar = maximumLoadVar
-        )
-        given optMassDF: DF[Option[Mass]] = optMassLinkedVal
+        // Plain Option[Mass] — mb_min and mb_max are independent supplier constraints, no stove_params link.
+        // load_size_nominal sync is handled explicitly in the makeFor lambda below.
+        given optMassDF: DF[Option[Mass]] = vertical_form_Option_QtyD_Kilogram
 
         // PipeShape (actualAirIntakePipeShape)
         given DF[PipeShape] = horizontal_form.horizontal_form_PipeShape.toVerticalForm
@@ -521,11 +512,32 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         DaisyUIVerticalForm
             .makeFor[Firebox.Door15aFirebox_Catalog](d): (v, fc) =>
                 import com.raquo.laminar.api.L.*
+
+                // Bidirectional sync between load_size_nominal and stove_params.maximum_load only.
+                // mb_min and mb_max are independent — they must NOT participate in this sync.
+                val loadSizeNominalVar: Var[Option[Mass]] =
+                    v.zoomLazy(_.load_size_nominal)((fb, m) => fb.copy(load_size_nominal = m))
+                val maximumLoadVar: Var[Option[Mass]] =
+                    stove_params_var.zoomLazy(_.maximum_load)((sp, m) =>
+                        if (m == sp.maximum_load) sp
+                        else if (m.isDefined) sp.with_mB(m.get) else sp
+                    )
+                val syncLoadToMax = loadSizeNominalVar.signal
+                    .distinct.changes.debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                    .withCurrentValueOf(maximumLoadVar)
+                    .collect { case (fv, lv) if fv != lv => fv } --> maximumLoadVar.writer
+                val syncMaxToLoad = maximumLoadVar.signal
+                    .distinct.changes.debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                    .withCurrentValueOf(loadSizeNominalVar)
+                    .collect { case (lv, fv) if lv != fv => lv } --> loadSizeNominalVar.writer
+
                 val modal = FireboxCatalogSelectComponent(
                     entriesSignal = door15aFireboxesSignal,
                     onSelect      = Observer(v.set)
                 )
                 div(
+                    syncLoadToMax,
+                    syncMaxToLoad,
                     button(
                         cls     := "btn btn-secondary btn-sm mb-2",
                         I18N_UI.catalog.select_from_catalog,
