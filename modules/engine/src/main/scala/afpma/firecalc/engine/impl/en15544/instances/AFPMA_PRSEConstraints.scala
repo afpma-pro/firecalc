@@ -5,8 +5,6 @@
 
 package afpma.firecalc.engine.impl.en15544.instances
 
-import afpma.firecalc.i18n.implicits.I18N
-
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
@@ -26,9 +24,6 @@ given afpmaPrseConstraints: FireboxConstraints[AFPMA_PRSE] =
         override def firebox_custom_constraints(
             firebox: AFPMA_PRSE,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] =
-            new FireboxErrorCustom(
-                I18N.warnings.firebox_afpma_prse_not_validated
-            ) :: Nil
+        )(using Locale): List[FireboxError] = Nil
 
 end afpmaPrseConstraints
