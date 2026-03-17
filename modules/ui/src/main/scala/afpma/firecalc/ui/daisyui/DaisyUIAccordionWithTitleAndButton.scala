@@ -7,6 +7,7 @@ package afpma.firecalc.ui.daisyui
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.icons.lucide
 
 import com.raquo.laminar.api.L.*
@@ -51,10 +52,10 @@ object DaisyUIAccordionWithTitleAndButton:
     case class Title(
         title_sig   : Signal[HtmlElement],
         onSelectClick: Observer[Unit]
-    ) extends Component:
+    )(using Locale) extends Component:
 
         protected def TitleChild = div(
-            cls                    := "flex-none w-64",
+            cls                    := "flex-none w-auto",
             child                  <-- title_sig,
             onClick.stopPropagation --> Observer.empty
         )
@@ -65,7 +66,7 @@ object DaisyUIAccordionWithTitleAndButton:
             button(
                 cls                    := "btn btn-secondary btn-sm",
                 lucide.plus,
-                "Select",
+                I18N_UI.buttons.select,
                 onClick.stopPropagation.mapTo(()) --> onSelectClick
             )
         )
