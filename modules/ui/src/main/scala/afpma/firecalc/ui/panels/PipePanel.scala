@@ -172,6 +172,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         )
         val header_and_node = renderIncrDescr(title, node, isProperty).amend(binders)
         val summary_node    = wrapLine(title, mkBadge(compact = true), isProperty)
+        if !isProperty then
+            header_and_node.amend(cls := "ml-[20px]")
+            summary_node.amend(cls := "ml-[20px]")
         val complexIncrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
         given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
