@@ -30,17 +30,13 @@ object PipeChain_15544_Strict:
         flueFinalFrame     : Option[PipeFrame],
         connectorFinalFrame: Option[PipeFrame]
     ):
-        import FluePipe_Module_15544.FullDescrResult.* // scalafix:ok
-        import ConnectorPipe_Module.FullDescrResult.*  // scalafix:ok
-        import ChimneyPipe_Module.FullDescrResult.*
+        def fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_15544] = FluePipe_Module_15544.FullDescrResult.extractPipe(fluePipeResult)
+        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  = ConnectorPipe_Module.FullDescrResult.extractPipe(connectorPipeResult)
+        def chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = ChimneyPipe_Module.FullDescrResult.extractPipe(chimneyPipeResult)
 
-        def fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_15544] = fluePipeResult.extractPipe
-        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  = connectorPipeResult.extractPipe
-        def chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = chimneyPipeResult.extractPipe
-
-        def fluePipeMappings      = fluePipeResult.extractIdsMapping
-        def connectorPipeMappings = connectorPipeResult.extractIdsMapping
-        def chimneyPipeMappings   = chimneyPipeResult.extractIdsMapping
+        def fluePipeMappings      = FluePipe_Module_15544.FullDescrResult.extractIdsMapping(fluePipeResult)
+        def connectorPipeMappings = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(connectorPipeResult)
+        def chimneyPipeMappings   = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(chimneyPipeResult)
 
     def build(d: Descriptors): Built =
         // Flue pipe → capture final frame
@@ -79,17 +75,13 @@ object PipeChain_15544_MCE:
         flueFinalFrame     : Option[PipeFrame],
         connectorFinalFrame: Option[PipeFrame]
     ):
-        import FluePipe_Module_13384.FullDescrResult.*  // scalafix:ok
-        import ConnectorPipe_Module.FullDescrResult.*   // scalafix:ok
-        import ChimneyPipe_Module.FullDescrResult.*
+        def fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_13384] = FluePipe_Module_13384.FullDescrResult.extractPipe(fluePipeResult)
+        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  = ConnectorPipe_Module.FullDescrResult.extractPipe(connectorPipeResult)
+        def chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = ChimneyPipe_Module.FullDescrResult.extractPipe(chimneyPipeResult)
 
-        def fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_13384] = fluePipeResult.extractPipe
-        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  = connectorPipeResult.extractPipe
-        def chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = chimneyPipeResult.extractPipe
-
-        def fluePipeMappings      = fluePipeResult.extractIdsMapping
-        def connectorPipeMappings = connectorPipeResult.extractIdsMapping
-        def chimneyPipeMappings   = chimneyPipeResult.extractIdsMapping
+        def fluePipeMappings      = FluePipe_Module_13384.FullDescrResult.extractIdsMapping(fluePipeResult)
+        def connectorPipeMappings = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(connectorPipeResult)
+        def chimneyPipeMappings   = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(chimneyPipeResult)
 
     def build(d: Descriptors): Built =
         // Flue pipe → capture final frame
@@ -125,14 +117,11 @@ object PipeChain_13384:
         chimneyPipeResult  : ChimneyPipe_Module.FullDescrResult,
         connectorFinalFrame: Option[PipeFrame]
     ):
-        import ConnectorPipe_Module.FullDescrResult.*
-        import ChimneyPipe_Module.FullDescrResult.*
+        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe] = ConnectorPipe_Module.FullDescrResult.extractPipe(connectorPipeResult)
+        def chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]   = ChimneyPipe_Module.FullDescrResult.extractPipe(chimneyPipeResult)
 
-        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe] = connectorPipeResult.extractPipe
-        def chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]   = chimneyPipeResult.extractPipe
-
-        def connectorPipeMappings = connectorPipeResult.extractIdsMapping
-        def chimneyPipeMappings   = chimneyPipeResult.extractIdsMapping
+        def connectorPipeMappings = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(connectorPipeResult)
+        def chimneyPipeMappings   = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(chimneyPipeResult)
 
     def build(d: Descriptors): Built =
         // Connector pipe → capture final frame

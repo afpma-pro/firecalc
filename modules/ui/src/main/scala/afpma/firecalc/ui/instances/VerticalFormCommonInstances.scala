@@ -427,8 +427,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             .withFieldName(I18N.firebox_names.single_tested)
 
     given given_Firebox_Door15aFirebox_Catalog: DF[Firebox.Door15aFirebox_Catalog] =
-        import vv.kilogram.validOption_whenStrictlyPositive
-        import defaultable.qty_d.kilogram.ten
         import defaultable.qty_d.centimeter.zero
 
         // Defaultable for Percent (needed by given_QtyD_Percent context param)
