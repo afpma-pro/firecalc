@@ -148,6 +148,15 @@ class CatalogParserTest extends FunSuite:
         val fireboxes = file.entriesFor[Firebox.Door15aFirebox_Catalog]
         assert(fireboxes.nonEmpty, "Expected at least one Door15aFirebox_Catalog entry")
         assertEquals(fireboxes.head.reference, "Door15aFirebox_Catalog_Example")
+        val singleTested = file.entriesFor[Firebox.SingleTested]
+        assert(singleTested.nonEmpty, "Expected at least one SingleTested entry")
+        val st = singleTested.head
+        assertEquals(st.reference, "SingleTested_Example")
+        assert(st.efficiency_reduced.isDefined, "efficiency_reduced should be decoded")
+        assert(st.minimum_fuel_mass.isDefined, "minimum_fuel_mass should be decoded")
+        assert(st.air_fuel_ratio_lowest.isDefined, "air_fuel_ratio_lowest should be decoded")
+        assert(st.co2_dry_lowest.isDefined, "co2_dry_lowest should be decoded")
+        assert(st.pellets_load_burn_duration.isDefined, "pellets_load_burn_duration should be decoded")
         val pipes = file.entriesFor[SetThermalPipeProp_13384.SetPropertiesInBatch]
         assert(pipes.nonEmpty, "Expected at least one pipe preset entry")
         val casings = file.entriesFor[CasingPreset]

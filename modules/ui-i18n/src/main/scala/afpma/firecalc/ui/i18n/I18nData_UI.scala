@@ -64,6 +64,7 @@ object I18nData_UI:
         import_catalog_button   : String,
         clear_all_button        : String,
         door_15a_fireboxes      : String,
+        single_tested_fireboxes : String,
         pipe_presets            : String,
         casing_presets          : String,
         flow_resistance_presets : String,

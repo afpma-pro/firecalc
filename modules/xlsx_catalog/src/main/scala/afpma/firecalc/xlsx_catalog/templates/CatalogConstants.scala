@@ -35,6 +35,15 @@ object CatalogConstants:
 
     val HeatOutputModes: Seq[String] = Seq("NotDefined", "HalfOfNominal", "FromTypeTest")
 
+    // SingleTested uses NotDefined_Or_Tested (no HalfOfNominal)
+    val HeatOutputModesTestedOnly: Seq[String] = Seq("NotDefined", "FromTypeTest")
+
+    val TypeOfApplianceValues: Seq[String] = Seq("WoodLogs", "Pellets")
+
+    val TestStandardValues: Seq[String] = Seq("EN_15250", "EN_13229", "National")
+
+    val BooleanYesNo: Seq[String] = Seq("Yes", "No")
+
     // Column indices for pipe/casing tabular sheets (0-based)
     object PipeCols:
         val BatchName   = 0
@@ -128,3 +137,41 @@ object CatalogConstants:
         val OgcRow      = 24
         val NoxRow      = 25
         val ValueCol    = 3
+
+    // Row indices for single-tested firebox form sheet (0-based)
+    object SingleTestedRows:
+        val Title              = 0
+        val SectionId          = 2
+        val Reference          = 3
+        val TypeOfApplianceRow = 4
+        val TestStandardRow    = 5
+        val NationalStdName    = 6
+        val SectionDim         = 8
+        val Depth              = 9
+        val Width              = 10
+        val Height             = 11
+        val AshPitHeight       = 12
+        val SectionGlass       = 14
+        val GlassRatioBelow    = 15
+        val GlassArea          = 16
+        val SectionTemp        = 18
+        val MeanFireboxTemp    = 19
+        val TBurnout           = 20
+        val SectionEfficiency  = 22
+        val EffNominal         = 23
+        val EffReduced         = 24
+        val SectionHeat        = 26
+        val HeatMode           = 27
+        val HeatPower          = 28
+        val SectionFuel        = 30
+        val MinFuelMass        = 31
+        val MaxFuelMass        = 32
+        val SectionAirFuel     = 34
+        val AirFuelNominal     = 35
+        val AirFuelLowest      = 36
+        val SectionCo2         = 38
+        val Co2Nominal         = 39
+        val Co2Lowest          = 40
+        val SectionPellets     = 42
+        val PelletsBurnDur     = 43
+        val ValueCol           = 3 // Column D for values

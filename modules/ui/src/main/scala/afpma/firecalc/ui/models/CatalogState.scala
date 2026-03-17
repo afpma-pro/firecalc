@@ -17,18 +17,21 @@ import io.circe.syntax.*
 /** Holds all catalog entries, keyed by unique key per category. */
 case class CatalogState(
     door_15a_fireboxes      : Map[String, Firebox.Door15aFirebox_Catalog],
+    single_tested_fireboxes : Map[String, Firebox.SingleTested],
     pipe_presets            : Map[String, SetThermalPipeProp_13384.SetPropertiesInBatch],
     casing_presets          : Map[String, SetThermalPipeProp_13384.SetPropertiesInBatch],
     flow_resistance_presets : Map[String, FlowResistanceCatalogEntry],
 )
 
 object CatalogState:
-    val empty: CatalogState = CatalogState(Map.empty, Map.empty, Map.empty, Map.empty)
+    val empty: CatalogState = CatalogState(Map.empty, Map.empty, Map.empty, Map.empty, Map.empty)
 
     /** Merge entries from a parsed CatalogFile. Duplicates: new entries overwrite. */
     def merge(current: CatalogState, file: CatalogFile): CatalogState =
         import CatalogCategoryInstances.given
         val newFireboxes = file.entriesFor[Firebox.Door15aFirebox_Catalog]
+            .map(e => e.reference -> e).toMap
+        val newSingleTested = file.entriesFor[Firebox.SingleTested]
             .map(e => e.reference -> e).toMap
         val newPresets = file.entriesFor[SetThermalPipeProp_13384.SetPropertiesInBatch]
             .map(e => e.batch_name -> e).toMap
@@ -38,6 +41,7 @@ object CatalogState:
             .map(e => e.name -> e).toMap
         CatalogState(
             door_15a_fireboxes      = current.door_15a_fireboxes ++ newFireboxes,
+            single_tested_fireboxes = current.single_tested_fireboxes ++ newSingleTested,
             pipe_presets            = current.pipe_presets ++ newPresets,
             casing_presets          = current.casing_presets ++ newCasings,
             flow_resistance_presets = current.flow_resistance_presets ++ newFlowResistances,
@@ -53,21 +57,26 @@ object CatalogStateCodec:
     private given Decoder[Firebox.Door15aFirebox_Catalog] = semiauto.deriveDecoder
     private given Encoder[Firebox.Door15aFirebox_Catalog] = semiauto.deriveEncoder
 
+    private given Decoder[Firebox.SingleTested] = semiauto.deriveDecoder
+    private given Encoder[Firebox.SingleTested] = semiauto.deriveEncoder
+
     private given Decoder[FlowResistanceCatalogEntry] = semiauto.deriveDecoder
     private given Encoder[FlowResistanceCatalogEntry] = semiauto.deriveEncoder
 
     given Decoder[CatalogState] = Decoder.instance { c =>
         for
             fireboxes        <- c.downField("door_15a_fireboxes").as[Option[Map[String, Firebox.Door15aFirebox_Catalog]]].map(_.getOrElse(Map.empty))
+            singleTested     <- c.downField("single_tested_fireboxes").as[Option[Map[String, Firebox.SingleTested]]].map(_.getOrElse(Map.empty))
             presets          <- c.downField("pipe_presets").as[Option[Map[String, SetThermalPipeProp_13384.SetPropertiesInBatch]]].map(_.getOrElse(Map.empty))
             casings          <- c.downField("casing_presets").as[Option[Map[String, SetThermalPipeProp_13384.SetPropertiesInBatch]]].map(_.getOrElse(Map.empty))
             flowResistances  <- c.downField("flow_resistance_presets").as[Option[Map[String, FlowResistanceCatalogEntry]]].map(_.getOrElse(Map.empty))
-        yield CatalogState(fireboxes, presets, casings, flowResistances)
+        yield CatalogState(fireboxes, singleTested, presets, casings, flowResistances)
     }
 
     given Encoder[CatalogState] = Encoder.instance { s =>
         Json.obj(
             "door_15a_fireboxes"      -> s.door_15a_fireboxes.asJson,
+            "single_tested_fireboxes" -> s.single_tested_fireboxes.asJson,
             "pipe_presets"            -> s.pipe_presets.asJson,
             "casing_presets"          -> s.casing_presets.asJson,
             "flow_resistance_presets" -> s.flow_resistance_presets.asJson,

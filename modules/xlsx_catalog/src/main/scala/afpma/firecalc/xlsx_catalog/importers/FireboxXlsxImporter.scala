@@ -115,7 +115,7 @@ object FireboxXlsxImporter:
 
         sb.toString.trim
 
-    private def readEmissions(sheet: org.apache.poi.ss.usermodel.Sheet): EmissionsAndEfficiencyValues_DTO =
+    private[importers] def readEmissions(sheet: org.apache.poi.ss.usermodel.Sheet): EmissionsAndEfficiencyValues_DTO =
         import EmissionsRows.*
 
         def str(row: Int, col: Int): Option[String] = readFormValue(sheet, row, col, readString)

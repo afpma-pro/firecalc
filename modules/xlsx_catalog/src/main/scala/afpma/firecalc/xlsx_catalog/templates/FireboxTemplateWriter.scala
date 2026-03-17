@@ -23,7 +23,7 @@ object FireboxTemplateWriter:
 
         buildMainSheet(wb.createSheet("Foyer - Firebox"), styles)
         buildPressureLossSheet(wb.createSheet("Pertes de charge"), styles)
-        buildEmissionsSheet(wb.createSheet("Émissions - Emissions"), styles)
+        EmissionsSheetHelper.buildEmissionsSheet(wb.createSheet("Émissions - Emissions"), styles)
 
         PoiHelpers.saveWorkbook(wb, outputPath)
         wb.close()
@@ -163,79 +163,4 @@ object FireboxTemplateWriter:
 
         sheet.createFreezePane(1, FirstDataRow)
 
-    // ---- Sheet 3: Emissions ----
-
-    private def buildEmissionsSheet(sheet: Sheet, styles: Styles.StyleBundle): Unit =
-        import EmissionsRows.*
-        setColumnWidths(sheet, Seq(22, 22, 20, 20))
-
-        // Title
-        val titleRow = sheet.createRow(Title)
-        val tc = titleRow.createCell(0)
-        tc.setCellValue("ÉMISSIONS ET RAPPORTS D'ESSAI / EMISSIONS AND TEST REPORTS")
-        tc.setCellStyle(styles.title)
-        sheet.addMergedRegion(new CellRangeAddress(Title, Title, 0, 3))
-
-        writeSection(sheet, styles, SectionId, "Identification", 4)
-        writeFormField(sheet, styles, FireboxName, "Nom du foyer", "Firebox name", "texte", Some("15a firebox"))
-        writeFormField(sheet, styles, AccrBody, "Organisme accrédité", "Accredited/notified body", "texte",
-            Some("Test Laboratory - TU Vienna"))
-
-        writeSection(sheet, styles, SectionRep, "Rapports d'essai / Test Reports (max 6)", 4)
-
-        val reportExamples = Seq(
-            (Some("PL-19075-1-P"), Some("9.6.2020")),
-            (Some("PL-19075-2-P"), Some("9.6.2020")),
-            (None, None), (None, None), (None, None), (None, None),
-        )
-
-        for (((nameEx, dateEx), i) <- reportExamples.zipWithIndex) do
-            val num = i + 1
-            val nameRow = FirstReport + i * 2
-            val dateRow = nameRow + 1
-            writeFormField(sheet, styles, nameRow,
-                s"Rapport $num - Nom", s"Report $num - Name", "texte", nameEx, optional = i >= 1)
-            writeFormField(sheet, styles, dateRow,
-                s"Rapport $num - Date", s"Report $num - Date", "texte", dateEx, optional = i >= 1)
-
-        // Emissions sub-table
-        writeSection(sheet, styles, SectionEmis, "Valeurs d'émissions / Emission Values", 4)
-
-        val emisHeaderRow = sheet.createRow(EmisHeader)
-        val subHeaders = Seq(
-            "Polluant\n(Pollutant)", "Valeur\n(Value mg/m³)", "Méthode d'essai\n(Test method)", "O2 réf.\n(O2 ref %)",
-        )
-        for ((h, colIdx) <- subHeaders.zipWithIndex) do
-            val c = emisHeaderRow.createCell(colIdx)
-            c.setCellValue(h)
-            c.setCellStyle(styles.frHeader)
-
-        val pollutants = Seq(
-            ("CO",                 1154.0, CoRow),
-            ("Poussières / Dust",  25.0,   DustRow),
-            ("COV / OGC",          40.0,   OgcRow),
-            ("NOx",                119.0,  NoxRow),
-        )
-
-        for ((label, exampleVal, rowIdx) <- pollutants) do
-            val row = sheet.createRow(rowIdx)
-            val nameCell = row.createCell(0)
-            nameCell.setCellValue(label)
-            nameCell.setCellStyle(styles.lockedGray)
-
-            val valCell = row.createCell(1)
-            valCell.setCellValue(exampleVal)
-            valCell.setCellStyle(styles.example)
-
-            val methodCell = row.createCell(2)
-            methodCell.setCellStyle(styles.thinBorder)
-
-            val o2Cell = row.createCell(3)
-            o2Cell.setCellValue(13.0)
-            o2Cell.setCellStyle(styles.example)
-
-        addComment(sheet, CoRow, 1,
-            "Valeur d'émission mesurée en mg/m³.\n" +
-            "Laisser vide si non mesuré.\n\n" +
-            "Measured emission value in mg/m³.\n" +
-            "Leave blank if not measured.")
+    // Emissions sheet is now built by EmissionsSheetHelper

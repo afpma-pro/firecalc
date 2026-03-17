@@ -521,6 +521,9 @@ lazy val catalogStateVar: Var[CatalogState] = Var(catalogWebStorageVar.now())
 lazy val door15aFireboxesSignal: Signal[Seq[Firebox_V3.Door15aFirebox_Catalog]] =
     catalogStateVar.signal.map(_.door_15a_fireboxes.values.toSeq)
 
+lazy val singleTestedFireboxesSignal: Signal[Seq[Firebox_V3.SingleTested]] =
+    catalogStateVar.signal.map(_.single_tested_fireboxes.values.toSeq)
+
 lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
     catalogStateVar.signal.map(_.pipe_presets.values.toSeq)
 

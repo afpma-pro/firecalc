@@ -99,6 +99,96 @@ door_15a_fireboxes:
       unit: "meter"
     heat_output_reduced: "NotDefined"
 
+single_tested_fireboxes:
+  - reference: "SingleTested_Example"
+    type_of_appliance: "WoodLogs"
+    test_standard: "EN_15250"
+    firebox_depth:
+      value: "0.40"
+      unit: "meter"
+    firebox_width:
+      value: "0.30"
+      unit: "meter"
+    firebox_height:
+      value: "0.90"
+      unit: "meter"
+    ash_pit_height:
+      value: "0.05"
+      unit: "meter"
+    is_glass_surface_ratio_below_one_fifth: true
+    glass_area:
+      value: "0.04"
+      unit: "meter^2"
+    mean_firebox_temperature:
+      value: "450.0"
+      unit: "celsius"
+    t_burnout:
+      value: "700.0"
+      unit: "celsius"
+    efficiency_nominal:
+      value: "80.0"
+      unit: "percent"
+    efficiency_reduced:
+      value: "70.0"
+      unit: "percent"
+    heat_output_reduced: "NotDefined"
+    minimum_fuel_mass:
+      value: "3.0"
+      unit: "kilogram"
+    maximum_fuel_mass:
+      value: "12.0"
+      unit: "kilogram"
+    air_fuel_ratio_nominal:
+      value: "3.5"
+      unit: "1"
+    air_fuel_ratio_lowest:
+      value: "2.5"
+      unit: "1"
+    co2_dry_nominal:
+      value: "11.0"
+      unit: "percent"
+    co2_dry_lowest:
+      value: "8.0"
+      unit: "percent"
+    pellets_load_burn_duration:
+      value: "90.0"
+      unit: "minute"
+    emissions_values:
+      firebox_name: "Tested Firebox Example"
+      accredited_or_notified_body: "Test Laboratory"
+      test_reports:
+        - name: "TR-2024-001"
+          date: "15.3.2024"
+      emissions_values:
+        co:
+          polluant_name: "CO"
+          valueO: 800.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        dust:
+          polluant_name: "Dust"
+          valueO: 20.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        ogc:
+          polluant_name: "OGC"
+          valueO: 30.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        nox:
+          polluant_name: "NOx"
+          valueO: 100.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+
 pipe_presets:
   - batch_name: "POUJOULAT 200mm DPI"
     props:

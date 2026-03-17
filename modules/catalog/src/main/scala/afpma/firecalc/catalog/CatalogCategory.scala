@@ -65,6 +65,7 @@ object CatalogCategoryRegistry:
     import CatalogCategoryInstances.given
     val all: List[CatalogCategoryAny] = List(
         CatalogCategoryAny.from[Firebox.Door15aFirebox_Catalog],
+        CatalogCategoryAny.from[Firebox.SingleTested],
         CatalogCategoryAny.from[SetThermalPipeProp_13384.SetPropertiesInBatch],
         CatalogCategoryAny.from[CasingPreset],
         CatalogCategoryAny.from[FlowResistanceCatalogEntry],
@@ -90,6 +91,16 @@ object CatalogCategoryInstances:
         def uniqueKey(entry: Firebox.Door15aFirebox_Catalog): String = entry.reference
         given decoder: Decoder[Firebox.Door15aFirebox_Catalog] = summon
         given encoder: Encoder[Firebox.Door15aFirebox_Catalog] = summon
+
+    // SingleTested: same approach – direct case class codec (no sealed-trait discriminator).
+    private given Decoder[Firebox.SingleTested] = semiauto.deriveDecoder[Firebox.SingleTested]
+    private given Encoder[Firebox.SingleTested] = semiauto.deriveEncoder[Firebox.SingleTested]
+
+    given CatalogCategory[Firebox.SingleTested] with
+        def yamlKey: String = "single_tested_fireboxes"
+        def uniqueKey(entry: Firebox.SingleTested): String = entry.reference
+        given decoder: Decoder[Firebox.SingleTested] = summon
+        given encoder: Encoder[Firebox.SingleTested] = summon
 
     given CatalogCategory[SetThermalPipeProp_13384.SetPropertiesInBatch] with
         def yamlKey: String = "pipe_presets"

@@ -26,11 +26,13 @@ import afpma.firecalc.ui.formgen.ConditionalFor
 import afpma.firecalc.ui.formgen.Defaultable
 import afpma.firecalc.ui.formgen.ValidateVar
 import afpma.firecalc.ui.components.FireboxCatalogSelectComponent
+import afpma.firecalc.ui.components.SingleTestedCatalogSelectComponent
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.BillableCountry
 import afpma.firecalc.ui.models.BillableCustomerType
 import afpma.firecalc.ui.models.BillingLanguage
 import afpma.firecalc.ui.models.door15aFireboxesSignal
+import afpma.firecalc.ui.models.singleTestedFireboxesSignal
 import afpma.firecalc.ui.models.stove_params_var
 import afpma.firecalc.ui.models.firebox_var
 
@@ -400,7 +402,28 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             given DF[EmissionValues_DTO] =
                 DaisyUIVerticalForm.autoDerived[EmissionValues_DTO].autoOverwriteFieldNames
             DaisyUIVerticalForm.autoDerived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
-        DaisyUIVerticalForm.autoDerived[Firebox.SingleTested].autoOverwriteFieldNames
+
+        val autoDerivedForm = DaisyUIVerticalForm.autoDerived[Firebox.SingleTested].autoOverwriteFieldNames
+        val d               = autoDerivedForm.defaultable_instance
+        given ValidateVar[Firebox.SingleTested] = autoDerivedForm.validate_var
+
+        DaisyUIVerticalForm
+            .makeFor[Firebox.SingleTested](d): (v, fc) =>
+                import com.raquo.laminar.api.L.*
+                val modal = SingleTestedCatalogSelectComponent(
+                    entriesSignal = singleTestedFireboxesSignal,
+                    onSelect      = Observer(v.set)
+                )
+                div(
+                    button(
+                        cls     := "btn btn-secondary btn-sm mb-2",
+                        I18N_UI.catalog.select_from_catalog,
+                        onClick --> { _ => modal.open() }
+                    ),
+                    autoDerivedForm.render(v, fc),
+                    modal.node
+                )
+            .withFieldName(I18N.firebox_names.single_tested)
 
     given given_Firebox_Door15aFirebox_Catalog: DF[Firebox.Door15aFirebox_Catalog] =
         import vv.kilogram.validOption_whenStrictlyPositive
