@@ -7,7 +7,6 @@ package afpma.firecalc.filaire
 
 import org.scalajs.dom
 import scala.scalajs.js
-import scala.scalajs.js.JSConverters.*
 import FilaireTypes.*
 
 /** Framework-agnostic Filaire visualization API.

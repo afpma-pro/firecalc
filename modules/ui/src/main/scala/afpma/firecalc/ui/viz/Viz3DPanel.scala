@@ -18,7 +18,6 @@ import io.taig.babel.Locale
 
 import org.scalajs.dom
 import scala.scalajs.js
-import scala.scalajs.js.JSON
 
 final case class Viz3DPanel()(using Locale) extends Component:
 
