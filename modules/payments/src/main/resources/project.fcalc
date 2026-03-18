@@ -330,7 +330,7 @@ chimney_pipe_descr:
     AddSectionVertical: 
       name: "extérieur"
       elevation_gain: 
-        value: "0.99"
+        value: "1.50"
         unit: "meter"
   - 
     SetPipeLocation: 
