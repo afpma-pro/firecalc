@@ -265,9 +265,42 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     protected def renderIncrDescr(title: String, el: HtmlElement, isProperty: Boolean): HtmlElement =
         wrapLine(title, el, isProperty)
 
+    /** Build a reverse mapping from engine PipeIdx → UI IdIncr
+      * so that error messages can reference the element number the user sees.
+      */
+    private def buildReverseIdsMap(
+        idsMappingOpt: Option[PipeIdsMapping],
+        elemsSize    : Int
+    ): Map[Int, Int] =
+        idsMappingOpt.fold(Map.empty[Int, Int]) { idsMapping =>
+            (0 until elemsSize).flatMap { idIncr =>
+                fromIdIncr_to_pipeSectionResultId(idsMapping, idIncr)
+                    .map(_ -> idIncr)
+            }.toMap
+        }
+
+    /** Remap the sectionId on known error types from PipeIdx to IdIncr
+      * so that the displayed section number matches the UI element number.
+      */
+    private def remapErrorSectionId(
+        err       : MCalc_Error,
+        reverseMap: Map[Int, Int]
+    ): MCalc_Error =
+        err match
+            case e: FlueGasVelocityError =>
+                reverseMap.get(e.sectionId)
+                    .fold(err)(idIncr => e.copy(sectionId = idIncr))
+            case e: FluePipeInvalidGeometryRatio =>
+                reverseMap.get(e.sectionId)
+                    .fold(err)(idIncr => e.copy(sectionId = idIncr))
+            case other => other
+
     def statusIcon =
         vnel_signal
-            .map: vnel =>
+            .combineWith(pipeMappings_vnel_signal.map(_.toOption))
+            .combineWith(elems_v.signal.map(_.size))
+            .map: (vnel, idsMappingOpt, elemsSize) =>
+                val reverseMap = buildReverseIdsMap(idsMappingOpt, elemsSize)
                 PanelStatusHelper
                     .keepGlobalErrorsOrErrorsSpecificToSectionTyp(_ == sectionType)(vnel) match
                     case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
@@ -276,7 +309,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                                 cls := "list",
                                 li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
                                 errs.toList.map: err =>
-                                    li(cls := "list-row text-xs", err.show)
+                                    li(cls := "list-row text-xs", remapErrorSectionId(err, reverseMap).show)
                             ),
                             element    = span(cls := PanelStatusHelper.textClsNameFoErrors(errs), lucide.`circle-x`),
                             ttStyle    = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
