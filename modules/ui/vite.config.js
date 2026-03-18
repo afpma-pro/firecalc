@@ -5,7 +5,7 @@
 
 import { resolve } from 'path'
 import { defineConfig, loadEnv } from "vite";
-import { viteSingleFile } from 'vite-plugin-singlefile'
+
 import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import tailwindcss from '@tailwindcss/vite';
@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
             external: [],
             output: {
-                assetFileNames: 'assets/[name].[ext]', // Keep consistent asset paths
+                assetFileNames: 'assets/[name]-[hash].[ext]',
                 // Optimize for large chunks (fullLinkJS output can be large)
                 manualChunks: undefined,
                 inlineDynamicImports: true,
@@ -77,9 +77,6 @@ export default defineConfig(({ mode }) => {
                 }
             }
         },
-        // Only use viteSingleFile for production builds (Electron packaging)
-        // In dev mode, this plugin defeats HMR and forces full page reloads
-        ...(process.env.NODE_ENV === 'production' ? [viteSingleFile()] : []),
         // Enable HTTPS + HTTP/2 in dev for faster loading of many small Scala.js modules
         ...(mode === 'development' ? [basicSsl()] : []),
         scalaJSPlugin({
