@@ -34,12 +34,15 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                         cls := "bg-base-100 h-42",
                         DaisyUINavBar.HeaderMenuButton(
                             titleLeftNode = div(
-                                cls := "flex flex-row items-center justify-center",
-                                a(cls := "flex-none btn btn-ghost text-xl", p("FireCalc AFPMA")),
-                                p(
-                                    cls := "flex-none text-base-content/40 text-sm self-center mt-1",
-                                    s"(${summon[Locale].language.value})"
-                                )
+                                cls := "flex flex-row items-center justify-start",
+                                a(
+                                    cls := "flex-none w-64 btn btn-ghost text-xl", 
+                                    p("FireCalc AFPMA"),
+                                    p(
+                                        cls := "flex-none text-base-content/40 text-sm self-center mt-1",
+                                        s"(${summon[Locale].language.value})"
+                                    )
+                                ),
                             ),
                             buttonString  = I18N_UI.buttons.menu
                         ),

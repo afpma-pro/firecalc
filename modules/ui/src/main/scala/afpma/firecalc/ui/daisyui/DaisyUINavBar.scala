@@ -59,45 +59,55 @@ object DaisyUINavBar:
                 titleLeftNode
             ),
             div(
-                cls := "flex-1 flex flex-row items-center justify-center gap-x-6",
-                FireCalcProjet.NewBlankComponent            (),
-                FireCalcProjet.UploadComponent              (),
-                FireCalcProjet.BackupComponent              (),
-                FireCalcProjet.HardCodedEngineStateComponent(
-                    nextEngineState = EngineState.example_projet_15544,
-                    buttonTitle     = I18N_UI.buttons.load_example_project_15544
-                ),
-                // Undo button
+                cls := "flex-1 flex flex-row items-center gap-x-6",
+                // Group 1: Undo / Redo
                 div(
-                    cls := "flex items-center h-6",
-                    DaisyUITooltip (
-                        ttContent  = div(I18N_UI.buttons.undo),
-                        element    = div(
-                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
-                            cls("text-base-content") <-- undoManager.canUndo,
-                            cls("text-base-content/40") <-- undoManager.cannotUndo,
-                            lucide.undo(stroke_width = 1.5, w = 16, h = 16),
-                            onClick.mapToUnit --> { _ => performUndo() }
-                        ),
-                        ttPosition = "tooltip-bottom"
+                    cls := "flex flex-row items-center gap-x-2",
+                    // Undo button
+                    div(
+                        cls := "flex items-center h-6",
+                        DaisyUITooltip (
+                            ttContent  = div(I18N_UI.buttons.undo),
+                            element    = div(
+                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls("text-base-content") <-- undoManager.canUndo,
+                                cls("text-base-content/40") <-- undoManager.cannotUndo,
+                                lucide.undo(stroke_width = 1.5, w = 16, h = 16),
+                                onClick.mapToUnit --> { _ => performUndo() }
+                            ),
+                            ttPosition = "tooltip-bottom"
+                        )
+                    ),
+                    // Redo button
+                    div(
+                        cls := "flex items-center h-6",
+                        DaisyUITooltip (
+                            ttContent  = div(I18N_UI.buttons.redo),
+                            element    = div(
+                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls("text-base-content") <-- undoManager.canRedo,
+                                cls("text-base-content/40") <-- undoManager.cannotRedo,
+                                lucide.redo(stroke_width = 1.5, w = 16, h = 16),
+                                onClick.mapToUnit --> { _ => performRedo() }
+                            ),
+                            ttPosition = "tooltip-bottom"
+                        )
                     )
                 ),
-                // Redo button
+                div(cls := "flex-grow"),
+                // Group 2: File operations
                 div(
-                    cls := "flex items-center h-6",
-                    DaisyUITooltip (
-                        ttContent  = div(I18N_UI.buttons.redo),
-                        element    = div(
-                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
-                            cls("text-base-content") <-- undoManager.canRedo,
-                            cls("text-base-content/40") <-- undoManager.cannotRedo,
-                            lucide.redo(stroke_width = 1.5, w = 16, h = 16),
-                            onClick.mapToUnit --> { _ => performRedo() }
-                        ),
-                        ttPosition = "tooltip-bottom"
+                    cls := "flex flex-row items-center gap-x-6",
+                    FireCalcProjet.NewBlankComponent            (),
+                    FireCalcProjet.UploadComponent              (),
+                    FireCalcProjet.BackupComponent              (),
+                    FireCalcProjet.HardCodedEngineStateComponent(
+                        nextEngineState = EngineState.example_projet_15544,
+                        buttonTitle     = I18N_UI.buttons.load_example_project_15544
                     )
                 ),
-                // Catalog Manager button
+                div(cls := "flex-grow"),
+                // Group 3: Catalog
                 div(
                     cls := "flex items-center h-6",
                     DaisyUITooltip(
@@ -110,44 +120,51 @@ object DaisyUINavBar:
                         ttPosition = "tooltip-bottom"
                     )
                 ),
-                // 3D visualization toggle
+                div(cls := "flex-grow"),
+                // Group 4: 3D & Graph toggles
                 div(
-                    cls := "flex items-center h-6",
-                    DaisyUITooltip(
-                        ttContent  = div("3D"),
-                        element    = div(
-                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
-                            cls("text-base-content") <-- viz3DPanelOn,
-                            cls("text-base-content/40 hover:text-base-content") <-- viz3DPanelOff,
-                            lucide.box(stroke_width = 1.5, w = 16, h = 16),
-                            onClick.mapToUnit --> { _ =>
-                                val wasOn = viz3DPanelVar.now()
-                                viz3DPanelVar.set(!wasOn)
-                                if !wasOn then graphPanelVar.set(false)
-                            }
-                        ),
-                        ttPosition = "tooltip-bottom"
+                    cls := "flex flex-row items-center gap-x-2",
+                    // 3D visualization toggle
+                    div(
+                        cls := "flex items-center h-6",
+                        DaisyUITooltip(
+                            ttContent  = div("3D"),
+                            element    = div(
+                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                                cls("text-base-content") <-- viz3DPanelOn,
+                                cls("text-base-content/40 hover:text-base-content") <-- viz3DPanelOff,
+                                lucide.box(stroke_width = 1.5, w = 16, h = 16),
+                                onClick.mapToUnit --> { _ =>
+                                    val wasOn = viz3DPanelVar.now()
+                                    viz3DPanelVar.set(!wasOn)
+                                    if !wasOn then graphPanelVar.set(false)
+                                }
+                            ),
+                            ttPosition = "tooltip-bottom"
+                        )
+                    ),
+                    // Graph (2D chart) toggle
+                    div(
+                        cls := "flex items-center h-6",
+                        DaisyUITooltip(
+                            ttContent  = div(I18N_UI.graph.title),
+                            element    = div(
+                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                                cls("text-base-content") <-- graphPanelOn,
+                                cls("text-base-content/40 hover:text-base-content") <-- graphPanelOff,
+                                lucide.`chart-line`(stroke_width = 1.5, w = 16, h = 16),
+                                onClick.mapToUnit --> { _ =>
+                                    val wasOn = graphPanelVar.now()
+                                    graphPanelVar.set(!wasOn)
+                                    if !wasOn then viz3DPanelVar.set(false)
+                                }
+                            ),
+                            ttPosition = "tooltip-bottom"
+                        )
                     )
                 ),
-                // Graph (2D chart) toggle
-                div(
-                    cls := "flex items-center h-6",
-                    DaisyUITooltip(
-                        ttContent  = div(I18N_UI.graph.title),
-                        element    = div(
-                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
-                            cls("text-base-content") <-- graphPanelOn,
-                            cls("text-base-content/40 hover:text-base-content") <-- graphPanelOff,
-                            lucide.`chart-line`(stroke_width = 1.5, w = 16, h = 16),
-                            onClick.mapToUnit --> { _ =>
-                                val wasOn = graphPanelVar.now()
-                                graphPanelVar.set(!wasOn)
-                                if !wasOn then viz3DPanelVar.set(false)
-                            }
-                        ),
-                        ttPosition = "tooltip-bottom"
-                    )
-                )
+
+                div(cls := "flex-grow"),
             ),
             // OPTIONAL
 
