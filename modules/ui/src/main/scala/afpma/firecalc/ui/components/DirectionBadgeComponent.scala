@@ -156,13 +156,13 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                span(cls := "text-xs opacity-60", I18N_UI.direction_badge.abs_dir_label),
+                span(cls := "text-[0.5rem] opacity-60", I18N_UI.direction_badge.abs_dir_label),
                 badgeText(dir)
             )
         else
             div(
                 cls := "flex flex-col",
-                label(cls := "fieldset-label", I18N_UI.direction_badge.abs_dir_label),
+                label(cls := "fieldset-label text-[0.5rem]", I18N_UI.direction_badge.abs_dir_label),
                 span(
                     cls <-- isCompatibleSig.map:
                         case Some(false) => "select select-xs pointer-events-none text-warning"
@@ -191,7 +191,7 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                when(compact)(span(cls := "text-xs opacity-60", I18N_UI.direction_badge.abs_dir_label)),
+                when(compact)(span(cls := "text-[0.5rem] opacity-60", I18N_UI.direction_badge.abs_dir_label)),
                 badgeText(dir)
             ),
             child <-- frameBefore.combineWith(deflectionAngle).map:
