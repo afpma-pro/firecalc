@@ -186,36 +186,36 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
         val detailed_columns = Seq(
             td(
-                cls := "text-center font-normal",
+                cls := s"$expertColCls font-normal",
                 text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle))
             ),
             td(
-                cls := "text-center font-normal",
+                cls := s"$expertColCls font-normal",
                 text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch])
             ),
             td(
-                cls := "text-center font-normal",
+                cls := s"$expertColCls font-normal",
                 text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit])
             ),
             td(
-                cls := "text-center font-normal",
+                cls := s"$expertColCls font-normal",
                 text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]))
             ),
-            td(cls := "text-center font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
-            td(cls := "text-center font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
-            td(cls := "text-center font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
+            td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
+            td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
+            td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
             td(
-                cls := "text-center font-normal",
+                cls := s"$expertColCls font-normal",
                 text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP))
             ),
             td(
-                cls := "text-center font-normal",
+                cls := s"$expertColCls font-normal",
                 text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero))
             )
         )
 
         tr(
-            td(cls := "w-0", complexIncrNode),
+            td(complexIncrNode),
             children(detailed_columns) <-- expertModeOn
         )
 
@@ -257,16 +257,23 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     lazy val quadrionSubtotal_sig: Signal[Option[QuadrionSubtotal]]
 
+    private lazy val panelOpened = Var(false)
+
     override def renderContent: HtmlElement =
         DaisyUIVerticalAccordionAndJoin.Element    (
             idx     = 0,
             title   = Title.WithQuadrionSubtotal(
                 titleString,
                 xtra_sig             = statusIcon.map(n => Some(div(n))),
-                quadrionSubtotal_sig = quadrionSubtotal_sig
+                quadrionSubtotal_sig = quadrionSubtotal_sig,
+                bottomContent_sig    = expertModeOn
+                    .combineWith(panelOpened.signal)
+                    .map((expert, open) =>
+                        Option.when(expert && open)(detailed_headers_title)
+                    )
             ),
             content = content,
-            opened  = Var(false)
+            opened  = panelOpened
         )
 
     def duShow[USI: ShowUnit, UIMP: ShowUnit]: String =
@@ -274,36 +281,34 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     val _I = I18N_UI.details_columns
 
-    lazy val detailed_headers = Seq(
-        th(cls := "z-3 text-center", div(_I.cross_section), div(duShow[Centimeter, Inch])     ),
-        th(cls := "z-3 text-center", div(_I.length), div(duShow[Meter, Inch])                 ),
-        th(cls := "z-3 text-center", div(_I.temp), div(duShow[Celsius, Fahrenheit])           ),
-        th(cls := "z-3 text-center", div(_I.speed), div(duShow[Meter / Second, Foot / Second])),
-        th(cls := "z-3 text-center", div(_I.ph), div("[Pa]")                                  ),
-        th(cls := "z-3 text-center", div(_I.pr), div("[Pa]")                                  ),
-        th(cls := "z-3 text-center", div(_I.zeta), div("[ζ]")                                 ),
-        th(cls := "z-3 text-center", div(_I.turn), div("[Pa]")                                ),
-        th(cls := "z-3 text-center", div(_I.net), div("[Pa]")                                 )
+    private val expertColCls = "w-20 text-center"
+
+    lazy val detailed_headers_title: HtmlElement = div(
+        cls := "flex items-center text-xs font-normal -ml-4 -mr-12 py-1",
+        div(cls := "flex-1"), // spacer matching first table column
+        div(
+            cls := "flex items-center border-t border-secondary-content/30 pt-1",
+            div(cls := expertColCls, div(_I.cross_section), div(duShow[Centimeter, Inch])     ),
+            div(cls := expertColCls, div(_I.length), div(duShow[Meter, Inch])                 ),
+            div(cls := expertColCls, div(_I.temp), div(duShow[Celsius, Fahrenheit])           ),
+            div(cls := expertColCls, div(_I.speed), div(duShow[Meter / Second, Foot / Second])),
+            div(cls := expertColCls, div(_I.ph), div("[Pa]")                                  ),
+            div(cls := expertColCls, div(_I.pr), div("[Pa]")                                  ),
+            div(cls := expertColCls, div(_I.zeta), div("[ζ]")                                 ),
+            div(cls := expertColCls, div(_I.turn), div("[Pa]")                                ),
+            div(cls := expertColCls, div(_I.net), div("[Pa]")                                 )
+        )
     )
 
     lazy val content = div(
         cls := "py-4 gap-2",
         div(
-            cls := "flex flex-col gap-2 relative overflow-x-auto overflow-y-auto", // add h-150 for sticky header
+            cls := "flex flex-col gap-2 relative overflow-x-auto",
             div(
                 cls := "relative",
                 // table start
                 table(
-                    cls := "sticky top-0 table table-auto table-xs table-pin-rows table-pin-cols",
-
-                    // table header
-                    thead(
-                        cls := "",
-                        tr(
-                            td(cls := "w-0"),
-                            children(detailed_headers) <-- expertModeOn
-                        )
-                    ),
+                    cls := "table table-fixed table-xs table-pin-cols",
 
                     // table rows
                     children <-- rendered_elems_sig

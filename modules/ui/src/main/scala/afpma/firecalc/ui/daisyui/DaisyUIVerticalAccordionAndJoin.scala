@@ -223,18 +223,22 @@ object DaisyUIVerticalAccordionAndJoin:
     sealed trait Title(
         title               : String,
         xtra_sig            : Signal[Option[HtmlElement]],
-        quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]]
+        quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]],
+        bottomContent_sig   : Signal[Option[HtmlElement]] = Signal.fromValue(None)
     ) extends Component:
 
         protected def TitleChild = div(cls := "flex-none w-64", title)
         protected def XtraFlexChild: Node = div(cls := "flex-1 w-12", child.maybe <-- xtra_sig)
 
         val node = div(
-            cls := "flex items-center",
-            TitleChild,
-            XtraFlexChild, // grows and shrink
-            child <-- quadrionSubtotal_sig.map(_.map(_.node).getOrElse(emptyNode)),
-            div(cls := "flex-none w-2") // right margin
+            div(
+                cls := "flex items-center",
+                TitleChild,
+                XtraFlexChild, // grows and shrink
+                child <-- quadrionSubtotal_sig.map(_.map(_.node).getOrElse(emptyNode)),
+                div(cls := "flex-none w-2") // right margin
+            ),
+            child.maybe <-- bottomContent_sig
         )
 
     object Title:
@@ -291,9 +295,10 @@ object DaisyUIVerticalAccordionAndJoin:
 
         final case class WithQuadrionSubtotal(
             title               : String,
-            xtra_sig            : Signal[Option[HtmlElement]] = Signal.fromValue(None),
-            quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]]
-        ) extends Title(title, xtra_sig, quadrionSubtotal_sig)
+            xtra_sig            : Signal[Option[HtmlElement]]            = Signal.fromValue(None),
+            quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]],
+            bottomContent_sig   : Signal[Option[HtmlElement]]            = Signal.fromValue(None)
+        ) extends Title(title, xtra_sig, quadrionSubtotal_sig, bottomContent_sig)
 
         final case class QuadrionValueWithTooltip(
             value      : String | Option[Double],
