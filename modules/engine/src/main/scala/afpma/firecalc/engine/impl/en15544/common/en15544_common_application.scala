@@ -1021,8 +1021,13 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             ap.validateVelocitiesInPipes             (),
             ap.validatePressureRequirements_EN15544  (),
             ap.validateChimneyWallTempIsAboveCondensationTemp(),
+            
             // validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
-            ap.validateSeasonalEfficiency(countryCode),
+            
+            // According to french officials, Ecodesign is not applicable to one-off stoves
+            // So this EN 16510 constraint does not need to pass. Even if it does in practice.
+            // ap.validateSeasonalEfficiency(countryCode), 
+            
             ap.validateCitedConstraints              (),
             // Firebox
             ap.validateFireboxSpecificConstraints    ()
