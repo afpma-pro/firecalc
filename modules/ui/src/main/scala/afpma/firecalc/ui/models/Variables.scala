@@ -268,7 +268,10 @@ lazy val results_en15544_strict_sig: Signal[ValidatedNel[MCalc_Error, EN15544_St
         // emits at most once during interval (prevent too much computing)
         // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
-        .map(_.make_en15544_Strict_Application)
+        .map: helper =>
+            scala.util.Try(helper.make_en15544_Strict_Application) match
+                case scala.util.Success(result) => result
+                case scala.util.Failure(e)      => Validated.invalidNel(UnexpectedDevError(e.getMessage))
 
 lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
     results_en15544_strict_sig

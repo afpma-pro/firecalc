@@ -579,8 +579,9 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
     // Conditional
 
     def conditionalOn[C, A](
-        condVar     : Var[C],
-        extraBinders: Seq[Binder[HtmlElement]] = Seq.empty
+        condVar          : Var[C],
+        extraBinders     : Seq[Binder[HtmlElement]] = Seq.empty,
+        activationDefault: Signal[Option[A]]         = Val(Option.empty[A])
     )(using
         fa  : DF[A],
         d   : Defaultable[A],
@@ -597,11 +598,17 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
                 case None    => d.default
             } { case (_, a) => Some(a) }
 
+            // Cache activationDefault in a Var for synchronous access inside the binder.
+            // This avoids Airstream tuple type erasure from chained withCurrentValueOf/combineWith.
+            val activationDefaultVar: Var[Option[A]] = Var(Option.empty[A])
+            val syncActivationDefault: Binder[HtmlElement] =
+                activationDefault --> activationDefaultVar.writer
+
             val binder =
                 condVar.signal
                     .withCurrentValueOf(voa)
                     .map((c, oa) =>
-                        if (cond.check(c)) oa
+                        if (cond.check(c)) oa.orElse(activationDefaultVar.now()).orElse(Some(d.default))
                         else None
                     )
                     .distinct --> voa.writer
@@ -611,6 +618,7 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
                 formConfig
             ).amend(
                 cls("hidden") <-- hideSignal,
+                syncActivationDefault,
                 binder,
                 extraBinders
             )

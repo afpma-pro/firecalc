@@ -15,6 +15,8 @@ import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
 import afpma.firecalc.ui.formgen.*
 import afpma.firecalc.ui.instances.*
 
+import com.raquo.laminar.api.L.Signal
+
 import coulomb.*
 
 import io.taig.babel.Locale
@@ -68,29 +70,33 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
     given conditionalFor_pn: ConditionalFor[StoveParams, QtyD[Kilo * Watt]] =
         ConditionalFor(_.sizing_method == SizingMethod.NominalHeatOutput)
 
+    // Engine-computed values used as activation defaults when switching sizing method.
+    // Since results_en15544_strict_sig is debounced, at switch time it still holds the
+    // previous computation — giving us the derived value to carry over seamlessly.
+    private val computedMbSignal: Signal[Option[QtyD[Kilogram]]]    =
+        results_en15544_strict_sig.map(_.toOption.map(_.m_B))
+    private val computedPnSignal: Signal[Option[QtyD[Kilo * Watt]]] =
+        results_en15544_strict_sig.map(_.toOption.map(_.P_n))
+
     given form_option_mB: DaisyUIVerticalForm[Option[QtyD[Kilogram]]] =
         import vv.kilogram.valid_whenStrictlyPositive
         given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form_DaisyUIVerticalForm
         DaisyUIVerticalForm
-            .conditionalOn[StoveParams, QtyD[Kilogram]](stove_params_var)
+            .conditionalOn[StoveParams, QtyD[Kilogram]](
+                stove_params_var,
+                activationDefault = computedMbSignal
+            )
             .withFieldName(I18N.en15544.terms.m_B.name)
 
     given form_option_pn: DaisyUIVerticalForm[Option[QtyD[Kilo * Watt]]] =
         import vv.kilowatt.valid_whenStrictlyPositive
         given DF[Power] = dual.given_dual_Power.form_DaisyUIVerticalForm
         DaisyUIVerticalForm
-            .conditionalOn[StoveParams, QtyD[Kilo * Watt]](stove_params_var)
+            .conditionalOn[StoveParams, QtyD[Kilo * Watt]](
+                stove_params_var,
+                activationDefault = computedPnSignal
+            )
             .withFieldName(I18N.en15544.terms.P_n.name)
-
-    given form_either_mB_or_pn: DaisyUIVerticalForm[Either[QtyD[Kilogram], QtyD[Kilo * Watt]]] =
-        DaisyUIVerticalForm.eitherFromOption(
-            stove_params_var,
-            convert = _.mB_or_pn,
-            revert  = (sp, mB_or_pn) =>
-                mB_or_pn match
-                    case Left(mB)  => if (sp.maximum_load.contains(mB)) sp else sp.with_mB(mB)
-                    case Right(pn) => if (sp.nominal_heat_output.contains(pn)) sp else sp.with_pn(pn)
-        )
 
     given DaisyUIVerticalForm[StoveParams] =
         given DaisyUIVerticalForm[Option[Power]] = form_option_pn
