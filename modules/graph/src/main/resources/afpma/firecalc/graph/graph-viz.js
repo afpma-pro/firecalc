@@ -70,8 +70,8 @@ function seriesToDataset(s) {
     yAxisID: s.yAxisId,
     pointRadius: 2,
     pointHoverRadius: 4,
-    tension: 0.1,
-    // slight curve smoothing
+    tension: 0,
+    // no curve smoothing
     fill: false
   };
 }
