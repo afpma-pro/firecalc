@@ -30,6 +30,9 @@ object Frontend {
     lazy val writeCatalogSubscription = catalogStateVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> catalogWebStorageVar.writer
 
+    lazy val writeUIStateSubscription = uiStateVar.signal.changes.distinct
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> uiStateWebStorageVar.writer
+
     private val undoSnapshotObserver = Observer[schema.AppStateSchema](undoManager.pushSnapshot(_))
 
     lazy val undoSnapshotSubscription =
@@ -59,6 +62,7 @@ object Frontend {
     lazy val app: Div = div(cls := "", child <-- router.currentPageSignal.map(renderPage)).amend(
         writeUnifiedSchemaSubscription,
         writeCatalogSubscription,
+        writeUIStateSubscription,
         undoSnapshotSubscription,
         undoRedoKeyboardSubscription
         // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))

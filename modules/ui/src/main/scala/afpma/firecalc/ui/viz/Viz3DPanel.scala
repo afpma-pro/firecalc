@@ -7,9 +7,9 @@ package afpma.firecalc.ui.viz
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.models.schema.LocalStorageKeys
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.filaire.*
+import afpma.firecalc.filaire.FilaireTypes.*
 
 import afpma.firecalc.ui.LAMINAR_VIZ_DEBOUNCE_MS
 import com.raquo.laminar.api.L.*
@@ -25,25 +25,33 @@ final case class Viz3DPanel()(using Locale) extends Component:
 
   private var currentHandle: Option[FilaireVizHandleJS] = None
 
+  private val beforeUnloadHandler: js.Function1[dom.Event, Unit] =
+    (_: dom.Event) =>
+      saveCameraState()
+      // Flush to localStorage immediately — debounced sync won't run in time
+      uiStateWebStorageVar.set(uiStateVar.now())
+
   private def saveCameraState(): Unit =
     for handle <- currentHandle do
       handle.getCameraState().toOption.foreach { cs =>
         try
-          val obj = js.Dynamic.literal(
-            position = cs.position,
-            up = cs.up,
-            target = cs.target
+          val scalaState = CameraState(
+            position = cs.position.toList,
+            up       = cs.up.toList,
+            target   = cs.target.toList
           )
-          dom.window.localStorage.setItem(LocalStorageKeys.VIZ_CAMERA_STATE, JSON.stringify(obj))
+          uiStateVar.update(_.copy(cameraState = Some(scalaState)))
         catch case _: Throwable => ()
       }
 
   private def loadCameraState(): Option[CameraStateJS] =
-    try
-      val raw = dom.window.localStorage.getItem(LocalStorageKeys.VIZ_CAMERA_STATE)
-      if raw == null || raw.isEmpty then None
-      else Some(JSON.parse(raw).asInstanceOf[CameraStateJS])
-    catch case _: Throwable => None
+    uiStateVar.now().cameraState.map { cs =>
+      js.Dynamic.literal(
+        position = js.Array(cs.position*),
+        up       = js.Array(cs.up*),
+        target   = js.Array(cs.target*)
+      ).asInstanceOf[CameraStateJS]
+    }
 
   private def disposeCurrentViz(): Unit =
     saveCameraState()
@@ -69,9 +77,20 @@ final case class Viz3DPanel()(using Locale) extends Component:
       ),
       div(
         cls := "flex-1 relative overflow-hidden",
-        onUnmountCallback { _ => disposeCurrentViz() },
+        onMountCallback { _ =>
+          dom.window.addEventListener("beforeunload", beforeUnloadHandler)
+        },
+        onUnmountCallback { _ =>
+          dom.window.removeEventListener("beforeunload", beforeUnloadHandler)
+          disposeCurrentViz()
+        },
+        vizSelectedElement.signal.changes
+          .collect { case Some(_) => () }
+          .flatMapSwitch(_ => EventStream.fromValue(()).delay(15000))
+          --> Observer[Unit](_ => vizSelectedElement.set(None)),
         child <-- allPositionsSig.map { (flue, connector, chimney, airIntake, firebox) =>
           disposeCurrentViz()
+          vizHoveredElement.set(None)
           val fbWidthCm = firebox.firebox_width.value * M_TO_CM
           val fbDepthCm = firebox.firebox_depth.value * M_TO_CM
           val fireboxLine = VizConverter.fireboxToLine(
@@ -103,7 +122,18 @@ final case class Viz3DPanel()(using Locale) extends Component:
                 labelAxisRight   = Some(I18N_UI.direction_badge.cardinal_right)
               ),
               DisplayType.FullShape,
-              None
+              Some[Option[FireCalcFilaireLine] => Unit] {
+                case Some(line) =>
+                  val newId   = line.name.flatMap(VizElementId.fromName)
+                  val current = vizSelectedElement.now()
+                  if newId == current then vizSelectedElement.set(None)
+                  else vizSelectedElement.set(newId)
+                case None =>
+                  vizSelectedElement.set(None)
+              },
+              Some[Option[FireCalcFilaireLine] => Unit] { lineOpt =>
+                vizHoveredElement.set(lineOpt.flatMap(_.name.flatMap(VizElementId.fromName)))
+              }
             )
             currentHandle = Some(vizResult.handle)
             foreignHtmlElement(vizResult.element)

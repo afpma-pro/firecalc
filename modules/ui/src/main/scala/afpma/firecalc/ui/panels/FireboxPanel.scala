@@ -22,6 +22,9 @@ import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.utils.flatMapVNelE
 
+import org.scalajs.dom
+import scala.scalajs.js
+
 import cats.data.*
 import cats.implicits.toShow
 import cats.syntax.option.catsSyntaxOptionId
@@ -32,6 +35,15 @@ import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
 
 final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
+
+    private lazy val panelOpened = panelOpenedVar("firebox")
+
+    private val vizHighlightSignal: Signal[String] =
+        vizHoveredElement.signal.combineWith(vizSelectedElement.signal).map:
+            (hover, select) =>
+                val matches = hover.contains(VizElementId.FireboxElement) ||
+                              select.contains(VizElementId.FireboxElement)
+                if matches then "viz-highlighted" else ""
 
     lazy val fireboxForm = FireboxComponent(firebox_var).node
 
@@ -121,7 +133,26 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                 ,
                 quadrionSubtotal_sig = firebox_quadrions_sig
             ),
-            content = fireboxForm
+            content = fireboxForm,
+            opened  = panelOpened
+        ).node.amend(
+            idAttr := "viz-fieldset-firebox",
+            cls <-- vizHighlightSignal,
+            vizSelectedElement.signal.changes.collect {
+                case Some(VizElementId.FireboxElement) => ()
+            } --> Observer[Unit] { _ =>
+                panelOpened.set(true)
+                dom.window.setTimeout(
+                    () => {
+                        Option(dom.document.getElementById("viz-fieldset-firebox")).foreach(
+                            _.asInstanceOf[js.Dynamic].scrollIntoView(
+                                js.Dynamic.literal(behavior = "smooth", block = "center")
+                            )
+                        )
+                    },
+                    300
+                )
+            }
         )
 
 end FireboxPanel

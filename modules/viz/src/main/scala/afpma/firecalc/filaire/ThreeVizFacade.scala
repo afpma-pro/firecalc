@@ -24,11 +24,13 @@ private[filaire] object ThreeVizFacade extends js.Object:
     * @param pipes Array of pipe data to visualize
     * @param config Visualization configuration
     * @param onPipeClick Optional callback when a pipe is clicked
+    * @param onPipeHover Optional callback when a pipe is hovered (index -1 = deselect)
     * @return A handle with lifecycle management methods (dispose, etc.)
     */
   def apply(
     container: dom.HTMLElement,
     pipeGroups: js.Array[PipeGroupJS],
     config: VizConfigJS,
-    onPipeClick: js.UndefOr[js.Function1[Int, Unit]] = js.undefined
+    onPipeClick: js.UndefOr[js.Function1[Int, Unit]] = js.undefined,
+    onPipeHover: js.UndefOr[js.Function1[Int, Unit]] = js.undefined
   ): FilaireVizHandleJS = js.native

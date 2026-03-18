@@ -22,6 +22,14 @@ import io.taig.babel.Locale
 
 final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384_Thermal:
 
+    override protected def vizFieldsetIdPrefix: String               = "connector"
+    override protected def ownsVizElement(id: VizElementId): Boolean = id match
+        case VizElementId.ConnectorPipeElement(_) => true
+        case _                                    => false
+    override protected def vizElementIndex(id: VizElementId): Int = id match
+        case VizElementId.ConnectorPipeElement(idx) => idx
+        case _                                      => -1
+
     type Out = ConnectorPipe
     type PT  = ConnectorPipeT
     lazy val sectionType = ConnectorPipeT

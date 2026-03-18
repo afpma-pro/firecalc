@@ -93,3 +93,11 @@ body {
 .pr-scollbar {
     padding-right: calc(var(--scrollbar-width) * 0);
 }
+
+/* Viz → UI focus highlight */
+.viz-highlighted {
+    border-color: var(--color-primary) !important;
+}
+.viz-highlighted > .fieldset-legend {
+    color: var(--color-primary) !important;
+}

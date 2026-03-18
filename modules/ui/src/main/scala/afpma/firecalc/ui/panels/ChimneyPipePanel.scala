@@ -23,6 +23,14 @@ import io.taig.babel.Locale
 
 final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384_Thermal:
 
+    override protected def vizFieldsetIdPrefix: String               = "chimney"
+    override protected def ownsVizElement(id: VizElementId): Boolean = id match
+        case VizElementId.ChimneyPipeElement(_) => true
+        case _                                  => false
+    override protected def vizElementIndex(id: VizElementId): Int = id match
+        case VizElementId.ChimneyPipeElement(idx) => idx
+        case _                                    => -1
+
     type Out = ChimneyPipe
     type PT  = ChimneyPipeT
     lazy val sectionType = ChimneyPipeT

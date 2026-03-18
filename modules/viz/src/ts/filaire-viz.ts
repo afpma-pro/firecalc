@@ -837,7 +837,8 @@ export function initFilaireViz(
   container: HTMLElement,
   pipeGroups: PipeGroup[],
   config: VizConfig,
-  onPipeClick?: (lineIndex: number) => void
+  onPipeClick?: (lineIndex: number) => void,
+  onPipeHover?: (lineIndex: number) => void
 ): FilaireVizHandle {
   // ---------------------------------------------------------------------------
   // Scene Setup
@@ -1111,7 +1112,7 @@ export function initFilaireViz(
     renderer.dispose()
     viewHelper.dispose()
     container.innerHTML = ''
-    initFilaireViz(container, pipeGroups, newConfig, onPipeClick)
+    initFilaireViz(container, pipeGroups, newConfig, onPipeClick, onPipeHover)
   })
 
   resetBtn.addEventListener('click', () => {
@@ -1165,6 +1166,9 @@ export function initFilaireViz(
         // Line object - just show pointer cursor
         renderer.domElement.style.cursor = 'pointer'
       }
+      if (onPipeHover) onPipeHover(intersects[0].object.userData.lineIndex as number)
+    } else {
+      if (onPipeHover) onPipeHover(-1)
     }
   })
 
@@ -1186,6 +1190,8 @@ export function initFilaireViz(
       if (intersects.length > 0 && onPipeClick) {
         const lineIndex = intersects[0].object.userData.lineIndex as number
         onPipeClick(lineIndex)
+      } else if (intersects.length === 0 && onPipeClick) {
+        onPipeClick(-1)
       }
     }
   })
@@ -1254,6 +1260,12 @@ export function initFilaireViz(
         const lineIndex = pipe.lineIndex
         label.addEventListener('click', () => {
           if (onPipeClick) onPipeClick(lineIndex)
+        })
+        label.addEventListener('pointerenter', () => {
+          if (onPipeHover) onPipeHover(lineIndex)
+        })
+        label.addEventListener('pointerleave', () => {
+          if (onPipeHover) onPipeHover(-1)
         })
 
         labelParent.appendChild(label)

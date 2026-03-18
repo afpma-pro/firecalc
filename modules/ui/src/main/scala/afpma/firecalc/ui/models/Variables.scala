@@ -514,6 +514,8 @@ lazy val all_conditions_and_results_not_satisfied_sig =
 
 import afpma.firecalc.ui.models.CatalogState
 import afpma.firecalc.ui.models.CatalogStateCodec.given
+import afpma.firecalc.ui.models.UIState
+import afpma.firecalc.ui.models.UIState.given
 import io.circe.Encoder
 import io.circe.parser
 
@@ -548,3 +550,72 @@ lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetProperti
 
 lazy val flowResistancePresetsSignal: Signal[Seq[FlowResistanceCatalogEntry]] =
     catalogStateVar.signal.map(_.flow_resistance_presets.values.toSeq)
+
+// ============================================================================
+// VIZ ELEMENT IDENTIFICATION
+// ============================================================================
+
+enum VizElementId:
+    case FluePipeElement(elementIndex: Int)
+    case ConnectorPipeElement(elementIndex: Int)
+    case ChimneyPipeElement(elementIndex: Int)
+    case AirIntakePipeElement(elementIndex: Int)
+    case FireboxElement
+
+object VizElementId:
+    def fromName(name: String): Option[VizElementId] = name match
+        case s"Flue #$idx"       => idx.toIntOption.map(FluePipeElement(_))
+        case s"Connector #$idx"  => idx.toIntOption.map(ConnectorPipeElement(_))
+        case s"Chimney #$idx"    => idx.toIntOption.map(ChimneyPipeElement(_))
+        case s"Air Intake #$idx" => idx.toIntOption.map(AirIntakePipeElement(_))
+        case "Firebox"           => Some(FireboxElement)
+        case _                   => None
+
+// Ephemeral hover/select state (not persisted to localStorage)
+val vizHoveredElement: Var[Option[VizElementId]]  = Var(None)
+val vizSelectedElement: Var[Option[VizElementId]] = Var(None)
+
+// ============================================================================
+// UI STATE (persisted to localStorage, with migration from VIZ_CAMERA_STATE)
+// ============================================================================
+
+import org.scalajs.dom
+
+private def migrateOldCameraState(): Option[CameraState] =
+    try
+        val raw = dom.window.localStorage.getItem(LocalStorageKeys.VIZ_CAMERA_STATE)
+        if raw == null || raw.isEmpty then None
+        else
+            parser.decode[CameraState](raw) match
+                case Right(cs) =>
+                    dom.window.localStorage.removeItem(LocalStorageKeys.VIZ_CAMERA_STATE)
+                    Some(cs)
+                case Left(_) =>
+                    dom.window.localStorage.removeItem(LocalStorageKeys.VIZ_CAMERA_STATE)
+                    None
+    catch case _: Throwable => None
+
+lazy val uiStateWebStorageVar: WebStorageVar[UIState] =
+    WebStorageVar
+        .localStorage(key = LocalStorageKeys.UI_STATE, syncOwner = None)
+        .withCodec(
+            encode           = (state: UIState) =>
+                Encoder[UIState].apply(state).noSpaces,
+            decode           = (raw: String) =>
+                parser.decode[UIState](raw) match
+                    case Right(state) => Success(state)
+                    case Left(_)      => Success(UIState.empty),
+            default          = Success {
+                // On first load: migrate old VIZ_CAMERA_STATE key if present
+                val migratedCamera = migrateOldCameraState()
+                UIState(cameraState = migratedCamera)
+            },
+            syncDistinctByFn = _ == _
+        )
+
+lazy val uiStateVar: Var[UIState] = Var(uiStateWebStorageVar.now())
+
+def panelOpenedVar(key: String): Var[Boolean] =
+    uiStateVar.zoomLazy(
+        _.panelStates.getOrElse(key, false)
+    )((state, v) => state.copy(panelStates = state.panelStates.updated(key, v)))

@@ -31,6 +31,16 @@ import io.taig.babel.Locale
 
 final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
+    override protected def vizFieldsetIdPrefix: String = "flue"
+
+    override protected def ownsVizElement(id: VizElementId): Boolean = id match
+        case VizElementId.FluePipeElement(_) => true
+        case _                               => false
+
+    override protected def vizElementIndex(id: VizElementId): Int = id match
+        case VizElementId.FluePipeElement(idx) => idx
+        case _                                 => -1
+
     import hastranslations.given
 
     private given flowOnlyHorizontalForm_15544: FlowOnlyHorizontalForm_15544 = FlowOnlyHorizontalForm_15544()

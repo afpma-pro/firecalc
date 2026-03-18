@@ -96,13 +96,14 @@ final case class DaisyUIVerticalAccordionAndJoin(
                             div(cls := "flex-none w-42", prj.date)
                         ).some
             ),
-            content       = projectDescrUI
+            content       = projectDescrUI,
+            opened        = panelOpenedVar("client_project")
         ),
         DaisyUIVerticalAccordionAndJoin.Element          (
             idx           = 0,
             title         = Title.WithTitleOnly(
                 I18N.panels.output_and_other_parameters,
-                xtra_sig = 
+                xtra_sig =
                     stove_params_var.signal
                     .combineWith(results_en15544_strict_sig)
                     .map { (pdm, vnel_appl) =>
@@ -134,7 +135,8 @@ final case class DaisyUIVerticalAccordionAndJoin(
                         ).some
                     }
             ),
-            content       = stoveParamsUI
+            content       = stoveParamsUI,
+            opened        = panelOpenedVar("output_and_parameters")
         ),
         DaisyUIVerticalAccordionAndJoin.Element          (
             idx           = 0,
@@ -159,7 +161,8 @@ final case class DaisyUIVerticalAccordionAndJoin(
                 ,
                 quadrionSubtotal_sig = penalty_sig
             ),
-            content       = localConditionsUI
+            content       = localConditionsUI,
+            opened        = panelOpenedVar("local_conditions")
         ),
         FlowOnlyAirIntakePipePanel                       (),
         FireboxPanel                                     (),
@@ -172,6 +175,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
                 I18N.panels.total,
                 quadrionSubtotal_sig = subtotal_quadrions_sig
             ),
+            opened        = panelOpenedVar("total"),
             allowCollapse = false
         )
 

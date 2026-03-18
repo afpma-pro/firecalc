@@ -7,6 +7,7 @@ package afpma.firecalc.filaire
 
 import org.scalajs.dom
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters.*
 import FilaireTypes.*
 
 /** Framework-agnostic Filaire visualization API.
@@ -31,13 +32,15 @@ object FilaireLinesViz:
         fcalcLines  : FireCalcFilaireLines,
         config      : FilaireVizConfig                    = FilaireVizConfig(),
         displayType : DisplayType                         = DisplayType.FullShape,
-        onShapeClick: Option[FireCalcFilaireLine => Unit] = None
+        onShapeClick: Option[Option[FireCalcFilaireLine] => Unit] = None,
+        onShapeHover: Option[Option[FireCalcFilaireLine] => Unit] = None
     ): FilaireVizResult =
         render(
           List(FireCalcFilaireGroup(fcalcLines)),
           config,
           displayType,
-          onShapeClick
+          onShapeClick,
+          onShapeHover
         )
 
     /** Render the Filaire visualization into a new div element.
@@ -53,30 +56,40 @@ object FilaireLinesViz:
         groups      : FireCalcFilaireGroups,
         config      : FilaireVizConfig,
         displayType : DisplayType,
-        onShapeClick: Option[FireCalcFilaireLine => Unit]
+        onShapeClick: Option[Option[FireCalcFilaireLine] => Unit],
+        onShapeHover: Option[Option[FireCalcFilaireLine] => Unit]
     ): FilaireVizResult =
         val container = dom.document.createElement("div").asInstanceOf[dom.HTMLDivElement]
         container.className = "filaire-viz"
 
-        // Flat list of all lines across all groups (for click callback lookup)
+        // Flat list of all lines across all groups (for click/hover callback lookup)
         val allLines = groups.flatMap(_.lines)
 
         val pipeGroupsJs = groupsToJs(groups)
         val configJs = configToJs(config, displayType)
 
         val hasAnyCallback = onShapeClick.isDefined || allLines.exists(_.onClick.isDefined)
-        val callback: js.UndefOr[js.Function1[Int, Unit]] =
+        val clickCallback: js.UndefOr[js.Function1[Int, Unit]] =
             if hasAnyCallback then
                 val fn: js.Function1[Int, Unit] = (idx: Int) =>
                     if idx >= 0 && idx < allLines.size then
                         val line = allLines(idx)
                         line.onClick match
                             case Some(perLineCb) => perLineCb(line)
-                            case None            => onShapeClick.foreach(_(line))
+                            case None            => onShapeClick.foreach(_(Some(line)))
+                    else onShapeClick.foreach(_(None))
                 fn
             else js.undefined
 
-        val handle = ThreeVizFacade(container, pipeGroupsJs, configJs, callback)
+        val hoverCallback: js.UndefOr[js.Function1[Int, Unit]] = onShapeHover match
+            case Some(cb) =>
+                (((idx: Int) => {
+                    if idx >= 0 && idx < allLines.length then cb(Some(allLines(idx)))
+                    else cb(None)
+                }): js.Function1[Int, Unit])
+            case None => js.undefined
+
+        val handle = ThreeVizFacade(container, pipeGroupsJs, configJs, clickCallback, hoverCallback)
 
         FilaireVizResult(container, handle)
 

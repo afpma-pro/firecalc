@@ -30,6 +30,13 @@ import afpma.firecalc.ui.daisyui.*
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.expertModeOn
+import afpma.firecalc.ui.models.vizHoveredElement
+import afpma.firecalc.ui.models.vizSelectedElement
+import afpma.firecalc.ui.models.panelOpenedVar
+import afpma.firecalc.ui.models.VizElementId
+
+import org.scalajs.dom
+import scala.scalajs.js
 
 import cats.Show
 import cats.data.*
@@ -140,6 +147,30 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
         Signal.fromValue(None)
 
+    // -------------------------------------------------------------------------
+    // Viz / highlight support
+    // -------------------------------------------------------------------------
+
+    /** Short prefix used to build DOM ids and to key the persistent panel-open state. */
+    protected def vizFieldsetIdPrefix: String
+
+    /** Returns true if this panel owns `id` (i.e. the element belongs to this pipe). */
+    protected def ownsVizElement(id: VizElementId): Boolean
+
+    /** Extracts the element index out of a `VizElementId` that belongs to this panel. */
+    protected def vizElementIndex(id: VizElementId): Int
+
+    protected def vizFieldsetId(idx: Int): String = s"viz-fieldset-$vizFieldsetIdPrefix-$idx"
+
+    private def vizHighlightSignal(i: Int): Signal[String] =
+        vizHoveredElement.signal
+            .combineWith(vizSelectedElement.signal)
+            .map { (hover, select) =>
+                val matchesHover  = hover.exists(id => ownsVizElement(id) && vizElementIndex(id) == i)
+                val matchesSelect = select.exists(id => ownsVizElement(id) && vizElementIndex(id) == i)
+                if matchesHover || matchesSelect then "viz-highlighted" else ""
+            }
+
     protected def renderElemTyped[AA <: Elem](
         i               : Int,
         title           : String,
@@ -170,7 +201,11 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             extraNode,
             mkBadge()
         )
-        val header_and_node = renderIncrDescr(title, node, isProperty).amend(binders)
+        val header_and_node = renderIncrDescr(title, node, isProperty).amend(
+            binders,
+            idAttr := vizFieldsetId(i),
+            cls <-- vizHighlightSignal(i)
+        )
         val summary_node    = wrapLine(title, mkBadge(compact = true), isProperty)
         if !isProperty then
             header_and_node.amend(cls := "ml-[20px]")
@@ -257,7 +292,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     lazy val quadrionSubtotal_sig: Signal[Option[QuadrionSubtotal]]
 
-    private lazy val panelOpened = Var(false)
+    protected lazy val panelOpened: Var[Boolean] = panelOpenedVar(vizFieldsetIdPrefix)
 
     override def renderContent: HtmlElement =
         DaisyUIVerticalAccordionAndJoin.Element    (
@@ -319,5 +354,21 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             // div(cls := "flex-none",
             //     children <-- welems_var.signal.map(_.map(x => p(x.toString)))
             // )
-        )
+        ),
+        vizSelectedElement.signal.changes.collect {
+            case Some(id) if ownsVizElement(id) => id
+        } --> Observer[VizElementId] { vizId =>
+            panelOpened.set(true)
+            val domId = vizFieldsetId(vizElementIndex(vizId))
+            dom.window.setTimeout(
+                () => {
+                    Option(dom.document.getElementById(domId)).foreach(
+                        _.asInstanceOf[js.Dynamic].scrollIntoView(
+                            js.Dynamic.literal(behavior = "smooth", block = "center")
+                        )
+                    )
+                },
+                300
+            )
+        }
     )
