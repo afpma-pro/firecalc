@@ -116,7 +116,13 @@ object AppStateSchemaMigrations:
 
             case Some(2) =>
                 // V2 - decode and migrate to V4
+                // Fallback: old V2 data may use V1 Firebox structure (before Firebox_V2 was created).
+                // Decode as V1 then migrate V1→V2 (Chimney adds height_of_first_row_of_air_injectors = 5.cm).
                 decodeV2(rawData)
+                    .orElse {
+                        dom.console.warn("V2 decode failed, falling back to V1 decode + migration")
+                        decodeV1(rawData).flatMap(migrateFromV1ToV2)
+                    }
                     .flatMap(migrateFromV2ToV3)
                     .flatMap(migrateFromV3ToV4) match
                         case Success(v4) => Some(v4)

@@ -20,7 +20,7 @@ import io.taig.babel.Locale
  *
  * Changes from V1:
  * - Added `height_of_first_row_of_air_injectors` field to Traditional and Ecolabeled fireboxes
- *   (with default value 5.cm for backwards compatibility)
+ *   (default 5.cm provided by Chimney V1→V2 transformer in transformers.scala, NOT by Circe decoder)
  */
 final case class FireCalcYAML_V2(
     version                       : FireCalc_Version = FireCalcYAML_V2.VERSION,
