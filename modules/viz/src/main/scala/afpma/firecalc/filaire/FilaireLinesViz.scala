@@ -175,5 +175,8 @@ object FilaireLinesViz:
           _cameraState = cameraStateJs,
           labelResetView = optStrToJs(config.labelResetView),
           labelViewMode = optStrToJs(config.labelViewMode),
-          labelAnnotations = optStrToJs(config.labelAnnotations)
+          labelAnnotations = optStrToJs(config.labelAnnotations),
+          labelAxisRear = optStrToJs(config.labelAxisRear),
+          labelAxisUp = optStrToJs(config.labelAxisUp),
+          labelAxisRight = optStrToJs(config.labelAxisRight)
         )

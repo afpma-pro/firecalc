@@ -63,6 +63,9 @@ export interface VizConfig {
   labelResetView?: string // label for reset view button (default 'reset view')
   labelViewMode?: string // label for view mode button (default 'view mode')
   labelAnnotations?: string // label for annotations button (default 'annotations')
+  labelAxisRear?: string // label for the rear axis in the orientation gizmo (default 'rear')
+  labelAxisUp?: string // label for the up axis in the orientation gizmo (default 'up')
+  labelAxisRight?: string // label for the right axis in the orientation gizmo (default 'right')
 }
 
 export interface FilaireVizHandle {
@@ -521,8 +524,15 @@ class LabeledViewHelper {
   private animationTarget: { position: THREE.Vector3; up: THREE.Vector3 } | null = null
   private animationStart: { position: THREE.Vector3; up: THREE.Vector3 } | null = null
   private animationProgress: number = 0
+  private axisLabels: { rear: string; up: string; right: string }
   
-  constructor(camera: THREE.PerspectiveCamera, controls: OrbitControls, domElement: HTMLElement) {
+  constructor(
+    camera: THREE.PerspectiveCamera,
+    controls: OrbitControls,
+    domElement: HTMLElement,
+    axisLabels: { rear: string; up: string; right: string } = { rear: 'rear', up: 'up', right: 'right' }
+  ) {
+    this.axisLabels = axisLabels
     this.viewHelper = new ViewHelper(camera, domElement)
     this.camera = camera
     this.controls = controls
@@ -610,9 +620,9 @@ class LabeledViewHelper {
   private setupLabels(): void {
     // Define axis directions in Three.js space
     const axisData = [
-      { text: 'rear', color: '#ff0000', axis: new THREE.Vector3(1, 0, 0) },    // X axis (red) = construction Rear
-      { text: 'up', color: '#00ff00', axis: new THREE.Vector3(0, 1, 0) },     // Y axis (green) = construction Up
-      { text: 'right', color: '#0000ff', axis: new THREE.Vector3(0, 0, 1) }   // Z axis (blue) = construction Right
+      { text: this.axisLabels.rear,  color: '#ff0000', axis: new THREE.Vector3(1, 0, 0) },  // X axis (red)   = construction Rear
+      { text: this.axisLabels.up,    color: '#00ff00', axis: new THREE.Vector3(0, 1, 0) },  // Y axis (green) = construction Up
+      { text: this.axisLabels.right, color: '#0000ff', axis: new THREE.Vector3(0, 0, 1) }   // Z axis (blue)  = construction Right
     ]
     
     axisData.forEach(({ text, color, axis }) => {
@@ -994,7 +1004,12 @@ export function initFilaireViz(
   // ---------------------------------------------------------------------------
   // ViewHelper (CAD-style orientation gizmo with labels)
   // ---------------------------------------------------------------------------
-  const viewHelper = new LabeledViewHelper(camera, controls, renderer.domElement)
+  const axisLabels = {
+    rear:  config.labelAxisRear  ?? 'rear',
+    up:    config.labelAxisUp    ?? 'up',
+    right: config.labelAxisRight ?? 'right',
+  }
+  const viewHelper = new LabeledViewHelper(camera, controls, renderer.domElement, axisLabels)
   const clock = new THREE.Clock()
 
   // Handle click events for ViewHelper axis snapping

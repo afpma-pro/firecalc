@@ -133,6 +133,9 @@ trait VizConfigJS extends js.Object:
   var labelResetView: js.UndefOr[String]
   var labelViewMode: js.UndefOr[String]
   var labelAnnotations: js.UndefOr[String]
+  var labelAxisRear: js.UndefOr[String]
+  var labelAxisUp: js.UndefOr[String]
+  var labelAxisRight: js.UndefOr[String]
 
 object VizConfigJS:
   def apply(
@@ -153,7 +156,10 @@ object VizConfigJS:
     _cameraState: js.UndefOr[CameraStateJS] = js.undefined,
     labelResetView: js.UndefOr[String] = js.undefined,
     labelViewMode: js.UndefOr[String] = js.undefined,
-    labelAnnotations: js.UndefOr[String] = js.undefined
+    labelAnnotations: js.UndefOr[String] = js.undefined,
+    labelAxisRear: js.UndefOr[String] = js.undefined,
+    labelAxisUp: js.UndefOr[String] = js.undefined,
+    labelAxisRight: js.UndefOr[String] = js.undefined
   ): VizConfigJS =
     js.Dynamic.literal(
       canvasWidth = canvasWidth,
@@ -173,7 +179,10 @@ object VizConfigJS:
       _cameraState = _cameraState,
       labelResetView = labelResetView,
       labelViewMode = labelViewMode,
-      labelAnnotations = labelAnnotations
+      labelAnnotations = labelAnnotations,
+      labelAxisRear = labelAxisRear,
+      labelAxisUp = labelAxisUp,
+      labelAxisRight = labelAxisRight
     ).asInstanceOf[VizConfigJS]
 
 /** Camera state returned by getCameraState() */

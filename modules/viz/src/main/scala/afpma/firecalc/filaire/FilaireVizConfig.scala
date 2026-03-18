@@ -29,5 +29,8 @@ case class FilaireVizConfig(
   _cameraState: Option[CameraStateJS] = None,
   labelResetView: Option[String] = None,
   labelViewMode: Option[String] = None,
-  labelAnnotations: Option[String] = None
+  labelAnnotations: Option[String] = None,
+  labelAxisRear: Option[String] = None,
+  labelAxisUp: Option[String] = None,
+  labelAxisRight: Option[String] = None
 )

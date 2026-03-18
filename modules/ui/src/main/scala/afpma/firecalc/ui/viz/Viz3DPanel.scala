@@ -97,7 +97,10 @@ final case class Viz3DPanel()(using Locale) extends Component:
                 _cameraState     = loadCameraState(),
                 labelResetView   = Some(I18N_UI.viz.reset_view),
                 labelViewMode    = Some(I18N_UI.viz.view_mode),
-                labelAnnotations = Some(I18N_UI.viz.annotations)
+                labelAnnotations = Some(I18N_UI.viz.annotations),
+                labelAxisRear    = Some(I18N_UI.direction_badge.cardinal_rear),
+                labelAxisUp      = Some(I18N_UI.direction_badge.cardinal_up),
+                labelAxisRight   = Some(I18N_UI.direction_badge.cardinal_right)
               ),
               DisplayType.FullShape,
               None
