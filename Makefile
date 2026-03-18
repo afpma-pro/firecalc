@@ -237,7 +237,7 @@ dev-env-test:
 ## STAGING - UI
 ## ================================
 
-staging-web-ui-build:
+staging-web-ui-build: build-viz build-graph
 	@echo "Building UI for staging environment..."
 	$(call generate_ui_version,staging)
 	@cd modules/ui && npm run build:staging
@@ -296,7 +296,7 @@ staging-env-test:
 ## PRODUCTION - UI
 ## ================================
 
-prod-web-ui-build:
+prod-web-ui-build: build-viz build-graph
 	@echo "Building UI for production..."
 	$(call generate_ui_version,)
 	@cd modules/ui && npm run build:production
