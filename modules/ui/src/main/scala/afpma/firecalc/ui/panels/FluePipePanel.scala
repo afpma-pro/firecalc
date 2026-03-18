@@ -14,7 +14,11 @@ import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
 
+import cats.data.Validated
+
+import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.i18n.implicits.given
+import afpma.firecalc.ui.utils.flatMapVNelE
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
@@ -62,6 +66,10 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     val channel_pipe_vnel4_signal = results_en15544_strict_sig.map: strict =>
         strict.andThen(_.primary.validateVelocitiesInFluePipe())
 
+    val channel_pipe_vnel5_signal: Signal[VNelMcalcErr[Unit]] =
+        results_en15544_strict_sig.flatMapVNelE: strict =>
+            strict.primary.validateCitedConstraints()
+
     lazy val vnel_signal =
         fluepipe_vnel_signal
             .combineWith(channel_pipe_vnel2_signal)
@@ -73,6 +81,10 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     .andThen(_ => v3)
                     .andThen(_ => v4)
                     .andThen(_ => v1)
+            )
+            .combineWith(channel_pipe_vnel5_signal)
+            .map((vBase, v5) =>
+                vBase.andThen(_ => v5).andThen(_ => vBase)
             )
 
     lazy val elems_v = fluepipe_incrdescr_var
@@ -88,6 +100,30 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val channel_pipe_quadrions_sig = makeQuadrionSubtotalForSingle(results_en15544_outputs)(_.flue)
 
     override lazy val quadrionSubtotal_sig = channel_pipe_quadrions_sig
+
+    private lazy val lzSummary_sig: Signal[Option[String]] =
+        results_en15544_channel_pipe
+            .combineWith(results_en15544_strict_sig)
+            .map: (vnelPipe, vnelStrict) =>
+                for
+                    pipe   <- vnelPipe.toOption
+                    strict <- vnelStrict.toOption
+                yield
+                    val lzStr = f"${pipe.lengthSum.value}%.2f m"
+                    strict.L_Z_min match
+                        case Validated.Valid(lzMin) =>
+                            val lzMinStr = f"${lzMin.unwrap.value}%.2f m"
+                            I18N.panels.channel_pipe_length_with_min(lzStr, lzMinStr)
+                        case Validated.Invalid(_) =>
+                            I18N.panels.channel_pipe_length(lzStr)
+
+    override protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
+        statusIcon.combineWith(lzSummary_sig).map: (icon, lzOpt) =>
+            Some(span(
+                cls := "flex flex-row gap-x-2",
+                icon,
+                lzOpt.map(s => p(s)).getOrElse(emptyNode)
+            ))
 
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal.map: elems =>

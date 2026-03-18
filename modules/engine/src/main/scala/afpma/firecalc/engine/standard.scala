@@ -289,9 +289,10 @@ object standard {
     sealed trait FluePipeError extends EN15544_Error with HasSectionTypError
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
-        case err: FlueGasVelocityError         => err.show
-        case err: FluePipeInvalidGeometryRatio => err.show
-        case err: FluePipeErrorCustom          => err.reason
+        case err: FlueGasVelocityError          => err.show
+        case err: FluePipeInvalidGeometryRatio  => err.show
+        case err: FluePipeErrorCustom           => err.reason
+        case err: FluePipeLengthBelowMinimum    => err.show
 
     case class FlueGasVelocityError(
         sectionId  : Int,
@@ -326,6 +327,20 @@ object standard {
                 I18N.errors.term_should_be_between_inclusive(term, r.show, rmin.show, rmax.show)
 
     class FluePipeErrorCustom(val sectionTyp: PipeType, val reason: Locale ?=> String) extends FluePipeError
+
+    case class FluePipeLengthBelowMinimum(
+        actualLength : Length,
+        minimumLength: Length
+    ) extends FluePipeError:
+        override val sectionTyp: PipeType = FluePipeT
+
+    object FluePipeLengthBelowMinimum:
+        given ShowUsingLocale[FluePipeLengthBelowMinimum] = showUsingLocale: err =>
+            given Show[Length] = shows.defaults.show_Meters
+            I18N.en15544_errors.flue_pipe_length_below_minimum(
+                err.actualLength.show,
+                err.minimumLength.show
+            )
 
     case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType)
         extends EN15544_Error

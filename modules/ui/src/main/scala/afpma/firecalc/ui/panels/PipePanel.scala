@@ -294,12 +294,15 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     protected lazy val panelOpened: Var[Boolean] = panelOpenedVar(vizFieldsetIdPrefix)
 
+    protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
+        statusIcon.map(n => Some(div(n)))
+
     override def renderContent: HtmlElement =
         DaisyUIVerticalAccordionAndJoin.Element    (
             idx     = 0,
             title   = Title.WithQuadrionSubtotal(
                 titleString,
-                xtra_sig             = statusIcon.map(n => Some(div(n))),
+                xtra_sig             = titleXtraSig,
                 quadrionSubtotal_sig = quadrionSubtotal_sig,
                 bottomContent_sig    = expertModeOn
                     .combineWith(panelOpened.signal)

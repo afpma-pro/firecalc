@@ -697,7 +697,9 @@ object I18nData:
         channel_pipe                              : String,
         geographical_location_and_external_factors: String,
         output_and_other_parameters               : String,
-        total                                     : String
+        total                                     : String,
+        channel_pipe_length_with_min              : StringFormat2,
+        channel_pipe_length                       : StringFormat1
     )
 
     case class PipeShape(
@@ -1008,6 +1010,7 @@ object I18nData:
         two_successive_direction_change_not_allowed     : StringFormat2,
         two_successive_straight_section_not_allowed     : StringFormat2,
         holes_should_not_happen                         : StringFormat1,
+        flue_pipe_length_below_minimum                  : StringFormat2,
     )
 
     case class TestReportI18n(

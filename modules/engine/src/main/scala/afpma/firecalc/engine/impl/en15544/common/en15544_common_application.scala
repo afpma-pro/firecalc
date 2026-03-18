@@ -438,8 +438,17 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     case None               =>
                         ().validNel // no min defined, so we're good
 
+        private def validateLzMinConstraint(): VNelMcalcErr[Unit] =
+            flue_PipeResult.andThen: pr =>
+                L_Z_min match
+                    case Validated.Valid(lzMin) =>
+                        if pr.lengthSum.value >= lzMin.unwrap.value then ().validNel
+                        else FluePipeLengthBelowMinimum(pr.lengthSum, lzMin.unwrap).invalidNel
+                    case Validated.Invalid(_) => ().validNel // can't check if L_Z_min computation failed
+
         def validateCitedConstraints(): VNelMcalcErr[Unit] =
-            citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
+            val base = citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
+            base.andThen(_ => validateLzMinConstraint())
 
         def validateFireboxSpecificConstraints(): ValidatedNel[FireboxError, Unit] =
             val fbCtx = FireboxConstraintContext(
