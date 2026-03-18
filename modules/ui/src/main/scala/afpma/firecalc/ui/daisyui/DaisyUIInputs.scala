@@ -228,10 +228,10 @@ object DaisyUIInputs:
         labelAndInputSeq: Seq[FieldsetLabelAndInput[?]] = Seq()
     ) extends Component:
         val node = fieldSet(
-            cls := "fieldset w-sm bg-base-200 border border-base-300 p-4 rounded-box",
+            cls := "fieldset w-sm bg-base-200 border border-base-300 py-2 px-4 rounded-box",
             legendOpt.map(t => legend(cls := "fieldset-legend", t)), // show title if defined
             div          (
-                cls := "flex flex-col gap-4 items-start",
+                cls := "flex flex-col gap-3 items-start",
                 labelAndInputSeq.map(n => div(cls := "flex-auto", n))
             )
         )
@@ -243,7 +243,7 @@ object DaisyUIInputs:
         borderClass: String
     ) extends Component:
         val node = fieldSet(
-            cls := s"fieldset w-full $bgClass border $borderClass p-4 rounded-box",
+            cls := s"fieldset w-full $bgClass border $borderClass py-2 px-4 rounded-box",
             legendOpt.map(l => legend(cls := "fieldset-legend", l)), // show title if defined
             content
         )

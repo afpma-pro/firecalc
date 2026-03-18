@@ -23,7 +23,9 @@ import io.taig.babel.Locale
 case class TagTreeMenuComponent[A](
     ttm             : TagTreeMenu[A],
     appendBus       : Observer[CollectionCommand[(Int, A)]],
-    incrDescrSizeVar: Var[Int]
+    incrDescrSizeVar: Var[Int],
+    externalOpenBus : EventStream[Unit] = EventStream.empty,
+    onDone          : () => Unit = () => ()
 )                                 (using Locale)
     extends Component:
     import TagTreeMenuComponent.*
@@ -53,6 +55,7 @@ case class TagTreeMenuComponent[A](
                 val onSelect: Observer[A] = Observer { selectedElem =>
                     val size = incrDescrSizeVar.now()
                     appendBus.onNext(CollectionCommand.Append((size, selectedElem)))
+                    onDone()
                     treeStateVar.set(TreeState.initWith(ttm))
                 }
                 List((m, m.modalContent(onSelect)))
@@ -81,7 +84,10 @@ case class TagTreeMenuComponent[A](
         cls := "btn btn-error btn-sm",
         lucide.`circle-x`,
         I18N_UI.buttons.cancel,
-        onClick.mapTo(TreeState.initWith(resetTo)) --> treeStateVar.writer
+        onClick --> { _ =>
+            treeStateVar.set(TreeState.initWith(resetTo))
+            onDone()
+        }
     )
 
     private def renderSep = span(lucide.`chevron-right`)
@@ -122,6 +128,7 @@ case class TagTreeMenuComponent[A](
                                 appendBus.onNext:
                                     val size = incrDescrSizeVar.now()
                                     CollectionCommand.Append((size, l.elem))
+                                onDone()
                                 TreeState.initWith(resetTo)
 
                             case sc: TagTreeMenu.Shortcut[A] =>
@@ -132,6 +139,7 @@ case class TagTreeMenuComponent[A](
                                         CollectionCommand.Append((currentSize, elem.asInstanceOf[A]))
                                     currentSize += 1
                                 }
+                                onDone()
                                 TreeState.initWith(resetTo)
 
                             case _: TagTreeMenu.Modal[A] =>
@@ -197,6 +205,9 @@ case class TagTreeMenuComponent[A](
         // Render main content with modals as siblings at the top level
         div(
             cls := "pt-2",
+            externalOpenBus --> Observer[Unit] { _ =>
+                treeStateVar.set(TreeState.initWith(ttm).copy(choicesOpened = true))
+            },
             renderWhenClosed.amend                   (display <-- displayWhenClosed          ),
             renderWhenSelectionPending(resetTo).amend(display <-- displayWhenSelectionPending),
             // Render all modals at the top level to avoid stacking context issues

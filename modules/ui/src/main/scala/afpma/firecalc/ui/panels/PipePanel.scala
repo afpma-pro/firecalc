@@ -36,6 +36,7 @@ import afpma.firecalc.ui.models.panelOpenedVar
 import afpma.firecalc.ui.models.VizElementId
 
 import org.scalajs.dom
+import org.scalajs.dom.HTMLDialogElement
 import scala.scalajs.js
 
 import cats.Show
@@ -371,6 +372,86 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         )
     )
 
+    // -------------------------------------------------------------------------
+    // Insert-between-rows: dialog + separator rows
+    // -------------------------------------------------------------------------
+
+    private class InsertElementDialog:
+        private val insertIdxVar: Var[Option[Int]] = Var(None)
+        private val openMenuBus: EventBus[Unit]    = new EventBus[Unit]
+
+        private val insertObserver: Observer[CollectionCommand[(Int, Elem)]] = Observer { cmd =>
+            insertIdxVar.now() match
+                case Some(atIdx) =>
+                    cmd match
+                        case CollectionCommand.Append(item) =>
+                            command_bus.emit(CollectionCommand.Insert(item, atIndex = atIdx))
+                            insertIdxVar.update(_.map(_ + 1))
+                        case other =>
+                            command_bus.emit(other)
+                case None =>
+                    command_bus.emit(cmd)
+        }
+
+        private lazy val innerMenu = TagTreeMenuComponent(
+            tagTreeMenu,
+            insertObserver,
+            elems_size_v,
+            externalOpenBus = openMenuBus.events,
+            onDone          = () => close()
+        )
+
+        def open(atIndex: Int): Unit =
+            insertIdxVar.set(Some(atIndex))
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
+            openMenuBus.emit(())
+
+        private def close(): Unit =
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
+            insertIdxVar.set(None)
+
+        private lazy val dialogNode: HtmlElement = dialogTag(
+            cls := "modal",
+            div(
+                cls := "modal-box w-11/12 max-w-5xl",
+                innerMenu.node
+            ),
+            form(
+                method := "dialog",
+                cls    := "modal-backdrop",
+                button("close")
+            )
+        )
+
+        lazy val node: HtmlElement = dialogNode
+    end InsertElementDialog
+
+    private lazy val insertDialog = new InsertElementDialog
+
+    protected def mkInsertSeparatorRow(idx: Int): HtmlElement =
+        tr(
+            cls := "insert-sep group/isep",
+            td(
+                colSpan := 100,
+                cls := "!p-0 !border-none",
+                div(
+                    cls := "h-0 flex items-center justify-start ml-[5rem] top-[5rem]",
+                    button(
+                        cls := "btn btn-ghost btn-xs btn-circle opacity-20 group-hover/isep:opacity-100 group-hover/isep:btn-secondary transition-all duration-150",
+                        lucide.plus,
+                        onClick --> { _ => insertDialog.open(idx) }
+                    )
+                )
+            )
+        )
+
+    protected def interleaveInsertSeparators(rows: Seq[HtmlElement]): Seq[HtmlElement] =
+        if rows.isEmpty then rows
+        else
+            rows.head +: rows.tail.zipWithIndex.flatMap { case (row, i) =>
+                mkInsertSeparatorRow(i + 1) :: row :: Nil
+            }
+
     lazy val content = div(
         cls := "py-4 gap-2",
         div(
@@ -381,11 +462,12 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 table(
                     cls := "table table-fixed table-xs table-pin-cols",
 
-                    // table rows
-                    children <-- rendered_elems_sig
+                    // table rows with insert separators between them
+                    children <-- rendered_elems_sig.map(interleaveInsertSeparators)
                 )
             ),
-            div(cls := "flex-none", TagTreeMenuComponent(tagTreeMenu, command_bus.writer, elems_size_v).node)
+            div(cls := "flex-none", TagTreeMenuComponent(tagTreeMenu, command_bus.writer, elems_size_v).node),
+            insertDialog.node
             // debug
             // div(cls := "flex-none",
             //     children <-- welems_var.signal.map(_.map(x => p(x.toString)))
