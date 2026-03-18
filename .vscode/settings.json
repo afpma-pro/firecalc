@@ -76,6 +76,8 @@
             "**/.jvmopts.ci",
             "**/Dockerfile",
             "**/*.json",
+            "**/*.fcalc",
+            "**/*.fcalc.base64",
             "**/*.fcalc-db"
         ]
     },
