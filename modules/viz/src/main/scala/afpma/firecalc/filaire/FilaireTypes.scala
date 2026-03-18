@@ -208,6 +208,7 @@ object FilaireTypes:
       shape: CrossSection,
       shapeOrientation: ShapeOrientation = ShapeOrientation.default,
       name: Option[String] = None,
+      displayName: Option[String] = None,
       onClick: Option[FireCalcFilaireLine => Unit] = None
   )
 

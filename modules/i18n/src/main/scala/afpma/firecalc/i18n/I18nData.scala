@@ -689,6 +689,7 @@ object I18nData:
 
     case class Panels(
         air_intake                                : String,
+        air_distribution                          : String,
         chimney_pipe                              : String,
         client_project                            : String,
         firebox                                   : String,

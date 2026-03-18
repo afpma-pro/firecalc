@@ -7,6 +7,7 @@ package afpma.firecalc.ui.viz
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.filaire.*
 import afpma.firecalc.filaire.FilaireTypes.*
@@ -93,13 +94,22 @@ final case class Viz3DPanel()(using Locale) extends Component:
           vizHoveredElement.set(None)
           val fbWidthCm = firebox.firebox_width.value * M_TO_CM
           val fbDepthCm = firebox.firebox_depth.value * M_TO_CM
+          val displayNames = VizConverter.PipeDisplayNames(
+            flue            = I18N.panels.channel_pipe,
+            connector       = I18N.panels.connector_pipe,
+            chimney         = I18N.panels.chimney_pipe,
+            airIntake       = I18N.panels.air_intake,
+            firebox         = I18N.panels.firebox,
+            airDistribution = I18N.panels.air_distribution
+          )
           val fireboxLine = VizConverter.fireboxToLine(
             fbWidthCm,
             fbDepthCm,
-            firebox.firebox_height.value * M_TO_CM
+            firebox.firebox_height.value * M_TO_CM,
+            displayName = Some(displayNames.firebox)
           )
-          val airDistribLine = VizConverter.airDistribToLine(fbWidthCm, fbDepthCm)
-          val groups = VizConverter.allPipesToGroups(flue, connector, chimney, airIntake, fireboxLine, airDistribLine)
+          val airDistribLine = VizConverter.airDistribToLine(fbWidthCm, fbDepthCm, displayName = Some(displayNames.airDistribution))
+          val groups = VizConverter.allPipesToGroups(flue, connector, chimney, airIntake, fireboxLine, airDistribLine, Some(displayNames))
           if groups.forall(_.lines.isEmpty) then
             div(
               cls := "flex items-center justify-center h-full text-base-content/40",

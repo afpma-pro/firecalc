@@ -78,6 +78,7 @@ trait PipeDataJS extends js.Object:
   var shapeOrientation: js.UndefOr[Double]
   var lineIndex: Int
   var name: js.UndefOr[String]
+  var displayName: js.UndefOr[String]
 
 object PipeDataJS:
   def apply(
@@ -88,7 +89,8 @@ object PipeDataJS:
     shape: PipeShapeJS,
     shapeOrientation: js.UndefOr[Double],
     lineIndex: Int,
-    name: js.UndefOr[String]
+    name: js.UndefOr[String],
+    displayName: js.UndefOr[String] = js.undefined
   ): PipeDataJS =
     js.Dynamic.literal(
       origin = origin,
@@ -98,7 +100,8 @@ object PipeDataJS:
       shape = shape,
       shapeOrientation = shapeOrientation,
       lineIndex = lineIndex,
-      name = name
+      name = name,
+      displayName = displayName
     ).asInstanceOf[PipeDataJS]
 
 /** A group of spatially-connected pipes (miter joints only within the group) */

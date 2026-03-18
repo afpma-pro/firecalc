@@ -126,6 +126,10 @@ object FilaireLinesViz:
                     case Some(n) => n
                     case None => js.undefined
 
+                val displayNameJs: js.UndefOr[String] = line.displayName match
+                    case Some(n) => n
+                    case None => js.undefined
+
                 pipesArr.push(PipeDataJS(
                   origin = originJs,
                   direction = directionJs,
@@ -134,7 +138,8 @@ object FilaireLinesViz:
                   shape = shapeJs,
                   shapeOrientation = line.shapeOrientation.degrees,
                   lineIndex = lineIndex,
-                  name = nameJs
+                  name = nameJs,
+                  displayName = displayNameJs
                 ))
                 lineIndex += 1
             }

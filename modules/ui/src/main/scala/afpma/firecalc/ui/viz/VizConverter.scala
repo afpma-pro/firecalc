@@ -25,18 +25,19 @@ object VizConverter:
   def vec3ToVector(v: Vec3): Vector =
     Vector(v.x, v.y, v.z)
 
-  def segmentToLine(seg: PipeSegmentPosition, color: LineColor, pipeName: String): FireCalcFilaireLine =
+  def segmentToLine(seg: PipeSegmentPosition, color: LineColor, pipeName: String, displayPipeName: Option[String] = None): FireCalcFilaireLine =
     FireCalcFilaireLine(
-      origin    = vec3ToOrigin(seg.startPoint),
-      direction = vec3ToVector(seg.direction),
-      length    = Length(seg.length * M_TO_CM),
-      color     = color,
-      shape     = seg.innerShape.map(shapeToCS).getOrElse(CrossSection.Circle(Cm(15.0))),
-      name      = Some(s"$pipeName #${seg.elementIndex}")
+      origin      = vec3ToOrigin(seg.startPoint),
+      direction   = vec3ToVector(seg.direction),
+      length      = Length(seg.length * M_TO_CM),
+      color       = color,
+      shape       = seg.innerShape.map(shapeToCS).getOrElse(CrossSection.Circle(Cm(15.0))),
+      name        = Some(s"$pipeName #${seg.elementIndex}"),
+      displayName = displayPipeName.map(dn => s"$dn #${seg.elementIndex}")
     )
 
-  def pipeToLines(result: PipePositionResult, color: LineColor, pipeName: String): List[FireCalcFilaireLine] =
-    result.segments.toList.map(segmentToLine(_, color, pipeName))
+  def pipeToLines(result: PipePositionResult, color: LineColor, pipeName: String, displayPipeName: Option[String] = None): List[FireCalcFilaireLine] =
+    result.segments.toList.map(segmentToLine(_, color, pipeName, displayPipeName))
 
   val FlueColor      : LineColor = LineColor.Orange
   val ConnectorColor : LineColor = LineColor.OrangeYellow
@@ -50,14 +51,15 @@ object VizConverter:
     * @param depthCm  firebox depth in cm (Front-Rear axis)
     * @param heightCm firebox height in cm (Down-Up axis)
     */
-  def fireboxToLine(widthCm: Double, depthCm: Double, heightCm: Double): FireCalcFilaireLine =
+  def fireboxToLine(widthCm: Double, depthCm: Double, heightCm: Double, displayName: Option[String] = None): FireCalcFilaireLine =
     FireCalcFilaireLine(
-      origin    = Origin(0.0, 0.0, 0.0),
-      direction = Vector(0.0, 0.0, 1.0),
-      length    = Length(heightCm),
-      color     = FireboxColor,
-      shape     = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
-      name      = Some("Firebox")
+      origin      = Origin(0.0, 0.0, 0.0),
+      direction   = Vector(0.0, 0.0, 1.0),
+      length      = Length(heightCm),
+      color       = FireboxColor,
+      shape       = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
+      name        = Some("Firebox"),
+      displayName = displayName
     )
 
   /** Build a single FireCalcFilaireLine representing the air distribution box.
@@ -65,16 +67,26 @@ object VizConverter:
     * @param widthCm  firebox width in cm (Left-Right axis)
     * @param depthCm  firebox depth in cm (Front-Rear axis)
     */
-  def airDistribToLine(widthCm: Double, depthCm: Double): FireCalcFilaireLine =
+  def airDistribToLine(widthCm: Double, depthCm: Double, displayName: Option[String] = None): FireCalcFilaireLine =
     val heightCm = 20.0
     FireCalcFilaireLine(
-      origin    = Origin(0.0, 0.0, -heightCm),
-      direction = Vector(0.0, 0.0, 1.0),
-      length    = Length(heightCm),
-      color     = AirDistribColor,
-      shape     = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
-      name      = Some("Air Distribution")
+      origin      = Origin(0.0, 0.0, -heightCm),
+      direction   = Vector(0.0, 0.0, 1.0),
+      length      = Length(heightCm),
+      color       = AirDistribColor,
+      shape       = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
+      name        = Some("Air Distribution"),
+      displayName = displayName
     )
+
+  case class PipeDisplayNames(
+      flue          : String,
+      connector     : String,
+      chimney       : String,
+      airIntake     : String,
+      firebox       : String,
+      airDistribution: String
+  )
 
   def allPipesToGroups(
       flue          : PipePositionResult,
@@ -82,19 +94,20 @@ object VizConverter:
       chimney       : PipePositionResult,
       airIntake     : PipePositionResult,
       fireboxLine   : FireCalcFilaireLine,
-      airDistribLine: FireCalcFilaireLine
+      airDistribLine: FireCalcFilaireLine,
+      displayNames  : Option[PipeDisplayNames] = None
   ): FireCalcFilaireGroups =
     List(
       FireCalcFilaireGroup(List(airDistribLine), Some("Air Distribution")),
       FireCalcFilaireGroup(List(fireboxLine), Some("Firebox")),
       FireCalcFilaireGroup(
-        pipeToLines(flue, FlueColor, "Flue") ++
-        pipeToLines(connector, ConnectorColor, "Connector") ++
-        pipeToLines(chimney, ChimneyColor, "Chimney"),
+        pipeToLines(flue, FlueColor, "Flue", displayNames.map(_.flue)) ++
+        pipeToLines(connector, ConnectorColor, "Connector", displayNames.map(_.connector)) ++
+        pipeToLines(chimney, ChimneyColor, "Chimney", displayNames.map(_.chimney)),
         Some("Exhaust")
       ),
       FireCalcFilaireGroup(
-        pipeToLines(airIntake, AirIntakeColor, "Air Intake"),
+        pipeToLines(airIntake, AirIntakeColor, "Air Intake", displayNames.map(_.airIntake)),
         Some("Air Intake")
       )
     )

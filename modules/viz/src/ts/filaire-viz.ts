@@ -37,6 +37,7 @@ export interface PipeData {
   shapeOrientation?: number // degrees, default 0
   lineIndex: number
   name?: string
+  displayName?: string
 }
 
 export interface PipeGroup {
@@ -1240,7 +1241,7 @@ export function initFilaireViz(
         mid.add(bestAxis.clone().multiplyScalar(nameOffset))
 
         const label = document.createElement('div')
-        label.textContent = pipe.name
+        label.textContent = pipe.displayName ?? pipe.name
         label.style.position = 'absolute'
         label.style.pointerEvents = 'auto'
         label.style.userSelect = 'none'
