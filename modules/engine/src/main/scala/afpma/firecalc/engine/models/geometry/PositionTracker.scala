@@ -284,7 +284,7 @@ object PositionTracker:
                     ))
                 case SetInnerShape(shape) =>
                     currentInnerShape = Some(shape)
-                case SetPropertiesInBatch(_, props) =>
+                case SetPropertiesInBatch(_, props, _) =>
                     props.collectFirst { case SetInnerShape(shape) => shape }
                         .foreach(shape => currentInnerShape = Some(shape))
                 case LinedFlue(_, liner, _, _) =>

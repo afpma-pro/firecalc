@@ -98,6 +98,7 @@ door_15a_fireboxes:
       value: "0.05"
       unit: "meter"
     heat_output_reduced: "NotDefined"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg=="
 
 single_tested_fireboxes:
   - reference: "SingleTested_Example"
@@ -188,6 +189,7 @@ single_tested_fireboxes:
           o2ref:
             value: "13.0"
             unit: "percent"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg=="
 
 pipe_presets:
   - batch_name: "POUJOULAT 200mm DPI"
@@ -213,6 +215,7 @@ pipe_presets:
                 thermal_resistance:
                   value: "0.44"
                   unit: "(meter^2 Kelvin)/watt"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
 casing_presets:
   - batch_name: "Boisseau terre cuite 20x20"
@@ -235,6 +238,7 @@ casing_presets:
                 thermal_resistance:
                   value: "0.12"
                   unit: "(meter^2 Kelvin)/watt"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
 
 flow_resistance_presets:
   - name: "Wire mesh screen"
@@ -245,6 +249,7 @@ flow_resistance_presets:
       type: option_of_either
       none_or_left_or_right: none
       value: null
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk4P9fDwAEGgJ/lLqmJQAAAABJRU5ErkJggg=="
   - name: "Butterfly damper (open)"
     zeta:
       value: "0.25"

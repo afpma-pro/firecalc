@@ -5,8 +5,11 @@
 
 package afpma.firecalc.ui.components
 
+import afpma.firecalc.catalog.{CatalogCategory, CatalogCategoryInstances}
+import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import afpma.firecalc.dto.all.FlowResistanceCatalogEntry
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.services.CatalogImageStore
 
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
@@ -20,11 +23,21 @@ case class FlowResistanceCatalogSelectComponent(
     onSelect     : Observer[FlowResistanceCatalogEntry]
 )(using Locale, DisplayUnits) extends Component:
 
+    private val cat = summon[CatalogCategory[FlowResistanceCatalogEntry]]
+
     private val dialog = CatalogSelectDialog(
         entriesSignal = entriesSignal,
         entryKey      = _.name,
         onSelect      = onSelect,
-        datalistId    = "flow-resistance-catalog-datalist"
+        datalistId    = "flow-resistance-catalog-datalist",
+        previewContent = Some(selectedSig =>
+            CatalogSearchWidget.imagePreview(
+                selectedSig.combineWith(CatalogImageStore.imagesVar.signal).map {
+                    case (Some(entry), imgs) => imgs.get(s"${cat.yamlKey}:${cat.uniqueKey(entry)}")
+                    case _                   => None
+                }
+            )
+        )
     )
 
     def open(): Unit      = dialog.open()

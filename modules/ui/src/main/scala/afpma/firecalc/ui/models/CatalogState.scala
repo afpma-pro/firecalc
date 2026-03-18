@@ -5,7 +5,7 @@
 
 package afpma.firecalc.ui.models
 
-import afpma.firecalc.catalog.{CasingPreset, CatalogCategoryInstances, CatalogFile}
+import afpma.firecalc.catalog.{CasingPreset, CatalogCategory, CatalogCategoryInstances, CatalogFile}
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.instances.CommonInstances.given
 import afpma.firecalc.dto.instances.V4Instances.given
@@ -47,6 +47,28 @@ object CatalogState:
             flow_resistance_presets = current.flow_resistance_presets ++ newFlowResistances,
         )
 
+    /** Extract validated images from a CatalogFile. Returns (validImages map: imageKey -> dataURI, warning messages).
+      * Image key format: "{yamlKey}:{uniqueKey}".
+      */
+    def extractImages(file: CatalogFile): (Map[String, String], List[String]) =
+        import CatalogCategoryInstances.given
+
+        def extract[A](getImage: A => Option[String])(using cat: CatalogCategory[A]): Seq[(String, String)] =
+            file.entriesFor[A].flatMap { entry =>
+                getImage(entry).map { uri =>
+                    s"${cat.yamlKey}:${cat.uniqueKey(entry)}" -> uri
+                }
+            }
+
+        val allImages: Seq[(String, String)] =
+            extract[Firebox.Door15aFirebox_Catalog](_.image) ++
+            extract[Firebox.SingleTested](_.image) ++
+            extract[SetThermalPipeProp_13384.SetPropertiesInBatch](_.image) ++
+            extract[CasingPreset](cp => cp.unwrap.image) ++
+            extract[FlowResistanceCatalogEntry](_.image)
+
+        CatalogImageValidator.validateBatch(allImages)
+
 /** JSON codecs for CatalogState persistence in localStorage */
 object CatalogStateCodec:
     // Needed for semiauto.deriveDecoder/Encoder to resolve QtyD[U] codec instances.
@@ -54,14 +76,26 @@ object CatalogStateCodec:
     import afpma.firecalc.units.all.given
 
     // Direct case-class codecs (not sealed-trait discriminated)
+    // Strip image field to keep localStorage under 5 MiB limit
     private given Decoder[Firebox.Door15aFirebox_Catalog] = semiauto.deriveDecoder
-    private given Encoder[Firebox.Door15aFirebox_Catalog] = semiauto.deriveEncoder
+    private given Encoder[Firebox.Door15aFirebox_Catalog] =
+        semiauto.deriveEncoder[Firebox.Door15aFirebox_Catalog]
+            .mapJson(_.mapObject(_.remove("image")))
 
     private given Decoder[Firebox.SingleTested] = semiauto.deriveDecoder
-    private given Encoder[Firebox.SingleTested] = semiauto.deriveEncoder
+    private given Encoder[Firebox.SingleTested] =
+        semiauto.deriveEncoder[Firebox.SingleTested]
+            .mapJson(_.mapObject(_.remove("image")))
 
     private given Decoder[FlowResistanceCatalogEntry] = semiauto.deriveDecoder
-    private given Encoder[FlowResistanceCatalogEntry] = semiauto.deriveEncoder
+    private given Encoder[FlowResistanceCatalogEntry] =
+        semiauto.deriveEncoder[FlowResistanceCatalogEntry]
+            .mapJson(_.mapObject(_.remove("image")))
+
+    private given Decoder[SetThermalPipeProp_13384.SetPropertiesInBatch] = semiauto.deriveDecoder
+    private given Encoder[SetThermalPipeProp_13384.SetPropertiesInBatch] =
+        semiauto.deriveEncoder[SetThermalPipeProp_13384.SetPropertiesInBatch]
+            .mapJson(_.mapObject(_.remove("image")))
 
     given Decoder[CatalogState] = Decoder.instance { c =>
         for

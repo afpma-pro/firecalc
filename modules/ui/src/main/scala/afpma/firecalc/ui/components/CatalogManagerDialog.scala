@@ -11,7 +11,7 @@ import afpma.firecalc.payments.shared.Constants.FIRECALC_CATALOG_FILE_EXTENSION
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.{CatalogState, catalogStateVar}
-import afpma.firecalc.ui.services.FileSystemService
+import afpma.firecalc.ui.services.{CatalogImageStore, FileSystemService}
 import afpma.firecalc.utils.BuildInfo
 
 import com.raquo.laminar.api.L.*
@@ -60,6 +60,13 @@ case class CatalogManagerDialog()(using Locale) extends Component:
                     case Right(catalogFile) =>
                         val merged = CatalogState.merge(catalogStateVar.now(), catalogFile)
                         catalogStateVar.set(merged)
+                        val (images, warnings) = CatalogState.extractImages(catalogFile)
+                        if images.nonEmpty then
+                            CatalogImageStore.putAll(images).recover { case e =>
+                                dom.console.warn(s"Failed to store catalog images: ${e.getMessage}")
+                            }
+                        if warnings.nonEmpty then
+                            dom.console.warn(s"Catalog image warnings: ${warnings.mkString(", ")}")
                         errorMessageVar.set(None)
 
     private lazy val fileInput: Input = input(
@@ -147,6 +154,7 @@ case class CatalogManagerDialog()(using Locale) extends Component:
                     I18N_UI.catalog.clear_all_button,
                     onClick --> { _ =>
                         catalogStateVar.set(CatalogState.empty)
+                        CatalogImageStore.clear()
                         errorMessageVar.set(None)
                     }
                 ),

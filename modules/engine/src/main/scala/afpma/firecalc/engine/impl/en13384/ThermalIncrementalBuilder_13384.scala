@@ -294,7 +294,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     ))
                 case _: SetInitialPosition => vState
                 case _: SetFinalPosition   => vState
-                case SetPropertiesInBatch(_, _) =>
+                case SetPropertiesInBatch(_, _, _) =>
                     throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
                 case _: LinedFlue =>
                     throw new Exception("DEV ERROR: LinedFlue should not be a possible case here.")
@@ -302,7 +302,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep.allSetPropsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (_, atom)) =>
                 atom match
-                    case SetPropertiesInBatch(batch_name, props) =>
+                    case SetPropertiesInBatch(batch_name, props, _) =>
                         props.foldLeft(vState)(updateVNelState(_)(_))
                     case lf: LinedFlue =>
                         expandLinedFlue(vState, lf, updateVNelState)

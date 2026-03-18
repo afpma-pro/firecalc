@@ -13,12 +13,15 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.i18n.implicits.given
 
+import afpma.firecalc.catalog.{CasingPreset, CatalogCategory, CatalogCategoryInstances}
+import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.models.casingPresetsSignal
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
+import afpma.firecalc.ui.services.CatalogImageStore
 import afpma.firecalc.ui.i18n.implicits.given
 
 import coulomb.policy.standard.given
@@ -32,6 +35,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     type In = ThermalPipeDescr_13384
 
     import hastranslations.given
+
+    private val pipeCat    = summon[CatalogCategory[SetPropertiesInBatch]]
+    private val casingCat  = summon[CatalogCategory[CasingPreset]]
 
     private given thermalHorizontalForm_13384: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
     import thermalHorizontalForm_13384.given
@@ -592,7 +598,23 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     LinedFlueCatalogSelectComponent(
                         pipePresetsSignal   = pipePresetsSignal,
                         casingPresetsSignal = casingPresetsSignal,
-                        onSelect            = onSelect.contramap[LinedFlue](identity)
+                        onSelect            = onSelect.contramap[LinedFlue](identity),
+                        linerPreviewContent = Some(sel =>
+                            CatalogSearchWidget.imagePreview(
+                                sel.combineWith(CatalogImageStore.imagesVar.signal).map {
+                                    case (Some(e), imgs) => imgs.get(s"${pipeCat.yamlKey}:${pipeCat.uniqueKey(e)}")
+                                    case _               => None
+                                }
+                            )
+                        ),
+                        casingPreviewContent = Some(sel =>
+                            CatalogSearchWidget.imagePreview(
+                                sel.combineWith(CatalogImageStore.imagesVar.signal).map {
+                                    case (Some(e), imgs) => imgs.get(s"${casingCat.yamlKey}:${e.batch_name}")
+                                    case _               => None
+                                }
+                            )
+                        )
                     ).node
             ),
             TagTreeMenu.Modal[ThermalPipeDescr_13384](

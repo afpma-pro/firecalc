@@ -9,7 +9,6 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.*
 
 import com.raquo.airstream.core.Signal
-import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
@@ -17,6 +16,8 @@ import org.scalajs.dom.HTMLDialogElement
 import afpma.firecalc.dto.common.DisplayUnits
 
 /** Generic modal dialog for selecting an entry from a catalog via datalist search.
+  *
+  * Delegates search-and-select logic to an embedded [[CatalogSearchWidget]].
   *
   * @tparam A
   *   The catalog entry type
@@ -39,52 +40,15 @@ case class CatalogSelectDialog[A](
     previewContent: Option[Signal[Option[A]] => HtmlElement] = None
 )(using Locale, DisplayUnits) extends Component:
 
-    private val searchQueryVar  : Var[Option[String]] = Var(None)
-    private val selectedEntryVar: Var[Option[A]]      = Var(None)
+    private val widget = CatalogSearchWidget(entriesSignal, entryKey, datalistId, previewContent)
 
-    private val hasMatchSignal: Signal[Boolean] = selectedEntryVar.signal.map(_.isDefined)
+    private val hasMatchSignal: Signal[Boolean] = widget.hasMatchSignal
 
     def open(): Unit =
-        searchQueryVar.set(None)
-        selectedEntryVar.set(None)
+        widget.reset()
         dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
 
     private def close(): Unit = dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
-
-    private val listAttr: HtmlAttr[String] =
-        htmlAttr("list", com.raquo.laminar.codecs.StringAsIsCodec)
-
-    private lazy val searchInputOrMessage: HtmlElement =
-        div(
-            child <-- entriesSignal.map(_.isEmpty).map {
-                case true =>
-                    p(
-                        cls := "text-sm text-warning",
-                        I18N_UI.catalog.no_catalog_loaded
-                    )
-                case false =>
-                    span(
-                        label(
-                            cls := "input input-md",
-                            input(
-                                cls         := "field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
-                                tpe         := "text",
-                                placeholder := I18N_UI.placeholders.search,
-                                listAttr    := datalistId,
-                                value <-- searchQueryVar.signal.map(_.getOrElse("")),
-                                onInput.mapToValue
-                                    .map(s => if s.isEmpty() then None else Some(s)) --> searchQueryVar.writer,
-                                onFocus --> Observer[org.scalajs.dom.FocusEvent](_ => searchQueryVar.set(None)),
-                                onClick --> Observer[org.scalajs.dom.MouseEvent](_ => searchQueryVar.set(None))
-                            )
-                        ),
-                        dataList(
-                            idAttr   := datalistId,
-                            children <-- entriesSignal.map(_.map(e => option(value := entryKey(e))))
-                        )
-                    )
-            }
-        )
 
     private lazy val dialogNode: HtmlElement = dialogTag(
         cls := "modal",
@@ -94,14 +58,7 @@ case class CatalogSelectDialog[A](
                 cls := "font-bold text-lg mb-4",
                 I18N_UI.catalog._self
             ),
-            searchInputOrMessage,
-            // Update selected entry when the search query changes
-            searchQueryVar.signal.combineWith(entriesSignal) --> Observer[(Option[String], Seq[A])] {
-                case (None | Some(""), _)   => selectedEntryVar.set(None)
-                case (Some(query), entries) =>
-                    selectedEntryVar.set(entries.find(e => entryKey(e) == query))
-            },
-            previewContent.fold[Modifier[HtmlElement]](emptyNode)(fn => fn(selectedEntryVar.signal)),
+            widget.node,
             div(
                 cls := "modal-action",
                 button(
@@ -109,7 +66,7 @@ case class CatalogSelectDialog[A](
                     disabled <-- hasMatchSignal.map(!_),
                     I18N_UI.buttons.import_catalog,
                     onClick --> { _ =>
-                        selectedEntryVar.now().foreach { entry =>
+                        widget.selectedEntryVar.now().foreach { entry =>
                             onSelect.onNext(entry)
                             close()
                         }

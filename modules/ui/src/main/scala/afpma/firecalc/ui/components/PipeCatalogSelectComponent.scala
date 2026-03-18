@@ -5,12 +5,15 @@
 
 package afpma.firecalc.ui.components
 
+import afpma.firecalc.catalog.{CatalogCategory, CatalogCategoryInstances}
+import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.{SetPropertiesInBatch, SetSingleProp}
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
 import afpma.firecalc.ui.formgen.{FormConfig, ValidateVar}
 import afpma.firecalc.ui.instances.ThermalHorizontalForm_13384
 import afpma.firecalc.ui.instances.ValidateVarCommonInstances
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.services.CatalogImageStore
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
@@ -28,6 +31,8 @@ case class PipeCatalogSelectComponent(
     entriesSignal: Signal[Seq[SetPropertiesInBatch]],
     onSelect     : Observer[SetPropertiesInBatch]
 )(using Locale, DisplayUnits) extends Component:
+
+    private val cat = summon[CatalogCategory[SetPropertiesInBatch]]
 
     private lazy val thermalForm: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
 
@@ -62,7 +67,17 @@ case class PipeCatalogSelectComponent(
         entryKey       = _.batch_name,
         onSelect       = onSelect,
         datalistId     = "pipe-catalog-datalist",
-        previewContent = Some(renderPreview)
+        previewContent = Some(selectedSig =>
+            div(
+                CatalogSearchWidget.imagePreview(
+                    selectedSig.combineWith(CatalogImageStore.imagesVar.signal).map {
+                        case (Some(entry), imgs) => imgs.get(s"${cat.yamlKey}:${cat.uniqueKey(entry)}")
+                        case _                   => None
+                    }
+                ),
+                renderPreview(selectedSig)
+            )
+        )
     )
 
     def open(): Unit      = dialog.open()

@@ -24,7 +24,8 @@ object SetThermalPipeProp_13384_V3:
     // TODO: add Transl annotations
     case class SetPropertiesInBatch(
         batch_name: String,
-        props: Seq[SetSingleProp]
+        props: Seq[SetSingleProp],
+        image: Option[String] = None
     ) extends SetThermalPipeProp_13384_V3
 
     @Transl(I(_.set_prop.LinedFlue))

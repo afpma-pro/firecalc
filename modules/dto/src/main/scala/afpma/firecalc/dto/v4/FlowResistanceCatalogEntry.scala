@@ -14,5 +14,6 @@ import afpma.firecalc.dto.all.*
 case class FlowResistanceCatalogEntry(
     name         : String,
     zeta         : QtyD[1],
-    cross_section: OptionOfEither[AreaInCm2, PipeShape] = NoneOfEither
+    cross_section: OptionOfEither[AreaInCm2, PipeShape] = NoneOfEither,
+    image        : Option[String] = None
 )

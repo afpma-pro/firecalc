@@ -198,7 +198,8 @@ object Firebox_V3:
         @Transl(I(_.firebox.single_tested.pellets_load_burn_duration))
         pellets_load_burn_duration            : Option[QtyD[Minute]],
         @Transl(I(_.emissions_and_efficiency_values._self))
-        emissions_values                      : EmissionsAndEfficiencyValues_DTO
+        emissions_values                      : EmissionsAndEfficiencyValues_DTO,
+        image                                 : Option[String] = None,
     ) extends Firebox_V3
 
     @Transl(I(_.firebox_names.door_15a_firebox))
@@ -241,4 +242,5 @@ object Firebox_V3:
         height_of_lowest_opening              : Length,
         @Transl(I(_.firebox.tested.heat_output_reduced))
         heat_output_reduced                   : HeatOutputReduced = HeatOutputReduced.NotDefined,
+        image                                 : Option[String] = None,
     ) extends Firebox_V3

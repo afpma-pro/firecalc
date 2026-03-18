@@ -9,7 +9,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.ui.components.GlobalErrorDialog
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
-import afpma.firecalc.ui.services.VersionService
+import afpma.firecalc.ui.services.{CatalogImageStore, VersionService}
 import afpma.firecalc.ui.views.*
 
 import com.raquo.laminar.api.L.*
@@ -132,6 +132,9 @@ object Frontend {
         com.raquo.airstream.core.Transaction.maxDepth = 1000
 
         waitForLoad {
+            // Fire-and-forget: populate imagesVar from IndexedDB for catalog picker dialogs
+            CatalogImageStore.loadAll()
+
             val appContainer = dom.document.querySelector("#app")
             appContainer.innerHTML = ""
             unmount()
