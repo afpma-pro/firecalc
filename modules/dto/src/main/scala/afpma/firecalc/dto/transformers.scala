@@ -165,7 +165,7 @@ object transformers:
     // V3 to V4 Migration: ThermalPipeDescr_13384_V2 → V3
     // Explicit transformer because:
     // - AddSectionSlopped drops elevation_gain (V2 has 3 fields, V3 has 2)
-    // - AddDirectionChange subtypes get finalDir = None (new in V3)
+    // - AddDirectionChange subtypes get absDir = None (new in V3)
     // - AirSpaceDetailed_V1 → V2 conversion needed
     // - New V3 coproduct variants (SetInitialDirection, LinedFlue, SetPropertiesInBatch)
     //   can't appear in V2 data.
@@ -207,7 +207,7 @@ object transformers:
 
     // V3 to V4 Migration: FlowOnlyPipeDescr_13384_V2 → V3
     // - AddSectionSlopped drops elevation_gain (V2 has 3 fields, V3 has 2)
-    // - AddDirectionChange subtypes get finalDir = None (new in V3)
+    // - AddDirectionChange subtypes get absDir = None (new in V3)
     // - SetInitialDirection never present in V2 data.
 
     given flowOnly13384V2ToV3: Transformer[v3.FlowOnlyPipeDescr_13384_V2, v4.FlowOnlyPipeDescr_13384_V3] =
@@ -240,7 +240,7 @@ object transformers:
 
     // V3 to V4 Migration: FlowOnlyPipeDescr_15544_V2 → V3
     // - AddSectionSlopped drops elevation_gain (V2 has 3 fields, V3 has 2)
-    // - AddDirectionChange subtypes get finalDir = None (new in V3)
+    // - AddDirectionChange subtypes get absDir = None (new in V3)
     // - SetInitialDirection never present in V2 data.
 
     given flowOnly15544V2ToV3: Transformer[v3.FlowOnlyPipeDescr_15544_V2, v4.FlowOnlyPipeDescr_15544_V3] =

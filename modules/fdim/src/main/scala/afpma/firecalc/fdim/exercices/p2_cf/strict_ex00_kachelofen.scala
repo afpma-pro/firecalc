@@ -8,7 +8,7 @@ package afpma.firecalc.fdim.exercices.p2_cf
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
@@ -68,32 +68,32 @@ object strict_ex00_kachelofen
             innerShape(rectangle(25.1.cm, 23.cm)),
             addSectionHorizontal("sortie foyer", 32.cm),
 
-            addSharpAngle_90deg("virage avant descente", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
+            addSharpAngle_90deg("virage avant descente", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
 
             innerShape(rectangle(25.1.cm, 22.cm)),
             addSectionVertical("descente", -81.cm),
 
-            addSharpAngle_90deg("virage avant avant banc", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+            addSharpAngle_90deg("virage avant avant banc", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
 
             innerShape(rectangle(22.cm, 24.cm)),
             addSectionHorizontal("avant banc", 1.79.meters),
 
-            addSharpAngle_90deg("virage avant bout du banc", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)),  // Rear
+            addSharpAngle_90deg("virage avant bout du banc", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)),  // Rear
 
             innerShape(rectangle(20.cm, 24.cm)),
             addSectionHorizontal("bout du banc", 44.cm),
 
-            addSharpAngle_90deg("virage avant arrière banc", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+            addSharpAngle_90deg("virage avant arrière banc", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
 
             innerShape(rectangle(19.cm, 24.cm)),
             addSectionHorizontal("arrière banc", 2.07.meters),
 
-            addSharpAngle_90deg("virage avant vers remontée", FinalDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front
+            addSharpAngle_90deg("virage avant vers remontée", AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front
 
             innerShape(rectangle(21.cm, 24.cm)),
             addSectionHorizontal("vers remontée", 44.cm),
 
-            addSharpAngle_90deg("virage avant remontée", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSharpAngle_90deg("virage avant remontée", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             innerShape(rectangle(21.cm, 22.cm)),
             addSectionVertical("remontée", 98.cm),

@@ -5,7 +5,7 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.dto.all.{AzimuthDirection, FinalDirection, InclinationDirection}
+import afpma.firecalc.dto.all.{AzimuthDirection, AbsoluteDirection, InclinationDirection}
 import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.Component
@@ -31,20 +31,20 @@ import org.scalajs.dom
  * Includes a tooltip on hover with azimuth/elevation details and a convention
  * explanation line based on the frame direction.
  *
- * When `finalDirVar` is provided, the badge is editable: a chevron is shown
+ * When `absDirVar` is provided, the badge is editable: a chevron is shown
  * and clicking opens a dropdown listing reachable cardinal directions.
  *
- * @param finalDirection    The computed direction after the element
+ * @param absDirection    The computed direction after the element
  * @param previousDirection Direction before the element; None for straight sections (read-only)
  * @param frameBefore       PipeFrame before the element (for reachable cardinals and tooltip convention)
- * @param finalDirVar       When provided, enables click-to-set; bidirectional binding to FinalDirection
+ * @param absDirVar       When provided, enables click-to-set; bidirectional binding to AbsoluteDirection
  * @param deflectionAngle   Deflection angle in degrees for computing reachable directions
  */
 case class DirectionBadgeComponent(
-    finalDirection  : Signal[Option[Vec3]],
+    absDirection  : Signal[Option[Vec3]],
     previousDirection: Signal[Option[Vec3]],
     frameBefore     : Signal[Option[PipeFrame]],
-    finalDirVar     : Option[Var[Option[FinalDirection]]],
+    absDirVar     : Option[Var[Option[AbsoluteDirection]]],
     deflectionAngle : Signal[Option[Double]] = Signal.fromValue(None),
     compact         : Boolean = false
 )(using Locale) extends Component:
@@ -53,15 +53,15 @@ case class DirectionBadgeComponent(
     private val summary = htmlTag("summary")
 
     /** True when fd is geometrically reachable from frame at the given deflection (tolerance 1°). */
-    private def isReachable(fd: FinalDirection, frame: PipeFrame, deflDeg: Double): Boolean =
-        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+    private def isReachable(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): Boolean =
+        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
         val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
         frame.rollAngleForOutputDirection(targetVec, deflDeg).isDefined
 
-    /** Signal: whether the current finalDir is reachable from frameBefore at the bend deflection.
+    /** Signal: whether the current absDir is reachable from frameBefore at the bend deflection.
       * None when context (frame or deflection) is not yet available. */
     private lazy val isCompatibleSig: Signal[Option[Boolean]] =
-        finalDirVar match
+        absDirVar match
             case None => Signal.fromValue(None)
             case Some(fdVar) =>
                 fdVar.signal
@@ -114,21 +114,21 @@ case class DirectionBadgeComponent(
         val s = dir.toDisplayString
         if s.startsWith("az:") then toArrowString(dir) else translateDisplayString(s)
 
-    /** Convert a Vec3 direction to a FinalDirection by snapping to named enum cases. */
-    private def vec3ToFinalDirection(v: Vec3): FinalDirection =
+    /** Convert a Vec3 direction to a AbsoluteDirection by snapping to named enum cases. */
+    private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
         val (az, el) = v.toAzimuthElevation
         val incl = InclinationDirection.fromDegrees(el)
         incl match
             case InclinationDirection.Up | InclinationDirection.Down =>
-                new FinalDirection(None, incl)
+                new AbsoluteDirection(None, incl)
             case _ =>
-                FinalDirection(AzimuthDirection.fromDegrees(az), incl)
+                AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
 
     private def tooltipContent: HtmlElement =
         val i18n = I18N_UI.direction_badge
         div(
             cls := "text-xs",
-            child <-- finalDirection.combineWith(isCompatibleSig).map:
+            child <-- absDirection.combineWith(isCompatibleSig).map:
                 case (None, _) => emptyNode
                 case (Some(dir), compat) =>
                     val (az, el)   = dir.toAzimuthElevation
@@ -156,13 +156,13 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label),
+                span(cls := "text-xs opacity-60", I18N_UI.direction_badge.abs_dir_label),
                 badgeText(dir)
             )
         else
             div(
                 cls := "flex flex-col",
-                label(cls := "fieldset-label", I18N_UI.direction_badge.final_dir_label),
+                label(cls := "fieldset-label", I18N_UI.direction_badge.abs_dir_label),
                 span(
                     cls <-- isCompatibleSig.map:
                         case Some(false) => "select select-xs pointer-events-none text-warning"
@@ -174,9 +174,9 @@ case class DirectionBadgeComponent(
     /**
      * Editable badge with DaisyUI details/summary dropdown.
      * The dropdown lists reachable cardinal directions from frameBefore.
-     * Selecting an item writes to finalDirVar and closes the dropdown.
+     * Selecting an item writes to absDirVar and closes the dropdown.
      */
-    private def editableBadge(dir: Vec3, fdVar: Var[Option[FinalDirection]]): HtmlElement =
+    private def editableBadge(dir: Vec3, fdVar: Var[Option[AbsoluteDirection]]): HtmlElement =
         val dropdown = details(
             cls := "dropdown",
             summary(
@@ -191,7 +191,7 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                when(compact)(span(cls := "text-xs opacity-60", I18N_UI.direction_badge.final_dir_label)),
+                when(compact)(span(cls := "text-xs opacity-60", I18N_UI.direction_badge.abs_dir_label)),
                 badgeText(dir)
             ),
             child <-- frameBefore.combineWith(deflectionAngle).map:
@@ -201,7 +201,7 @@ case class DirectionBadgeComponent(
                     ul(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
                         presets.map: (cardinalVec, _) =>
-                            val fd = vec3ToFinalDirection(cardinalVec)
+                            val fd = vec3ToAbsoluteDirection(cardinalVec)
                             val lbl = translateCardinal(cardinalVec.toDisplayString)
                             li(
                                 a(
@@ -223,16 +223,16 @@ case class DirectionBadgeComponent(
         else
             div(
                 cls := "flex flex-col",
-                label(cls := "fieldset-label", I18N_UI.direction_badge.final_dir_label),
+                label(cls := "fieldset-label", I18N_UI.direction_badge.abs_dir_label),
                 dropdown
             )
 
     lazy val node: HtmlElement =
         span(
-            child <-- finalDirection.map:
+            child <-- absDirection.map:
                 case None      => emptyNode
                 case Some(dir) =>
-                    val badgeEl = finalDirVar match
+                    val badgeEl = absDirVar match
                         case None       => readOnlyBadge(dir)
                         case Some(fdVar) => editableBadge(dir, fdVar)
                     DaisyUITooltip(

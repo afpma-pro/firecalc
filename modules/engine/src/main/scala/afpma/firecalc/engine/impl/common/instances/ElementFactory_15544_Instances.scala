@@ -10,7 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.FinalDirection
+import afpma.firecalc.dto.v4.AbsoluteDirection
 
 import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
@@ -139,9 +139,9 @@ object ElementFactory_15544_Instances:
                 // The factory runs before updateStateAfterConversionStep, so currentFrame still holds
                 // the pre-bend frame. We must apply the current bend here to get the post-bend direction.
                 val computedAngleN2: Option[QtyD[Degree]] =
-                    (ctx.dirBeforePreviousDC, ctx.currentFrame, op.finalDir) match
+                    (ctx.dirBeforePreviousDC, ctx.currentFrame, op.absDir) match
                         case (Some(dirBefore), Some(frame), Some(fd)) =>
-                            val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                             val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                             val postBendFrame = frame.applyBendForFinalDir(
                                 op.angle.toUnit[Degree].value,

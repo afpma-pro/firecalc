@@ -7,7 +7,7 @@ package afpma.firecalc.engine.cas_types.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
 
 import afpma.firecalc.engine.api.v0_2024_10
@@ -82,22 +82,22 @@ object ExampleProject_15544
             roughness           (3.mm                        ),
             innerShape(rectangle(251.mm, 230.mm)),
             addSectionHorizontal("sortie foyer", 317.mm      ),
-            addSharpAngle_90deg ("virage avant descente"     , FinalDirection(AzimuthDirection.Left, InclinationDirection.Down)), // Down
+            addSharpAngle_90deg ("virage avant descente"     , AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Down)), // Down
             innerShape(rectangle(251.mm, 220.mm)),
             addSectionVertical  ("descente", -815.mm         ),
-            addSharpAngle_90deg ("virage avant banc avant"   , FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+            addSharpAngle_90deg ("virage avant banc avant"   , AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
             innerShape(rectangle(220.mm, 240.mm)),
             addSectionHorizontal("banc avant", 1792.mm       ),
-            addSharpAngle_90deg ("virage avant bout du banc" , FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
+            addSharpAngle_90deg ("virage avant bout du banc" , AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
             innerShape(rectangle(200.mm, 240.mm)),
             addSectionHorizontal("bout du banc", 437.mm      ),
-            addSharpAngle_90deg ("virage avant banc arrière" , FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+            addSharpAngle_90deg ("virage avant banc arrière" , AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
             innerShape(rectangle(190.mm, 240.mm)),
             addSectionHorizontal("arrière banc", 2073.mm     ),
-            addSharpAngle_90deg ("virage avant vers remontée", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
+            addSharpAngle_90deg ("virage avant vers remontée", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
             innerShape(rectangle(210.mm, 240.mm)),
             addSectionHorizontal("vers remontée", 437.mm     ),
-            addSharpAngle_90deg ("virage avant remontée"     , FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSharpAngle_90deg ("virage avant remontée"     , AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
             innerShape(rectangle(210.mm, 220.mm)),
             addSectionVertical  ("remontée", 980.mm          )
         )
@@ -112,9 +112,9 @@ object ExampleProject_15544
             layer                     (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
             pipeLocation              (PipeLocation.HeatedArea                                    ),
             addSectionVertical        ("conduit simple peau 1 ", 409.mm                           ),
-            addSharpAngle_30deg       ("coude angle vif 30°"          , FinalDirection(AzimuthDirection.Front, InclinationDirection.Custom(60.degrees))), // towards Front-Up at 60°
+            addSharpAngle_30deg       ("coude angle vif 30°"          , AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Custom(60.degrees))), // towards Front-Up at 60°
             addSectionSlopped         ("conduit simple peau 2", 707.mm                             ),
-            addSharpAngle_30deg_unsafe("coude angle vif 30°"          , FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
+            addSharpAngle_30deg_unsafe("coude angle vif 30°"          , AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
             addSectionVertical        ("conduit simple peau 2", 241.mm                            )
         )
 

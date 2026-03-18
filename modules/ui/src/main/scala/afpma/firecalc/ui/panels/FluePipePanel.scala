@@ -95,9 +95,9 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     case dc: AddDirectionChange =>
                         for
                             f  <- frame
-                            fd <- dc.finalDir
+                            fd <- dc.absDir
                         do
-                            val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                             val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                             frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                     case _ => ()
@@ -109,8 +109,8 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                 frameMap.get(idx).flatMap: frameBefore =>
                     elem match
                         case dc: AddDirectionChange =>
-                            dc.finalDir.map: fd =>
-                                val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                            dc.absDir.map: fd =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                                 val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                                 idx -> frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
                         case _: AddFlowOnlyPipeElement_15544 =>
@@ -134,23 +134,23 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
         previousDirectionByIdx.map(_.get(idx))
 
-    private def finalDirBadgeVar[A <: AddDirectionChange](
-        getter: A => Option[FinalDirection],
-        setter: (A, Option[FinalDirection]) => A
-    ): Var[A] => Option[Var[Option[FinalDirection]]] =
+    private def absDirBadgeVar[A <: AddDirectionChange](
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
+    ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
         ev => Some(ev.zoomLazy(getter)(setter))
 
     private def relativeDirectionExtra[A <: AddDirectionChange](
         idx   : Int,
-        getter: A => Option[FinalDirection],
-        setter: (A, Option[FinalDirection]) => A
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
     ): Var[A] => HtmlElement =
         ev =>
             val fdVar = ev.zoomLazy(getter)(setter)
             RelativeDirectionInput(
                 frameBefore     = frameBeforeSig_badge(idx),
                 deflectionAngle = deflectionAngleSig(idx),
-                finalDirVar     = fdVar
+                absDirVar     = fdVar
             ).node
 
     override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
@@ -262,8 +262,8 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     iix._2,
                     sig,
                     isProperty      = false,
-                    extra            = relativeDirectionExtra(iix._1, _.finalDir, (a, fd) => a.copy(finalDir = fd)),
-                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
+                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -277,8 +277,8 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     iix._2,
                     sig,
                     isProperty      = false,
-                    extra            = relativeDirectionExtra(iix._1, _.finalDir, (a, fd) => a.copy(finalDir = fd)),
-                    badgeFinalDirVar = finalDirBadgeVar(_.finalDir, (a, fd) => a.copy(finalDir = fd))
+                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[

@@ -10,7 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
 import afpma.firecalc.engine.models.*
@@ -43,7 +43,7 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                 "remontée dans chambre de détente",
                                 (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U) / 2.0
                             ),
-                            addSharpAngle_90deg ("virage vers colonnes d'air", FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+                            addSharpAngle_90deg ("virage vers colonnes d'air", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
                             innerShape(
                                 rectangle(
                                     a = arriveeAirGeometry.perimeterWetted,
@@ -54,7 +54,7 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                 "longueur jusqu'au milieu des colonnes d'air",
                                 (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + 7.1.cm
                             ),
-                            addSharpAngle_90deg ("virage au pied des colonnes d'air", FinalDirection(AzimuthDirection.Left, InclinationDirection.Up)), // Up
+                            addSharpAngle_90deg ("virage au pied des colonnes d'air", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)), // Up
                             roughness           (2.mm                                                          ),
                             innerShape(
                                 rectangle(
@@ -71,7 +71,7 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                 "remontée dans les colonnes d'air",
                                 h91_hauteurDuCendrier_AF + h92_epaisseurSole_S + h93_hauteurEmbaseDessousSoleFoyer_V - h95_hauteurPassageVersColonneAir_W / 2.0 + 13.5.cm
                             ),
-                            addSharpAngle_90deg ("virage avant canal horizontal injecteur", FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+                            addSharpAngle_90deg ("virage avant canal horizontal injecteur", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
                             roughness           (1.mm                                                          ),
                             innerShape(
                                 rectangle(

@@ -10,7 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.FinalDirection
+import afpma.firecalc.dto.all.AbsoluteDirection
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -147,17 +147,17 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         sig             : Signal[(Int, AA, XtraOutputs)],
         isProperty      : Boolean,
         extra           : Var[AA] => HtmlElement                              = (_: Var[AA]) => span(),
-        badgeFinalDirVar: Var[AA] => Option[Var[Option[FinalDirection]]] = (_: Var[AA]) => None
+        badgeFinalDirVar: Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode         = extra(elem_v)
         val xtra_sig          = sig.map(_._3)
 
         def mkBadge(compact: Boolean = false) = DirectionBadgeComponent(
-            finalDirection    = directionBadgeSig(i, xtra_sig),
+            absDirection    = directionBadgeSig(i, xtra_sig),
             previousDirection = previousDirectionSig_badge(i),
             frameBefore       = frameBeforeSig_badge(i),
-            finalDirVar       = badgeFinalDirVar(elem_v),
+            absDirVar       = badgeFinalDirVar(elem_v),
             deflectionAngle   = deflectionAngleSig(i),
             compact           = compact
         ).node

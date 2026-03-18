@@ -110,8 +110,8 @@ object AddFlowOnlyPipeElement_15544_V3:
         override val name : String,
         @Transl(I(_.terms.angle))
         val angle         : Angle,
-        @Transl(I(_.terms.final_direction))
-        val finalDir      : Option[FinalDirection] = None
+        @Transl(I(_.terms.absolute_direction))
+        val absDir      : Option[AbsoluteDirection] = None
     ) extends AddFlowOnlyPipeElement_15544_V3
 
     @Transl(I(_.add_element.AddSharpeAngle_0_to_180))
@@ -120,17 +120,17 @@ object AddFlowOnlyPipeElement_15544_V3:
         override val name    : String,
         @Transl(I(_.terms.angle))
         override val angle   : Angle,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, angle, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, angle, absDir)
 
     @Transl(I(_.add_element.AddCircularArc_60))
     case class AddCircularArc_60(
         @Transl(I(_.terms.name))
         override val name    : String,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, 60.degrees, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, 60.degrees, absDir)
 
     @Transl(I(_.add_element.AddSectionShapeChange))
     case class AddSectionShapeChange(

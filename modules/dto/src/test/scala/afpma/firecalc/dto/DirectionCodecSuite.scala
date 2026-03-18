@@ -8,7 +8,7 @@ package afpma.firecalc.dto
 import afpma.firecalc.dto.instances.CommonInstances.given
 import afpma.firecalc.dto.instances.V4Instances.given
 import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.FinalDirection
+import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.units.coulombutils.*
 
@@ -100,48 +100,48 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
         }
     }
 
-    // ── FinalDirection ─────────────────────────────────────────────────
+    // ── AbsoluteDirection ─────────────────────────────────────────────────
 
-    "FinalDirection" - {
+    "AbsoluteDirection" - {
 
         "round-trips with named directions" in {
-            val fd = FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)
-            roundTrip[FinalDirection](fd).shouldBe(fd)
+            val fd = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+            roundTrip[AbsoluteDirection](fd).shouldBe(fd)
         }
 
         "round-trips with custom directions" in {
-            val fd = FinalDirection(
+            val fd = AbsoluteDirection(
                 AzimuthDirection.Custom(123.0.degrees),
                 InclinationDirection.Custom(-15.0.degrees)
             )
-            roundTrip[FinalDirection](fd).shouldBe(fd)
+            roundTrip[AbsoluteDirection](fd).shouldBe(fd)
         }
 
         "round-trips with mixed named/custom" in {
-            val fd = FinalDirection(AzimuthDirection.FrontLeft, InclinationDirection.Custom(45.0.degrees))
-            roundTrip[FinalDirection](fd).shouldBe(fd)
+            val fd = AbsoluteDirection(AzimuthDirection.FrontLeft, InclinationDirection.Custom(45.0.degrees))
+            roundTrip[AbsoluteDirection](fd).shouldBe(fd)
         }
 
         "encodes azimuth and inclination as top-level fields" in {
-            val fd = FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
-            val json = Encoder[FinalDirection].apply(fd)
+            val fd = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+            val json = Encoder[AbsoluteDirection].apply(fd)
             json.hcursor.downField("azimuth").as[String].shouldBe(Right("Right"))
             json.hcursor.downField("inclination").as[String].shouldBe(Right("Horizontal"))
         }
     }
 
-    // ── Option[FinalDirection] ─────────────────────────────────────────
+    // ── Option[AbsoluteDirection] ─────────────────────────────────────────
 
-    "Option[FinalDirection]" - {
+    "Option[AbsoluteDirection]" - {
 
         "Some round-trips" in {
-            val opt: Option[FinalDirection] = Some(FinalDirection(AzimuthDirection.Left, InclinationDirection.Down))
-            roundTrip[Option[FinalDirection]](opt).shouldBe(opt)
+            val opt: Option[AbsoluteDirection] = Some(AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Down))
+            roundTrip[Option[AbsoluteDirection]](opt).shouldBe(opt)
         }
 
         "None round-trips" in {
-            val opt: Option[FinalDirection] = None
-            roundTrip[Option[FinalDirection]](opt).shouldBe(opt)
+            val opt: Option[AbsoluteDirection] = None
+            roundTrip[Option[AbsoluteDirection]](opt).shouldBe(opt)
         }
     }
 

@@ -7,7 +7,7 @@ package afpma.firecalc.dto
 
 import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_13384_V3.*
 import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.FinalDirection
+import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.units.coulombutils.*
 
@@ -20,7 +20,7 @@ import org.scalatest.matchers.should.Matchers
  */
 class DirectionProductElementSuite extends AnyFreeSpec with Matchers:
 
-    val fd = Some(FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up))
+    val fd = Some(AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up))
 
     "AddSharpeAngle_0_to_90 productElement order" in {
         val dc = AddSharpeAngle_0_to_90("test", 45.0.degrees, fd)
@@ -59,11 +59,11 @@ class DirectionProductElementSuite extends AnyFreeSpec with Matchers:
         val dc = AddSharpeAngle_0_to_90("test", 45.0.degrees, fd)
         // The angle field should be a Double (Angle = QtyD[Degree] = Double at runtime)
         dc.productElement(1).isInstanceOf[Double].shouldBe(true)
-        // The finalDir field should NOT be a Double
+        // The absDir field should NOT be a Double
         dc.productElement(2).isInstanceOf[Option[?]].shouldBe(true)
     }
 
-    "productElement with None finalDir" in {
+    "productElement with None absDir" in {
         val dc = AddSharpeAngle_0_to_90("test", 45.0.degrees, None)
         dc.productElement(0).shouldBe("test")
         dc.productElement(1).shouldBe(45.0.degrees)

@@ -8,7 +8,7 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
@@ -76,7 +76,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import AddFlowOnlyPipeElement_15544_V3.*
         val elems = Seq(
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),  // Rear direction
-            AddSharpeAngle_0_to_180("dc", 90.0.degrees, Some(FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))),
+            AddSharpeAngle_0_to_180("dc", 90.0.degrees, Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))),
             AddSectionHorizontal("h", 2.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))

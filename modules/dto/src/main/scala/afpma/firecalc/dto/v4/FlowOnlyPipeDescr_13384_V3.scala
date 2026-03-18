@@ -109,8 +109,8 @@ object AddFlowOnlyPipeElement_13384_V3:
         val name    : String,
         @Transl(I(_.terms.angle))
         val angle   : Angle,
-        @Transl(I(_.terms.final_direction))
-        val finalDir: Option[FinalDirection] = None
+        @Transl(I(_.terms.absolute_direction))
+        val absDir: Option[AbsoluteDirection] = None
     ) extends AddFlowOnlyPipeElement_13384_V3
 
     @Transl(I(_.add_element.AddAngleAdjustable))
@@ -121,9 +121,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val angle   : Angle,
         @Transl(I(_.terms.zeta_ζ))
         val zeta             : QtyD[1],
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, angle, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, angle, absDir)
 
     @Transl(I(_.add_element.AddSharpeAngle_0_to_90))
     case class AddSharpeAngle_0_to_90(
@@ -131,9 +131,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name    : String,
         @Transl(I(_.terms.angle))
         override val angle   : Angle,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, angle, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, angle, absDir)
 
     // __INTERPRETATION__
     @Transl(I(_.add_element.AddSharpeAngle_0_to_90_Unsafe))
@@ -142,9 +142,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name    : String,
         @Transl(I(_.terms.angle))
         override val angle   : Angle,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, angle, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, angle, absDir)
 
     @Transl(I(_.add_element.AddSmoothCurve_90))
     case class AddSmoothCurve_90(
@@ -152,9 +152,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name    : String,
         @Transl(I(_.terms.curvature_radius))
         curvature_radius     : Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, 90.degrees, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, 90.degrees, absDir)
 
     // __INTERPRETATION__
     @Transl(I(_.add_element.AddSmoothCurve_90_Unsafe))
@@ -163,9 +163,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name    : String,
         @Transl(I(_.terms.curvature_radius))
         curvature_radius     : Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, 90.degrees, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, 90.degrees, absDir)
 
     @Transl(I(_.add_element.AddSmoothCurve_60))
     case class AddSmoothCurve_60(
@@ -173,9 +173,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name    : String,
         @Transl(I(_.terms.curvature_radius))
         curvature_radius     : Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, 60.degrees, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, 60.degrees, absDir)
 
     // __INTERPRETATION__
     @Transl(I(_.add_element.AddSmoothCurve_60_Unsafe))
@@ -184,9 +184,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name    : String,
         @Transl(I(_.terms.curvature_radius))
         curvature_radius     : Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir: Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, 60.degrees, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir: Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, 60.degrees, absDir)
 
     // coudes à segments
     sealed abstract class CoudeASegment90(
@@ -196,9 +196,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         val number_of_segments: 2 | 3 | 4,
         @Transl(I(_.terms.curvature_radius))
         val curvature_radius  : Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir : Option[FinalDirection] = None
-    ) extends AddDirectionChange(name, 90.degrees, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir : Option[AbsoluteDirection] = None
+    ) extends AddDirectionChange(name, 90.degrees, absDir)
 
     @Transl(I(_.add_element.AddElbows_2x45))
     case class AddElbows_2x45(
@@ -206,9 +206,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name            : String,
         @Transl(I(_.terms.curvature_radius))
         override val curvature_radius: Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir        : Option[FinalDirection] = None
-    ) extends CoudeASegment90(name, 2, curvature_radius, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir        : Option[AbsoluteDirection] = None
+    ) extends CoudeASegment90(name, 2, curvature_radius, absDir)
 
     @Transl(I(_.add_element.AddElbows_3x30))
     case class AddElbows_3x30(
@@ -216,9 +216,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name            : String,
         @Transl(I(_.terms.curvature_radius))
         override val curvature_radius: Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir        : Option[FinalDirection] = None
-    ) extends CoudeASegment90(name, 3, curvature_radius, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir        : Option[AbsoluteDirection] = None
+    ) extends CoudeASegment90(name, 3, curvature_radius, absDir)
 
     @Transl(I(_.add_element.AddElbows_4x22p5))
     case class AddElbows_4x22p5(
@@ -226,9 +226,9 @@ object AddFlowOnlyPipeElement_13384_V3:
         override val name            : String,
         @Transl(I(_.terms.curvature_radius))
         override val curvature_radius: Length,
-        @Transl(I(_.terms.final_direction))
-        override val finalDir        : Option[FinalDirection] = None
-    ) extends CoudeASegment90(name, 4, curvature_radius, finalDir)
+        @Transl(I(_.terms.absolute_direction))
+        override val absDir        : Option[AbsoluteDirection] = None
+    ) extends CoudeASegment90(name, 4, curvature_radius, absDir)
 
     // TODO: rename to AddSectionShapeChange
     sealed abstract class AddSectionChange(

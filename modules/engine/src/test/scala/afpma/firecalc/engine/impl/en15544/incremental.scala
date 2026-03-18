@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.en15544
 import cats.data.Validated.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.units.coulombutils.*
 
@@ -81,7 +81,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 innerShape(square(a)),
                                 roughness(2.mm),
                                 addSectionHorizontal("first", 2.meters),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees, FinalDirection(AzimuthDirection.RearRight, InclinationDirection.Horizontal)), // towards Right-ish
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, AbsoluteDirection(AzimuthDirection.RearRight, InclinationDirection.Horizontal)), // towards Right-ish
                                 addSectionHorizontal("second", 1.meters)
                             )
     
@@ -142,9 +142,9 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 innerShape(circle(diam)),
                                 roughness(2.mm),
                                 addSectionHorizontal("straight-0", 50.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees, FinalDirection(AzimuthDirection.RearLeft, InclinationDirection.Horizontal)), // Towards RearLeft
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, AbsoluteDirection(AzimuthDirection.RearLeft, InclinationDirection.Horizontal)), // Towards RearLeft
                                 addSectionHorizontal("straight-1-short", 10.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees, FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Towards Left
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Towards Left
                                 addSectionHorizontal("straight-2", 50.cm),
                             )
 

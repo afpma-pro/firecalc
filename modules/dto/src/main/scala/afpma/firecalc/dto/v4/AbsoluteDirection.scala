@@ -84,21 +84,21 @@ object InclinationDirection:
  *
  * Azimuth is `None` for vertical directions (Up/Down) where it is physically meaningless.
  */
-case class FinalDirection(
+case class AbsoluteDirection(
     azimuth    : Option[AzimuthDirection],
     inclination: InclinationDirection
 )
 
-object FinalDirection:
+object AbsoluteDirection:
     /** Convenience constructor that normalizes vertical directions to azimuth=None. */
-    def apply(azimuth: AzimuthDirection, inclination: InclinationDirection): FinalDirection =
+    def apply(azimuth: AzimuthDirection, inclination: InclinationDirection): AbsoluteDirection =
         val az = inclination match
             case InclinationDirection.Up | InclinationDirection.Down => None
             case _ => Some(azimuth)
-        new FinalDirection(az, inclination)
+        new AbsoluteDirection(az, inclination)
 
     /** Convert to (azimuthDeg, elevationDeg) pair. Returns 0.0 azimuth when None. */
-    def toAzimuthElevationDeg(fd: FinalDirection): (Double, Double) =
+    def toAzimuthElevationDeg(fd: AbsoluteDirection): (Double, Double) =
         val azDeg = fd.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0)
         val elDeg = InclinationDirection.toDegrees(fd.inclination)
         (azDeg, elDeg)

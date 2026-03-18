@@ -8,7 +8,7 @@ package afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models.*
@@ -67,16 +67,16 @@ object strict_ex02_carneau_descendant
             innerShape(rectangle(16.1.cm, 15.3.cm)),
             addSectionHorizontal("sortie foyer", 28.6.cm),
 
-            addSharpAngle_90deg("virage avant descente", FinalDirection(AzimuthDirection.Right, InclinationDirection.Down)), // Down
+            addSharpAngle_90deg("virage avant descente", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)), // Down
 
             innerShape(rectangle(16.1.cm, 11.1.cm)),
             addSectionVertical("descente", -36.7.cm),
 
-            addSharpAngle_90deg("virage 90° avant colonne", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
+            addSharpAngle_90deg("virage 90° avant colonne", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
 
             addSectionHorizontal("vers colonne", 22.6.cm),
 
-            addSharpAngle_90deg("virage 90°", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSharpAngle_90deg("virage 90°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
             
             addSectionVertical("colonne", 4.134.m)
         )

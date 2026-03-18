@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.common.instances
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.FinalDirection
+import afpma.firecalc.dto.v4.AbsoluteDirection
 
 import afpma.firecalc.engine.impl.common.typeclasses.DirectionChangeDSL_15544
 
@@ -19,13 +19,13 @@ object DirectionChangeDSL_15544_Instances:
         def addSharpAngle_0_to_180deg(
             name    : String,
             angle   : QtyD[Degree],
-            finalDir: FinalDirection
+            absDir: AbsoluteDirection
         ) =
             AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
                 name,
                 angle,
-                Some(finalDir)
+                Some(absDir)
             )
 
-        def addCircularArc60(name: String, finalDir: FinalDirection) =
-            AddFlowOnlyPipeElement_15544.AddCircularArc_60(name, Some(finalDir))
+        def addCircularArc60(name: String, absDir: AbsoluteDirection) =
+            AddFlowOnlyPipeElement_15544.AddCircularArc_60(name, Some(absDir))

@@ -17,7 +17,7 @@ import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.Firebox_V3
-import afpma.firecalc.dto.v4.FinalDirection
+import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.TypeOfAppliance
 
@@ -128,9 +128,9 @@ object V4Instances:
             Json.obj("Custom" -> Encoder[Angle].apply(el))
     }
 
-    // FinalDirection: derive from the above AzimuthDirection/InclinationDirection codecs
-    given Decoder[FinalDirection] = semiauto.deriveDecoder[FinalDirection]
-    given Encoder[FinalDirection] = semiauto.deriveEncoder[FinalDirection]
+    // AbsoluteDirection: derive from the above AzimuthDirection/InclinationDirection codecs
+    given Decoder[AbsoluteDirection] = semiauto.deriveDecoder[AbsoluteDirection]
+    given Encoder[AbsoluteDirection] = semiauto.deriveEncoder[AbsoluteDirection]
 
     // ThermalPipeDescr_13384_V3
     // NOTE: sealed trait codecs must come AFTER all leaf-type codecs they depend on

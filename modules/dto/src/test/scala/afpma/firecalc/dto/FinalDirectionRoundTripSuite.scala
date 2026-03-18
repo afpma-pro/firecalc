@@ -23,14 +23,14 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 /**
- * Regression test for FinalDirection YAML roundtrip through the full V4 pipeline.
+ * Regression test for AbsoluteDirection YAML roundtrip through the full V4 pipeline.
  *
  * Motivated by commit 5e9d375 where codec ordering in V4Instances.scala caused
- * a ClassCastException. This suite ensures FinalDirection (including all
+ * a ClassCastException. This suite ensures AbsoluteDirection (including all
  * AzimuthDirection and InclinationDirection variants) survives encode/decode
  * through FireCalcYAML_V4.
  */
-class FinalDirectionRoundTripSuite
+class AbsoluteDirectionRoundTripSuite
     extends AnyFreeSpec
     with Matchers
     with ScalaCheckPropertyChecks:
@@ -94,11 +94,11 @@ class FinalDirectionRoundTripSuite
         }
         decoded.get
 
-    // ── Full V4 pipeline roundtrip with FinalDirection on pipe elements ─
+    // ── Full V4 pipeline roundtrip with AbsoluteDirection on pipe elements ─
 
-    "Full V4 pipeline roundtrip with FinalDirection values" - {
+    "Full V4 pipeline roundtrip with AbsoluteDirection values" - {
 
-        "roundtrips a pipe with SetInitialDirection and direction changes with named FinalDirection" in {
+        "roundtrips a pipe with SetInitialDirection and direction changes with named AbsoluteDirection" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
                 SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
                 SetInnerShape(PipeShape.Circle(15.cm)),
@@ -107,12 +107,12 @@ class FinalDirectionRoundTripSuite
                 AddSectionVertical("vertical-1", 100.cm),
                 AddSharpeAngle_0_to_90(
                     "bend-1", 90.degrees,
-                    finalDir = Some(FinalDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))
+                    absDir = Some(AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))
                 ),
                 AddSectionHorizontal("horizontal-1", 50.cm),
                 AddSmoothCurve_90(
                     "curve-1", 15.cm,
-                    finalDir = Some(FinalDirection(AzimuthDirection.Right, InclinationDirection.Up))
+                    absDir = Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up))
                 )
             )
 
@@ -121,7 +121,7 @@ class FinalDirectionRoundTripSuite
             decoded.shouldBe(original)
         }
 
-        "roundtrips a pipe with custom angle FinalDirection" in {
+        "roundtrips a pipe with custom angle AbsoluteDirection" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
                 SetInitialDirection(
                     AzimuthDirection.Custom(42.5.degrees),
@@ -133,7 +133,7 @@ class FinalDirectionRoundTripSuite
                 AddSectionSlopped("slopped-1", 80.cm),
                 AddAngleAdjustable(
                     "adj-bend-1", 45.degrees, 0.5.withUnit[1],
-                    finalDir = Some(FinalDirection(
+                    absDir = Some(AbsoluteDirection(
                         AzimuthDirection.Custom(123.0.degrees),
                         InclinationDirection.Custom(-15.0.degrees)
                     ))
@@ -145,7 +145,7 @@ class FinalDirectionRoundTripSuite
             decoded.shouldBe(original)
         }
 
-        "roundtrips a pipe with mixed named and custom FinalDirection variants" in {
+        "roundtrips a pipe with mixed named and custom AbsoluteDirection variants" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
                 SetInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal),
                 SetInnerShape(PipeShape.Rectangle(20.cm, 15.cm)),
@@ -154,12 +154,12 @@ class FinalDirectionRoundTripSuite
                 AddSectionHorizontal("horiz-1", 100.cm),
                 AddSharpeAngle_0_to_90(
                     "bend-named", 90.degrees,
-                    finalDir = Some(FinalDirection(AzimuthDirection.FrontLeft, InclinationDirection.Custom(45.0.degrees)))
+                    absDir = Some(AbsoluteDirection(AzimuthDirection.FrontLeft, InclinationDirection.Custom(45.0.degrees)))
                 ),
                 AddSectionSlopped("slopped-1", 60.cm),
                 AddSmoothCurve_60(
                     "curve-custom", 20.cm,
-                    finalDir = Some(FinalDirection(AzimuthDirection.Custom(200.0.degrees), InclinationDirection.Down))
+                    absDir = Some(AbsoluteDirection(AzimuthDirection.Custom(200.0.degrees), InclinationDirection.Down))
                 )
             )
 
@@ -168,7 +168,7 @@ class FinalDirectionRoundTripSuite
             decoded.shouldBe(original)
         }
 
-        "roundtrips direction changes with finalDir = None" in {
+        "roundtrips direction changes with absDir = None" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
                 SetInnerShape(PipeShape.Circle(15.cm)),
                 SetRoughness(3.mm),
@@ -205,7 +205,7 @@ class FinalDirectionRoundTripSuite
                     AddSectionVertical("vert", 100.cm),
                     AddSharpeAngle_0_to_90(
                         s"bend-$label", 90.degrees,
-                        finalDir = Some(FinalDirection(azDir, InclinationDirection.Horizontal))
+                        absDir = Some(AbsoluteDirection(azDir, InclinationDirection.Horizontal))
                     )
                 )
 
@@ -235,7 +235,7 @@ class FinalDirectionRoundTripSuite
                     AddSectionHorizontal("horiz", 100.cm),
                     AddSmoothCurve_90(
                         s"curve-$label", 15.cm,
-                        finalDir = Some(FinalDirection(AzimuthDirection.Rear, inclDir))
+                        absDir = Some(AbsoluteDirection(AzimuthDirection.Rear, inclDir))
                     )
                 )
 
@@ -248,7 +248,7 @@ class FinalDirectionRoundTripSuite
 
     // ── Property-based test using existing generators ───────────────────
 
-    "Property-based V4 roundtrip (with FinalDirection from generators)" - {
+    "Property-based V4 roundtrip (with AbsoluteDirection from generators)" - {
 
         "random V4 instances roundtrip through YAML" in forAll(
             AllGenerators.genFireCalcYAML_V4
@@ -268,4 +268,4 @@ class FinalDirectionRoundTripSuite
         }
     }
 
-end FinalDirectionRoundTripSuite
+end AbsoluteDirectionRoundTripSuite

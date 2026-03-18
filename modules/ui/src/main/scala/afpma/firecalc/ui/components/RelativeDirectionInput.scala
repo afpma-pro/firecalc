@@ -5,7 +5,7 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.dto.all.{AzimuthDirection, FinalDirection, InclinationDirection}
+import afpma.firecalc.dto.all.{AzimuthDirection, AbsoluteDirection, InclinationDirection}
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipeFrame.RelativeSide
 import afpma.firecalc.engine.models.geometry.Vec3
@@ -23,17 +23,17 @@ import io.taig.babel.Locale
  * Relative direction input for direction-change elements.
  *
  * Shows a quadrant dropdown (Right/Up/Left/Down) and a theta rotation input (0° to 90°).
- * Bidirectionally synced with `finalDirVar` using `.distinct.changes.debounce`
+ * Bidirectionally synced with `absDirVar` using `.distinct.changes.debounce`
  * to prevent transaction depth overflow.
  *
  * @param frameBefore     PipeFrame before the direction-change element
  * @param deflectionAngle Deflection angle in degrees
- * @param finalDirVar     Bidirectional binding to the element's FinalDirection
+ * @param absDirVar     Bidirectional binding to the element's AbsoluteDirection
  */
 case class RelativeDirectionInput(
     frameBefore    : Signal[Option[PipeFrame]],
     deflectionAngle: Signal[Option[Double]],
-    finalDirVar    : Var[Option[FinalDirection]]
+    absDirVar    : Var[Option[AbsoluteDirection]]
 )(using Locale) extends Component:
 
     // Internal state: quadrant side and theta in degrees [0, 90]
@@ -53,20 +53,20 @@ case class RelativeDirectionInput(
             case RelativeSide.Up    => i18n.relative_up
             case RelativeSide.Down  => i18n.relative_down
 
-    private def vec3ToFinalDirection(v: Vec3): FinalDirection =
+    private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
         val (az, el) = v.toAzimuthElevation
         val incl = InclinationDirection.fromDegrees(el)
         incl match
             case InclinationDirection.Up | InclinationDirection.Down =>
-                new FinalDirection(None, incl)
+                new AbsoluteDirection(None, incl)
             case _ =>
-                FinalDirection(AzimuthDirection.fromDegrees(az), incl)
+                AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
 
-    private def computeFinalDir(side: RelativeSide, theta: Double, frame: PipeFrame, deflDeg: Double): Option[FinalDirection] =
-        Some(vec3ToFinalDirection(frame.relativeTarget(side, theta, deflDeg)))
+    private def computeFinalDir(side: RelativeSide, theta: Double, frame: PipeFrame, deflDeg: Double): Option[AbsoluteDirection] =
+        Some(vec3ToAbsoluteDirection(frame.relativeTarget(side, theta, deflDeg)))
 
-    private def recoverSideTheta(fd: FinalDirection, frame: PipeFrame, deflDeg: Double): (RelativeSide, Double) =
-        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+    private def recoverSideTheta(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): (RelativeSide, Double) =
+        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
         val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
         frame.recoverRelative(targetVec, deflDeg)
 
@@ -74,19 +74,19 @@ case class RelativeDirectionInput(
         math.max(0.0, math.min(90.0, v))
 
     /** True when fd is geometrically reachable from frame at the given deflection angle (tolerance 1°). */
-    private def isReachable(fd: FinalDirection, frame: PipeFrame, deflDeg: Double): Boolean =
-        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+    private def isReachable(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): Boolean =
+        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
         val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
         frame.rollAngleForOutputDirection(targetVec, deflDeg).isDefined
 
-    /** Compare FinalDirections by Vec3 geometry, not enum representation.
+    /** Compare AbsoluteDirections by Vec3 geometry, not enum representation.
       * Prevents lossy write-backs where e.g. (Left, Up) and (Rear, Up)
       * produce the same Vec3(0,0,1) but differ as enums. */
-    private def fdGeometryEqual(a: Option[FinalDirection], b: Option[FinalDirection]): Boolean =
+    private def fdGeometryEqual(a: Option[AbsoluteDirection], b: Option[AbsoluteDirection]): Boolean =
         (a, b) match
             case (Some(fa), Some(fb)) =>
-                val (azA, elA) = FinalDirection.toAzimuthElevationDeg(fa)
-                val (azB, elB) = FinalDirection.toAzimuthElevationDeg(fb)
+                val (azA, elA) = AbsoluteDirection.toAzimuthElevationDeg(fa)
+                val (azB, elB) = AbsoluteDirection.toAzimuthElevationDeg(fb)
                 val va = Vec3.fromAzimuthElevation(azA, elA)
                 val vb = Vec3.fromAzimuthElevation(azB, elB)
                 (va - vb).norm < 1e-6
@@ -96,9 +96,9 @@ case class RelativeDirectionInput(
     lazy val node: HtmlElement =
         val i18n = I18N_UI.direction_badge
 
-        // Derived signal: what FinalDirection the current (side, theta, frame, deflection) produces.
+        // Derived signal: what AbsoluteDirection the current (side, theta, frame, deflection) produces.
         // Depends on all 4 inputs, but is only sampled (not subscribed) by the forward sync.
-        val localFdSig: Signal[Option[FinalDirection]] =
+        val localFdSig: Signal[Option[AbsoluteDirection]] =
             sideVar.signal
                 .combineWith(thetaVar.signal, frameBefore, deflectionAngle)
                 .map { case (side, theta, frameOpt, deflOpt) =>
@@ -107,10 +107,10 @@ case class RelativeDirectionInput(
                 }
                 .map(_.flatten)
 
-        // Forward sync: (side, theta) → finalDirVar
+        // Forward sync: (side, theta) → absDirVar
         // Only triggers when the USER changes side/theta — NOT when frameBefore changes.
         // The user-action stream (.changes on side+theta) gates which emissions reach
-        // the writer; localFdSig and finalDirVar are sampled for their current values.
+        // the writer; localFdSig and absDirVar are sampled for their current values.
         val forwardSync =
             sideVar.signal
                 .combineWith(thetaVar.signal)
@@ -119,20 +119,20 @@ case class RelativeDirectionInput(
                 .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                 .mapTo(()) // discard payload; we only need the timing
                 .withCurrentValueOf(localFdSig)
-                .withCurrentValueOf(finalDirVar.signal)
+                .withCurrentValueOf(absDirVar.signal)
                 .collect { case (newFd, curFd) if !fdGeometryEqual(newFd, curFd) => newFd }
-                --> finalDirVar.writer
+                --> absDirVar.writer
 
-        // Derived signal combining finalDirVar + context into an Option[(side, theta)]
+        // Derived signal combining absDirVar + context into an Option[(side, theta)]
         val externalStSig: Signal[Option[(RelativeSide, Double)]] =
-            finalDirVar.signal
+            absDirVar.signal
                 .combineWith(frameBefore, deflectionAngle)
                 .map { case (fdOpt, frameOpt, deflOpt) =>
                     for fd <- fdOpt; frame <- frameOpt; deflDeg <- deflOpt
                     yield recoverSideTheta(fd, frame, deflDeg)
                 }
 
-        // Reverse sync: finalDirVar → (side, theta)
+        // Reverse sync: absDirVar → (side, theta)
         val reverseSync =
             externalStSig
                 .distinct
@@ -148,19 +148,19 @@ case class RelativeDirectionInput(
                     thetaVar.set(st._2)
                 }
 
-        // Signal: true when current finalDir is geometrically unreachable from frameBefore.
+        // Signal: true when current absDir is geometrically unreachable from frameBefore.
         // Uses the proven 2-arg combineWith → 3-tuple pattern to avoid type erasure.
         val isIncompatibleSig: Signal[Boolean] =
-            finalDirVar.signal
+            absDirVar.signal
                 .combineWith(frameBefore, deflectionAngle)
                 .map { case (fdOpt, frameOpt, deflOpt) =>
                     (for fd <- fdOpt; frame <- frameOpt; defl <- deflOpt
                      yield !isReachable(fd, frame, defl)).getOrElse(false)
                 }
 
-        // Signal: what finalDir we would cascade to (from current side/theta + new frame).
+        // Signal: what absDir we would cascade to (from current side/theta + new frame).
         // Uses the same proven 3-arg combineWith → 4-tuple pattern as localFdSig.
-        val cascadedFdSig: Signal[Option[FinalDirection]] =
+        val cascadedFdSig: Signal[Option[AbsoluteDirection]] =
             sideVar.signal
                 .combineWith(thetaVar.signal, frameBefore, deflectionAngle)
                 .map { case (side, theta, frameOpt, deflOpt) =>
@@ -170,7 +170,7 @@ case class RelativeDirectionInput(
                 .map(_.flatten)
 
         // Combined: Some(newFd) when cascade is needed, None otherwise.
-        val cascadeNeededSig: Signal[Option[Option[FinalDirection]]] =
+        val cascadeNeededSig: Signal[Option[Option[AbsoluteDirection]]] =
             isIncompatibleSig
                 .combineWith(cascadedFdSig)
                 .map { case (incompatible, newFd) =>
@@ -178,7 +178,7 @@ case class RelativeDirectionInput(
                 }
 
         // Cascade sync: fires on frameBefore/deflectionAngle changes, samples cascadeNeededSig.
-        // Only writes when isReachable is false — no-op when finalDir is still compatible.
+        // Only writes when isReachable is false — no-op when absDir is still compatible.
         val cascadeSync =
             frameBefore
                 .combineWith(deflectionAngle)
@@ -188,9 +188,9 @@ case class RelativeDirectionInput(
                 .mapTo(())
                 .withCurrentValueOf(cascadeNeededSig)
                 .collect { case Some(newFd) => newFd }
-                --> finalDirVar.writer
+                --> absDirVar.writer
 
-        // One-time initial sync: populate sideVar/thetaVar from finalDirVar
+        // One-time initial sync: populate sideVar/thetaVar from absDirVar
         // when context (frameBefore, deflectionAngle) becomes available.
         // Needed because .changes in reverseSync skips the initial value.
         // Signal --> Observer fires for the initial value at mount time, plus

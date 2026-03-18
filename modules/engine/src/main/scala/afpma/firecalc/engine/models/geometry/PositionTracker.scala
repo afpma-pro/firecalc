@@ -9,7 +9,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.PipeShape
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -79,9 +79,9 @@ object PositionTracker:
                 case dc: AddDirectionChange =>
                     for
                         f  <- frame
-                        fd <- dc.finalDir
+                        fd <- dc.absDir
                     do
-                        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                 case AddSectionVertical(_, elevGain) =>
@@ -183,9 +183,9 @@ object PositionTracker:
                 case dc: AddDirectionChange =>
                     for
                         f  <- frame
-                        fd <- dc.finalDir
+                        fd <- dc.absDir
                     do
-                        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                 case AddSectionVertical(_, elevGain) =>
@@ -293,9 +293,9 @@ object PositionTracker:
                 case dc: AddDirectionChange =>
                     for
                         f  <- frame
-                        fd <- dc.finalDir
+                        fd <- dc.absDir
                     do
-                        val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                 case AddSectionVertical(_, elevGain) =>

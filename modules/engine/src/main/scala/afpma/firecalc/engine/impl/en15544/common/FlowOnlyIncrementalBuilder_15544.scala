@@ -9,7 +9,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
@@ -113,7 +113,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         finalState: PropsState
     ): ValidatedResult[Unit] =
         val hasFinalDir = incrDescrs.exists:
-            case (_, dc: AddDirectionChange) => dc.finalDir.isDefined
+            case (_, dc: AddDirectionChange) => dc.absDir.isDefined
             case _                           => false
         if hasFinalDir && finalState.initialFrame.isEmpty then
             FinalDirWithoutInitialDirection(pt).invalidNel
@@ -213,11 +213,11 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
             case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
             case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
             case Some(addDC: AddDirectionChange) =>
-                addDC.finalDir match
+                addDC.absDir match
                     case Some(fd) =>
                         propsState.currentFrame match
                             case Some(frame) =>
-                                val (azDeg, elDeg) = FinalDirection.toAzimuthElevationDeg(fd)
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                                 val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                                 val deflDeg   = addDC.angle.toUnit[Degree].value
                                 val newFrame  = frame.applyBendForFinalDir(deflDeg, targetVec)
@@ -294,19 +294,19 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     given directionDSL: DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544] =
         summon[DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544]]
 
-    def addSharpAngle_0_to_180deg(name: String, angle: Angle, finalDir: FinalDirection) =
-        directionDSL.addSharpAngle_0_to_180deg(name, angle, finalDir)
-    def addSharpAngle_30deg(name: String, finalDir: FinalDirection)                     =
-        directionDSL.addSharpAngle_30deg(name, finalDir)
-    def addSharpAngle_45deg(name: String, finalDir: FinalDirection)                     =
-        directionDSL.addSharpAngle_45deg(name, finalDir)
-    def addSharpAngle_60deg(name: String, finalDir: FinalDirection)                     =
-        directionDSL.addSharpAngle_60deg(name, finalDir)
-    def addSharpAngle_90deg(name: String, finalDir: FinalDirection)                     =
-        directionDSL.addSharpAngle_90deg(name, finalDir)
+    def addSharpAngle_0_to_180deg(name: String, angle: Angle, absDir: AbsoluteDirection) =
+        directionDSL.addSharpAngle_0_to_180deg(name, angle, absDir)
+    def addSharpAngle_30deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_30deg(name, absDir)
+    def addSharpAngle_45deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_45deg(name, absDir)
+    def addSharpAngle_60deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_60deg(name, absDir)
+    def addSharpAngle_90deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_90deg(name, absDir)
 
-    def addCircularArc60(name: String, finalDir: FinalDirection) =
-        directionDSL.addCircularArc60(name, finalDir)
+    def addCircularArc60(name: String, absDir: AbsoluteDirection) =
+        directionDSL.addCircularArc60(name, absDir)
 
     def addSectionShapeChange(
         name    : String,

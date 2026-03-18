@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.impl.common.typeclasses
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.dto.v4.FinalDirection
+import afpma.firecalc.dto.v4.AbsoluteDirection
 
 /**
  * Typeclass for EN15544-specific direction changes.
@@ -15,35 +15,35 @@ trait DirectionChangeDSL_15544[Descr]:
     def addSharpAngle_0_to_180deg(
         name: String,
         angle: Angle,
-        finalDir: FinalDirection
+        absDir: AbsoluteDirection
     ): Descr
 
-    def addCircularArc60(name: String, finalDir: FinalDirection): Descr
+    def addCircularArc60(name: String, absDir: AbsoluteDirection): Descr
 
     // Convenience methods
     def addSharpAngle_30deg(
         name: String,
-        finalDir: FinalDirection
+        absDir: AbsoluteDirection
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 30.degrees, finalDir)
+        addSharpAngle_0_to_180deg(name, 30.degrees, absDir)
 
     def addSharpAngle_45deg(
         name: String,
-        finalDir: FinalDirection
+        absDir: AbsoluteDirection
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 45.degrees, finalDir)
+        addSharpAngle_0_to_180deg(name, 45.degrees, absDir)
 
     def addSharpAngle_60deg(
         name: String,
-        finalDir: FinalDirection
+        absDir: AbsoluteDirection
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 60.degrees, finalDir)
+        addSharpAngle_0_to_180deg(name, 60.degrees, absDir)
 
     def addSharpAngle_90deg(
         name: String,
-        finalDir: FinalDirection
+        absDir: AbsoluteDirection
     ): Descr =
-        addSharpAngle_0_to_180deg(name, 90.degrees, finalDir)
+        addSharpAngle_0_to_180deg(name, 90.degrees, absDir)
 
 object DirectionChangeDSL_15544:
     def apply[D](using

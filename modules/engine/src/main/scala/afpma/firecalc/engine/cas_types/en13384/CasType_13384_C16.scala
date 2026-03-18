@@ -10,7 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{FinalDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -143,16 +143,16 @@ object CasType_13384_C16
             layer                          (e                 = 0.2.mm, tr = 0.0.m2_K_per_W),
             addSectionHorizontal           ("hz", 25.cm                                    ),
             // turn right - final direction = 'Left'
-            addCoudeCourbe90               ("coude 90° #1", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)),
+            addCoudeCourbe90               ("coude 90° #1", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
             // turn left - final direction = 'Front'
-            addCoudeCourbe90               ("coude 90° #2", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
+            addCoudeCourbe90               ("coude 90° #2", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
             // turn upwards - final direction = 'Up'
-            addCoudeCourbe90               ("coude 90° #3", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Front, InclinationDirection.Up)),
+            addCoudeCourbe90               ("coude 90° #3", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)),
             addSectionVertical             ("vertical", 35.cm                              ),
             // turn - final direction = 'Right'
-            addCoudeCourbe90               ("coude 90° #4", R = 50.mm, finalDir = FinalDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)),
+            addCoudeCourbe90               ("coude 90° #4", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
             addSectionHorizontal           ("hz", 25.cm                                    )
         ).toFullDescr().extractPipe
@@ -171,11 +171,11 @@ object CasType_13384_C16
             // tel que H utile = 2.10 et L developée = 2.18 m
 
             addSectionHorizontal("avant té ?",         8.cm                                   ),
-            addSharpAngle_90deg ("té 90°",             FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSharpAngle_90deg ("té 90°",             AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
             addSectionVertical  ("montée",             70.cm                                  ),
-            addSharpAngle_45deg ("dévoiement 45°",     FinalDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))), // Rear-Up (azimuth=0° inclination=45°)
+            addSharpAngle_45deg ("dévoiement 45°",     AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))), // Rear-Up (azimuth=0° inclination=45°)
             addSectionSloppedForceManualElevationGain("dévoiement", 70.cm, 70.cm), // approx to match C16 (50cm otherwise)
-            addSharpAngle_45deg ("fin dévoiement 45°", FinalDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSharpAngle_45deg ("fin dévoiement 45°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
             addSectionVertical  ("avant plafond",      70.cm)
         )
 
