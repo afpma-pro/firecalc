@@ -18,6 +18,9 @@ object implicits {
     import io.taig.babel.DerivedDecoder.derivedProduct
 
     // Explicit decoders for nested types with many fields
+    implicit val directionBadgeDecoder  : Decoder[I18nData_UI.DirectionBadge]    = deriveDecoder[I18nData_UI.DirectionBadge]
+    implicit val tooltipsDecoder        : Decoder[I18nData_UI.Tooltips]          = deriveDecoder[I18nData_UI.Tooltips]
+    implicit val catalogErrorsDecoder   : Decoder[I18nData_UI.Catalog.Errors]    = deriveDecoder[I18nData_UI.Catalog.Errors]
     implicit val pdfOrderingModalDecoder: Decoder[I18nData_UI.PDFOrdering.Modal] =
         deriveDecoder[I18nData_UI.PDFOrdering.Modal]
     implicit val pdfOrderingDecoder     : Decoder[I18nData_UI.PDFOrdering]       = deriveDecoder[I18nData_UI.PDFOrdering]

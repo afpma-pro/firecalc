@@ -9,6 +9,7 @@ import afpma.firecalc.dto.generators.AllGenerators
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.dto.v3.FireCalcYAML_V3
+import afpma.firecalc.dto.v4.FireCalcYAML_V4
 
 import org.scalactic.anyvals.PosInt
 import org.scalatest.freespec.AnyFreeSpec
@@ -59,6 +60,17 @@ class RoundTripSuite
 
                 decoded.get.shouldBe(original)
         }
+
+        "V4 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V4) {
+            original =>
+                val encoded = FireCalcYAML_V4.encodeToYaml(original)
+                encoded.isSuccess.shouldBe(true)
+
+                val decoded = FireCalcYAML_V4.decodeFromYaml(encoded.get)
+                decoded.isSuccess.shouldBe(true)
+
+                decoded.get.shouldBe(original)
+        }
     }
 
     "Migration and Encode/Decode Integration" - {
@@ -85,6 +97,15 @@ class RoundTripSuite
             AllGenerators.genFireCalcYAML_V3
         ) { v3 =>
             val yaml = FireCalcYAML_V3.encodeToYaml(v3).get
+            val result =
+                FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
+            result.isSuccess.shouldBe(true)
+        }
+
+        "decode V4 YAML without migration" in forAll(
+            AllGenerators.genFireCalcYAML_V4
+        ) { v4 =>
+            val yaml = FireCalcYAML_V4.encodeToYaml(v4).get
             val result =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
             result.isSuccess.shouldBe(true)

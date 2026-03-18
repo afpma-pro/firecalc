@@ -22,4 +22,10 @@ object LocalStorageKeys {
      */
     val APP_STATE_SCHEMA: String = "app_state_schema"
 
+    val CATALOG_STATE: String = "catalog_state"
+
+    val VIZ_CAMERA_STATE: String = "viz_camera_state"
+
+    val UI_STATE: String = "ui_state"
+
 }

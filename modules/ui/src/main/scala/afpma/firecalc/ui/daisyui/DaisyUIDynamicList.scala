@@ -167,6 +167,7 @@ trait DaisyUIDynamicList extends Component:
                 lucide.hide(stroke_width = 0.5),
                 onClick(_.mapTo(false)) --> displayFull.writer
             ),
+            // full node
             div(
                 cls := "flex-none",
                 when(summaryChildNode.isDefined)(
@@ -174,6 +175,7 @@ trait DaisyUIDynamicList extends Component:
                 ),
                 fullChildNode
             ),
+            // summary node
             when(summaryChildNode.isDefined)(
                 div(cls := "flex-none", cls("hidden") <-- showFullNodeSig, summaryChildNode.get)
             )

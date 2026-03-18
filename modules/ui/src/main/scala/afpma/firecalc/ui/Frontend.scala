@@ -7,7 +7,9 @@ package afpma.firecalc.ui
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.ui.services.VersionService
+import afpma.firecalc.ui.components.GlobalErrorDialog
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
+import afpma.firecalc.ui.services.{CatalogImageStore, VersionService}
 import afpma.firecalc.ui.views.*
 
 import com.raquo.laminar.api.L.*
@@ -22,11 +24,47 @@ object Frontend {
 
     import models.*
 
-    val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
+    lazy val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> appStateSchemaWebStorageVar.writer
 
-    val app: Div = div(cls := "", child <-- router.currentPageSignal.map(renderPage)).amend(
-        writeUnifiedSchemaSubscription
+    lazy val writeCatalogSubscription = catalogStateVar.signal.changes.distinct
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> catalogWebStorageVar.writer
+
+    lazy val writeUIStateSubscription = uiStateVar.signal.changes.distinct
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> uiStateWebStorageVar.writer
+
+    private val undoSnapshotObserver = Observer[schema.AppStateSchema](undoManager.pushSnapshot(_))
+
+    lazy val undoSnapshotSubscription =
+        appStateSchemaVar.signal.changes
+            .distinct
+            .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+            --> undoSnapshotObserver
+
+    lazy val undoRedoKeyboardSubscription =
+        documentEvents(_.onKeyDown)
+            .filter { ev =>
+                val dyn = ev.asInstanceOf[scala.scalajs.js.Dynamic]
+                val ctrl = dyn.ctrlKey
+                val meta = dyn.metaKey
+                // Guard: some events processed during Airstream transactions lack KeyboardEvent properties
+                if scala.scalajs.js.isUndefined(ctrl) || scala.scalajs.js.isUndefined(meta) then false
+                else (ctrl.asInstanceOf[Boolean] || meta.asInstanceOf[Boolean]) &&
+                    !scala.scalajs.js.isUndefined(dyn.key) &&
+                    dyn.key.asInstanceOf[String].toLowerCase == "z"
+            }
+            --> Observer[dom.KeyboardEvent] { ev =>
+                ev.preventDefault()
+                if ev.shiftKey then performRedo()
+                else performUndo()
+            }
+
+    lazy val app: Div = div(cls := "", child <-- router.currentPageSignal.map(renderPage)).amend(
+        writeUnifiedSchemaSubscription,
+        writeCatalogSubscription,
+        writeUIStateSubscription,
+        undoSnapshotSubscription,
+        undoRedoKeyboardSubscription
         // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))
         //     .tapEach(consoleLogVNelStringErrors) --> errorBusConsole
     )
@@ -64,10 +102,39 @@ object Frontend {
         // Log version information to console on startup
         VersionService.logVersionToConsole()
 
+        // Initialize global error dialog i18n using the current locale
+        GlobalErrorDialog.setI18n(I18N_UI(using localeVar.now()).global_error)
+
+        def isTransactionLoop(msg: String): Boolean =
+            msg.contains("Transaction depth exceeded") || msg.contains("maxDepth")
+
+        // Global error handlers (raw DOM, independent of Laminar)
+        dom.window.addEventListener("error", (e: dom.ErrorEvent) =>
+            val msg = Option(e.message).getOrElse("Unknown error")
+            if isTransactionLoop(msg) then GlobalErrorDialog.showTransactionError()
+            else GlobalErrorDialog.showGenericError(msg)
+        )
+
+        dom.window.addEventListener("unhandledrejection", (e: dom.Event) =>
+            val reason = e.asInstanceOf[js.Dynamic].reason
+            val msg = if reason != null && !js.isUndefined(reason) then reason.toString else "Unknown error"
+            GlobalErrorDialog.showGenericError(msg)
+        )
+
+        // Airstream unhandled error callback — catches errors from the reactive graph
+        // (e.g. Transaction depth exceeded) that don't propagate to DOM error events
+        com.raquo.airstream.core.AirstreamError.registerUnhandledErrorCallback: (err: Throwable) =>
+            val msg = Option(err.getMessage).getOrElse("Unknown error")
+            if isTransactionLoop(msg) then GlobalErrorDialog.showTransactionError()
+            else GlobalErrorDialog.showGenericError(msg)
+
         // com.raquo.airstream.core.Transaction.maxDepth = Int.MaxValue
         com.raquo.airstream.core.Transaction.maxDepth = 1000
 
         waitForLoad {
+            // Fire-and-forget: populate imagesVar from IndexedDB for catalog picker dialogs
+            CatalogImageStore.loadAll()
+
             val appContainer = dom.document.querySelector("#app")
             appContainer.innerHTML = ""
             unmount()

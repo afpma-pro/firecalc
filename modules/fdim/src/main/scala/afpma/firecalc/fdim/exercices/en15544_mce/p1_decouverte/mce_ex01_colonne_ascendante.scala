@@ -8,12 +8,13 @@ package afpma.firecalc.fdim.exercices.en15544_mce.p1_decouverte
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.Wood
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.wood_combustion.WoodCombustionAlg
 import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
@@ -25,10 +26,15 @@ import coulomb.policy.standard.given
 
 object mce_ex01_colonne_ascendante 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_MCE_Alg
-    with v0_2024_10.Firebox_15544_MCE_OneOff_Alg:
+    with v0_2024_10.Firebox_15544_MCE_Alg:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.mce.given
     import gtypedefs.ζ
+
+    type FB = TraditionalFirebox
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val exercice_name = "exercices // p1_decouverte // mce_ex01_colonne_ascendante"
     
@@ -68,7 +74,6 @@ object mce_ex01_colonne_ascendante
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                               = 33.2.cm,
         h12_largeurDuFoyer                                  = 33.2.cm,
         h13_hauteurDuFoyer                                  = 51.9.cm,
@@ -76,6 +81,7 @@ object mce_ex01_colonne_ascendante
         h67_sectionCumuleeEntreeAirPorte                    = 94.cm2,
         h71_largeurVitre                                    = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
         h72_hauteurVitre                                    = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                                      = 5.cm,
     )
 
     val fluePipe = 
@@ -83,12 +89,13 @@ object mce_ex01_colonne_ascendante
         FluePipe_Module_13384
         .incremental
         .define(
+            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
             pipeLocation(PipeLocation.HeatedArea), // added for EN13384
             roughness(3.mm),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
             layer(e = 1.cm, λ = 0.89.W_per_mK), // added for EN13384
             addSectionHorizontal("sortie foyer", 28.1.cm),
-            addSharpAngle_90deg("virage 90 deg"),
+            addSharpAngle_90deg ("virage 90 deg", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)), // "Up"
             innerShape(rectangle(11.1.cm, 11.1.cm)),
             addSectionVertical("colonne ascendante", 3.737.m)
         )

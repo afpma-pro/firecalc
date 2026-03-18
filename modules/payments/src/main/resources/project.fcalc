@@ -89,7 +89,7 @@ flue_pipe_descr:
       angle: 
         value: "90"
         unit: "degree"
-      angle_to_original_direction: !!null
+      roll: !!null
   - 
     SetInnerShape: 
       shape: 
@@ -112,7 +112,7 @@ flue_pipe_descr:
       angle: 
         value: "90"
         unit: "degree"
-      angle_to_original_direction: !!null
+      roll: !!null
   - 
     SetInnerShape: 
       shape: 
@@ -135,7 +135,7 @@ flue_pipe_descr:
       angle: 
         value: "90"
         unit: "degree"
-      angle_to_original_direction: !!null
+      roll: !!null
   - 
     SetInnerShape: 
       shape: 
@@ -158,7 +158,7 @@ flue_pipe_descr:
       angle: 
         value: "90"
         unit: "degree"
-      angle_to_original_direction: !!null
+      roll: !!null
   - 
     SetInnerShape: 
       shape: 
@@ -181,7 +181,7 @@ flue_pipe_descr:
       angle: 
         value: "90"
         unit: "degree"
-      angle_to_original_direction: !!null
+      roll: !!null
   - 
     SetInnerShape: 
       shape: 
@@ -204,7 +204,7 @@ flue_pipe_descr:
       angle: 
         value: "90"
         unit: "degree"
-      angle_to_original_direction: !!null
+      roll: !!null
   - 
     SetInnerShape: 
       shape: 
@@ -330,7 +330,7 @@ chimney_pipe_descr:
     AddSectionVertical: 
       name: "extérieur"
       elevation_gain: 
-        value: "0.99"
+        value: "1.50"
         unit: "meter"
   - 
     SetPipeLocation: 

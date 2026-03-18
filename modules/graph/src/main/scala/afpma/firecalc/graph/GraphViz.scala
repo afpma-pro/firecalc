@@ -1,0 +1,85 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
+ */
+
+package afpma.firecalc.graph
+
+import org.scalajs.dom
+import scala.scalajs.js
+
+/** Framework-agnostic Graph visualization API.
+  * Returns plain DOM elements that can be wrapped by any UI framework.
+  */
+object GraphViz:
+
+    /** Result of rendering a graph visualization.
+      * @param element The container div element containing the chart canvas
+      * @param handle Handle for lifecycle management (dispose, update)
+      */
+    case class GraphVizResult(
+        element: dom.HTMLDivElement,
+        handle : GraphVizHandleJS
+    )
+
+    /** Render a line chart from the given data. */
+    def render(
+        data   : ChartData,
+        config : GraphVizConfig = GraphVizConfig()
+    ): GraphVizResult =
+        val container = dom.document.createElement("div").asInstanceOf[dom.HTMLDivElement]
+        container.className = "graph-viz"
+        container.style.width = "100%"
+        container.style.height = "100%"
+
+        val dataJs   = chartDataToJs(data)
+        val configJs = GraphConfigJS(
+            responsive          = config.responsive,
+            maintainAspectRatio = config.maintainAspectRatio
+        )
+
+        val handle = GraphVizFacade(container, dataJs, configJs)
+        GraphVizResult(container, handle)
+
+    /** Update an existing chart with new data. */
+    def update(handle: GraphVizHandleJS, data: ChartData): Unit =
+        handle.update(chartDataToJs(data))
+
+    private def chartDataToJs(data: ChartData): ChartDataJS =
+        val seriesJs = js.Array(data.series.map { s =>
+            val pointsJs = js.Array(s.points.map { p =>
+                DataPointJS(
+                    x              = p.x,
+                    y              = p.y,
+                    tooltipTitle   = p.tooltipTitle,
+                    tooltipExtra   = p.tooltipExtra,
+                    formattedValue = p.formattedValue
+                )
+            }*)
+            ChartSeriesJS(
+                id        = s.id,
+                name      = s.name,
+                color     = s.color,
+                points    = pointsJs,
+                yAxisId   = s.yAxisId,
+                lineWidth = s.lineWidth,
+                dashed    = s.dashed
+            )
+        }*)
+
+        val yAxesJs = js.Array(data.yAxes.map { a =>
+            val posStr = a.position match
+                case YAxisPosition.Left  => "left"
+                case YAxisPosition.Right => "right"
+            val minJs: js.UndefOr[Double] = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val maxJs: js.UndefOr[Double] = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            YAxisConfigJS(
+                id       = a.id,
+                label    = a.label,
+                position = posStr,
+                min      = minJs,
+                max      = maxJs
+            )
+        }*)
+
+        ChartDataJS(series = seriesJs, yAxes = yAxesJs, xAxisLabel = data.xAxisLabel)

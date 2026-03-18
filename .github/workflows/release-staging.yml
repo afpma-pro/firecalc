@@ -149,7 +149,7 @@ jobs:
           $cs = Join-Path $env:RUNNER_TEMP "cs.exe"
           Invoke-WebRequest -Uri $url -OutFile $cs
           # Prefetch scala3-compiler into our isolated cache to avoid lock contention during sbt/plugin resolve
-          & $cs fetch org.scala-lang:scala3-compiler_3:3.8.1 --cache "$env:GITHUB_WORKSPACE\.coursier"
+          & $cs fetch org.scala-lang:scala3-compiler_3:3.8.2 --cache "$env:GITHUB_WORKSPACE\.coursier"
 
       - name: Install UI dependencies
         run: make ui-setup

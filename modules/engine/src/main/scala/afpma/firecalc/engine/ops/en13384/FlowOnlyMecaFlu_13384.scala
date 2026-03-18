@@ -134,8 +134,6 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     given HeatingAppliance.Powers     = hapwr
     given HeatingAppliance.Efficiency = haeff
 
-    val σ_CO2 = en13384.σ_CO2
-
     private val DEBUG = false
     private inline def debug(msg: String): Unit = if (DEBUG) println(msg) else ()
 
@@ -172,6 +170,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
             },
             getSingularCrossSection = curr.el match {
                 case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
+                case PressureDiff(_, Some(crossSection))           => Some(crossSection)
                 case _                                             => None
             }
         )
@@ -322,7 +321,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
         gp.pipeEl.el match
             case _ : StraightSection                                                    =>
                 (None, 0.0.pascals).validNel
-            case PressureDiff(pa) =>
+            case PressureDiff(pa, _) =>
                 val pd = en13384.P_R_dynamicPressure_calc(
                     density_for_pr_pu_pd,
                     velocity_for_pr_pu_pd

@@ -65,7 +65,7 @@ class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with Incr
                                 roughness = 2.mm,
                                 layers = List(AppendLayerDescr.FromLambdaUsingThickness(e0, λ0)),
                                 elevation_gain = 0.meters,
-                                airSpaceDetailed = AirSpaceDetailed.WithoutAirSpace,
+                                airSpaceDetailed = AirSpaceDetailed.WithoutAirSpace_V2,
                                 pipeLoc = HeatedArea,
                                 ductType = DuctType.NonConcentricDuctsHighThermalResistance,
                             )

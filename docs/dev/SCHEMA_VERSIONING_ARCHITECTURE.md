@@ -122,7 +122,7 @@ final case class AppStateSchema_V1(
 
 ```scala
 final case class FireCalcYAML_V1(
-    version: FireCalc_Version = FireCalc_Version(1),
+    version: FireCalc_Version = FireCalcYAML_V1.VERSION,
     locale: Locale,
     display_units: DisplayUnits,
     standard_or_computation_method: StandardOrComputationMethod,

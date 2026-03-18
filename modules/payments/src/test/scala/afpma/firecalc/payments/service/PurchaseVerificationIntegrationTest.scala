@@ -109,7 +109,29 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
         customer
       }
       def findByEmail(email: String): IO[Option[Customer]] = IO.pure(repos.customers.get(email))
-      def findByEmailAndUpdate(email: String, newCustomerInfo: CustomerInfo): IO[Option[Customer]] = ???
+      def findByEmailAndUpdate(email: String, newCustomerInfo: CustomerInfo): IO[Option[Customer]] = IO.delay {
+        repos.customers.get(email).map { existing =>
+          val updated = existing.copy(
+            customerType = newCustomerInfo.customerType,
+            language = newCustomerInfo.language,
+            givenName = newCustomerInfo.givenName,
+            familyName = newCustomerInfo.familyName,
+            companyName = newCustomerInfo.companyName,
+            addressLine1 = newCustomerInfo.addressLine1,
+            addressLine2 = newCustomerInfo.addressLine2,
+            addressLine3 = newCustomerInfo.addressLine3,
+            city = newCustomerInfo.city,
+            region = newCustomerInfo.region,
+            postalCode = newCustomerInfo.postalCode,
+            countryCode = newCustomerInfo.countryCode,
+            phoneNumber = newCustomerInfo.phoneNumber,
+            updatedAt = Instant.now()
+          )
+          repos.customers = repos.customers + (email -> updated)
+          repos.customersById = repos.customersById + (updated.id -> updated)
+          updated
+        }
+      }
       def findById(customerId: CustomerId): IO[Option[Customer]] = IO.pure(repos.customersById.get(customerId))
       def createFull(customer: Customer): IO[Boolean] = ???
       def updatePaymentProvider(customerId: CustomerId, paymentProviderId: String, paymentProvider: PaymentProvider): IO[Boolean] = ???
@@ -421,11 +443,11 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
       val repos = new TestTupleHandlingRepositories()
       val (productRepo, customerRepo, purchaseIntentRepo, productMetadataRepo, authService, orderService, paymentService, emailService) = createMockTupleServices(repos)
       
-    //   val service = new PurchaseServiceImpl[IO](
-    //     productRepo, customerRepo, purchaseIntentRepo, productMetadataRepo,
-    //     authService, orderService, paymentService, emailService
-    //   )
-      
+      val service = new PurchaseServiceImpl[IO](
+        productRepo, customerRepo, purchaseIntentRepo, productMetadataRepo,
+        authService, orderService, paymentService, emailService
+      )
+
       val minimalCustomerInfo = CustomerInfo(
         email = "minimal@example.com",
         customerType = CustomerType.Individual,
@@ -442,14 +464,14 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
         countryCode = None,
         phoneNumber = None
       )
-      
-    //   val createRequest = CreatePurchaseIntentRequest(
-    //     productId = testProduct.id,
-    //     productMetadata = None,
-    //     customer = minimalCustomerInfo
-    //   )
-      
-    //   val token = service.createPurchaseIntent(createRequest).unsafeRunSync()
+
+      val createRequest = CreatePurchaseIntentRequest(
+        productId = testProduct.id,
+        productMetadata = None,
+        customer = minimalCustomerInfo
+      )
+
+      service.createPurchaseIntent(createRequest).unsafeRunSync()
       
       // Verify minimal data was handled correctly 
       assert(repos.customers.contains(minimalCustomerInfo.email))

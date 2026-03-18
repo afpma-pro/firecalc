@@ -23,7 +23,9 @@ import io.taig.babel.Locale
 case class TagTreeMenuComponent[A](
     ttm             : TagTreeMenu[A],
     appendBus       : Observer[CollectionCommand[(Int, A)]],
-    incrDescrSizeVar: Var[Int]
+    incrDescrSizeVar: Var[Int],
+    externalOpenBus : EventStream[Unit] = EventStream.empty,
+    onDone          : () => Unit = () => ()
 )                                 (using Locale)
     extends Component:
     import TagTreeMenuComponent.*
@@ -32,6 +34,44 @@ case class TagTreeMenuComponent[A](
 
     private val treeStateVar: Var[TreeState[A]] =
         Var(TreeState.initWith(ttm))
+
+    /**
+     * Collect all Modal elements from the tree upfront.
+     * Each modal gets a unique ID and is rendered at the top level.
+     */
+    private val allModals: List[(TagTreeMenu.Modal[A], HtmlElement)] =
+        collectAllModals(ttm.elems)
+
+    /**
+     * Recursively collects all modals from the tree, generating unique IDs
+     * and creating the modal elements.
+     */
+    private def collectAllModals(
+        elems: List[TagTreeMenu.Elems[A]]
+    ): List[(TagTreeMenu.Modal[A], HtmlElement)] =
+        elems.flatMap {
+            case m: TagTreeMenu.Modal[A] =>
+                // Create an observer that appends the selected element
+                val onSelect: Observer[A] = Observer { selectedElem =>
+                    val size = incrDescrSizeVar.now()
+                    appendBus.onNext(CollectionCommand.Append((size, selectedElem)))
+                    onDone()
+                    treeStateVar.set(TreeState.initWith(ttm))
+                }
+                List((m, m.modalContent(onSelect)))
+            case g: TagTreeMenu.Group[A] =>
+                collectAllModals(g.next)
+            case _: TagTreeMenu.Leaf[A] =>
+                Nil
+            case _: TagTreeMenu.Shortcut[A] =>
+                Nil
+        }
+
+    /**
+     * Find the modal element for a given Modal element from the pre-computed list.
+     */
+    private def findModalElement(m: TagTreeMenu.Modal[A]): Option[HtmlElement] =
+        allModals.find(_._1 == m).map(_._2)
 
     private def renderButtonAdd = button(
         cls := "btn btn-secondary btn-sm",
@@ -44,7 +84,10 @@ case class TagTreeMenuComponent[A](
         cls := "btn btn-error btn-sm",
         lucide.`circle-x`,
         I18N_UI.buttons.cancel,
-        onClick.mapTo(TreeState.initWith(resetTo)) --> treeStateVar.writer
+        onClick --> { _ =>
+            treeStateVar.set(TreeState.initWith(resetTo))
+            onDone()
+        }
     )
 
     private def renderSep = span(lucide.`chevron-right`)
@@ -54,39 +97,59 @@ case class TagTreeMenuComponent[A](
         nl         : TagTreeMenu.Elems[A],
         @nowarn snl: Signal[TagTreeMenu.Elems[A]]
     ): HtmlElement =
+        import org.scalajs.dom.HTMLDialogElement
+
         // Determine icon and button style based on element type
         val (icon, btnClass) = nl match
             case _: TagTreeMenu.Shortcut[A] => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
             case _: TagTreeMenu.Group[A]    => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
             case _: TagTreeMenu.Leaf[A]     => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+            case _: TagTreeMenu.Modal[A]    => (lucide.`book-open-text`, "bg-base-200 hover:bg-secondary"       )
 
-        button(
-            cls := s"btn btn-sm $btnClass",
-            icon,
-            txt,
-            onClick --> { _ =>
-                // update tree state
-                treeStateVar.update: s =>
-                    nl match
-                        case n: TagTreeMenu.Group[A] =>
-                            s.selectNode(n)
+        // For Modal case, find the pre-computed modal element
+        val modalElementOpt = nl match
+            case m: TagTreeMenu.Modal[A] => findModalElement(m)
+            case _ => None
 
-                        case l: TagTreeMenu.Leaf[A] =>
-                            appendBus.onNext:
-                                val size = incrDescrSizeVar.now()
-                                CollectionCommand.Append((size, l.elem))
-                            TreeState.initWith(resetTo)
+        div(
+            cls := "inline",
+            button(
+                cls := s"btn btn-sm $btnClass",
+                icon,
+                txt,
+                onClick --> { _ =>
+                    // update tree state
+                    treeStateVar.update: s =>
+                        nl match
+                            case n: TagTreeMenu.Group[A] =>
+                                s.selectNode(n)
 
-                        case sc: TagTreeMenu.Shortcut[A] =>
-                            // Append all elements from tuple
-                            var currentSize = incrDescrSizeVar.now()
-                            sc.elems.productIterator.foreach { elem =>
+                            case l: TagTreeMenu.Leaf[A] =>
                                 appendBus.onNext:
-                                    CollectionCommand.Append((currentSize, elem.asInstanceOf[A]))
-                                currentSize += 1
-                            }
-                            TreeState.initWith(resetTo)
-            }
+                                    val size = incrDescrSizeVar.now()
+                                    CollectionCommand.Append((size, l.elem))
+                                onDone()
+                                TreeState.initWith(resetTo)
+
+                            case sc: TagTreeMenu.Shortcut[A] =>
+                                // Append all elements from tuple
+                                var currentSize = incrDescrSizeVar.now()
+                                sc.elems.productIterator.foreach { elem =>
+                                    appendBus.onNext:
+                                        CollectionCommand.Append((currentSize, elem.asInstanceOf[A]))
+                                    currentSize += 1
+                                }
+                                onDone()
+                                TreeState.initWith(resetTo)
+
+                            case _: TagTreeMenu.Modal[A] =>
+                                // Open the modal - it will handle appending and resetting
+                                modalElementOpt.foreach { el =>
+                                    el.ref.asInstanceOf[HTMLDialogElement].showModal()
+                                }
+                                s
+                }
+            )
         )
 
     private def renderSelectedNode(
@@ -119,12 +182,7 @@ case class TagTreeMenuComponent[A](
             .split(_.txt)(renderChoice(resetTo))
             .map(cs => if (cs.nonEmpty) renderSep :: cs else cs)
             .map(_.map(el => div(cls := "flex-none", el)))
-        // div(
-        //     cls := "flex flex-row",
-        //     div(cls := "flex-none", renderButtonCancel(resetTo)),
-        //     div(cls := "flex-none", span(children <-- selectedNodesRenderedStream)),
-        //     div(cls := "flex-none", span(children <-- choicesRendered))
-        // )
+
         div(
             cls := "flex flex-row flex-wrap gap-y-4 items-center gap-x-2",
             renderButtonCancel(resetTo),
@@ -144,10 +202,16 @@ case class TagTreeMenuComponent[A](
             TreeState.Status.SelectionPending
         )
 
+        // Render main content with modals as siblings at the top level
         div(
             cls := "pt-2",
+            externalOpenBus --> Observer[Unit] { _ =>
+                treeStateVar.set(TreeState.initWith(ttm).copy(choicesOpened = true))
+            },
             renderWhenClosed.amend                   (display <-- displayWhenClosed          ),
-            renderWhenSelectionPending(resetTo).amend(display <-- displayWhenSelectionPending)
+            renderWhenSelectionPending(resetTo).amend(display <-- displayWhenSelectionPending),
+            // Render all modals at the top level to avoid stacking context issues
+            allModals.map(_._2)
         )
 
     val node = render(resetTo = ttm)
@@ -193,6 +257,7 @@ object TagTreeMenuComponent:
                     case n: TagTreeMenu.Group[A]    => n.next
                     case _: TagTreeMenu.Leaf[A]     => Nil
                     case _: TagTreeMenu.Shortcut[A] => Nil
+                    case _: TagTreeMenu.Modal[A]    => Nil
             )
 
         def selectNode(n: TagTreeMenu.Group[A]): TreeState[A] =
@@ -233,6 +298,11 @@ object TagTreeMenu:
     case class Group[+A](txt: String, next: List[Elems[A]]) extends Elems[A]
     case class Leaf[+A](txt: String, elem: A)               extends Elems[A]
     case class Shortcut[+A](txt: String, elems: Tuple)      extends Elems[A]
+    /** A menu entry that opens a modal dialog instead of directly adding an element.
+      * The modalContent function receives an observer to call when selection is confirmed,
+      * and a modalId that should be used as the dialog element's id attribute.
+      */
+    case class Modal[+A](txt: String, modalContent: Observer[A] => HtmlElement) extends Elems[A]
     object Leaf:
         def apply[A](txt: String)(using d: Defaultable[A]): Leaf[A] =
             Leaf(txt, elem = d.default)

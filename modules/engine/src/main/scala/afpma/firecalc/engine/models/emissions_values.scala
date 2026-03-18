@@ -15,6 +15,8 @@ import cats.syntax.option.catsSyntaxOptionId
 
 import coulomb.ops.standard.all.given
 
+export afpma.firecalc.dto.v4.TestReport
+
 case class EfficienciesValues(
     n_nominal: VNelMcalcErr[Percentage],
     n_lowest : VNelMcalcErr[Option[Percentage]],
@@ -32,8 +34,6 @@ case class EmissionsAndEfficiencyValues(
     min_seasonal_efficiency_full_stove: VNelMcalcErr[Option[Percentage]],
     emissions_values                  : EmissionValues
 )
-
-case class TestReport(name: String, date: String)
 
 case class TestEmissionValue(
     polluant_name: PolluantName,

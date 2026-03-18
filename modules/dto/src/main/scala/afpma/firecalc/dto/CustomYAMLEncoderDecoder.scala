@@ -14,8 +14,10 @@ import io.circe.parser.*
 import io.circe.syntax.*
 import io.circe.yaml.scalayaml.parser as yamlParser
 import io.circe.yaml.scalayaml.printer as yamlPrinter
-
 trait CustomYAMLEncoderDecoder[A]:
+
+    type Version
+    val VERSION: Version
 
     given decoder: Decoder[A] = scala.compiletime.deferred
     given encoder: Encoder[A] = scala.compiletime.deferred

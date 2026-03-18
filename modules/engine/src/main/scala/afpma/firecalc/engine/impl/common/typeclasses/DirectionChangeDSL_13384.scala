@@ -5,51 +5,53 @@
 
 package afpma.firecalc.engine.impl.common.typeclasses
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.dto.v4.AbsoluteDirection
 
 /**
  * Typeclass for EN13384-specific direction changes.
  * Has many variants due to complex zeta calculations.
  */
 trait DirectionChangeDSL_13384[Descr]:
-    def addAngleVifDe0A90           (name: String, angle: Angle ): Descr
-    def addAngleVifDe0A90_unsafe    (name: String, angle: Angle ): Descr
-    def addCoudeCourbe90            (name: String, R    : Length): Descr
-    def addCoudeCourbe90_unsafe     (name: String, R    : Length): Descr
-    def addCoudeCourbe60            (name: String, R    : Length): Descr
-    def addCoudeCourbe60_unsafe     (name: String, R    : Length): Descr
-    def addCoudeASegment90Avec2A45  (name: String, R    : Length): Descr
-    def addCoudeASegment90Avec3A30  (name: String, R    : Length): Descr
-    def addCoudeASegment90Avec4A22p5(name: String, R    : Length): Descr
+    def addAngleVifDe0A90           (name: String, angle: Angle,  absDir: AbsoluteDirection): Descr
+    def addAngleVifDe0A90_unsafe    (name: String, angle: Angle,  absDir: AbsoluteDirection): Descr
+    def addCoudeCourbe90            (name: String, R    : Length, absDir: AbsoluteDirection): Descr
+    def addCoudeCourbe90_unsafe     (name: String, R    : Length, absDir: AbsoluteDirection): Descr
+    def addCoudeCourbe60            (name: String, R    : Length, absDir: AbsoluteDirection): Descr
+    def addCoudeCourbe60_unsafe     (name: String, R    : Length, absDir: AbsoluteDirection): Descr
+    def addCoudeASegment90Avec2A45  (name: String, R    : Length, absDir: AbsoluteDirection): Descr
+    def addCoudeASegment90Avec3A30  (name: String, R    : Length, absDir: AbsoluteDirection): Descr
+    def addCoudeASegment90Avec4A22p5(name: String, R    : Length, absDir: AbsoluteDirection): Descr
     def addAngleSpecifique          (
-        name : String,
-        angle: Angle,
-        zeta : Double
+        name    : String,
+        angle   : Angle,
+        zeta    : Double,
+        absDir: AbsoluteDirection
     ): Descr
 
     // Convenience methods with fixed angles
-    def addSharpAngle_30deg(name: String): Descr =
-        addAngleVifDe0A90(name, 30.degrees)
+    def addSharpAngle_30deg(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90(name, 30.degrees, absDir)
 
-    def addSharpAngle_45deg(name: String): Descr =
-        addAngleVifDe0A90(name, 45.degrees)
+    def addSharpAngle_45deg(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90(name, 45.degrees, absDir)
 
-    def addSharpAngle_60deg(name: String): Descr =
-        addAngleVifDe0A90(name, 60.degrees)
+    def addSharpAngle_60deg(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90(name, 60.degrees, absDir)
 
-    def addSharpAngle_90deg(name: String): Descr =
-        addAngleVifDe0A90(name, 90.degrees)
+    def addSharpAngle_90deg(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90(name, 90.degrees, absDir)
 
-    def addSharpAngle_30deg_unsafe(name: String): Descr =
-        addAngleVifDe0A90_unsafe(name, 30.degrees)
+    def addSharpAngle_30deg_unsafe(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90_unsafe(name, 30.degrees, absDir)
 
-    def addSharpAngle_45deg_unsafe(name: String): Descr =
-        addAngleVifDe0A90_unsafe(name, 45.degrees)
+    def addSharpAngle_45deg_unsafe(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90_unsafe(name, 45.degrees, absDir)
 
-    def addSharpAngle_60deg_unsafe(name: String): Descr =
-        addAngleVifDe0A90_unsafe(name, 60.degrees)
+    def addSharpAngle_60deg_unsafe(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90_unsafe(name, 60.degrees, absDir)
 
-    def addSharpAngle_90deg_unsafe(name: String): Descr =
-        addAngleVifDe0A90_unsafe(name, 90.degrees)
+    def addSharpAngle_90deg_unsafe(name: String, absDir: AbsoluteDirection): Descr =
+        addAngleVifDe0A90_unsafe(name, 90.degrees, absDir)
 
 object DirectionChangeDSL_13384:
     def apply[D](using

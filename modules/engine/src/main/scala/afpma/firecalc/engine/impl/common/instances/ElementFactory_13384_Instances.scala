@@ -16,6 +16,7 @@ import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
+import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.*
 
 import cats.data.NonEmptyList
@@ -25,6 +26,7 @@ import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
+import coulomb.syntax.*
 import coulomb.policy.standard.given
 
 object ElementFactory_13384_Instances:
@@ -43,19 +45,25 @@ object ElementFactory_13384_Instances:
     // ========== Flow-Only Straight Section Factory ==========
 
     case class FlowOnlyStraightSectionCtx_13384(
-        innerShape: Option[PipeShape],
-        roughness : Option[Roughness],
-        pipeType  : PipeType
+        innerShape  : Option[PipeShape],
+        roughness   : Option[Roughness],
+        pipeType    : PipeType,
+        currentFrame: Option[PipeFrame] = None
     )
 
     given flowOnlyStraightSection13384: ElementFactory[
-        AddFlowOnlyPipeElement_13384.AddSectionSlopped | AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
-            AddFlowOnlyPipeElement_13384.AddSectionVertical,
+        AddFlowOnlyPipeElement_13384.AddSectionSlopped | 
+        AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+        AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
+        AddFlowOnlyPipeElement_13384.AddSectionVertical,
         FlowOnlyPipeDescr_13384.StraightSection,
         FlowOnlyStraightSectionCtx_13384
     ] with
         def make(
-            op: AddFlowOnlyPipeElement_13384.AddSectionSlopped | AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
+            op: 
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped | 
+                AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+                AddFlowOnlyPipeElement_13384.AddSectionHorizontal |
                 AddFlowOnlyPipeElement_13384.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_13384) =
             val vig = ctx.getValidated(
@@ -67,18 +75,23 @@ object ElementFactory_13384_Instances:
                 RoughnessMustBeSet(op.name, ctx.pipeType)
             )
 
-            val (len, elev_gain) = op match
-                case AddFlowOnlyPipeElement_13384.AddSectionSlopped(
+            val (len, elev_gain, auto_compute_elev_gain) = op match
+                case AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain(
                         _,
                         len,
-                        elev_gain
+                        elev_gain,
                     ) =>
-                    (len, elev_gain)
+                    (len, elev_gain, false)
+                case AddFlowOnlyPipeElement_13384.AddSectionSlopped(
+                        _,
+                        len
+                    ) =>
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_13384.AddSectionHorizontal(
                         _,
                         len
                     ) =>
-                    (len, 0.0.m)
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_13384.AddSectionVertical(
                         _,
                         elev_gain
@@ -86,14 +99,21 @@ object ElementFactory_13384_Instances:
                     val len =
                         if (elev_gain < 0.meters) -elev_gain
                         else elev_gain
-                    (len, elev_gain)
+                    (len, elev_gain, true)
+
+            val finalElevGain = ctx.currentFrame match
+                case Some(frame) => 
+                    if auto_compute_elev_gain 
+                    then (math.abs(len.value) * frame.direction.z).m
+                    else elev_gain
+                case None        => elev_gain
 
             (vig, vr).mapN { (ig, r) =>
                 FlowOnlyPipeDescr_13384.StraightSection        (
                     length         = len,
                     innerShape     = ig,
                     roughness      = r,
-                    elevation_gain = elev_gain
+                    elevation_gain = finalElevGain
                 )
             }
 
@@ -107,18 +127,23 @@ object ElementFactory_13384_Instances:
         airSpace_afterLayers: Option[AirSpaceDetailed],
         pipeLoc             : Option[PipeLocation],
         ductType            : Option[DuctType],
-        pipeType            : PipeType
+        pipeType            : PipeType,
+        currentFrame        : Option[PipeFrame] = None
     )
 
     given thermalStraightSection13384: ElementFactory[
-        AddThermalPipeElement_13384.AddSectionSlopped | AddThermalPipeElement_13384.AddSectionHorizontal |
-            AddThermalPipeElement_13384.AddSectionVertical,
+        AddThermalPipeElement_13384.AddSectionSlopped | 
+        AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+        AddThermalPipeElement_13384.AddSectionHorizontal |
+        AddThermalPipeElement_13384.AddSectionVertical,
         ThermalPipeDescr_13384.StraightSection,
         ThermalStraightSectionCtx_13384
     ] with
         def make(
-            op: AddThermalPipeElement_13384.AddSectionSlopped | AddThermalPipeElement_13384.AddSectionHorizontal |
-                AddThermalPipeElement_13384.AddSectionVertical
+            op: AddThermalPipeElement_13384.AddSectionSlopped | 
+            AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain |
+            AddThermalPipeElement_13384.AddSectionHorizontal |
+            AddThermalPipeElement_13384.AddSectionVertical
         )(using ctx: ThermalStraightSectionCtx_13384) =
             val vig     = ctx.getValidated(
                 _.innerShape,
@@ -149,18 +174,23 @@ object ElementFactory_13384_Instances:
                 DuctTypeMustBeSet(op.name, ctx.pipeType)
             )
 
-            val (len, elev_gain) = op match
-                case AddThermalPipeElement_13384.AddSectionSlopped(
+            val (len, elev_gain, auto_compute_elev_gain) = op match
+                case AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain(
                         _,
                         len,
                         elev_gain
                     ) =>
-                    (len, elev_gain)
+                    (len, elev_gain, false)
+                case AddThermalPipeElement_13384.AddSectionSlopped(
+                        _,
+                        len
+                    ) =>
+                    (len, 0.0.m, true)
                 case AddThermalPipeElement_13384.AddSectionHorizontal(
                         _,
                         len
                     ) =>
-                    (len, 0.0.m)
+                    (len, 0.0.m, true)
                 case AddThermalPipeElement_13384.AddSectionVertical(
                         _,
                         elev_gain
@@ -168,7 +198,14 @@ object ElementFactory_13384_Instances:
                     val len =
                         if (elev_gain < 0.meters) -elev_gain
                         else elev_gain
-                    (len, elev_gain)
+                    (len, elev_gain, true)
+
+            val finalElevGain = ctx.currentFrame match
+                case Some(frame) => 
+                    if auto_compute_elev_gain 
+                    then (math.abs(len.value) * frame.direction.z).m
+                    else elev_gain
+                case None        => elev_gain
 
             (vig, vog, vr, vlayers, vasp, vpl, vduct).mapN { (ig, og, r, layers, asp, pl, duct) =>
                 ThermalPipeDescr_13384.StraightSection          (
@@ -177,7 +214,7 @@ object ElementFactory_13384_Instances:
                     outer_shape      = og,
                     roughness        = r,
                     layers           = layers,
-                    elevation_gain   = elev_gain,
+                    elevation_gain   = finalElevGain,
                     airSpaceDetailed = asp,
                     pipeLoc          = pl,
                     ductType         = duct
@@ -187,9 +224,11 @@ object ElementFactory_13384_Instances:
     // ========== FlowOnly Direction Change Factory ==========
 
     case class DirectionChangeCtx_13384(
-        innerShape       : Option[PipeShape],
-        nextSectionLength: Option[QtyD[Meter]],
-        pipeType         : PipeType
+        innerShape          : Option[PipeShape],
+        nextSectionLength   : Option[QtyD[Meter]],
+        pipeType            : PipeType,
+        dirBeforePreviousDC : Option[Vec3]      = None,
+        currentFrame        : Option[PipeFrame] = None
     )
 
     given flowOnlyDirectionChange13384: ElementFactory[
@@ -213,83 +252,106 @@ object ElementFactory_13384_Instances:
                     )
                 )
 
+            // Compute angleN2 from direction tracking if available
+            val angleN2: Option[QtyD[Degree]] =
+                (ctx.dirBeforePreviousDC, ctx.currentFrame) match
+                    case (Some(dirBefore), Some(frame)) =>
+                        Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
+                    case _ => None
+
             (vDh, vLd).mapN { (dh: QtyD[Meter], ld: QtyD[Meter]) =>
                 op match
                     case AddFlowOnlyPipeElement_13384.AddAngleAdjustable(
                             name,
                             angle,
-                            zeta
+                            zeta,
+                            _
                         ) =>
-                        FlowOnlyPipeDescr_13384.AngleSpecifique(angle, zeta)
+                        FlowOnlyPipeDescr_13384.AngleSpecifique(angle, zeta, angleN2)
                     case AddFlowOnlyPipeElement_13384.AddSharpeAngle_0_to_90(
                             name,
-                            angle
+                            angle,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.AngleVifDe0A90(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384
-                            .AddSharpeAngle_0_to_90_Unsafe(name, angle) =>
+                            .AddSharpeAngle_0_to_90_Unsafe(name, angle, _) =>
                         FlowOnlyPipeDescr_13384.AngleVifDe0A90_Unsafe(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_90(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe90(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_90_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe90_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_60(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe60(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddSmoothCurve_60_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeCourbe60_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
-                    case AddFlowOnlyPipeElement_13384.AddElbows_2x45(name, r) =>
+                    case AddFlowOnlyPipeElement_13384.AddElbows_2x45(name, r, _) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec2A45(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
-                    case AddFlowOnlyPipeElement_13384.AddElbows_3x30(name, r) =>
+                    case AddFlowOnlyPipeElement_13384.AddElbows_3x30(name, r, _) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec3A30(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddFlowOnlyPipeElement_13384.AddElbows_4x22p5(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         FlowOnlyPipeDescr_13384.CoudeASegment90Avec4A22p5(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
             }
 
@@ -316,83 +378,106 @@ object ElementFactory_13384_Instances:
                     )
                 )
 
+            // Compute angleN2 from direction tracking if available
+            val angleN2: Option[QtyD[Degree]] =
+                (ctx.dirBeforePreviousDC, ctx.currentFrame) match
+                    case (Some(dirBefore), Some(frame)) =>
+                        Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
+                    case _ => None
+
             (vDh, vLd).mapN { (dh: QtyD[Meter], ld: QtyD[Meter]) =>
                 op match
                     case AddThermalPipeElement_13384.AddAngleAdjustable(
                             name,
                             angle,
-                            zeta
+                            zeta,
+                            _
                         ) =>
-                        ThermalPipeDescr_13384.AngleSpecifique(angle, zeta)
+                        ThermalPipeDescr_13384.AngleSpecifique(angle, zeta, angleN2)
                     case AddThermalPipeElement_13384.AddSharpeAngle_0_to_90(
                             name,
-                            angle
+                            angle,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.AngleVifDe0A90(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384
-                            .AddSharpeAngle_0_to_90_Unsafe(name, angle) =>
+                            .AddSharpeAngle_0_to_90_Unsafe(name, angle, _) =>
                         ThermalPipeDescr_13384.AngleVifDe0A90_Unsafe(
                             angle,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_90(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe90(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_90_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe90_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_60(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe60(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddSmoothCurve_60_Unsafe(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeCourbe60_Unsafe(
                             r,
                             Ld = ld,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
-                    case AddThermalPipeElement_13384.AddElbows_2x45(name, r) =>
+                    case AddThermalPipeElement_13384.AddElbows_2x45(name, r, _) =>
                         ThermalPipeDescr_13384.CoudeASegment90Avec2A45(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
-                    case AddThermalPipeElement_13384.AddElbows_3x30(name, r) =>
+                    case AddThermalPipeElement_13384.AddElbows_3x30(name, r, _) =>
                         ThermalPipeDescr_13384.CoudeASegment90Avec3A30(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
                     case AddThermalPipeElement_13384.AddElbows_4x22p5(
                             name,
-                            r
+                            r,
+                            _
                         ) =>
                         ThermalPipeDescr_13384.CoudeASegment90Avec4A22p5(
                             r,
-                            Dh = dh
+                            Dh = dh,
+                            angleN2 = angleN2
                         )
             }
 
@@ -612,29 +697,53 @@ object ElementFactory_13384_Instances:
     given flowOnlyPressureDiff13384: ElementFactory[
         AddFlowOnlyPipeElement_13384.AddPressureDiff,
         FlowOnlyPipeDescr_13384.PressureDiff,
-        Unit
+        FlowResistanceCtx_13384
     ] with
         def make(op: AddFlowOnlyPipeElement_13384.AddPressureDiff)(using
-            Unit
+            ctx: FlowResistanceCtx_13384
         ) =
-            FlowOnlyPipeDescr_13384
-                .PressureDiff(
-                    pa = op.pressure_difference
+            ctx.getValidated(
+                _.innerShape,
+                FlowResistanceRequiresGeometry(
+                    op.name,
+                    "EN13384",
+                    ctx.pipeType
                 )
-                .validNel
+            ).andThen { geom =>
+                FlowOnlyPipeDescr_13384
+                    .PressureDiff(
+                        pa = op.pressure_difference,
+                        crossSectionO = Some(geom.area)
+                    )
+                    .validNel
+            }
+
+
 
     // ========== Thermal Pressure Diff Factory ==========
 
     given thermalPressureDiff13384: ElementFactory[
         AddThermalPipeElement_13384.AddPressureDiff,
         ThermalPipeDescr_13384.PressureDiff,
-        Unit
+        FlowResistanceCtx_13384
     ] with
         def make(op: AddThermalPipeElement_13384.AddPressureDiff)(using
-            Unit
+            ctx: FlowResistanceCtx_13384
         ) =
-            ThermalPipeDescr_13384
-                .PressureDiff(
-                    pa = op.pressure_difference
+            ctx.getValidated(
+                _.innerShape,
+                FlowResistanceRequiresGeometry(
+                    op.name,
+                    "EN13384",
+                    ctx.pipeType
                 )
-                .validNel
+            ).andThen { geom =>
+                ThermalPipeDescr_13384
+                    .PressureDiff(
+                        pa = op.pressure_difference,
+                        crossSectionO = Some(geom.area)
+                    )
+                    .validNel
+            }
+
+

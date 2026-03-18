@@ -40,8 +40,17 @@ object defaultable_15544:
             def default = SetMaterial(defaultable_material_15544_v2.default)
         given Defaultable[SetNumberOfFlows]           :
             def default = SetNumberOfFlows(divideFlowIn.default)
+        given Defaultable[SetInitialDirection]        :
+            def default = SetInitialDirection(
+                azimuth     = AzimuthDirection.Rear,
+                inclination = InclinationDirection.Up
+            )
+        given Defaultable[SetInitialPosition]         :
+            def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
+        given Defaultable[SetFinalPosition]           :
+            def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
         given Locale => Defaultable[AddSectionSlopped]:
-            def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters, 0.meters)
+            def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
 
         given Locale => Defaultable[AddSectionHorizontal]   :
             def default = AddSectionHorizontal(I18N_UI.default_element_names.horizontal_straight_element, 1.meters)

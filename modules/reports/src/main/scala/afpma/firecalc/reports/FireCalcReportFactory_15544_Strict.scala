@@ -17,8 +17,6 @@ import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
 import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.LoadQty
 import io.taig.babel.Locale
 import io.github.fatihcatalkaya.javatypst.JavaTypst
 import java.nio.file.Files
@@ -110,10 +108,7 @@ object FireCalcReportFactory_15544_Strict:
                     val typstReportFactory = new TypstReportFactory_15544_Strict(isDraft) {
                         override val en15544_app: EN15544_Application = strict_appl
                         override val stove_proj_15544_strict = fcProj
-                        given params: en15544_app.Params_15544 =
-                            given pReq: DraftCondition = DraftCondition.DraftMinOrPositivePressureMax
-                            import LoadQty.givens.nominal
-                            (pReq, nominal)
+                        override val atParams = en15544_app.primary
                     }
                     // update local state
                     typString = Some(typstReportFactory.build())

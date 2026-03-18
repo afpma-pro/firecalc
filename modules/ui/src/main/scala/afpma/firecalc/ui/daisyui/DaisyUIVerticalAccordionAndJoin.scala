@@ -96,33 +96,47 @@ final case class DaisyUIVerticalAccordionAndJoin(
                             div(cls := "flex-none w-42", prj.date)
                         ).some
             ),
-            content       = projectDescrUI
+            content       = projectDescrUI,
+            opened        = panelOpenedVar("client_project")
         ),
         DaisyUIVerticalAccordionAndJoin.Element          (
             idx           = 0,
             title         = Title.WithTitleOnly(
                 I18N.panels.output_and_other_parameters,
-                xtra_sig = stove_params_var.signal.map: pdm =>
-                    given Show[QtyD[Kilogram]] = shows.defaults.show_Kilograms_1
-                    given showPound0: Show[QtyD[Pound]] = shows.defaults.show_Pound_0
-                    val mb_or_pn = pdm.maximum_load
-                        .map(mb => s"${I18N.technical_specifications.maximum_load_short} ${mb.showP_orImpUnits[Pound]}")
-                        .orElse(pdm.nominal_heat_output.map(_.showP_orImpUnits[BTU / Hour]))
-                        .getOrElse("")
-                    div(
-                        cls := "flex flex-row max-w-3/4",
-                        div(cls := "flex-grow w-36", mb_or_pn),
+                xtra_sig =
+                    stove_params_var.signal
+                    .combineWith(results_en15544_strict_sig)
+                    .map { (pdm, vnel_appl) =>
+                        given Show[QtyD[Kilogram]] = shows.defaults.show_Kilograms_1
+                        given showPound0: Show[QtyD[Pound]] = shows.defaults.show_Pound_0
+                        val opt_appl = vnel_appl.toOption
+                        val mb_value = pdm.sizing_method match
+                            case SizingMethod.NominalHeatOutput => opt_appl.map(_.m_B)  // use calculated value from en15544
+                            case SizingMethod.MaxLoad           => pdm.maximum_load     // use input from user
+                        val mb_value_show = mb_value.map(_.showP_orImpUnits[Pound]).getOrElse("-")
+                        val mb_show = s"${I18N.technical_specifications.maximum_load_short} = ${mb_value_show}"
+                        val pn_value = pdm.sizing_method match
+                            case SizingMethod.NominalHeatOutput => pdm.nominal_heat_output  // use input from user
+                            case SizingMethod.MaxLoad           => opt_appl.map(_.P_n)      // use calculated value from en15544
+                        val pn_value_show = pn_value.map(_.showP_orImpUnits[BTU / Hour]).getOrElse("-")
+                        val pn_show = s"${I18N.technical_specifications.nominal_heat_output_short} = ${pn_value_show}"
                         div(
-                            cls := "flex-grow w-36",
-                            s"${I18N.technical_specifications.heating_cycle} = ${pdm.heating_cycle.show}"
-                        ),
-                        div(
-                            cls := "flex-grow w-36",
-                            I18N.technical_specifications.facing_type_sentence(pdm.facing_type.show.toLowerCase())
-                        )
-                    ).some
+                            cls := "flex flex-row max-w-3/4",
+                            div(cls := "flex-grow w-36", mb_show),
+                            div(cls := "flex-grow w-36", pn_show),
+                            div(
+                                cls := "flex-grow w-36",
+                                s"${I18N.technical_specifications.heating_cycle} = ${pdm.heating_cycle.show}"
+                            ),
+                            div(
+                                cls := "flex-grow w-36",
+                                I18N.technical_specifications.facing_type_sentence(pdm.facing_type.show.toLowerCase())
+                            )
+                        ).some
+                    }
             ),
-            content       = stoveParamsUI
+            content       = stoveParamsUI,
+            opened        = panelOpenedVar("output_and_parameters")
         ),
         DaisyUIVerticalAccordionAndJoin.Element          (
             idx           = 0,
@@ -147,7 +161,8 @@ final case class DaisyUIVerticalAccordionAndJoin(
                 ,
                 quadrionSubtotal_sig = penalty_sig
             ),
-            content       = localConditionsUI
+            content       = localConditionsUI,
+            opened        = panelOpenedVar("local_conditions")
         ),
         FlowOnlyAirIntakePipePanel                       (),
         FireboxPanel                                     (),
@@ -160,6 +175,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
                 I18N.panels.total,
                 quadrionSubtotal_sig = subtotal_quadrions_sig
             ),
+            opened        = panelOpenedVar("total"),
             allowCollapse = false
         )
 
@@ -211,18 +227,22 @@ object DaisyUIVerticalAccordionAndJoin:
     sealed trait Title(
         title               : String,
         xtra_sig            : Signal[Option[HtmlElement]],
-        quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]]
+        quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]],
+        bottomContent_sig   : Signal[Option[HtmlElement]] = Signal.fromValue(None)
     ) extends Component:
 
         protected def TitleChild = div(cls := "flex-none w-64", title)
         protected def XtraFlexChild: Node = div(cls := "flex-1 w-12", child.maybe <-- xtra_sig)
 
         val node = div(
-            cls := "flex items-center",
-            TitleChild,
-            XtraFlexChild, // grows and shrink
-            child <-- quadrionSubtotal_sig.map(_.map(_.node).getOrElse(emptyNode)),
-            div(cls := "flex-none w-2") // right margin
+            div(
+                cls := "flex items-center",
+                TitleChild,
+                XtraFlexChild, // grows and shrink
+                child <-- quadrionSubtotal_sig.map(_.map(_.node).getOrElse(emptyNode)),
+                div(cls := "flex-none w-2") // right margin
+            ),
+            child.maybe <-- bottomContent_sig
         )
 
     object Title:
@@ -279,9 +299,10 @@ object DaisyUIVerticalAccordionAndJoin:
 
         final case class WithQuadrionSubtotal(
             title               : String,
-            xtra_sig            : Signal[Option[HtmlElement]] = Signal.fromValue(None),
-            quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]]
-        ) extends Title(title, xtra_sig, quadrionSubtotal_sig)
+            xtra_sig            : Signal[Option[HtmlElement]]            = Signal.fromValue(None),
+            quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]],
+            bottomContent_sig   : Signal[Option[HtmlElement]]            = Signal.fromValue(None)
+        ) extends Title(title, xtra_sig, quadrionSubtotal_sig, bottomContent_sig)
 
         final case class QuadrionValueWithTooltip(
             value      : String | Option[Double],

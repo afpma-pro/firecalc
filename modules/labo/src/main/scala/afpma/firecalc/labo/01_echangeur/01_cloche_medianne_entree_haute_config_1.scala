@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -17,7 +18,6 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.biblio.kov.firebox_emissions
 import afpma.firecalc.engine.impl.en15544.labo.*
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en13384.std.Wood
 import afpma.firecalc.engine.models.en15544.std
@@ -26,8 +26,9 @@ import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
 import coulomb.*
 import coulomb.ops.standard.all.given
 
-object `01_cloche_medianne_entree_haute_config_1` 
-    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Labo_Alg:
+object `01_cloche_medianne_entree_haute_config_1`
+    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Labo_Alg
+    with v0_2024_10.WithPipeChain_15544_MCE:
     self =>
 
     import std.*
@@ -93,6 +94,7 @@ object `01_cloche_medianne_entree_haute_config_1`
     val airIntakePipe = 
         import AirIntakePipe_Module.*
         define(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // Up
             addFlowResistance("grille", 1.2.unitless, hydraulic_diameter = 154.mm),
 
             pipeLocation(Area.Exterieure),
@@ -102,7 +104,7 @@ object `01_cloche_medianne_entree_haute_config_1`
 
             addSectionVertical("entrée verticale", 114.5.cm + 12.2.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm), 
+            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front (TOCHECK)
 
             pipeLocation(Area.NonChauffee),
             addSectionHorizontal("traversée mur", 62.8.cm), // non cohérent sur sketchup
@@ -110,14 +112,14 @@ object `01_cloche_medianne_entree_haute_config_1`
             addSectionHorizontal("horizontal en combles", 0.0.cm),
 
             pipeLocation(Area.DansLaPieceDuPoele),
-            addCoudeCourbe90_unsafe("vertical en combles", 12.2.cm), 
-            
+            addCoudeCourbe90_unsafe("vertical en combles", 12.2.cm, absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down (TOCHECK)
+
             addSectionVertical("P01", -196.1.cm),
             addSectionVertical("anémomètre", -39.5.cm),
             addSectionVertical("capteur humidité", -104.cm),
             addSectionVertical("descente 4", -38.7.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm),
+            addCoudeCourbe90_unsafe("coude courbe 90° (R=12.2cm)", 12.2.cm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front (TOCHECK)
 
             addSectionHorizontal("avt clapet", 23.7.cm),
             addFlowResistance("clapet zeta = 0.3!", 0.3.unitless: ζ),
@@ -138,24 +140,24 @@ object `01_cloche_medianne_entree_haute_config_1`
             layer(e = 1.cm, λ = 1.3.W_per_mK),
             addSectionHorizontal("entrée P03 TC03", 18.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
+            addSharpAngle_90deg_unsafe("angle vif 90°", absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             innerShape(rectangle(36.cm, 36.cm)),
             addSectionVertical("montée", 7.3.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
-            
+            addSharpAngle_90deg_unsafe("angle vif 90°", absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left (TOCHECK / arbitrary)
+
             channelsSplit(11),
 
             innerShape(rectangle(6.6.cm, 8.7.cm)),
             addSectionHorizontal("sous sole", 25.cm),
 
-            addSharpAngle_90deg("angle vif 90°"),
+            addSharpAngle_90deg("angle vif 90°", absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             innerShape(rectangle(6.6.cm, 3.3.cm)),
             addSectionVertical("montée", 27.3.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
+            addSharpAngle_90deg_unsafe("angle vif 90°", absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right (TOCHECK / arbitrary)
             
             innerShape(rectangle(26.4.cm, 1.8.cm)),
             addSectionHorizontal("injecteurs", 2.cm),
@@ -183,11 +185,11 @@ object `01_cloche_medianne_entree_haute_config_1`
 
     val firebox_output_temp = 785.degreesCelsius
 
-    val fluePipe = 
+    val fluePipeDescr =
         import FluePipe_Module_13384.*
-        FluePipe_Module_13384
-        .incremental
-        .define(
+        Seq(
+            setInitialDirection(azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left (TOCHECK)
+
             pipeLocation(Area.Accumulateur),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
@@ -205,31 +207,30 @@ object `01_cloche_medianne_entree_haute_config_1`
             layer(e = 3.cm, λ = 1.3.W_per_mK),
 
             innerShape(rectangle(16.2.cm, 22.2.cm)),
-            
+
             addSectionHorizontal("horizontal carneaux TC31", 34.3.cm),
             addSectionHorizontal("horizontal milieu de cloche", 33.2.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm),
+            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm, absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
 
             innerShape(rectangle(55.4.cm, 55.5.cm)),
 
             addSectionVertical("descente dans la cloche TC30", -11.cm),
             addSectionVertical("descente dans la cloche", 77.cm),
 
-            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm),
+            addCoudeCourbe90_unsafe("coude courbe 90°", R = 30.cm, absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left (TOCHECK)
 
             addSectionHorizontal("vers colonne", 28.7.cm),
 
-            addSharpAngle_90deg_unsafe("angle vif 90°"),
+            addSharpAngle_90deg_unsafe("angle vif 90°", absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             addSectionVertical("colonne P09", 77.7.cm),
             addSectionVertical("colonne", 113.7.cm),
         )
-        .toFullDescr().extractPipe
 
-    val connectorPipe = 
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental.define(
+        Seq(
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
             layer(e = 0.1.cm, λ = 15.W_per_mK),
@@ -237,11 +238,10 @@ object `01_cloche_medianne_entree_haute_config_1`
 
             addSectionVertical("raccord", 4.cm)
         )
-        .toFullDescr().extractPipe
 
-    val chimneyPipe = 
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental.define(
+        Seq(
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)),
             layer(e = 2.5.cm, λ = 0.096.W_per_mK),
@@ -259,10 +259,9 @@ object `01_cloche_medianne_entree_haute_config_1`
 
             addFlowResistance("element terminal", 1.2.unitless: ζ)
         )
-        .toFullDescr().extractPipe
 
     override lazy val design = Design(
-        firebox = Firebox_15544.OneOff.CustomForLab(
+        firebox = Firebox_15544.Traditional.CustomForLab(
             reference = LocalizedString(_ => "???"),
             type_of_appliance = TypeOfAppliance.WoodLogs,
             emissions_values = firebox_emissions.Standing_Standard_Burning_Firebox,
@@ -275,5 +274,6 @@ object `01_cloche_medianne_entree_haute_config_1`
                 height = 58.3.cm
             ),
             glass_area = 200.cm2, // does not matter here
+            height_of_lowest_opening = 5.cm, // TOCHECK but does not matter
         )
     )

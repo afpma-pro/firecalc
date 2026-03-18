@@ -7,7 +7,6 @@ package afpma.firecalc.dto.generators.schema
 
 import org.scalacheck.Gen
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
-import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.generators.common.{
     CommonTypes_Generators,
     StoveParams_Generators
@@ -58,7 +57,7 @@ trait FireCalcYAML_V1_Generators
             connector <- genThermalPipeDescr_13384_V1_Seq
             chimney <- genThermalPipeDescr_13384_V1_Seq
         yield FireCalcYAML_V1(
-            version = FireCalc_Version(1),
+            version = FireCalcYAML_V1.VERSION,
             locale = locale,
             display_units = displayUnits,
             standard_or_computation_method = method,

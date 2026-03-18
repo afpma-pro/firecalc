@@ -56,3 +56,6 @@ astformatter
 
 # SBT watch mode logs
 .logs/
+
+# Generated viz bundle (source of truth is modules/viz/src/ts/filaire-viz.ts)
+modules/viz/src/main/resources/afpma/firecalc/filaire/filaire-viz.js

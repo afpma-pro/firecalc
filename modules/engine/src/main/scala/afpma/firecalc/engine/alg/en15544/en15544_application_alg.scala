@@ -75,16 +75,16 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         override lazy val last_known_density_before_connector_pipe: WithParams_13384[Option[Density]] =
             computeAt match
                 case ComputeAt.Mean   =>
-                    flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_density_mean)
+                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_density_mean)
                 case ComputeAt.Middle =>
-                    flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_density_middle)
+                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_density_middle)
 
         override lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] =
             computeAt match
                 case ComputeAt.Mean   =>
-                    flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_mean)
+                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_velocity_mean)
                 case ComputeAt.Middle =>
-                    flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_middle)
+                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_velocity_middle)
 
         // 7.8.4
         // Températures moyennes pour le calcul de pression
@@ -100,6 +100,9 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
             // scala.scalajs.js.Dynamic.global.console.log(debug)
             // println(debug)
             formulas.T_mB_calc(dt, tl).withSectionTyp(AirIntakePipeT)
+
+        /** Lookup the pre-built AtParams instance matching the given EN13384 params */
+        def atParamsFor(p: Params_13384): AtParams
     }
 
     lazy val en13384_application: EN13384_For_15544_Application
@@ -147,25 +150,17 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     // Section "1", "Scope"
 
-    // Section "4.3.1.2", "Firebox surface"
-    def U_BR: OneOffOrNotApplicable[U_BR]
+    // Section "4.3.1", "Firebox sizing"
 
-    def O_BR: O_BR
-
-    // Section "4.3.1.3", "Firebox base"
-    def A_BR_min: A_BR
-    def A_BR_max: OneOffOrNotApplicable[A_BR]
-    def A_BR    : OneOffOrNotApplicable[A_BR]
-
-    // Section "4.3.1.4", "Firebox height"
-    def H_BR: OneOffOrNotApplicable[H_BR]
+    def firebox_sizing: FireboxSizingAlg
+    type FireboxSizingAlg <: FireboxSizing_15544_Alg
 
     // Section "4.3.2", "Calculated flue pipe length"
     def L_Z_calculated: L_N
 
     // Section "4.3.3", "Minimum flue pipe length"
     def table_1_Factor_a_or_b: Option[Table_1_Factor_a_or_b]
-    def L_Z_min              : OneOffOrNotApplicable[VNel[L_N]]
+    def L_Z_min              : VNel[L_N]
 
     // Section "4.3.4", "Gas groove profile"
     def A_GS: A_GS
@@ -230,48 +225,6 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def t_fluepipe     (L_Z: QtyD[Meter]                  ): t_fluepipe
     def t_fluepipe_mean(lz1: QtyD[Meter], lz2: QtyD[Meter]): VNel[t_fluepipe]
 
-    // Section "4.8.4", "Flue gas temperature in the connector pipe"
-    def t_connector_pipe_mean: WithParams_15544[VNelMcalcErr[t_connector_pipe_mean]]
-
-    // Section "4.8.5",
-
-    // Flue gas temperature at chimney entrance mean flue gas
-    // temperature of the chimney and temperature of the chimney wall
-    // at the top of the chimney
-    def t_chimney_entrance: WithParams_15544[VNelMcalcErr[t_chimney_entrance]]
-    def t_chimney_mean    : WithParams_15544[VNelMcalcErr[t_chimney_mean]]
-    def t_chimney_out     : WithParams_15544[VNelMcalcErr[t_chimney_out]]
-    def t_chimney_wall_top: WithParams_15544[VNelMcalcErr[t_chimney_wall_top]]
-
-    // Section "4.9.4", Calculation of static friction
-
-    // Section "4.9.4.3", Friction coefficient
-
-    // Section "4.9.5, Calculation of the resistance due to direction change (p_u)
-
-    // Section "4.10.1", Pressure requirement
-
-    def Σ_p_R_and_Σ_p_u: WithParams_15544[VNelMcalcErr[Pressure]]
-    def Σ_p_h          : WithParams_15544[VNelMcalcErr[Pressure]]
-
-    def pressureRequirement_EN15544: WithParams_15544[VNelMcalcErr[PressureRequirement]]
-
-    // Section "4.10.2, Dew point condition
-
-    // Section "4.10.3", Efficiency of the combustion
-
-    def η  : WithParams_15544[VNelMcalcErr[η]]
-    def t_F: WithParams_15544[VNelMcalcErr[t_F]]
-
-    // Section "4.10.4"
-
-    def required_delivery_pressure: WithParams_15544[VNelMcalcErr[RequiredDeliveryPressure]]
-    def t_fluepipe_end            : WithParams_15544[VNelMcalcErr[TCelsius]]
-
-    def flue_gas_triple_of_variates: WithParams_15544[VNelMcalcErr[FlueGasTripleOfVariates]]
-
-    def estimated_output_temperatures: WithParams_15544[EstimatedOutputTemperatures]
-
     // EN13384 variables
 
     // TODO: P_Z, P_Zmax, P_Ze, P_Zemax, P_W, P_W_max, P_B
@@ -300,30 +253,90 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     given pressReq_from_Params_15544: (p: Params_15544) => DraftCondition = p._1
     // export Params_13384.pressReq_from_Params_13384
 
-    def airIntake_PipeResult    : WithParams_13384[VNelMcalcErr[PipeResult]]
-    def combustionAir_PipeResult: WithParams_15544[VNelMcalcErr[PipeResult]]
-    def firebox_PipeResult      : WithParams_15544[VNelMcalcErr[PipeResult]]
-    def flue_PipeResult         : WithParams_15544[VNelMcalcErr[PipeResult]]
-    def connector_PipeResult    : WithParams_15544[VNelMcalcErr[PipeResult]]
-    def chimney_PipeResult      : WithParams_15544[VNelMcalcErr[PipeResult]]
+    // ─── AtParams: params-dependent layer ───────────────────────────────
 
-    protected def pipesResult_15544_VNelS: WithParams_15544[PipesResult_15544_VNelString]
+    /** Inner trait grouping all declarations that depend on a fixed `Params_15544`.
+      * Implementations provide lazy vals so that results are computed once per params combo.
+      */
+    trait AtParams:
+        val params: Params_15544
+
+        // Pipe results
+        lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
+        lazy val firebox_PipeResult      : VNelMcalcErr[PipeResult]
+        lazy val flue_PipeResult         : VNelMcalcErr[PipeResult]
+        lazy val connector_PipeResult    : VNelMcalcErr[PipeResult]
+        lazy val chimney_PipeResult      : VNelMcalcErr[PipeResult]
+
+        // Derived temperatures (Section 4.8.4 – 4.8.5)
+        lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean]
+        lazy val t_chimney_entrance   : VNelMcalcErr[t_chimney_entrance]
+        lazy val t_chimney_mean       : VNelMcalcErr[t_chimney_mean]
+        lazy val t_chimney_out        : VNelMcalcErr[t_chimney_out]
+        lazy val t_chimney_wall_top   : VNelMcalcErr[t_chimney_wall_top]
+
+        // Pressures (Section 4.9 – 4.10.1)
+        lazy val Σ_p_R_and_Σ_p_u          : VNelMcalcErr[Pressure]
+        lazy val Σ_p_h                    : VNelMcalcErr[Pressure]
+        lazy val pressureRequirement_EN15544: VNelMcalcErr[PressureRequirement]
+
+        // Efficiency (Section 4.10.3)
+        lazy val η  : VNelMcalcErr[η]
+        lazy val t_F: VNelMcalcErr[t_F]
+        lazy val η_s: VNelMcalcErr[Percentage]
+
+        // Section 4.10.4
+        lazy val required_delivery_pressure: VNelMcalcErr[RequiredDeliveryPressure]
+        lazy val t_fluepipe_end            : VNelMcalcErr[TCelsius]
+
+        lazy val flue_gas_triple_of_variates  : VNelMcalcErr[FlueGasTripleOfVariates]
+        lazy val estimated_output_temperatures: EstimatedOutputTemperatures
+
+        // Aggregated pipe results
+        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString
+
+        // Outputs
+        lazy val outputs: Outputs
+
+        // Validations
+        def validateVelocitiesInFluePipe                  ()                    : VNelMcalcErr[Unit]
+        def validateVelocitiesInConnectorPipe             ()                    : VNelMcalcErr[Unit]
+        def validateVelocitiesInChimneyPipe               ()                    : VNelMcalcErr[Unit]
+        def validateVelocitiesInPipes                     ()                    : VNel[Unit]
+        def validatePressureRequirements_EN15544          ()                    : VNelMcalcErr[Unit]
+        def validateChimneyWallTempIsAboveCondensationTemp()                    : VNelMcalcErr[Unit]
+        def validateEfficiencyIsAboveMinEfficiency        ()                    : VNelMcalcErr[Unit]
+        def validateSeasonalEfficiency                    (countryCode: Country): VNelMcalcErr[Unit]
+        def validateCitedConstraints                      ()                    : VNelMcalcErr[Unit]
+        def validateFireboxSpecificConstraints            ()                    : ValidatedNel[FireboxError, Unit]
+    end AtParams
+
+    // ─── Pre-built AtParams instances ───────────────────────────────────
+
+    /** Draft-min / nominal load — the primary computation used by the UI */
+    lazy val atDraftMin_LoadNominal: AtParams
+
+    /** Draft-min / reduced load — None when there is no m_B_min */
+    lazy val atDraftMin_LoadMin: Option[AtParams]
+
+    /** Draft-max / nominal load */
+    lazy val atDraftMax_LoadNominal: AtParams
+
+    /** Draft-max / reduced load — None when there is no m_B_min */
+    lazy val atDraftMax_LoadMin: Option[AtParams]
+
+    /** Alias to the most commonly used combo (draft-min, nominal load) */
+    lazy val primary: AtParams = atDraftMin_LoadNominal
+
+    // ─── Params-independent members kept on outer trait ──────────────────
+
+    def airIntake_PipeResult: WithParams_13384[VNelMcalcErr[PipeResult]]
 
     // outputs
     val techSpecs: TechnicalSpecficiations
     def reference_temperatures: ReferenceTemperatures
-    def outputs               : WithParams_15544[Outputs]
 
-    def validateFluePipeShape                         (                    ): VNel[Unit]
-    def validateVelocitiesInPipes                     (                    ): WithParams_15544[VNel[Unit]]
-    def validatePressureRequirements_EN15544          (                    ): WithParams_15544[VNelMcalcErr[Unit]]
-    def validateChimneyWallTempIsAboveCondensationTemp(                    ): WithParams_15544[VNelMcalcErr[Unit]]
-    def validateEfficiencyIsAboveMinEfficiency        (                    ): WithParams_15544[VNelMcalcErr[Unit]]
-    def validateSeasonalEfficiency                    (countryCode: Country): WithParams_15544[VNelMcalcErr[Unit]]
-    def validateCitedConstraints                      (                    ): WithParams_15544[VNelMcalcErr[Unit]]
-    def validateFireboxSpecificConstraints            (                    ): WithParams_15544[ValidatedNel[FireboxError, Unit]]
-
-    val runValidationAtParams: Params_15544
+    def validateFluePipeShape                    (): VNel[Unit]
     def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit]
 
     def efficiencies_values            : EfficienciesValues
@@ -331,6 +344,5 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def check_emissions_and_efficiency_values_with_local_regulations(
         lreg: LocalRegulations
     ): List[LocalRegulations.ParamCheckResult[?]]
-    def η_s: WithParams_15544[VNelMcalcErr[Percentage]]
 
 end EN15544_V_2023_Application_Alg

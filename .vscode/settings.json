@@ -17,10 +17,11 @@
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.5+35-65796bf7-SNAPSHOT",
+    "metals.serverVersion": "1.6.6+20-34e62510-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 38615,
     "metals.suggestLatestUpgrade": "on",
+    "metals.shutdownBloopOnEditorClose": true,
     "metals.customRepositories": [
         "sonatype:releases|sonatype:snapshots|jcenter"
     ],
@@ -66,12 +67,18 @@
             "**/package.json",
             "**/package-lock.json",
             "**/*.{svg,png,jpg,jpeg,gif,ico,pdf}",
+            "**/*.{md}",
+            "**/.*/**/*.md",
+            "**/.*/**/*.json",
             "**/.vscode/settings.json",
             "**/web/electron-app/resources/fontconfig/**",
             "**/.gitignore",
             "**/.jvmopts.ci",
             "**/Dockerfile",
-            "**/*.json"
+            "**/*.json",
+            "**/*.fcalc",
+            "**/*.fcalc.base64",
+            "**/*.fcalc-db"
         ]
     },
     "psi-header.variables": [

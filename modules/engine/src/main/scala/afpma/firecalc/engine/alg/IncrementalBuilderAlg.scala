@@ -6,6 +6,7 @@
 package afpma.firecalc.engine.alg
 
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
 import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
 import afpma.firecalc.engine.standard.ForbiddenAddElementAtStart
@@ -107,18 +108,41 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr]
         def toFullDescr(): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr)] =
-            val iPropsState    = mkInitPropsState(piDescr)
-            val iPipeFullDescr = mkInitPipeFullDescr(piDescr)
-            val iIdsMapping    = IdsMapping.empty
-            val iListIncrDescr = piDescr.listIncrDescr()
-            validateBoundaryElements(iListIncrDescr) *>
-            buildIncrDescr(
-                iPipeFullDescr,
-                iIdsMapping,
-                iPropsState,
-                opsDone = Vector.empty,
-                opsLeft = iListIncrDescr
-            )
+            buildFrom(piDescr, externalInitialFrame = None).map((ids, fd, _) => (ids, fd))
+
+        /** Like toFullDescr(), but also returns the final PipeFrame (if direction tracking was active). */
+        def toFullDescrWithFinalFrame(): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
+            buildFrom(piDescr, externalInitialFrame = None)
+
+        /**
+         * Like toFullDescr(), but seeds the initial direction from an external frame
+         * (e.g. the final frame of the preceding pipe in the sequence).
+         * Only takes effect when the pipe itself does not already define an initial direction.
+         */
+        def toFullDescrWithExternalInitialFrame(
+            externalInitialFrame: Option[PipeFrame]
+        ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
+            buildFrom(piDescr, externalInitialFrame)
+
+    private def buildFrom(
+        piDescr             : PipeIncrDescr,
+        externalInitialFrame: Option[PipeFrame]
+    ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
+        val iPropsState0   = mkInitPropsState(piDescr)
+        val iPropsState    = externalInitialFrame.fold(iPropsState0)(applyExternalFrame(iPropsState0, _))
+        val iPipeFullDescr = mkInitPipeFullDescr(piDescr)
+        val iIdsMapping    = IdsMapping.empty
+        val iListIncrDescr = piDescr.listIncrDescr()
+        validateBoundaryElements(iListIncrDescr) *>
+        buildIncrDescr(
+            iPipeFullDescr,
+            iIdsMapping,
+            iPropsState,
+            opsDone = Vector.empty,
+            opsLeft = iListIncrDescr
+        ).andThen: (ids, fd, finalState) =>
+            postBuildValidation(iListIncrDescr, finalState) *>
+            (ids, fd, currentFrameFromPropsState(finalState)).validNel
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
 
@@ -128,6 +152,32 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected type PropsState
 
     protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState
+
+    /**
+     * Extract the current PipeFrame from PropsState, if direction tracking is active.
+     * Default: returns None (no direction tracking).
+     * Concrete builders that support direction tracking override this.
+     */
+    protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] = None
+
+    /**
+     * Hook for post-build validation. Called after all incremental descriptions have been
+     * processed. Override in concrete builders to add pipe-specific validations.
+     * Default: no validation (always valid).
+     */
+    protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] = ().validNel
+
+    /**
+     * Apply an external initial frame to a freshly-created PropsState, but ONLY if
+     * that state does not already have a direction defined (i.e. SetInitialDirection was
+     * not used in the pipe's own descriptor).
+     * Default: no-op (returns the state unchanged).
+     * Concrete builders that support direction tracking override this.
+     */
+    protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState = s
 
     extension (propsState: PropsState) {
 
@@ -246,12 +296,12 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         propsState: PropsState,
         opsDone   : Vector[Id_IncrDescr],
         opsLeft   : Vector[Id_IncrDescr]
-    ): ValidatedResult[(IdsMapping, PipeFullDescr)] =
+    ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
         val convStep = mkConversionStep(opsLeft)
         if (convStep.isLastStep)
             // we hit the end of the conversion steps, nothing left to do
-            // return the last computed full descr
-            (idsMapping, pFullDescr).validNel
+            // return the last computed full descr along with final state
+            (idsMapping, pFullDescr, propsState).validNel
         else
             // update state BEFORE updating full descr
             updateStateBeforeConversionStep(propsState, convStep) match
@@ -275,9 +325,9 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                                         nextOpsDone,
                                         nextOpsLeft
                                     )
-                                case i @ Invalid(_)        => i
-                        case i @ Invalid(_)                           => i
-                case i @ Invalid(_)       => i
+                                case Invalid(e)        => Invalid(e)
+                        case Invalid(e)                           => Invalid(e)
+                case Invalid(e)       => Invalid(e)
 
     val ElementFactory: ElementFactoryModule
     export ElementFactory.{*, given}

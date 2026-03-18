@@ -10,17 +10,25 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.ConnectorPipe
 import afpma.firecalc.engine.models.ConnectorPipeT
-import afpma.firecalc.engine.models.LoadQty
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.models.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
 import io.taig.babel.Locale
 
 final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePanel_13384_Thermal:
+
+    override protected def vizFieldsetIdPrefix: String               = "connector"
+    override protected def ownsVizElement(id: VizElementId): Boolean = id match
+        case VizElementId.ConnectorPipeElement(_) => true
+        case _                                    => false
+    override protected def vizElementIndex(id: VizElementId): Int = id match
+        case VizElementId.ConnectorPipeElement(idx) => idx
+        case _                                      => -1
 
     type Out = ConnectorPipe
     type PT  = ConnectorPipeT
@@ -32,8 +40,7 @@ final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePa
         p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
     val connector_pipe_vnel3_signal = results_en15544_strict_sig.map: strict =>
-        val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(_.validateVelocitiesInConnectorPipe()(using p))
+        strict.andThen(_.primary.validateVelocitiesInConnectorPipe())
 
     lazy val vnel_signal =
         connector_pipe_vnel_signal
@@ -47,6 +54,8 @@ final case class ConnectorPipePanel()(using Locale, DisplayUnits) extends PipePa
             )
 
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] = connector_pipe_incrdescr_var
+
+    override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] = fluepipe_finalFrame_sig
 
     type PipeIdsMapping = afpma.firecalc.engine.models.ConnectorPipe_Module.IdsMapping
 

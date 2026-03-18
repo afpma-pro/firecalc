@@ -7,7 +7,7 @@
 @import "./style.css";
 
 /* @source "./src/main/scala/"; */
-@source "./target/scala-3.8.1/firecalc-ui-fastopt"; 
+@source "./target/scala-3.8.2/firecalc-ui-fastopt"; 
 
 @plugin "@tailwindcss/typography";
 
@@ -92,4 +92,17 @@ body {
 
 .pr-scollbar {
     padding-right: calc(var(--scrollbar-width) * 0);
+}
+
+/* Insert-between separator rows: suppress DaisyUI table borders */
+tr.insert-sep td {
+    border: none;
+}
+
+/* Viz → UI focus highlight */
+.viz-highlighted {
+    border-color: var(--color-primary) !important;
+}
+.viz-highlighted > .fieldset-legend {
+    color: var(--color-primary) !important;
 }

@@ -8,14 +8,13 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v3.FireCalcYAML_V3
+import afpma.firecalc.dto.v4.FireCalcYAML_V4
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
-import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.From_CalculPdM_V_0_2_32
+import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers
 
 import afpma.firecalc.ui.instances.defaultable
 
@@ -30,7 +29,7 @@ object EngineState:
     // given Decoder[AppState] = FireCalcYAML.decoder
     // given Encoder[AppState] = FireCalcYAML.encoder
 
-    val example_projet_15544: EngineState = FireCalcYAML_V3(
+    lazy val example_projet_15544: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -43,14 +42,14 @@ object EngineState:
         stove_params                   = ExampleProject_15544.stoveParams,
         air_intake_descr               = ExampleProject_15544.conduit_air_descr,
         firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional](using
-            From_CalculPdM_V_0_2_32.transformer_inv_TraditionalFirebox_Standard
+            FireboxTransformers.transformer_inv_TraditionalFirebox_Standard
         ),
         flue_pipe_descr                = ExampleProject_15544.accumulateur_descr,
         connector_pipe_descr           = ExampleProject_15544.conduit_raccordement_descr,
         chimney_pipe_descr             = ExampleProject_15544.conduit_fumees_descr
     )
 
-    val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V3(
+    lazy val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -62,15 +61,15 @@ object EngineState:
         local_conditions               = CasType_15544_C3.localConditions,
         stove_params                   = CasType_15544_C3.stoveParams,
         air_intake_descr               = CasType_15544_C3.conduit_air_descr,
-        firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.EcoLabeled](using
-            From_CalculPdM_V_0_2_32.transformer_inv_EcoLabeled
+        firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.Ecolabeled](using
+            FireboxTransformers.transformer_inv_Ecolabeled
         ),
         flue_pipe_descr                = CasType_15544_C3.accumulateur_descr,
         connector_pipe_descr           = CasType_15544_C3.conduit_raccordement_descr,
         chimney_pipe_descr             = CasType_15544_C3.conduit_fumees_descr
     )
 
-    val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V3(
+    lazy val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -82,15 +81,15 @@ object EngineState:
         local_conditions               = CasPratique_15544_FDIM_EX_03.localConditions,
         stove_params                   = CasPratique_15544_FDIM_EX_03.stoveParams,
         air_intake_descr               = CasPratique_15544_FDIM_EX_03.conduit_air_descr,
-        firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.EcoLabeled](using
-            From_CalculPdM_V_0_2_32.transformer_inv_EcoLabeled
+        firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.Ecolabeled](using
+            FireboxTransformers.transformer_inv_Ecolabeled
         ),
         flue_pipe_descr                = CasPratique_15544_FDIM_EX_03.accumulateur_descr,
         connector_pipe_descr           = CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr,
         chimney_pipe_descr             = CasPratique_15544_FDIM_EX_03.conduit_fumees_descr
     )
 
-    val empty: EngineState = FireCalcYAML_V3(
+    lazy val empty: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -104,7 +103,7 @@ object EngineState:
         chimney_pipe_descr             = Seq.empty
     )
 
-    val minimal: EngineState = FireCalcYAML_V3(
+    lazy val minimal: EngineState = FireCalcYAML_V4(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -116,15 +115,17 @@ object EngineState:
         flue_pipe_descr                =
             import FluePipe_Module_15544.*
             Seq(
-                roughness           (3.mm                         ),
-                innerShape(rectangle(18.cm, 18.cm)),
-                addSectionHorizontal("sortie de foyer", 30.cm     ),
-                addSharpAngle_90deg ("vers descente"              ),
-                addSectionVertical  ("descente", -100.cm          ),
-                addSharpAngle_90deg ("vers section horizontale"   ),
-                addSectionHorizontal("section horizontale", 200.cm),
-                addSharpAngle_90deg ("vers remontée"              ),
-                addSectionVertical  ("remontée", 200.cm           )
+                setInitialPosition((+33.0/2).cm, (33.0/2-18.0/2).cm, (52-18.0/2).cm),
+                setInitialDirection (azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // Right
+                roughness           (3.mm                                          ),
+                innerShape(rectangle(18.cm, 18.cm)                                 ),
+                addSectionHorizontal("sortie de foyer", 30.cm                      ),
+                addSharpAngle_90deg ("vers descente", absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
+                addSectionVertical  ("descente", -100.cm                                                                   ),
+                addSharpAngle_90deg ("vers section horizontale", absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+                addSectionHorizontal("section horizontale", 200.cm                                                         ),
+                addSharpAngle_90deg ("vers remontée", absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+                addSectionVertical  ("remontée", 200.cm                            )
             )
         ,
         connector_pipe_descr           =
@@ -148,6 +149,6 @@ object EngineState:
             )
     )
 
-    val init = minimal
+    lazy val init = minimal
 
 end EngineState

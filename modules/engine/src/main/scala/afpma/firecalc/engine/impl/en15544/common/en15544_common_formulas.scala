@@ -12,6 +12,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.utils.Log
 import afpma.firecalc.engine.models.en15544.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
@@ -52,35 +53,8 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
 
     // Section "4.3", "Design of the essential dimensions"
 
-    // Section "4.3.1", "Firebox dimensions"
-
-    // Section "4.3.1.1", "General"
-
-    override lazy val O_BR_calc =
-        (mb) => (900 * mb.value).squareCentimeters
-
-    // Section "4.3.1.3", "Firebox base"
-
-    // A_BR_min
-    override lazy val A_BR_min_calc =
-        mb => (100 * mb.value).squareCentimeters
-
-    // A_BR_max
-    override lazy val A_BR_max_calc =
-        (mb, ubr) => (((900 * mb.value) - (25 + mb.value) * ubr.toUnit[Centimeter].value) / 2.0).squareCentimeters
-
-    // Section "4.3.1.4", "Firebox height"
-
-    override lazy val H_BR_min_calc =
-        mb => (25.0 + mb.value).cm
-
-    override lazy val H_BR_calc =
-        (mb, abr, ubr) =>
-            (
-                (900.0 * mb.toUnit[Kilogram].value - 2.0 * abr.toUnit[(Centimeter ^ 2)].value)
-                    /
-                        ubr.toUnit[Centimeter].value
-            ).cm
+    // Section "4.3.1", "Firebox sizing"
+    // NOTE: firebox_formulas removed — now accessed via firebox.formulas (typeclass)
 
     // Section "4.3.2", "Calculated flue pipe length"
 
@@ -128,23 +102,25 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
 
     override lazy val Table_1_Factor_a_opt_calc =
         nmin =>
-            TSVTableString
+            val result = TSVTableString
                 .fromString(EN15544_2023_TABLE_1_RAW_STRING)
                 .getUsingLinearInterpolation(
                     xHeader = "Efficiency",
                     yHeader = "Factor a"
                 )(xi = nmin.value)
-                .map(_.unitless)
+            result.left.foreach(err => Log.warning(s"[EN15544] Table 1 Factor a interpolation failed for nmin=${nmin.value}: $err"))
+            result.toOption.map(_.unitless)
 
     override lazy val Table_1_Factor_b_opt_calc =
         nmin =>
-            TSVTableString
+            val result = TSVTableString
                 .fromString(EN15544_2023_TABLE_1_RAW_STRING)
                 .getUsingLinearInterpolation(
                     xHeader = "Efficiency",
                     yHeader = "Factor b"
                 )(xi = nmin.value)
-                .map(_.unitless)
+            result.left.foreach(err => Log.warning(s"[EN15544] Table 1 Factor b interpolation failed for nmin=${nmin.value}: $err"))
+            result.toOption.map(_.unitless)
 
     override lazy val L_Z_min_calc = (ab: Table_1_Factor_a_or_b, mb: m_B) =>
         val a_or_b_value = ab.fold(_.value, _.value)
@@ -222,11 +198,11 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
     final lazy val t_BR_default_in_standard: TCelsius = 700.degreesCelsius
 
     override lazy val t_BR_calc =
-        case t: Firebox_15544.Tested =>
+        case t: Firebox_15544.SingleTested =>
             t.meanFireboxTemperature
                 .map(_.toUnit[Celsius])
                 .getOrElse(t_BR_default)
-        case _: Firebox_15544.OneOff =>
+        case _: Firebox_15544 =>
             t_BR_default
 
     // Section "4.8.3", "Flue gas temperature in the flue pipe"
@@ -236,8 +212,8 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
     final lazy val t_burnout_in_standard = 550.degreesCelsius
 
     override lazy val t_burnout_calc =
-        case t: Firebox_15544.Tested => t.tBurnout.toUnit[Celsius]
-        case _: Firebox_15544.OneOff => t_burnout_default
+        case t: Firebox_15544.SingleTested => t.tBurnout.toUnit[Celsius]
+        case _: Firebox_15544  => t_burnout_default
 
     override lazy val t_fluepipe_calc =
         (tburnout, lz, lzCalculated) =>

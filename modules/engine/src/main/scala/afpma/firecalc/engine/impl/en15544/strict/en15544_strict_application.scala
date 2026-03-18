@@ -9,7 +9,6 @@ import cats.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.*
-import afpma.firecalc.engine.alg.en13384.WithLoadQty
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
@@ -20,13 +19,11 @@ import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
 import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
 import afpma.firecalc.units.coulombutils.*
 
-import algebra.instances.all.given
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -35,6 +32,7 @@ import afpma.firecalc.engine.standard.VNelMcalcErr
 import cats.data.Validated
 import afpma.firecalc.engine.standard.UnexpectedDevError
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
+import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 
 object EN15544_Strict_Application:
@@ -85,16 +83,13 @@ sealed abstract class EN15544_Strict_Application(
     val combustionDuration: Duration = (1 / 0.78).hours.toUnit[Minute]
 
     lazy val en13384_η_WN: VNelMcalcErr[Percentage] =
-        t_fluepipe_end(using Params_15544.DraftMin_LoadNominal)
-            .map(t_fp_end => formulas.η_calc(t_fp_end)) // en15544.n_min ? mais en enlevant l'accumulateur ?
+        atDraftMin_LoadNominal.t_fluepipe_end
+            .map(t_fp_end => formulas.η_calc(t_fp_end))
 
     lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] =
-        m_B_min.map: _ =>
-            // m_B_min is defined so we can compute using LoadQty.Reduced
-            t_fluepipe_end(using Params_15544.DraftMin_LoadMin)
-                .map(t_fp_end =>
-                    formulas.η_calc(t_fp_end) // en15544.n_min ? mais en enlevant l'accumulateur ?
-                )
+        atDraftMin_LoadMin.map:
+            _.t_fluepipe_end
+                .map(t_fp_end => formulas.η_calc(t_fp_end))
 
     lazy val en13384_fluegas_σ_CO2_dry_nominal: Percentage         = fluegas_σ_CO2_dry_nominal // yes, even for tested firebox
     lazy val en13384_fluegas_σ_CO2_dry_lowest : Option[Percentage] =
@@ -106,50 +101,28 @@ sealed abstract class EN15544_Strict_Application(
     lazy val en13384_heatingAppliance_massFlows: MassFlows = MassFlows.undefined
 
     lazy val en13384_heatingAppliance_temperatures: VNelMcalcErr[Temperatures] =
-        import LoadQty.givens.nominal
-
         val isEqualAndValidVNel: (VNelMcalcErr[TCelsius], VNelMcalcErr[TCelsius]) => Boolean =
             case (Validated.Valid(t1), Validated.Valid(t2)) => t1 == t2
-            case (Validated.Invalid(nel1), Validated.Invalid(nel2)) => true // errors in both cases, ok for this case.
+            case (Validated.Invalid(_), Validated.Invalid(_)) => true // errors in both cases, ok for this case.
             case _ => false
 
-        val flue_gas_temp_nominal_vnel =
-            computeAndRequireEqualityAtDraftMinDraftMax[Unit, VNelMcalcErr[TCelsius]] { (pReq: DraftCondition) ?=>
-                t_fluepipe_end(using (pReq, nominal))
-            }(isEqualAndValidVNel)(using ())
+        val a = atDraftMin_LoadNominal.t_fluepipe_end
+        val b = atDraftMax_LoadNominal.t_fluepipe_end
+        require(isEqualAndValidVNel(a, b), s"dev error: '$a' if min draft != '$b' if max draft !! Why ?")
 
-        flue_gas_temp_nominal_vnel.map: fg_temp_nominal =>
+        a.map: fg_temp_nominal =>
             HeatingAppliance.Temperatures(
                 flue_gas_temp_nominal = fg_temp_nominal,
                 flue_gas_temp_reduced = None
-                // import LoadQty.givens.reduced
-                // computeAndRequireEqualityAtDraftMinDraftMax[Unit, TCelsius] { (pReq: PressureRequirements) ?=>
-                //     t_fluepipe_end(using (ep, lowest))
-                // }(_ == _)(using ()).some,
             )
 
     override final lazy val en13384_T_L_override = en13384_T_L_override_default
 
-    def fluegas_σ_CO2_dry: WithLoadQty[Option[σ_CO2]] =
-        val ei: Either[IllegalStateException, Option["OK"]] = inputs.design.firebox match
-            case _ : OneOff => Right("OK".some)
-            case tt: Tested =>
-                val afr_opt = LoadQty.summon match
-                    case LoadQty.Nominal => tt.airFuelRatio_nominal.some
-                    case LoadQty.Reduced => tt.airFuelRatio_lowest
-                afr_opt.fold(Right(None)): afr =>
-                    if (afr < 1.95 || afr > 3.95) // TODO: add constraint instead ? in formulas impl. ?
-                        Left (
-                            new IllegalStateException(
-                                s"ERROR: tested firebox should have air-fuel ratio λ such as 1.95 <= λ <= 3.95, got ${afr.show}"
-                            )
-                        )
-                    else
-                        Right("OK".some)
-        ei.map(o => o.map(_ => formulas.fluegas_σ_CO2_calc)).fold(e => throw e, identity)
+    val fluegas_σ_CO2_dry_nominal: σ_CO2 =
+        inputs.design.firebox.co2_dry_nominal
 
-    val fluegas_σ_CO2_dry_nominal: σ_CO2         = fluegas_σ_CO2_dry(using LoadQty.Nominal).get // should always be defined
-    val fluegas_σ_CO2_dry_lowest : Option[σ_CO2] = fluegas_σ_CO2_dry(using LoadQty.Reduced)
+    val fluegas_σ_CO2_dry_lowest: Option[σ_CO2] =
+        inputs.design.firebox.co2_dry_lowest
 
     val wood_σ_H2O: σ_H2O = formulas.wood_σ_H2O_calc
 
@@ -183,6 +156,7 @@ sealed abstract class EN15544_Strict_Application(
 
         override final lazy val computeAt                                      = ComputeAt.Middle
         override final lazy val p_L_override                                   = en13384_p_L_override
+        override def atParamsFor(p: Params_13384): AtParams = en15544.atParamsFor(p)
         // overrides
         @nowarn override def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas) =
             en15544.ρ_G(T_m.toUnit[Celsius])
@@ -256,71 +230,78 @@ sealed abstract class EN15544_Strict_Application(
         //     flue_PipeResult(using params_13384_to_15544).toOption.flatMap(_.last_velocity_middle)
     end en13384_application
 
-    def combustionAir_PipeResult =
-        airIntake_PipeResult.andThen: _ =>
+    override def combustionAir_PipeResult_whenExists(
+        fd: CombustionAirPipe_Module_15544.FullDescr
+    ) =
+        ops_en15544.FlowOnlyMecaFlu_15544
+            .makePipeResult                 (
+                fd                  = CombustionAirPipe_Module_15544.unwrap(fd),
+                gas                 = CombustionAir,
+                loadQty             = LoadQty.summon,
+                z_geodetical_height = z_geodetical_height,
+                params              = pressReq_from_Params_15544
+            )(using en15544)
+            .toValidatedNel
+
+    // ─── StrictAtParams: concrete inner class for strict application ─────
+
+    class StrictAtParams(p: Params_15544) extends CommonAtParams(p):
+
+        lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult] =
+            given Params_15544 = p
+            CombustionAirPipe_Module_15544.foldPipeCanBe(inputs.pipes.combustionAir)(
+                onWithout   = combustionAir_PipeResult_whenEmpty,
+                onFullDescr = fd => combustionAir_PipeResult_whenExists(fd)
+            )
+
+        lazy val firebox_PipeResult: VNelMcalcErr[PipeResult] =
             ops_en15544.FlowOnlyMecaFlu_15544
-                .makePipeResult                 (
-                    fd                  = CombustionAirPipe_Module_15544.unwrap(inputs.pipes.combustionAir),
-                    gas                 = CombustionAir,
-                    loadQty             = LoadQty.summon,
+                .makePipeResult(
+                    fd                  = FireboxPipe_Module_15544.unwrap(inputs.pipes.firebox),
+                    gas                 = FlueGas,
+                    loadQty             = p._2,
                     z_geodetical_height = z_geodetical_height,
-                    params              = pressReq_from_Params_15544
+                    params              = p._1
                 )(using en15544)
                 .toValidatedNel
 
-    def firebox_PipeResult =
-        ops_en15544.FlowOnlyMecaFlu_15544
-            .makePipeResult                 (
-                fd                  = FireboxPipe_Module_15544.unwrap(inputs.pipes.firebox),
-                gas                 = FlueGas,
-                loadQty             = LoadQty.summon,
-                z_geodetical_height = z_geodetical_height,
-                params              = pressReq_from_Params_15544
-            )(using en15544)
-            .toValidatedNel
+        lazy val flue_PipeResult: VNelMcalcErr[PipeResult] =
+            ops_en15544.FlowOnlyMecaFlu_15544
+                .makePipeResult(
+                    fd                  = FluePipe_Module_15544.unwrap(inputs.pipes.flue),
+                    gas                 = FlueGas,
+                    loadQty             = p._2,
+                    z_geodetical_height = z_geodetical_height,
+                    params              = p._1
+                )(using en15544)
+                .toValidatedNel
 
-    // def t_connector_pipe_mean: WithParams_15544[t_connector_pipe_mean] =
-    //     connector_PipeResult
-    //         .map: cp =>
-    //             val tms = cp.elements.flatMap(_.gas_temp_mean.map(_.toUnit[Kelvin]))
-    //             en13384_formulas.T_mV_calc(tms.size, tms).toUnit[Celsius]
-    //         .fold(e => throw new Exception(e.msg), identity)
+        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString =
+            PipesResult_15544_VNelString(
+                airIntake     = airIntake_PipeResult(using p),
+                combustionAir = combustionAir_PipeResult,
+                firebox       = firebox_PipeResult,
+                flue          = flue_PipeResult,
+                connector     = connector_PipeResult,
+                chimney       = chimney_PipeResult
+            )
 
-    def flue_PipeResult =
-        ops_en15544.FlowOnlyMecaFlu_15544
-            .makePipeResult                 (
-                fd                  = FluePipe_Module_15544.unwrap(inputs.pipes.flue),
-                gas                 = FlueGas,
-                loadQty             = LoadQty.summon,
-                z_geodetical_height = z_geodetical_height,
-                params              = pressReq_from_Params_15544
-            )(using en15544)
-            .toValidatedNel
+        lazy val outputs: Outputs =
+            val pipesResult = pipesResult_15544_VNelS.accumulateErrors
+            models.en15544.std.Outputs(
+                techSpecs,
+                pipesResult,
+                reference_temperatures,
+                efficiencies_values
+            )
+    end StrictAtParams
 
-    override final def pipesResult_15544_VNelS =
-        PipesResult_15544_VNelString    (
-            airIntake     = airIntake_PipeResult,
-            combustionAir = combustionAir_PipeResult,
-            firebox       = firebox_PipeResult,
-            flue          = flue_PipeResult,
-            connector     = connector_PipeResult,
-            chimney       = chimney_PipeResult
-        )
+    // ─── Pre-built AtParams instances ───────────────────────────────────
 
-    override final def outputs =
-        val pipesResult = pipesResult_15544_VNelS.accumulateErrors
-        models.en15544.std.Outputs(
-            techSpecs,
-            pipesResult,
-            reference_temperatures,
-            efficiencies_values
-            // pressureRequirement_EN15544,
-            // estimated_output_temperatures,
-            // flue_gas_triple_of_variates
-        )
-
-    override final val runValidationAtParams: Params_15544 =
-        (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.Nominal)
+    lazy val atDraftMin_LoadNominal: AtParams = new StrictAtParams(Params_15544.DraftMin_LoadNominal)
+    lazy val atDraftMin_LoadMin: Option[AtParams] = m_B_min.map(_ => new StrictAtParams(Params_15544.DraftMin_LoadMin))
+    lazy val atDraftMax_LoadNominal: AtParams = new StrictAtParams(Params_15544.DraftMax_LoadNominal)
+    lazy val atDraftMax_LoadMin: Option[AtParams] = m_B_min.map(_ => new StrictAtParams(Params_15544.DraftMax_LoadMin))
 
     def net_calorific_value_of_wet_wood(
         @nowarn ncv_dry: HeatCapacity,

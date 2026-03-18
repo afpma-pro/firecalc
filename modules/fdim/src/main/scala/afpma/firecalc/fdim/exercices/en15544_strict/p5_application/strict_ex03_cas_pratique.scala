@@ -8,20 +8,27 @@ package afpma.firecalc.fdim.exercices.en15544_strict.p5_application
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled_V1
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
 import cats.syntax.all.*
 
 object strict_ex03_cas_pratique 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
+    with v0_2024_10.Firebox_15544_Strict_Alg:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
+
+    type FB = Ecolabeled
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val exercice_name = "exercices // p5_application // mce_ex03_cas_pratique"
 
@@ -40,7 +47,7 @@ object strict_ex03_cas_pratique
 
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
-    val firebox = EcoLabeled_V1(
+    val firebox: Ecolabeled = Ecolabeled_V1(
         pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                               = 54.cm,
         h12_largeurDuFoyer                                  = 54.cm,
@@ -58,7 +65,7 @@ object strict_ex03_cas_pratique
         h80_largeurRenfortMedianArriere                     = 3.cm,
         h81_debordDesRenfortsDansLesAngles                  = 3.cm,
         h82_hauteurDesInjecteurs_Z                          = 0.8.cm,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur              = 10.cm,
+        h83_hauteurEntreLaSoleEtLe1erInjecteur_X            = 10.cm,
     )
 
     val fluePipe =
@@ -66,33 +73,35 @@ object strict_ex03_cas_pratique
         FluePipe_Module_15544
         .incremental
         .define(
+            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
+
             roughness(3.mm),
             innerShape(rectangle(37.1.cm, 32.0.cm)),
-            
+
             addSectionHorizontal("sortie foyer", 34.8.cm),
 
-            addSharpAngle_90deg("virage 90 deg (1)"),
+            addSharpAngle_90deg("virage 90 deg (1)", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)), // Down
 
             addSectionVertical("colonne étage", -1.09.m),
 
             addSectionVertical("colonne rdc", -2.44.m),
 
-            addSharpAngle_90deg("virage 90 deg (2)"),
+            addSharpAngle_90deg("virage 90 deg (2)", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
 
             innerShape(rectangle(32.1.cm, 27.cm)),
             addSectionHorizontal("allez banc", 1.m),
 
-            addSharpAngle_90deg("virage 90 deg (3)"),
+            addSharpAngle_90deg("virage 90 deg (3)", AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Avant
 
             innerShape(rectangle(26.cm, 27.cm)),
             addSectionHorizontal("demi tour banc", 34.cm),
 
-            addSharpAngle_90deg("virage 90 deg (4)"),
+            addSharpAngle_90deg("virage 90 deg (4)", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Gauche
 
             innerShape(rectangle(26.cm, 27.cm)),
             addSectionHorizontal("retour banc", 1.m),
 
-            addSharpAngle_90deg("virage 90 deg (5)"),
+            addSharpAngle_90deg("virage 90 deg (5)", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Haut
             
             innerShape(rectangle(21.cm, 32.cm)),
             addSectionVertical("colonne montant RdC", 2.44.m),

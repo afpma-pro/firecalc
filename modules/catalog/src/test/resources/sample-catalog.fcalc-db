@@ -1,0 +1,268 @@
+catalog_version: 4
+catalog_name:
+  fr: "Catalogue Test AFPMA 2026"
+  en: "Test AFPMA Catalog 2026"
+
+door_15a_fireboxes:
+  - reference: "Door15aFirebox_Catalog_Example"
+    firebox_depth:
+      value: "0.39"
+      unit: "meter"
+    firebox_width:
+      value: "0.29"
+      unit: "meter"
+    firebox_height:
+      value: "1.0"
+      unit: "meter"
+    sb:
+      value: "1.6"
+      unit: "centimeter"
+    sb_min:
+      value: "1.6"
+      unit: "centimeter"
+    sb_max:
+      value: "4.0"
+      unit: "centimeter"
+    mb_min:
+      value: "10.0"
+      unit: "kilogram"
+    mb_max:
+      value: "25.0"
+      unit: "kilogram"
+    pressure_loss_table_raw: |
+      mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
+      10 4       3       2       1
+      25 22      20      18      16
+    expectedAirIntakePipeShapes:
+      - Circle:
+          diameter:
+            value: "0.2"
+            unit: "meter"
+    actualAirIntakePipeShape:
+      Circle:
+        diameter:
+          value: "0.2"
+          unit: "meter"
+    co2_dry_nominal:
+      value: "12.0"
+      unit: "percent"
+    emissions_values:
+      firebox_name: "15a firebox"
+      accredited_or_notified_body: "Test Laboratory for Combustion Systems - Technical University of Vienna"
+      test_reports:
+        - name: "PL-19075-1-P"
+          date: "9.6.2020"
+        - name: "PL-19075-2-P"
+          date: "9.6.2020"
+        - name: "PL-19075-3-P"
+          date: "27.10.2020"
+        - name: "PL-19075-4-P"
+          date: "19.1.2021"
+        - name: "PL-19075-5-P"
+          date: "19.1.2021"
+        - name: "PL-19075-6-P"
+          date: "19.1.2021"
+      emissions_values:
+        co:
+          polluant_name: "CO"
+          valueO: 1154.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        dust:
+          polluant_name: "Dust"
+          valueO: 25.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        ogc:
+          polluant_name: "OGC"
+          valueO: 40.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        nox:
+          polluant_name: "NOx"
+          valueO: 119.0
+          test_method: ""
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+    glass_area:
+      value: "0.05"
+      unit: "meter^2"
+    height_of_lowest_opening:
+      value: "0.05"
+      unit: "meter"
+    heat_output_reduced: "NotDefined"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg=="
+
+single_tested_fireboxes:
+  - reference: "SingleTested_Example"
+    type_of_appliance: "WoodLogs"
+    test_standard: "EN_15250"
+    firebox_depth:
+      value: "0.40"
+      unit: "meter"
+    firebox_width:
+      value: "0.30"
+      unit: "meter"
+    firebox_height:
+      value: "0.90"
+      unit: "meter"
+    ash_pit_height:
+      value: "0.05"
+      unit: "meter"
+    is_glass_surface_ratio_below_one_fifth: true
+    glass_area:
+      value: "0.04"
+      unit: "meter^2"
+    mean_firebox_temperature:
+      value: "450.0"
+      unit: "celsius"
+    t_burnout:
+      value: "700.0"
+      unit: "celsius"
+    efficiency_nominal:
+      value: "80.0"
+      unit: "percent"
+    efficiency_reduced:
+      value: "70.0"
+      unit: "percent"
+    heat_output_reduced: "NotDefined"
+    minimum_fuel_mass:
+      value: "3.0"
+      unit: "kilogram"
+    maximum_fuel_mass:
+      value: "12.0"
+      unit: "kilogram"
+    air_fuel_ratio_nominal:
+      value: "3.5"
+      unit: "1"
+    air_fuel_ratio_lowest:
+      value: "2.5"
+      unit: "1"
+    co2_dry_nominal:
+      value: "11.0"
+      unit: "percent"
+    co2_dry_lowest:
+      value: "8.0"
+      unit: "percent"
+    pellets_load_burn_duration:
+      value: "90.0"
+      unit: "minute"
+    emissions_values:
+      firebox_name: "Tested Firebox Example"
+      accredited_or_notified_body: "Test Laboratory"
+      test_reports:
+        - name: "TR-2024-001"
+          date: "15.3.2024"
+      emissions_values:
+        co:
+          polluant_name: "CO"
+          valueO: 800.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        dust:
+          polluant_name: "Dust"
+          valueO: 20.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        ogc:
+          polluant_name: "OGC"
+          valueO: 30.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+        nox:
+          polluant_name: "NOx"
+          valueO: 100.0
+          test_method: "EN 15250"
+          o2ref:
+            value: "13.0"
+            unit: "percent"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg=="
+
+pipe_presets:
+  - batch_name: "POUJOULAT 200mm DPI"
+    props:
+      - SetMaterial:
+          material:
+            WeldedSteel:
+              roughness:
+                value: "0.001"
+                unit: "meter"
+      - SetInnerShape:
+          shape:
+            Circle:
+              diameter:
+                value: "0.2"
+                unit: "meter"
+      - SetLayers:
+          layers:
+            - FromThermalResistanceUsingThickness:
+                thickness:
+                  value: "0.026"
+                  unit: "meter"
+                thermal_resistance:
+                  value: "0.44"
+                  unit: "(meter^2 Kelvin)/watt"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+casing_presets:
+  - batch_name: "Boisseau terre cuite 20x20"
+    props:
+      - SetInnerShape:
+          shape:
+            Rectangle:
+              a:
+                value: "0.20"
+                unit: "meter"
+              b:
+                value: "0.20"
+                unit: "meter"
+      - SetLayers:
+          layers:
+            - FromThermalResistanceUsingThickness:
+                thickness:
+                  value: "0.115"
+                  unit: "meter"
+                thermal_resistance:
+                  value: "0.12"
+                  unit: "(meter^2 Kelvin)/watt"
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+
+flow_resistance_presets:
+  - name: "Wire mesh screen"
+    zeta:
+      value: "0.61"
+      unit: "1"
+    cross_section:
+      type: option_of_either
+      none_or_left_or_right: none
+      value: null
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk4P9fDwAEGgJ/lLqmJQAAAABJRU5ErkJggg=="
+  - name: "Butterfly damper (open)"
+    zeta:
+      value: "0.25"
+      unit: "1"
+    cross_section:
+      type: option_of_either
+      none_or_left_or_right: none
+      value: null
+  - name: "Rain cap (standard)"
+    zeta:
+      value: "1.5"
+      unit: "1"
+    cross_section:
+      type: option_of_either
+      none_or_left_or_right: none
+      value: null

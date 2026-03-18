@@ -23,6 +23,9 @@ import utest.*
 
 object PdfReportGenerationTest extends TestSuite {
 
+  // To regenerate the base64 resource file from the YAML source:
+  //   base64 -w 0 modules/payments/src/main/resources/project.fcalc > modules/payments/src/main/resources/project.fcalc.base64
+  //
   // Read the base64 encoded YAML content from resources
   def readBase64Content(): String = {
     val stream = getClass.getResourceAsStream("/project.fcalc.base64")

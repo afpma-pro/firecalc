@@ -8,6 +8,7 @@ package afpma.firecalc.engine.impl.en15544
 import cats.data.Validated.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.units.coulombutils.*
 
@@ -76,51 +77,57 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val a = 100.mm
                         val p = 
                             builder.define(
+                                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                                 innerShape(square(a)),
                                 roughness(2.mm),
                                 addSectionHorizontal("first", 2.meters),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees),
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, AbsoluteDirection(AzimuthDirection.RearRight, InclinationDirection.Horizontal)), // towards Right-ish
                                 addSectionHorizontal("second", 1.meters)
                             )
     
                         val vRepr = p.toFullDescr().map(_._2)
     
-                        val expected = PipeFullDescr(
-                            elements = Vector(
-                                NamedPipeElDescr(
-                                    idx = PipeIdx(0),
-                                    typ = FluePipeT,
-                                    name = "first",
-                                    el = StraightSection(
-                                        length = 2.meters,
-                                        geometry = PipeShape.Square(a),
-                                        roughness = 2.mm,
-                                        elevation_gain = 0.meters,
-                                    )
-                                ),
-                                NamedPipeElDescr(
-                                    idx = PipeIdx(1),
-                                    typ = FluePipeT,
-                                    name = "turn left",
-                                    el = DirectionChange.AngleVifDe0A180(45.degrees)
-                                ),
-                                NamedPipeElDescr(
-                                    idx = PipeIdx(2),
-                                    typ = FluePipeT,
-                                    name = "second",
-                                    el = StraightSection(
-                                        length = 1.meters,
-                                        geometry = PipeShape.Square(a),
-                                        roughness = 2.mm,
-                                        elevation_gain = 0.meters,
-                                    )
-                                )
-                                
-                            ),
-                            pipeType = FluePipeT
-                        )
-    
-                        vRepr.shouldBe(Valid(expected))
+                        // "second" has elevation_gain ≈ 0 (float noise from trig; expected exact 0
+                        // for a horizontal pipe after a horizontal bend). Assert with tolerance.
+                        val elems = vRepr.toOption.get.elems
+                        elems.size.shouldBe(3)
+                        elems(0).shouldBe(NamedPipeElDescr(
+                            idx = PipeIdx(0), typ = FluePipeT, name = "first",
+                            el = StraightSection(2.meters, PipeShape.Square(a), 2.mm, 0.meters)
+                        ))
+                        elems(1).shouldBe(NamedPipeElDescr(
+                            idx = PipeIdx(1), typ = FluePipeT, name = "turn left",
+                            el = DirectionChange.AngleVifDe0A180(45.degrees)
+                        ))
+                        val second = elems(2).el.asInstanceOf[StraightSection]
+                        second.length.shouldEqual(1.meters)
+                        second.geometry.shouldBe(PipeShape.Square(a))
+                        second.roughness.shouldBe(2.mm)
+                        second.elevation_gain.value.shouldEqual(0.0 +- 1e-10)
+                    }
+                }
+
+                "case direction-tracked : SetInitialDirection(vertical up) + addSectionSlopped" - {
+
+                    "elevation_gain is auto-computed from direction (should be 2m for 2m vertical section)" in {
+                        // given NbOfFlows = 1.flow
+                        val d0 = 100.mm
+                        val p =
+                            builder.define(
+                                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
+                                innerShape(circle(d0)),
+                                roughness(2.mm),
+                                addSectionSlopped("s1", 2.meters)
+                            )
+
+                        val vRepr = p.toFullDescr().map(_._2)
+
+                        vRepr.isValid.shouldBe(true)
+
+                        val section = vRepr.toOption.get.elems.head.el.asInstanceOf[StraightSection]
+                        // direction.z = sin(90°) = 1.0, so finalElevGain = 2m * 1.0 = 2m
+                        section.elevation_gain.shouldEqual(2.meters)
+                        section.length.shouldEqual(2.meters)
                     }
                 }
 
@@ -131,12 +138,13 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val diam = 20.cm
                         val p = 
                             builder.define(
+                                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
                                 innerShape(circle(diam)),
                                 roughness(2.mm),
                                 addSectionHorizontal("straight-0", 50.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees),
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, AbsoluteDirection(AzimuthDirection.RearLeft, InclinationDirection.Horizontal)), // Towards RearLeft
                                 addSectionHorizontal("straight-1-short", 10.cm),
-                                addSharpAngle_0_to_180deg("turn left", 45.degrees),
+                                addSharpAngle_0_to_180deg("turn left", 45.degrees, AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Towards Left
                                 addSectionHorizontal("straight-2", 50.cm),
                             )
 
@@ -176,7 +184,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                     idx = PipeIdx(3),
                                     typ = FluePipeT,
                                     name = "turn left",
-                                    el = DirectionChange.AngleVifDe0A180(45.degrees)
+                                    el = DirectionChange.AngleVifDe0A180(45.degrees, angleN2 = Some(90.degrees))
                                 ),
                                 NamedPipeElDescr(
                                     idx = PipeIdx(4),

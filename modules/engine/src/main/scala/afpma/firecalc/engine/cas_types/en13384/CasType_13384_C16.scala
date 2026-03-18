@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -17,7 +18,6 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.cas_types.en13384.*
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 
@@ -28,7 +28,10 @@ import coulomb.policy.standard.given
 
 import io.taig.babel.Languages
 
-object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg:
+object CasType_13384_C16
+    extends v2024_10_Alg
+    with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg
+    with v0_2024_10.WithPipeChain_13384:
 
     val language = Languages.Fr
 
@@ -119,9 +122,13 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
         )
     ).validNel
 
+    // specific TURNS were not specified when defining the reference examples for the engine
+    // only number of 90° turn (x4), total length 2m35 and vertical length 0,35m
     val airIntakePipe = // "Tube Flexible en Inox"
         import AirIntakePipe_Module.*
         define(
+            setInitialDirection(azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // Front
+
             pipeLocation(PipeLocation.HeatedArea), // to check
 
             roughness(5.mm), // ConduitFlexibleInox = 5mm
@@ -135,61 +142,60 @@ object CasType_13384_C16 extends v2024_10_Alg with v0_2024_10.StoveProjectDescr_
             innerShape(circle(50.mm)),
             layer                          (e                 = 0.2.mm, tr = 0.0.m2_K_per_W),
             addSectionHorizontal           ("hz", 25.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #1", R = 50.mm                      ), // ???
+            // turn right - final direction = 'Left'
+            addCoudeCourbe90               ("coude 90° #1", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #2", R = 50.mm                      ),
+            // turn left - final direction = 'Front'
+            addCoudeCourbe90               ("coude 90° #2", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #3", R = 50.mm                      ),
+            // turn upwards - final direction = 'Up'
+            addCoudeCourbe90               ("coude 90° #3", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)),
             addSectionVertical             ("vertical", 35.cm                              ),
+            // turn - final direction = 'Right'
+            addCoudeCourbe90               ("coude 90° #4", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)),
             addSectionHorizontal           ("hz", 50.cm                                    ),
-            addCoudeCourbe90               ("coude 90° #4", R = 50.mm                      ),
             addSectionHorizontal           ("hz", 25.cm                                    )
         ).toFullDescr().extractPipe
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental
-            .define (
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(circle(100.mm)              ),
-                layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
-                pipeLocation(PipeLocation.HeatedArea      ),
+        Seq(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(100.mm)              ),
+            layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
+            pipeLocation(PipeLocation.HeatedArea      ),
 
-                // pb: sortie arrière sans longueur horizontale ???
-                // car sinon impossible d'avoir un enchainement horizontal + coude 90 + dévoiement à 45°
-                // tel que H utile = 2.10 et L developée = 2.18 m
+            // pb: sortie arrière sans longueur horizontale ???
+            // car sinon impossible d'avoir un enchainement horizontal + coude 90 + dévoiement à 45°
+            // tel que H utile = 2.10 et L developée = 2.18 m
 
-                addSectionHorizontal("avant té ?", 8.cm                         ),
-                addSharpAngle_90deg ("té 90°"                                   ),
-                addSectionVertical  ("montée", 70.cm                            ),
-                addSharpAngle_45deg ("dévoiement 45°"                           ),
-                addSectionSlopped   ("dévoiement", 70.cm, elevation_gain = 70.cm), // approx to match C16 (50cm otherwise)
+            addSectionHorizontal("avant té ?",         8.cm                                   ),
+            addSharpAngle_90deg ("té 90°",             AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSectionVertical  ("montée",             70.cm                                  ),
+            addSharpAngle_45deg ("dévoiement 45°",     AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))), // Rear-Up (azimuth=0° inclination=45°)
+            addSectionSloppedForceManualElevationGain("dévoiement", 70.cm, 70.cm), // approx to match C16 (50cm otherwise)
+            addSharpAngle_45deg ("fin dévoiement 45°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSectionVertical  ("avant plafond",      70.cm)
+        )
 
-                addSharpAngle_45deg("fin dévoiement 45°"  ),
-                addSectionVertical ("avant plafond", 70.cm)
-            )
-            .toFullDescr()
-            .extractPipe
-
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module
-            .define (
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(circle(100.mm)              ),
-                layer(
-                    // T450 N1 W V3 L50040 G50 (source: Therminox TI on https://legal.poujoulat.com/fr)
-                    e = 0.4.mm * 2.0 + 30.0.mm,
+        Seq(
+            // initial direction inherited from last connector pipe element = Up
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(100.mm)              ),
+            layer(
+                // T450 N1 W V3 L50040 G50 (source: Therminox TI on https://legal.poujoulat.com/fr)
+                e = 0.4.mm * 2.0 + 30.0.mm,
 
-                    // 0.523 selon fiche technique qui ne dissocie pas Rth selon si ep=25mm ou ep=30mm
-                    // 0.45 dans QC2
-                    tr = 0.45.m2_K_per_W
-                ),
-                pipeLocation                               (PipeLocation.HeatedArea                                 ),
-                addSectionVertical                         ("partie en ambiance chaude", 2.93.m * 63.percent.asRatio),
-                pipeLocation                               (PipeLocation.OutsideOrExterior                          ),
-                addSectionVertical                         ("partie en extérieur", 2.93.m * 38.percent.asRatio      ),
-                addRainCapEN13384_withHeightEquals2Diameter("element terminal"                                      )
-            )
-            .toFullDescr()
-            .extractPipe
+                // 0.523 selon fiche technique qui ne dissocie pas Rth selon si ep=25mm ou ep=30mm
+                // 0.45 dans QC2
+                tr = 0.45.m2_K_per_W
+            ),
+            pipeLocation                               (PipeLocation.HeatedArea                                 ),
+            addSectionVertical                         ("partie en ambiance chaude", 2.93.m * 63.percent.asRatio),
+            pipeLocation                               (PipeLocation.OutsideOrExterior                          ),
+            addSectionVertical                         ("partie en extérieur", 2.93.m * 38.percent.asRatio      ),
+            addRainCapEN13384_withHeightEquals2Diameter("element terminal"                                      )
+        )

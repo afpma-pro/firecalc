@@ -8,9 +8,12 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.*
@@ -24,6 +27,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
+import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
 
 import cats.data.*
 import cats.syntax.all.*
@@ -32,6 +36,8 @@ import scala.annotation.targetName
 import scala.reflect.*
 
 import com.softwaremill.quicklens.*
+
+import coulomb.policy.standard.given
 
 trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
@@ -91,15 +97,16 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     .map(_._2)
                     .find:
                         case _: SetProp                                                                       => false
-                        case _: AddSectionSlopped                                                             => true
+                        case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain)               => true
                         case _: AddSectionHorizontal                                                          => true
                         case _: AddSectionVertical                                                            => true
                         case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => false
                     .map(_.asInstanceOf[AddElement])
             nextAddSectionsOps.headOption.flatMap:
-                case _ @AddSectionSlopped(_, l, _) => l.some
-                case _ @AddSectionHorizontal(_, l) => l.some
-                case _ @AddSectionVertical(_, l)   => l.some
+                case _ @AddSectionSlopped(_, l)                             => l.some
+                case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
+                case _ @AddSectionHorizontal(_, l)                         => l.some
+                case _ @AddSectionVertical(_, l)                           => l.some
                 case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
 
     extension (piDescr: PipeIncrDescr) override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
@@ -109,6 +116,25 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
+
+    override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
+        s.currentFrame
+
+    override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
+        // Only apply if the pipe itself did not already define an initial direction
+        if s.initialFrame.isDefined then s
+        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
+    override protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] =
+        val hasFinalDir = incrDescrs.exists:
+            case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+            case _                           => false
+        if hasFinalDir && finalState.initialFrame.isEmpty then
+            FinalDirWithoutInitialDirection(pt).invalidNel
+        else ().validNel
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
@@ -121,12 +147,13 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         val st = summon[PropsState]
 
         val el = addElementOp match
-            case op @ (_: AddSectionSlopped | _: AddSectionHorizontal | _: AddSectionVertical) =>
+            case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal | _: AddSectionVertical) =>
                 given FlowOnlyStraightSectionCtx_13384 =
                     FlowOnlyStraightSectionCtx_13384(
                         stateOps.getInnerShape(st),
                         stateOps.getRoughness (st),
-                        pt
+                        pt,
+                        currentFrame = st.currentFrame
                     )
                 flowOnlyStraightSection13384.make(op)
 
@@ -134,7 +161,9 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
                     stateOps.getInnerShape(st),
                     convStep.nextSectionLengthOpt,
-                    pt
+                    pt,
+                    dirBeforePreviousDC = st.dirBeforePreviousDC,
+                    currentFrame        = st.currentFrame
                 )
                 flowOnlyDirectionChange13384.make(op)
 
@@ -156,7 +185,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 flowOnlyFlowResistance13384.make(op)
 
             case op: AddPressureDiff =>
-                given Unit = ()
+                given FlowResistanceCtx_13384 =
+                    FlowResistanceCtx_13384(stateOps.getInnerShape(st), pt)
                 flowOnlyPressureDiff13384.make(op)
 
         val elIdx = PipeIdx(prevs.elems.size)
@@ -167,11 +197,26 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _, _)) => propsState.validNel
-            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
-            case Some(_: AddDirectionChange)         => propsState.validNel
+            case None                                                        => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _))                             => propsState.validNel
+            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
+            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
+            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
+            case Some(addDC: AddDirectionChange) =>
+                addDC.absDir match
+                    case Some(fd) =>
+                        propsState.currentFrame match
+                            case Some(frame) =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                val deflDeg   = addDC.angle.toUnit[Degree].value
+                                val newFrame  = frame.applyBendForFinalDir(deflDeg, targetVec)
+                                propsState.copy(
+                                    dirBeforePreviousDC = Some(frame.direction),
+                                    currentFrame        = Some(newFrame)
+                                ).validNel
+                            case None => propsState.validNel
+                    case None => propsState.validNel
             case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
             case Some(op: AddSectionChange)          =>
@@ -192,6 +237,18 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case SetNumberOfFlows(nf) =>
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
+                    case SetInitialDirection(azimuth, inclination) =>
+                        val dir   = Vec3.fromAzimuthElevation(
+                            AzimuthDirection.toDegrees(azimuth),
+                            InclinationDirection.toDegrees(inclination)
+                        )
+                        val frame = PipeFrame.initial(dir)
+                        vState.map(_.copy(
+                            initialFrame = Some(frame),
+                            currentFrame = Some(frame)
+                        ))
+                    case _: SetInitialPosition => vState
+                    case _: SetFinalPosition   => vState
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
@@ -207,6 +264,15 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def material(lm: Material_13384) =
         SetMaterial(lm)
 
+    def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
+        SetInitialDirection(azimuth, inclination)
+
+    def setInitialPosition(x: Length, y: Length, z: Length) =
+        SetInitialPosition(x, y, z)
+
+    def setFinalPosition(x: Length, y: Length, z: Length) =
+        SetFinalPosition(x, y, z)
+
     // Delegate to ChannelsDSL typeclass
     def channelsSplit(n: Int) =
         summon[ChannelsDSL[FlowOnlyPipeDescr_13384]].channelsSplit(n)
@@ -218,49 +284,49 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     given directionDSL: DirectionChangeDSL_13384[FlowOnlyPipeDescr_13384] =
         summon[DirectionChangeDSL_13384[FlowOnlyPipeDescr_13384]]
 
-    def addAngleVifDe0A90(name: String, angle: QtyD[Degree]) =
-        directionDSL.addAngleVifDe0A90(name, angle)
-    def addSharpAngle_30deg(name: String)                    =
-        directionDSL.addSharpAngle_30deg(name)
-    def addSharpAngle_45deg(name: String)                    =
-        directionDSL.addSharpAngle_45deg(name)
-    def addSharpAngle_60deg(name: String)                    =
-        directionDSL.addSharpAngle_60deg(name)
-    def addSharpAngle_90deg(name: String)                    =
-        directionDSL.addSharpAngle_90deg(name)
+    def addAngleVifDe0A90(name: String, angle: QtyD[Degree], absDir: AbsoluteDirection) =
+        directionDSL.addAngleVifDe0A90(name, angle, absDir)
+    def addSharpAngle_30deg(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_30deg(name, absDir)
+    def addSharpAngle_45deg(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_45deg(name, absDir)
+    def addSharpAngle_60deg(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_60deg(name, absDir)
+    def addSharpAngle_90deg(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_90deg(name, absDir)
 
     // __INTERPRETATION__
-    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree]) =
-        directionDSL.addAngleVifDe0A90_unsafe(name, angle)
-    def addSharpAngle_30deg_unsafe(name: String)                    =
-        directionDSL.addSharpAngle_30deg_unsafe(name)
-    def addSharpAngle_45deg_unsafe(name: String)                    =
-        directionDSL.addSharpAngle_45deg_unsafe(name)
-    def addSharpAngle_60deg_unsafe(name: String)                    =
-        directionDSL.addSharpAngle_60deg_unsafe(name)
-    def addSharpAngle_90deg_unsafe(name: String)                    =
-        directionDSL.addSharpAngle_90deg_unsafe(name)
+    def addAngleVifDe0A90_unsafe(name: String, angle: QtyD[Degree], absDir: AbsoluteDirection) =
+        directionDSL.addAngleVifDe0A90_unsafe(name, angle, absDir)
+    def addSharpAngle_30deg_unsafe(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_30deg_unsafe(name, absDir)
+    def addSharpAngle_45deg_unsafe(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_45deg_unsafe(name, absDir)
+    def addSharpAngle_60deg_unsafe(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_60deg_unsafe(name, absDir)
+    def addSharpAngle_90deg_unsafe(name: String, absDir: AbsoluteDirection)                    =
+        directionDSL.addSharpAngle_90deg_unsafe(name, absDir)
 
-    def addCoudeCourbe90(name: String, R: QtyD[Meter]) =
-        directionDSL.addCoudeCourbe90(name, R)
-    def addCoudeCourbe60(name: String, R: QtyD[Meter]) =
-        directionDSL.addCoudeCourbe60(name, R)
+    def addCoudeCourbe90(name: String, R: QtyD[Meter], absDir: AbsoluteDirection) =
+        directionDSL.addCoudeCourbe90(name, R, absDir)
+    def addCoudeCourbe60(name: String, R: QtyD[Meter], absDir: AbsoluteDirection) =
+        directionDSL.addCoudeCourbe60(name, R, absDir)
 
     // __INTERPRETATION__
-    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter]) =
-        directionDSL.addCoudeCourbe90_unsafe(name, R)
-    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter]) =
-        directionDSL.addCoudeCourbe60_unsafe(name, R)
+    def addCoudeCourbe90_unsafe(name: String, R: QtyD[Meter], absDir: AbsoluteDirection) =
+        directionDSL.addCoudeCourbe90_unsafe(name, R, absDir)
+    def addCoudeCourbe60_unsafe(name: String, R: QtyD[Meter], absDir: AbsoluteDirection) =
+        directionDSL.addCoudeCourbe60_unsafe(name, R, absDir)
 
-    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter])   =
-        directionDSL.addCoudeASegment90Avec2A45(name, R)
-    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter])   =
-        directionDSL.addCoudeASegment90Avec3A30(name, R)
-    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter]) =
-        directionDSL.addCoudeASegment90Avec4A22p5(name, R)
+    def addCoudeASegment90Avec2A45(name: String, R: QtyD[Meter], absDir: AbsoluteDirection)   =
+        directionDSL.addCoudeASegment90Avec2A45(name, R, absDir)
+    def addCoudeASegment90Avec3A30(name: String, R: QtyD[Meter], absDir: AbsoluteDirection)   =
+        directionDSL.addCoudeASegment90Avec3A30(name, R, absDir)
+    def addCoudeASegment90Avec4A22p5(name: String, R: QtyD[Meter], absDir: AbsoluteDirection) =
+        directionDSL.addCoudeASegment90Avec4A22p5(name, R, absDir)
 
-    def addAngleSpecifique(name: String, angle: Angle, zeta: Double) =
-        directionDSL.addAngleSpecifique(name, angle, zeta)
+    def addAngleSpecifique(name: String, angle: Angle, zeta: Double, absDir: AbsoluteDirection) =
+        directionDSL.addAngleSpecifique(name, angle, zeta, absDir)
 
     // def addSectionChange(
     //     name: String,
@@ -276,16 +342,23 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         summon[SectionDSL[FlowOnlyPipeDescr_13384]]
 
     def addSectionSlopped(
+        name  : String,
+        length: QtyD[Meter]
+    ) = sectionDSL.addSectionSlopped(name, length)
+
+    def addSectionSloppedForceManualElevationGain(
         name          : String,
         length        : QtyD[Meter],
         elevation_gain: QtyD[Meter]
-    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
+    ) = sectionDSL.addSectionSloppedForceManualElevationGain(name, length, elevation_gain)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(
         name             : String,
         horizontal_length: QtyD[Meter]
     ) = sectionDSL.addSectionHorizontal(name, horizontal_length)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionVertical(
         name          : String,
         elevation_gain: QtyD[Meter]

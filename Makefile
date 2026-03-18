@@ -107,13 +107,21 @@ sync-build-config:
 ## SETUP TARGETS (run these first)
 ## ================================
 
-setup-all: ui-setup electron-setup sync-build-config
+setup-all: ui-setup electron-setup sync-build-config build-viz build-graph
 	@echo "All dependencies installed successfully!"
 	@echo "Run 'make dev-env-setup' to verify configuration files"
 
 ui-setup:
 	@echo "Installing UI dependencies..."
 	@cd modules/ui && npm install
+
+build-viz:
+	@echo "Building viz bundle (filaire-viz.ts → filaire-viz.js)..."
+	@cd modules/ui && npm run build:viz
+
+build-graph:
+	@echo "Building graph bundle (graph-viz.ts → graph-viz.js)..."
+	@cd modules/ui && npm run build:graph
 
 electron-setup:
 	@echo "Installing Electron dependencies..."
@@ -229,7 +237,7 @@ dev-env-test:
 ## STAGING - UI
 ## ================================
 
-staging-web-ui-build:
+staging-web-ui-build: build-viz build-graph
 	@echo "Building UI for staging environment..."
 	$(call generate_ui_version,staging)
 	@cd modules/ui && npm run build:staging
@@ -288,7 +296,7 @@ staging-env-test:
 ## PRODUCTION - UI
 ## ================================
 
-prod-web-ui-build:
+prod-web-ui-build: build-viz build-graph
 	@echo "Building UI for production..."
 	$(call generate_ui_version,)
 	@cd modules/ui && npm run build:production
@@ -354,13 +362,13 @@ dev-electron-ui-build:
 	@cd modules/ui && npm run build
 
 # Shared target for optimized staging builds
-staging-electron-ui-build:
+staging-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,staging)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:staging
 
 # Shared target for optimized production builds
-prod-electron-ui-build:
+prod-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:production

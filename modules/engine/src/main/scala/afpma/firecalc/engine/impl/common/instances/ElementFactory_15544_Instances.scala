@@ -10,10 +10,12 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.AbsoluteDirection
 
 import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
+import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.*
 
 import cats.data.Validated
@@ -22,6 +24,7 @@ import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
+import coulomb.syntax.*
 import coulomb.policy.standard.given
 
 object ElementFactory_15544_Instances:
@@ -40,20 +43,25 @@ object ElementFactory_15544_Instances:
     // ========== Flow-Only Straight Section Factory ==========
 
     case class FlowOnlyStraightSectionCtx_15544(
-        geometry : Option[PipeShape],
-        roughness: Option[Roughness],
-        pipeType : PipeType
+        geometry    : Option[PipeShape],
+        roughness   : Option[Roughness],
+        pipeType    : PipeType,
+        currentFrame: Option[PipeFrame] = None
     )
 
     given flowOnlyStraightSection15544: ElementFactory[
-        AddFlowOnlyPipeElement_15544.AddSectionSlopped | AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
-            AddFlowOnlyPipeElement_15544.AddSectionVertical,
+        AddFlowOnlyPipeElement_15544.AddSectionSlopped | 
+        AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
+        AddFlowOnlyPipeElement_15544.AddSectionVertical,
         FlowOnlyPipeDescr_15544.StraightSection,
         FlowOnlyStraightSectionCtx_15544
     ] with
         def make(
-            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped | AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
-                AddFlowOnlyPipeElement_15544.AddSectionVertical
+            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped | 
+            AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
+            AddFlowOnlyPipeElement_15544.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_15544) =
             val vg = ctx.getValidated(
                 _.geometry,
@@ -64,18 +72,23 @@ object ElementFactory_15544_Instances:
                 RoughnessMustBeSet(op.name, ctx.pipeType)
             )
 
-            val (len, elev_gain) = op match
-                case AddFlowOnlyPipeElement_15544.AddSectionSlopped(
+            val (len, elev_gain, auto_compute_elev_gain) = op match
+                case AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain(
                         _,
                         len,
                         elev_gain
                     ) =>
-                    (len, elev_gain)
+                    (len, elev_gain, false)
+                case AddFlowOnlyPipeElement_15544.AddSectionSlopped(
+                        _,
+                        len
+                    ) =>
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_15544.AddSectionHorizontal(
                         _,
                         len
                     ) =>
-                    (len, 0.0.m)
+                    (len, 0.0.m, true)
                 case AddFlowOnlyPipeElement_15544.AddSectionVertical(
                         _,
                         elev_gain
@@ -83,22 +96,31 @@ object ElementFactory_15544_Instances:
                     val len =
                         if (elev_gain < 0.meters) -elev_gain
                         else elev_gain
-                    (len, elev_gain)
+                    (len, elev_gain, true)
+
+            val finalElevGain = ctx.currentFrame match
+                case Some(frame) => 
+                    if auto_compute_elev_gain 
+                    then (math.abs(len.value) * frame.direction.z).m
+                    else elev_gain
+                case None        => elev_gain
 
             (vg, vr).mapN { (g, r) =>
                 FlowOnlyPipeDescr_15544.StraightSection        (
                     length         = len,
                     geometry       = g,
                     roughness      = r,
-                    elevation_gain = elev_gain
+                    elevation_gain = finalElevGain
                 )
             }
 
     // ========== Direction Change Factory ==========
 
     case class DirectionChangeCtx_15544(
-        geometry: Option[PipeShape],
-        pipeType: PipeType
+        geometry            : Option[PipeShape],
+        pipeType            : PipeType,
+        dirBeforePreviousDC : Option[Vec3]      = None,
+        currentFrame        : Option[PipeFrame] = None
     )
 
     given directionChange15544: ElementFactory[
@@ -113,15 +135,26 @@ object ElementFactory_15544_Instances:
                 _.geometry.map(_.dh),
                 DirectionChangeRequiresSectionGeometry(ctx.pipeType)
             ).map { _ =>
+                // angleN2 = angle between direction BEFORE the previous bend and direction AFTER the current bend.
+                // The factory runs before updateStateAfterConversionStep, so currentFrame still holds
+                // the pre-bend frame. We must apply the current bend here to get the post-bend direction.
+                val computedAngleN2: Option[QtyD[Degree]] =
+                    (ctx.dirBeforePreviousDC, ctx.currentFrame, op.absDir) match
+                        case (Some(dirBefore), Some(frame), Some(fd)) =>
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            val postBendFrame = frame.applyBendForFinalDir(
+                                op.angle.toUnit[Degree].value,
+                                targetVec
+                            )
+                            Some(dirBefore.angleTo(postBendFrame.direction).withUnit[Degree])
+                        case _ => None
+
                 op match
-                    case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
-                            _,
-                            angle,
-                            angleN2
-                        ) =>
+                    case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(_, angle, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange
-                            .AngleVifDe0A180(angle, angleN2)
-                    case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_) =>
+                            .AngleVifDe0A180(angle, computedAngleN2)
+                    case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
             }
 
@@ -218,13 +251,23 @@ object ElementFactory_15544_Instances:
     given pressureDiff15544: ElementFactory[
         AddFlowOnlyPipeElement_15544.AddPressureDiff,
         FlowOnlyPipeDescr_15544.PressureDiff,
-        Unit
+        FlowResistanceCtx_15544
     ] with
         def make(op: AddFlowOnlyPipeElement_15544.AddPressureDiff)(using
-            Unit
+            ctx: FlowResistanceCtx_15544
         ) =
-            FlowOnlyPipeDescr_15544
-                .PressureDiff(
-                    pa = op.pressure_difference
+            ctx.getValidated(
+                _.geometry,
+                PressureDiffRequiresGeometry(
+                    op.name,
+                    "EN15544",
+                    ctx.pipeType
+                )
+            ).andThen { geom =>
+                FlowOnlyPipeDescr_15544
+                    .PressureDiff(
+                    pa = op.pressure_difference,
+                    crossSectionO = ctx.geometry.map(_.area)
                 )
                 .validNel
+            }

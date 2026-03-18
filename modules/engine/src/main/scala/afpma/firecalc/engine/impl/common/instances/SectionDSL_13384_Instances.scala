@@ -16,16 +16,27 @@ object SectionDSL_13384_Instances:
     // Instance for ThermalPipeDescr_13384
     given thermal13384: SectionDSL[ThermalPipeDescr_13384] with
         def addSectionSlopped(
-            name          : String,
-            length        : QtyD[Meter],
-            elevation_gain: QtyD[Meter]
+            name  : String,
+            length: QtyD[Meter],
         ) =
             AddThermalPipeElement_13384.AddSectionSlopped(
+                name,
+                length
+            )
+
+        def addSectionSloppedForceManualElevationGain(
+            name          : String,
+            length        : QtyD[Meter],
+            elevation_gain: QtyD[Meter],
+        ) =
+            AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain(
                 name,
                 length,
                 elevation_gain
             )
+            
 
+        @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionHorizontal(
             name             : String,
             horizontal_length: QtyD[Meter]
@@ -35,6 +46,7 @@ object SectionDSL_13384_Instances:
                 horizontal_length
             )
 
+        @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionVertical(
             name          : String,
             elevation_gain: QtyD[Meter]
@@ -46,17 +58,28 @@ object SectionDSL_13384_Instances:
 
     // Instance for FlowOnlyPipeDescr_13384
     given flowOnly13384: SectionDSL[FlowOnlyPipeDescr_13384] with
+
         def addSectionSlopped(
-            name          : String,
-            length        : QtyD[Meter],
-            elevation_gain: QtyD[Meter]
+            name  : String,
+            length: QtyD[Meter],
         ) =
             AddFlowOnlyPipeElement_13384.AddSectionSlopped(
+                name,
+                length
+            )
+
+        def addSectionSloppedForceManualElevationGain(
+            name          : String,
+            length        : QtyD[Meter],
+            elevation_gain: QtyD[Meter],
+        ) =
+            AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain(
                 name,
                 length,
                 elevation_gain
             )
 
+        @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionHorizontal(
             name             : String,
             horizontal_length: QtyD[Meter]
@@ -66,6 +89,7 @@ object SectionDSL_13384_Instances:
                 horizontal_length
             )
 
+        @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
         def addSectionVertical(
             name          : String,
             elevation_gain: QtyD[Meter]

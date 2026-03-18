@@ -5,13 +5,13 @@
 
 package afpma.firecalc.ui.models.schema
 
-import afpma.firecalc.ui.models.schema.v3.*
+import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4
 
-// Alias to V3
-type AppStateSchema = AppStateSchema_V3
+// Alias to V4
+type AppStateSchema = AppStateSchema_V4
 
 object AppStateSchema:
 
-    val LATEST_VERSION: Int = 3
+    val LATEST_VERSION: Int = 4
 
-    export AppStateSchema_V3.{given, *}
+    export AppStateSchema_V4.{given, *}

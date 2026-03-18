@@ -4,6 +4,7 @@
  */
 
 package afpma.firecalc.ui.instances
+
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
@@ -22,6 +23,7 @@ import scala.annotation.nowarn
 import scala.deriving.Mirror
 
 import io.taig.babel.Locale
+import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
 
 class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
@@ -32,8 +34,179 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
     import horizontal_form.{*, given}
 
+    private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
+
     // AddElement
 
+    given horizontal_form_SetPropertiesInBatch: DaisyUIHorizontalForm[SetPropertiesInBatch] =
+        import defaultable_13384.incr_descr_en13384.defaultable_Seq_SetSingleProp
+        // given DaisyUIHorizontalForm[String] = string_emptyAsDefault_alwaysValid
+
+        // List[SetSingleProp] should be a global vertical form
+        // containing horizontal form instances for each "SetSingleProp" element
+        given df_list: DaisyUIVerticalForm[List[SetSingleProp]] =
+            DaisyUIVerticalForm
+                .forList_WithEphemeralIds[SetSingleProp](using horizontal_form_SetSingleProp.toVerticalForm)
+
+        // Convert from List -> Seq
+        given seqForm: DaisyUIVerticalForm[Seq[SetSingleProp]] =
+            DaisyUIVerticalForm.formConversionOpaque[Seq[SetSingleProp], List[SetSingleProp]](using
+                df_list,
+                _.toList,
+                _.toSeq
+            )
+
+        val d: Defaultable[SetPropertiesInBatch] = summon[Defaultable[SetPropertiesInBatch]]
+        given vv_batch: ValidateVar[SetPropertiesInBatch] = ValidateVar.valid
+
+        val stringForm: DaisyUIHorizontalForm[String] = string_emptyAsDefault_alwaysValid
+
+        DaisyUIHorizontalForm.makeFor[SetPropertiesInBatch](d): (v, fc) =>
+            import afpma.firecalc.ui.instances.ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
+            import afpma.firecalc.ui.components.SetPropertiesInBatchFormComponent
+            import afpma.firecalc.ui.models.pipePresetsSignal
+
+            val titleVar   = v.zoomLazy(_.batch_name)((spb, name) => spb.copy(batch_name = name))
+            val contentVar = v.zoomLazy(_.props)((spb, props) => spb.copy(props = props))
+
+            val titleElement   = stringForm.render(titleVar, fc)
+            val contentElement = seqForm.render(contentVar, fc)
+
+            SetPropertiesInBatchFormComponent(
+                v             = v,
+                entriesSignal = pipePresetsSignal,
+                titleEl       = titleElement,
+                contentEl     = contentElement
+            ).node
+
+    given horizontal_form_LinedFlue: DaisyUIHorizontalForm[LinedFlue] =
+        import defaultable_13384.incr_descr_en13384.given
+        val d: Defaultable[LinedFlue] = summon[Defaultable[LinedFlue]]
+        given ValidateVar[LinedFlue] = ValidateVar.valid
+
+        DaisyUIHorizontalForm.makeFor[LinedFlue](d): (v, fc) =>
+            import com.raquo.laminar.api.L.*
+
+            given vv_spb: ValidateVar[SetPropertiesInBatch] =
+                ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetPropertiesInBatch]
+            given vv_asd: ValidateVar[AirSpaceDetailed] =
+                ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AirSpaceDetailed]
+
+            val linerForm  = horizontal_form_SetPropertiesInBatch
+            val casingForm = horizontal_form_SetPropertiesInBatch
+
+            val linerVar  = v.zoomLazy(_.liner)((lf, l) => lf.copy(liner = l))
+            val airVar    = v.zoomLazy(_.air_space)((lf, a) => lf.copy(air_space = a))
+            val casingVar = v.zoomLazy(_.casing)((lf, c) => lf.copy(casing = c))
+
+            // --- Bidirectional linking: airspace width ↔ casing inner shape ---
+
+            import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
+            import afpma.firecalc.ui.components.InfoDialog
+            import coulomb.syntax.*
+
+            val infoDialog = InfoDialog()
+
+            def linerOuterShape(liner: SetPropertiesInBatch): Option[PipeShape] =
+                liner.props.extractInnerShape.map(is => liner.props.extractLayers.compute_outer_shape(is))
+
+            // Adjust the casing inner shape so its smallest dimension matches requiredMinDim.
+            // Preserves the existing shape type; only changes the smallest side.
+            def adjustCasingInnerShape(existing: Option[PipeShape], requiredMinDim: Length): PipeShape =
+                existing match
+                    case Some(Circle(_))                                      => Circle(requiredMinDim)
+                    case Some(Square(_))                                      => Square(requiredMinDim)
+                    case Some(Rectangle(a, b)) if a.value == b.value          => Rectangle(requiredMinDim, requiredMinDim)
+                    case Some(Rectangle(a, b)) if a.value < b.value           => Rectangle(requiredMinDim, b)
+                    case Some(Rectangle(a, b))                                => Rectangle(a, requiredMinDim)
+                    case None                                                 => Square(requiredMinDim)
+
+            def upsertInnerShape(props: Seq[SetSingleProp], newShape: PipeShape): Seq[SetSingleProp] =
+                if props.exists(_.isInstanceOf[SetInnerShape]) then
+                    props.map { case _: SetInnerShape => SetInnerShape(newShape); case other => other }
+                else
+                    SetInnerShape(newShape) +: props
+
+            // Derived signal: liner's outer shape (inner shape expanded through wall layers)
+            val linerOuterSig: Signal[Option[PipeShape]] =
+                linerVar.signal.map(linerOuterShape)
+
+            // Binder 1: (linerOuter + airWidth) → casing inner shape
+            val airToCasingBinder =
+                linerOuterSig.combineWith(airVar.signal)
+                    .distinct
+                    .changes
+                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                    .map {
+                        case (Some(los), AirSpaceDetailed_V2.WithAirSpace_V2(width, _, _)) =>
+                            val requiredMinDim = (los.dh.toUnit[Meter].value + 2.0 * width.toUnit[Meter].value).withUnit[Meter]
+                            Some(requiredMinDim)
+                        case _ => None
+                    }
+                    .withCurrentValueOf(casingVar.signal.map(_.props.extractInnerShape))
+                    .map { case (optDim, curCasingInner) =>
+                        optDim.map(dim => (adjustCasingInnerShape(curCasingInner, dim), curCasingInner))
+                    }
+                    .collect { case Some((newShape, curShape)) if !curShape.contains(newShape) => newShape }
+                    --> Observer[PipeShape](newShape =>
+                        casingVar.update(c => c.copy(props = upsertInnerShape(c.props, newShape)))
+                        infoDialog.show(I18N.set_prop.LinedFlue_sync_casing)
+                    )
+
+            // Binder 2: (linerOuter + casing inner shape) → air width
+            // Observe the full casingVar (not just extractInnerShape) to ensure
+            // changes to PipeShape dimensions propagate even through nested zooms.
+            val casingToAirBinder =
+                linerOuterSig.combineWith(casingVar.signal)
+                    .distinct
+                    .changes
+                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                    .map { case (los, casing) =>
+                        (los, casing.props.extractInnerShape) match
+                            case (Some(l), Some(cis)) =>
+                                val dh = cis match
+                                    case Rectangle(min, b) if min < b   => min
+                                    case Rectangle(a, min) if min < a   => min
+                                    case other                          => other.dh
+                                val airWidthMeters = (dh.toUnit[Meter].value - l.dh.toUnit[Meter].value) / 2.0
+                                if airWidthMeters > 0 then Some(airWidthMeters.withUnit[Meter])
+                                else None
+                            case _ => None
+                    }
+                    .distinct
+                    .withCurrentValueOf(airVar.signal)
+                    .collect {
+                        case (Some(newWidth), AirSpaceDetailed_V2.WithAirSpace_V2(curWidth, _, _))
+                            if math.abs(newWidth.toUnit[Meter].value - curWidth.toUnit[Meter].value) >= 0.001 => 
+                                // equality means diff less than 1mm.
+                                // should be enough to prevent looping because of floating computations
+                                newWidth
+
+                    }
+                    --> Observer[Length](newWidth =>
+                        airVar.update {
+                            case AirSpaceDetailed_V2.WithAirSpace_V2(_, dir, vo) =>
+                                AirSpaceDetailed_V2.WithAirSpace_V2(newWidth, dir, vo)
+                            case other => other
+                        }
+                        infoDialog.show(I18N.set_prop.LinedFlue_sync_airspace)
+                    )
+
+            div(
+                airToCasingBinder,
+                casingToAirBinder,
+                infoDialog.node,
+                h4(cls := "font-semibold text-sm mb-1", I18N.set_prop.LinedFlue_liner),
+                linerForm.render(linerVar, fc),
+                h4(cls := "font-semibold text-sm mb-1 mt-2", I18N.en13384.air_space_detailed),
+                horizontal_form_AirSpaceDetailed.render(airVar, fc),
+                h4(cls := "font-semibold text-sm mb-1 mt-2", I18N.set_prop.LinedFlue_casing),
+                casingForm.render(casingVar, fc)
+            )
+
+    given horizontal_form_SetSingleProp: DaisyUIHorizontalForm[SetSingleProp] =
+        DaisyUIHorizontalForm.splitViaMatchingOnly[SetSingleProp]
+    
     given horizontal_form_SetInnerShape: DaisyUIHorizontalForm[SetInnerShape] =
         autoDeriveAndOverwriteFieldNames[SetInnerShape]
 
@@ -67,9 +240,9 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
             defaultable_13384.defaultable_Material_13384_v2
 
         // Provide ValidateVar
-        given ValidateVar[Roughness]         = validatevar.roughness.valid_whenPositive
+        given ValidateVar[Roughness]         = vv.roughness.valid_whenStrictlyPositive
         given ValidateVar[Material_13384_V2] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V2]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V2]
 
         DaisyUIHorizontalForm.forSelectionWithDefaultValue_usingSelectInput[Material_13384_V2, Roughness]   (
             selectOptions    = Material_13384_V2.values,
@@ -83,7 +256,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_Material_13384_V1: DaisyUIHorizontalForm[Material_13384_V1] =
         import Material_13384_V1.given
         given ValidateVar[Material_13384_V1] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V1]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V1]
         DaisyUIHorizontalForm
             .forEnumOrSumTypeLike_UsingShowAsId[Material_13384_V1](Material_13384_V1.values.toList)
 
@@ -97,7 +270,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_SetLayers: DaisyUIHorizontalForm[SetLayers] =
         // import defaultable.given_AppendLayerDescr
         given DaisyUIHorizontalForm[List[AppendLayerDescr]] =
-            import validatevar.valid_always.given
+            import ValidateVarCommonInstances.valid_always.given
             DaisyUIHorizontalForm.forList_fromComponent: appnd_layers_var =>
                 AppendLayersComponent(appnd_layers_var).node
         autoDeriveAndOverwriteFieldNames[SetLayers]
@@ -111,8 +284,26 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_SetDuctType: DaisyUIHorizontalForm[SetDuctType] =
         autoDeriveAndOverwriteFieldNames[SetDuctType]
 
+    given horizontal_form_SetInitialDirection: DaisyUIHorizontalForm[SetInitialDirection] =
+        given Defaultable[SetInitialDirection] =
+            Defaultable(SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
+        given ValidateVar[SetInitialDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetInitialDirection]
+        DaisyUIHorizontalForm.makeFor[SetInitialDirection](summon[Defaultable[SetInitialDirection]]): (variable, _) =>
+            val azVar   = variable.zoomLazy(_.azimuth)((sid, az) => sid.copy(azimuth = az))
+            val inclVar = variable.zoomLazy(_.inclination)((sid, incl) => sid.copy(inclination = incl))
+            horizontal_form.renderInitialDirectionForm(azVar, inclVar)
+
+    given horizontal_form_SetInitialPosition: DaisyUIHorizontalForm[SetInitialPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetInitialPosition]
+
+    given horizontal_form_SetFinalPosition: DaisyUIHorizontalForm[SetFinalPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetFinalPosition]
+
     given horizontal_form_SetNumberOfFlows: DaisyUIHorizontalForm[SetNumberOfFlows] =
-        import validatevar.validOption_always.given
+        import ValidateVarCommonInstances.validOption_always.given
         given DaisyUIHorizontalForm[Int]       = DaisyUIHorizontalForm.forInt
         given DaisyUIHorizontalForm[NbOfFlows] = DaisyUIHorizontalForm.formConversionOpaque[NbOfFlows, Int]
         autoDeriveAndOverwriteFieldNames[SetNumberOfFlows]
@@ -122,6 +313,17 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     // helper with string field always validated
     inline def autoDeriveAndOverwriteFieldNames_AddElement_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        autoDeriveAndOverwriteFieldNames[A]
+
+    // Like above but suppresses the absDir field — absDir is set via the DirectionBadge dropdown.
+    // Both places must be updated together when adding a new DC subtype.
+    inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
+        import com.raquo.laminar.api.L.span
+        @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[AbsoluteDirection]] =
+            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[AbsoluteDirection]
+        @nowarn given DaisyUIHorizontalForm[Option[AbsoluteDirection]] =
+            DaisyUIHorizontalForm.makeFor[Option[AbsoluteDirection]](Defaultable(None))((_, _) => span())
         autoDeriveAndOverwriteFieldNames[A]
 
     given horizontal_form_AddSectionSlopped: DaisyUIHorizontalForm[AddSectionSlopped] =
@@ -137,41 +339,41 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionVertical]
 
     given horizontal_form_AddAngleAdjustable: DaisyUIHorizontalForm[AddAngleAdjustable] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddAngleAdjustable]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddAngleAdjustable]
 
     given horizontal_form_AddSharpeAngle_0_to_90: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_90]
 
     given horizontal_form_AddSharpeAngle_0_to_90_Unsafe: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90_Unsafe] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_90_Unsafe]
 
     given horizontal_form_AddSmoothCurve_90: DaisyUIHorizontalForm[AddSmoothCurve_90] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_90]
 
     given horizontal_form_AddSmoothCurve_90_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_90_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_90_Unsafe]
 
     given horizontal_form_AddSmoothCurve_60: DaisyUIHorizontalForm[AddSmoothCurve_60] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_60]
 
     given horizontal_form_AddSmoothCurve_60_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_60_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_60_Unsafe]
 
     given horizontal_form_AddElbows_2x45: DaisyUIHorizontalForm[AddElbows_2x45] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_2x45]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_2x45]
 
     given horizontal_form_AddElbows_3x30: DaisyUIHorizontalForm[AddElbows_3x30] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_3x30]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_3x30]
 
     given horizontal_form_AddElbows_4x22p5: DaisyUIHorizontalForm[AddElbows_4x22p5] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_4x22p5]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_4x22p5]
 
     given horizontal_form_AddSectionDecrease: DaisyUIHorizontalForm[AddSectionDecrease] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
@@ -226,12 +428,12 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_AirSpaceDetailed: DaisyUIHorizontalForm[AirSpaceDetailed] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed]
 
-    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace]
+    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace_V2] =
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace_V2]
 
-    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace] =
+    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace_V2] =
         given DaisyUIHorizontalForm[QtyD[Meter]]     = horizontal_form_Length_mm_cm
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace]
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace_V2]
 
     // PipeLocation.AreaName
 
@@ -244,7 +446,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_PipeLocation_AreaName_OutsideOrExterior: DaisyUIHorizontalForm[PipeLocation.AreaName.OutsideOrExterior] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.OutsideOrExterior]
     given horizontal_form_PipeLocation_AreaName_CustomArea       : DaisyUIHorizontalForm[PipeLocation.AreaName.CustomArea]        =
-        given ValidateVar[Option[String]] = validatevar.string.validOption_Always
+        given ValidateVar[Option[String]] = ValidateVarCommonInstances.string.validOption_Always
         given DaisyUIHorizontalForm[String] = DaisyUIHorizontalForm.forString
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.CustomArea]
 

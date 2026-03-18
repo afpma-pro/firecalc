@@ -43,13 +43,9 @@ object readtable:
         else if (yi > ymax) Left(ValueOutOfBound(s"y ($yHeader)", yi, ymin, ymax))
         else
             val data = TSVTableString.fromString(tsvTableRawString)
-            for out <- data.getUsingBilinearInterpolation(xHeader, yHeader, zHeader)(xi, yi) match
-                    case Some(coeff) => Right(coeff)
-                    case None        =>
-                        Left(
-                            CouldNotInterpolate(
-                                s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, zHeader=$zHeader, xi=$xi, yi=$yi"
-                            )
-                        )
-            yield out
+            data.getUsingBilinearInterpolation(xHeader, yHeader, zHeader)(xi, yi)
+                .left.map: err =>
+                    CouldNotInterpolate(
+                        s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, zHeader=$zHeader, xi=$xi, yi=$yi ($err)"
+                    )
     }

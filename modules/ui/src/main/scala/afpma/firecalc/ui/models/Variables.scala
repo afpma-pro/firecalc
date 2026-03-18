@@ -10,19 +10,17 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
+import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.FireCalc_Version.<
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
-import afpma.firecalc.engine.models.LoadQty
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipesResult_15544
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en13384.typedefs.P_L
 import afpma.firecalc.engine.models.en15544.std.Outputs
-import afpma.firecalc.engine.models.en15544.typedefs.CitedConstraints
 import afpma.firecalc.engine.models.en15544.typedefs.EstimatedOutputTemperatures
 import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
 import afpma.firecalc.engine.models.en15544.typedefs.η
@@ -44,7 +42,6 @@ import afpma.firecalc.ui.utils.*
 import cats.data.Validated
 import cats.data.Validated.Valid
 import cats.data.ValidatedNel
-import cats.implicits.catsSyntaxOptionId
 import cats.implicits.catsSyntaxTuple2Semigroupal
 
 import com.raquo.airstream.core.Signal
@@ -66,7 +63,7 @@ import scala.util.*
  * Unified application state schema stored in localStorage as a single atomic unit.
  * Contains: engine_state (sent to backend), sensitive_data (client-only), billing_data (client-only)
  */
-val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
+lazy val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
     WebStorageVar
         .localStorage(key = LocalStorageKeys.APP_STATE_SCHEMA, syncOwner = None)
         .withCodec          (
@@ -88,7 +85,7 @@ val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
             syncDistinctByFn = _ == _
         )
 
-val appStateSchemaVar =
+lazy val appStateSchemaVar =
     Var[AppStateSchema](appStateSchemaWebStorageVar.now())
 
 // ============================================================================
@@ -101,7 +98,7 @@ import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.engine.models.LocalRegulations
 
 // Engine state (sent to backend for PDF generation)
-val engineStateVar = appStateSchemaVar.zoomLazy(_.engine_state)((schema, engine) =>
+lazy val engineStateVar = appStateSchemaVar.zoomLazy(_.engine_state)((schema, engine) =>
     // Migrate engine state to latest version if needed
     val migratedEngine =
         if engine.version < FireCalcYAML.LATEST_VERSION then
@@ -206,21 +203,75 @@ val chimney_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.chimne
 val chimney_pipe_mappings_vnel_signal =
     engineStateHelperVar.signal.map(_.chimneyPipeMappings)
 
-// Results for EN15544 Strict
+// Final frames: flue pipe's final frame seeds the connector, connector's seeds the chimney.
+// These are derived from the incremental descriptions directly (no engine run needed).
 
-def run_en15544_strict[X](using
-    strict: EN15544_Strict_Application
-)(run: strict.Params_15544 ?=> VNelString[X]): VNelString[X] =
-    val p: strict.Params_15544 =
-        (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-    run(using p)
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.FluePipe_Module_15544
+import afpma.firecalc.engine.models.ConnectorPipe_Module
+
+lazy val fluepipe_finalFrame_sig: Signal[Option[PipeFrame]] =
+    fluepipe_incrdescr_var.signal.map: descr =>
+        val (_, finalFrameV) = FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr)
+        finalFrameV.toOption.flatten
+    .distinct
+
+lazy val connectorpipe_finalFrame_sig: Signal[Option[PipeFrame]] =
+    connector_pipe_incrdescr_var.signal.combineWith(fluepipe_finalFrame_sig).map: (descr, flueFinalFrame) =>
+        val (_, finalFrameV) = ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(descr, flueFinalFrame)
+        finalFrameV.toOption.flatten
+    .distinct
+
+// Position tracking: cumulative XYZ coordinates for each pipe's physical segments.
+// Chained: connector starts at flue's finalPoint, chimney starts at connector's finalPoint.
+// Air intake and flue pipe both start at origin (firebox outlet not modeled spatially).
+
+import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
+import afpma.firecalc.engine.models.geometry.Vec3
+
+lazy val fluepipe_positions_sig: Signal[PipePositionResult] =
+    fluepipe_incrdescr_var.signal
+        .combineWith(firebox_var.signal)
+        .map: (descr, firebox) =>
+            val fbHeightM = firebox.firebox_height.value
+            PositionTracker.computeFlowOnly15544(descr, externalFrame = None, startPoint = Vec3(0, 0, fbHeightM + 1.0))
+        .distinct
+
+lazy val connectorpipe_positions_sig: Signal[PipePositionResult] =
+    connector_pipe_incrdescr_var.signal
+        .combineWith(fluepipe_finalFrame_sig, fluepipe_positions_sig)
+        .map: (descr, flueFinalFrame, fluePositions) =>
+            PositionTracker.computeThermal13384(descr, flueFinalFrame, fluePositions.finalPoint)
+        .distinct
+
+lazy val chimneypipe_positions_sig: Signal[PipePositionResult] =
+    chimney_pipe_incrdescr_var.signal
+        .combineWith(connectorpipe_finalFrame_sig, connectorpipe_positions_sig)
+        .map: (descr, connFinalFrame, connPositions) =>
+            PositionTracker.computeThermal13384(descr, connFinalFrame, connPositions.finalPoint)
+        .distinct
+
+lazy val airintake_positions_sig: Signal[PipePositionResult] =
+    air_intake_incrdescr_var.signal.map: descr =>
+        PositionTracker.computeFlowOnly13384(
+            descr,
+            externalFrame = None,
+            startPoint = Vec3(0, 0, 0),
+            finalPoint = Some(Vec3(0, 0, -1.0))
+        )
+    .distinct
+
+// Results for EN15544 Strict
 
 lazy val results_en15544_strict_sig: Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =
     engineStateHelperVar.signal
         // emits at most once during interval (prevent too much computing)
         // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
-        .map(_.make_en15544_Strict_Application)
+        .map: helper =>
+            scala.util.Try(helper.make_en15544_Strict_Application) match
+                case scala.util.Success(result) => result
+                case scala.util.Failure(e)      => Validated.invalidNel(UnexpectedDevError(e.getMessage))
 
 lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
     results_en15544_strict_sig
@@ -257,20 +308,12 @@ lazy val results_en13384_sig: Signal[VNelMcalcErr[EN13384_1_A1_2019_Common_Appli
 
 lazy val results_en15544_pressure_requirements: Signal[VNelMcalcErr[PressureRequirement]] =
     results_en15544_strict_sig.flatMapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.pressureRequirement_EN15544(using p)
+        strict.primary.pressureRequirement_EN15544
     )
 
 lazy val results_en15544_outputs: Signal[VNelMcalcErr[Outputs]] =
     results_en15544_strict_sig.mapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.outputs(using p)
+        strict.primary.outputs
     )
 
 lazy val results_en15544_air_intake_pipe: Signal[VNelMcalcErr[PipeResult]] =
@@ -297,19 +340,14 @@ lazy val results_en15544_chimney_pipe  : Signal[VNelMcalcErr[PipeResult]] =
 
 lazy val results_en15544_estimated_output_temperatures: Signal[VNelMcalcErr[EstimatedOutputTemperatures]] =
     results_en15544_strict_sig.mapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.estimated_output_temperatures(using p)
+        strict.primary.estimated_output_temperatures
     )
 
 lazy val chimney_wall_temp_above_condensation_temp_sig: Signal[Boolean] =
     results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
-            val p = strict.runValidationAtParams
-            strict
-                .validateChimneyWallTempIsAboveCondensationTemp()(using p)
+            strict.primary
+                .validateChimneyWallTempIsAboveCondensationTemp()
                 .map(_ => true)
         ,
         default = false
@@ -317,11 +355,7 @@ lazy val chimney_wall_temp_above_condensation_temp_sig: Signal[Boolean] =
 
 lazy val results_en15544_t_chimney_wall_top: Signal[VNelMcalcErr[t_chimney_wall_top]] =
     results_en15544_strict_sig.flatMapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.t_chimney_wall_top(using p)
+        strict.primary.t_chimney_wall_top
     )
 
 lazy val results_en15544_t_chimney_wall_top_min: Signal[VNelMcalcErr[t_chimney_wall_top_min]] =
@@ -329,11 +363,7 @@ lazy val results_en15544_t_chimney_wall_top_min: Signal[VNelMcalcErr[t_chimney_w
 
 lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
     results_en15544_strict_sig.flatMapVNelE(strict =>
-        val p = (
-            DraftCondition.DraftMinOrPositivePressureMax,
-            LoadQty.givens.nominal
-        )
-        strict.η(using p)
+        strict.primary.η
     )
 
 lazy val eff_and_min_eff: Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[Percentage]])] =
@@ -345,9 +375,8 @@ lazy val eff_and_min_eff: Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[
 lazy val effInRange_sig: Signal[Boolean] =
     results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
-            val p = strict.runValidationAtParams
-            strict
-                .validateEfficiencyIsAboveMinEfficiency()(using p)
+            strict.primary
+                .validateEfficiencyIsAboveMinEfficiency()
                 .map(_ => true)
         ,
         false
@@ -355,6 +384,12 @@ lazy val effInRange_sig: Signal[Boolean] =
 
 lazy val results_en15544_emissions_and_efficiency_values: Signal[VNelMcalcErr[EmissionsAndEfficiencyValues]] =
     results_en15544_strict_sig.mapVNelE(_.emissions_and_efficiency_values)
+
+extension (d: Double)
+    private def filterNaN: Option[Double] = Option.when(!d.isNaN)(d)
+
+extension (od: Option[Double])
+    private def filterNaN: Option[Double] = od.filter(!_.isNaN)
 
 def makeQuadrionSubtotalForSingle(
     outputsSig: Signal[VNelMcalcErr[Outputs]]
@@ -367,10 +402,10 @@ def makeQuadrionSubtotalForSingle(
                 case Validated.Valid(pres) =>
                     Some(
                         QuadrionSubtotal   (
-                            ph    = pres.ph.value.some,
-                            pr    = (-1.0 * pres.pR.value).some,
-                            pu    = (pres.pu.map(pu => (-1.0 * pu).value)).toOption,
-                            sigma = pres.`ph-(pR+pu)`.map(_.value).toOption
+                            ph    = pres.ph.value.filterNaN,
+                            pr    = (-1.0 * pres.pR.value).filterNaN,
+                            pu    = pres.pu.map(pu => (-1.0 * pu).value).toOption.filterNaN,
+                            sigma = pres.`ph-(pR+pu)`.map(_.value).toOption.filterNaN
                         )
                     )
                 case _                     => None
@@ -394,15 +429,16 @@ def makeQuadrionSubtotalForFirebox(
                 case (Valid(cc_intlair_pres), Valid(cc_firebox_pres)) =>
                     Some(
                         QuadrionSubtotal   (
-                            ph    = (cc_intlair_pres.ph + cc_firebox_pres.ph).value.some,
-                            pr    = (-1.0 * (cc_intlair_pres.pR + cc_firebox_pres.pR).value).some,
+                            ph    = (cc_intlair_pres.ph + cc_firebox_pres.ph).value.filterNaN,
+                            pr    = (-1.0 * (cc_intlair_pres.pR + cc_firebox_pres.pR).value).filterNaN,
                             pu    = (cc_intlair_pres.pu, cc_firebox_pres.pu)
                                 .mapN((l, r) => -1.0 * (l + r).value)
-                                .toOption,
+                                .toOption
+                                .filterNaN,
                             sigma = (
                                 cc_intlair_pres.`ph-(pR+pu)`,
                                 cc_firebox_pres.`ph-(pR+pu)`
-                            ).mapN((l, r) => (l + r).value).toOption
+                            ).mapN((l, r) => (l + r).value).toOption.filterNaN
                         )
                     )
                 case (l, r                                          ) =>
@@ -418,20 +454,32 @@ val expertModeVar = Var[Boolean](false)
 val expertModeOn  = expertModeVar.signal
 val expertModeOff = expertModeOn.map(!_)
 
-// contraints / error validation for firebox
+// 3D visualization panel
+val viz3DPanelVar  = Var[Boolean](false)
+val viz3DPanelOn   = viz3DPanelVar.signal
+val viz3DPanelOff  = viz3DPanelOn.map(!_)
 
-val citedConstraintsValidation_sig: Signal[VNelMcalcErr[CitedConstraints]] =
-    results_en15544_strict_sig.mapVNelE(_.citedConstraints)
+// Graph (2D chart) panel
+val graphPanelVar = Var[Boolean](false)
+val graphPanelOn  = graphPanelVar.signal
+val graphPanelOff = graphPanelOn.map(!_)
+
+// Undo / Redo
+lazy val undoManager = UndoManager(maxDepth = 1000)
+
+def performUndo(): Unit =
+    undoManager.undo(appStateSchemaVar.now()).foreach { state =>
+        undoManager.withRestoring { appStateSchemaVar.set(state) }
+    }
+
+def performRedo(): Unit =
+    undoManager.redo(appStateSchemaVar.now()).foreach { state =>
+        undoManager.withRestoring { appStateSchemaVar.set(state) }
+    }
 
 // pour récupérer les erreurs de type AngleN2 missing etc...
 val air_intake_pipe_vnel2_signal = results_en15544_air_intake_pipe.map: p_vnel =>
     p_vnel.andThen(p => p.`ph-(pR+pu)`)
-
-// pressure final calc ok ?
-val firebox_vnel2_signal =
-    results_en15544_combustion_air_pipe
-        .combineWith(results_en15544_firebox_pipe)
-        .map((vp1, vp2) => vp1.map(_.`ph-(pR+pu)`).andThen(_ => vp2.map(_.`ph-(pR+pu)`)))
 
 val en13384_P_L_sig: Signal[VNelMcalcErr[P_L]] =
     results_en13384_sig.map(_.map(_.P_L))
@@ -459,3 +507,115 @@ lazy val all_conditions_and_results_satisfied_sig: Signal[Boolean] =
 
 lazy val all_conditions_and_results_not_satisfied_sig =
     all_conditions_and_results_satisfied_sig.map(!_)
+
+// ============================================================================
+// CATALOG STATE
+// ============================================================================
+
+import afpma.firecalc.ui.models.CatalogState
+import afpma.firecalc.ui.models.CatalogStateCodec.given
+import afpma.firecalc.ui.models.UIState
+import afpma.firecalc.ui.models.UIState.given
+import io.circe.Encoder
+import io.circe.parser
+
+lazy val catalogWebStorageVar: WebStorageVar[CatalogState] =
+    WebStorageVar
+        .localStorage(key = LocalStorageKeys.CATALOG_STATE, syncOwner = None)
+        .withCodec(
+            encode           = (state: CatalogState) =>
+                Encoder[CatalogState].apply(state).noSpaces,
+            decode           = (raw: String) =>
+                parser.decode[CatalogState](raw) match
+                    case Right(state) => Success(state)
+                    case Left(_)      => Success(CatalogState.empty),
+            default          = Success(CatalogState.empty),
+            syncDistinctByFn = _ == _
+        )
+
+lazy val catalogStateVar: Var[CatalogState] = Var(catalogWebStorageVar.now())
+
+// Per-category derived Signals
+lazy val door15aFireboxesSignal: Signal[Seq[Firebox_V3.Door15aFirebox_Catalog]] =
+    catalogStateVar.signal.map(_.door_15a_fireboxes.values.toSeq)
+
+lazy val singleTestedFireboxesSignal: Signal[Seq[Firebox_V3.SingleTested]] =
+    catalogStateVar.signal.map(_.single_tested_fireboxes.values.toSeq)
+
+lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+    catalogStateVar.signal.map(_.pipe_presets.values.toSeq)
+
+lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+    catalogStateVar.signal.map(_.casing_presets.values.toSeq)
+
+lazy val flowResistancePresetsSignal: Signal[Seq[FlowResistanceCatalogEntry]] =
+    catalogStateVar.signal.map(_.flow_resistance_presets.values.toSeq)
+
+// ============================================================================
+// VIZ ELEMENT IDENTIFICATION
+// ============================================================================
+
+enum VizElementId:
+    case FluePipeElement(elementIndex: Int)
+    case ConnectorPipeElement(elementIndex: Int)
+    case ChimneyPipeElement(elementIndex: Int)
+    case AirIntakePipeElement(elementIndex: Int)
+    case FireboxElement
+
+object VizElementId:
+    def fromName(name: String): Option[VizElementId] = name match
+        case s"Flue #$idx"       => idx.toIntOption.map(FluePipeElement(_))
+        case s"Connector #$idx"  => idx.toIntOption.map(ConnectorPipeElement(_))
+        case s"Chimney #$idx"    => idx.toIntOption.map(ChimneyPipeElement(_))
+        case s"Air Intake #$idx" => idx.toIntOption.map(AirIntakePipeElement(_))
+        case "Firebox"           => Some(FireboxElement)
+        case _                   => None
+
+// Ephemeral hover/select state (not persisted to localStorage)
+val vizHoveredElement: Var[Option[VizElementId]]  = Var(None)
+val vizSelectedElement: Var[Option[VizElementId]] = Var(None)
+
+// ============================================================================
+// UI STATE (persisted to localStorage, with migration from VIZ_CAMERA_STATE)
+// ============================================================================
+
+import org.scalajs.dom
+
+private def migrateOldCameraState(): Option[CameraState] =
+    try
+        val raw = dom.window.localStorage.getItem(LocalStorageKeys.VIZ_CAMERA_STATE)
+        if raw == null || raw.isEmpty then None
+        else
+            parser.decode[CameraState](raw) match
+                case Right(cs) =>
+                    dom.window.localStorage.removeItem(LocalStorageKeys.VIZ_CAMERA_STATE)
+                    Some(cs)
+                case Left(_) =>
+                    dom.window.localStorage.removeItem(LocalStorageKeys.VIZ_CAMERA_STATE)
+                    None
+    catch case _: Throwable => None
+
+lazy val uiStateWebStorageVar: WebStorageVar[UIState] =
+    WebStorageVar
+        .localStorage(key = LocalStorageKeys.UI_STATE, syncOwner = None)
+        .withCodec(
+            encode           = (state: UIState) =>
+                Encoder[UIState].apply(state).noSpaces,
+            decode           = (raw: String) =>
+                parser.decode[UIState](raw) match
+                    case Right(state) => Success(state)
+                    case Left(_)      => Success(UIState.empty),
+            default          = Success {
+                // On first load: migrate old VIZ_CAMERA_STATE key if present
+                val migratedCamera = migrateOldCameraState()
+                UIState(cameraState = migratedCamera)
+            },
+            syncDistinctByFn = _ == _
+        )
+
+lazy val uiStateVar: Var[UIState] = Var(uiStateWebStorageVar.now())
+
+def panelOpenedVar(key: String): Var[Boolean] =
+    uiStateVar.zoomLazy(
+        _.panelStates.getOrElse(key, false)
+    )((state, v) => state.copy(panelStates = state.panelStates.updated(key, v)))

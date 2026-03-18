@@ -5,7 +5,6 @@
 
 package afpma.firecalc.dto.generators.schema
 
-import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.generators.common.CommonTypes_Generators
 import afpma.firecalc.dto.generators.common.StoveParams_Generators
 import afpma.firecalc.dto.generators.firebox.Firebox_V2_Generators
@@ -57,7 +56,7 @@ trait FireCalcYAML_V3_Generators
             connector <- genThermalPipeDescr_13384_V2_Seq
             chimney <- genThermalPipeDescr_13384_V2_Seq
         yield FireCalcYAML_V3(
-            version = FireCalc_Version(3),
+            version = FireCalcYAML_V3.VERSION,
             locale = locale,
             display_units = displayUnits,
             standard_or_computation_method = method,

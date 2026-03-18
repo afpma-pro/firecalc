@@ -7,6 +7,8 @@ package afpma.firecalc.ui.instances
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilDirection
+import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilOpenings
 import afpma.firecalc.dto.common.NbOfFlows
 
 import afpma.firecalc.i18n.implicits.I18N
@@ -29,6 +31,8 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
 
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
     import horizontal_form.{*, given}
+
+    private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
 
     // AddElement
 
@@ -58,9 +62,9 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
             defaultable_13384.defaultable_Material_13384_v2
 
         // Provide ValidateVar
-        given ValidateVar[Roughness]         = validatevar.roughness.valid_whenPositive
+        given ValidateVar[Roughness]         = vv.roughness.valid_whenStrictlyPositive
         given ValidateVar[Material_13384_V2] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V2]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V2]
 
         DaisyUIHorizontalForm.forSelectionWithDefaultValue_usingSelectInput[Material_13384_V2, Roughness]   (
             selectOptions    = Material_13384_V2.values,
@@ -74,7 +78,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_Material_13384_V1: DaisyUIHorizontalForm[Material_13384_V1] =
         import Material_13384_V1.given
         given ValidateVar[Material_13384_V1] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V1]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_13384_V1]
         DaisyUIHorizontalForm
             .forEnumOrSumTypeLike_UsingShowAsId[Material_13384_V1](Material_13384_V1.values.toList)
 
@@ -83,16 +87,45 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
     given horizontal_form_SetNumberOfFlows: DaisyUIHorizontalForm[SetNumberOfFlows] =
-        import validatevar.validOption_always.given
+        import ValidateVarCommonInstances.validOption_always.given
         given DaisyUIHorizontalForm[Int]       = DaisyUIHorizontalForm.forInt
         given DaisyUIHorizontalForm[NbOfFlows] = DaisyUIHorizontalForm.formConversionOpaque[NbOfFlows, Int]
         autoDeriveAndOverwriteFieldNames[SetNumberOfFlows]
+
+    given horizontal_form_SetInitialDirection: DaisyUIHorizontalForm[SetInitialDirection] =
+        given Defaultable[SetInitialDirection] =
+            Defaultable(SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
+        given ValidateVar[SetInitialDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetInitialDirection]
+        DaisyUIHorizontalForm.makeFor[SetInitialDirection](summon[Defaultable[SetInitialDirection]]): (variable, _) =>
+            val azVar   = variable.zoomLazy(_.azimuth)((sid, az) => sid.copy(azimuth = az))
+            val inclVar = variable.zoomLazy(_.inclination)((sid, incl) => sid.copy(inclination = incl))
+            horizontal_form.renderInitialDirectionForm(azVar, inclVar)
+
+    given horizontal_form_SetInitialPosition: DaisyUIHorizontalForm[SetInitialPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetInitialPosition]
+
+    given horizontal_form_SetFinalPosition: DaisyUIHorizontalForm[SetFinalPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetFinalPosition]
 
     // AddElement
 
     // helper with string field always validated
     inline def autoDeriveAndOverwriteFieldNames_AddElement_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        autoDeriveAndOverwriteFieldNames[A]
+
+    // Like above but suppresses the absDir field — absDir is set via the DirectionBadge dropdown.
+    // Both places must be updated together when adding a new DC subtype.
+    inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
+        import com.raquo.laminar.api.L.span
+        @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[AbsoluteDirection]] =
+            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[AbsoluteDirection]
+        @nowarn given DaisyUIHorizontalForm[Option[AbsoluteDirection]] =
+            DaisyUIHorizontalForm.makeFor[Option[AbsoluteDirection]](Defaultable(None))((_, _) => span())
         autoDeriveAndOverwriteFieldNames[A]
 
     given horizontal_form_AddSectionSlopped: DaisyUIHorizontalForm[AddSectionSlopped] =
@@ -108,41 +141,41 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionVertical]
 
     given horizontal_form_AddAngleAdjustable: DaisyUIHorizontalForm[AddAngleAdjustable] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddAngleAdjustable]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddAngleAdjustable]
 
     given horizontal_form_AddSharpeAngle_0_to_90: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_90]
 
     given horizontal_form_AddSharpeAngle_0_to_90_Unsafe: DaisyUIHorizontalForm[AddSharpeAngle_0_to_90_Unsafe] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_90_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_90_Unsafe]
 
     given horizontal_form_AddSmoothCurve_90: DaisyUIHorizontalForm[AddSmoothCurve_90] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_90]
 
     given horizontal_form_AddSmoothCurve_90_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_90_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_90_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_90_Unsafe]
 
     given horizontal_form_AddSmoothCurve_60: DaisyUIHorizontalForm[AddSmoothCurve_60] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_60]
 
     given horizontal_form_AddSmoothCurve_60_Unsafe: DaisyUIHorizontalForm[AddSmoothCurve_60_Unsafe] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSmoothCurve_60_Unsafe]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSmoothCurve_60_Unsafe]
 
     given horizontal_form_AddElbows_2x45: DaisyUIHorizontalForm[AddElbows_2x45] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_2x45]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_2x45]
 
     given horizontal_form_AddElbows_3x30: DaisyUIHorizontalForm[AddElbows_3x30] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_3x30]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_3x30]
 
     given horizontal_form_AddElbows_4x22p5: DaisyUIHorizontalForm[AddElbows_4x22p5] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddElbows_4x22p5]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddElbows_4x22p5]
 
     given horizontal_form_AddSectionDecrease: DaisyUIHorizontalForm[AddSectionDecrease] =
         given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
@@ -195,12 +228,12 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_AirSpaceDetailed: DaisyUIHorizontalForm[AirSpaceDetailed] =
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed]
 
-    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace]
+    given horizontal_form_AirSpaceDetailed_WithoutAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithoutAirSpace_V2] =
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace_V2]
 
-    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace] =
+    given horizontal_form_AirSpaceDetailed_WithAirSpace: DaisyUIHorizontalForm[AirSpaceDetailed.WithAirSpace_V2] =
         given DaisyUIHorizontalForm[QtyD[Meter]]     = horizontal_form_Length_mm_cm
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace]
+        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace_V2]
 
     // PipeLocation.AreaName
 
@@ -213,7 +246,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_PipeLocation_AreaName_OutsideOrExterior: DaisyUIHorizontalForm[PipeLocation.AreaName.OutsideOrExterior] =
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.OutsideOrExterior]
     given horizontal_form_PipeLocation_AreaName_CustomArea       : DaisyUIHorizontalForm[PipeLocation.AreaName.CustomArea]        =
-        given ValidateVar[Option[String]] = validatevar.string.validOption_Always
+        given ValidateVar[Option[String]] = ValidateVarCommonInstances.string.validOption_Always
         given DaisyUIHorizontalForm[String] = DaisyUIHorizontalForm.forString
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.CustomArea]
 
@@ -258,35 +291,35 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     // Ventil Direction
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_UndefinedDir
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.UndefinedDir] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.UndefinedDir]
+        : DaisyUIHorizontalForm[VentilDirection.UndefinedDir] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection.UndefinedDir]
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_SameDirAsFlueGas
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.SameDirAsFlueGas]
+        : DaisyUIHorizontalForm[VentilDirection.SameDirAsFlueGas] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection.SameDirAsFlueGas]
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_OppositeDirOfFlueGas
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection.OppositeDirOfFlueGas]
+        : DaisyUIHorizontalForm[VentilDirection.OppositeDirOfFlueGas] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection.OppositeDirOfFlueGas]
 
-    given horizontal_form_AirSpaceDetailed_VentilDirection: DaisyUIHorizontalForm[AirSpaceDetailed.VentilDirection] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilDirection]
+    given horizontal_form_AirSpaceDetailed_VentilDirection: DaisyUIHorizontalForm[VentilDirection] =
+        autoDeriveAndOverwriteFieldNames[VentilDirection]
 
     // Ventil Openings
 
-    given horizontal_form_AirSpaceDetailed_VentilOpenings_NoOpening: DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.NoOpening] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.NoOpening]
+    given horizontal_form_AirSpaceDetailed_VentilOpenings_NoOpening: DaisyUIHorizontalForm[VentilOpenings.NoOpening] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings.NoOpening]
 
     given horizontal_form_AirSpaceDetailed_VentilOpenings_AnnularAreaFullyOpened
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.AnnularAreaFullyOpened]
+        : DaisyUIHorizontalForm[VentilOpenings.AnnularAreaFullyOpened] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings.AnnularAreaFullyOpened]
 
     given horizontal_form_AirSpaceDetailed_VentilOpenings_PartiallyOpened_InAccordanceWith_DTU_24_1
-        : DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1]
+        : DaisyUIHorizontalForm[VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1]
 
-    given horizontal_form_AirSpaceDetailed_VentilOpenings: DaisyUIHorizontalForm[AirSpaceDetailed.VentilOpenings] =
-        autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.VentilOpenings]
+    given horizontal_form_AirSpaceDetailed_VentilOpenings: DaisyUIHorizontalForm[VentilOpenings] =
+        autoDeriveAndOverwriteFieldNames[VentilOpenings]
 
     // TuTemperature
 

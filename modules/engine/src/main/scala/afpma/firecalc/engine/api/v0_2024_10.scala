@@ -12,6 +12,8 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.LocalizedAlg
 
+import afpma.firecalc.engine.impl.en15544.strict.*
+import afpma.firecalc.engine.impl.en15544.mce.*
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
@@ -30,7 +32,6 @@ import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithThermalAirIntake
@@ -38,7 +39,6 @@ import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en13384.std.Wood
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
-import afpma.firecalc.engine.models.en15544
 import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.engine.models.en15544.std.Design
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
@@ -89,100 +89,54 @@ object v0_2024_10:
 
     // Flue Pipe
 
-    sealed trait FluePipe_Alg:
+    sealed trait HasFluePipe_Alg:
         type FluePipeType <: FluePipe_15544 | FluePipe_13384
         def fluePipe: ValidatedNel[IncrementalValidation_Error, FluePipeType]
 
-    trait FluePipe_15544_Alg extends FluePipe_Alg:
+    trait HasFluePipe_15544_Alg extends HasFluePipe_Alg:
         type FluePipeType = FluePipe_15544
 
-    trait FluePipe_13384_Alg extends FluePipe_Alg:
+    trait HasFluePipe_13384_Alg extends HasFluePipe_Alg:
         type FluePipeType = FluePipe_13384
 
     // Firebox
 
-    trait Firebox_15544_Alg:
+    trait HasFireboxInternalPipes_Alg:
         type CombustionAirPipe
         type FireboxPipe
 
-        def combustionAirPipe: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe]
-        def fireboxPipe      : ValidatedNel[IncrementalValidation_Error, FireboxPipe]
+        def combustionAirPipe: VNelMcalcErr[CombustionAirPipe]
+        def fireboxPipe      : VNelMcalcErr[FireboxPipe]
 
-    trait Firebox_15544_Strict_Alg extends Firebox_15544_Alg:
-        type CombustionAirPipe = CombustionAirPipe_Module_15544.FullDescr
-        type FireboxPipe       = FireboxPipe_Module_15544.FullDescr
+    trait HasFireboxInternalPipes_15544_Strict_Alg extends HasFireboxInternalPipes_Alg:
+        type CombustionAirPipe = CombustionAirPipe_15544
+        type FireboxPipe       = FireboxPipe_15544
 
-    trait Firebox_15544_MCE_Alg extends Firebox_15544_Alg:
-        type CombustionAirPipe = CombustionAirPipe_Module_13384.FullDescr
-        type FireboxPipe       = FireboxPipe_Module_13384.FullDescr
+    trait HasFireboxInternalPipes_15544_MCE_Alg extends HasFireboxInternalPipes_Alg:
+        type CombustionAirPipe = CombustionAirPipe_13384
+        type FireboxPipe       = FireboxPipe_13384
 
-    // "One Off" Firebox
+    trait HasFirebox_15544_Alg:
+        self: HasFireboxInternalPipes_Alg =>
 
-    trait Firebox_15544_OneOff_Alg:
-        self: Firebox_15544_Alg =>
+        type FB <: std.Firebox_15544
+        def firebox: FB
 
-        def firebox: en15544.firebox.From_CalculPdM_V_0_2_32
+        lazy val design: Design = Design(firebox = self.firebox)
 
-        lazy val design: Design = Design(
-            firebox = self.firebox
-            // firebox =
-            //     Firebox.OneOff.Minimal(
-            //         pn_reduced = HeatOutputReduced.DefinedAsDefault,
-            //         heightOfLowestOpening = foyer.heightOfLowestOpening,
-            //         dimensions = FireboxDimensions(
-            //             base = FireboxDimensions.Base.Squared(
-            //                 width = foyer.h12_lrun_en15544_strictargeurDuFoyer,
-            //                 depth = foyer.h11_profondeurDuFoyer,
-            //             ),
-            //             height = foyer.h13_hauteurDuFoyer
-            //         ),
-            //         glass_area = foyer.surfaceVitre
-            // )
-        )
+    trait Firebox_15544_Strict_Alg extends HasFirebox_15544_Alg with HasFireboxInternalPipes_15544_Strict_Alg:
+        protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_Strict[FB]
+        protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_Strict[FB]
 
-    trait Firebox_15544_Strict_OneOff_Alg extends Firebox_15544_OneOff_Alg with Firebox_15544_Strict_Alg:
+        override def combustionAirPipe = { given FireboxToCombustionAirPipe_15544_Strict[FB] = toCombustionAirPipeTC; firebox.toCombustionAirPipe_FullDescr }
+        override def fireboxPipe       = { given FireboxToFireboxPipe_15544_Strict[FB] = toFireboxPipeTC; firebox.toFireboxPipe_FullDescr }
 
-        import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.*
+    trait Firebox_15544_MCE_Alg extends HasFirebox_15544_Alg with HasFireboxInternalPipes_15544_MCE_Alg:
+        protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_MCE[FB]
+        protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_MCE[FB]
 
-        def combustionAirPipe: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe] =
-            firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toCombustionAirPipe_15544(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toCombustionAirPipe_15544(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toCombustionAirPipe_15544(f)
-
-        def fireboxPipe: ValidatedNel[IncrementalValidation_Error, FireboxPipe] =
-            firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toFireboxPipe_15544(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toFireboxPipe_15544(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toFireboxPipe_15544(f)
-
-    trait Firebox_15544_MCE_OneOff_Alg extends Firebox_15544_OneOff_Alg with Firebox_15544_MCE_Alg:
-
-        import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.*
-
-        def combustionAirPipe: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe] =
-            firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toCombustionAirPipe_13384(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toCombustionAirPipe_13384(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toCombustionAirPipe_13384(f)
-
-        def fireboxPipe: ValidatedNel[IncrementalValidation_Error, FireboxPipe] =
-            firebox match
-                case f: TraditionalFirebox =>
-                    TraditionalFirebox_Module.toFireboxPipe_13384(f)
-                case f: AFPMA_PRSE         =>
-                    AFPMA_PRSE_Module.toFireboxPipe_13384(f)
-                case f: EcoLabeled         =>
-                    EcoLabeled_Module.toFireboxPipe_13384(f)
+        override def combustionAirPipe = { given FireboxToCombustionAirPipe_15544_MCE[FB] = toCombustionAirPipeTC; firebox.toCombustionAirPipe_FullDescr }
+        override def fireboxPipe       = { given FireboxToFireboxPipe_15544_MCE[FB] = toFireboxPipeTC; firebox.toFireboxPipe_FullDescr }
 
     // Stove Project Description
 
@@ -299,8 +253,8 @@ object v0_2024_10:
     trait StoveProjectDescr_15544_Alg
         extends StoveProjectDescr_13384_Alg
         with HasTypeMembers_15544_Alg
-        with Firebox_15544_Alg
-        with FluePipe_Alg:
+        with HasFireboxInternalPipes_Alg
+        with HasFluePipe_Alg:
         self =>
 
         type EN15544_Alg <: EN15544_V_2023_Common_Application {
@@ -358,8 +312,8 @@ object v0_2024_10:
     trait StoveProjectDescr_15544_Strict_Alg
         extends StoveProjectDescr_15544_Alg
         with HasTypeMembers_15544_Strict
-        with Firebox_15544_Strict_Alg
-        with FluePipe_15544_Alg:
+        with HasFireboxInternalPipes_15544_Strict_Alg
+        with HasFluePipe_15544_Alg:
         self =>
 
         val kindOfWood = KindOfWood.HardWood
@@ -412,8 +366,8 @@ object v0_2024_10:
     trait StoveProjectDescr_15544_MCE_Alg
         extends StoveProjectDescr_15544_Alg
         with HasTypeMembers_15544_MCE
-        with Firebox_15544_MCE_Alg
-        with FluePipe_13384_Alg:
+        with HasFireboxInternalPipes_15544_MCE_Alg
+        with HasFluePipe_13384_Alg:
         self =>
 
         val wComb: WoodCombustionAlg
@@ -546,6 +500,51 @@ object v0_2024_10:
                 )(labcond)
                 val wComb = new WoodCombustionImpl
                 EN15544_Labo_Application.make(f, bs845, wComb, labcond)(i)
+
+    // ---- Pipe-chain mixin traits (frame inheritance) ----
+
+    trait WithPipeChain_15544_Strict:
+        self: StoveProjectDescr_15544_Strict_Alg =>
+
+        def fluePipeDescr     : Seq[FluePipe_Module_15544.incremental.IncrDescr]
+        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
+        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+
+        private lazy val pipeChain = PipeChain_15544_Strict.build(
+            PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+        )
+
+        override lazy val fluePipe      = pipeChain.fluePipe
+        override lazy val connectorPipe = pipeChain.connectorPipe
+        override lazy val chimneyPipe   = pipeChain.chimneyPipe
+
+    trait WithPipeChain_15544_MCE:
+        self: StoveProjectDescr_15544_MCE_Alg =>
+
+        def fluePipeDescr     : Seq[FluePipe_Module_13384.incremental.IncrDescr]
+        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
+        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+
+        private lazy val pipeChain = PipeChain_15544_MCE.build(
+            PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+        )
+
+        override lazy val fluePipe      = pipeChain.fluePipe
+        override lazy val connectorPipe = pipeChain.connectorPipe
+        override lazy val chimneyPipe   = pipeChain.chimneyPipe
+
+    trait WithPipeChain_13384:
+        self: StoveProjectDescr_13384_Alg =>
+
+        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
+        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+
+        private lazy val pipeChain = PipeChain_13384.build(
+            PipeChain_13384.Descriptors(connectorPipeDescr, chimneyPipeDescr)
+        )
+
+        override lazy val connectorPipe = pipeChain.connectorPipe
+        override lazy val chimneyPipe   = pipeChain.chimneyPipe
 
     object StoveProjectDescr:
 

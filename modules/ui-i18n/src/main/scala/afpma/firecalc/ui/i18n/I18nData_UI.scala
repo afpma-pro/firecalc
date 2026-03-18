@@ -16,32 +16,72 @@ import io.taig.babel.StringFormat1
 
 final case class I18nData_UI(
     buttons              : Buttons,
+    catalog              : Catalog,
     client_project_data  : ClientProjectData,
     connectivity_status  : ConnectivityStatus,
     customer             : Customer,
     default_element_names: DefaultElementNames,
     default_names        : DefaultNames,
     details_columns      : DetailsColumns,
+    direction_badge      : DirectionBadge,
     errors               : Errors,
     footer               : Footer,
+    global_error         : GlobalError,
     indicators           : Indicators,
     local_conditions     : LocalConditions,
     pdf_ordering         : PDFOrdering,
     placeholders         : Placeholders,
     tooltips             : Tooltips,
-    ui_messages          : UiMessages
+    ui_messages          : UiMessages,
+    viz                  : Viz,
+    graph                : Graph
 )
 
 object I18nData_UI:
 
     case class Buttons(
+        select                    : String,
         add                       : String,
         cancel                    : String,
+        close                     : String,
+        import_catalog            : String,
         load_example_project_15544: String,
         menu                      : String,
         order_pdf_report          : String,
+        redo                      : String,
+        undo                      : String,
         units                     : String
     )
+
+    case class Catalog(
+        _self                   : String,
+        select_from_catalog     : String,
+        manager_title           : String,
+        download_section        : String,
+        afpma_catalog_page      : String,
+        loaded_entries          : String,
+        no_catalog_loaded       : String,
+        import_catalog_button   : String,
+        clear_all_button        : String,
+        door_15a_fireboxes      : String,
+        single_tested_fireboxes : String,
+        pipe_presets            : String,
+        casing_presets          : String,
+        flow_resistance_presets : String,
+        simple_pipe             : String,
+        lined_flue              : String,
+        errors                  : Catalog.Errors,
+    )
+
+    object Catalog:
+        case class Errors(
+            invalid_file    : String,
+            missing_version : String,
+            version_too_new : String,
+            migration_failed: String,
+            decode_error    : String,
+            storage_full    : String,
+        )
 
     case class ClientProjectData(
         customer       : String,
@@ -186,6 +226,38 @@ object I18nData_UI:
         }
     }
 
+    case class DirectionBadge(
+        label                        : String,
+        tooltip_direction            : String,
+        tooltip_azimuth              : StringFormat1,
+        tooltip_elevation            : StringFormat1,
+        tooltip_roll                 : StringFormat1,
+        tooltip_convention_up        : String,
+        tooltip_convention_horizontal: String,
+        tooltip_convention_down      : String,
+        cardinal_up                  : String,
+        cardinal_down                : String,
+        cardinal_rear                : String,
+        cardinal_front               : String,
+        cardinal_right               : String,
+        cardinal_left                : String,
+        cardinal_rear_right          : String,
+        cardinal_front_right         : String,
+        cardinal_front_left          : String,
+        cardinal_rear_left           : String,
+        relative_left                : String,
+        relative_right               : String,
+        relative_up                  : String,
+        relative_down                : String,
+        relative_theta                  : String,
+        relative_dir_label              : String,
+        abs_dir_label                 : String,
+        direction_incompatible_warning  : String,
+        cardinal_horizontal             : String,
+        custom_btn                      : String,
+        custom_dialog_title             : String,
+    )
+
     case class Tooltips(
         load_project                      : StringFormat1,
         new_project                       : String,
@@ -223,13 +295,41 @@ case class Errors(
     failed_to_write_file    : StringFormat1,
     failed_to_save_file     : StringFormat1,
     failed_to_open_dialog   : StringFormat1,
-    failed_to_save_dialog   : StringFormat1
+    failed_to_save_dialog   : StringFormat1,
+    value_ge_0              : StringFormat1,
+    value_gt_0              : StringFormat1,
+    value_is_undefined      : String
+)
+
+case class GlobalError(
+    title          : String,
+    transaction_msg: String,
+    generic_msg    : String,
+    reload_button  : String
 )
 
 case class Placeholders(
+    search     : String,
     select_date: String
 )
 
 case class UiMessages(
     not_implemented_yet: String
+)
+
+case class Viz(
+    reset_view  : String,
+    view_mode   : String,
+    annotations : String,
+    no_pipe_data: String
+)
+
+case class Graph(
+    title      : String,
+    no_data    : String,
+    temperature: String,
+    velocity   : String,
+    elevation  : String,
+    pressure   : String,
+    length     : String
 )

@@ -25,7 +25,7 @@ object SchemaGenerators:
      */
     def minimalV1: FireCalcYAML_V1 =
         FireCalcYAML_V1(
-            version = FireCalc_Version(1),
+            version = FireCalcYAML_V1.VERSION,
             locale = Locale(Language("en")),
             display_units = DisplayUnits.SI,
             standard_or_computation_method =
@@ -64,7 +64,7 @@ object SchemaGenerators:
      */
     def minimalV2: FireCalcYAML_V2 =
         FireCalcYAML_V2(
-            version = FireCalc_Version(2),
+            version = FireCalcYAML_V2.VERSION,
             locale = Locale(Language("en")),
             display_units = DisplayUnits.SI,
             standard_or_computation_method =
@@ -104,7 +104,7 @@ object SchemaGenerators:
      */
     def minimalV3: FireCalcYAML_V3 =
         FireCalcYAML_V3(
-            version = FireCalc_Version(3),
+            version = FireCalcYAML_V3.VERSION,
             locale = Locale(Language("en")),
             display_units = DisplayUnits.SI,
             standard_or_computation_method =

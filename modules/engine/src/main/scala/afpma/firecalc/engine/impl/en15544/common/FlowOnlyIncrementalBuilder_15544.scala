@@ -4,9 +4,12 @@
  */
 
 package afpma.firecalc.engine.impl.en15544.common
+import algebra.instances.all.given
+
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
@@ -22,6 +25,8 @@ import afpma.firecalc.engine.impl.common.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
@@ -29,6 +34,8 @@ import afpma.firecalc.engine.standard.*
 import cats.Show
 import cats.data.*
 import cats.syntax.all.*
+
+import coulomb.policy.standard.given
 
 import scala.annotation.targetName
 import scala.reflect.*
@@ -93,12 +100,32 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
 
+    override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
+        s.currentFrame
+
+    override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
+        // Only apply if the pipe itself did not already define an initial direction
+        if s.initialFrame.isDefined then s
+        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
+    override protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] =
+        val hasFinalDir = incrDescrs.exists:
+            case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+            case _                           => false
+        if hasFinalDir && finalState.initialFrame.isEmpty then
+            FinalDirWithoutInitialDirection(pt).invalidNel
+        else ().validNel
+
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[Length] =
             convStep.nextOpIfAddElement
                 .map(_._2)
                 .flatMap:
-                    case _ @AddSectionSlopped(_, l, _) => l.some
+                    case _ @AddSectionSlopped(_, l) => l.some
+                    case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
                     case _ @AddSectionHorizontal(_, l) => l.some
                     case _ @AddSectionVertical(_, l)   => l.some
                     case _: (AddSectionShapeChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
@@ -119,12 +146,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
         val vels: ValidatedNel[IncrementalValidation_Error, NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] =
             addElementOp match
-                case op @ (_: AddSectionSlopped | _: AddSectionHorizontal | _: AddSectionVertical) =>
+                case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal | _: AddSectionVertical) =>
                     given FlowOnlyStraightSectionCtx_15544 =
                         FlowOnlyStraightSectionCtx_15544(
                             stateOps.getInnerShape(st),
                             stateOps.getRoughness (st),
-                            pt
+                            pt,
+                            currentFrame = st.currentFrame
                         )
                     flowOnlyStraightSection15544.make(op).andThen { s =>
                         prevInnerGeomO match
@@ -141,7 +169,12 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
                 case op: AddDirectionChange =>
                     given DirectionChangeCtx_15544 =
-                        DirectionChangeCtx_15544(stateOps.getInnerShape(st), pt)
+                        DirectionChangeCtx_15544(
+                            stateOps.getInnerShape(st),
+                            pt,
+                            dirBeforePreviousDC = st.dirBeforePreviousDC,
+                            currentFrame        = st.currentFrame
+                        )
                     directionChange15544.make(op).asNonEmptyList
 
                 case op: AddSectionShapeChange =>
@@ -162,7 +195,8 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                     flowResistance15544.make(op).asNonEmptyList
 
                 case op: AddPressureDiff =>
-                    given Unit = ()
+                    given FlowResistanceCtx_15544 =
+                        FlowResistanceCtx_15544(stateOps.getInnerShape(st), pt)
                     pressureDiff15544.make(op).asNonEmptyList
 
         vels.map(_.map: (idx, newNameO, el) =>
@@ -173,11 +207,26 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _, _)) => propsState.validNel
-            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
-            case Some(_: AddDirectionChange)         => propsState.validNel
+            case None                                                        => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _))                             => propsState.validNel
+            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
+            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
+            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
+            case Some(addDC: AddDirectionChange) =>
+                addDC.absDir match
+                    case Some(fd) =>
+                        propsState.currentFrame match
+                            case Some(frame) =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                val deflDeg   = addDC.angle.toUnit[Degree].value
+                                val newFrame  = frame.applyBendForFinalDir(deflDeg, targetVec)
+                                propsState.copy(
+                                    dirBeforePreviousDC = Some(frame.direction),
+                                    currentFrame        = Some(newFrame)
+                                ).validNel
+                            case None => propsState.validNel
+                    case None => propsState.validNel
             case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
             case Some(obj: AddSectionShapeChange)    => propsState.modify(_.geometry).setTo(obj.to_shape.some).validNel
@@ -197,6 +246,18 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case SetNumberOfFlows(nf) =>
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
+                    case SetInitialDirection(azimuth, inclination) =>
+                        val dir   = Vec3.fromAzimuthElevation(
+                            AzimuthDirection.toDegrees(azimuth),
+                            InclinationDirection.toDegrees(inclination)
+                        )
+                        val frame = PipeFrame.initial(dir)
+                        vState.map(_.copy(
+                            initialFrame = Some(frame),
+                            currentFrame = Some(frame)
+                        ))
+                    case _: SetInitialPosition => vState
+                    case _: SetFinalPosition   => vState
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
@@ -212,6 +273,15 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     def material(material: Material_15544) =
         SetMaterial(material)
 
+    def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
+        SetInitialDirection(azimuth, inclination)
+
+    def setInitialPosition(x: Length, y: Length, z: Length) =
+        SetInitialPosition(x, y, z)
+
+    def setFinalPosition(x: Length, y: Length, z: Length) =
+        SetFinalPosition(x, y, z)
+
     // Delegate to ChannelsDSL typeclass
     def channelsSplit(n: Int) =
         summon[ChannelsDSL[FlowOnlyPipeDescr_15544]].channelsSplit(n)
@@ -224,19 +294,19 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     given directionDSL: DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544] =
         summon[DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544]]
 
-    def addSharpAngle_0_to_180deg(name: String, angle: Angle, angleN2: Option[Angle] = None) =
-        directionDSL.addSharpAngle_0_to_180deg(name, angle, angleN2)
-    def addSharpAngle_30deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_30deg(name, angleN2)
-    def addSharpAngle_45deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_45deg(name, angleN2)
-    def addSharpAngle_60deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_60deg(name, angleN2)
-    def addSharpAngle_90deg(name: String, angleN2: Option[Angle] = None)                     =
-        directionDSL.addSharpAngle_90deg(name, angleN2)
+    def addSharpAngle_0_to_180deg(name: String, angle: Angle, absDir: AbsoluteDirection) =
+        directionDSL.addSharpAngle_0_to_180deg(name, angle, absDir)
+    def addSharpAngle_30deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_30deg(name, absDir)
+    def addSharpAngle_45deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_45deg(name, absDir)
+    def addSharpAngle_60deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_60deg(name, absDir)
+    def addSharpAngle_90deg(name: String, absDir: AbsoluteDirection)                     =
+        directionDSL.addSharpAngle_90deg(name, absDir)
 
-    def addCircularArc60(name: String) =
-        directionDSL.addCircularArc60(name)
+    def addCircularArc60(name: String, absDir: AbsoluteDirection) =
+        directionDSL.addCircularArc60(name, absDir)
 
     def addSectionShapeChange(
         name    : String,
@@ -248,20 +318,30 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         summon[SectionDSL[FlowOnlyPipeDescr_15544]]
 
     def addSectionSlopped(
+        name  : String,
+        length: Length
+    ) = sectionDSL.addSectionSlopped(name, length)
+
+    def addSectionSloppedForceManualElevationGain(
         name          : String,
         length        : Length,
         elevation_gain: Length
-    ) = sectionDSL.addSectionSlopped(name, length, elevation_gain)
+    ) = sectionDSL.addSectionSloppedForceManualElevationGain(name, length, elevation_gain)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionHorizontal(
         name             : String,
         horizontal_length: Length
-    ) = sectionDSL.addSectionHorizontal(name, horizontal_length)
+    ) = sectionDSL.addSectionSlopped(name, horizontal_length)
 
+    @deprecated("Use addSectionSlopped instead — elevation_gain is auto-computed from direction", "2026.03")
     def addSectionVertical(
         name          : String,
         elevation_gain: Length
-    ) = sectionDSL.addSectionVertical(name, elevation_gain)
+    ) = sectionDSL.addSectionSlopped(
+        name,
+        if (elevation_gain) >= 0.meters then elevation_gain else elevation_gain * -1.0
+    )
 
     // Delegate to FlowResistanceDSL typeclass
     given flowResistanceDSL: FlowResistanceDSL[FlowOnlyPipeDescr_15544] =

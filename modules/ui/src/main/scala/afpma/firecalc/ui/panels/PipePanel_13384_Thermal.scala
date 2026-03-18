@@ -8,11 +8,23 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 
+import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.i18n.implicits.given
 
+import afpma.firecalc.catalog.{CasingPreset, CatalogCategory, CatalogCategoryInstances}
+import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
+import afpma.firecalc.ui.models.pipePresetsSignal
+import afpma.firecalc.ui.models.casingPresetsSignal
+import afpma.firecalc.ui.models.flowResistancePresetsSignal
+import afpma.firecalc.ui.services.CatalogImageStore
+import afpma.firecalc.ui.i18n.implicits.given
+
+import coulomb.policy.standard.given
 
 import com.raquo.laminar.api.L.*
 
@@ -24,12 +36,131 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
 
     import hastranslations.given
 
+    private val pipeCat    = summon[CatalogCategory[SetPropertiesInBatch]]
+    private val casingCat  = summon[CatalogCategory[CasingPreset]]
+
     private given thermalHorizontalForm_13384: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
     import thermalHorizontalForm_13384.given
+
+    /** Override to supply an inherited PipeFrame from the previous pipe.
+     *  Defaults to no external frame (first pipe in a sequence, or direction tracking inactive).
+     */
+    protected def externalInitialFrameSig: Signal[Option[PipeFrame]] = Signal.fromValue(None)
+
+    /** Compute PipeFrame per element index by scanning the element list.
+     *  This runs in the UI, independent of engine success, so direction labels
+     *  are available even when the pipe has validation errors.
+     *  When `externalInitialFrameSig` provides a frame, that frame seeds the
+     *  computation for pipes that have no `SetInitialDirection` of their own.
+     */
+    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+        welems_var.signal.combineWith(externalInitialFrameSig).map: (elems, externalFrame) =>
+            var frame: Option[PipeFrame] = externalFrame
+            val builder = Map.newBuilder[Int, PipeFrame]
+            for (idx, elem) <- elems do
+                elem match
+                    case SetInitialDirection(az, incl) =>
+                        val azDeg  = AzimuthDirection.toDegrees(az)
+                        val elDeg  = InclinationDirection.toDegrees(incl)
+                        frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
+                    case _ => ()
+                frame.foreach(f => builder += (idx -> f))
+                elem match
+                    case dc: AddDirectionChange =>
+                        for
+                            f  <- frame
+                            fd <- dc.absDir
+                        do
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
+                    case _ => ()
+            builder.result()
+
+    /**
+     * Direction AFTER each element, keyed by element index. Used for the direction badge.
+     * Only populated for AddThermalPipeElement_13384 subtypes (geometric elements);
+     * property setters (SetThermalPipeProp_13384) are excluded — no badge for them.
+     * - DC with absDir: direction after the bend
+     * - DC without absDir: no badge entry
+     * - Straight sections: direction from the frame before
+     */
+    private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems.flatMap: (idx, elem) =>
+                frameMap.get(idx).flatMap: frameBefore =>
+                    elem match
+                        case dc: AddDirectionChange =>
+                            dc.absDir.map: fd =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                idx -> frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
+                        case _: AddThermalPipeElement_13384 =>
+                            Some(idx -> frameBefore.direction)
+                        case _ => None
+            .toMap
+
+    override protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
+        directionAfterByIdx.map(_.get(idx))
+
+    override protected def frameBeforeSig_badge(idx: Int): Signal[Option[PipeFrame]] =
+        frameBeforeByIdx.map(_.get(idx))
+
+    /**
+     * Direction coming INTO the element, only for direction-change elements.
+     * Used by DirectionBadgeComponent to determine editable vs read-only mode.
+     */
+    private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems
+                .collect { case (idx, _: AddDirectionChange) => idx }
+                .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
+                .toMap
+
+    override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
+        previousDirectionByIdx.map(_.get(idx))
+
+    /**
+     * Returns the `badgeFinalDirVar` factory for a DC element.
+     * The derived Var zooms into the absDir field of the element.
+     */
+    private def absDirBadgeVar[A <: AddDirectionChange](
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
+    ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
+        ev => Some(ev.zoomLazy(getter)(setter))
+
+    private def relativeDirectionExtra[A <: AddDirectionChange](
+        idx   : Int,
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
+    ): Var[A] => HtmlElement =
+        ev =>
+            val fdVar = ev.zoomLazy(getter)(setter)
+            RelativeDirectionInput(
+                frameBefore     = frameBeforeSig_badge(idx),
+                deflectionAngle = deflectionAngleSig(idx),
+                absDirVar     = fdVar
+            ).node
+
+    override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
+        welems_var.signal.map: elems =>
+            elems.collectFirst:
+                case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
             .splitMatchSeq(_._1)
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetPropertiesInBatch, XtraOutputs), HtmlElement] {
+                case (i, aa: SetPropertiesInBatch, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetPropertiesInBatch](iaax._1, I18N.set_prop.SetPropertiesInBatch, iaax._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, LinedFlue, XtraOutputs), HtmlElement] {
+                case (i, aa: LinedFlue, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[LinedFlue](iaax._1, I18N.set_prop.LinedFlue, iaax._2, sig, isProperty = true)
+            }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInnerShape, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInnerShape, x) => (i, aa, x)
             } { (iaax, sig) =>
@@ -94,6 +225,21 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             } { (iaax, sig) =>
                 renderElemTyped[SetDuctType](iaax._1, I18N.set_prop.SetDuctType, iaax._2, sig, isProperty = true)
             }
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
+                case (i, aa: SetInitialDirection, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
+                case (i, aa: SetInitialPosition, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
+                case (i, aa: SetFinalPosition, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true)
+            }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetNumberOfFlows, XtraOutputs), HtmlElement] {
                 case (i, aa: SetNumberOfFlows, x) => (i, aa, x)
             } { (iaax, sig) =>
@@ -115,6 +261,14 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty = false
                 )
+            }
+            .handleCase[
+                (Int, ThermalPipeDescr_13384, XtraOutputs),
+                (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs),
+                HtmlElement
+            ] { case (i, aa: AddSectionSloppedForceManualElevationGain, x) => (i, aa, x) } { (_, _) =>
+                // should never happen, only allowed internally in engine
+                ???
             }
             .handleCase[
                 (Int, ThermalPipeDescr_13384, XtraOutputs),
@@ -148,7 +302,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddAngleAdjustable,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -161,7 +317,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_90,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -174,7 +332,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_90_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_90, XtraOutputs), HtmlElement] {
@@ -185,7 +345,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_90,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -198,7 +360,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_90_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_60, XtraOutputs), HtmlElement] {
@@ -209,7 +373,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_60,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -222,7 +388,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_60_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_2x45, XtraOutputs), HtmlElement] {
@@ -233,7 +401,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_2x45,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_3x30, XtraOutputs), HtmlElement] {
@@ -244,7 +414,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_3x30,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddElbows_4x22p5, XtraOutputs), HtmlElement] {
@@ -255,7 +427,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_4x22p5,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSectionDecrease, XtraOutputs), HtmlElement] {
@@ -302,7 +476,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     lazy val tagTreeMenu = TagTreeMenu(
         shortcut_start_new_pipe,
         prop_elements,
-        geom_elements
+        geom_elements,
+        catalog_elements
     )
 
     lazy val shortcut_start_new_pipe =
@@ -320,7 +495,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     lazy val geom_elements = TagTreeMenu.Group(
         txt  = I18N.add_element._self,
         next = List(
-            straight_elements,
+            TagTreeMenu.Leaf[AddSectionSlopped],
             direction_change_elements,
             split_group,
             grids
@@ -342,14 +517,12 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         )
     )
 
-    lazy val straight_elements = TagTreeMenu.Group(
-        txt  = I18N.add_element.add_section_element,
-        next = List(
-            TagTreeMenu.Leaf[AddSectionVertical],
-            TagTreeMenu.Leaf[AddSectionHorizontal],
-            TagTreeMenu.Leaf[AddSectionSlopped]
-        )
-    )
+    // lazy val straight_elements = TagTreeMenu.Group(
+    //     txt  = I18N.add_element.add_section_element,
+    //     next = List(
+    //         TagTreeMenu.Leaf[AddSectionSlopped]
+    //     )
+    // )
 
     lazy val direction_change_elements = TagTreeMenu.Group(
         txt  = I18N.add_element.add_direction_change_element,
@@ -367,13 +540,27 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
 
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
-        next = TagTreeMenu.Leaf[SetMaterial] ::
-            TagTreeMenu.Leaf[SetRoughness]           ::
-            prop_elements_geom                       ::
-            prop_elements_insulation                 ::
-            TagTreeMenu.Leaf[SetAirSpaceAfterLayers] ::
-            TagTreeMenu.Leaf[SetPipeLocation]        ::
-            Nil
+        next = List(
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._position_and_direction,
+                next = List(
+                    TagTreeMenu.Leaf[SetInitialPosition],
+                    TagTreeMenu.Leaf[SetInitialDirection],
+                    TagTreeMenu.Leaf[SetFinalPosition]
+                )
+            ),
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._material_and_roughness,
+                next = List(
+                    TagTreeMenu.Leaf[SetMaterial],
+                    TagTreeMenu.Leaf[SetRoughness]
+                )
+            ),
+            TagTreeMenu.Leaf[SetPipeLocation],
+            prop_elements_geom,
+            prop_elements_insulation,
+            TagTreeMenu.Leaf[SetAirSpaceAfterLayers]
+        )
     )
 
     lazy val prop_elements_geom = TagTreeMenu.Group(
@@ -390,5 +577,55 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         next = List(
             TagTreeMenu.Leaf[SetLayer],
             TagTreeMenu.Leaf[SetLayers]
+        )
+    )
+
+    // catalog
+    lazy val catalog_elements = TagTreeMenu.Group(
+        txt  = I18N_UI.catalog._self,
+        next = List(
+            TagTreeMenu.Modal[ThermalPipeDescr_13384](
+                txt = I18N_UI.catalog.simple_pipe,
+                modalContent = (onSelect) =>
+                    PipeCatalogSelectComponent(
+                        entriesSignal = pipePresetsSignal,
+                        onSelect      = onSelect.contramap[SetPropertiesInBatch](identity)
+                    ).node
+            ),
+            TagTreeMenu.Modal[ThermalPipeDescr_13384](
+                txt = I18N_UI.catalog.lined_flue,
+                modalContent = (onSelect) =>
+                    LinedFlueCatalogSelectComponent(
+                        pipePresetsSignal   = pipePresetsSignal,
+                        casingPresetsSignal = casingPresetsSignal,
+                        onSelect            = onSelect.contramap[LinedFlue](identity),
+                        linerPreviewContent = Some(sel =>
+                            CatalogSearchWidget.imagePreview(
+                                sel.combineWith(CatalogImageStore.imagesVar.signal).map {
+                                    case (Some(e), imgs) => imgs.get(s"${pipeCat.yamlKey}:${pipeCat.uniqueKey(e)}")
+                                    case _               => None
+                                }
+                            )
+                        ),
+                        casingPreviewContent = Some(sel =>
+                            CatalogSearchWidget.imagePreview(
+                                sel.combineWith(CatalogImageStore.imagesVar.signal).map {
+                                    case (Some(e), imgs) => imgs.get(s"${casingCat.yamlKey}:${e.batch_name}")
+                                    case _               => None
+                                }
+                            )
+                        )
+                    ).node
+            ),
+            TagTreeMenu.Modal[ThermalPipeDescr_13384](
+                txt = I18N_UI.catalog.flow_resistance_presets,
+                modalContent = (onSelect) =>
+                    FlowResistanceCatalogSelectComponent(
+                        entriesSignal = flowResistancePresetsSignal,
+                        onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                            AddFlowResistance(e.name, e.zeta, e.cross_section)
+                        )
+                    ).node
+            )
         )
     )

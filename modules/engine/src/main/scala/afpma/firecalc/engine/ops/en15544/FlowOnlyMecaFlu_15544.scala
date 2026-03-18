@@ -218,6 +218,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
                 ,
                 getSingularCrossSection = curr.el match
                     case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
+                    case PressureDiff(_, Some(crossSection))           => Some(crossSection)
                     case _                                             => None
             )
             .fold(e => throw new Exception(e.toString), identity)
@@ -300,7 +301,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
         curr.el match
             case _ : StraightSection                                                    =>
                 (None, 0.0.pascals).validNel
-            case PressureDiff(pa) =>
+            case PressureDiff(pa, _) =>
                 val pd = dynamicPressure(using Position.Middle)
                 val pu = pa
                 val zeta_eq: ζ = pu / pd

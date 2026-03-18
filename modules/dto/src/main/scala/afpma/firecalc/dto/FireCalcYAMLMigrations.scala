@@ -10,6 +10,7 @@ import afpma.firecalc.dto.transformers.given
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.dto.v3.FireCalcYAML_V3
+import afpma.firecalc.dto.v4.FireCalcYAML_V4
 
 import scala.util.Failure
 import scala.util.Success
@@ -32,7 +33,7 @@ object FireCalcYAMLMigrations:
     given Transformer[FireCalcYAML_V1, FireCalcYAML_V2] =
         Transformer
             .define[FireCalcYAML_V1, FireCalcYAML_V2]
-            .withFieldConst(_.version, FireCalc_Version(2))
+            .withFieldConst(_.version, FireCalcYAML_V2.VERSION)
             .withFieldComputed(_.firebox, _.firebox.transformInto[v2.Firebox_V2])
             .buildTransformer
 
@@ -42,14 +43,19 @@ object FireCalcYAMLMigrations:
     def migrateV2ToV3(v2: FireCalcYAML_V2): FireCalcYAML_V3 =
         v2.transformInto[FireCalcYAML_V3]
 
+    def migrateV3ToV4(v3: FireCalcYAML_V3): FireCalcYAML_V4 =
+        v3.transformInto[FireCalcYAML_V4]
+
     def upgradeToCurrent(dto: Any): Either[Throwable, FireCalcYAML] =
         dto match
+            case fcv4: FireCalcYAML_V4 =>
+                Right(fcv4)
             case fcv3: FireCalcYAML_V3 =>
-                Right(fcv3)
+                Right((migrateV3ToV4)(fcv3))
             case fcv2: FireCalcYAML_V2 =>
-                Right(migrateV2ToV3(fcv2))
+                Right((migrateV2ToV3 andThen migrateV3ToV4)(fcv2))
             case fcv1: FireCalcYAML_V1 =>
-                Right((migrateV1ToV2 andThen migrateV2ToV3)(fcv1))
+                Right((migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4)(fcv1))
             case other =>
                 Left(new Exception(s"Unsupported file version: ${other.getClass().getName}"))
 
@@ -81,11 +87,13 @@ object FireCalcYAMLMigrations:
             case None          =>
                 Left("Could not detect version field in YAML")
             case Some(1)       =>
-                decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3)
+                decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4)
             case Some(2)       =>
-                decodeV2(json).map(migrateV2ToV3)
+                decodeV2(json).map(migrateV2ToV3 andThen migrateV3ToV4)
             case Some(3)       =>
-                decodeV3(json)
+                decodeV3(json).map(migrateV3ToV4)
+            case Some(4)       =>
+                decodeV4(json)
             case Some(version) =>
                 Left(s"Unknown FireCalcYAML version: $version")
 
@@ -110,6 +118,12 @@ object FireCalcYAMLMigrations:
         // Use the decoder from V3/FireCalcYAML_V3.scala
         import FireCalcYAML_V3.decoder
         json.as[FireCalcYAML_V3].left.map(e => s"Failed to decode V3: ${e.getMessage()}")
+
+    /** Decode V4 from JSON using FireCalcYAML_V4 decoder. */
+    private def decodeV4(json: Json): Either[String, FireCalcYAML_V4] =
+        // Use the decoder from V4/FireCalcYAML_V4.scala
+        import FireCalcYAML_V4.decoder
+        json.as[FireCalcYAML_V4].left.map(e => s"Failed to decode V4: ${e.getMessage()}")
 
     /** Try-based wrapper for decodeAndMigrate for Scala.js compatibility. */
     def decodeAndMigrateTry(yaml: String): Try[FireCalcYAML] =

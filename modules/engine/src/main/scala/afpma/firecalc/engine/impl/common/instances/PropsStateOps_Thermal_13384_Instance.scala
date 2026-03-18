@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.impl.common.typeclasses.*
+import afpma.firecalc.engine.models.geometry.*
 
 object PropsStateOps_Thermal_13384_Instance:
 
@@ -19,22 +20,37 @@ object PropsStateOps_Thermal_13384_Instance:
      * Tracks both inner and outer geometry, thermal layers, air spaces,
      * pipe location, duct type, roughness, and number of flows for
      * thermal pipe calculations.
+     *
+     * Direction tracking fields (optional, only set when SetInitialDirection is used):
+     *   - initialFrame: frame set once by SetInitialDirection, never changes
+     *   - currentFrame: updated after each DirectionChange with roll defined
+     *   - dirBeforePreviousDC: direction BEFORE the previous bend, used to compute angleN2
      */
     case class ThermalPropsState_13384(
         innerShape          : Option[PipeShape]              = None,
         outer_shape         : Option[PipeShape]              = None,
         roughness           : Option[Roughness]              = None,
         layers              : Option[List[AppendLayerDescr]] = None,
-        airSpace_afterLayers: Option[AirSpaceDetailed]       = Some(AirSpaceDetailed.WithoutAirSpace),
+        airSpace_afterLayers: Option[AirSpaceDetailed]       = Some(AirSpaceDetailed.WithoutAirSpace_V2),
         pipeLoc             : Option[PipeLocation]           = None,
         ductType            : Option[DuctType]               = Some(DuctType.NonConcentricDuctsHighThermalResistance),
-        nFlows              : Option[NbOfFlows]              = Some(1.flow)
+        nFlows              : Option[NbOfFlows]              = Some(1.flow),
+        initialFrame        : Option[PipeFrame]              = None,
+        currentFrame        : Option[PipeFrame]              = None,
+        dirBeforePreviousDC : Option[Vec3]                   = None
     )
 
     given thermalPropsStateOps13384: ThermalPropsStateOps[ThermalPropsState_13384] with
         def isValid(s: ThermalPropsState_13384) =
-            val t = Tuple.fromProductTyped(s)
-            t.toList.forall(_.asInstanceOf[Option[?]].isDefined)
+            // Only check the core pipe properties, not the optional direction tracking fields
+            s.innerShape.isDefined &&
+                s.outer_shape.isDefined &&
+                s.roughness.isDefined &&
+                s.layers.isDefined &&
+                s.airSpace_afterLayers.isDefined &&
+                s.pipeLoc.isDefined &&
+                s.ductType.isDefined &&
+                s.nFlows.isDefined
 
         def getInnerShape(s: ThermalPropsState_13384) = s.innerShape
         def getRoughness (s: ThermalPropsState_13384) = s.roughness

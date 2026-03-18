@@ -6,6 +6,8 @@
 package afpma.firecalc.ui.formgen
 
 import afpma.firecalc.engine.utils.*
+import afpma.firecalc.ui.i18n.implicits.I18N_UI as I18N
+import io.taig.babel.Locale
 
 import cats.data.NonEmptyList
 import cats.data.Validated
@@ -95,11 +97,11 @@ object ValidateVar:
     def validWhen[A](cond: A => Boolean)(err: A => String): ValidateVar[A] =
         a => VNelString.validUnitWhen(a)(cond)(err(a))
 
-    def validOption_WhenDefinedAnd[A](cond: A => Boolean)(err: A => String): ValidateVar[Option[A]] =
+    def validOption_WhenDefinedAnd[A](cond: A => Boolean)(err: A => String)(using Locale): ValidateVar[Option[A]] =
         oa =>
             oa match
                 case Some(a) => VNelString.validUnitWhenOption(oa)(cond)(err(a))
-                case None    => VNelString.invalidOne("value is undefined (None)")
+                case None    => VNelString.invalidOne(I18N.errors.value_is_undefined)
 
     def invalidOne[A](err: A => String): ValidateVar[A] =
         a => VNelString.invalidOne(err(a))
@@ -116,11 +118,12 @@ object ValidateVar:
         def contramap[B](f: B => A): ValidateVar[B]        =
             (b: B) => vv(f(b))
 
-        def toOption_WithNoneAsInvalid: ValidateVar[Option[A]] =
+        def toOption_WithNoneAsInvalid(using Locale): ValidateVar[Option[A]] =
             (oa: Option[A]) =>
                 oa match
                     case Some(a) => vv(a)
-                    case None    => VNelString.invalidOne("value is undefined (None)")
+                    case None    => VNelString.invalidOne(I18N.errors.value_is_undefined)
+
         def toOption_WithNoneAsValid  : ValidateVar[Option[A]] =
             (oa: Option[A]) =>
                 oa match
@@ -151,3 +154,4 @@ object ValidateVar:
 
     object Option:
         def apply[A](using ev: ValidateVar[Option[A]]) = ev
+

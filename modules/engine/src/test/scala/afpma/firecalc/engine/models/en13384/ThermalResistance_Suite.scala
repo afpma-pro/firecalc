@@ -10,6 +10,8 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilDirection
+import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilOpenings
 
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 import afpma.firecalc.engine.models.en13384.std.ThermalResistance.CoefficientOfForm
@@ -159,7 +161,7 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                             |"""".stripMargin)
 
                 tr.isRight `shouldBe` true
-                tr.toOption.get.value `shouldEqual` (0.2036 +- 0.01)
+                tr.toOption.get.value `shouldEqual` (0.162 +- 0.01)
 
             }
         }

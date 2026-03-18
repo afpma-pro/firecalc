@@ -23,14 +23,15 @@ import afpma.firecalc.engine.utils.VNelString
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
 import afpma.firecalc.ui.daisyui.DaisyUIInputs.CommonRenderingFactory
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.SelectFieldsetLabelAndInput
 import afpma.firecalc.ui.formgen.*
 import afpma.firecalc.ui.formgen.Defaultable.*
 import afpma.firecalc.ui.formgen.Defaultable.given
-import afpma.firecalc.ui.instances.validatevar
+import afpma.firecalc.ui.instances.ValidateVarCommonInstances
 import afpma.firecalc.ui.utils.OptionalField
 import afpma.firecalc.ui.utils.convertToOpaqueVar
+import afpma.firecalc.ui.daisyui.DaisyUIInputs
 
 import cats.Show
 import cats.syntax.all.toFunctorOps
@@ -52,6 +53,7 @@ import magnolia1.CaseClass
 import magnolia1.Derivation
 import magnolia1.SealedTrait
 import magnolia1.SealedTrait.Subtype
+import scala.deriving.Mirror
 
 trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFactory.SplitAsSelectWithOptionsImpl[DF]:
     self: Derivation[DF] =>
@@ -113,11 +115,11 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
         makeFor[Option[A]](Defaultable.summon[Option[A]])(factory)
 
     def mk_AlwaysValid[A](factory: (Var[A], FormConfig) => HtmlElement): D_to_DF[A] =
-        given ValidateVar[A] = validatevar.valid_always.given_ValidateVar_AlwaysValid[A]
+        given ValidateVar[A] = ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[A]
         mk[A](factory)
 
     def mkOption_AlwaysValid[A](factory: (Var[Option[A]], FormConfig) => HtmlElement): DOpt_to_DFOpt[A] =
-        given ValidateVar[Option[A]] = validatevar.valid_always.given_ValidateVar_AlwaysValid[Option[A]]
+        given ValidateVar[Option[A]] = ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Option[A]]
         mkOption[A](factory)
 
     def mkFromComponent[A](factory: (Var[A], FormConfig) => Component): D_VV_to_DF[A] =
@@ -139,6 +141,8 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
 
     // opaque types
 
+    // TODO: rename to "map" or alike ? not specific to opaque type. 
+    // Conversion possible as long as bijection exists between 2 types.
     def formConversionOpaque[T, A](using
         fa : DF[A],
         out: Conversion[T, A],
@@ -382,27 +386,38 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
     )                                      : VVOpt_to_DFOpt[BigDecimal] =
         forOptionNumeric[BigDecimal](updateFieldName, optionalField)
 
-    @nowarn private def forOptionK[F[_], U: SUnit](
+    private def forOptionK[F[_], U: SUnit](
         updateFieldName       : Option[String] => Option[String],
-        optionalField         : OptionalField = OptionalField.No,
+        optionalField         : OptionalField,
         getValueFromF         : F[U] => Double,
         makeFWithUnitFromValue: Double => F[U]
     ): VVOpt_to_DFOpt[F[U]] =
+        val sunits           = List(SUnit[U])
+        val renderingFactory = mkRenderingFactoryForNumberWithUnitsAndValidation(
+            sunitsVar       = Var(sunits),
+            sunitCurrentVar = Var(sunits.head)
+        )
+        forOptionK_withRenderingFactory(
+            updateFieldName,
+            optionalField,
+            getValueFromF,
+            makeFWithUnitFromValue,
+            renderingFactory
+        )
 
-        // val validateDouble: (Option[Double], SUnit[?]) => VNelString[Unit] =
-        //     (od, su) =>
-        //         val oq = od.map(makeFWithUnitFromValue)
-        //         vvof.unwrap(oq)
+    private def forOptionK_withRenderingFactory[F[_], U](
+        updateFieldName       : Option[String] => Option[String],
+        optionalField         : OptionalField,
+        getValueFromF         : F[U] => Double,
+        makeFWithUnitFromValue: Double => F[U],
+        renderingFactory      : CommonRenderingFactory[Double]
+    ): VVOpt_to_DFOpt[F[U]] =
+
         given ValidateVar[Option[Double]] = ValidateVar.Option[F[U]].contramapOpt[Double](makeFWithUnitFromValue)
 
         makeFor(makeOptionWithNoneFor[F[U]]): (variable, formConfig) =>
-            val sunits              = List(SUnit[U])
-            val dVar                = variable.bimap(_.map(getValueFromF))(_.map(makeFWithUnitFromValue))
-            val factory             = mkRenderingFactoryForNumberWithUnitsAndValidation(
-                sunitsVar       = Var(sunits),
-                sunitCurrentVar = Var(sunits.head)
-            )
-            factory.make(
+            val dVar = variable.bimap(_.map(getValueFromF))(_.map(makeFWithUnitFromValue))
+            renderingFactory.make(
                 v             = dVar,
                 label         = updateFieldName(formConfig.shownFieldName),
                 optionalField = optionalField
@@ -417,6 +432,19 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
             optionalField          = optionalField,
             getValueFromF          = _.value,
             makeFWithUnitFromValue = _.withUnit[U]
+        )
+
+    def forOptionQtyD_withRenderingFactory[U: SUnit](
+        updateFieldName       : Option[String] => Option[String],
+        optionalField         : OptionalField = OptionalField.No,
+        renderingFactory      : CommonRenderingFactory[Double]
+    ): VVOpt_to_DFOpt[QtyD[U]] =
+        forOptionK_withRenderingFactory[QtyD, U](
+            updateFieldName        = updateFieldName,
+            optionalField          = optionalField,
+            getValueFromF          = _.value,
+            makeFWithUnitFromValue = _.withUnit[U],
+            renderingFactory       = renderingFactory,
         )
 
     def forOptionTempD[U: SUnit](
@@ -449,6 +477,50 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
     // switch to def ???
     given given_forOptionTempD_default: [U: SUnit] => VVOpt_to_DFOpt[TempD[U]] =
         forOptionTempD_default[U]
+
+    // ========================================
+    // Form with bidirectional sync to linked Var
+
+    /** Creates a form field with bidirectional sync to a linked Var.
+      *
+      * This is useful when you want a form field to stay in sync with another Var,
+      * such as a field in a parent model.
+      *
+      * @param underlying The form to use for rendering the field
+      * @param linkedVar The Var to sync with
+      * @return A form field that automatically syncs with linkedVar
+      */
+    def mkFromUnderlyingWithLinkedVar[U](
+        underlying: DF[Option[QtyD[U]]],
+        linkedVar: Var[Option[QtyD[U]]]
+    ): D_VVOpt_to_DFOpt[QtyD[U]] =
+        val d: Defaultable[Option[QtyD[U]]] = Defaultable.summon[Option[QtyD[U]]]
+
+        makeFor[Option[QtyD[U]]](d): (variable, formConfig) =>
+            // Bidirectional sync: form -> linkedVar
+            // Debounced to break synchronous transaction chains that cause
+            // infinite loops when multiple forms write to the same parent Var
+            // (e.g. firebox form + StoveParamsUI both zooming on stove_params_var).
+            val syncToLinkedVar = variable.signal
+                .distinct
+                .changes
+                .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                .collect { case Some(v) => Some(v) }
+                .withCurrentValueOf(linkedVar.signal)
+                .collect { case (newVal, curVal) if newVal != curVal => newVal } --> linkedVar.writer
+
+            // Bidirectional sync: linkedVar -> form
+            // Debounced for the same reason as above.
+            val syncFromLinkedVar = linkedVar.signal
+                .distinct
+                .changes
+                .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                .withCurrentValueOf(variable.signal)
+                .collect { case (newVal, curVal) if newVal != curVal => newVal } --> variable.writer
+
+            underlying
+                .render(variable, formConfig)
+                .amend(syncToLinkedVar, syncFromLinkedVar)
 
     // helper for Option[QtyD[A]] rendering
 
@@ -507,8 +579,9 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
     // Conditional
 
     def conditionalOn[C, A](
-        condVar     : Var[C],
-        extraBinders: Seq[Binder[HtmlElement]] = Seq.empty
+        condVar          : Var[C],
+        extraBinders     : Seq[Binder[HtmlElement]] = Seq.empty,
+        activationDefault: Signal[Option[A]]         = Val(Option.empty[A])
     )(using
         fa  : DF[A],
         d   : Defaultable[A],
@@ -525,11 +598,17 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
                 case None    => d.default
             } { case (_, a) => Some(a) }
 
+            // Cache activationDefault in a Var for synchronous access inside the binder.
+            // This avoids Airstream tuple type erasure from chained withCurrentValueOf/combineWith.
+            val activationDefaultVar: Var[Option[A]] = Var(Option.empty[A])
+            val syncActivationDefault: Binder[HtmlElement] =
+                activationDefault --> activationDefaultVar.writer
+
             val binder =
                 condVar.signal
                     .withCurrentValueOf(voa)
                     .map((c, oa) =>
-                        if (cond.check(c)) oa
+                        if (cond.check(c)) oa.orElse(activationDefaultVar.now()).orElse(Some(d.default))
                         else None
                     )
                     .distinct --> voa.writer
@@ -539,6 +618,7 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
                 formConfig
             ).amend(
                 cls("hidden") <-- hideSignal,
+                syncActivationDefault,
                 binder,
                 extraBinders
             )
@@ -776,6 +856,48 @@ object LaminarFormFactory:
     trait SplitAsSelectWithOptionsImpl[DF[x] <: LaminarForm[x, DF[x]]] extends Derivation[DF]:
         self: LaminarFormFactory[DF] =>
 
+        inline def splitViaMatchingOnly[A](using sum: Mirror.SumOf[A]): DF[A] =
+
+            val sealedTrait = sealedTraitFromMirror(sum)
+
+            val anns     = sealedTrait.annotations.toList
+            val typeInfo = sealedTrait.typeInfo
+
+            given ValidateVar[A] = ValidateVar.make: a =>
+                sealedTrait.choose(a) { sub =>
+                    val c = sub.cast(a)
+                    sub.typeclass.validate_var.validate(c)
+                }
+
+            self.makeForUsingOverwrite[A](_formConfigOverwrite =>
+                val finalFieldName = LaminarForm.mkFinalFieldName(
+                    _formConfigOverwrite,
+                    anns,
+                    typeInfo
+                )
+                Defaultable
+                    .selectFirstSubtypeAsDefaultableOrThrow[A](finalFieldName)(
+                        sealedTrait.subtypes.map(_.typeclass.defaultable_instance)
+                    )
+            ): (variable, _) =>
+
+                val a = variable.now()
+
+                val subt_typeclass_curr = sealedTrait.choose(a)(_.typeclass.asInstanceOf[DF[A]])
+                val subt_typeclass_label = finalFieldNameForSubtype_fromValue(sealedTrait)(a)
+
+                val content = 
+                    render_SumType_WrappedSubtypeFormAsNode(
+                        variable.as_HtmlElement(using subt_typeclass_curr)
+                    )
+
+                DaisyUIInputs.FieldsetLegendWithContent    (
+                    Some(subt_typeclass_label),
+                    content,
+                    bgClass     = "bg-base-100",
+                    borderClass = "border-base-300 border-dashed"
+                )
+        
         inline def eitherAsSelectWithOptions[L, R](
             selectFieldName: String
         )(using
@@ -834,28 +956,24 @@ object LaminarFormFactory:
             var_selected      : Var[String],
             subt_labels       : IArray[String]
         ): L.HtmlElement =
-            // without label above "select"
-
-            // SelectAndOptionsOnly(
-            //     selectedVar,
-            //     options = subtypes_label,
-            //     show = identity,
-            //     makeId = identity,
-            //     getById = identity,
-            //     selectCls = "select",
-            // )
-
-            // with label above "select"
-
-            SelectFieldsetLabelAndInput     (
-                labelOpt      = select_field_label,
-                selectedVar   = var_selected,
-                options       = subt_labels,
-                show          = identity,
-                makeId        = identity,
-                getById       = identity,
-                optionalField = OptionalField.No
+            val selectNode = DaisyUIInputs.SelectAndOptionsOnly(
+                selectedVar           = var_selected,
+                labelAsDisabledOption = select_field_label,
+                options               = subt_labels,
+                show                  = identity,
+                makeId                = identity,
+                getById               = identity,
+                selectCls             = "select"
             )
+            select_field_label match
+                case Some(lbl) =>
+                    L.label(
+                        cls := "floating-label whitespace-nowrap",
+                        selectNode,
+                        span(lbl)
+                    )
+                case None      =>
+                    selectNode
             // debug
             // .amend(
             //     div(text <-- selectedVar.signal.map(_.toString))
@@ -1012,16 +1130,7 @@ object LaminarFormFactory:
                     .selectFirstSubtypeAsDefaultableOrThrow[A](finalFieldName)(
                         sealedTrait.subtypes.map(_.typeclass.defaultable_instance)
                     )
-            ): (variable, _) =>
-                def finalFieldNameForSubtype(sub: Subtype[DF, A, ?]): String =
-                    LaminarForm.mkFinalFieldName(
-                        sub.typeclass._formConfigOverwrite,
-                        sub.annotations.toList,
-                        sub.typeInfo
-                    )
-
-                def finalFieldNameForSubtype_fromValue(a: A): String =
-                    sealedTrait.choose(a)(sub => finalFieldNameForSubtype(sub.subtype))
+            ): (variable, formConfig) =>
 
                 val subt_defaultables: IArray[Defaultable[A]] =
                     sealedTrait.subtypes.map: subt =>
@@ -1042,7 +1151,7 @@ object LaminarFormFactory:
 
                 // initialiaze manual vars
 
-                val var_subt_label_curr = Var(finalFieldNameForSubtype_fromValue(a))
+                val var_subt_label_curr = Var(finalFieldNameForSubtype_fromValue(sealedTrait)(a))
 
                 val subt_typeclasses =
                     sealedTrait.subtypes.map(
@@ -1052,10 +1161,20 @@ object LaminarFormFactory:
                 renderAndBind_SumType_WithSelectAndOptions(
                     variable,
                     var_subt_label_curr,
-                    value_to_subt_label = finalFieldNameForSubtype_fromValue,
-                    // select_field_label = Some(finalFieldNameForSelect),
-                    select_field_label  = None,
+                    value_to_subt_label = finalFieldNameForSubtype_fromValue(sealedTrait),
+                    select_field_label  = formConfig.shownFieldName,
                     subt_defaultables   = subt_defaultables,
                     subt_labels         = subt_labels,
                     subt_typeclasses    = subt_typeclasses
                 )
+        end split
+
+        def finalFieldNameForSubtype[A](sub: Subtype[DF, A, ?]): String =
+            LaminarForm.mkFinalFieldName(
+                sub.typeclass._formConfigOverwrite,
+                sub.annotations.toList,
+                sub.typeInfo
+            )
+
+        def finalFieldNameForSubtype_fromValue[A](sealedTrait: SealedTrait[DF, A])(a: A): String =
+            sealedTrait.choose(a)(sub => finalFieldNameForSubtype(sub.subtype))

@@ -8,19 +8,26 @@ package afpma.firecalc.fdim.exercices.p2_cf
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
 
 object strict_ex00_kachelofen 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
-        
+    with v0_2024_10.Firebox_15544_Strict_Alg:
+    self =>
+
+    import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
+
+    type FB = TraditionalFirebox
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val exercice_name: String = "exercices // p2_cf // ex00_kachelofen"
 
@@ -40,7 +47,6 @@ object strict_ex00_kachelofen
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                               = 44.cm,
         h12_largeurDuFoyer                                  = 42.cm,
         h13_hauteurDuFoyer                                  = 78.cm,
@@ -48,6 +54,7 @@ object strict_ex00_kachelofen
         h67_sectionCumuleeEntreeAirPorte                    = 170.cm2,
         h71_largeurVitre                                    = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
         h72_hauteurVitre                                    = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                                      = 5.cm,
     )
 
     val fluePipe = 
@@ -55,37 +62,38 @@ object strict_ex00_kachelofen
         FluePipe_Module_15544
         .incremental
         .define(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
             roughness(3.mm),
-            
+
             innerShape(rectangle(25.1.cm, 23.cm)),
             addSectionHorizontal("sortie foyer", 32.cm),
-            
-            addSharpAngle_90deg("virage avant descente"),
-            
+
+            addSharpAngle_90deg("virage avant descente", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
+
             innerShape(rectangle(25.1.cm, 22.cm)),
             addSectionVertical("descente", -81.cm),
 
-            addSharpAngle_90deg("virage avant avant banc"),
-            
+            addSharpAngle_90deg("virage avant avant banc", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+
             innerShape(rectangle(22.cm, 24.cm)),
             addSectionHorizontal("avant banc", 1.79.meters),
 
-            addSharpAngle_90deg("virage avant bout du banc"),
-            
+            addSharpAngle_90deg("virage avant bout du banc", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)),  // Rear
+
             innerShape(rectangle(20.cm, 24.cm)),
             addSectionHorizontal("bout du banc", 44.cm),
 
-            addSharpAngle_90deg("virage avant arrière banc"),
+            addSharpAngle_90deg("virage avant arrière banc", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
 
             innerShape(rectangle(19.cm, 24.cm)),
             addSectionHorizontal("arrière banc", 2.07.meters),
 
-            addSharpAngle_90deg("virage avant vers remontée"),
+            addSharpAngle_90deg("virage avant vers remontée", AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front
 
             innerShape(rectangle(21.cm, 24.cm)),
             addSectionHorizontal("vers remontée", 44.cm),
 
-            addSharpAngle_90deg("virage avant remontée"),
+            addSharpAngle_90deg("virage avant remontée", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             innerShape(rectangle(21.cm, 22.cm)),
             addSectionVertical("remontée", 98.cm),

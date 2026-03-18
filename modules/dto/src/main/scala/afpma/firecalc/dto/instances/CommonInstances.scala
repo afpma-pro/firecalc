@@ -61,9 +61,21 @@ object CommonInstances:
     given encoder_AdjacentBuildings: Encoder[AdjacentBuildings] = semiauto.deriveEncoder[AdjacentBuildings]
 
     // AirSpaceDetailed
+    // Custom decoder: handle YAML round-trip issue where case object WithoutAirSpace
+    // is emitted as "WithoutAirSpace: null" by the YAML printer (instead of "{}"),
+    // causing the default semiauto decoder to fail when reading back.
+    given decoder_AirSpaceDetailed_V1: Decoder[AirSpaceDetailed_V1] =
+        val derived = semiauto.deriveDecoder[AirSpaceDetailed_V1]
+        Decoder.instance { cursor =>
+            cursor.keys.flatMap(_.headOption) match
+                case Some("WithoutAirSpace") =>
+                    // Accept both {} and null payloads for the no-field case object
+                    Right(AirSpaceDetailed_V1.WithoutAirSpace)
+                case _ =>
+                    derived(cursor)
+        }
 
-    given Decoder[AirSpaceDetailed] = semiauto.deriveDecoder[AirSpaceDetailed]
-    given Encoder[AirSpaceDetailed] = semiauto.deriveEncoder[AirSpaceDetailed]
+    given encoder_AirSpaceDetailed_V1: Encoder[AirSpaceDetailed_V1] = semiauto.deriveEncoder[AirSpaceDetailed_V1]
 
     // AppendLayerDescr
 
@@ -354,6 +366,65 @@ object CommonInstances:
             case x: HeatOutputReduced.FromTypeTest  => Encoder[HeatOutputReduced.FromTypeTest].apply(x)
         }
 
+    given Decoder[HeatOutputReduced.NotDefined_Or_Tested] =
+        import cats.implicits.toFunctorOps
+        List[Decoder[HeatOutputReduced.NotDefined_Or_Tested]](
+            Decoder[HeatOutputReduced.NotDefined].widen,
+            Decoder[HeatOutputReduced.FromTypeTest].widen
+        ).reduceLeft(_ or _)
+
+    given Encoder[HeatOutputReduced.NotDefined_Or_Tested] =
+        Encoder.instance {
+            case x: HeatOutputReduced.NotDefined   => Encoder[HeatOutputReduced.NotDefined].apply(x)
+            case x: HeatOutputReduced.FromTypeTest => Encoder[HeatOutputReduced.FromTypeTest].apply(x)
+        }
+
+    // EmissionValueU
+    // Encoded as a plain number (value in mg/Nm³) for compact YAML representation.
+
+    given decoder_EmissionValueU: Decoder[EmissionValueU] =
+        Decoder.decodeDouble.map(_.mg_per_Nm3)
+
+    given encoder_EmissionValueU: Encoder[EmissionValueU] =
+        Encoder.encodeDouble.contramap(_.value)
+
+    // PolluantName — encoded as plain string matching enum case names
+
+    given Decoder[PolluantName] = Decoder.decodeString.emap { s =>
+        try Right(PolluantName.valueOf(s))
+        catch case _: IllegalArgumentException => Left(s"Unknown PolluantName: $s")
+    }
+    given Encoder[PolluantName] = Encoder.encodeString.contramap(_.toString)
+
+    // TestReport
+
+    given Decoder[TestReport] = semiauto.deriveDecoder[TestReport]
+    given Encoder[TestReport] = semiauto.deriveEncoder[TestReport]
+
+    // TestEmissionValue_DTO
+
+    given Decoder[TestEmissionValue_DTO] = semiauto.deriveDecoder[TestEmissionValue_DTO]
+    given Encoder[TestEmissionValue_DTO] = semiauto.deriveEncoder[TestEmissionValue_DTO]
+
+    // EmissionValues_DTO
+
+    given Decoder[EmissionValues_DTO] = semiauto.deriveDecoder[EmissionValues_DTO]
+    given Encoder[EmissionValues_DTO] = semiauto.deriveEncoder[EmissionValues_DTO]
+
+    // EmissionsAndEfficiencyValues_DTO
+
+    // Custom decoder: YAML encodes empty List as null, so we treat null test_reports as Nil
+    given Decoder[EmissionsAndEfficiencyValues_DTO] = Decoder.instance { c =>
+        for
+            firebox_name                <- c.downField("firebox_name").as[String]
+            accredited_or_notified_body <- c.downField("accredited_or_notified_body").as[String]
+            test_reports                <- c.downField("test_reports").as[List[TestReport]]
+                                            .orElse(Right(Nil))
+            emissions_values            <- c.downField("emissions_values").as[EmissionValues_DTO]
+        yield EmissionsAndEfficiencyValues_DTO(firebox_name, accredited_or_notified_body, test_reports, emissions_values)
+    }
+    given Encoder[EmissionsAndEfficiencyValues_DTO] = semiauto.deriveEncoder[EmissionsAndEfficiencyValues_DTO]
+
     // ProjectDescr
 
     given Decoder[ProjectDescr] = semiauto.deriveDecoder[ProjectDescr]
@@ -377,6 +448,9 @@ object CommonInstances:
                 ("value", Json.fromString(iq.value.toString)   ),
                 ("unit", Json.fromString(SUnit[U].showUnitFull))
             )
+
+    given decoder_QtyD_minute: Decoder[QtyD[Minute]] = decoder_QtyD[Minute]
+    given encoder_QtyD_minute: Encoder[QtyD[Minute]] = encoder_QtyD[Minute]
 
     given decoder_QtyD_meter: Decoder[QtyD[Meter]] = decoder_QtyD[Meter]
     given encoder_QtyD_meter: Encoder[QtyD[Meter]] = encoder_QtyD[Meter]
@@ -439,12 +513,12 @@ object CommonInstances:
     given decoder_UseTuoOverride: Decoder[UseTuoOverride] = Decoder.const(UseTuoOverride)
     given encoder_UseTuoOverride: Encoder[UseTuoOverride] = Encoder.encodeString.contramap(_ => "UseTuoOverride")
 
-    // VentilDirection
+    // AirSpaceDetailed_V1.VentilDirection
 
-    given Decoder[VentilDirection] = deriveDecoderForEnum[VentilDirection](VentilDirection.valueOf)
-    given Encoder[VentilDirection] = deriveEncoderForEnum[VentilDirection]
+    given decoder_AirSpaceDetailed_V1_VentilDirection: Decoder[AirSpaceDetailed_V1.VentilDirection] = deriveDecoderForEnum[AirSpaceDetailed_V1.VentilDirection](AirSpaceDetailed_V1.VentilDirection.valueOf)
+    given encoder_AirSpaceDetailed_V1_VentilDirection: Encoder[AirSpaceDetailed_V1.VentilDirection] = deriveEncoderForEnum[AirSpaceDetailed_V1.VentilDirection]
 
-    // VentilOpenings
+    // AirSpaceDetailed_V1.VentilOpenings
 
-    given Decoder[VentilOpenings] = deriveDecoderForEnum[VentilOpenings](VentilOpenings.valueOf)
-    given Encoder[VentilOpenings] = deriveEncoderForEnum[VentilOpenings]
+    given decoder_AirSpaceDetailed_V1_VentilOpenings: Decoder[AirSpaceDetailed_V1.VentilOpenings] = deriveDecoderForEnum[AirSpaceDetailed_V1.VentilOpenings](AirSpaceDetailed_V1.VentilOpenings.valueOf)
+    given encoder_AirSpaceDetailed_V1_VentilOpenings: Encoder[AirSpaceDetailed_V1.VentilOpenings] = deriveEncoderForEnum[AirSpaceDetailed_V1.VentilOpenings]

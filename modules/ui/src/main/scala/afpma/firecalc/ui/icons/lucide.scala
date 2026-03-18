@@ -482,4 +482,101 @@ object lucide:
         )
     )
 
+    def undo(w: Int = 24, h: Int = 24, stroke_width: Double) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-undo-icon lucide-undo",
+        path(d := "M3 7v6h6"),
+        path(d := "M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13")
+    )
+
+    def box(w: Int = 24, h: Int = 24, stroke_width: Double = 2) =
+        svg(
+            xmlns          := "http://www.w3.org/2000/svg",
+            width          := s"$w",
+            height         := s"$h",
+            viewBox        := "0 0 24 24",
+            fill           := "none",
+            stroke         := "currentColor",
+            strokeWidth    := s"$stroke_width",
+            strokeLinecap  := "round",
+            strokeLinejoin := "round",
+            cls            := "lucide lucide-box-icon lucide-box",
+            path(d := "M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"),
+            path(d := "m3.3 7 8.7 5 8.7-5"),
+            path(d := "M12 22V12")
+        )
+
+    def redo(w: Int = 24, h: Int = 24, stroke_width: Double) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-redo-icon lucide-redo",
+        path(d := "M21 7v6h-6"),
+        path(d := "M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7")
+    )
+
+    def database(w: Int = 24, h: Int = 24, stroke_width: Double = 2) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-database-icon lucide-database",
+        ellipse(cx := "12", cy := "5", rx := "9", ry := "3"),
+        path(d := "M3 5V19A9 3 0 0 0 21 19V5"),
+        path(d := "M3 12A9 3 0 0 0 21 12")
+    )
+
+    def `chart-line`(w: Int = 24, h: Int = 24, stroke_width: Double = 2) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-chart-line-icon lucide-chart-line",
+        path(d := "M3 3v16a2 2 0 0 0 2 2h16"),
+        path(d := "m19 9-5 5-4-4-3 3"        )
+    )
+
+    def `book-open-text` = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := "24",
+        height         := "24",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := "2",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-book-open-text",
+        path(d := "M12 7v14"),
+        path(d := "M16 12h2"),
+        path(d := "M16 8h2"),
+        path(d := "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"),
+        path(d := "M6 12h2"),
+        path(d := "M6 8h2")
+    )
+
 end lucide

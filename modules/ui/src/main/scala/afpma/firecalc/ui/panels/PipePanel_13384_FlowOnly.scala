@@ -6,11 +6,18 @@
 package afpma.firecalc.ui.panels
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.instances.*
+import afpma.firecalc.ui.models.flowResistancePresetsSignal
+
+import coulomb.policy.standard.given
 
 import com.raquo.laminar.api.L.*
 
@@ -27,6 +34,85 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     private given flowOnlyHorizontalForm_13384: FlowOnlyHorizontalForm_13384 = FlowOnlyHorizontalForm_13384()
     import flowOnlyHorizontalForm_13384.given
+
+    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+        welems_var.signal.map: elems =>
+            var frame: Option[PipeFrame] = None
+            val builder = Map.newBuilder[Int, PipeFrame]
+            for (idx, elem) <- elems do
+                elem match
+                    case SetInitialDirection(az, incl) =>
+                        val azDeg  = AzimuthDirection.toDegrees(az)
+                        val elDeg  = InclinationDirection.toDegrees(incl)
+                        frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
+                    case _ => ()
+                frame.foreach(f => builder += (idx -> f))
+                elem match
+                    case dc: AddDirectionChange =>
+                        for
+                            f  <- frame
+                            fd <- dc.absDir
+                        do
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
+                    case _ => ()
+            builder.result()
+
+    private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems.flatMap: (idx, elem) =>
+                frameMap.get(idx).flatMap: frameBefore =>
+                    elem match
+                        case dc: AddDirectionChange =>
+                            dc.absDir.map: fd =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                idx -> frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
+                        case _: AddFlowOnlyPipeElement_13384 =>
+                            Some(idx -> frameBefore.direction)
+                        case _ => None
+            .toMap
+
+    override protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
+        directionAfterByIdx.map(_.get(idx))
+
+    override protected def frameBeforeSig_badge(idx: Int): Signal[Option[PipeFrame]] =
+        frameBeforeByIdx.map(_.get(idx))
+
+    private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems
+                .collect { case (idx, _: AddDirectionChange) => idx }
+                .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
+                .toMap
+
+    override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
+        previousDirectionByIdx.map(_.get(idx))
+
+    private def absDirBadgeVar[A <: AddDirectionChange](
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
+    ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
+        ev => Some(ev.zoomLazy(getter)(setter))
+
+    private def relativeDirectionExtra[A <: AddDirectionChange](
+        idx   : Int,
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
+    ): Var[A] => HtmlElement =
+        ev =>
+            val fdVar = ev.zoomLazy(getter)(setter)
+            RelativeDirectionInput(
+                frameBefore     = frameBeforeSig_badge(idx),
+                deflectionAngle = deflectionAngleSig(idx),
+                absDirVar     = fdVar
+            ).node
+
+    override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
+        welems_var.signal.map: elems =>
+            elems.collectFirst:
+                case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -59,6 +145,21 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     isProperty = true
                 )
             }
+            .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
+                case (i, aa: SetInitialDirection, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
+                case (i, aa: SetInitialPosition, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
+                case (i, aa: SetFinalPosition, x) => (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true)
+            }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSectionSlopped, XtraOutputs), HtmlElement] {
                 case (i, aa: AddSectionSlopped, x) => (i, aa, x)
             } { (iaax, sig) =>
@@ -69,6 +170,14 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty = false
                 )
+            }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_13384, XtraOutputs),
+                (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs),
+                HtmlElement
+            ] { case (i, aa: AddSectionSloppedForceManualElevationGain, x) => (i, aa, x) } { (_, _) =>
+                // should never happen, only allowed internally in engine
+                ???
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_13384, XtraOutputs),
@@ -106,7 +215,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddAngleAdjustable,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -119,7 +230,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_90,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -132,7 +245,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_90_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_90, XtraOutputs), HtmlElement] {
@@ -143,7 +258,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_90,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -156,7 +273,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_90_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSmoothCurve_60, XtraOutputs), HtmlElement] {
@@ -167,7 +286,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_60,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -180,7 +301,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSmoothCurve_60_Unsafe,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddElbows_2x45, XtraOutputs), HtmlElement] {
@@ -191,7 +314,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_2x45,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddElbows_3x30, XtraOutputs), HtmlElement] {
@@ -202,7 +327,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_3x30,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddElbows_4x22p5, XtraOutputs), HtmlElement] {
@@ -213,7 +340,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddElbows_4x22p5,
                     iaax._2,
                     sig,
-                    isProperty = false
+                    isProperty = false,
+                    extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -280,7 +409,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     lazy val geom_elements = TagTreeMenu.Group(
         txt  = I18N.add_element._self,
         next = List(
-            straight_elements,
+            TagTreeMenu.Leaf[AddSectionSlopped],
             direction_change_elements,
             split_group,
             grids
@@ -290,6 +419,16 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     lazy val grids = TagTreeMenu.Group(
         txt  = I18N.add_element.AddFlowResistance,
         next = List(
+            TagTreeMenu.Modal[FlowOnlyPipeDescr_13384](
+                txt = I18N_UI.catalog.flow_resistance_presets,
+                modalContent = (onSelect) =>
+                    FlowResistanceCatalogSelectComponent(
+                        entriesSignal = flowResistancePresetsSignal,
+                        onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                            AddFlowResistance(e.name, e.zeta, e.cross_section)
+                        )
+                    ).node
+            ),
             TagTreeMenu.Leaf[AddFlowResistance]("ζ")
         )
     )
@@ -302,14 +441,12 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
         )
     )
 
-    lazy val straight_elements = TagTreeMenu.Group(
-        txt  = I18N.add_element.add_section_element,
-        next = List(
-            TagTreeMenu.Leaf[AddSectionVertical],
-            TagTreeMenu.Leaf[AddSectionHorizontal],
-            TagTreeMenu.Leaf[AddSectionSlopped]
-        )
-    )
+    // lazy val straight_elements = TagTreeMenu.Group(
+    //     txt  = I18N.add_element.add_section_element,
+    //     next = List(
+    //         TagTreeMenu.Leaf[AddSectionSlopped]
+    //     )
+    // )
 
     lazy val direction_change_elements = TagTreeMenu.Group(
         txt  = I18N.add_element.add_direction_change_element,
@@ -328,8 +465,21 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
         next = List(
-            TagTreeMenu.Leaf[SetMaterial],
-            TagTreeMenu.Leaf[SetRoughness],
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._position_and_direction,
+                next = List(
+                    TagTreeMenu.Leaf[SetInitialPosition],
+                    TagTreeMenu.Leaf[SetInitialDirection],
+                    TagTreeMenu.Leaf[SetFinalPosition]
+                )
+            ),
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._material_and_roughness,
+                next = List(
+                    TagTreeMenu.Leaf[SetMaterial],
+                    TagTreeMenu.Leaf[SetRoughness]
+                )
+            ),
             TagTreeMenu.Leaf[SetInnerShape]
         )
     )

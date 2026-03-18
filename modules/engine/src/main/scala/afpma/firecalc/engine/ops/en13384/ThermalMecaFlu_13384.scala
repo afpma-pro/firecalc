@@ -325,6 +325,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
             },
             getSingularCrossSection = curr.el match {
                 case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
+                case PressureDiff(_, Some(crossSection))           => Some(crossSection)
                 case _                                             => None
             }
         )
@@ -608,7 +609,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         gp.pipeEl.el match
             case _ : StraightSection                                                    =>
                 (None, 0.0.pascals).validNel
-            case PressureDiff(pa) =>
+            case PressureDiff(pa, _) =>
                 val pd = en13384.P_R_dynamicPressure_calc(
                     density_for_pr_pu_pd,
                     velocity_for_pr_pu_pd
@@ -749,32 +750,32 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                             .NoStraightSectionDefinedForTemperatureCalc(s"last attempt is ${curr.el}", curr.typ)
                             .asLeft
 
-    val section_id           = curr.idx
-    val section_name         = curr.name
-    val section_typ          = curr.typ
-    val descr                = curr.el
-    val n_flows              = curr.nf
-    val air_space_detailed   = airSpaceDetailedE.toOption
-    val temperature_amb      = tu.map(_.to_degC)
-    val thermal_resistance   = en13384_tr
-    val gas_temp_start       = temperature(using Position.Start)
-    val gas_temp_middle      = temperature(using Position.Middle)
-    val gas_temp_mean        = (temp_mean: TCelsius).some
-    val gas_temp_end         = temperature(using Position.End)
-    val v_start              = flowVelocity(using Position.Start)
-    val v_middle             = flowVelocity_middle.some
-    val v_mean               = en13384_flowVelocity_mean.some
-    val v_end                = flowVelocity(using Position.End)
-    val mass_flow            = massFlow
-    val innerShape_middle    = innerShape(using Position.Middle)
-    val innerShape_end       = innerShape(using Position.End)
-    val crossSectionArea_end = crossSectionArea(using Position.End)
-    val pu                   = v_zetaO_dynamicFriction.map(_._2)
-    val zeta                 = v_zetaO_dynamicFriction.toOption.flatMap(_._1)
-    val pd                   = dynamicPressure_mean.some
-    val pRs                  = staticFriction
-    val pRg                  = vChangeFriction
-    val ph                   = standingPressure
+    val section_id             = curr.idx
+    val section_name           = curr.name
+    val section_typ            = curr.typ
+    val descr                  = curr.el
+    val n_flows                = curr.nf
+    val air_space_detailed     = airSpaceDetailedE.toOption
+    val temperature_amb        = tu.map(_.to_degC)
+    val thermal_resistance     = en13384_tr
+    val gas_temp_start         = temperature(using Position.Start)
+    val gas_temp_middle        = temperature(using Position.Middle)
+    val gas_temp_mean          = (temp_mean: TCelsius).some
+    val gas_temp_end           = temperature(using Position.End)
+    val v_start                = flowVelocity(using Position.Start)
+    val v_middle               = flowVelocity_middle.some
+    val v_mean                 = en13384_flowVelocity_mean.some
+    val v_end                  = flowVelocity(using Position.End)
+    val mass_flow              = massFlow
+    val innerShape_middle      = innerShape(using Position.Middle)
+    val innerShape_end         = innerShape(using Position.End)
+    val crossSectionArea_end   = crossSectionArea(using Position.End)
+    val pu                     = v_zetaO_dynamicFriction.map(_._2)
+    val zeta                   = v_zetaO_dynamicFriction.toOption.flatMap(_._1)
+    val pd                     = dynamicPressure_mean.some
+    val pRs = staticFriction
+    val pRg = vChangeFriction
+    val ph  = standingPressure
 
 private abstract trait MecaFlu_13384_PipeResult_Impl(
     fd                : PipeFullDescrG[PipeElDescr],

@@ -12,6 +12,11 @@
 # declaring success. This prevents false positives when a dependency
 # module succeeds but the target module hasn't compiled yet.
 #
+# The detection strategy uses the "Monitoring source files" line that
+# sbt prints at the end of each watch cycle as the definitive
+# cycle-boundary marker. This makes the script robust regardless of
+# log size or number of error lines.
+#
 # Exit codes:
 #   0 - SUCCESS
 #   1 - ERROR (compilation failed)
@@ -23,6 +28,7 @@ LOGS_DIR=".logs"
 LOG_FILE="$LOGS_DIR/sbt-compile.log"
 PID_FILE="$LOGS_DIR/sbt-compile.pid"
 SCOPE_FILE="$LOGS_DIR/sbt-compile.scope"
+CLIENT_FILE="$LOGS_DIR/sbt-compile.client"
 
 WAIT_MODE=false
 ERRORS_ONLY=false
@@ -66,7 +72,7 @@ check_status() {
     if ! kill -0 "$PID" 2>/dev/null; then
         echo "STATUS: NOT_RUNNING"
         echo "Process stopped unexpectedly. Check $LOG_FILE for errors."
-        rm "$PID_FILE"
+        rm -f "$PID_FILE" "$CLIENT_FILE"
         return 3
     fi
 
@@ -77,88 +83,113 @@ check_status() {
         return 2
     fi
 
-    # Read the last portion of the log (enough to capture a full cycle)
-    local last_lines
-    last_lines=$(tail -300 "$LOG_FILE")
+    # Find the last "Monitoring source files" line number — this marks the end
+    # of a complete watch cycle.
+    local monitor_line
+    monitor_line=$(grep -n "Monitoring source files" "$LOG_FILE" | tail -1 | cut -d: -f1)
 
-    # --- Strategy ---
-    # In a compilation cycle, sbt outputs:
-    #   1. [info] compiling ...
-    #   2. [FIRECALC_COMPILE_DONE] module=<name>  (per completed module)
-    #   3. [success] Total time: ...   OR   [error] ...
-    #
-    # For watch mode, between cycles sbt prints something about
-    # monitoring source files. We look at the LATEST cycle only.
-    #
-    # We need to verify that:
-    #   - The target module's marker appeared in the latest cycle
-    #   - AND [success] came after it
-    # OR:
-    #   - [error] lines indicate failure
-
-    # Find the line number of the last [FIRECALC_COMPILE_DONE] for our target module
-    local target_marker_line
-    target_marker_line=$(echo "$last_lines" | grep -n "\[FIRECALC_COMPILE_DONE\] module=${EXPECTED_MODULE}$" | tail -1 | cut -d: -f1)
-
-    # Find the line number of the last [success] line
-    local success_line
-    success_line=$(echo "$last_lines" | grep -n "^\[success\] Total time:" | tail -1 | cut -d: -f1)
-
-    # Find the line number of the last [error] line
-    local last_error_line
-    last_error_line=$(echo "$last_lines" | grep -n "^\[error\]" | tail -1 | cut -d: -f1)
-
-    # Case 1: Target module marker found AND [success] appears after it
-    if [ -n "$target_marker_line" ] && [ -n "$success_line" ]; then
-        if [ "$success_line" -gt "$target_marker_line" ]; then
-            echo "STATUS: SUCCESS"
-            if [ "$ERRORS_ONLY" = false ]; then
-                echo "$last_lines" | grep "^\[success\] Total time:" | tail -1
-            fi
-            return 0
+    if [ -z "$monitor_line" ]; then
+        # No monitoring line yet — cycle not complete
+        echo "STATUS: IN_PROGRESS"
+        if [ "$ERRORS_ONLY" = false ]; then
+            echo "Waiting for module '${EXPECTED_MODULE}' to finish compiling..."
         fi
+        return 2
     fi
 
-    # Case 2: Errors detected after target module marker (or if target never appeared)
-    # If there are [error] lines and they come after any target marker (or no marker at all)
-    if [ -n "$last_error_line" ]; then
-        # If target marker exists, only report errors that come after it
-        # If no target marker, check if errors come after the last [success]
-        # (meaning they are from the current cycle)
-        local report_errors=false
-
-        if [ -n "$target_marker_line" ] && [ "$last_error_line" -gt "$target_marker_line" ]; then
-            report_errors=true
-        elif [ -z "$target_marker_line" ]; then
-            # No target marker yet. Check if errors are from the current cycle
-            # (after the last [success] or at the end of the log)
-            if [ -n "$success_line" ] && [ "$last_error_line" -gt "$success_line" ]; then
-                report_errors=true
-            elif [ -z "$success_line" ]; then
-                # No success line at all — errors are from the current (first) cycle
-                report_errors=true
-            fi
+    # Check if a NEW cycle has started after the last "Monitoring source files" line.
+    # When sbt detects a file change, it prints lines like:
+    #   [info] Build triggered by ...
+    #   [info] compiling ...
+    # If there's meaningful content after the last monitoring line (beyond the
+    # "Press <enter>" prompt that immediately follows it), a new cycle is in progress.
+    local total_lines
+    total_lines=$(wc -l < "$LOG_FILE")
+    # The "Press <enter>" line is typically 1 line after the monitoring line
+    local lines_after_monitor=$(( total_lines - monitor_line ))
+    if [ "$lines_after_monitor" -gt 2 ]; then
+        # More than the "Press <enter>" line after monitoring → new cycle started
+        echo "STATUS: IN_PROGRESS"
+        if [ "$ERRORS_ONLY" = false ]; then
+            echo "Waiting for module '${EXPECTED_MODULE}' to finish compiling..."
         fi
-
-        if [ "$report_errors" = true ]; then
-            echo "STATUS: ERROR"
-            if [ "$ERRORS_ONLY" = false ]; then
-                echo "---ERRORS---"
-            fi
-            # Extract error lines from the current cycle
-            # Show errors that appeared after the last success (if any) to avoid old errors
-            if [ -n "$success_line" ] && [ -z "$target_marker_line" ]; then
-                echo "$last_lines" | tail -n +"$success_line" | grep "^\[error\]"
-            elif [ -n "$target_marker_line" ]; then
-                echo "$last_lines" | tail -n +"$target_marker_line" | grep "^\[error\]"
-            else
-                echo "$last_lines" | grep "^\[error\]"
-            fi
-            return 1
-        fi
+        return 2
     fi
 
-    # Case 3: Still compiling
+    # Cycle is complete. Extract the latest cycle text.
+    # Find the previous "Monitoring source files" line (start of this cycle)
+    local prev_monitor_line
+    prev_monitor_line=$(grep -n "Monitoring source files" "$LOG_FILE" | tail -2 | head -1 | cut -d: -f1)
+
+    local cycle_start
+    if [ "$prev_monitor_line" = "$monitor_line" ]; then
+        # Only one monitoring line — first cycle, start from line 1
+        cycle_start=1
+    else
+        # Start from the line after the previous monitoring line
+        cycle_start=$((prev_monitor_line + 1))
+    fi
+
+    local cycle_text
+    cycle_text=$(sed -n "${cycle_start},${monitor_line}p" "$LOG_FILE")
+
+    # Check if target module's FIRECALC_COMPILE_DONE marker is present in this cycle
+    local has_target_marker
+    has_target_marker=$(echo "$cycle_text" | grep -c "\[FIRECALC_COMPILE_DONE\] module=${EXPECTED_MODULE}$")
+
+    # Check for [success] line in this cycle
+    local has_success
+    has_success=$(echo "$cycle_text" | grep -c "^\[success\] Total time:")
+
+    # Check for [error] lines in this cycle
+    local has_errors
+    has_errors=$(echo "$cycle_text" | grep -c "^\[error\]")
+
+    # Case 1: Target module marker found AND [success] present AND no errors → SUCCESS
+    if [ "$has_target_marker" -gt 0 ] && [ "$has_success" -gt 0 ] && [ "$has_errors" -eq 0 ]; then
+        echo "STATUS: SUCCESS"
+        if [ "$ERRORS_ONLY" = false ]; then
+            echo "$cycle_text" | grep "^\[success\] Total time:" | tail -1
+            local warnings
+            warnings=$(echo "$cycle_text" | grep "^\[warn\]")
+            if [ -n "$warnings" ]; then
+                echo "---WARNINGS---"
+                echo "$warnings"
+            fi
+        fi
+        return 0
+    fi
+
+    # Case 2: Errors detected in this cycle → ERROR
+    if [ "$has_errors" -gt 0 ]; then
+        echo "STATUS: ERROR"
+        if [ "$ERRORS_ONLY" = false ]; then
+            echo "---ERRORS---"
+        fi
+        echo "$cycle_text" | grep "^\[error\]"
+        if [ "$ERRORS_ONLY" = false ]; then
+            local warnings
+            warnings=$(echo "$cycle_text" | grep "^\[warn\]")
+            if [ -n "$warnings" ]; then
+                echo "---WARNINGS---"
+                echo "$warnings"
+            fi
+        fi
+        return 1
+    fi
+
+    # Case 3: Success but target module marker not found
+    # (nothing was recompiled in this cycle, e.g., no source changes)
+    if [ "$has_success" -gt 0 ]; then
+        echo "STATUS: SUCCESS"
+        if [ "$ERRORS_ONLY" = false ]; then
+            echo "$cycle_text" | grep "^\[success\] Total time:" | tail -1
+            echo "(Note: target module '${EXPECTED_MODULE}' was not recompiled in this cycle)"
+        fi
+        return 0
+    fi
+
+    # Fallback: still in progress (shouldn't normally reach here)
     echo "STATUS: IN_PROGRESS"
     if [ "$ERRORS_ONLY" = false ]; then
         echo "Waiting for module '${EXPECTED_MODULE}' to finish compiling..."
@@ -172,7 +203,7 @@ if [ "$WAIT_MODE" = true ]; then
     DELAY_MS=500
     MAX_DELAY_MS=16000
     TOTAL_WAIT_MS=0
-    MAX_TOTAL_WAIT_MS=120000  # 2 minutes
+    MAX_TOTAL_WAIT_MS=380000  # 6 minutes
 
     while true; do
         check_status

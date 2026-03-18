@@ -15,7 +15,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
 // Global / watchForceTriggerOnAnyChange := true
 
-val scala_version = "3.8.1"
+val scala_version = "3.8.2"
 
 // =========
 // Shared i18n Configuration
@@ -106,10 +106,10 @@ ThisBuild / startYear           := Some(2025)
 ThisBuild / licenses            := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage            := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version         = "0.3.0-b10"
-lazy val reports_base_version   = "0.9.0-b10"
-lazy val payments_base_version  = "0.9.0-b10"
-lazy val ui_base_version        = "0.9.0-b10"
+lazy val engine_version         = "0.3.0-b11-SNAPSHOT"
+lazy val reports_base_version   = "0.9.0-b11-SNAPSHOT"
+lazy val payments_base_version  = "0.9.0-b11-SNAPSHOT"
+lazy val ui_base_version        = "0.9.0-b11-SNAPSHOT"
 
 // Repository information (single source of truth)
 lazy val githubOwner            = "afpma-pro"
@@ -134,7 +134,7 @@ val commonSettings = Seq(
     // "-language:existentials",
     // "-language:higherKinds",
     "-language:implicitConversions",
-    // "-unchecked",
+    "-unchecked",
     // "-Wunused:all",
     // "-Wunused:all",
     "-Wunused:imports,privates,locals",
@@ -171,7 +171,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, engine.js, engine.jvm, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, viz, graph, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -319,6 +319,25 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(utils, i18n, units)
 
 // =========
+// catalog
+
+lazy val catalog = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/catalog"))
+  .settings(
+    commonSettings,
+    name := "firecalc-catalog",
+    version := engine_version,
+    libraryDependencies ++= Seq(
+        // Testing
+        "org.scalameta" %%% "munit" % "1.0.0" % "test",
+    ),
+  )
+  .jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .dependsOn(dto)
+
+// =========
 // engine
 
 lazy val engine = crossProject(JVMPlatform, JSPlatform)
@@ -357,6 +376,44 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(i18n, units, dto)
 
 
+
+// =========
+// viz (3D visualization library - framework-agnostic, Scala.js only)
+
+lazy val viz = (project in file("modules/viz"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "firecalc-viz",
+    version := ui_version,
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+    ),
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
+
+// =========
+// graph (2D chart visualization library - framework-agnostic, Scala.js only)
+
+lazy val graph = (project in file("modules/graph"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "firecalc-graph",
+    version := ui_version,
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+    ),
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
 
 // =========
 // fdim
@@ -514,8 +571,8 @@ lazy val jsSourceMapSettings = Def.settings(
         // - Include both file:/ and file:/// prefixes (both occur in practice).
         // - Keep trailing slash on the target so absolute paths preserve their leading slash.
         Seq(
-          "-scalajs-mapSourceURI:file:/->http://localhost:5173/@fs/",
-          "-scalajs-mapSourceURI:file:///->http://localhost:5173/@fs/"
+          "-scalajs-mapSourceURI:file:/->https://localhost:5173/@fs/",
+          "-scalajs-mapSourceURI:file:///->https://localhost:5173/@fs/"
         )
     }
 )
@@ -526,7 +583,7 @@ lazy val ui = (project in file("modules/ui"))
   .settings(
     name := "firecalc-ui",
     version := ui_version,
-    stIgnore += "@tailwindcss/vite",
+    stIgnore := List("@tailwindcss/vite", "three", "chart.js"),
     maybeHackScalablyTypedRemoveSourceFuture,
     
     // Generate .env.electron file with repository and version information
@@ -694,13 +751,13 @@ lazy val ui = (project in file("modules/ui"))
   .settings(
     commonSettings,
     scalacOptions ++= Seq(
-      "-Xmax-inlines:32", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
+      "-Xmax-inlines:40", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
     //   "--explain-cyclic",
     ),
   )
   .settings(jsSourceMapSettings)
   .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
-  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, ui_i18n.js, payments_shared.js)
+  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph)
 
 // =========
 // ui-i18n
@@ -884,6 +941,18 @@ lazy val reports = (project in file("modules/reports"))
   )
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine.jvm, utils.jvm)
+
+lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
+  .settings(
+    name := "firecalc-xlsx-catalog",
+    version := engine_version,
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.apache.poi" % "poi"       % "5.3.0",
+      "org.apache.poi" % "poi-ooxml" % "5.3.0",
+    ),
+  )
+  .dependsOn(catalog.jvm)
 
 lazy val payments = (project in file("modules/payments"))
   .enablePlugins(MoleculePlugin)

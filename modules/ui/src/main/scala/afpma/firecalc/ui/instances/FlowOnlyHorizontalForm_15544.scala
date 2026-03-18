@@ -31,6 +31,8 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
     import horizontal_form.{*, given}
 
+    private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
+
     // SetProp
 
     given horizontal_form_SetInnerShape: DaisyUIHorizontalForm[SetInnerShape] =
@@ -59,9 +61,9 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
             defaultable_15544.defaultable_material_15544_v2
 
         // Provide ValidateVar
-        given ValidateVar[Roughness]         = validatevar.roughness.valid_whenPositive
+        given ValidateVar[Roughness]         = vv.roughness.valid_whenStrictlyPositive
         given ValidateVar[Material_15544_V2] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V2]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V2]
 
         DaisyUIHorizontalForm.forSelectionWithDefaultValue_usingSelectInput[Material_15544_V2, Roughness]   (
             selectOptions    = Material_15544_V2.values,
@@ -75,7 +77,7 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
     given horizontal_form_Material_15544_V1: DaisyUIHorizontalForm[Material_15544_V1] =
         import Material_15544_V1.given
         given ValidateVar[Material_15544_V1] =
-            validatevar.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V1]
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Material_15544_V1]
         DaisyUIHorizontalForm
             .forEnumOrSumTypeLike_UsingShowAsId[Material_15544_V1](Material_15544_V1.values.toList)
 
@@ -83,25 +85,47 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
     given horizontal_form_SetNumberOfFlows: DaisyUIHorizontalForm[SetNumberOfFlows] =
-        import validatevar.validOption_always.given
+        import ValidateVarCommonInstances.validOption_always.given
         given DaisyUIHorizontalForm[Int]       = DaisyUIHorizontalForm.forInt
         given DaisyUIHorizontalForm[NbOfFlows] = DaisyUIHorizontalForm.formConversionOpaque[NbOfFlows, Int]
         autoDeriveAndOverwriteFieldNames[SetNumberOfFlows]
 
-    // AddElement
+    given horizontal_form_SetInitialDirection: DaisyUIHorizontalForm[SetInitialDirection] =
+        given Defaultable[SetInitialDirection] =
+            Defaultable(SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
+        given ValidateVar[SetInitialDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetInitialDirection]
+        DaisyUIHorizontalForm.makeFor[SetInitialDirection](summon[Defaultable[SetInitialDirection]]): (variable, _) =>
+            val azVar   = variable.zoomLazy(_.azimuth)((sid, az) => sid.copy(azimuth = az))
+            val inclVar = variable.zoomLazy(_.inclination)((sid, incl) => sid.copy(inclination = incl))
+            horizontal_form.renderInitialDirectionForm(azVar, inclVar)
 
-    given horizontal_form_Option_Angle: DaisyUIHorizontalForm[Option[QtyD[Degree]]] =
-        import afpma.firecalc.units.all.given
-        // given Defaultable[Option[QtyD[Degree]]] = Defaultable(None)
-        given ValidateVar[Option[QtyD[Degree]]] =
-            validatevar.validOption_always.given_ValidateVarOption_AlwaysValid[QtyD[Degree]]
-        DaisyUIHorizontalForm.forOptionQtyD_default[Degree]
+    given horizontal_form_SetInitialPosition: DaisyUIHorizontalForm[SetInitialPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetInitialPosition]
+
+    given horizontal_form_SetFinalPosition: DaisyUIHorizontalForm[SetFinalPosition] =
+        given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form_Length_cm_m
+        autoDeriveAndOverwriteFieldNames[SetFinalPosition]
+
+    // AddElement
 
     // helper with string field always validated
     inline def autoDeriveAndOverwriteFieldNames_AddElement_Subtype[A](using
         inline m: Mirror.Of[A]
     ): DaisyUIHorizontalForm[A] =
         @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        autoDeriveAndOverwriteFieldNames[A]
+
+    // Like above but suppresses the absDir field — absDir is set via the DirectionBadge dropdown.
+    // Both places must be updated together when adding a new DC subtype.
+    inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): DaisyUIHorizontalForm[A] =
+        import com.raquo.laminar.api.L.span
+        @nowarn given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[AbsoluteDirection]] =
+            ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[AbsoluteDirection]
+        @nowarn given DaisyUIHorizontalForm[Option[AbsoluteDirection]] =
+            DaisyUIHorizontalForm.makeFor[Option[AbsoluteDirection]](Defaultable(None))((_, _) => span())
         autoDeriveAndOverwriteFieldNames[A]
 
     given horizontal_form_AddSectionSlopped: DaisyUIHorizontalForm[AddSectionSlopped] =
@@ -117,13 +141,14 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionVertical]
 
     given horizontal_form_AddSharpeAngle_0_to_180: DaisyUIHorizontalForm[AddSharpeAngle_0_to_180] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSharpeAngle_0_to_180]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddSharpeAngle_0_to_180]
 
     given horizontal_form_AddCircularArc_60: DaisyUIHorizontalForm[AddCircularArc_60] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddCircularArc_60]
+        autoDeriveAndOverwriteFieldNames_DC_Subtype[AddCircularArc_60]
 
     given horizontal_form_AddSectionShapeChange: DaisyUIHorizontalForm[AddSectionShapeChange] =
-        autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddSectionShapeChange]
+        given DaisyUIHorizontalForm[String] = horizontal_form.string_emptyAsDefault_alwaysValid
+        autoDeriveAndOverwriteFieldNames[AddSectionShapeChange]
 
     given horizontal_form_AddFlowResistance: DaisyUIHorizontalForm[AddFlowResistance] =
         given DaisyUIHorizontalForm[OptionOfEither[AreaInCm2, PipeShape]] =

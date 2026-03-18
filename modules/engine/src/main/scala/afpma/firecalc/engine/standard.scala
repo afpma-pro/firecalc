@@ -163,8 +163,14 @@ object standard {
         case e: FireboxHeightOutOfRange       => Show[FireboxHeightOutOfRange].show(e)
         case e: InjectorVelocityBelowMinimum  => Show[InjectorVelocityBelowMinimum].show(e)
         case e: InjectorVelocityAboveMaximum  => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: MissingFlowRate               => Show[MissingFlowRate].show(e)
-        case e: FireboxErrorCustom            => e.reason
+        case e: MissingFlowRate                => Show[MissingFlowRate].show(e)
+        case e: AirIntakePipeShapeMismatch     => e.show
+        case e: FireboxErrorCustom             => e.reason
+        case e: InvalidFireboxConstraint       => e.show
+
+    case class InvalidFireboxConstraint(error: TermConstraintError[?]) extends FireboxError
+    object InvalidFireboxConstraint:
+        given ShowUsingLocale[InvalidFireboxConstraint] = showUsingLocale(_.error.failMsg)
 
     final class FireboxErrorCustom(val reason: Locale ?=> String) extends FireboxError
 
@@ -212,6 +218,11 @@ object standard {
     case object MissingFlowRate extends FireboxError:
         given ShowUsingLocale[MissingFlowRate] = showUsingLocale: e =>
             I18N.errors.missing_flow_rate
+
+    case class AirIntakePipeShapeMismatch(expected: String, actual: String) extends FireboxError
+    object AirIntakePipeShapeMismatch:
+        given ShowUsingLocale[AirIntakePipeShapeMismatch] = showUsingLocale: e =>
+            I18N.errors.air_intake_pipe_shape_mismatch(e.expected, e.actual)
 
     sealed trait InvalidTermValue[T] extends FireboxError:
         def termName : String
@@ -278,9 +289,10 @@ object standard {
     sealed trait FluePipeError extends EN15544_Error with HasSectionTypError
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
-        case err: FlueGasVelocityError         => err.show
-        case err: FluePipeInvalidGeometryRatio => err.show
-        case err: FluePipeErrorCustom          => err.reason
+        case err: FlueGasVelocityError          => err.show
+        case err: FluePipeInvalidGeometryRatio  => err.show
+        case err: FluePipeErrorCustom           => err.reason
+        case err: FluePipeLengthBelowMinimum    => err.show
 
     case class FlueGasVelocityError(
         sectionId  : Int,
@@ -315,6 +327,20 @@ object standard {
                 I18N.errors.term_should_be_between_inclusive(term, r.show, rmin.show, rmax.show)
 
     class FluePipeErrorCustom(val sectionTyp: PipeType, val reason: Locale ?=> String) extends FluePipeError
+
+    case class FluePipeLengthBelowMinimum(
+        actualLength : Length,
+        minimumLength: Length
+    ) extends FluePipeError:
+        override val sectionTyp: PipeType = FluePipeT
+
+    object FluePipeLengthBelowMinimum:
+        given ShowUsingLocale[FluePipeLengthBelowMinimum] = showUsingLocale: err =>
+            given Show[Length] = shows.defaults.show_Meters
+            I18N.en15544_errors.flue_pipe_length_below_minimum(
+                err.actualLength.show,
+                err.minimumLength.show
+            )
 
     case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType)
         extends EN15544_Error
@@ -740,8 +766,10 @@ object standard {
     // Property must be defined errors (without operation name)
     sealed trait PropertyMustBeDefined extends IncrementalValidation_Error
 
-    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)   extends PropertyMustBeDefined
-    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType) extends PropertyMustBeDefined
+    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)                extends PropertyMustBeDefined
+    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)              extends PropertyMustBeDefined
+    case class PressureLossMustBeDefined(sectionTyp: PipeType)                   extends PropertyMustBeDefined
+    case class PressureLossTableError(reason: String, sectionTyp: PipeType)      extends PropertyMustBeDefined
 
     object PropertyMustBeDefined:
         given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
@@ -749,6 +777,10 @@ object standard {
                 I18N.incremental_validation.property_must_be_defined.section_geometry
             case _: NextSectionLengthMustBeDefined =>
                 I18N.incremental_validation.property_must_be_defined.next_section_length
+            case _: PressureLossMustBeDefined      =>
+                I18N.incremental_validation.property_must_be_defined.pressure_loss
+            case e: PressureLossTableError         =>
+                I18N.incremental_validation.property_must_be_defined.pressure_loss_table_error(e.reason)
 
     // Prerequisite errors
     sealed trait PrerequisiteNotMet extends IncrementalValidation_Error
@@ -757,6 +789,7 @@ object standard {
     case class LayerRequiresSectionGeometry(sectionTyp: PipeType)           extends PrerequisiteNotMet
     case class LayersRequireInnerShape(sectionTyp: PipeType)                extends PrerequisiteNotMet
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
+    case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
@@ -767,6 +800,8 @@ object standard {
             case _: LayersRequireInnerShape                => I18N.incremental_validation.prerequisites.layers_require_inner_shape
             case _: DirectionChangeRequiresSectionGeometry =>
                 I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
+            case _: FinalDirWithoutInitialDirection        =>
+                I18N.incremental_validation.prerequisites.final_dir_without_initial_direction
 
     // Conflict errors
     sealed trait ConflictDetected extends IncrementalValidation_Error
@@ -774,6 +809,10 @@ object standard {
     case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)                   extends ConflictDetected
     case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType) extends ConflictDetected
     case class FlowResistanceRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
+        extends ConflictDetected
+    case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
+        extends ConflictDetected
+    case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType)
         extends ConflictDetected
 
     object ConflictDetected:
@@ -788,6 +827,10 @@ object standard {
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
             case FlowResistanceRequiresGeometry(op, _, _)         =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
+            case PressureDiffRequiresGeometry(op, _, _)         =>
+                I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
+            case CasingTooSmallForLiner(linerDh, casingDh, _)  =>
+                I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
 
     // Forbidden element position errors
     sealed trait ForbiddenElementPosition extends IncrementalValidation_Error

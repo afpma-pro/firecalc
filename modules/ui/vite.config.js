@@ -7,6 +7,7 @@ import { resolve } from 'path'
 import { defineConfig, loadEnv } from "vite";
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
@@ -54,9 +55,33 @@ export default defineConfig(({ mode }) => {
         exclude: ['scalajs:main.js'],
     },
     plugins: [
+        // Resolve 'three' and 'three/addons/*' imports originating from the aliased
+        // filaire-viz.js (which lives outside this project root at modules/viz/...).
+        // Without this, vite:import-analysis cannot find 'three' because node_modules
+        // is only at modules/ui/, not on the ancestor path of modules/viz/.
+        {
+            name: 'resolve-filaire-three',
+            resolveId(id, importer) {
+                if (importer && importer.includes('filaire-viz') &&
+                    (id === 'three' || id.startsWith('three/'))) {
+                    return this.resolve(id, resolve(__dirname, './package.json'));
+                }
+            }
+        },
+        {
+            name: 'resolve-graph-chartjs',
+            resolveId(id, importer) {
+                if (importer && importer.includes('graph-viz') &&
+                    (id === 'chart.js' || id.startsWith('chart.js/'))) {
+                    return this.resolve(id, resolve(__dirname, './package.json'));
+                }
+            }
+        },
         // Only use viteSingleFile for production builds (Electron packaging)
         // In dev mode, this plugin defeats HMR and forces full page reloads
         ...(process.env.NODE_ENV === 'production' ? [viteSingleFile()] : []),
+        // Enable HTTPS + HTTP/2 in dev for faster loading of many small Scala.js modules
+        ...(mode === 'development' ? [basicSsl()] : []),
         scalaJSPlugin({
             cwd: '../../',
             projectID: 'ui',
@@ -116,59 +141,6 @@ export default defineConfig(({ mode }) => {
                 });
             },
         },
-        // Fix ScalaJS inline source maps: convert to external references
-        // Helps with: https://github.com/scala-js/vite-plugin-scalajs/issues/4 ???
-        {
-            name: 'scalajs-sourcemap-fix',
-            enforce: 'post',
-            apply: 'serve',
-            configureServer(server) {
-                server.middlewares.use((req, res, next) => {
-                    // Only intercept ScalaJS fastopt .js files (not .map files)
-                    if (req.url && req.url.includes('/firecalc-ui-fastopt/') &&
-                        req.url.endsWith('.js') && !req.url.endsWith('.js.map')) {
-                        
-                        const originalWrite = res.write;
-                        const originalEnd = res.end;
-                        const chunks = [];
-                        
-                        res.write = function(chunk) {
-                            chunks.push(Buffer.from(chunk));
-                            return true;
-                        };
-                        
-                        res.end = function(chunk) {
-                            if (chunk) {
-                                chunks.push(Buffer.from(chunk));
-                            }
-                            
-                            const body = Buffer.concat(chunks).toString('utf8');
-                            
-                            // Check if has inline source map
-                            if (body.includes('sourceMappingURL=data:application/json;base64,')) {
-                                // Extract filename from URL, preserving special characters like $$
-                                const urlParts = req.url.split('/');
-                                const fileName = decodeURIComponent(urlParts[urlParts.length - 1]);
-                                
-                                // Replace inline sourcemap with external reference
-                                // Use a function to avoid $$ being interpreted as a special replacement pattern
-                                const fixed = body.replace(
-                                    /\/\/# sourceMappingURL=data:application\/json;base64,[^\s]+$/m,
-                                    () => `//# sourceMappingURL=${fileName}.map`
-                                );
-                                
-                                res.setHeader('Content-Length', Buffer.byteLength(fixed));
-                                originalEnd.call(res, fixed);
-                            } else {
-                                originalEnd.call(res, body);
-                            }
-                        };
-                    }
-                    next();
-                });
-            },
-        },
-        
     ],
     server: {
         port: 5173,
@@ -178,7 +150,7 @@ export default defineConfig(({ mode }) => {
                 // Existing UI module paths
                 resolve(__dirname, '.'),
                 resolve(__dirname, './src/main/scala'),
-                resolve(__dirname, './target/scala-3.8.1/firecalc-ui-fastopt'),
+                resolve(__dirname, './target/scala-3.8.2/firecalc-ui-fastopt'),
 
                 // IMPORTANT: Allow the repo root so Vite can serve any source via /@fs/...
                 // This matches the -scalajs-mapSourceURI added in build.sbt
@@ -188,8 +160,8 @@ export default defineConfig(({ mode }) => {
         watch: {
           // Watch only generated JS files and source maps for faster change detection
           include: [
-            './target/scala-3.8.1/firecalc-ui-fastopt/**/*.js',
-            './target/scala-3.8.1/firecalc-ui-fastopt/**/*.js.map',
+            './target/scala-3.8.2/firecalc-ui-fastopt/**/*.js',
+            './target/scala-3.8.2/firecalc-ui-fastopt/**/*.js.map',
           ],
           ignored: [
             '**/*.scala',              // Ignore source files (handled by sbt)
@@ -205,16 +177,14 @@ export default defineConfig(({ mode }) => {
     resolve: {
         alias: {
             'firecalc-ui': resolve(__dirname, './firecalc-ui.js'),
-        }
-    },
-
-    // Silence esbuild's "missing source files" sourcemap warning in dev.
-    // Scala.js sourcemaps may include external stdlib sources (e.g. raw.githubusercontent.com)
-    // and absolute file URIs, which esbuild cannot resolve on disk during its transform step.
-    // Browser-side source fetching is handled via the middleware above and Vite's /@fs.
-    esbuild: {
-        logOverride: {
-            'missing source files': 'silent',
+            // In dev, Vite compiles TypeScript natively — point directly at the source.
+            // For production (fullLinkJS), run `npm run build:viz` to generate the .js resource.
+            '/afpma/firecalc/filaire/filaire-viz.js': resolve(
+                __dirname, '../viz/src/ts/filaire-viz.ts'
+            ),
+            '/afpma/firecalc/graph/graph-viz.js': resolve(
+                __dirname, '../graph/src/ts/graph-viz.ts'
+            ),
         },
     },
 }});

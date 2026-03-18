@@ -38,7 +38,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                     case CircularArc60                    => ZERO
                     case SectionGeometryChange(_, _)      => ZERO
                     case SingularFlowResistance(_, _)     => ZERO
-                    case PressureDiff(_)                  => ZERO
+                    case PressureDiff(_, _)                  => ZERO
     }
 
     override given hasVerticalElev: HasVerticalElev[PipeElDescr]:
@@ -56,6 +56,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr]:
         extension (el: PipeElDescr)
             def innerShape(oPrevGeom: Option[PipeShape]): Option[PositionOp[PipeShape]] =
+                
                 def makeQtyAtPositionForGeometryTransition(
                     from: PipeShape,
                     to  : PipeShape
@@ -79,12 +80,16 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                         )
                         .some
                         .map(_.atPos)
+
                 el match
                     case s: StraightSection                                           =>
                         QtyDAtPosition.constant(s.geometry).some.map(_.atPos)
                     case s: SectionGeometryChange                                     =>
                         makeQtyAtPositionForGeometryTransition(s.from, s.to)
                     case SingularFlowResistance(_, Some(crossSection)) =>
+                        val equivCircle = Circle.fromArea(crossSection)
+                        QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
+                    case PressureDiff(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
                     case _: (SingularFlowResistance | PressureDiff | DirectionChange) =>
@@ -126,4 +131,4 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     ) extends PipeElDescr derives Show
 
     case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr derives Show
-    case class PressureDiff(pa: QtyD[Pascal])                               extends PipeElDescr derives Show
+    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr derives Show

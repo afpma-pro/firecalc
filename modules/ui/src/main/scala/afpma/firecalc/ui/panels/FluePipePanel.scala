@@ -11,15 +11,22 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 
-import afpma.firecalc.i18n.implicits.given
-
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+
+import cats.data.Validated
+
+import afpma.firecalc.engine.standard.VNelMcalcErr
+import afpma.firecalc.i18n.implicits.given
+import afpma.firecalc.ui.utils.flatMapVNelE
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
+
+import coulomb.policy.standard.given
 
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
@@ -27,6 +34,16 @@ import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
 
 final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
+
+    override protected def vizFieldsetIdPrefix: String = "flue"
+
+    override protected def ownsVizElement(id: VizElementId): Boolean = id match
+        case VizElementId.FluePipeElement(_) => true
+        case _                               => false
+
+    override protected def vizElementIndex(id: VizElementId): Int = id match
+        case VizElementId.FluePipeElement(idx) => idx
+        case _                                 => -1
 
     import hastranslations.given
 
@@ -47,8 +64,11 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
         p_vnel.andThen(p => p.`ph-(pR+pu)`)
 
     val channel_pipe_vnel4_signal = results_en15544_strict_sig.map: strict =>
-        val p = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.givens.nominal)
-        strict.andThen(_.validateVelocitiesInFluePipe()(using p))
+        strict.andThen(_.primary.validateVelocitiesInFluePipe())
+
+    val channel_pipe_vnel5_signal: Signal[VNelMcalcErr[Unit]] =
+        results_en15544_strict_sig.flatMapVNelE: strict =>
+            strict.primary.validateCitedConstraints()
 
     lazy val vnel_signal =
         fluepipe_vnel_signal
@@ -61,6 +81,10 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     .andThen(_ => v3)
                     .andThen(_ => v4)
                     .andThen(_ => v1)
+            )
+            .combineWith(channel_pipe_vnel5_signal)
+            .map((vBase, v5) =>
+                vBase.andThen(_ => v5).andThen(_ => vBase)
             )
 
     lazy val elems_v = fluepipe_incrdescr_var
@@ -76,6 +100,109 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val channel_pipe_quadrions_sig = makeQuadrionSubtotalForSingle(results_en15544_outputs)(_.flue)
 
     override lazy val quadrionSubtotal_sig = channel_pipe_quadrions_sig
+
+    private lazy val lzSummary_sig: Signal[Option[String]] =
+        results_en15544_channel_pipe
+            .combineWith(results_en15544_strict_sig)
+            .map: (vnelPipe, vnelStrict) =>
+                for
+                    pipe   <- vnelPipe.toOption
+                    strict <- vnelStrict.toOption
+                yield
+                    val lzStr = f"${pipe.lengthSum.value}%.2f m"
+                    strict.L_Z_min match
+                        case Validated.Valid(lzMin) =>
+                            val lzMinStr = f"${lzMin.unwrap.value}%.2f m"
+                            I18N.panels.channel_pipe_length_with_min(lzStr, lzMinStr)
+                        case Validated.Invalid(_) =>
+                            I18N.panels.channel_pipe_length(lzStr)
+
+    override protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
+        statusIcon.combineWith(lzSummary_sig).map: (icon, lzOpt) =>
+            Some(span(
+                cls := "flex flex-row gap-x-2",
+                icon,
+                lzOpt.map(s => p(s)).getOrElse(emptyNode)
+            ))
+
+    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+        welems_var.signal.map: elems =>
+            var frame: Option[PipeFrame] = None
+            val builder = Map.newBuilder[Int, PipeFrame]
+            for (idx, elem) <- elems do
+                elem match
+                    case SetInitialDirection(az, incl) =>
+                        val azDeg  = AzimuthDirection.toDegrees(az)
+                        val elDeg  = InclinationDirection.toDegrees(incl)
+                        frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
+                    case _ => ()
+                frame.foreach(f => builder += (idx -> f))
+                elem match
+                    case dc: AddDirectionChange =>
+                        for
+                            f  <- frame
+                            fd <- dc.absDir
+                        do
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
+                    case _ => ()
+            builder.result()
+
+    private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems.flatMap: (idx, elem) =>
+                frameMap.get(idx).flatMap: frameBefore =>
+                    elem match
+                        case dc: AddDirectionChange =>
+                            dc.absDir.map: fd =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                idx -> frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
+                        case _: AddFlowOnlyPipeElement_15544 =>
+                            Some(idx -> frameBefore.direction)
+                        case _ => None
+            .toMap
+
+    override protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
+        directionAfterByIdx.map(_.get(idx))
+
+    override protected def frameBeforeSig_badge(idx: Int): Signal[Option[PipeFrame]] =
+        frameBeforeByIdx.map(_.get(idx))
+
+    private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
+        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
+            elems
+                .collect { case (idx, _: AddDirectionChange) => idx }
+                .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
+                .toMap
+
+    override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
+        previousDirectionByIdx.map(_.get(idx))
+
+    private def absDirBadgeVar[A <: AddDirectionChange](
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
+    ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
+        ev => Some(ev.zoomLazy(getter)(setter))
+
+    private def relativeDirectionExtra[A <: AddDirectionChange](
+        idx   : Int,
+        getter: A => Option[AbsoluteDirection],
+        setter: (A, Option[AbsoluteDirection]) => A
+    ): Var[A] => HtmlElement =
+        ev =>
+            val fdVar = ev.zoomLazy(getter)(setter)
+            RelativeDirectionInput(
+                frameBefore     = frameBeforeSig_badge(idx),
+                deflectionAngle = deflectionAngleSig(idx),
+                absDirVar     = fdVar
+            ).node
+
+    override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
+        welems_var.signal.map: elems =>
+            elems.collectFirst:
+                case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig
@@ -108,6 +235,21 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     isProperty = true
                 )
             }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
+                case (i, incr: SetInitialDirection, x) => (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SetInitialDirection](iix._1, I18N.set_prop.SetInitialDirection, iix._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
+                case (i, incr: SetInitialPosition, x) => (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SetInitialPosition](iix._1, I18N.set_prop.SetInitialPosition, iix._2, sig, isProperty = true)
+            }
+            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
+                case (i, incr: SetFinalPosition, x) => (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SetFinalPosition](iix._1, I18N.set_prop.SetFinalPosition, iix._2, sig, isProperty = true)
+            }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
                 (Int, AddSectionSlopped, XtraOutputs      ),
@@ -120,6 +262,14 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty = false
                 )
+            }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs      ),
+                HtmlElement
+            ] { case (i, incr: AddSectionSloppedForceManualElevationGain, x) => (i, incr, x) } { (iix, sig) =>
+                // should never happen, only allowed internally in engine
+                ???
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
@@ -157,7 +307,9 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddSharpeAngle_0_to_180,
                     iix._2,
                     sig,
-                    isProperty = false
+                    isProperty      = false,
+                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -170,7 +322,9 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     I18N.add_element.AddCircularArc_60,
                     iix._2,
                     sig,
-                    isProperty = false
+                    isProperty      = false,
+                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[
@@ -234,7 +388,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val geom_elements = TagTreeMenu.Group(
         txt  = I18N.add_element._self,
         next = List(
-            straight_elements,
+            TagTreeMenu.Leaf[AddSectionSlopped],
             direction_change_elements,
             split_group,
             grids
@@ -244,6 +398,16 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val grids = TagTreeMenu.Group(
         txt  = I18N.add_element.AddFlowResistance,
         next = List(
+            TagTreeMenu.Modal[FlowOnlyPipeDescr_15544](
+                txt = I18N_UI.catalog.flow_resistance_presets,
+                modalContent = (onSelect) =>
+                    FlowResistanceCatalogSelectComponent(
+                        entriesSignal = flowResistancePresetsSignal,
+                        onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                            AddFlowResistance(e.name, e.zeta, e.cross_section)
+                        )
+                    ).node
+            ),
             TagTreeMenu.Leaf                   (
                 I18N.add_element.AddFlowResistance_wire_mesh_screen,
                 AddFlowResistance(
@@ -280,14 +444,12 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
         )
     )
 
-    lazy val straight_elements = TagTreeMenu.Group(
-        txt  = I18N.add_element.add_section_element,
-        next = List(
-            TagTreeMenu.Leaf[AddSectionVertical],
-            TagTreeMenu.Leaf[AddSectionHorizontal],
-            TagTreeMenu.Leaf[AddSectionSlopped]
-        )
-    )
+    // lazy val straight_elements = TagTreeMenu.Group(
+    //     txt  = I18N.add_element.add_section_element,
+    //     next = List(
+    //         TagTreeMenu.Leaf[AddSectionSlopped]
+    //     )
+    // )
 
     lazy val direction_change_elements = TagTreeMenu.Group(
         txt  = I18N.add_element.add_direction_change_element,
@@ -300,8 +462,21 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
         next = List(
-            TagTreeMenu.Leaf[SetMaterial],
-            TagTreeMenu.Leaf[SetRoughness],
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._position_and_direction,
+                next = List(
+                    TagTreeMenu.Leaf[SetInitialPosition],
+                    TagTreeMenu.Leaf[SetInitialDirection],
+                    TagTreeMenu.Leaf[SetFinalPosition]
+                )
+            ),
+            TagTreeMenu.Group(
+                txt  = I18N.set_prop._material_and_roughness,
+                next = List(
+                    TagTreeMenu.Leaf[SetMaterial],
+                    TagTreeMenu.Leaf[SetRoughness]
+                )
+            ),
             TagTreeMenu.Leaf[SetInnerShape]
         )
     )

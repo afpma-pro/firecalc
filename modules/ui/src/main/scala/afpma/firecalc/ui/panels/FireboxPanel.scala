@@ -11,8 +11,7 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.engine.models.CombustionAirPipeT
 import afpma.firecalc.engine.models.FireboxPipeT
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.OneOff
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Tested
+import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
@@ -21,6 +20,10 @@ import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.utils.flatMapVNelE
+
+import org.scalajs.dom
+import scala.scalajs.js
 
 import cats.data.*
 import cats.implicits.toShow
@@ -33,27 +36,41 @@ import io.taig.babel.Locale
 
 final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
 
+    private lazy val panelOpened = panelOpenedVar("firebox")
+
+    private val vizHighlightSignal: Signal[String] =
+        vizHoveredElement.signal.combineWith(vizSelectedElement.signal).map:
+            (hover, select) =>
+                val matches = hover.contains(VizElementId.FireboxElement) ||
+                              select.contains(VizElementId.FireboxElement)
+                if matches then "viz-highlighted" else ""
+
     lazy val fireboxForm = FireboxComponent(firebox_var).node
 
-    // firebox validate() method ok ?
-    val firebox_vnel1_signal = results_en15544_strict_sig.map(_.andThen(strict =>
-        import cats.syntax.validated.catsSyntaxValidatedId
-        val mB                = strict.m_B
-        val p                 = strict.runValidationAtParams
-        val firebox_flow_rate = strict.V_L(using p._1)(using Some(p._2))
-        strict.inputs.design.firebox match
-            case _ : Tested => ().validNel
-            case oo: OneOff => oo.validateSpecificConstraints(mB, firebox_flow_rate)
-    ))
+    // contraints / error validation for firebox
 
-    lazy val vnel_signal =
-        firebox_vnel1_signal
-            .combineWith(firebox_vnel2_signal)
-            .map((v1, v2) =>
-                v1
-                    .andThen(_ => v2)
-                    .andThen(_ => v1)
+    val cited_constraints_validation_sig: Signal[VNelMcalcErr[Unit]] =
+        results_en15544_strict_sig.flatMapVNelE: strict =>
+            strict.primary.validateCitedConstraints()
+
+    lazy val firebox_custom_constraints_sig: Signal[VNelMcalcErr[Unit]] =
+        results_en15544_strict_sig.flatMapVNelE: strict =>
+            strict.primary.validateFireboxSpecificConstraints()
+        
+
+    /** Sum of pressures available for 'combustion air pipe' and 'firebox pipe' */
+    val firebox_pressures_avail_signal =
+        results_en15544_combustion_air_pipe
+            .combineWith(results_en15544_firebox_pipe)
+            .map(
+                (vp1, vp2) => vp1.map(_.`ph-(pR+pu)`).andThen(_ => vp2.map(_.`ph-(pR+pu)`))
             )
+
+    lazy val all_cons_signal =
+        cited_constraints_validation_sig
+            .combineWith(firebox_custom_constraints_sig)
+            .map: (v1, v2) => 
+                v1.andThen(_ => v2)
 
     lazy val firebox_quadrions_sig = makeQuadrionSubtotalForFirebox(results_en15544_outputs)(
         _.combustionAir,
@@ -66,14 +83,14 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
             title   = Title.WithQuadrionSubtotal(
                 I18N.panels.firebox,
                 xtra_sig             = firebox_var.signal
-                    .combineWith(citedConstraintsValidation_sig)
-                    .combineWith(vnel_signal)
-                    .map: (cc, citedCons, vnel) =>
+                    .combineWith(all_cons_signal)
+                    .combineWith(firebox_pressures_avail_signal)
+                    .map: (fb, all_cons, fb_press_avail) =>
                         val statusCons  =
                             PanelStatusHelper
                                 .keepGlobalErrorsOrErrorsSpecificToSectionTyp(st =>
                                     (st == FireboxPipeT) || (st == CombustionAirPipeT)
-                                )(citedCons.andThen(_.checkAndReturnVNelInvalidConstraint)) match
+                                )(all_cons) match
                                 case Validated.Valid(_)      => div(lucide.`circle-check`)
                                 case Validated.Invalid(errs) =>
                                     DaisyUITooltip (
@@ -92,7 +109,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                             PanelStatusHelper
                                 .keepGlobalErrorsOrErrorsSpecificToSectionTyp(st =>
                                     (st == FireboxPipeT) || (st == CombustionAirPipeT)
-                                )(vnel) match
+                                )(fb_press_avail) match
                                 case Validated.Valid(_)      => div(lucide.`circle-check`)
                                 case Validated.Invalid(errs) =>
                                     DaisyUITooltip (
@@ -111,12 +128,31 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                             cls := "flex flex-row gap-x-2",
                             statusCons,
                             statusOther,
-                            p(FireboxComponent.showDimensionsSummary.show(cc))
+                            p(FireboxComponent.showDimensionsSummary.show(fb))
                         ).some
                 ,
                 quadrionSubtotal_sig = firebox_quadrions_sig
             ),
-            content = fireboxForm
+            content = fireboxForm,
+            opened  = panelOpened
+        ).node.amend(
+            idAttr := "viz-fieldset-firebox",
+            cls <-- vizHighlightSignal,
+            vizSelectedElement.signal.changes.collect {
+                case Some(VizElementId.FireboxElement) => ()
+            } --> Observer[Unit] { _ =>
+                panelOpened.set(true)
+                dom.window.setTimeout(
+                    () => {
+                        Option(dom.document.getElementById("viz-fieldset-firebox")).foreach(
+                            _.asInstanceOf[js.Dynamic].scrollIntoView(
+                                js.Dynamic.literal(behavior = "smooth", block = "center")
+                            )
+                        )
+                    },
+                    300
+                )
+            }
         )
 
 end FireboxPanel

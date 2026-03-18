@@ -8,24 +8,30 @@ package afpma.firecalc.engine.cas_types.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.EcoLabeled_V1
-
-import cats.syntax.all.*
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
+import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
 import io.taig.babel.Languages
 
 object CasPratique_15544_FDIM_EX_03
     extends v2024_10_Alg
-    with v0_2024_10.Firebox_15544_Strict_OneOff_Alg
-    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg:
+    with v0_2024_10.Firebox_15544_Strict_Alg
+    with v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+    with v0_2024_10.WithPipeChain_15544_Strict:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
+
+    type FB = Ecolabeled
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val language = Languages.Fr
 
@@ -53,11 +59,12 @@ object CasPratique_15544_FDIM_EX_03
     val conduit_air_descr =
         import AirIntakePipe_Module.*
         Seq  (
+            setInitialDirection       (azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // "Front"
             addFlowResistance         ("1. grille", 1.23.unitless: ζ, hydraulic_diameter = 154.mm),
-            material  (Material_13384.WeldedSteel()),
-            innerShape(circle(154.mm)              ),
+            material  (Material_13384.WeldedSteel()                                              ),
+            innerShape(circle(154.mm)                                                            ),
             addSectionHorizontal      ("Car. 2", 253.cm                                          ),
-            addSharpAngle_90deg_unsafe("vers remontée"                                           ),
+            addSharpAngle_90deg_unsafe("vers droite", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // "Right"
             addSectionHorizontal      ("Car. 4", 40.cm                                           )
         )
 
@@ -65,7 +72,7 @@ object CasPratique_15544_FDIM_EX_03
         import AirIntakePipe_Module.*
         define(conduit_air_descr*).toFullDescr().extractPipe
 
-    val foyer_descr = EcoLabeled_V1(
+    val foyer_descr = Ecolabeled_V1(
         pn_reduced                                      = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                           = 54.cm,
         h12_largeurDuFoyer                              = 54.cm,
@@ -84,43 +91,42 @@ object CasPratique_15544_FDIM_EX_03
         h80_largeurRenfortMedianArriere                 = 6.cm,
         h81_debordDesRenfortsDansLesAngles              = 3.cm,
         h82_hauteurDesInjecteurs_Z                      = 0.5.cm,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur          = 10.cm
+        h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = 10.cm
     )
 
-    val firebox = foyer_descr
+    val firebox: Ecolabeled = foyer_descr
 
     val accumulateur_descr =
         import FluePipe_Module_15544.*
         Seq(
-            roughness           (3.mm                                         ),
-            innerShape(rectangle(37.cm, 37.cm)),
-            addSectionHorizontal("Car. 1", 34.8.cm                            ),
-            addSharpAngle_90deg ("virage 90° 1-2"                             ),
-            addSectionVertical  ("Car. 2", -109.cm                            ),
-            addSectionVertical  ("Car. 3", -244.cm                            ),
-            addSharpAngle_90deg ("virage 90° 3-4", angleN2  = 0.degrees.some  ),
-            innerShape(rectangle(27.cm, 40.cm)),
-            addSectionHorizontal("Car. 4", 50.cm                              ),
-            addSharpAngle_90deg ("virage 90° 4-5", angleN2  = 90.degrees.some ),
-            innerShape(rectangle(27.cm, 27.cm)),
-            addSectionHorizontal("Car. 5", 5.cm                               ),
-            addSharpAngle_90deg ("virage 90° 5-6", angleN2  = 0.degrees.some  ),
-            addSectionHorizontal("Car. 6", 50.cm                              ),
-            addSharpAngle_90deg ("virage 90° 6-7", angleN2  = 0.degrees.some  ),
-            addSectionHorizontal("Car. 7", 34.cm                              ),
-            addSharpAngle_45deg ("virage 45° 7-8", angleN2  = 135.degrees.some),
-            addSectionHorizontal("Car. 8", 14.1.cm                            ),
-            addSharpAngle_45deg ("virage 45° 8-9", angleN2  = 90.degrees.some ),
-            addSectionHorizontal("Car. 9", 100.cm                             ),
-            addSharpAngle_90deg ("virage 90° 9-10", angleN2 = 90.degrees.some ),
-            innerShape(rectangle(21.cm, 32.cm)),
-            addSectionVertical  ("Car. 10", 244.cm                            ),
-            addSectionVertical  ("Car. 11", 128.cm                            )
+            setInitialDirection (azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
+            roughness           (3.mm                                                  ),
+            innerShape(rectangle(37.cm, 37.cm)                                         ),
+            addSectionHorizontal("Car. 1", 34.8.cm                                     ),
+            addSharpAngle_90deg ("virage 90° 1-2 (-> Bas)",  AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)), // "Down"
+            addSectionVertical  ("Car. 2", -109.cm                                     ),
+            addSectionVertical  ("Car. 3", -244.cm                                     ),
+            addSharpAngle_90deg ("virage 90° 3-4 (-> Droite)", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+            innerShape(rectangle(27.cm, 40.cm)                                         ),
+            addSectionHorizontal("Car. 4", 50.cm                                       ),
+            addSharpAngle_90deg ("virage 90° 4-5 (-> Avant)",  AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front
+            innerShape(rectangle(27.cm, 27.cm)                                         ),
+            addSectionHorizontal("Car. 5", 5.cm                                        ),
+            addSharpAngle_90deg ("virage 90° 5-6 (-> Droite)", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+            addSectionHorizontal("Car. 6", 50.cm                                       ),
+            addSharpAngle_90deg ("virage 90° 6-7 (-> Avant)",  AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front
+            addSectionHorizontal("Car. 7", 34.cm                                       ),
+            addSharpAngle_45deg ("virage 45° 7-8 (-> Avant+Gauche)",  AbsoluteDirection(AzimuthDirection.FrontLeft, InclinationDirection.Horizontal)), // Front-Left
+            addSectionHorizontal("Car. 8", 14.1.cm                                     ),
+            addSharpAngle_45deg ("virage 45° 8-9 (-> Gauche)",  AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+            addSectionHorizontal("Car. 9", 100.cm                                      ),
+            addSharpAngle_90deg ("virage 90° 9-10 (-> Haut)", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)), // "Up"
+            innerShape(rectangle(21.cm, 32.cm)                                         ),
+            addSectionVertical  ("Car. 10", 244.cm                                     ),
+            addSectionVertical  ("Car. 11", 128.cm                                     )
         )
 
-    val fluePipe =
-        import FluePipe_Module_15544.*
-        define(accumulateur_descr*).toFullDescr().extractPipe
+    val fluePipeDescr = accumulateur_descr
 
     val conduit_raccordement_descr =
         import ConnectorPipe_Module.*
@@ -132,9 +138,7 @@ object CasPratique_15544_FDIM_EX_03
             addSectionVertical("Car. 12", 5.cm                             )
         )
 
-    val connectorPipe =
-        import ConnectorPipe_Module.*
-        define(conduit_raccordement_descr*).toFullDescr().extractPipe
+    val connectorPipeDescr = conduit_raccordement_descr
 
     val conduit_fumees_descr =
         import ChimneyPipe_Module.*
@@ -151,8 +155,6 @@ object CasPratique_15544_FDIM_EX_03
             addFlowResistance ("element terminal", 1.48.unitless: ζ) // cf fichier .k10
         )
 
-    val chimneyPipe =
-        import ChimneyPipe_Module.*
-        define(conduit_fumees_descr*).toFullDescr().extractPipe
+    val chimneyPipeDescr = conduit_fumees_descr
 
 end CasPratique_15544_FDIM_EX_03

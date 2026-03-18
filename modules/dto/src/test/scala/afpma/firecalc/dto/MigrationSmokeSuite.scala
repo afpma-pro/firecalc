@@ -38,12 +38,29 @@ class MigrationSmokeSuite
                 }
         }
 
+        "V3 to V4 migration" in forAll(AllGenerators.genFireCalcYAML_V3) {
+            v3 =>
+                noException should be thrownBy {
+                    FireCalcYAMLMigrations.migrateV3ToV4(v3)
+                }
+        }
+
         "V1 to V3 migration (chained)" in forAll(
             AllGenerators.genFireCalcYAML_V1
         ) { v1 =>
             noException should be thrownBy {
                 (FireCalcYAMLMigrations.migrateV1ToV2 andThen
                     FireCalcYAMLMigrations.migrateV2ToV3)(v1)
+            }
+        }
+
+        "V1 to V4 migration (chained)" in forAll(
+            AllGenerators.genFireCalcYAML_V1
+        ) { v1 =>
+            noException should be thrownBy {
+                (FireCalcYAMLMigrations.migrateV1ToV2 andThen
+                    FireCalcYAMLMigrations.migrateV2ToV3 andThen
+                    FireCalcYAMLMigrations.migrateV3ToV4)(v1)
             }
         }
 
@@ -65,6 +82,13 @@ class MigrationSmokeSuite
             v3 =>
                 val result =
                     FireCalcYAMLMigrations.upgradeToCurrent(v3)
+                result shouldBe a[Right[?, ?]]
+        }
+
+        "upgradeToCurrent from V4" in forAll(AllGenerators.genFireCalcYAML_V4) {
+            v4 =>
+                val result =
+                    FireCalcYAMLMigrations.upgradeToCurrent(v4)
                 result shouldBe a[Right[?, ?]]
         }
     }

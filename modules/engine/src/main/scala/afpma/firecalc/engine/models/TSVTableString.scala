@@ -6,6 +6,7 @@
 package afpma.firecalc.engine.models
 
 import afpma.firecalc.engine.utils.*
+import afpma.firecalc.engine.utils.InterpolationError
 
 opaque type TSVTableString = List[Map[String, String]]
 
@@ -16,8 +17,13 @@ private def str2double: Conversion[String, Double] =
 
 object TSVTableString:
 
+    /** Normalize literal escape sequences (\n, \\n, \t, \\t) that may survive JSON round-trips. */
+    def normalize(rawString: String): String =
+        rawString.replaceAll("\\\\+n", "\n").replaceAll("\\\\+t", "\t")
+
     def fromString(rawString: String, sep: String = "\t"): TSVTableString =
-        val lines   = rawString.split("\n")
+        val normalized = normalize(rawString)
+        val lines   = normalized.split("\n")
         val header  = lines.head
         val headers = header.split(sep)
         val data    = lines.tail.toList
@@ -28,6 +34,20 @@ object TSVTableString:
 extension (tt: TSVTableString)
 
     def toList: List[Map[String, String]] = tt
+
+    def extractHeaders: List[String] = 
+        tt.toList.head.map(_._1).toList
+
+
+    def extractColAs(
+        firstHeader : String,
+    ): List[Double] =
+        tt.extractCol(firstHeader).map(str2double)
+        
+    def extractCol(
+        firstHeader : String,
+    ): List[String] =
+        tt.map(_.get(firstHeader)).flatten
 
     def extractColsAs(
         firstHeader : String,
@@ -69,13 +89,13 @@ extension (tt: TSVTableString)
 
     def getUsingLinearInterpolation(xHeader: String, yHeader: String)(
         xi: Double
-    ): Option[Double] =
+    ): Either[InterpolationError, Double] =
         val it = tt.extractColsAs(xHeader, yHeader)
         it.getWithLinearInterpolation(xi)
 
     def getUsingBilinearInterpolation(xHeader: String, yHeader: String, zHeader: String)(
         xi: Double,
         yi: Double
-    ): Option[Double] =
+    ): Either[InterpolationError, Double] =
         val it = tt.extract3ColsAs(xHeader, yHeader, zHeader)
         it.getWithBilinearInterpolation(xi, yi)

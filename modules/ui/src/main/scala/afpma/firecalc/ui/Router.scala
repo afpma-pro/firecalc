@@ -22,12 +22,12 @@ object Page:
     given rwDisplayUnits: ReadWriter[DisplayUnits] =
         readwriter[String].bimap[DisplayUnits](_.toString, DisplayUnits.valueOf)
 
-val defaultRoute = Route.static(DefaultPage, root / endOfSegments)
+lazy val defaultRoute = Route.static(DefaultPage, root / endOfSegments)
 
 case object DefaultPage                                                           extends Page
 case class HomePage(lang: Language, displayUnitsOpt: Option[DisplayUnits] = None) extends Page
 
-val homeRoute = Route[HomePage, (String)](
+lazy val homeRoute = Route[HomePage, (String)](
     encode  = homePage => homePage.lang.value,
     decode  = args => HomePage(lang = Language(args)),
     pattern = root / segment[String] / endOfSegments

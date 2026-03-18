@@ -20,6 +20,14 @@ import io.taig.babel.Locale
 
 final case class FlowOnlyAirIntakePipePanel()(using Locale, DisplayUnits) extends PipePanel_13384_FlowOnly:
 
+    override protected def vizFieldsetIdPrefix: String               = "airintake"
+    override protected def ownsVizElement(id: VizElementId): Boolean = id match
+        case VizElementId.AirIntakePipeElement(_) => true
+        case _                                    => false
+    override protected def vizElementIndex(id: VizElementId): Int = id match
+        case VizElementId.AirIntakePipeElement(idx) => idx
+        case _                                      => -1
+
     type Out = FlowOnlyAirIntakePipe_13384
     type PT  = AirIntakePipeT
     lazy val sectionType = AirIntakePipeT

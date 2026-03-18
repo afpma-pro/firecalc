@@ -16,7 +16,7 @@ import io.circe.generic.semiauto
 import io.taig.babel.Locale
 
 final case class FireCalcYAML_V1(
-    version                       : FireCalc_Version = FireCalc_Version(1),
+    version                       : FireCalc_Version = FireCalcYAML_V1.VERSION,
     locale                        : Locale,
     display_units                 : DisplayUnits,
     standard_or_computation_method: StandardOrComputationMethod,
@@ -31,6 +31,9 @@ final case class FireCalcYAML_V1(
 ) extends FireCalcYAML_Format
 
 trait FireCalcYAML_V1_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V1]:
+
+    type Version = FireCalc_Version
+    final val VERSION = FireCalc_Version(1)
 
     import CommonInstances.given
     import V1Instances.given

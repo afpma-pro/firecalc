@@ -50,15 +50,8 @@ trait EN15544_V_2023_Formulas_Alg:
 
     def v_calc: (VolumeFlow, QtyD[(Meter ^ 2)]) => v
 
-    def O_BR_calc: m_B => O_BR
-
-    // Section "4.3.1.3", "Firebox base"
-    def A_BR_min_calc: m_B => A_BR
-    def A_BR_max_calc: (m_B, U_BR) => A_BR
-
-    // Section "4.3.1.4", "Firebox height"
-    def H_BR_min_calc: m_B => H_BR
-    def H_BR_calc    : (m_B, A_BR, U_BR) => H_BR
+    // Section "4.3.1", "Firebox sizing"
+    // NOTE: firebox_formulas removed — now accessed via firebox.formulas (typeclass)
 
     // Section "4.3.2", "Calculated flue pipe length"
     def L_Z_calculated_calc: (FacingType, m_B) => L_N

@@ -637,9 +637,9 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
     def interpretAirSpaceFromAirSpaceDetailed(airSpaceDetailed: AirSpaceDetailed): AirSpace =
         import AirSpaceDetailed.*
         airSpaceDetailed match
-            case WithoutAirSpace                                                                          =>
+            case WithoutAirSpace_V2                                                                          =>
                 AirSpace.DeadAirSpace
-            case WithAirSpace(_, VentilDirection.SameDirAsFlueGas, VentilOpenings.AnnularAreaFullyOpened) =>
+            case WithAirSpace_V2(_, VentilDirection.SameDirAsFlueGas, VentilOpenings.AnnularAreaFullyOpened) =>
                 // Source:
                 //
                 // Rapport EAE / GPE N°00-195
@@ -651,7 +651,7 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
 
                 // According to this report,
                 AirSpace.DeadAirSpace
-            case WithAirSpace(
+            case WithAirSpace_V2(
                     w,
                     VentilDirection.SameDirAsFlueGas,
                     VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1

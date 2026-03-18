@@ -20,6 +20,64 @@
 	<meta name="description" content="" />
 	<meta name="keywords" content="" />
 
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #FDF6EE;
+        }
+        #loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            gap: 20px;
+        }
+        /* Bricks: bounce wave rippling left→right in zigzag */
+        @keyframes bounce {
+            0%, 55%, 100% { translate: 0 0; }
+            28% { translate: 0 -35px; }
+        }
+        .br-1 { animation: bounce 1.2s ease-in-out 0s    infinite; }
+        .br-2 { animation: bounce 1.2s ease-in-out 0.1s  infinite; }
+        .br-3 { animation: bounce 1.2s ease-in-out 0.2s  infinite; }
+        .br-4 { animation: bounce 1.2s ease-in-out 0.3s  infinite; }
+        .br-5 { animation: bounce 1.2s ease-in-out 0.4s  infinite; }
+        /* Loading dots */
+        @keyframes dot-pulse {
+            0%, 100% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+        .loading-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3B2416;
+            margin-left: 4px;
+            animation: dot-pulse 1.4s ease-in-out infinite;
+        }
+        .loading-dot:nth-child(2) { animation-delay: 0s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.2s; }
+        .loading-dot:nth-child(4) { animation-delay: 0.4s; }
+        #loader-title {
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: #3B2416;
+            margin: 0;
+        }
+        #loader-dots {
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            color: #3B2416;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+    </style>
     <script type="module" src="/firecalc-ui.js"></script>
     <script data-ui5-config type="application/json">
     {
@@ -31,7 +89,29 @@
 </head>
 <body>
 
-<div id="app"></div>
+<div id="app">
+  <div id="loader" role="status" aria-live="polite">
+    <svg viewBox="0 0 488 679" width="140" height="195" overflow="visible" aria-hidden="true">
+      <!-- Logo (flames + text, bricks removed) -->
+      <image href="/assets/img/AFPMA_LogoMenu_no_bricks.png" width="488" height="679"/>
+      <!-- Bricks: 3+2 running bond, bounce wave left→right zigzag -->
+      <!-- Top row (3 bricks) -->
+      <rect class="br-1" x="124" y="486" width="68" height="35" rx="4" fill="#EF662F"/>
+      <rect class="br-3" x="205" y="486" width="68" height="35" rx="4" fill="#EF662F"/>
+      <rect class="br-5" x="289" y="486" width="68" height="35" rx="4" fill="#EF662F"/>
+      <!-- Bottom row (2 bricks, offset to bridge top joints) -->
+      <rect class="br-2" x="164" y="535" width="68" height="36" rx="4" fill="#EF662F"/>
+      <rect class="br-4" x="249" y="535" width="68" height="36" rx="4" fill="#EF662F"/>
+    </svg>
+    <div id="loader-title">FireCalc AFPMA</div>
+    <div id="loader-dots">
+      <span>Loading</span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="/main.js"></script>
 </body>

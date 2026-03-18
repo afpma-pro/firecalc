@@ -8,18 +8,24 @@ package afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.calcpdm_v_0_2_32.TraditionalFirebox
+import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
 
 object strict_ex02_carneau_descendant 
     extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10.Firebox_15544_Strict_OneOff_Alg:
+    with v0_2024_10.Firebox_15544_Strict_Alg:
     self =>
 
+    import afpma.firecalc.engine.impl.en15544.strict.given
+
+    type FB = TraditionalFirebox
+    protected val toCombustionAirPipeTC = summon
+    protected val toFireboxPipeTC       = summon
 
     val exercice_name: String = "exercices // p1_decouverte // ex02_carneau_descendant"
 
@@ -39,7 +45,6 @@ object strict_ex02_carneau_descendant
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        pn_reduced                                          = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
         h11_profondeurDuFoyer                               = 33.2.cm,
         h12_largeurDuFoyer                                  = 33.2.cm,
         h13_hauteurDuFoyer                                  = 51.9.cm,
@@ -47,6 +52,7 @@ object strict_ex02_carneau_descendant
         h67_sectionCumuleeEntreeAirPorte                    = 94.cm2,
         h71_largeurVitre                                    = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
         h72_hauteurVitre                                    = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                                      = 5.cm,
     )
 
     val fluePipe = 
@@ -54,21 +60,23 @@ object strict_ex02_carneau_descendant
         FluePipe_Module_15544
         .incremental
         .define(
+            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
+
             roughness(3.mm),
-            
+
             innerShape(rectangle(16.1.cm, 15.3.cm)),
             addSectionHorizontal("sortie foyer", 28.6.cm),
-            
-            addSharpAngle_90deg("virage avant descente"),
-            
+
+            addSharpAngle_90deg("virage avant descente", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)), // Down
+
             innerShape(rectangle(16.1.cm, 11.1.cm)),
             addSectionVertical("descente", -36.7.cm),
 
-            addSharpAngle_90deg("virage 90° avant colonne"),
+            addSharpAngle_90deg("virage 90° avant colonne", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
 
             addSectionHorizontal("vers colonne", 22.6.cm),
 
-            addSharpAngle_90deg("virage 90°"),
+            addSharpAngle_90deg("virage 90°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
             
             addSectionVertical("colonne", 4.134.m)
         )

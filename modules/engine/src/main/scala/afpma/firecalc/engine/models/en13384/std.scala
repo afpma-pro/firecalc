@@ -14,7 +14,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.i18n.*
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LocalRegulations.TypeOfAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.*
 
 import coulomb.*

@@ -46,10 +46,10 @@ object macros:
             } =>
 
                 val classNameTransl = classNameTranslKeyOpt match
-                    case '{ Some($classNameTranslKey: List[String]) } => 
+                    case '{ Some($classNameTranslKey: List[String]) } =>
                         getTranslFromPathExpr(classNameTranslKey)
-                    case '{ None } => 
-                        '{ None }
+                    case '{ None } =>
+                        '{ Some($classNamePath) }
 
                 val paramsTranslated = paramsTranslSeq match
                     case Varargs(paramPairs) =>
@@ -58,7 +58,7 @@ object macros:
                                 case '{ ($fieldName: String, $pathOpt: Option[List[String]]) } =>
                                     val translOpt = pathOpt match
                                         case '{ Some[List[String]]($path) } => getTranslFromPathExpr(path)
-                                        case '{ None } => '{ None }
+                                        case '{ None } => '{ Some($fieldName) }
                                     Expr.ofTuple((fieldName, translOpt))
                 '{
                     TranslatedFieldsWithValues(

@@ -31,6 +31,10 @@ object defaultable_13384:
 
     object incr_descr_en13384:
 
+        // given Defaultable[SetThermalPipeProp_13384] = Defaultable.autoDerived[SetThermalPipeProp_13384]
+
+        given defaultable_Seq_SetSingleProp: Defaultable[Seq[SetSingleProp]]              :
+            def default = Seq.empty
         given Defaultable[SetInnerShape]              :
             def default = SetInnerShape(pipeShapeInner.default)
         given Defaultable[SetOuterShape]              :
@@ -45,16 +49,32 @@ object defaultable_13384:
             def default = SetLayer(thickness.default, thermalConductivity.default)
         given Defaultable[SetLayers]                  :
             def default = SetLayers(Nil)
+        given Defaultable[LinedFlue]                  :
+            def default = LinedFlue(
+                batch_name = "",
+                liner      = SetPropertiesInBatch("", Seq.empty),
+                air_space  = AirSpaceDetailed.WithoutAirSpace_V2,
+                casing     = SetPropertiesInBatch("", Seq.empty)
+            )
         given Defaultable[SetAirSpaceAfterLayers]     :
             def default = SetAirSpaceAfterLayers(airSpaceDetailed.default)
         given Defaultable[SetPipeLocation]            :
             def default = SetPipeLocation(pipeLocation.default)
         given Defaultable[SetDuctType]                :
             def default = SetDuctType(DuctType.NonConcentricDuctsHighThermalResistance)
+        given Defaultable[SetInitialDirection]        :
+            def default = SetInitialDirection(
+                azimuth     = AzimuthDirection.Rear,
+                inclination = InclinationDirection.Up
+            )
+        given Defaultable[SetInitialPosition]         :
+            def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
+        given Defaultable[SetFinalPosition]           :
+            def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
         given Defaultable[SetNumberOfFlows]           :
             def default = SetNumberOfFlows(divideFlowIn.default)
         given Locale => Defaultable[AddSectionSlopped]:
-            def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters, 0.meters)
+            def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
 
         given Locale => Defaultable[AddSectionHorizontal]         :
             def default = AddSectionHorizontal(I18N_UI.default_element_names.horizontal_straight_element, 1.meters)
@@ -100,7 +120,14 @@ object defaultable_13384:
         given Locale => Defaultable[AddFlowResistance]            :
             def default = AddFlowResistance(I18N_UI.default_element_names.grid, defaultable.zeta.default, None)
 
-    val airSpaceDetailed = Defaultable(AirSpaceDetailed.WithoutAirSpace)
+    val airSpaceDetailed = Defaultable(AirSpaceDetailed.WithoutAirSpace_V2)
+
+    /** Default for LinedFlueCatalogSelectComponent: 3cm air space with standard ventilation. */
+    val airSpaceDetailed_WithAirSpace = Defaultable(AirSpaceDetailed.WithAirSpace_V2(
+        width           = 3.cm,
+        direction       = AirSpaceDetailed.VentilDirection.SameDirAsFlueGas,
+        ventil_openings = AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
+    ))
 
     val appendLayerDescr =
         import defaultable.pipeShapeOuter // scalafix:ok

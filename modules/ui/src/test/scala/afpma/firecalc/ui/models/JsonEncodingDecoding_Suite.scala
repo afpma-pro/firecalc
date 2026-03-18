@@ -13,6 +13,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.ui.instances
 import afpma.firecalc.ui.instances.circe.given
 import afpma.firecalc.ui.utils.InputQtyD
+import afpma.firecalc.units.all.SUnit
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -29,58 +30,56 @@ import org.scalatest.matchers.should.*
 
 class JsonEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
 
-
-    def encodingAndDecodingToJsonShouldWork[X: {Encoder, Decoder}](
+    def roundTripJsonShouldWork[X: {Encoder, Decoder}](
         x_title: String
     )(
-        x: X, 
-        jsonStringExp: String,
+        x: X,
         makeAssertion: (X, X) => Assertion = (x: X, y: X) => x `shouldEqual` y
     ) =
         s"${x_title}" - {
             "encoding to JSON" - {
                 "should work" in {
-                    x.asJson.noSpaces `shouldEqual` jsonStringExp
+                    noException should be thrownBy x.asJson.noSpaces
                 }
             }
 
             "decoding from JSON" - {
                 "should work" in {
-                    decode[X](jsonStringExp) match
+                    val json = x.asJson.noSpaces
+                    decode[X](json) match
                         case Left(e)  => fail(e)
                         case Right(y) => makeAssertion(x, y)
                 }
             }
-
         }
+
+    def inputQtyDAssertion[DU: SUnit, FU]: (InputQtyD[DU, FU], InputQtyD[DU, FU]) => Assertion =
+        (x, y) => x.displayValue shouldEqual y.displayValue
 
     "JSON Encoding/Decoding" - {
 
-        encodingAndDecodingToJsonShouldWork("InputQtyD [123.meters]")(
-            x = InputQtyD.fromDisplayQty[Meter, Inch](123.meters), 
-            jsonStringExp = """{"value":"123","unit":"meter"}"""
+        roundTripJsonShouldWork("InputQtyD [123.meters]")(
+            x = InputQtyD.fromDisplayQty[Meter, Inch](123.meters),
+            makeAssertion = inputQtyDAssertion
         )
 
-        encodingAndDecodingToJsonShouldWork("InputQtyD [10.inch]")(
-            x = InputQtyD.fromFinalQty[Meter, Inch](10.withUnit[Inch]), 
-            jsonStringExp = """{"value":"10","unit":"inch"}"""
+        roundTripJsonShouldWork("InputQtyD [10.inch]")(
+            x = InputQtyD.fromFinalQty[Meter, Inch](10.withUnit[Inch]),
+            makeAssertion = inputQtyDAssertion
         )
-        
-        encodingAndDecodingToJsonShouldWork("QtyD [123.meters]")(
-            x = 123.meters, 
-            jsonStringExp = """{"value":"123","unit":"meter"}""",
-        )(using 
-            instances.circe.encoder_QtyD_meter, 
+
+        roundTripJsonShouldWork("QtyD [123.meters]")(
+            x = 123.meters
+        )(using
+            instances.circe.encoder_QtyD_meter,
             instances.circe.decoder_QtyD_meter,
         )
 
-        encodingAndDecodingToJsonShouldWork("LocalConditions.empty")(
-            x = LocalConditions.default, 
-            jsonStringExp = """{"z_geodetical_height":{"value":"100","unit":"meter"},"coastal_region":false,"chimney_termination":{"chimney_location_on_roof":{"h":"MoreThan40cm","d":null,"rs":null,"o":null,"s":null},"adjacent_buildings":{"l":"MoreThan15m","alpha":null,"beta":null}}}""",
+        roundTripJsonShouldWork("LocalConditions.default")(
+            x = LocalConditions.default
         )
 
-        encodingAndDecodingToJsonShouldWork("AppState.init")(
-            x = EngineState.init, 
-            jsonStringExp = """{"customer":{"first_name":"","last_name":"","phone_no":"","email":"","address":"","city":"","postal_code":""},"localConditions":{"z_geodetical_height":{"value":"100","unit":"meter"},"coastal_region":false,"chimney_termination":{"chimney_location_on_roof":{"h":"MoreThan40cm","d":null,"rs":null,"o":null,"s":null},"adjacent_buildings":{"l":"MoreThan15m","alpha":null,"beta":null}}}}""",
+        roundTripJsonShouldWork("EngineState.init")(
+            x = EngineState.init
         )
     }

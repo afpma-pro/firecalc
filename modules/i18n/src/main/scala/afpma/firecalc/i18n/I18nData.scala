@@ -47,6 +47,7 @@ final case class I18nData(
     errors                         : Errors,
     facing_type                    : FacingType,
     headers                        : Headers,
+    heat_output_reduced            : HeatOutputReduced,
     heating_appliance              : HeatingAppliance,
     incremental_validation         : IncrementalValidation,
     inputs_data                    : String,
@@ -54,12 +55,12 @@ final case class I18nData(
     local_conditions               : LocalConditions,
     local_regulations              : LocalRegulations,
     mecaflu                        : MecaFlu,
+    min_load                       : MinLoad,
     no                             : String,
     panels                         : Panels,
     pipe_location                  : PipeLocation,
     pipe_type                      : PipeType,
     pollutant_names                : PolluantNames,
-    heat_output_reduced            : HeatOutputReduced,
     pressure_requirements          : String,
     project_description            : ProjectDescription,
     set_prop                       : SetProp,
@@ -76,8 +77,12 @@ final case class I18nData(
     area_heating_status            : AreaHeatingStatus,
     reports                        : Reports,
     warnings                       : Warnings,
+    not_defined                    : String,
     not_respected                  : String,
-    missing_data                   : String
+    missing_data                   : String,
+    test_report                    : TestReportI18n,
+    test_emission_value            : TestEmissionValueI18n,
+    emission_values                : EmissionValuesI18n
 )
 
 object I18nData:
@@ -142,14 +147,22 @@ object I18nData:
     )
 
     case class Firebox_15544(
+        firebox_depth                              : String,
+        firebox_width                              : String,
+        firebox_height                             : String,
+        ash_pit_height                             : String,
         afpma_prse                                 : Firebox_15544.AFPMA_PRSE,
+        base_geometry                              : String,
         dimensions_summary_w_d_h                   : StringFormat3,
+        firebox_glass_surface_ratio_below_one_fifth: String,
+        glass_area                                 : String,
         ref                                        : String,
         typ                                        : String,
-        ecolabeled                                 : Firebox_15544.EcoLabeled,
+        ecolabeled                                 : Firebox_15544.Ecolabeled,
         tested                                     : Firebox_15544.Tested,
         traditional                                : Firebox_15544.Traditional,
-        firebox_glass_surface_ratio_below_one_fifth: String
+        single_tested                              : Firebox_15544.SingleTested,
+        door_15a_firebox                           : Firebox_15544.Door15aFirebox,
     )
 
     object Firebox_15544:
@@ -168,18 +181,17 @@ object I18nData:
             number_of_air_columns_feeding_door   : String
         )
 
-        case class EcoLabeled(
+        case class Ecolabeled(
             version                                  : String,
             version_1_with_airbox                    : String,
             version_2_without_airbox                 : String,
             version_2_air_intake_shape               : String,
-            width                                    : String,
-            depth                                    : String,
-            height                                   : String,
             door_opening_width                       : String,
             glass_width                              : String,
             glass_height                             : String,
             ash_pit_height_AF                        : String,
+            height_of_first_row_of_air_injectors_X   : String,
+            distance_between_air_injectors_Y         : String,
             air_manifold_height_W                    : String,
             firebox_floor_thickness                  : String,
             inner_wall_thickness_D1                  : String,
@@ -210,10 +222,7 @@ object I18nData:
 
         case class Traditional(
             firebox_floor_shape                  : String,
-            depth                                : String,
-            width                                : String,
             width_to_depth_ratio                 : String,
-            height                               : String,
             pressure_loss_coefficient_from_door  : String,
             total_air_intake_surface_area_on_door: String,
             glass_surface_area                   : String,
@@ -225,6 +234,42 @@ object I18nData:
             ash_pit_height_AF                    : String
         )
 
+        case class SingleTested(
+            test_standard                       : String,
+            reference                           : String,
+            efficiency_nominal                  : String,
+            efficiency_reduced                  : String,
+            heat_output_reduced                 : String,
+            minimum_fuel_mass                   : String,
+            maximum_fuel_mass                   : String,
+            air_fuel_ratio_nominal              : String,
+            air_fuel_ratio_lowest               : String,
+            co2_dry_nominal                     : String,
+            co2_dry_lowest                      : String,
+            pellets_load_burn_duration          : String,
+            mean_firebox_temperature            : String,
+            t_burnout                           : String,
+            is_glass_surface_ratio_below_one_fifth: String,
+            emissions_firebox_name              : String,
+            emissions_accredited_body           : String,
+            emissions_co                        : String,
+            emissions_dust                      : String,
+            emissions_ogc                       : String,
+            emissions_nox                       : String
+        )
+
+        case class Door15aFirebox(
+            sb                            : String,
+            sb_min                        : String,
+            sb_max                        : String,
+            mb_min                        : String,
+            mb_max                        : String,
+            load_size_nominal             : String,
+            pressure_loss_table           : String,
+            expected_air_intake_pipe_shapes: String,
+            actual_air_intake_pipe_shape  : String,
+        )
+
     case class FireboxNames(
         traditional      : String,
         ecolabeled       : String,
@@ -232,10 +277,13 @@ object I18nData:
         ecolabeled_v2    : String,
         afpma_prse       : String,
         certified        : String,
-        custom_lab_tested: String
+        custom_lab_tested: String,
+        single_tested    : String,
+        door_15a_firebox : String,
     )
 
     case class PolluantNames(
+        _self   : String,
         CO      : String,
         Dust    : String,
         OGC     : String,
@@ -249,8 +297,11 @@ object I18nData:
     )
 
     case class EmissionsAndEfficiencyValues(
+        _self                            : String,
         accredited_or_notified_body      : String,
         firebox_name                     : String,
+        test_reports                     : String,
+        emissions_values                 : String,
         min_efficiency_firebox_reduced   : String,
         min_efficiency_firebox_nominal   : String,
         min_efficiency_full_stove_reduced: String,
@@ -435,7 +486,8 @@ object I18nData:
         t_chimney_out               : EN15544_TermDef,
         t_stove_out                 : EN15544_TermDef,
         necessary_delivery_pressure : EN15544_TermDef,
-        flue_gas_mass_rate          : EN15544_TermDef
+        flue_gas_mass_rate          : EN15544_TermDef,
+        t_BU                        : EN15544_TermDef,
     )
 
     case class EN16510(
@@ -460,7 +512,8 @@ object I18nData:
         injector_velocity_below_minimum      : StringFormat2,
         injector_velocity_above_maximum      : StringFormat2,
         flue_gas_velocity_error              : StringFormat5,
-        missing_flow_rate                    : String
+        missing_flow_rate                    : String,
+        air_intake_pipe_shape_mismatch       : StringFormat2
     )
 
     case class Headers(
@@ -483,6 +536,12 @@ object I18nData:
         temperature_requirements_15544     : String,
         temperature_at_chimney_outlet      : String,
         wind_pressure                      : String
+    )
+
+    case class HeatOutputReduced(
+        defined_as_default        : StringFormat1,
+        defined_as_half_of_nominal: String,
+        defined_when_tested       : StringFormat1
     )
 
     case class HeatingAppliance(
@@ -623,8 +682,14 @@ object I18nData:
         country       : String
     )
 
+    case class MinLoad(
+        defined_as_half_of_nominal: StringFormat1,
+        defined_when_tested       : StringFormat1
+    )
+
     case class Panels(
         air_intake                                : String,
+        air_distribution                          : String,
         chimney_pipe                              : String,
         client_project                            : String,
         firebox                                   : String,
@@ -632,7 +697,9 @@ object I18nData:
         channel_pipe                              : String,
         geographical_location_and_external_factors: String,
         output_and_other_parameters               : String,
-        total                                     : String
+        total                                     : String,
+        channel_pipe_length_with_min              : StringFormat2,
+        channel_pipe_length                       : StringFormat1
     )
 
     case class PipeShape(
@@ -661,13 +728,6 @@ object I18nData:
         chimney       : String
     )
 
-    case class HeatOutputReduced(
-        not_defined               : String,
-        defined_as_default        : StringFormat1,
-        defined_as_half_of_nominal: String,
-        defined_when_tested       : StringFormat1
-    )
-
     case class ProjectDescription(
         reference_and_filename: String,
         date                  : String,
@@ -677,7 +737,10 @@ object I18nData:
     case class SetProp(
         _self                            : String,
         _geometric_properties            : String,
+        _position_and_direction          : String,
+        _material_and_roughness          : String,
         define_layers                    : String,
+        SetPropertiesInBatch             : String,
         SetInnerShape                    : String,
         SetOuterShape                    : String,
         SetThickness                     : String,
@@ -692,6 +755,14 @@ object I18nData:
         SetNumberOfFlows_fieldName       : String,
         SetNumberOfFlows_NumberOfChannels: String,
         SetNumberOfFlows_Join            : String,
+        SetInitialDirection              : String,
+        SetInitialPosition               : String,
+        SetFinalPosition                 : String,
+        LinedFlue                        : String,
+        LinedFlue_liner                  : String,
+        LinedFlue_casing                 : String,
+        LinedFlue_sync_casing            : String,
+        LinedFlue_sync_airspace          : String,
         shortcuts                        : SetProp.Shortcuts
     )
 
@@ -718,10 +789,13 @@ object I18nData:
         name                    : String,
         angle                   : String,
         area                    : String,
+        azimuth                 : String,
         curvature_radius        : String,
         diameter                : String,
+        absolute_direction         : String,
         height                  : String,
         horizontal_length       : String,
+        inclination             : String,
         inner_shape             : String,
         length                  : String,
         number_of_parallel_flows: String,
@@ -730,6 +804,7 @@ object I18nData:
         pipe_shape              : PipeShape,
         pressure_difference     : String,
         radius                  : String,
+        roll                    : String,
         roughness               : String,
         side                    : String,
         speed                   : String,
@@ -744,6 +819,9 @@ object I18nData:
         elevation_gain          : String,
         width                   : String,
         width_to_height_ratio   : String,
+        x                       : String,
+        y                       : String,
+        z                       : String,
         zeta                    : String,
         zeta_ζ                  : String
     )
@@ -767,6 +845,7 @@ object I18nData:
         degree                      : String,
         foot                        : String,
         hour                        : String,
+        minute                      : String,
         inch                        : String,
         kelvin                      : String,
         kilogram                    : String,
@@ -781,7 +860,8 @@ object I18nData:
         square_meter                : String,
         square_meter_kelvin_per_watt: String,
         unitless                    : String,
-        watt_per_meter_kelvin       : String
+        watt_per_meter_kelvin       : String,
+        mg_per_Nm3                  : String
     )
 
     case class AreaHeatingStatus(
@@ -846,22 +926,27 @@ object I18nData:
         )
 
         case class PropertyMustBeDefined(
-            section_geometry   : String,
-            next_section_length: String
+            section_geometry          : String,
+            next_section_length       : String,
+            pressure_loss             : String,
+            pressure_loss_table_error : StringFormat1
         )
 
         case class Prerequisites(
             thickness_requires_inner_geometry         : String,
             layer_requires_section_geometry           : String,
             layers_require_inner_shape                : String,
-            direction_change_requires_section_geometry: String
+            direction_change_requires_section_geometry: String,
+            final_dir_without_initial_direction       : String
         )
 
         case class Conflicts(
             cannot_set_geometry_before_change      : String,
             section_change_requires_circle         : StringFormat1,
             flow_resistance_requires_geometry      : StringFormat1,
-            flow_resistance_requires_geometry_15544: StringFormat1
+            pressure_diff_requires_geometry        : StringFormat1,
+            flow_resistance_requires_geometry_15544: StringFormat1,
+            casing_too_small_for_liner             : StringFormat2
         )
 
         case class ForbiddenElementPosition(
@@ -925,6 +1010,29 @@ object I18nData:
         two_successive_direction_change_not_allowed     : StringFormat2,
         two_successive_straight_section_not_allowed     : StringFormat2,
         holes_should_not_happen                         : StringFormat1,
+        flue_pipe_length_below_minimum                  : StringFormat2,
+    )
+
+    case class TestReportI18n(
+        _self: String,
+        name : String,
+        date : String
+    )
+
+    case class TestEmissionValueI18n(
+        _self        : String,
+        polluant_name: String,
+        value        : String,
+        test_method  : String,
+        o2ref        : String
+    )
+
+    case class EmissionValuesI18n(
+        _self: String,
+        co   : String,
+        dust : String,
+        ogc  : String,
+        nox  : String
     )
 
     case class BuilderErrors(
