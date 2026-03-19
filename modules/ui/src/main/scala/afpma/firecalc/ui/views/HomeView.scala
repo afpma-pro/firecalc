@@ -58,7 +58,7 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                                 if v then
                                     "w-2/3 overflow-y-auto" 
                                 else if g then
-                                    "w-1/2 overflow-y-auto" 
+                                    "w-2/3 overflow-y-auto" 
                                 else "w-full"
                             },
                         DaisyUIVerticalAccordionAndJoin(),
@@ -73,7 +73,7 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                             ))
                         case (_, true) =>
                             Some(div(
-                                cls := "w-1/2 fixed right-0 top-42 bottom-0 p-2",
+                                cls := "w-1/3 fixed right-0 top-42 bottom-0 p-2",
                                 GraphPanel().node
                             ))
                         case _ => None
