@@ -24,6 +24,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
   private val M_TO_CM = 100.0
 
   private var currentHandle: Option[FilaireVizHandleJS] = None
+  private var lastCameraStateJS: Option[CameraStateJS] = None
 
   private val beforeUnloadHandler: js.Function1[dom.Event, Unit] =
     (_: dom.Event) =>
@@ -34,6 +35,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
   private def saveCameraState(): Unit =
     for handle <- currentHandle do
       handle.getCameraState().toOption.foreach { cs =>
+        lastCameraStateJS = Some(cs)
         try
           val scalaState = CameraState(
             position = cs.position.toList,
@@ -45,13 +47,15 @@ final case class Viz3DPanel()(using Locale) extends Component:
       }
 
   private def loadCameraState(): Option[CameraStateJS] =
-    uiStateVar.now().cameraState.map { cs =>
-      js.Dynamic.literal(
-        position = js.Array(cs.position*),
-        up       = js.Array(cs.up*),
-        target   = js.Array(cs.target*)
-      ).asInstanceOf[CameraStateJS]
-    }
+    lastCameraStateJS.orElse(
+      uiStateVar.now().cameraState.map { cs =>
+        js.Dynamic.literal(
+          position = js.Array(cs.position*),
+          up       = js.Array(cs.up*),
+          target   = js.Array(cs.target*)
+        ).asInstanceOf[CameraStateJS]
+      }
+    )
 
   private def disposeCurrentViz(): Unit =
     saveCameraState()
