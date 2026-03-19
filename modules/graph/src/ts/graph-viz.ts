@@ -107,18 +107,9 @@ export function initGraphViz(
                 (scales.x as any).title.text = newData.xAxisLabel;
             }
             // Add new y scales
-            for (const axis of newData.yAxes) {
-                scales[axis.id] = {
-                    type: 'linear',
-                    position: axis.position,
-                    title: {
-                        display: true,
-                        text: axis.label,
-                    },
-                    ...(axis.min !== undefined && { min: axis.min }),
-                    ...(axis.max !== undefined && { max: axis.max }),
-                };
-            }
+            newData.yAxes.forEach((axis, i) => {
+                scales[axis.id] = buildYAxisScale(axis, i === 0);
+            });
 
             chart.update();
         },
@@ -126,6 +117,37 @@ export function initGraphViz(
 }
 
 // ── Internal helpers ──
+
+/** Number of ticks on every y-axis so that grids are aligned across scales. */
+const Y_AXIS_TICK_COUNT = 11;
+
+/** Solid grid lines with zero-line emphasis + aligned tick count. */
+function buildYAxisScale(axis: YAxisConfigJS, isPrimary: boolean): Record<string, any> {
+    return {
+        type: 'linear',
+        position: axis.position,
+        title: {
+            display: true,
+            text: axis.label,
+        },
+        grid: {
+            drawOnChartArea: true,
+            color: (ctx: { tick: { value: number } }) =>
+                ctx.tick.value === 0
+                    ? 'rgba(0, 0, 0, 0.35)'
+                    : isPrimary
+                        ? 'rgba(0, 0, 0, 0.1)'
+                        : 'transparent',
+            lineWidth: (ctx: { tick: { value: number } }) =>
+                ctx.tick.value === 0 ? 2 : 1,
+        },
+        ticks: {
+            count: Y_AXIS_TICK_COUNT,
+        },
+        ...(axis.min !== undefined && { min: axis.min }),
+        ...(axis.max !== undefined && { max: axis.max }),
+    };
+}
 
 function seriesToDataset(s: ChartSeriesJS): ChartDataset<'line'> {
     return {
@@ -162,18 +184,9 @@ function buildChartConfig(
         },
     };
 
-    for (const axis of data.yAxes) {
-        scales[axis.id] = {
-            type: 'linear',
-            position: axis.position,
-            title: {
-                display: true,
-                text: axis.label,
-            },
-            ...(axis.min !== undefined && { min: axis.min }),
-            ...(axis.max !== undefined && { max: axis.max }),
-        };
-    }
+    data.yAxes.forEach((axis, i) => {
+        scales[axis.id] = buildYAxisScale(axis, i === 0);
+    });
 
     return {
         type: 'line',
