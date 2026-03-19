@@ -50,12 +50,15 @@ object Frontend {
                 // Guard: some events processed during Airstream transactions lack KeyboardEvent properties
                 if scala.scalajs.js.isUndefined(ctrl) || scala.scalajs.js.isUndefined(meta) then false
                 else (ctrl.asInstanceOf[Boolean] || meta.asInstanceOf[Boolean]) &&
-                    !scala.scalajs.js.isUndefined(dyn.key) &&
-                    dyn.key.asInstanceOf[String].toLowerCase == "z"
+                    !scala.scalajs.js.isUndefined(dyn.key) && {
+                        val key = dyn.key.asInstanceOf[String].toLowerCase
+                        key == "z" || key == "y"
+                    }
             }
             --> Observer[dom.KeyboardEvent] { ev =>
                 ev.preventDefault()
-                if ev.shiftKey then performRedo()
+                val key = ev.asInstanceOf[scala.scalajs.js.Dynamic].key.asInstanceOf[String].toLowerCase
+                if key == "y" || ev.shiftKey then performRedo()
                 else performUndo()
             }
 
