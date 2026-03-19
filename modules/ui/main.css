@@ -94,9 +94,10 @@ body {
     padding-right: calc(var(--scrollbar-width) * 0);
 }
 
-/* Insert-between separator rows: suppress DaisyUI table borders */
+/* Insert-between separator rows: suppress DaisyUI table borders and sticky positioning */
 tr.insert-sep td {
     border: none;
+    position: static !important;
 }
 
 /* Viz → UI focus highlight */

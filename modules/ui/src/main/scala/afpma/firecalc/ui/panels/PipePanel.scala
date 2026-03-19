@@ -353,7 +353,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     val _I = I18N_UI.details_columns
 
-    private val expertColCls = "w-20 text-center"
+    private val expertColCls = "w-20 min-w-20 text-center"
 
     lazy val detailed_headers_title: HtmlElement = div(
         cls := "flex items-center text-xs font-normal -ml-4 -mr-12 py-1",
@@ -460,7 +460,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 cls := "relative",
                 // table start
                 table(
-                    cls := "table table-fixed table-xs table-pin-cols",
+                    cls := "table table-xs table-pin-cols",
 
                     // table rows with insert separators between them
                     children <-- rendered_elems_sig.map(interleaveInsertSeparators)
