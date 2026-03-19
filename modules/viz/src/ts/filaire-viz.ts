@@ -1011,6 +1011,23 @@ export function initFilaireViz(
     up:    config.labelAxisUp    ?? 'up',
     right: config.labelAxisRight ?? 'right',
   }
+
+  // ---------------------------------------------------------------------------
+  // Axis legend (bottom-left, symmetric with gizmo on the right)
+  // ---------------------------------------------------------------------------
+  const axisLegendDiv = document.createElement('div')
+  axisLegendDiv.style.position = 'absolute'
+  axisLegendDiv.style.bottom = '20px'
+  axisLegendDiv.style.left = '20px'
+  axisLegendDiv.style.fontFamily = 'Roboto, sans-serif'
+  axisLegendDiv.style.fontSize = '12px'
+  axisLegendDiv.style.color = 'rgba(0, 0, 0, 0.4)'
+  axisLegendDiv.style.pointerEvents = 'none'
+  axisLegendDiv.style.userSelect = 'none'
+  axisLegendDiv.style.whiteSpace = 'pre'
+  axisLegendDiv.textContent = `X = ${axisLabels.right}\nY = ${axisLabels.rear}\nZ = ${axisLabels.up}`
+  container.appendChild(axisLegendDiv)
+
   const viewHelper = new LabeledViewHelper(camera, controls, renderer.domElement, axisLabels)
   const clock = new THREE.Clock()
 
