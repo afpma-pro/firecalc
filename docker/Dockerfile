@@ -97,7 +97,7 @@ ENV FIRECALC_ENV=staging
 # Health check to verify the application is running
 # Adjust the endpoint based on your application's health check endpoint
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8181/health || exit 1
+    CMD curl -f http://localhost:8181/v1/healthcheck || exit 1
 
 # Application entry point
 # Runs the assembled JAR file with the JVM

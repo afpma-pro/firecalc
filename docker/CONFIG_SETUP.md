@@ -112,7 +112,7 @@ docker/
 │       ├── invoices/
 │       │   ├── invoice-config.yaml.example       # Template
 │       │   ├── invoice-config.yaml               # Your config
-│       │   └── logo.jpg                          # Company logo for invoices (REQUIRED)
+│       │   └── logo.png                          # Company logo for invoices (REQUIRED)
 │       └── reports/
 │           └── logo.jpg                          # Company logo for reports (REQUIRED)
 │
@@ -311,12 +311,11 @@ FireCalc uses TWO separate domains for better security and separation of concern
    ```bash
    # Copy your company logo to BOTH directories
    # These logos will be embedded in the JAR during build and used by Typst for PDF generation
-   cp /path/to/your/logo.jpg docker/configs/staging/invoices/logo.jpg
+   # NOTE: The invoices module requires PNG format; the reports module requires JPG format
+   cp /path/to/your/logo.png docker/configs/staging/invoices/logo.png
    cp /path/to/your/logo.jpg docker/configs/staging/reports/logo.jpg
-   
-   # Note: The logo must be in JPG format
+
    # Recommended size: 200x200 pixels or similar aspect ratio
-   # Both files should be identical (invoices module and reports module both need the logo)
    ```
 
 4. **Secure the file**
@@ -408,9 +407,9 @@ sudo chmod -R 755 docker/databases
      - Routing to appropriate upstream based on domain (UI → ui-server, API → backend)
 
 5. **Access the services**
-   - **UI**: https://staging.firecalc.example.com (port 443)
-   - **API**: https://api.staging.firecalc.example.com (port 443)
-   
+   - **UI**: https://firecalc.staging.example.com (port 443)
+   - **API**: https://api.staging.example.com (port 443)
+
    Both domains use standard HTTPS port 443, with routing handled by nginx based on the `server_name`.
 
 6. **Verify deployment**
@@ -429,7 +428,7 @@ sudo chmod -R 755 docker/databases
    
    Expected certificate output:
    ```
-   DNS:staging.firecalc.example.com, DNS:api.staging.firecalc.example.com
+   DNS:firecalc.staging.example.com, DNS:api.staging.example.com
    ```
 
 > **⚠️ IMPORTANT - Docker Image Rebuild**:
