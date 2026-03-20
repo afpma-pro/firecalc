@@ -119,6 +119,18 @@ payments {
     }
     
     # ---------------------------------------------------------------------
+    # JWT Authentication
+    # ---------------------------------------------------------------------
+    # Cryptographic signing for JWT tokens.
+    # IMPORTANT: Set the JWT_SECRET environment variable before deploying.
+    # Generate a secret: openssl rand -base64 32
+    jwt {
+      secret = ${JWT_SECRET}
+      expiration-minutes = 60
+      issuer = "firecalc-payments"
+    }
+
+    # ---------------------------------------------------------------------
     # Report Configuration
     # ---------------------------------------------------------------------
     # Generate reports in draft mode (adds watermark/draft indicator)

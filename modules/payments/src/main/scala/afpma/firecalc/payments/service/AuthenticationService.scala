@@ -4,6 +4,8 @@
  */
 
 package afpma.firecalc.payments.service
+
+import afpma.firecalc.payments.config.JwtConfig
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.impl.*
@@ -21,6 +23,7 @@ trait AuthenticationService[F[_]]:
 
 object AuthenticationService:
     def create[F[_]: Async](
-        purchaseIntentRepo: PurchaseIntentRepository[F]
+        purchaseIntentRepo: PurchaseIntentRepository[F],
+        jwtConfig         : JwtConfig
     )(implicit logger: Logger[F]): F[AuthenticationService[F]] =
-        Async[F].pure(new AuthenticationServiceImpl[F](purchaseIntentRepo))
+        Async[F].pure(new AuthenticationServiceImpl[F](purchaseIntentRepo, jwtConfig))

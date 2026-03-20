@@ -18,7 +18,8 @@ case class PaymentsConfig(
     databaseConfig              : DatabaseConfig,
     invoiceConfig               : InvoiceConfig,
     adminConfig                 : AdminConfig,
-    reportAsDraft               : Boolean
+    reportAsDraft               : Boolean,
+    jwtConfig                   : JwtConfig
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
     require(
@@ -62,4 +63,14 @@ case class AdminConfig(
 ) {
     require(email.nonEmpty, "Admin email cannot be empty"                   )
     require(email.contains("@"), "Admin email must be a valid email address")
+}
+
+case class JwtConfig(
+    secret           : String,
+    expirationMinutes: Int    = 60,
+    issuer           : String = "firecalc-payments"
+) {
+    require(secret.length >= 32, "JWT secret must be at least 32 characters (256 bits)")
+    require(expirationMinutes > 0, "JWT expiration minutes must be positive")
+    require(issuer.nonEmpty, "JWT issuer cannot be empty")
 }

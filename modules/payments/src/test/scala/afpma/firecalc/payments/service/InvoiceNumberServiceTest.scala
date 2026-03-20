@@ -12,6 +12,7 @@ import afpma.firecalc.payments.config.AdminConfig
 import afpma.firecalc.payments.config.DatabaseConfig
 import afpma.firecalc.payments.config.InvoiceConfig
 import afpma.firecalc.payments.config.InvoiceRetryConfig
+import afpma.firecalc.payments.config.JwtConfig
 import afpma.firecalc.payments.config.PaymentsConfig
 import afpma.firecalc.payments.repository.impl.MoleculeInvoiceCounterRepository
 import afpma.firecalc.payments.repository.impl.MoleculeOrderRepository
@@ -47,7 +48,10 @@ object InvoiceNumberServiceTest extends TestSuite with TestDatabaseSetup {
     adminConfig = AdminConfig(
       email = "admin@example.com"
     ),
-    reportAsDraft = true
+    reportAsDraft = true,
+    jwtConfig = JwtConfig(
+      secret = "test-only-secret-not-used-in-invoice-tests"
+    )
   )
   
   def withService(test: (InvoiceNumberService[IO], MoleculeInvoiceCounterRepository[IO], Conn) => IO[Unit]): Unit = {

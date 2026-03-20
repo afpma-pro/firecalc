@@ -1,174 +1,124 @@
-# Implementation Plan: SEC-001 — Replace Forgeable JWT with Signed Tokens
+# SEC-001 — Replace Forgeable JWT with Signed Tokens
 
-## Finding Summary
-
+**Status**: Implemented
 **Severity**: Critical (CVSS 9.8)
+**Priority**: P0
 
-The "JWT" implementation in `AuthenticationServiceImpl.scala` uses plain string concatenation (`jwt_<UUID>_<timestamp>`) with no cryptographic signature. Any party knowing a customer UUID can forge a valid token. The validation only checks `startsWith("jwt_")` and parses a UUID — no signature verification, no expiry enforcement.
+---
 
-## Current State
+## Finding
 
-```scala
-// AuthenticationServiceImpl.scala:50-54
-def generateJWT(customerId: CustomerId): F[String] =
-    for
-        _     <- logger.debug(s"Generating JWT for customer: ${customerId.value}")
-        token <- Async[F].delay(s"jwt_${customerId.value}_${System.currentTimeMillis()}")
-    yield token
+The "JWT" implementation in `AuthenticationServiceImpl.scala` used plain string concatenation (`jwt_<UUID>_<timestamp>`) with no cryptographic signature. Any party knowing a customer UUID could forge a valid token. The validation only checked `startsWith("jwt_")` and parsed a UUID — no signature verification, no expiry enforcement.
 
-// AuthenticationServiceImpl.scala:56-68
-def validateJWT(token: String): F[Option[CustomerId]] =
-    for
-        _ <- logger.debug("Validating JWT token")
-        customerIdOpt <- Async[F].delay {
-            if token.startsWith("jwt_") then
-                val parts = token.split("_")
-                if parts.length >= 2 then
-                    try Some(CustomerId(UUID.fromString(parts(1))))
-                    catch case _ => None
-                else None
-            else None
-        }
-    yield customerIdOpt
-```
+**Mitigating factor**: `validateJWT` is currently never called from any route or middleware. The JWT is generated after successful verification and returned in `VerifyAndProcessResponse.jwtToken`, but no endpoint requires it for authorization. This made the finding less urgent for the current flow, but critical to fix before any future route uses JWT auth.
 
-**Important context**: `validateJWT` is currently never called from any route or middleware. The JWT is generated after successful verification and returned in `VerifyAndProcessResponse.jwtToken`, but no endpoint currently requires it for authorization. This makes the finding less urgent for the *current* flow, but critical to fix before any future route uses JWT auth.
+## What was implemented
 
-## Target State
+### JWT signing with HMAC-SHA256
 
-- JWT tokens cryptographically signed using HMAC-SHA256 with a server-side secret key
-- Standard JWT claims: `sub` (customer UUID), `iat` (issued at), `exp` (expiration), `iss` (issuer)
-- Configurable expiration (default: 60 minutes)
-- Proper signature validation on every `validateJWT` call
-- Secret key loaded from configuration (not hardcoded)
+Replaced the forgeable string concatenation with cryptographically signed JWTs using `jwt-scala` (`jwt-circe 10.0.1`). Tokens now include standard claims: `sub` (customer UUID), `iat` (issued at), `exp` (expiration), `iss` (issuer).
 
-## Implementation Steps
+### Validation hardening
 
-### Step 1: Add JWT Library Dependency
+`validateJWT` now verifies:
+1. **HMAC-SHA256 signature** — rejects tampered tokens and tokens signed with a different key
+2. **Expiration (`exp`)** — automatically rejected by `JwtCirce.decode` if expired
+3. **Issuer (`iss`)** — explicitly checked against `jwtConfig.issuer` to prevent cross-service token confusion
+4. **Algorithm whitelist** — only `HS256` accepted, preventing `"alg": "none"` attacks
 
-**Files to modify**: `build.sbt`
+### Configuration
 
-Add `jwt-scala` (pure Scala JWT library, works on both JVM and JS):
+Secret loaded from environment variable `JWT_SECRET` via HOCON config. Startup fails immediately if missing (staging/prod) or if secret is shorter than 32 characters (256 bits).
 
-```scala
-// In the payments module dependencies
-"com.github.jwt-scala" %% "jwt-circe" % "10.0.1"
-```
+### Test coverage
 
-`jwt-circe` integrates with the existing circe JSON stack.
+10 unit tests covering: round-trip encode/decode, old-format forged token rejection, wrong-secret rejection, tampered payload, expired token, wrong-issuer rejection, invalid string, and 3 `JwtConfig` validation boundary tests.
 
-### Step 2: Add JWT Secret to Configuration
+## Files changed
 
-**Files to modify**: `PaymentsConfig.scala`, config files
+### Source code
 
-Add a `jwt-secret` field to the payments configuration:
+| File | Change |
+|------|--------|
+| `build.sbt` | Added `jwt-circe 10.0.1` to `payments` module |
+| `modules/payments/.../config/PaymentsConfig.scala` | Added `JwtConfig` case class with validation (`secret.length >= 32`, `expirationMinutes > 0`, `issuer.nonEmpty`); added `jwtConfig` field to `PaymentsConfig` |
+| `modules/payments/.../config/ConfigLoader.scala` | Loads `jwt { }` HOCON block from env-specific config |
+| `modules/payments/.../service/AuthenticationService.scala` | Updated `create` factory to accept `JwtConfig` |
+| `modules/payments/.../service/impl/AuthenticationServiceImpl.scala` | Rewrote `generateJWT` (HMAC-SHA256 signing) and `validateJWT` (signature + expiry + issuer validation with debug logging on issuer mismatch) |
+| `modules/payments/.../BackendMain.scala` | Passes `paymentsConfig.jwtConfig` to `AuthenticationService.create` |
 
-```scala
-// PaymentsConfig.scala — add to config case class
-case class JwtConfig(
-    secret: String,
-    expirationMinutes: Int = 60,
-    issuer: String = "firecalc-payments"
-)
-```
+### Tests
 
-Config templates:
-```hocon
-# payments-config.conf
-jwt {
-    secret = ${JWT_SECRET}      # Required: 256-bit random string
-    expiration-minutes = 60
-    issuer = "firecalc-payments"
-}
-```
+| File | Change |
+|------|--------|
+| `modules/payments/.../service/AuthenticationServiceJwtTest.scala` | **New** — 10 tests |
+| `modules/payments/.../service/InvoiceNumberServiceTest.scala` | Added `jwtConfig` to `PaymentsConfig` test fixture |
 
-### Step 3: Rewrite AuthenticationServiceImpl
+### Configuration
 
-**Files to modify**: `modules/payments/src/main/scala/afpma/firecalc/payments/service/impl/AuthenticationServiceImpl.scala`
+| File | Change |
+|------|--------|
+| `configs/dev/payments/payments-config.conf` | Added `jwt { }` with dev-only fallback secret + `${?JWT_SECRET}` override |
+| `configs/staging/payments/payments-config.conf` | Added `jwt { }` with mandatory `${JWT_SECRET}` |
+| `configs/prod/payments/payments-config.conf` | Added `jwt { }` with mandatory `${JWT_SECRET}` |
+| `docker/configs/staging/payments/payments-config.conf` | Added `jwt { }` with mandatory `${JWT_SECRET}` |
 
-```scala
-import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
-import io.circe.syntax._
-import java.time.Instant
+### Deployment documentation
 
-class AuthenticationServiceImpl[F[_]: Async](
-    purchaseIntentRepo: PurchaseIntentRepository[F],
-    jwtConfig: JwtConfig
-)(using logger: Logger[F]) extends AuthenticationService[F]:
+| File | Change |
+|------|--------|
+| `docker/.env.example` | Added `JWT_SECRET` with generation instructions |
+| `docker/configs/staging/payments/payments-config.conf.example` | Added `jwt { }` template section |
+| `docker/CONFIG_SETUP.md` | Added JWT prerequisite + Step 3 mentions `JWT_SECRET` |
 
-    private val algorithm = JwtAlgorithm.HS256
+## Cross-module impact analysis
 
-    def generateJWT(customerId: CustomerId): F[String] =
-        for
-            _ <- logger.debug(s"Generating JWT for customer: ${customerId.value}")
-            now = Instant.now()
-            claim = JwtClaim(
-                subject   = Some(customerId.value.toString),
-                issuer    = Some(jwtConfig.issuer),
-                issuedAt  = Some(now.getEpochSecond),
-                expiration = Some(now.plusSeconds(jwtConfig.expirationMinutes * 60L).getEpochSecond)
-            )
-            token <- Async[F].delay(JwtCirce.encode(claim, jwtConfig.secret, algorithm))
-        yield token
+| Module | Impact | Reason |
+|--------|--------|--------|
+| `payments` (JVM) | **Changed** | Core implementation |
+| `payments-shared` (JVM+JS) | **None** | `VerifyAndProcessResponse.jwtToken` is `String` — opaque |
+| `ui` (JS) | **None** | No JWT format parsing in frontend — treats token as opaque |
+| `reports`, `invoices`, `engine` | **None** | Unrelated to auth |
+| Electron (`web/`) | **None** | Wraps UI, no token inspection |
 
-    def validateJWT(token: String): F[Option[CustomerId]] =
-        for
-            _ <- logger.debug("Validating JWT token")
-            result <- Async[F].delay {
-                JwtCirce.decode(token, jwtConfig.secret, Seq(algorithm)).toOption.flatMap { claim =>
-                    for
-                        sub <- claim.subject
-                        uuid <- scala.util.Try(java.util.UUID.fromString(sub)).toOption
-                    yield CustomerId(uuid)
-                }
-            }
-        yield result
-```
+**No database migration required** — JWT is stateless.
+**No assembly conflicts** — `jwt-circe 10.0.1` is compatible with existing `circe 0.14.14`.
 
-### Step 4: Update Service Wiring
+## Deployment requirements
 
-**Files to modify**: `BackendMain.scala`
+Before deploying the updated JAR to staging/prod:
 
-Update the `AuthenticationServiceImpl` instantiation to pass the JWT config:
-
-```scala
-val jwtConfig = JwtConfig(
-    secret = config.jwt.secret,
-    expirationMinutes = config.jwt.expirationMinutes,
-    issuer = config.jwt.issuer
-)
-val authService = AuthenticationServiceImpl[IO](purchaseIntentRepo, jwtConfig)
-```
-
-### Step 5: Generate and Distribute JWT Secret
-
-For each environment:
 ```bash
-# Generate a 256-bit random secret
+# Generate a 256-bit JWT secret
 openssl rand -base64 32
+
+# Add to the server's docker/.env file
+JWT_SECRET=<paste-generated-secret>
+
+# Redeploy
+make staging-docker-deploy-up
 ```
 
-Add to environment-specific configs or environment variables (`JWT_SECRET`).
+Without `JWT_SECRET`, the container will fail at startup with `ConfigException.UnresolvedSubstitution`.
 
-## Dependencies
+## Design decisions
 
-- `jwt-scala` library (JVM only, which is correct since JWT is only used in the payments backend)
-- New configuration field `jwt.secret` must be set in all environments before deployment
+### No `jwtId` / token revocation
 
-## Testing Plan
+`validateJWT` is currently never called in production. Building a revocation store (DB table + repository + admin endpoint) for tokens that are never validated would be dead code. Revocation should be implemented alongside JWT auth middleware when a protected route is added.
 
-1. **Unit tests**: Test `generateJWT` produces a valid JWT that `validateJWT` can decode. Test that forged tokens (old format `jwt_<UUID>_<timestamp>`) are rejected. Test expired tokens are rejected.
-2. **Integration test**: Full purchase flow — verify the returned JWT is a valid signed token.
-3. **Negative tests**: Tampered payload, wrong secret, expired token, malformed string.
-4. **Manual verification**: Call `verify-and-process`, decode the returned JWT at jwt.io to verify structure.
+### No `Clock[F]` injection
 
-## Migration Notes
+`Instant.now()` is called directly in `generateJWT`. A `Clock[F]` abstraction would improve testability but was deemed over-engineering for the current scope. The expired-token test works by crafting a claim with a past `exp` directly via `JwtCirce.encode`.
 
-- **Breaking change**: Old-format tokens (`jwt_<UUID>_<timestamp>`) will no longer validate. Since `validateJWT` is currently unused in production, this has zero impact.
-- The `VerifyAndProcessResponse.jwtToken` field format changes from plaintext to a proper JWT string. Frontend code that stores this value is unaffected (it's treated as an opaque string).
-- All environments must have `JWT_SECRET` configured before deployment.
+### Algorithm hardcoded as `HS256`
 
-## Estimated Effort
+Not configurable — intentional. Prevents misconfiguration with weak algorithms. Algorithm rotation requires a code change, which is the right level of ceremony for a security-critical parameter.
 
-**T-shirt size**: S (Small)
-**Priority**: P0 — fix before any route starts using JWT for authorization.
+### Secret minimum length: 32 characters
+
+Enforced at startup via `require(secret.length >= 32)`. Matches the 256-bit key space of HMAC-SHA256. The dev-only fallback secret (`"dev-only-insecure-secret-change-me-in-production"`, 50 chars) passes this check while being clearly labeled as non-production.
+
+## Pre-existing issues noted (not in scope)
+
+- **`validateCode` line 52**: `logger.debug(...)` called inside `.exists { ... }` lambda produces an `F[Unit]` that is silently discarded — the "auth code expired" log message is never emitted. Pre-existing bug, not introduced by SEC-001.

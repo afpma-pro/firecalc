@@ -1068,9 +1068,12 @@ lazy val payments = (project in file("modules/payments"))
         "org.flywaydb" % "flyway-core" % "11.10.4",
         "org.xerial" % "sqlite-jdbc" % "3.50.3.0",
 
+        // JWT - cryptographic token signing (HMAC-SHA256)
+        "com.github.jwt-scala" %% "jwt-circe" % "10.0.1",
+
         // testing
         "com.lihaoyi" %% "utest" % "0.9.0" % "test",
-        
+
         // TODO: remove, only use utest
         "org.scalatest" %% "scalatest" % "3.2.19" % "test",
         "org.typelevel" %% "cats-effect-testing-scalatest" % "1.6.0" % "test"

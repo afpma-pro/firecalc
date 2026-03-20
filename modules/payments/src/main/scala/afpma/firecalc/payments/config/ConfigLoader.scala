@@ -142,6 +142,7 @@ object ConfigLoader:
             val retryConfig             = envConfig.getConfig("retry")
             val invoiceGenerationConfig = envConfig.getConfig("invoice-generation")
             val adminConfig             = envConfig.getConfig("admin")
+            val jwtSection              = envConfig.getConfig("jwt")
 
             PaymentsConfig                 (
                 environment                  = environment,
@@ -168,7 +169,12 @@ object ConfigLoader:
                 adminConfig                  = AdminConfig(
                     email = adminConfig.getString("email")
                 ),
-                reportAsDraft                = Try(envConfig.getBoolean("report-as-draft")).getOrElse(false)
+                reportAsDraft                = Try(envConfig.getBoolean("report-as-draft")).getOrElse(false),
+                jwtConfig                    = JwtConfig(
+                    secret            = jwtSection.getString("secret"),
+                    expirationMinutes = Try(jwtSection.getInt("expiration-minutes")).getOrElse(60),
+                    issuer            = Try(jwtSection.getString("issuer")).getOrElse("firecalc-payments")
+                )
             )
         }
 

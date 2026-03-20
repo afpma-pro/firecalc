@@ -32,6 +32,7 @@ Before starting configuration:
 - [ ] Ports 80 and 443 accessible from the internet (for Let's Encrypt)
 - [ ] GoCardless account (sandbox for staging, live for production)
 - [ ] SMTP service account (Mailtrap.io for staging, production SMTP for production)
+- [ ] JWT secret generated (`openssl rand -base64 32`) and added to `.env`
 - [ ] Company information and legal details ready
 
 ## Quick Start
@@ -196,6 +197,7 @@ FireCalc uses TWO separate domains for better security and separation of concern
    ```
 
 3. **Key settings to update**:
+   - `jwt.secret`: Requires `JWT_SECRET` environment variable in `.env` (generate with `openssl rand -base64 32`, must be at least 32 characters)
    - `invoice.number-prefix`: Set to `"FCALC-STG-[YYYY]-"` for staging
    - `invoice-generation.config-file-path`: Verify path is correct
    - `admin.email`: Set to your admin email

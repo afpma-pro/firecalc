@@ -306,7 +306,7 @@ object Main extends IOApp:
                         _ <- logger.info("Initializing services...")
 
                         // Initialize services
-                        authService  <- AuthenticationService.create[IO](purchaseIntentRepo)
+                        authService  <- AuthenticationService.create[IO](purchaseIntentRepo, paymentsConfig.jwtConfig)
                         orderService <- OrderService
                             .create[IO](orderRepo, productRepo, customerRepo, productMetadataRepo)
 
