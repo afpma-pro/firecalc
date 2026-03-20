@@ -181,12 +181,12 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
       def findByTokenAndCode(token: PurchaseToken, code: String): IO[Option[PurchaseIntent]] = IO.delay {
         repos.purchaseIntents.get(token).filter(_.authCode == code)
       }
-      def markAsProcessed(token: PurchaseToken): IO[Boolean] = IO.delay {
+      def atomicMarkAsProcessed(token: PurchaseToken): IO[Boolean] = IO.delay {
         repos.purchaseIntents.get(token) match {
-          case Some(intent) =>
+          case Some(intent) if !intent.processed =>
             repos.purchaseIntents = repos.purchaseIntents + (token -> intent.copy(processed = true))
             true
-          case None => false
+          case _ => false
         }
       }
       def deleteExpired(): IO[Int] = ???
@@ -533,6 +533,45 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
       }
     }
     
+    test("verifyAndProcess - second call with same token returns AlreadyProcessedException") {
+      val repos = new TestRepositories()
+      val (productRepo, customerRepo, purchaseIntentRepo, productMetadataRepo, authService, orderService, paymentService, emailService) = createMockServices(repos)
+
+      val service = new PurchaseServiceImpl[IO](
+        productRepo, customerRepo, purchaseIntentRepo, productMetadataRepo,
+        authService, orderService, paymentService, emailService
+      )
+
+      // Setup: Create purchase intent
+      val createRequest = CreatePurchaseIntentRequest(
+        productId = testProduct.id,
+        productMetadata = None,
+        customer = testCustomerInfo
+      )
+      val token = service.createPurchaseIntent(createRequest).unsafeRunSync()
+
+      // First call: should succeed
+      val verifyRequest = VerifyAndProcessRequest(
+        purchaseToken = token,
+        email = testCustomerInfo.email,
+        code = "123456"
+      )
+      val firstResult = service.verifyAndProcess(verifyRequest).unsafeRunSync()
+      assert(firstResult.success == true)
+
+      // Second call with same token+code: should fail with AlreadyProcessedException
+      val secondResult = service.verifyAndProcess(verifyRequest).attempt.unsafeRunSync()
+      secondResult match {
+        case Left(ex: AlreadyProcessedException) =>
+          assert(ex.errorCode == "alreadyprocessed")
+          assert(ex.context("purchaseToken") == token.value.toString)
+        case Left(other) =>
+          throw new Exception(s"Expected AlreadyProcessedException but got ${other.getClass}: ${other.getMessage}")
+        case Right(_) =>
+          throw new Exception("Expected AlreadyProcessedException but got success")
+      }
+    }
+
     test("customer validation - Individual requires givenName and familyName") {
       val repos = new TestRepositories()
       val (productRepo, customerRepo, purchaseIntentRepo, productMetadataRepo, authService, orderService, paymentService, emailService) = createMockServices(repos)

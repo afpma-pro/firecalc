@@ -180,7 +180,7 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                     .currency
                     .authCode(code)
                     .failedAttempts
-                    .processed
+                    .processed(false) // Defense-in-depth: only return unprocessed intents
                     .expiresAt
                     .createdAt
                     .Customer
@@ -224,16 +224,15 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
             }
         yield result
 
-    def markAsProcessed(token: api.PurchaseToken): F[Boolean] =
+    def atomicMarkAsProcessed(token: api.PurchaseToken): F[Boolean] =
         for
-            _          <- logger.info(s"Marking purchase intent as processed: ${token}")
-            internalId <- future2AsyncF {
-                PurchaseIntent.id.token_(token.value).query.get.map(_.head)
+            _ <- logger.info(s"Atomically marking purchase intent as processed: ${token}")
+            result <- future2AsyncF {
+                rawTransact(
+                    s"UPDATE PurchaseIntent SET processed = 1 WHERE token = '${token.value}' AND processed = 0"
+                ).map(_.ids.nonEmpty)
             }
-            result     <- future2AsyncF {
-                PurchaseIntent(internalId).token(token.value).processed(true).update.transact
-            }
-        yield true
+        yield result
 
     def deleteExpired(): F[Int] =
         import scala.math.Ordered.orderingToOrdered

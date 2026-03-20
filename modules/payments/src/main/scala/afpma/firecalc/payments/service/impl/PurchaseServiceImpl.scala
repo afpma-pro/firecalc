@@ -142,6 +142,17 @@ class PurchaseServiceImpl[F[_]: Async](
             // Step 1: Validate authentication code and retrieve intent
             intent <- validateAuthenticationCode(request.purchaseToken, request.code)
 
+            // Step 2: Atomically mark as processed — concurrency gate (SEC-004)
+            // Only the first request through wins; duplicates get 409.
+            // DESIGN DECISION: if this succeeds but subsequent steps (order creation,
+            // payment link) fail, the intent stays permanently locked. The user must
+            // create a new purchase intent to retry. This is intentional — it prevents
+            // retry abuse where an attacker replays the same token to create duplicate
+            // orders or payment links.
+            wasMarked <- purchaseIntentRepo.atomicMarkAsProcessed(request.purchaseToken)
+            _         <- Async[F].raiseError(AlreadyProcessedException(request.purchaseToken.value.toString))
+                             .whenA(!wasMarked)
+
             // Step 3: Find customer with typed error
             customer <- findCustomer(intent.customerId)
 
@@ -200,14 +211,6 @@ class PurchaseServiceImpl[F[_]: Async](
             jwtToken   <- generateJWTToken(customer.id)
             order      <- createOrderSafely(customer.id, intent, customer.language)
             paymentUrl <- createPaymentLinkSafely(order.id, order.amount, customer.toCustomerInfo)
-
-            _ <- purchaseIntentRepo
-                .markAsProcessed(request.purchaseToken)
-                .handleErrorWith(error =>
-                    logger.warn(s"Failed to mark purchase intent as processed: ${error.getMessage}") *>
-                        Async[F].pure(false) // Continue even if this fails, return false
-                )
-                .void
         } yield VerifyAndProcessResponse    (
             success     = true,
             jwtToken    = jwtToken,

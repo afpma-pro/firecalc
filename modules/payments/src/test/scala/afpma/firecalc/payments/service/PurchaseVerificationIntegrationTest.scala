@@ -160,12 +160,12 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
       def findByTokenAndCode(token: PurchaseToken, code: String): IO[Option[PurchaseIntent]] = IO.delay {
         repos.purchaseIntents.get(token).filter(_.authCode == code)
       }
-      def markAsProcessed(token: PurchaseToken): IO[Boolean] = IO.delay {
+      def atomicMarkAsProcessed(token: PurchaseToken): IO[Boolean] = IO.delay {
         repos.purchaseIntents.get(token) match {
-          case Some(intent) =>
+          case Some(intent) if !intent.processed =>
             repos.purchaseIntents = repos.purchaseIntents + (token -> intent.copy(processed = true))
             true
-          case None => false
+          case _ => false
         }
       }
       def deleteExpired(): IO[Int] = ???

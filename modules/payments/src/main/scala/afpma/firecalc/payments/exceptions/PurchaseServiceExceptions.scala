@@ -375,6 +375,17 @@ final case class WebhookProcessingException(
     )
 }
 
+// Idempotency errors
+final case class AlreadyProcessedException(
+    token: String
+) extends PurchaseServiceError(
+        "This purchase has already been processed"
+    ) {
+    override def context: Map[String, String] = Map(
+        "purchaseToken" -> token
+    )
+}
+
 // Repository/Service errors
 final case class EntityNotFoundException[T](
     entityType: String,

@@ -107,6 +107,13 @@ class PurchaseRoutes[F[_]: Async](
                     response <- NotFound(createErrorResponse(ex))
                 yield response
 
+            // Idempotency errors - 409 Conflict
+            case ex: AlreadyProcessedException =>
+                for
+                    _        <- logger.warn(s"Purchase already processed: ${ex.getMessage}")
+                    response <- Conflict(createErrorResponse(ex))
+                yield response
+
             // Business logic errors - 422 Unprocessable Entity
             case ex: CustomerValidationException =>
                 for
