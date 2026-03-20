@@ -101,6 +101,7 @@ object MoleculeDomain extends DomainStructure:
         val amount          = oneBigDecimal
         val currency        = oneEnum[Currency]
         val authCode        = oneString
+        val failedAttempts  = oneInt
         val customer        = one[Customer]
         val processed       = oneBoolean
         val productMetadata = one[ProductMetadata]

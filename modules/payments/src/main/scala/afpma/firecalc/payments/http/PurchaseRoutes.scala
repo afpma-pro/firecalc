@@ -56,6 +56,19 @@ class PurchaseRoutes[F[_]: Async](
     // Structured error handling for typed purchase service exceptions
     private def handlePurchaseServiceError(error: Throwable): F[Response[F]] =
         error match
+            // Rate limiting errors - 429 Too Many Requests
+            case ex: TooManyAttemptsException =>
+                for
+                    _        <- logger.warn(s"Too many attempts: ${ex.getMessage}")
+                    response <- TooManyRequests(createErrorResponse(ex))
+                yield response
+
+            case ex: TooManyIntentsForEmailException =>
+                for
+                    _        <- logger.warn(s"Too many intents for email: ${ex.getMessage}")
+                    response <- TooManyRequests(createErrorResponse(ex))
+                yield response
+
             // Authentication errors - 401 Unauthorized
             case ex: InvalidOrExpiredCodeException =>
                 for

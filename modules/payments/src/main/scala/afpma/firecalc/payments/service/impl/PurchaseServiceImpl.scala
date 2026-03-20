@@ -5,6 +5,7 @@
 
 package afpma.firecalc.payments.service.impl
 
+import java.time.Instant
 import java.util.UUID
 
 import afpma.firecalc.payments.domain.*
@@ -62,6 +63,13 @@ class PurchaseServiceImpl[F[_]: Async](
 
             productOpt <- productRepo.findById(request.productId)
             product    <- productOpt.liftTo[F](ProductNotFoundException(request.productId.value.toString))
+
+            now      <- Async[F].delay(Instant.now())
+
+            // Check per-email cooldown: max 10 intents per hour
+            recentCount <- purchaseIntentRepo.countRecentByEmail(validatedEmail, since = now.minusSeconds(3600))
+            _           <- Async[F].raiseError(TooManyIntentsForEmailException(validatedEmail))
+                               .whenA(recentCount >= 10)
 
             authCode <- authService.generateAuthCode()
 
@@ -131,11 +139,8 @@ class PurchaseServiceImpl[F[_]: Async](
                     Async[F].raiseError(CustomerValidationException(List(s"Invalid email address: $errorMsg")))
             }
 
-            // Step 1: Validate authentication code with typed error
-            _ <- validateAuthenticationCode(request.purchaseToken, request.code)
-
-            // Step 2: Find purchase intent with typed error
-            intent <- findPurchaseIntent(request.purchaseToken, request.code)
+            // Step 1: Validate authentication code and retrieve intent
+            intent <- validateAuthenticationCode(request.purchaseToken, request.code)
 
             // Step 3: Find customer with typed error
             customer <- findCustomer(intent.customerId)
@@ -148,19 +153,32 @@ class PurchaseServiceImpl[F[_]: Async](
         yield response)
             .handleErrorWith(logAndRethrowError(request.purchaseToken.value.toString, _))
 
-    private def validateAuthenticationCode(token: PurchaseToken, code: String): F[Unit] =
-        authService.validateCode(token, code).flatMap { isValid =>
-            if (!isValid)
-                Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString, code))
-            else
-                Async[F].unit
-        }
+    private val MAX_ATTEMPTS = 10
 
-    private def findPurchaseIntent(token: PurchaseToken, code: String): F[PurchaseIntent] =
-        purchaseIntentRepo.findByTokenAndCode(token, code).flatMap {
-            case Some(intent) => Async[F].pure(intent)
-            case None         => Async[F].raiseError(PurchaseIntentNotFoundException(token.value.toString, code))
-        }
+    private def validateAuthenticationCode(token: PurchaseToken, code: String): F[PurchaseIntent] =
+        for
+            intent <- purchaseIntentRepo.findByToken(token)
+                .flatMap(_.liftTo[F](PurchaseIntentNotFoundException(token.value.toString, code)))
+
+            // Check lockout before doing anything else
+            _ <- Async[F].raiseError(TooManyAttemptsException(token.value.toString))
+                     .whenA(intent.failedAttempts >= MAX_ATTEMPTS)
+
+            // Check expiry
+            now <- Async[F].delay(Instant.now())
+            _   <- Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString, code))
+                       .whenA(now.isAfter(intent.expiresAt))
+
+            // Constant-time comparison to prevent timing attacks
+            isValid = java.security.MessageDigest.isEqual(
+                intent.authCode.getBytes,
+                code.getBytes
+            )
+
+            _ <- (purchaseIntentRepo.incrementFailedAttempts(token) *>
+                     Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString, code)))
+                     .whenA(!isValid)
+        yield intent
 
     private def findCustomer(customerId: CustomerId): F[Customer] =
         customerRepo.findById(customerId).flatMap {

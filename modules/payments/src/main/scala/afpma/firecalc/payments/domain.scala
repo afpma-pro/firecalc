@@ -136,6 +136,7 @@ case class PurchaseIntent(
     amount           : BigDecimal,
     currency         : Currency,
     authCode         : String,
+    failedAttempts   : Int          = 0,
     customerId       : CustomerId,
     processed        : Boolean      = false,
     productMetadataId: Option[Long] = None,

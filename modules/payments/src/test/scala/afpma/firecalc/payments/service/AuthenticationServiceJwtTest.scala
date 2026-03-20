@@ -40,6 +40,8 @@ object AuthenticationServiceJwtTest extends TestSuite {
         def findByTokenAndCode(token: PurchaseToken, code: String): IO[Option[PurchaseIntent]]                                                                                                                     = ???
         def markAsProcessed(token: PurchaseToken): IO[Boolean]                                                                                                                                                     = ???
         def deleteExpired(): IO[Int]                                                                                                                                                                               = ???
+        def incrementFailedAttempts(token: PurchaseToken): IO[Unit]                                                                                                                                                = ???
+        def countRecentByEmail(email: String, since: java.time.Instant): IO[Int]                                                                                                                                   = ???
 
     val service = new AuthenticationServiceImpl[IO](stubRepo, testJwtConfig)
 

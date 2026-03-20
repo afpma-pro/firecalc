@@ -5,21 +5,18 @@
 
 package afpma.firecalc.payments.service.impl
 
+import java.security.SecureRandom
 import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import afpma.firecalc.payments.config.JwtConfig
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
-import afpma.firecalc.payments.shared.api.PurchaseToken
 
 import cats.effect.Async
 import cats.syntax.all.*
 
-import scala.util.Random
 import scala.util.Try
 
 import org.typelevel.log4cats.Logger
@@ -33,27 +30,14 @@ class AuthenticationServiceImpl[F[_]: Async](
 )                                           (implicit logger: Logger[F])
     extends AuthenticationService[F]:
 
-    private val algorithm = JwtAlgorithm.HS256
+    private val algorithm   = JwtAlgorithm.HS256
+    private val secureRandom = new SecureRandom()
 
     def generateAuthCode(): F[String] =
-        Async[F].delay(Random.between(100000, 999999).toString)
-
-    def validateCode(token: PurchaseToken, code: String): F[Boolean] =
-        for
-            _         <- logger.debug(s"Validating code for token: ${token.value}")
-            intentOpt <- purchaseIntentRepo.findByTokenAndCode(token, code)
-            now       <- Async[F].delay(Instant.now())
-            isValid = intentOpt.exists { intent =>
-                val notExpired = now.isBefore(intent.expiresAt)
-                if !notExpired then
-                    val formatter          = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
-                    val nowFormatted       = formatter.format(now)
-                    val expiresAtFormatted = formatter.format(intent.expiresAt)
-                    logger.debug(s"Auth code expired. Current time: $nowFormatted, Expires at: $expiresAtFormatted")
-                notExpired
-            }
-            _ <- logger.debug(s"Code validation result: $isValid")
-        yield isValid
+        Async[F].delay {
+            val code = 100000 + secureRandom.nextInt(900000)
+            code.toString
+        }
 
     def generateJWT(customerId: CustomerId): F[String] =
         for

@@ -190,8 +190,14 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
         }
       }
       def deleteExpired(): IO[Int] = ???
+      def incrementFailedAttempts(token: PurchaseToken): IO[Unit] = IO.delay {
+        repos.purchaseIntents.get(token).foreach { intent =>
+          repos.purchaseIntents = repos.purchaseIntents + (token -> intent.copy(failedAttempts = intent.failedAttempts + 1))
+        }
+      }
+      def countRecentByEmail(email: String, since: Instant): IO[Int] = IO.pure(0)
     }
-    
+
     val productMetadataRepo = new ProductMetadataRepository[IO] {
       def create(metadata: ProductMetadata): IO[Long] = IO.delay {
         val id = repos.nextMetadataId
@@ -204,9 +210,6 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
     
     val authService = new AuthenticationService[IO] {
       def generateAuthCode(): IO[String] = IO.pure("123456") // Fixed for testing
-      def validateCode(token: PurchaseToken, code: String): IO[Boolean] = IO.delay {
-        repos.authCodes.get(token.value.toString).contains(code)
-      }
       def generateJWT(customerId: CustomerId): IO[String] = IO.pure(s"jwt-${customerId.value}")
       def validateJWT(token: String): IO[Option[CustomerId]] = ???
     }
@@ -519,13 +522,12 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
       
       val result = service.verifyAndProcess(verifyRequest).attempt.unsafeRunSync()
       result match {
-        case Left(ex: InvalidOrExpiredCodeException) =>
-          // Nonexistent token fails at auth code validation step first
-          assert(ex.errorCode == "invalidorexpiredcode")
+        case Left(ex: PurchaseIntentNotFoundException) =>
+          // Nonexistent token fails at findByToken before code comparison
+          assert(ex.errorCode == "purchaseintentnotfound")
           assert(ex.context.contains("purchaseToken"))
-          assert(ex.context("codeLength") == "6")
         case Left(other) =>
-          throw new Exception(s"Expected InvalidOrExpiredCodeException but got ${other.getClass}")
+          throw new Exception(s"Expected PurchaseIntentNotFoundException but got ${other.getClass}")
         case Right(_) =>
           throw new Exception("Expected exception but got success")
       }

@@ -5,6 +5,8 @@
 
 package afpma.firecalc.payments.repository
 
+import java.time.Instant
+
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.repository.impl.*
 import afpma.firecalc.payments.shared.api.*
@@ -36,10 +38,12 @@ trait PurchaseIntentRepository[F[_]]:
         productMetadataId : Option[Long]
     ): F[PurchaseIntent]
 
-    def findByToken       (token: PurchaseToken              ): F[Option[PurchaseIntent]]
-    def findByTokenAndCode(token: PurchaseToken, code: String): F[Option[PurchaseIntent]]
-    def markAsProcessed   (token: PurchaseToken              ): F[Boolean]
-    def deleteExpired     (                                  ): F[Int]
+    def findByToken            (token: PurchaseToken              ): F[Option[PurchaseIntent]]
+    def findByTokenAndCode     (token: PurchaseToken, code: String): F[Option[PurchaseIntent]]
+    def markAsProcessed        (token: PurchaseToken              ): F[Boolean]
+    def deleteExpired          (                                  ): F[Int]
+    def incrementFailedAttempts(token: PurchaseToken              ): F[Unit]
+    def countRecentByEmail     (email: String, since: Instant     ): F[Int]
 
 object PurchaseIntentRepository:
 

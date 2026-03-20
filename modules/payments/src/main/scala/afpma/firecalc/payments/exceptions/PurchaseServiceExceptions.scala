@@ -25,6 +25,27 @@ sealed abstract class PurchaseServiceError(
     def context: Map[String, String] = Map.empty
 }
 
+// Rate limiting errors
+final case class TooManyAttemptsException(
+    token: String
+) extends PurchaseServiceError(
+        "Too many failed verification attempts for this purchase token"
+    ) {
+    override def context: Map[String, String] = Map(
+        "purchaseToken" -> token
+    )
+}
+
+final case class TooManyIntentsForEmailException(
+    email: String
+) extends PurchaseServiceError(
+        "Too many purchase intents created for this email in the last hour"
+    ) {
+    override def context: Map[String, String] = Map(
+        "email" -> email
+    )
+}
+
 // Authentication related errors
 final case class InvalidOrExpiredCodeException(
     token: String,
