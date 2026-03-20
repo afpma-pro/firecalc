@@ -26,120 +26,110 @@ Real credentials (SMTP password, GoCardless API tokens) exist in local config fi
 
 ## Implementation Steps
 
-### Step 1: Update .gitignore (Immediate)
+### Step 1: Update .gitignore — DONE
 
-**Files to modify**: `.gitignore`
+**Commit**: `0edc77c`
 
-Add these patterns:
-
+Added to `.gitignore`:
 ```gitignore
-# Deployment configs with credentials (use templates instead)
+# Docker deployment configs with credentials (use .template counterparts instead)
 docker/configs/*/payments/*.conf
 docker/configs/*/invoices/*.yaml
-docker/configs/*/invoices/*.jpg
-docker/configs/*/invoices/*.png
-docker/configs/*/reports/*.jpg
-docker/configs/*/reports/*.png
 !docker/configs/**/*.template
 !docker/configs/**/*.example
+
+# Docker databases (contain transactional data, never commit)
+docker/databases/
 ```
 
-### Step 2: Create Template Files
+Note: logo files (`.jpg`/`.png`) were intentionally kept out of `.gitignore` — they are company assets, not credentials, and remain protected via `.git/info/exclude`.
 
-**Files to create**: For each real config file, create a `.template` counterpart:
+### Step 2: Create Template Files — DONE
 
-```hocon
-# docker/configs/staging/payments/gocardless-config.conf.template
-gocardless {
-    access-token = "YOUR_GOCARDLESS_SANDBOX_TOKEN_HERE"
-    webhook-secret = "YOUR_GOCARDLESS_WEBHOOK_SECRET_HERE"
-    environment = "sandbox"
-    base-url = "https://api-sandbox.gocardless.com"
-}
+**Commit**: `0edc77c`
+
+Created `.template` files alongside pre-existing `.example` files:
+- `docker/configs/staging/payments/gocardless-config.conf.template` — concise scaffold with `YOUR_*` placeholders
+- `docker/configs/staging/payments/email-config.conf.template` — concise scaffold with `YOUR_*` placeholders
+- `docker/configs/staging/payments/payments-config.conf.template` — concise scaffold (JWT already uses `${JWT_SECRET}` env var)
+- `docker/configs/staging/invoices/invoice-config.yaml.template` — concise scaffold with `YOUR_*` placeholders
+
+Each `.template` file starts with a comment pointing to the `.example` counterpart for full setup documentation:
+```
+# Quick-start scaffold — copy to <name>.conf and fill in values.
+# For detailed setup docs and alternatives, see the .example counterpart.
 ```
 
-```hocon
-# docker/configs/staging/payments/email-config.conf.template
-email {
-    smtp-host = "YOUR_SMTP_HOST"
-    smtp-port = 465
-    username = "YOUR_EMAIL_USERNAME"
-    password = "YOUR_EMAIL_PASSWORD"
-    from-address = "YOUR_FROM_ADDRESS"
-    support-email = "YOUR_SUPPORT_EMAIL"
-}
-```
+**Convention**: `.template` = quick copy-and-fill scaffold. `.example` = full onboarding docs with setup guides, troubleshooting, and alternative providers.
 
-### Step 3: Rotate All Exposed Credentials
+### Step 3: Rotate All Exposed Credentials — TODO
 
 **Actions** (manual, by project administrator):
 
 1. **SMTP password** (highest priority — real mail server):
-   - Log into OVH mail admin for `logiciel@afpma.pro`
-   - Change password immediately
-   - Update `docker/configs/staging/payments/email-config.conf` locally
-   - Update production config if same credentials are shared
+   - [ ] Log into OVH mail admin for `logiciel@afpma.pro`
+   - [ ] Change password immediately
+   - [ ] Update `docker/configs/staging/payments/email-config.conf` locally
+   - [ ] Update production config if same credentials are shared
 
 2. **GoCardless sandbox token**:
-   - Log into GoCardless dashboard → Developer → Sandbox
-   - Revoke `<REDACTED>`
-   - Generate new sandbox access token
-   - Update local config
+   - [ ] Log into GoCardless dashboard → Developer → Sandbox
+   - [ ] Revoke the exposed sandbox access token
+   - [ ] Generate new sandbox access token
+   - [ ] Update local config
 
 3. **GoCardless webhook secret**:
-   - Log into GoCardless dashboard → Webhooks
-   - Regenerate webhook endpoint secret
-   - Update local config
+   - [ ] Log into GoCardless dashboard → Webhooks
+   - [ ] Regenerate webhook endpoint secret
+   - [ ] Update local config
 
-### Step 4: Add Secrets Scanning to Pre-commit Hook
+### Step 4: Add Secrets Scanning to Pre-commit Hook — DONE
 
-**Files to modify**: `scripts/git-hooks/pre-commit`
+**Commit**: `0edc77c`
 
-Add a basic secrets detection check after the license header check:
+Added secrets detection to `scripts/git-hooks/pre-commit` (runs before the license header report):
+- Scans `git diff --cached` for patterns matching `(password|secret|token|api.?key)` followed by a quoted value of 8+ characters
+- Skips `.template`, `.example`, and binary files
+- Blocks commit if a potential secret is found (override with `--no-verify`)
 
-```bash
-# ── Secret detection ──────────────────────────────────────
-echo "Checking for potential secrets in staged files..."
+### Step 5: Add Secrets Scanning to CI — DONE
 
-SECRETS_FOUND=0
-for file in $STAGED_FILES; do
-    # Skip binary and template files
-    if file "$file" | grep -q "binary"; then continue; fi
-    if [[ "$file" == *.template ]] || [[ "$file" == *.example ]]; then continue; fi
+**Commit**: `0edc77c`
 
-    # Check for common secret patterns
-    if git diff --cached -- "$file" | grep -qiE \
-        '(password|secret|token|api.?key)\s*[:=]\s*"[^"]{8,}"'; then
-        echo "⚠️  Potential secret in: $file"
-        SECRETS_FOUND=1
-    fi
-done
+Created `.github/workflows/secret-scan.yml`:
+- Uses `gitleaks/gitleaks-action@v2` with full history scan (`fetch-depth: 0`)
+- Triggers on **all pushes** (including to `main`) and all pull requests
+- No `.gitleaks.toml` needed — git history was cleaned before push
 
-if [ $SECRETS_FOUND -eq 1 ]; then
-    echo "ERROR: Potential secrets detected in staged files."
-    echo "If these are false positives, use: git commit --no-verify"
-    exit 1
-fi
+### Step 6: Clean Up .git/info/exclude — DONE
+
+**Commit**: `0edc77c`
+
+Removed credential-file entries now covered by `.gitignore`. Kept logo entries (company assets, not credentials):
+```
+# staging config assets (logos — not credentials, but company-specific assets)
+# Note: *.conf and *.yaml files are now covered by .gitignore
+docker/configs/staging/invoices/logo.jpg
+docker/configs/staging/invoices/logo.png
+docker/configs/staging/reports/logo.jpg
 ```
 
-### Step 5: Add Secrets Scanning to CI
+## Remaining Work
 
-**Files to modify**: `.github/workflows/license-check.yml` (or create new workflow)
+### Credential Rotation (Step 3) — BLOCKED on admin access
 
-Add a step using `gitleaks` or `trufflehog`:
+| Credential | Service | Priority | Status |
+|---|---|---|---|
+| SMTP password | OVH mail admin | P0 (real mail server) | TODO |
+| GoCardless sandbox token | GoCardless dashboard | P1 (sandbox only) | TODO |
+| GoCardless webhook secret | GoCardless dashboard | P1 (sandbox only) | TODO |
 
-```yaml
-- name: Scan for secrets
-  uses: gitleaks/gitleaks-action@v2
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
+### Post-Rotation Verification
 
-### Step 6: Clean Up .git/info/exclude
-
-**Files to modify**: `.git/info/exclude`
-
-Remove the patterns that are now covered by `.gitignore`. This file should not be relied upon for security-critical exclusions.
+- [ ] Test staging deployment with new SMTP credentials (send test email)
+- [ ] Test staging payment flow with new GoCardless token
+- [ ] Verify webhook delivery with new webhook secret
+- [ ] Confirm CI secrets scan passes on first push
 
 ## Dependencies
 
@@ -157,10 +147,10 @@ Remove the patterns that are now covered by `.gitignore`. This file should not b
 ## Migration Notes
 
 - **No breaking changes** for existing developers — their local config files remain untouched.
-- New developers must copy `.template` files and fill in credentials obtained from team admin.
+- New developers must copy `.template` or `.example` files and fill in credentials obtained from team admin.
 - Document the setup process in `docs/dev/guides/STAGING.md`.
 
 ## Estimated Effort
 
-**T-shirt size**: S (Small) for .gitignore + templates. Credential rotation is manual admin work.
-**Priority**: P0 — the SMTP password for a real mail server is at risk.
+**T-shirt size**: S (Small) for .gitignore + templates + hooks. Credential rotation is manual admin work.
+**Priority**: P0 — the SMTP password for a real mail server is at risk until rotated.

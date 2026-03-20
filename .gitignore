@@ -37,6 +37,15 @@ modules/*/samples/*.jpg
 .env.staging.local
 .env.production.local
 
+# Docker deployment configs with credentials (use .template counterparts instead)
+docker/configs/*/payments/*.conf
+docker/configs/*/invoices/*.yaml
+!docker/configs/**/*.template
+!docker/configs/**/*.example
+
+# Docker databases (contain transactional data, never commit)
+docker/databases/
+
 
 # Company-specific overrides for i18n
 modules/*/src/main/resources/company-overlay/

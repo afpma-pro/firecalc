@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 #
-# Pre-commit hook to check for AGPL-3.0-or-later license headers
+# Pre-commit hook to check for license headers and detect secrets
 
 set -e
 
@@ -170,6 +170,31 @@ while IFS= read -r file; do
             ;;
     esac
 done <<< "$STAGED_FILES"
+
+# ── Secret detection ──────────────────────────────────────
+SECRETS_FOUND=0
+while IFS= read -r file; do
+    [ ! -f "$file" ] && continue
+    # Skip template and example files (they legitimately contain placeholder patterns)
+    [[ "$file" == *.template ]] && continue
+    [[ "$file" == *.example ]] && continue
+    # Skip binary files
+    if file "$file" | grep -q "binary\|image\|PDF"; then continue; fi
+
+    # Check staged diff for common secret assignment patterns
+    if git diff --cached -- "$file" | grep -qiE \
+        '(password|secret|token|api.?key)\s*[=:]\s*"[^"$\{][^"]{7,}"'; then
+        echo -e "${RED}⚠  Potential secret in: $file${NC}"
+        SECRETS_FOUND=1
+    fi
+done <<< "$STAGED_FILES"
+
+if [ $SECRETS_FOUND -eq 1 ]; then
+    echo -e "${RED}✗ ERROR: Potential secrets detected in staged files.${NC}"
+    echo "  Review the flagged files and remove credentials before committing."
+    echo "  If this is a false positive: git commit --no-verify"
+    exit 1
+fi
 
 # Report results
 if [ ${#MISSING_HEADERS[@]} -gt 0 ]; then

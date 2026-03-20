@@ -1,0 +1,78 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# Quick-start scaffold — copy to payments-config.conf and fill in values.
+# For detailed setup docs and alternatives, see the .example counterpart.
+#
+# Payments Configuration - STAGING Environment
+# The JWT_SECRET environment variable MUST be set before deploying.
+# Generate a secret with: openssl rand -base64 32
+
+payments {
+  environment = "staging"
+
+  staging {
+    product-catalog = "staging"
+
+    database {
+      filename = "firecalc-payments-staging.db"
+      path = "./databases/staging/firecalc-payments-staging.db"
+    }
+
+    invoice {
+      number-prefix = "FCALC-STG-[YYYY]-"
+      number-digits = 4
+      counter-starting-number = 1
+      timezone = "Europe/Paris"
+    }
+
+    invoice-generation {
+      enabled = true
+      config-file-path = "configs/staging/invoices/invoice-config.yaml"
+      email-enabled = true
+      pdf-generation-enabled = true
+    }
+
+    retry {
+      max-retries = 3
+      base-delay-ms = 2000
+      max-delay-ms = 60000
+    }
+
+    admin {
+      email = "YOUR_ADMIN_EMAIL"
+    }
+
+    jwt {
+      # Required: set JWT_SECRET environment variable before deploying.
+      # Generate with: openssl rand -base64 32
+      secret = ${JWT_SECRET}
+      expiration-minutes = 60
+      issuer = "firecalc-payments"
+    }
+
+    # Report configuration
+    # Development/Staging: true (draft mode for testing)
+    # Production: false (final reports)
+    report-as-draft = true
+  }
+}
+
+# Alternative: Use environment variables for specific settings
+payments-env {
+  environment = ${?PAYMENTS_ENVIRONMENT}
+
+  invoice {
+    number-prefix = ${?INVOICE_PREFIX}
+    number-digits = ${?INVOICE_DIGITS}
+    counter-starting-number = ${?INVOICE_STARTING_NUMBER}
+  }
+
+  retry {
+    max-retries = ${?RETRY_MAX_RETRIES}
+    base-delay-ms = ${?RETRY_BASE_DELAY_MS}
+    max-delay-ms = ${?RETRY_MAX_DELAY_MS}
+  }
+}
