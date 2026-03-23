@@ -18,6 +18,7 @@ object CasingsTemplateWriter:
         Some(0.115), Some("Rth"), Some(0.12),
         None, None, None,
         None, None, None,
+        None,
     )
 
     def generate(outputPath: Path): Unit =

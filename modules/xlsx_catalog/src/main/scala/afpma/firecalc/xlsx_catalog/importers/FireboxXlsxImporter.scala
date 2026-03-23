@@ -30,14 +30,15 @@ object FireboxXlsxImporter:
             require(pressureSheet != null, "Sheet 'Pertes de charge' not found")
             require(emissionsSheet != null, "Sheet 'Émissions - Emissions' not found")
 
-            val firebox = readMainSheet(mainSheet, pressureSheet, emissionsSheet)
-            firebox
+            val image = readFirstPicture(wb, wb.getSheetIndex(mainSheet))
+            readMainSheet(mainSheet, pressureSheet, emissionsSheet, image)
         finally wb.close()
 
     private def readMainSheet(
         main: org.apache.poi.ss.usermodel.Sheet,
         pressure: org.apache.poi.ss.usermodel.Sheet,
         emissions: org.apache.poi.ss.usermodel.Sheet,
+        image: Option[String],
     ): Firebox.Door15aFirebox_Catalog =
         import FireboxRows.*
 
@@ -87,6 +88,7 @@ object FireboxXlsxImporter:
             glass_area                 = reqDbl(GlassArea, "glass area").withUnit[(Meter ^ 2)],
             height_of_lowest_opening   = reqDbl(LowestOpen, "height of lowest opening").withUnit[Meter],
             heat_output_reduced        = heatMode,
+            image                      = image,
         )
 
     private def readPressureLossTable(sheet: org.apache.poi.ss.usermodel.Sheet): String =

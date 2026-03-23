@@ -32,12 +32,17 @@ object SingleTestedTemplateWriter:
         val wb = new XSSFWorkbook()
         val styles = Styles.create(wb)
 
-        buildMainSheet(wb.createSheet("Foyer testé - Tested Firebox"), styles, data)
+        val mainSheet = wb.createSheet("Foyer testé - Tested Firebox")
+        buildMainSheet(mainSheet, styles, data)
         EmissionsSheetHelper.buildEmissionsSheet(
             wb.createSheet("Émissions - Emissions"),
             styles,
             data.map(_.emissions_values)
         )
+
+        // Embed image if present (export flow)
+        data.flatMap(_.image).foreach: dataUri =>
+            PoiHelpers.embedDataUriImage(wb, mainSheet, dataUri, SingleTestedRows.PelletsBurnDur + 3, 0)
 
         PoiHelpers.saveWorkbook(wb, outputPath)
         wb.close()
@@ -161,3 +166,11 @@ object SingleTestedTemplateWriter:
             vOpt(_.pellets_load_burn_duration.map(_.value)), optional = true)
         addComment(sheet, PelletsBurnDur, 0,
             "Uniquement pour les appareils à granulés.\n\nOnly for pellet appliances.")
+
+        // ── Image ──
+        writeSection(sheet, styles, PelletsBurnDur + 2, "Image / Photo (optionnel / optional)", 4)
+        addComment(sheet, PelletsBurnDur + 2, 0,
+            "Optionnel : insérer une photo du foyer dans cette zone.\n" +
+            "Utiliser Insertion > Image. L'image sera importée automatiquement.\n\n" +
+            "Optional: insert a photo of the firebox in this area.\n" +
+            "Use Insert > Picture. The image will be imported automatically.")

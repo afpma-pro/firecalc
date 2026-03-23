@@ -102,6 +102,14 @@ object FireboxTemplateWriter:
         writeFormField(sheet, styles, HeatPower, "Puissance réduite", "Reduced power value", "W", optional = true)
         addComment(sheet, HeatPower, 0, "Uniquement si mode = FromTypeTest.\nOnly if mode = FromTypeTest.")
 
+        // ── Image ──
+        writeSection(sheet, styles, HeatPower + 2, "Image / Photo (optionnel / optional)", 4)
+        addComment(sheet, HeatPower + 2, 0,
+            "Optionnel : insérer une photo du foyer dans cette zone.\n" +
+            "Utiliser Insertion > Image. L'image sera importée automatiquement.\n\n" +
+            "Optional: insert a photo of the firebox in this area.\n" +
+            "Use Insert > Picture. The image will be imported automatically.")
+
     // ---- Sheet 2: Pressure loss table (16x9 grid) ----
 
     private def buildPressureLossSheet(sheet: Sheet, styles: Styles.StyleBundle): Unit =

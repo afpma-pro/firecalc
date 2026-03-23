@@ -61,6 +61,7 @@ object CatalogConstants:
         val Layer3Thick = 12
         val Layer3Type  = 13
         val Layer3Value = 14
+        val Image       = 15
 
     // Column indices for flow resistance tabular sheet (0-based)
     object FlowResCols:
@@ -71,6 +72,7 @@ object CatalogConstants:
         val Shape       = 4
         val Dim1        = 5
         val Dim2        = 6
+        val Image       = 7
 
     // Row indices for firebox form sheet (0-based)
     object FireboxRows:

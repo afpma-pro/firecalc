@@ -21,12 +21,13 @@ object FlowResXlsxImporter:
         val wb = openWorkbook(path)
         try
             val sheet = wb.getSheetAt(0)
+            val pictures = readPicturesByRow(wb, 0, FlowResCols.Image)
             val rows = (3 to sheet.getLastRowNum).flatMap: rowIdx =>
-                Option(sheet.getRow(rowIdx)).flatMap(parseRow)
+                Option(sheet.getRow(rowIdx)).flatMap(parseRow(_, pictures.get(rowIdx)))
             rows
         finally wb.close()
 
-    private def parseRow(row: org.apache.poi.ss.usermodel.Row): Option[FlowResistanceCatalogEntry] =
+    private def parseRow(row: org.apache.poi.ss.usermodel.Row, image: Option[String]): Option[FlowResistanceCatalogEntry] =
         for
             name <- readString(row, FlowResCols.Name)
             zeta <- readDouble(row, FlowResCols.Zeta)
@@ -49,4 +50,5 @@ object FlowResXlsxImporter:
                 name = name,
                 zeta = zeta.withUnit[1],
                 cross_section = crossSection,
+                image = image,
             )

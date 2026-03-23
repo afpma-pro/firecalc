@@ -21,12 +21,13 @@ object PipesXlsxImporter:
         val wb = openWorkbook(path)
         try
             val sheet = wb.getSheetAt(0)
+            val pictures = readPicturesByRow(wb, 0, PipeCols.Image)
             val rows = (3 to sheet.getLastRowNum).flatMap: rowIdx =>
-                Option(sheet.getRow(rowIdx)).flatMap(parseRow)
+                Option(sheet.getRow(rowIdx)).flatMap(parseRow(_, pictures.get(rowIdx)))
             rows
         finally wb.close()
 
-    private def parseRow(row: org.apache.poi.ss.usermodel.Row): Option[SetThermalPipeProp_13384.SetPropertiesInBatch] =
+    private def parseRow(row: org.apache.poi.ss.usermodel.Row, image: Option[String]): Option[SetThermalPipeProp_13384.SetPropertiesInBatch] =
         readString(row, PipeCols.BatchName).map: batchName =>
             val props = scala.collection.mutable.ListBuffer[SetThermalPipeProp_13384.SetSingleProp]()
 
@@ -55,7 +56,7 @@ object PipesXlsxImporter:
             if layers.nonEmpty then
                 props += SetThermalPipeProp_13384.SetLayers(layers.toList)
 
-            SetThermalPipeProp_13384.SetPropertiesInBatch(batchName, props.toSeq)
+            SetThermalPipeProp_13384.SetPropertiesInBatch(batchName, props.toSeq, image = image)
 
     private[importers] def parseMaterial(name: String, roughnessOverride: Option[Double]): Material_13384 =
         val rough = roughnessOverride.map(_.withUnit[Meter])

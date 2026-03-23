@@ -23,11 +23,12 @@ object FlowResTemplateWriter:
         ("Forme de section",   "Cross-section shape", "—"),
         ("Dimension 1",        "Dimension 1",         "m"),
         ("Dimension 2",        "Dimension 2",         "m"),
+        ("Image / Photo",      "Image / Photo",       "—"),
     )
 
     private val Example: Seq[Option[Any]] = Seq(
         Some("Grillage pare-étincelles / Wire mesh screen"),
-        Some(0.61), Some("Aucune / None"), None, None, None, None,
+        Some(0.61), Some("Aucune / None"), None, None, None, None, None,
     )
 
     def generate(outputPath: Path): Unit =
@@ -38,7 +39,7 @@ object FlowResTemplateWriter:
         writeTableHeaders(sheet, styles, 0, 1, 2, Headers)
         writeExampleRow(sheet, styles, 3, Example)
 
-        setColumnWidths(sheet, Seq(38, 20, 24, 20, 22, 14, 14))
+        setColumnWidths(sheet, Seq(38, 20, 24, 20, 22, 14, 14, 18))
 
         sheet.createFreezePane(0, 3)
 
@@ -52,6 +53,11 @@ object FlowResTemplateWriter:
             "None = no cross-section specified\n" +
             "Area = specify area in cm²\n" +
             "Shape = specify geometry (shape + dimensions)")
+        addComment(sheet, 2, FlowResCols.Image,
+            "Optionnel : insérer une image du produit dans cette colonne.\n" +
+            "L'image doit être insérée (Insertion > Image) et positionnée sur la ligne correspondante.\n\n" +
+            "Optional: insert a product image in this column.\n" +
+            "The image must be inserted (Insert > Picture) and positioned on the corresponding row.")
 
         PoiHelpers.saveWorkbook(wb, outputPath)
         wb.close()

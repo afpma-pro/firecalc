@@ -31,6 +31,7 @@ object PipesTemplateWriter:
         ("Couche 3 : Épaisseur",        "Layer 3: Thickness",    "m"),
         ("Couche 3 : Rth ou lambda ?",  "Layer 3: Rth or lambda?", "—"),
         ("Couche 3 : Valeur therm.",    "Layer 3: Thermal value", "m².K/W ou W/(m.K)"),
+        ("Image / Photo",               "Image / Photo",         "—"),
     )
 
     private val PipeExample: Seq[Option[Any]] = Seq(
@@ -38,6 +39,7 @@ object PipesTemplateWriter:
         Some(0.026), Some("Rth"), Some(0.44),
         None, None, None,
         None, None, None,
+        None,
     )
 
     def generate(outputPath: Path): Unit =
@@ -59,7 +61,7 @@ object PipesTemplateWriter:
         writeTableHeaders(sheet, styles, 0, 1, 2, Headers)
         writeExampleRow(sheet, styles, 3, example)
 
-        setColumnWidths(sheet, Seq(30, 18, 16, 18, 14, 14, 16, 20, 22, 16, 20, 22, 16, 20, 22))
+        setColumnWidths(sheet, Seq(30, 18, 16, 18, 14, 14, 16, 20, 22, 16, 20, 22, 16, 20, 22, 18))
 
         sheet.createFreezePane(0, 3)
 
@@ -86,6 +88,11 @@ object PipesTemplateWriter:
             "lambda = conductivité thermique (W/(m.K))\n\n" +
             "Rth = thermal resistance (m².K/W)\n" +
             "lambda = thermal conductivity (W/(m.K))")
+        addComment(sheet, 2, PipeCols.Image,
+            "Optionnel : insérer une image du produit dans cette colonne.\n" +
+            "L'image doit être insérée (Insertion > Image) et positionnée sur la ligne correspondante.\n\n" +
+            "Optional: insert a product image in this column.\n" +
+            "The image must be inserted (Insert > Picture) and positioned on the corresponding row.")
 
     private[templates] def buildRoughnessRefSheet(sheet: org.apache.poi.ss.usermodel.Sheet, styles: Styles.StyleBundle): Unit =
         sheet.setColumnWidth(0, 22 * 256)

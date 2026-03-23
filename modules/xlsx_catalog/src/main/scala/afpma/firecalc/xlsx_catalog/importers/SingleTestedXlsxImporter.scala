@@ -28,12 +28,14 @@ object SingleTestedXlsxImporter:
             require(mainSheet != null, "Sheet 'Foyer testé - Tested Firebox' not found")
             require(emissionsSheet != null, "Sheet 'Émissions - Emissions' not found")
 
-            readMainSheet(mainSheet, emissionsSheet)
+            val image = readFirstPicture(wb, wb.getSheetIndex(mainSheet))
+            readMainSheet(mainSheet, emissionsSheet, image)
         finally wb.close()
 
     private def readMainSheet(
         main: org.apache.poi.ss.usermodel.Sheet,
         emissions: org.apache.poi.ss.usermodel.Sheet,
+        image: Option[String],
     ): Firebox.SingleTested =
         import SingleTestedRows.*
 
@@ -93,4 +95,5 @@ object SingleTestedXlsxImporter:
             co2_dry_lowest                         = dbl(Co2Lowest).map(_.withUnit[Percent]),
             pellets_load_burn_duration             = dbl(PelletsBurnDur).map(_.withUnit[Minute]),
             emissions_values                       = FireboxXlsxImporter.readEmissions(emissions),
+            image                                  = image,
         )
