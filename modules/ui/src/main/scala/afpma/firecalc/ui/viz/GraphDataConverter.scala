@@ -204,25 +204,52 @@ object GraphDataConverter:
             ChartData(series = series, yAxes = yAxes, xAxisLabel = xLabel, backgroundBands = bands.result())
 
     /** Build data points for a given series type.
-      * Each point is placed at the section boundary (xEnd) and carries tooltip metadata.
+      * Returns an origin point at x=0 (inlet condition) followed by one point per section
+      * at xEnd (section exit). Temperature and velocity use boundary values (_start/_end)
+      * so the curve is physically continuous across section transitions.
       */
     private def buildSeriesPoints(
         sections : Vector[PlottableSection],
         seriesId : String
     )(using DisplayUnits): Vector[DataPoint] =
+        if sections.isEmpty then return Vector.empty
+
         var cumulativeHeight   = 0.0
         var cumulativePressure = 0.0
 
-        sections.zipWithIndex.map { case (ps, idx) =>
+        // Origin point at x = 0: start values of the first section
+        val firstSection = sections.head.section
+        val (originY, originFmt) = seriesId match
+            case "temperature" =>
+                val t = firstSection.gas_temp_start
+                (t.value, t.showP_orImpUnitsTemp[Fahrenheit])
+            case "velocity" =>
+                val v = firstSection.v_start
+                (v.value, v.showP_orImpUnits[Foot / Second])
+            case "elevation" =>
+                (0.0, 0.0.withUnit[Meter].showP_orImpUnits[Foot])
+            case "pressure" =>
+                (0.0, 0.0.withUnit[Pascal].showP)
+            case _ => (0.0, "")
+
+        val originPoint = DataPoint(
+            x              = 0.0,
+            y              = originY,
+            tooltipTitle   = s"→ ${firstSection.section_name}",
+            tooltipExtra   = sections.head.pipeName,
+            formattedValue = originFmt
+        )
+
+        // Section boundary points at xEnd using _end values
+        val boundaryPoints = sections.zipWithIndex.map { case (ps, idx) =>
             val section = ps.section
 
-            // Compute y-value and formatted value
             val (yVal, fmtVal) = seriesId match
                 case "temperature" =>
-                    val t = section.gas_temp_middle
+                    val t = section.gas_temp_end
                     (t.value, t.showP_orImpUnitsTemp[Fahrenheit])
                 case "velocity" =>
-                    val v = section.v_middle.getOrElse(section.v_start)
+                    val v = section.v_end
                     (v.value, v.showP_orImpUnits[Foot / Second])
                 case "elevation" =>
                     cumulativeHeight += section.effective_height.value
@@ -237,7 +264,6 @@ object GraphDataConverter:
                     (cumulativePressure, p.showP)
                 case _ => (0.0, "")
 
-            // Tooltip title: "{name_before} → {name_after}" at section boundaries
             val tooltipTitle = buildTooltipTitle(sections, idx)
             val tooltipExtra = ps.pipeName
 
@@ -249,6 +275,8 @@ object GraphDataConverter:
                 formattedValue = fmtVal
             )
         }
+
+        originPoint +: boundaryPoints
 
     /** Build tooltip title showing section transition.
       * - First point: "→ {name}"
