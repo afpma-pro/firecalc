@@ -88,4 +88,7 @@ object GraphViz:
             BackgroundBandJS(xStart = b.xStart, xEnd = b.xEnd, color = b.color, label = b.label)
         }*)
 
-        ChartDataJS(series = seriesJs, yAxes = yAxesJs, xAxisLabel = data.xAxisLabel, backgroundBands = bandsJs)
+        val xMinJs: js.UndefOr[Double] = data.xMin.fold[js.UndefOr[Double]](js.undefined)(v => v)
+        val xMaxJs: js.UndefOr[Double] = data.xMax.fold[js.UndefOr[Double]](js.undefined)(v => v)
+
+        ChartDataJS(series = seriesJs, yAxes = yAxesJs, xAxisLabel = data.xAxisLabel, backgroundBands = bandsJs, xMin = xMinJs, xMax = xMaxJs)

@@ -69,6 +69,8 @@ interface ChartDataJS {
     yAxes: YAxisConfigJS[];
     xAxisLabel: string;
     backgroundBands: BackgroundBandJS[];
+    xMin?: number;
+    xMax?: number;
 }
 
 interface GraphConfigJS {
@@ -142,9 +144,15 @@ export function initGraphViz(
                     delete scales[key];
                 }
             }
-            // Update x-axis label
-            if (scales.x && (scales.x as any).title) {
-                (scales.x as any).title.text = newData.xAxisLabel;
+            // Update x-axis
+            if (scales.x) {
+                if ((scales.x as any).title) {
+                    (scales.x as any).title.text = newData.xAxisLabel;
+                }
+                if (newData.xMin !== undefined) (scales.x as any).min = newData.xMin;
+                else delete (scales.x as any).min;
+                if (newData.xMax !== undefined) (scales.x as any).max = newData.xMax;
+                else delete (scales.x as any).max;
             }
             // Add new y scales
             newData.yAxes.forEach((axis, i) => {
@@ -217,18 +225,20 @@ function buildChartConfig(
 ): ChartConfiguration<'line'> {
     const datasets = data.series.map(seriesToDataset);
 
-    const scales: Record<string, any> = {
-        x: {
-            type: 'linear' as const,
-            title: {
-                display: true,
-                text: data.xAxisLabel,
-            },
-            ticks: {
-                maxRotation: 0,
-            },
+    const xScale: Record<string, any> = {
+        type: 'linear' as const,
+        title: {
+            display: true,
+            text: data.xAxisLabel,
+        },
+        ticks: {
+            maxRotation: 0,
         },
     };
+    if (data.xMin !== undefined) xScale.min = data.xMin;
+    if (data.xMax !== undefined) xScale.max = data.xMax;
+
+    const scales: Record<string, any> = { x: xScale };
 
     data.yAxes.forEach((axis, i) => {
         scales[axis.id] = buildYAxisScale(axis, i === 0);

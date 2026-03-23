@@ -107,19 +107,25 @@ trait ChartDataJS extends js.Object:
     var yAxes          : js.Array[YAxisConfigJS]
     var xAxisLabel     : String
     var backgroundBands: js.Array[BackgroundBandJS]
+    var xMin           : js.UndefOr[Double]
+    var xMax           : js.UndefOr[Double]
 
 object ChartDataJS:
     def apply(
         series         : js.Array[ChartSeriesJS],
         yAxes          : js.Array[YAxisConfigJS],
         xAxisLabel     : String,
-        backgroundBands: js.Array[BackgroundBandJS] = js.Array()
+        backgroundBands: js.Array[BackgroundBandJS] = js.Array(),
+        xMin           : js.UndefOr[Double] = js.undefined,
+        xMax           : js.UndefOr[Double] = js.undefined
     ): ChartDataJS =
         js.Dynamic.literal(
             series          = series,
             yAxes           = yAxes,
             xAxisLabel      = xAxisLabel,
-            backgroundBands = backgroundBands
+            backgroundBands = backgroundBands,
+            xMin            = xMin,
+            xMax            = xMax
         ).asInstanceOf[ChartDataJS]
 
 trait GraphConfigJS extends js.Object:
