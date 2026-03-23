@@ -950,6 +950,7 @@ lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
     libraryDependencies ++= Seq(
       "org.apache.poi" % "poi"       % "5.3.0",
       "org.apache.poi" % "poi-ooxml" % "5.3.0",
+      "org.scalameta" %% "munit"     % "1.0.0" % "test",
     ),
   )
   .dependsOn(catalog.jvm)

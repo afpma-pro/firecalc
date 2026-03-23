@@ -62,7 +62,7 @@ case class CatalogSearchWidget[A](
                     label(
                         cls := "input input-md",
                         input(
-                            cls         := "field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
+                            cls         := "field-sizing-content min-w-[14ch]",
                             tpe         := "text",
                             placeholder := I18N_UI.placeholders.search,
                             listAttr    := datalistId,
