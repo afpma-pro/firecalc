@@ -72,17 +72,19 @@ object GraphDataConverter:
     private def make_PipeSectionResult_Manual(
         section_name: String,
         pu: ValidatedNel[MecaFlu_Error, Pressure],
+        v_end: FlowVelocity,
     ): PipeSectionResult[?] = 
         PipeSectionResult
             .makeFrom[AddFlowOnlyPipeElement_15544_V3.AddPressureDiff](
                 _section_id = PipeIdx(0),
-                _section_name = "Registre d'Air",
+                _section_name = section_name,
                 _section_typ = CombustionAirPipeT,
-                _descr = AddFlowOnlyPipeElement_15544_V3.AddPressureDiff("registre d'air", 0.pascals),
+                _descr = AddFlowOnlyPipeElement_15544_V3.AddPressureDiff(section_name, 0.pascals),
                 _innerShape_middle = Circle(100.mm),
                 _innerShape_end = Circle(100.mm),
                 _crossSectionArea_end = Circle(100.mm).area,
-                _pu = pu
+                _pu = pu,
+                _v_end = v_end
             )
 
     def convert(
@@ -109,17 +111,22 @@ object GraphDataConverter:
             case Validated.Invalid(nel) => 
                 UnexpectedThrowable(new Exception(s"accumulation error in graph : ${nel.show}"), sectionTyp = CombustionAirPipeT ).invalidNel
 
-        val registreAirSection = make_PipeSectionResult_Manual("registre d'air", delta_pressure)
+        val registreAirSectionVNel = airIntake.map: air_intake_res =>
+            make_PipeSectionResult_Manual("registre d'air", 
+                pu = delta_pressure,
+                v_end = air_intake_res.v_end.getOrElse(0.m_per_s)
+            )
 
-        val registreAir: PipeResult = new PipeResultFromSections(Vector(registreAirSection)) {
-            val density_mean: Option[Density] = None
-            val gas_temp_mean: TCelsius = 0.degreesCelsius
-        }
+        val registreAir: VNelMcalcErr[PipeResult] = registreAirSectionVNel.map: registreAirSection =>
+            new PipeResultFromSections(Vector(registreAirSection)) {
+                val density_mean: Option[Density] = None
+                val gas_temp_mean: TCelsius = 0.degreesCelsius
+            }
 
         val pipes = Vector(
             ("Air Intake",     airIntake),
+            ("Registre d'air", registreAir),
             ("Combustion Air", combustionAir),
-            ("Registre d'air", registreAir.validNel),
             ("Firebox",        firebox),
             ("Flue",           flue),
             ("Connector",      connector),
@@ -137,11 +144,12 @@ object GraphDataConverter:
                         runningLength += section.section_length.value
                         PlottableSection(pipeName, section, xStart, xEnd = runningLength)
                     }
-                case Validated.Valid(pr: PipeResult) => 
+                case Validated.Valid(pr: PipeResult) if pipeName == "Registre d'air" || pipeName == "Air Intake" => 
                     val xStart = runningLength
                     val section = make_PipeSectionResult_Manual(
                         section_name = pr.typ.show,
-                        pu = pr.pu
+                        pu = pr.pu,
+                        v_end = pr.v_end.getOrElse(0.m_per_s)
                     )
                     runningLength += section.section_length.value
                     Vector(PlottableSection(pipeName, section, xStart, xEnd = runningLength))
@@ -229,7 +237,7 @@ object GraphDataConverter:
             case "elevation" =>
                 (0.0, 0.0.withUnit[Meter].showP_orImpUnits[Foot])
             case "pressure" =>
-                (0.0, 0.0.withUnit[Pascal].showP)
+                (0.0, 0.pascals.showP)
             case _ => (0.0, "")
 
         val originPoint = DataPoint(
