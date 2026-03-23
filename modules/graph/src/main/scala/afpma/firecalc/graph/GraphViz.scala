@@ -71,15 +71,21 @@ object GraphViz:
             val posStr = a.position match
                 case YAxisPosition.Left  => "left"
                 case YAxisPosition.Right => "right"
-            val minJs: js.UndefOr[Double] = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val maxJs: js.UndefOr[Double] = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val minJs: js.UndefOr[Double]  = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val maxJs: js.UndefOr[Double]  = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val stepJs: js.UndefOr[Double] = a.stepSize.fold[js.UndefOr[Double]](js.undefined)(v => v)
             YAxisConfigJS(
                 id       = a.id,
                 label    = a.label,
                 position = posStr,
                 min      = minJs,
-                max      = maxJs
+                max      = maxJs,
+                stepSize = stepJs
             )
         }*)
 
-        ChartDataJS(series = seriesJs, yAxes = yAxesJs, xAxisLabel = data.xAxisLabel)
+        val bandsJs = js.Array(data.backgroundBands.map { b =>
+            BackgroundBandJS(xStart = b.xStart, xEnd = b.xEnd, color = b.color, label = b.label)
+        }*)
+
+        ChartDataJS(series = seriesJs, yAxes = yAxesJs, xAxisLabel = data.xAxisLabel, backgroundBands = bandsJs)

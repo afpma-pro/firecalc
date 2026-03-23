@@ -67,6 +67,7 @@ trait YAxisConfigJS extends js.Object:
     var position: String
     var min     : js.UndefOr[Double]
     var max     : js.UndefOr[Double]
+    var stepSize: js.UndefOr[Double]
 
 object YAxisConfigJS:
     def apply(
@@ -74,31 +75,51 @@ object YAxisConfigJS:
         label   : String,
         position: String,
         min     : js.UndefOr[Double] = js.undefined,
-        max     : js.UndefOr[Double] = js.undefined
+        max     : js.UndefOr[Double] = js.undefined,
+        stepSize: js.UndefOr[Double] = js.undefined
     ): YAxisConfigJS =
         js.Dynamic.literal(
             id       = id,
             label    = label,
             position = position,
             min      = min,
-            max      = max
+            max      = max,
+            stepSize = stepSize
         ).asInstanceOf[YAxisConfigJS]
 
+trait BackgroundBandJS extends js.Object:
+    var xStart: Double
+    var xEnd  : Double
+    var color : String
+    var label : String
+
+object BackgroundBandJS:
+    def apply(xStart: Double, xEnd: Double, color: String, label: String): BackgroundBandJS =
+        js.Dynamic.literal(
+            xStart = xStart,
+            xEnd   = xEnd,
+            color  = color,
+            label  = label
+        ).asInstanceOf[BackgroundBandJS]
+
 trait ChartDataJS extends js.Object:
-    var series     : js.Array[ChartSeriesJS]
-    var yAxes      : js.Array[YAxisConfigJS]
-    var xAxisLabel : String
+    var series         : js.Array[ChartSeriesJS]
+    var yAxes          : js.Array[YAxisConfigJS]
+    var xAxisLabel     : String
+    var backgroundBands: js.Array[BackgroundBandJS]
 
 object ChartDataJS:
     def apply(
-        series     : js.Array[ChartSeriesJS],
-        yAxes      : js.Array[YAxisConfigJS],
-        xAxisLabel : String
+        series         : js.Array[ChartSeriesJS],
+        yAxes          : js.Array[YAxisConfigJS],
+        xAxisLabel     : String,
+        backgroundBands: js.Array[BackgroundBandJS] = js.Array()
     ): ChartDataJS =
         js.Dynamic.literal(
-            series     = series,
-            yAxes      = yAxes,
-            xAxisLabel = xAxisLabel
+            series          = series,
+            yAxes           = yAxes,
+            xAxisLabel      = xAxisLabel,
+            backgroundBands = backgroundBands
         ).asInstanceOf[ChartDataJS]
 
 trait GraphConfigJS extends js.Object:

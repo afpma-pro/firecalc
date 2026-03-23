@@ -28,14 +28,23 @@ case class YAxisConfig(
     label   : String,
     position: YAxisPosition,
     min     : Option[Double] = None,
-    max     : Option[Double] = None
+    max     : Option[Double] = None,
+    stepSize: Option[Double] = None
 )
 
 enum YAxisPosition:
     case Left, Right
 
+case class BackgroundBand(
+    xStart: Double,
+    xEnd  : Double,
+    color : String,
+    label : String
+)
+
 case class ChartData(
-    series     : Vector[ChartSeries],
-    yAxes      : Vector[YAxisConfig],
-    xAxisLabel : String
+    series         : Vector[ChartSeries],
+    yAxes          : Vector[YAxisConfig],
+    xAxisLabel     : String,
+    backgroundBands: Vector[BackgroundBand] = Vector.empty
 )

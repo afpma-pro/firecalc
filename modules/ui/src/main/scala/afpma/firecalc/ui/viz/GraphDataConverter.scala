@@ -58,6 +58,17 @@ object GraphDataConverter:
     private val ElevationColor   = "#E9C46A"
     private val PressureColor    = "#6C757D"
 
+    // Background band colors (matching 3D viz pipe group palette, ~12% opacity)
+    private val BandColors: Map[String, String] = Map(
+        "Air Intake"     -> "rgba(17, 153, 255, 0.12)",   // Blue #19F
+        "Combustion Air" -> "rgba(88, 184, 255, 0.12)",   // Light Blue #58B8FF
+        "Registre d'air" -> "rgba(88, 184, 255, 0.12)",   // Same as Combustion Air
+        "Firebox"        -> "rgba(188, 33, 50, 0.12)",    // Red #BC2132
+        "Flue"           -> "rgba(238, 102, 34, 0.12)",   // Orange #E62
+        "Connector"      -> "rgba(245, 147, 49, 0.12)",   // OrangeYellow #F59331
+        "Chimney"        -> "rgba(255, 220, 56, 0.12)"    // Yellow #FFDC38
+    )
+
     private def make_PipeSectionResult_Manual(
         section_name: String,
         pu: ValidatedNel[MecaFlu_Error, Pressure],
@@ -177,10 +188,20 @@ object GraphDataConverter:
 
             val yAxes = Vector(
                 YAxisConfig(id = "temp",  label = tempLabel, position = YAxisPosition.Left),
-                YAxisConfig(id = "right", label = rightLabel, position = YAxisPosition.Right)
+                YAxisConfig(id = "right", label = rightLabel, position = YAxisPosition.Right, stepSize = Some(5.0))
             )
 
-            ChartData(series = series, yAxes = yAxes, xAxisLabel = xLabel)
+            // Build background bands from pipe group boundaries
+            val bands = Vector.newBuilder[BackgroundBand]
+            var bandStart = 0.0
+            pipes.foreach { (pipeName, _) =>
+                val pipeEnd = allSections.filter(_.pipeName == pipeName).lastOption.map(_.xEnd).getOrElse(bandStart)
+                if pipeEnd > bandStart then
+                    bands += BackgroundBand(bandStart, pipeEnd, BandColors.getOrElse(pipeName, "transparent"), pipeName)
+                bandStart = pipeEnd
+            }
+
+            ChartData(series = series, yAxes = yAxes, xAxisLabel = xLabel, backgroundBands = bands.result())
 
     /** Build data points for a given series type.
       * Each point is placed at the section boundary (xEnd) and carries tooltip metadata.

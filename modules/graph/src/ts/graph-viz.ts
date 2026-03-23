@@ -54,12 +54,21 @@ interface YAxisConfigJS {
     position: 'left' | 'right';
     min?: number;
     max?: number;
+    stepSize?: number;
+}
+
+interface BackgroundBandJS {
+    xStart: number;
+    xEnd: number;
+    color: string;
+    label: string;
 }
 
 interface ChartDataJS {
     series: ChartSeriesJS[];
     yAxes: YAxisConfigJS[];
     xAxisLabel: string;
+    backgroundBands: BackgroundBandJS[];
 }
 
 interface GraphConfigJS {
@@ -71,6 +80,33 @@ interface GraphVizHandleJS {
     dispose(): void;
     update(data: ChartDataJS): void;
 }
+
+// ── Background bands plugin ──
+
+/** Inline Chart.js plugin: paints semi-transparent vertical bands behind the chart area.
+  * Reads band data from `(chart as any)._backgroundBands` so it can be updated dynamically. */
+const graphVizPlugin = {
+    id: 'graphVizPlugin',
+    beforeDraw(chart: Chart) {
+        const bands = (chart as any)._backgroundBands as BackgroundBandJS[] | undefined;
+        if (!bands || bands.length === 0) return;
+
+        const { ctx, chartArea, scales } = chart;
+        if (!chartArea || !scales.x) return;
+
+        const xScale = scales.x;
+        ctx.save();
+        for (const band of bands) {
+            const x1 = Math.max(xScale.getPixelForValue(band.xStart), chartArea.left);
+            const x2 = Math.min(xScale.getPixelForValue(band.xEnd), chartArea.right);
+            if (x2 <= x1) continue;
+
+            ctx.fillStyle = band.color;
+            ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
+        }
+        ctx.restore();
+    },
+};
 
 // ── Public API ──
 
@@ -84,6 +120,7 @@ export function initGraphViz(
 
     const chartConfig = buildChartConfig(data, config);
     const chart = new Chart(canvas, chartConfig);
+    (chart as any)._backgroundBands = data.backgroundBands;
 
     return {
         dispose() {
@@ -93,6 +130,9 @@ export function initGraphViz(
         update(newData: ChartDataJS) {
             // Update datasets
             chart.data.datasets = newData.series.map(seriesToDataset);
+
+            // Update background bands
+            (chart as any)._backgroundBands = newData.backgroundBands;
 
             // Update scales
             const scales = chart.options.scales!;
@@ -121,14 +161,22 @@ export function initGraphViz(
 /** Number of ticks on every y-axis so that grids are aligned across scales. */
 const Y_AXIS_TICK_COUNT = 11;
 
-/** Solid grid lines with zero-line emphasis + aligned tick count. */
+/** Grid lines with zero-line emphasis, dashed non-zero lines, and optional stepSize. */
 function buildYAxisScale(axis: YAxisConfigJS, isPrimary: boolean): Record<string, any> {
+    const ticks: Record<string, any> = axis.stepSize !== undefined
+        ? { stepSize: axis.stepSize }
+        : { count: Y_AXIS_TICK_COUNT };
+
     return {
         type: 'linear',
         position: axis.position,
         title: {
             display: true,
             text: axis.label,
+        },
+        border: {
+            dash: (ctx: { tick: { value: number } }) =>
+                ctx.tick.value === 0 ? [] : [4, 4],
         },
         grid: {
             drawOnChartArea: true,
@@ -141,9 +189,7 @@ function buildYAxisScale(axis: YAxisConfigJS, isPrimary: boolean): Record<string
             lineWidth: (ctx: { tick: { value: number } }) =>
                 ctx.tick.value === 0 ? 2 : 1,
         },
-        ticks: {
-            count: Y_AXIS_TICK_COUNT,
-        },
+        ticks,
         ...(axis.min !== undefined && { min: axis.min }),
         ...(axis.max !== undefined && { max: axis.max }),
     };
@@ -193,6 +239,7 @@ function buildChartConfig(
         data: {
             datasets,
         },
+        plugins: [graphVizPlugin],
         options: {
             responsive: config.responsive,
             maintainAspectRatio: config.maintainAspectRatio,

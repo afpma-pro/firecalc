@@ -20,11 +20,31 @@ Chart.register(
   Legend,
   Filler
 );
+var graphVizPlugin = {
+  id: "graphVizPlugin",
+  beforeDraw(chart) {
+    const bands = chart._backgroundBands;
+    if (!bands || bands.length === 0) return;
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea || !scales.x) return;
+    const xScale = scales.x;
+    ctx.save();
+    for (const band of bands) {
+      const x1 = Math.max(xScale.getPixelForValue(band.xStart), chartArea.left);
+      const x2 = Math.min(xScale.getPixelForValue(band.xEnd), chartArea.right);
+      if (x2 <= x1) continue;
+      ctx.fillStyle = band.color;
+      ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
+    }
+    ctx.restore();
+  }
+};
 function initGraphViz(container, data, config) {
   const canvas = document.createElement("canvas");
   container.appendChild(canvas);
   const chartConfig = buildChartConfig(data, config);
   const chart = new Chart(canvas, chartConfig);
+  chart._backgroundBands = data.backgroundBands;
   return {
     dispose() {
       chart.destroy();
@@ -32,6 +52,7 @@ function initGraphViz(container, data, config) {
     },
     update(newData) {
       chart.data.datasets = newData.series.map(seriesToDataset);
+      chart._backgroundBands = newData.backgroundBands;
       const scales = chart.options.scales;
       for (const key of Object.keys(scales)) {
         if (key !== "x") {
@@ -41,20 +62,34 @@ function initGraphViz(container, data, config) {
       if (scales.x && scales.x.title) {
         scales.x.title.text = newData.xAxisLabel;
       }
-      for (const axis of newData.yAxes) {
-        scales[axis.id] = {
-          type: "linear",
-          position: axis.position,
-          title: {
-            display: true,
-            text: axis.label
-          },
-          ...axis.min !== void 0 && { min: axis.min },
-          ...axis.max !== void 0 && { max: axis.max }
-        };
-      }
+      newData.yAxes.forEach((axis, i) => {
+        scales[axis.id] = buildYAxisScale(axis, i === 0);
+      });
       chart.update();
     }
+  };
+}
+var Y_AXIS_TICK_COUNT = 11;
+function buildYAxisScale(axis, isPrimary) {
+  const ticks = axis.stepSize !== void 0 ? { stepSize: axis.stepSize } : { count: Y_AXIS_TICK_COUNT };
+  return {
+    type: "linear",
+    position: axis.position,
+    title: {
+      display: true,
+      text: axis.label
+    },
+    border: {
+      dash: (ctx) => ctx.tick.value === 0 ? [] : [4, 4]
+    },
+    grid: {
+      drawOnChartArea: true,
+      color: (ctx) => ctx.tick.value === 0 ? "rgba(0, 0, 0, 0.35)" : isPrimary ? "rgba(0, 0, 0, 0.1)" : "transparent",
+      lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1
+    },
+    ticks,
+    ...axis.min !== void 0 && { min: axis.min },
+    ...axis.max !== void 0 && { max: axis.max }
   };
 }
 function seriesToDataset(s) {
@@ -89,23 +124,15 @@ function buildChartConfig(data, config) {
       }
     }
   };
-  for (const axis of data.yAxes) {
-    scales[axis.id] = {
-      type: "linear",
-      position: axis.position,
-      title: {
-        display: true,
-        text: axis.label
-      },
-      ...axis.min !== void 0 && { min: axis.min },
-      ...axis.max !== void 0 && { max: axis.max }
-    };
-  }
+  data.yAxes.forEach((axis, i) => {
+    scales[axis.id] = buildYAxisScale(axis, i === 0);
+  });
   return {
     type: "line",
     data: {
       datasets
     },
+    plugins: [graphVizPlugin],
     options: {
       responsive: config.responsive,
       maintainAspectRatio: config.maintainAspectRatio,
