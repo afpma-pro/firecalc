@@ -74,6 +74,13 @@ object CatalogConstants:
         val Dim2        = 6
         val Image       = 7
 
+    // Column indices for angle preset tabular sheet (0-based)
+    object AnglePresetCols:
+        val Reference = 0
+        val Angle     = 1
+        val Zeta      = 2
+        val Image     = 3
+
     // Row indices for firebox form sheet (0-based)
     object FireboxRows:
         val Title       = 0

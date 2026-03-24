@@ -68,6 +68,7 @@ object I18nData_UI:
         pipe_presets            : String,
         casing_presets          : String,
         flow_resistance_presets : String,
+        angle_presets           : String,
         simple_pipe             : String,
         lined_flue              : String,
         errors                  : Catalog.Errors,

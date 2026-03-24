@@ -25,10 +25,11 @@ case class CatalogState(
     pipe_presets            : ListMap[String, SetThermalPipeProp_13384.SetPropertiesInBatch],
     casing_presets          : ListMap[String, SetThermalPipeProp_13384.SetPropertiesInBatch],
     flow_resistance_presets : ListMap[String, FlowResistanceCatalogEntry],
+    angle_presets           : ListMap[String, AnglePresetCatalogEntry],
 )
 
 object CatalogState:
-    val empty: CatalogState = CatalogState(ListMap.empty, ListMap.empty, ListMap.empty, ListMap.empty, ListMap.empty)
+    val empty: CatalogState = CatalogState(ListMap.empty, ListMap.empty, ListMap.empty, ListMap.empty, ListMap.empty, ListMap.empty)
 
     /** Merge entries from a parsed CatalogFile. Duplicates: new entries overwrite. */
     def merge(current: CatalogState, file: CatalogFile): CatalogState =
@@ -43,12 +44,15 @@ object CatalogState:
             .map(e => e.unwrap.batch_name -> e.unwrap))
         val newFlowResistances = ListMap.from(file.entriesFor[FlowResistanceCatalogEntry]
             .map(e => e.name -> e))
+        val newAnglePresets = ListMap.from(file.entriesFor[AnglePresetCatalogEntry]
+            .map(e => e.reference -> e))
         CatalogState(
             door_15a_fireboxes      = current.door_15a_fireboxes ++ newFireboxes,
             single_tested_fireboxes = current.single_tested_fireboxes ++ newSingleTested,
             pipe_presets            = current.pipe_presets ++ newPresets,
             casing_presets          = current.casing_presets ++ newCasings,
             flow_resistance_presets = current.flow_resistance_presets ++ newFlowResistances,
+            angle_presets           = current.angle_presets ++ newAnglePresets,
         )
 
     /** Extract validated images from a CatalogFile. Returns (validImages map: imageKey -> dataURI, warning messages).
@@ -69,7 +73,8 @@ object CatalogState:
             extract[Firebox.SingleTested](_.image) ++
             extract[SetThermalPipeProp_13384.SetPropertiesInBatch](_.image) ++
             extract[CasingPreset](cp => cp.unwrap.image) ++
-            extract[FlowResistanceCatalogEntry](_.image)
+            extract[FlowResistanceCatalogEntry](_.image) ++
+            extract[AnglePresetCatalogEntry](_.image)
 
         CatalogImageValidator.validateBatch(allImages)
 
@@ -96,6 +101,11 @@ object CatalogStateCodec:
         semiauto.deriveEncoder[FlowResistanceCatalogEntry]
             .mapJson(_.mapObject(_.remove("image")))
 
+    private given Decoder[AnglePresetCatalogEntry] = semiauto.deriveDecoder
+    private given Encoder[AnglePresetCatalogEntry] =
+        semiauto.deriveEncoder[AnglePresetCatalogEntry]
+            .mapJson(_.mapObject(_.remove("image")))
+
     private given Decoder[SetThermalPipeProp_13384.SetPropertiesInBatch] = semiauto.deriveDecoder
     private given Encoder[SetThermalPipeProp_13384.SetPropertiesInBatch] =
         semiauto.deriveEncoder[SetThermalPipeProp_13384.SetPropertiesInBatch]
@@ -108,7 +118,8 @@ object CatalogStateCodec:
             presets          <- c.downField("pipe_presets").as[Option[ListMap[String, SetThermalPipeProp_13384.SetPropertiesInBatch]]].map(_.getOrElse(ListMap.empty))
             casings          <- c.downField("casing_presets").as[Option[ListMap[String, SetThermalPipeProp_13384.SetPropertiesInBatch]]].map(_.getOrElse(ListMap.empty))
             flowResistances  <- c.downField("flow_resistance_presets").as[Option[ListMap[String, FlowResistanceCatalogEntry]]].map(_.getOrElse(ListMap.empty))
-        yield CatalogState(fireboxes, singleTested, presets, casings, flowResistances)
+            anglePresets     <- c.downField("angle_presets").as[Option[ListMap[String, AnglePresetCatalogEntry]]].map(_.getOrElse(ListMap.empty))
+        yield CatalogState(fireboxes, singleTested, presets, casings, flowResistances, anglePresets)
     }
 
     given Encoder[CatalogState] = Encoder.instance { s =>
@@ -118,5 +129,6 @@ object CatalogStateCodec:
             "pipe_presets"            -> s.pipe_presets.asJson,
             "casing_presets"          -> s.casing_presets.asJson,
             "flow_resistance_presets" -> s.flow_resistance_presets.asJson,
+            "angle_presets"           -> s.angle_presets.asJson,
         )
     }

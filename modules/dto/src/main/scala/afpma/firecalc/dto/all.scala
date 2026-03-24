@@ -154,6 +154,7 @@ object all:
     export afpma.firecalc.dto.v4.EmissionsAndEfficiencyValues_DTO
 
     export afpma.firecalc.dto.v4.FlowResistanceCatalogEntry
+    export afpma.firecalc.dto.v4.AnglePresetCatalogEntry
 
     // AbsoluteDirection enums
     export afpma.firecalc.dto.v4.AzimuthDirection

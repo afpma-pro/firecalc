@@ -551,6 +551,9 @@ lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetProperti
 lazy val flowResistancePresetsSignal: Signal[Seq[FlowResistanceCatalogEntry]] =
     catalogStateVar.signal.map(_.flow_resistance_presets.values.toSeq)
 
+lazy val anglePresetsSignal: Signal[Seq[AnglePresetCatalogEntry]] =
+    catalogStateVar.signal.map(_.angle_presets.values.toSeq)
+
 // ============================================================================
 // VIZ ELEMENT IDENTIFICATION
 // ============================================================================

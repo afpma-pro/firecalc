@@ -106,7 +106,7 @@ case class CatalogManagerDialog()(using Locale) extends Component:
                 div(
                     cls := "text-sm space-y-1",
                     child <-- catalogStateVar.signal.map: state =>
-                        val hasEntries = state.door_15a_fireboxes.nonEmpty || state.single_tested_fireboxes.nonEmpty || state.pipe_presets.nonEmpty || state.casing_presets.nonEmpty || state.flow_resistance_presets.nonEmpty
+                        val hasEntries = state.door_15a_fireboxes.nonEmpty || state.single_tested_fireboxes.nonEmpty || state.pipe_presets.nonEmpty || state.casing_presets.nonEmpty || state.flow_resistance_presets.nonEmpty || state.angle_presets.nonEmpty
                         if !hasEntries then
                             p(cls := "text-base-content/50 italic", I18N_UI.catalog.no_catalog_loaded)
                         else
@@ -125,6 +125,9 @@ case class CatalogManagerDialog()(using Locale) extends Component:
                                 ),
                                 Option.when(state.flow_resistance_presets.nonEmpty)(
                                     p(s"• ${I18N_UI.catalog.flow_resistance_presets}: ${state.flow_resistance_presets.size}")
+                                ),
+                                Option.when(state.angle_presets.nonEmpty)(
+                                    p(s"• ${I18N_UI.catalog.angle_presets}: ${state.angle_presets.size}")
                                 )
                             )
                 )

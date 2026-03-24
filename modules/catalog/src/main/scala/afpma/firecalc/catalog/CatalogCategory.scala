@@ -69,6 +69,7 @@ object CatalogCategoryRegistry:
         CatalogCategoryAny.from[SetThermalPipeProp_13384.SetPropertiesInBatch],
         CatalogCategoryAny.from[CasingPreset],
         CatalogCategoryAny.from[FlowResistanceCatalogEntry],
+        CatalogCategoryAny.from[AnglePresetCatalogEntry],
     )
 
     // Fail fast if two categories share the same yamlKey
@@ -121,3 +122,12 @@ object CatalogCategoryInstances:
         def uniqueKey(entry: FlowResistanceCatalogEntry): String = entry.name
         given decoder: Decoder[FlowResistanceCatalogEntry] = summon
         given encoder: Encoder[FlowResistanceCatalogEntry] = summon
+
+    private given Decoder[AnglePresetCatalogEntry] = semiauto.deriveDecoder[AnglePresetCatalogEntry]
+    private given Encoder[AnglePresetCatalogEntry] = semiauto.deriveEncoder[AnglePresetCatalogEntry]
+
+    given CatalogCategory[AnglePresetCatalogEntry] with
+        def yamlKey: String = "angle_presets"
+        def uniqueKey(entry: AnglePresetCatalogEntry): String = entry.reference
+        given decoder: Decoder[AnglePresetCatalogEntry] = summon
+        given encoder: Encoder[AnglePresetCatalogEntry] = summon

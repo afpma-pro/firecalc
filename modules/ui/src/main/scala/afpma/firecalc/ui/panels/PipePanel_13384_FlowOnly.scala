@@ -15,7 +15,7 @@ import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.instances.*
-import afpma.firecalc.ui.models.flowResistancePresetsSignal
+import afpma.firecalc.ui.models.{anglePresetsSignal, flowResistancePresetsSignal}
 
 import coulomb.policy.standard.given
 
@@ -217,7 +217,22 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty = false,
                     extra = relativeDirectionExtra(iaax._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
-                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
+                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd)),
+                    afterBadge = ev =>
+                        val selectDialog = AnglePresetCatalogSelectComponent(
+                            entriesSignal = anglePresetsSignal,
+                            onSelect      = Observer[AnglePresetCatalogEntry](entry =>
+                                ev.update(a => a.copy(name = entry.reference, angle = entry.angle, zeta = entry.zeta))
+                            )
+                        )
+                        div(
+                            button(
+                                cls     := "btn btn-secondary btn-sm",
+                                I18N_UI.catalog._self,
+                                onClick --> { _ => selectDialog.open() }
+                            ),
+                            selectDialog.node
+                        )
                 )
             }
             .handleCase[

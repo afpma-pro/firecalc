@@ -179,10 +179,12 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         sig             : Signal[(Int, AA, XtraOutputs)],
         isProperty      : Boolean,
         extra           : Var[AA] => HtmlElement                              = (_: Var[AA]) => span(),
-        badgeFinalDirVar: Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None
+        badgeFinalDirVar: Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None,
+        afterBadge      : Var[AA] => HtmlElement                              = (_: Var[AA]) => span()
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode         = extra(elem_v)
+        val afterBadgeNode    = afterBadge(elem_v)
         val xtra_sig          = sig.map(_._3)
 
         def mkBadge(compact: Boolean = false) = DirectionBadgeComponent(
@@ -200,7 +202,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             cls := "flex flex-row items-end gap-2",
             div(cls := "flex-1", elem_v.as_HtmlElement),
             extraNode,
-            mkBadge()
+            mkBadge(),
+            afterBadgeNode
         )
         val header_and_node = renderIncrDescr(title, node, isProperty).amend(
             binders,

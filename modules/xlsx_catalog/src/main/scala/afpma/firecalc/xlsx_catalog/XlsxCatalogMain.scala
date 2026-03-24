@@ -43,6 +43,7 @@ object XlsxCatalogMain:
                       |  import pipes          <input.xlsx> <output.fcalc-db>
                       |  import casings        <input.xlsx> <output.fcalc-db>
                       |  import flow-res       <input.xlsx> <output.fcalc-db>
+                      |  import angle-presets  <input.xlsx> <output.fcalc-db>
                       |  export single-tested  <input.fcalc-db> <output-dir>""".stripMargin)
                 sys.exit(1)
 
@@ -59,6 +60,8 @@ object XlsxCatalogMain:
         println("  -> casings-template.xlsx")
         FlowResTemplateWriter.generate(outputDir.resolve("flow-resistances-template.xlsx"))
         println("  -> flow-resistances-template.xlsx")
+        AnglePresetTemplateWriter.generate(outputDir.resolve("angle-presets-template.xlsx"))
+        println("  -> angle-presets-template.xlsx")
         println("Done.")
 
     private def exportXlsx(category: String, inputPath: Path, outputDir: Path): Unit =
@@ -117,8 +120,12 @@ object XlsxCatalogMain:
                 val flowRes = FlowResXlsxImporter.read(inputPath)
                 println(s"  Read ${flowRes.size} flow resistance(s)")
                 builder.add(flowRes)
+            case "angle-presets" =>
+                val anglePresets = AnglePresetXlsxImporter.read(inputPath)
+                println(s"  Read ${anglePresets.size} angle preset(s)")
+                builder.add(anglePresets)
             case other =>
-                System.err.println(s"Unknown category: $other (expected: firebox, single-tested, pipes, casings, flow-res)")
+                System.err.println(s"Unknown category: $other (expected: firebox, single-tested, pipes, casings, flow-res, angle-presets)")
                 sys.exit(1)
         val sections = builder.build
 

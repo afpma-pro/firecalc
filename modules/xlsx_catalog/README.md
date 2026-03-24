@@ -14,6 +14,7 @@ sbt "xlsx_catalog/run import single-tested  input.xlsx output.fcalc-db"
 sbt "xlsx_catalog/run import pipes          input.xlsx output.fcalc-db"
 sbt "xlsx_catalog/run import casings        input.xlsx output.fcalc-db"
 sbt "xlsx_catalog/run import flow-res       input.xlsx output.fcalc-db"
+sbt "xlsx_catalog/run import angle-presets  input.xlsx output.fcalc-db"
 
 # Export catalog entries to filled Excel files (one xlsx per entry)
 sbt "xlsx_catalog/run export single-tested  catalog.fcalc-db output-dir/"
@@ -28,6 +29,7 @@ sbt "xlsx_catalog/run export single-tested  catalog.fcalc-db output-dir/"
 | `pipes-template.xlsx` | Pipe presets | Tabular, one row per preset, up to 3 insulation layers |
 | `casings-template.xlsx` | Casing presets | Same structure as pipes |
 | `flow-resistances-template.xlsx` | Flow resistance presets | Tabular with optional cross-section |
+| `angle-presets-template.xlsx` | Angle/bend presets | Tabular: reference, angle (°), zeta, optional image |
 
 All templates have bilingual FR/EN headers, data validation dropdowns, example data, and cell comments.
 
@@ -39,11 +41,11 @@ templates/       # Excel template generation (export)
   EmissionsSheetHelper.scala          # Shared emissions sheet builder
   FireboxTemplateWriter               # 15a firebox template
   SingleTestedTemplateWriter          # Single-tested firebox template + export
-  PipesTemplateWriter, CasingsTemplateWriter, FlowResTemplateWriter
+  PipesTemplateWriter, CasingsTemplateWriter, FlowResTemplateWriter, AnglePresetTemplateWriter
 
 importers/       # Excel data import
   FireboxXlsxImporter, SingleTestedXlsxImporter
-  PipesXlsxImporter, CasingsXlsxImporter, FlowResXlsxImporter
+  PipesXlsxImporter, CasingsXlsxImporter, FlowResXlsxImporter, AnglePresetXlsxImporter
 
 PoiHelpers.scala       # POI cell read/write utilities
 XlsxCatalogMain.scala  # CLI entry point
