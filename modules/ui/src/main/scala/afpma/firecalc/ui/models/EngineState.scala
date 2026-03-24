@@ -133,7 +133,7 @@ object EngineState:
             Seq (
                 roughness (Material_13384.WeldedSteel()),
                 innerShape(circle(20.cm)               ),
-                layer             (e = 1.mm, tr = SquareMeterKelvinPerWatt(56.0)),
+                layer             (e = 1.mm, tr = SquareMeterKelvinPerWatt(0.44)),
                 pipeLocation      (PipeLocation.HeatedArea                      ),
                 addSectionVertical("connecteur", 5.cm                           )
             )
