@@ -261,6 +261,35 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
         )
     .distinct
 
+// ── Post-firebox generic topology ─────────────────────────────────
+// These signals expose the pipe topology as a generic vector,
+// preparing for future N-pipe UI support.
+
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.engine.models.PipeChain_15544_Strict
+
+/** The current post-firebox pipe topology as descriptor slots.
+  * Derives from the three individual descriptor vars. Future UI can bind
+  * pipe add/remove/reorder to this signal directly.
+  */
+lazy val postFireboxDescrSlots_sig: Signal[Vector[PostFireboxPipeDescrSlot]] =
+    fluepipe_incrdescr_var.signal
+        .combineWith(connector_pipe_incrdescr_var.signal, chimney_pipe_incrdescr_var.signal)
+        .map { (flue, connector, chimney) =>
+            PipeChain_15544_Strict.toSlots(
+                PipeChain_15544_Strict.Descriptors(flue, connector, chimney)
+            )
+        }
+        .distinct
+
+/** All post-firebox pipe results as a vector: [flue, connector, chimney].
+  * Extracts from the EN15544 Strict application's primary AtParams.
+  * Future N-pipe UI will consume this instead of the individual result signals.
+  */
+lazy val postFireboxPipeResults_sig: Signal[VNelMcalcErr[Vector[PipeResult]]] =
+    results_en15544_strict_sig.map: vnelAppl =>
+        vnelAppl.andThen(_.primary.postFireboxPipeResults)
+
 // Results for EN15544 Strict
 
 lazy val results_en15544_strict_sig: Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =
