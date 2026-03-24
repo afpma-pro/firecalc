@@ -456,7 +456,8 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             TagTreeMenu.Leaf[AddSmoothCurve_60_Unsafe],
             TagTreeMenu.Leaf[AddElbows_2x45],
             TagTreeMenu.Leaf[AddElbows_3x30],
-            TagTreeMenu.Leaf[AddElbows_4x22p5]
+            TagTreeMenu.Leaf[AddElbows_4x22p5],
+            TagTreeMenu.Leaf[AddAngleAdjustable]
         )
     )
 
