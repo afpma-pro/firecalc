@@ -219,6 +219,31 @@ object GraphDataConverter:
                 xMax = Some(runningLength + 0.5)
             )
 
+    /** Convert pipe results to chart data, accepting post-firebox pipes as a generic vector.
+      *
+      * Pre-firebox pipes (airIntake, combustionAir, firebox) are still named because they're
+      * fixed in the topology. Post-firebox pipes come from PostFireboxPipeChain results
+      * and are matched by position: (0) flue, (1) connector, (2) chimney.
+      *
+      * Delegates to [[convert]] after extracting the named post-firebox pipes.
+      */
+    def convertGeneric(
+        airIntake        : VNelMcalcErr[PipeResult],
+        combustionAir    : VNelMcalcErr[PipeResult],
+        firebox          : VNelMcalcErr[PipeResult],
+        postFireboxPipes : Vector[(String, VNelMcalcErr[PipeResult])]
+    )(using Locale, DisplayUnits): ChartData =
+        val flue      = postFireboxPipes.headOption.map(_._2).getOrElse(Validated.invalidNel(
+            UnexpectedThrowable(new Exception("Missing flue pipe in postFireboxPipes"), sectionTyp = CombustionAirPipeT)
+        ))
+        val connector = postFireboxPipes.lift(1).map(_._2).getOrElse(Validated.invalidNel(
+            UnexpectedThrowable(new Exception("Missing connector pipe in postFireboxPipes"), sectionTyp = CombustionAirPipeT)
+        ))
+        val chimney   = postFireboxPipes.lift(2).map(_._2).getOrElse(Validated.invalidNel(
+            UnexpectedThrowable(new Exception("Missing chimney pipe in postFireboxPipes"), sectionTyp = CombustionAirPipeT)
+        ))
+        convert(airIntake, combustionAir, firebox, flue, connector, chimney)
+
     /** Build data points for a given series type.
       * Returns an origin point at x=0 (inlet condition) followed by two points per section:
       * one at xStart (section inlet) and one at xEnd (section exit).

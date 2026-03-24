@@ -89,9 +89,10 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         PostFireboxPipeChain.validated(
             postFireboxSlots.map { slot =>
                 slot match
-                    case FlueSlot(_)      => PipeSlot.noop(FluePipeT, "Flue")
-                    case ConnectorSlot(_) => PipeSlot.noop(ConnectorPipeT, "Connector")
-                    case ChimneySlot(_)   => PipeSlot.noop(ChimneyPipeT, "Chimney")
+                    case FlueSlot(_)         => PipeSlot.noop(FluePipeT, "Flue")
+                    case ThermalFlueSlot(_)  => PipeSlot.noop(FluePipeT, "Flue")
+                    case ConnectorSlot(_)    => PipeSlot.noop(ConnectorPipeT, "Connector")
+                    case ChimneySlot(_)      => PipeSlot.noop(ChimneyPipeT, "Chimney")
             }
         ) match
             case Validated.Valid(chain) => chain

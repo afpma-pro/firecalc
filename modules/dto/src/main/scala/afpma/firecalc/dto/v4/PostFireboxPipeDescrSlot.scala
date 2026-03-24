@@ -14,6 +14,7 @@ import io.circe.{Decoder, Encoder, Json}
   */
 enum PostFireboxPipeDescrSlot:
     case FlueSlot(descr: Seq[FlowOnlyPipeDescr_15544_V3])
+    case ThermalFlueSlot(descr: Seq[ThermalPipeDescr_13384_V3])
     case ConnectorSlot(descr: Seq[ThermalPipeDescr_13384_V3])
     case ChimneySlot(descr: Seq[ThermalPipeDescr_13384_V3])
 
@@ -24,6 +25,8 @@ object PostFireboxPipeDescrSlot:
     given Encoder[PostFireboxPipeDescrSlot] = Encoder.instance {
         case PostFireboxPipeDescrSlot.FlueSlot(d)      =>
             Json.obj("FlueSlot" -> Encoder[Seq[FlowOnlyPipeDescr_15544_V3]].apply(d))
+        case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
+            Json.obj("ThermalFlueSlot" -> Encoder[Seq[ThermalPipeDescr_13384_V3]].apply(d))
         case PostFireboxPipeDescrSlot.ConnectorSlot(d)  =>
             Json.obj("ConnectorSlot" -> Encoder[Seq[ThermalPipeDescr_13384_V3]].apply(d))
         case PostFireboxPipeDescrSlot.ChimneySlot(d)    =>
@@ -32,6 +35,7 @@ object PostFireboxPipeDescrSlot:
 
     given Decoder[PostFireboxPipeDescrSlot] = Decoder.instance { c =>
         c.downField("FlueSlot").as[Seq[FlowOnlyPipeDescr_15544_V3]].map(PostFireboxPipeDescrSlot.FlueSlot(_))
+            .orElse(c.downField("ThermalFlueSlot").as[Seq[ThermalPipeDescr_13384_V3]].map(PostFireboxPipeDescrSlot.ThermalFlueSlot(_)))
             .orElse(c.downField("ConnectorSlot").as[Seq[ThermalPipeDescr_13384_V3]].map(PostFireboxPipeDescrSlot.ConnectorSlot(_)))
             .orElse(c.downField("ChimneySlot").as[Seq[ThermalPipeDescr_13384_V3]].map(PostFireboxPipeDescrSlot.ChimneySlot(_)))
     }

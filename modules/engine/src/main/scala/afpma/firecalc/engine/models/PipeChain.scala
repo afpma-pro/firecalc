@@ -118,9 +118,21 @@ object PipeChain_15544_MCE:
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
-    // Note: MCE flue uses ThermalPipeDescr_13384 descriptors (not FlowOnly 15544),
-    // so toSlots/fromSlots would require a separate ThermalFlueSlot variant in
-    // PostFireboxPipeDescrSlot. Deferred to when MCE topology support is needed.
+    /** Convert MCE descriptors to descriptor slots for generic topology processing. */
+    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot] =
+        Vector(
+            ThermalFlueSlot(d.flue),
+            ConnectorSlot(d.connector),
+            ChimneySlot(d.chimney)
+        )
+
+    /** Build from descriptor slots (validates types are in expected positions). */
+    def fromSlots(slots: Vector[PostFireboxPipeDescrSlot]): Either[String, Descriptors] =
+        slots match
+            case Vector(ThermalFlueSlot(f), ConnectorSlot(c), ChimneySlot(ch)) =>
+                Right(Descriptors(f, c, ch))
+            case _ =>
+                Left(s"Expected [ThermalFlueSlot, ConnectorSlot, ChimneySlot], got ${slots.map(_.getClass.getSimpleName)}")
 
 end PipeChain_15544_MCE
 
