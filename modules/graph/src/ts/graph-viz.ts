@@ -36,6 +36,7 @@ interface DataPointJS {
     tooltipTitle: string;
     tooltipExtra: string;
     formattedValue: string;
+    segmentColor: string;
 }
 
 interface ChartSeriesJS {
@@ -216,6 +217,21 @@ function seriesToDataset(s: ChartSeriesJS): ChartDataset<'line'> {
         pointHoverRadius: 4,
         tension: 0.0, // no curve smoothing
         fill: false,
+        // Per-segment color override (driven by segmentColor metadata from Scala)
+        segment: {
+            borderColor: (ctx: any) => {
+                const raw = ctx.chart.data.datasets[ctx.datasetIndex].data[ctx.p0DataIndex] as DataPointJS;
+                return raw?.segmentColor || undefined;
+            },
+        },
+        pointBackgroundColor: ((ctx: any) => {
+            const raw = ctx.raw as DataPointJS;
+            return raw?.segmentColor || s.color;
+        }) as any,
+        pointBorderColor: ((ctx: any) => {
+            const raw = ctx.raw as DataPointJS;
+            return raw?.segmentColor || s.color;
+        }) as any,
     };
 }
 

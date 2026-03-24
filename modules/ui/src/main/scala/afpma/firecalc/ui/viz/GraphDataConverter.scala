@@ -56,7 +56,8 @@ object GraphDataConverter:
     private val TemperatureColor = "#E63946"
     private val VelocityColor    = "#2A9D8F"
     private val ElevationColor   = "#E9C46A"
-    private val PressureColor    = "#6C757D"
+    private val PressureColor              = "#6C757D"
+    private val RegistreAirPressureColor   = "#FAAF4C"
 
     // Background band colors (matching 3D viz pipe group palette, ~12% opacity)
     private val BandColors: Map[String, String] = Map(
@@ -259,6 +260,7 @@ object GraphDataConverter:
         // Two points per section: start (inlet) + end (exit)
         val sectionPoints = sections.zipWithIndex.flatMap { case (ps, idx) =>
             val section = ps.section
+            val segColor = if seriesId == "pressure" && ps.pipeName == "Registre d'air" then RegistreAirPressureColor else ""
 
             // --- Start point at xStart ---
             val (yStart, fmtStart) = seriesId match
@@ -281,7 +283,8 @@ object GraphDataConverter:
                 y              = yStart,
                 tooltipTitle   = buildTooltipTitleStart(sections, idx),
                 tooltipExtra   = ps.pipeName,
-                formattedValue = fmtStart
+                formattedValue = fmtStart,
+                segmentColor   = segColor
             )
 
             // --- Update accumulators between start and end ---
@@ -316,7 +319,8 @@ object GraphDataConverter:
                 y              = yEnd,
                 tooltipTitle   = buildTooltipTitleEnd(sections, idx),
                 tooltipExtra   = ps.pipeName,
-                formattedValue = fmtEnd
+                formattedValue = fmtEnd,
+                segmentColor   = segColor
             )
 
             Vector(startPoint, endPoint)

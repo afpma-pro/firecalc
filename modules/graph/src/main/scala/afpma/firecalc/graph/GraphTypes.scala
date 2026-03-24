@@ -10,7 +10,8 @@ case class DataPoint(
     y             : Double,
     tooltipTitle  : String = "",
     tooltipExtra  : String = "",
-    formattedValue: String = ""
+    formattedValue: String = "",
+    segmentColor  : String = ""   // non-empty → override series color for this point/segment
 )
 
 case class ChartSeries(

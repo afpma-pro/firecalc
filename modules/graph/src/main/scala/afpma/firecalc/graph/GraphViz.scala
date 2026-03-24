@@ -53,7 +53,8 @@ object GraphViz:
                     y              = p.y,
                     tooltipTitle   = p.tooltipTitle,
                     tooltipExtra   = p.tooltipExtra,
-                    formattedValue = p.formattedValue
+                    formattedValue = p.formattedValue,
+                    segmentColor   = p.segmentColor
                 )
             }*)
             ChartSeriesJS(

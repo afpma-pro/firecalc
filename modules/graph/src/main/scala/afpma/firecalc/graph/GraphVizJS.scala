@@ -15,6 +15,7 @@ trait DataPointJS extends js.Object:
     var tooltipTitle  : String
     var tooltipExtra  : String
     var formattedValue: String
+    var segmentColor  : String
 
 object DataPointJS:
     def apply(
@@ -22,14 +23,16 @@ object DataPointJS:
         y             : Double,
         tooltipTitle  : String = "",
         tooltipExtra  : String = "",
-        formattedValue: String = ""
+        formattedValue: String = "",
+        segmentColor  : String = ""
     ): DataPointJS =
         js.Dynamic.literal(
             x              = x,
             y              = y,
             tooltipTitle   = tooltipTitle,
             tooltipExtra   = tooltipExtra,
-            formattedValue = formattedValue
+            formattedValue = formattedValue,
+            segmentColor   = segmentColor
         ).asInstanceOf[DataPointJS]
 
 trait ChartSeriesJS extends js.Object:
