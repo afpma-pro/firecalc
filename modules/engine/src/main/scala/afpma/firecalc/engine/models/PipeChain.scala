@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.models
 
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
@@ -55,6 +57,22 @@ object PipeChain_15544_Strict:
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
+    /** Convert V4 YAML fields to descriptor slots for generic topology processing. */
+    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot] =
+        Vector(
+            FlueSlot(d.flue),
+            ConnectorSlot(d.connector),
+            ChimneySlot(d.chimney)
+        )
+
+    /** Build from descriptor slots (validates types are in expected positions). */
+    def fromSlots(slots: Vector[PostFireboxPipeDescrSlot]): Either[String, Descriptors] =
+        slots match
+            case Vector(FlueSlot(f), ConnectorSlot(c), ChimneySlot(ch)) =>
+                Right(Descriptors(f, c, ch))
+            case _ =>
+                Left(s"Expected [FlueSlot, ConnectorSlot, ChimneySlot], got ${slots.map(_.getClass.getSimpleName)}")
+
 end PipeChain_15544_Strict
 
 // ---------------------------------------------------------------------------
@@ -100,6 +118,10 @@ object PipeChain_15544_MCE:
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
+    // Note: MCE flue uses ThermalPipeDescr_13384 descriptors (not FlowOnly 15544),
+    // so toSlots/fromSlots would require a separate ThermalFlueSlot variant in
+    // PostFireboxPipeDescrSlot. Deferred to when MCE topology support is needed.
+
 end PipeChain_15544_MCE
 
 // ---------------------------------------------------------------------------
@@ -134,5 +156,20 @@ object PipeChain_13384:
             ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorFinalFrame)
 
         Built(connectorPipeResult, chimneyPipeResult, connectorFinalFrame)
+
+    /** Convert V4 YAML fields to descriptor slots for generic topology processing. */
+    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot] =
+        Vector(
+            ConnectorSlot(d.connector),
+            ChimneySlot(d.chimney)
+        )
+
+    /** Build from descriptor slots (validates types are in expected positions). */
+    def fromSlots(slots: Vector[PostFireboxPipeDescrSlot]): Either[String, Descriptors] =
+        slots match
+            case Vector(ConnectorSlot(c), ChimneySlot(ch)) =>
+                Right(Descriptors(c, ch))
+            case _ =>
+                Left(s"Expected [ConnectorSlot, ChimneySlot], got ${slots.map(_.getClass.getSimpleName)}")
 
 end PipeChain_13384

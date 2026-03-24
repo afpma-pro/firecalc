@@ -67,10 +67,38 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     val chimneyPipeMappings   = pipeChain.chimneyPipeMappings
 
     // ── Post-firebox topology ────────────────────────────────────────────
-    // When DTO V5 introduces dynamic post-firebox pipe lists, validate the
-    // topology here using PostFireboxPipeChain.validated(...) before proceeding
-    // to build the EN15544 application. Currently the topology is fixed
-    // (flue → connector → chimney) so validation is not needed.
+    // Build descriptor slots and validate the topology grammar. Currently
+    // the topology is fixed (flue → connector → chimney) so validation
+    // always passes, but this validates the invariant early and prepares
+    // for dynamic post-firebox pipe lists in DTO V5.
+
+    import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+    import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+    import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
+
+    private val postFireboxSlots: Vector[PostFireboxPipeDescrSlot] = PipeChain_15544_Strict.toSlots(
+        PipeChain_15544_Strict.Descriptors(
+            flue      = fcProj.flue_pipe_descr,
+            connector = fcProj.connector_pipe_descr,
+            chimney   = fcProj.chimney_pipe_descr
+        )
+    )
+
+    @scala.annotation.nowarn("msg=unused private member")
+    private val postFireboxChain: PostFireboxPipeChain =
+        PostFireboxPipeChain.validated(
+            postFireboxSlots.map { slot =>
+                slot match
+                    case FlueSlot(_)      => PipeSlot.noop(FluePipeT, "Flue")
+                    case ConnectorSlot(_) => PipeSlot.noop(ConnectorPipeT, "Connector")
+                    case ChimneySlot(_)   => PipeSlot.noop(ChimneyPipeT, "Chimney")
+            }
+        ) match
+            case Validated.Valid(chain) => chain
+            case Validated.Invalid(errors) =>
+                throw new IllegalArgumentException(
+                    s"Invalid post-firebox pipe topology: ${errors.toList.mkString(", ")}"
+                )
 
     // EN15544 Strict
 

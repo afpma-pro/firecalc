@@ -161,4 +161,6 @@ object all:
     export afpma.firecalc.dto.v4.InclinationDirection
     export afpma.firecalc.dto.v4.AbsoluteDirection
 
+    export afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+
     export afpma.firecalc.dto.v4.TypeOfAppliance
