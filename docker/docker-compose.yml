@@ -47,7 +47,7 @@ services:
     # FIRECALC_ENV determines which configuration file to load
     # Additional env vars can be added via the .env file
     environment:
-      - FIRECALC_ENV=${FIRECALC_ENV:-staging}
+      - FIRECALC_ENV=${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
     
     # Load additional environment variables from .env file
     env_file:

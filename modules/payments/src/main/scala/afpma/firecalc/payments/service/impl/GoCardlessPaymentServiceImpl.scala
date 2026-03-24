@@ -482,39 +482,25 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         ).map(_.billing_request_flows)
 
     def verifyWebhookSignature(body: String, signature: String): F[Boolean] =
-        val isSignatureValid = Try {
+        val isValid = Try {
             val mac       = Mac.getInstance("HmacSHA256")
             val secretKey = new SecretKeySpec(config.webhookSecret.getBytes("UTF-8"), "HmacSHA256")
             mac.init(secretKey)
             val computedSignature    = mac.doFinal(body.getBytes("UTF-8"))
             val computedSignatureHex = computedSignature.map("%02x".format(_)).mkString
-            computedSignatureHex == signature
+
+            // Timing-safe comparison — prevents side-channel attacks
+            java.security.MessageDigest.isEqual(
+                computedSignatureHex.getBytes("UTF-8"),
+                signature.getBytes("UTF-8")
+            )
         }.getOrElse(false)
 
-        config.environment match {
-            case "live"    =>
-                logger
-                    .info(s"Live environment: webhook signature verification ${
-                            if (isSignatureValid) "passed" else "failed"
-                        }")
-                    .map(_ => isSignatureValid)
-            case "sandbox" =>
-                if (isSignatureValid) {
-                    logger
-                        .info("Sandbox environment: webhook signature verification passed")
-                        .map(_ => true)
-                } else {
-                    logger
-                        .warn(
-                            "Sandbox environment: webhook signature verification failed, but allowing webhook to proceed"
-                        )
-                        .map(_ => true)
-                }
-            case other     =>
-                logger
-                    .warn(s"Unknown environment '$other', treating as live environment")
-                    .map(_ => isSignatureValid)
-        }
+        (if isValid then
+             logger.info(s"Webhook signature verification passed (env: ${config.environment})")
+         else
+             logger.error(s"Webhook signature verification FAILED (env: ${config.environment})")
+        ).map(_ => isValid)
 
     private def getPayment(paymentId: String): F[GoCardlessPayment] =
         makeRequest[Unit, PaymentResponseEnvelope](

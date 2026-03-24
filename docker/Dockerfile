@@ -89,10 +89,9 @@ USER appuser
 # The payments backend service listens on port 8181
 EXPOSE 8181
 
-# Set default environment variable
-# FIRECALC_ENV determines which configuration to load
-# Can be overridden at runtime: docker run -e FIRECALC_ENV=production ...
-ENV FIRECALC_ENV=staging
+# FIRECALC_ENV must be explicitly set at runtime:
+#   docker run -e FIRECALC_ENV=production ...
+# No default — application will fail fast if not provided
 
 # Health check to verify the application is running
 # Adjust the endpoint based on your application's health check endpoint

@@ -268,11 +268,23 @@ object Main extends IOApp:
                     )
 
     def run(args: List[String]): IO[ExitCode] =
+        // Fail fast if FIRECALC_ENV is not explicitly set.
+        // Prevents accidental misconfiguration (e.g. defaulting to sandbox with HMAC bypass).
+        val firecalcEnv = sys.env.get("FIRECALC_ENV").getOrElse {
+            throw new IllegalStateException(
+                "FIRECALC_ENV is not set. " +
+                    "Set to 'production', 'staging', or 'dev' explicitly. " +
+                    "Refusing to start with a default to prevent accidental misconfiguration."
+            )
+        }
+
         // Create HTTP client resource
         EmberClientBuilder.default[IO].build.use { httpClient =>
             val logger = summon[org.typelevel.log4cats.Logger[IO]]
 
             for {
+                _ <- logger.info(s"FIRECALC_ENV explicitly set to: $firecalcEnv")
+
                 // Load payments configuration first
                 paymentsConfig <- ConfigLoader.loadPaymentsConfig[IO]()
                 _              <- logger.info(s"Loaded payments config for environment: ${paymentsConfig.environment}")

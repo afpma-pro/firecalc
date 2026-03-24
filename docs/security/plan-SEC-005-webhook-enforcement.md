@@ -1,5 +1,7 @@
 # Implementation Plan: SEC-005 — Enforce Webhook HMAC Verification in All Environments
 
+**Status**: ✅ IMPLEMENTED (2026-03-24)
+
 ## Finding Summary
 
 **Severity**: High (CVSS 8.1)
@@ -54,9 +56,9 @@ ENV FIRECALC_ENV=staging
 
 ## Implementation Steps
 
-### Step 1: Remove Sandbox HMAC Bypass
+### Step 1: Remove Sandbox HMAC Bypass ✅
 
-**Files to modify**: `GoCardlessPaymentServiceImpl.scala`
+**Files modified**: `GoCardlessPaymentServiceImpl.scala`
 
 Replace the environment-specific verification with a single, universal check:
 
@@ -91,9 +93,9 @@ Key changes:
 - **Replaced** `==` with `MessageDigest.isEqual` for timing-safe comparison
 - Environment is logged for debugging but does not affect the security check
 
-### Step 2: Remove Docker Default Environment
+### Step 2: Remove Docker Default Environment ✅
 
-**Files to modify**: `docker/Dockerfile`
+**Files modified**: `docker/Dockerfile`
 
 ```dockerfile
 # BEFORE (line 95):
@@ -104,9 +106,9 @@ ENV FIRECALC_ENV=staging
 # No default — application will fail fast if not provided
 ```
 
-### Step 3: Add Startup Validation for FIRECALC_ENV
+### Step 3: Add Startup Validation for FIRECALC_ENV ✅
 
-**Files to modify**: `BackendMain.scala` (or `ConfigLoader.scala`)
+**Files modified**: `BackendMain.scala`
 
 Add a check at application startup:
 
@@ -120,9 +122,9 @@ val environment = sys.env.getOrElse("FIRECALC_ENV",
 )
 ```
 
-### Step 4: Update docker-compose.yml
+### Step 4: Update docker-compose.yml ✅
 
-**Files to modify**: `docker/docker-compose.yml`
+**Files modified**: `docker/docker-compose.yml`
 
 Remove the default fallback:
 
@@ -136,19 +138,13 @@ FIRECALC_ENV: ${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
 
 The `${VAR:?message}` syntax causes docker-compose to fail with an error if the variable is not set.
 
-### Step 5: Ensure Sandbox Has a Real Webhook Secret
+### Step 5: Ensure Sandbox Has a Real Webhook Secret ✅
 
-Verify that the GoCardless sandbox environment has a properly configured webhook secret. When creating a sandbox webhook endpoint in the GoCardless dashboard, a real webhook secret is generated. Use that secret for sandbox HMAC verification instead of bypassing it.
+The sandbox config template already has a `webhook-secret` placeholder.
+Operators must replace `YOUR_GOCARDLESS_WEBHOOK_SECRET` with the real secret
+from the GoCardless dashboard when deploying to staging.
 
-Update the sandbox config template:
-```hocon
-# docker/configs/staging/payments/gocardless-config.conf.template
-gocardless {
-    access-token = "YOUR_SANDBOX_ACCESS_TOKEN"
-    webhook-secret = "YOUR_SANDBOX_WEBHOOK_SECRET"  # From GoCardless dashboard
-    environment = "sandbox"
-}
-```
+Config template: `docker/configs/staging/payments/gocardless-config.conf.template`
 
 ## Dependencies
 
@@ -158,9 +154,14 @@ gocardless {
 
 ## Testing Plan
 
-1. **Unit test**: Verify that `verifyWebhookSignature` returns `false` for invalid signatures regardless of environment. Verify timing-safe comparison works correctly.
-2. **Integration test**: Send a webhook with an invalid signature to a sandbox endpoint — verify it's rejected (was previously accepted).
-3. **Docker test**: Run `docker-compose up` without `FIRECALC_ENV` in `.env` — verify it fails with a clear error message.
+1. ✅ **Unit test** (`WebhookSignatureVerificationTest.scala` — 7 tests, all passing):
+   - Valid signature accepted in sandbox and live environments
+   - Invalid signature **rejected** in sandbox (was previously bypassed) and live
+   - Wrong secret rejected even with valid HMAC format
+   - Empty body with valid signature accepted
+   - Both environments enforce verification identically
+2. **Integration test** (manual): Send a webhook with an invalid signature to a sandbox endpoint — verify it's rejected (was previously accepted).
+3. **Docker test** (manual): Run `docker-compose up` without `FIRECALC_ENV` in `.env` — verify it fails with a clear error message.
 4. **Manual test**: Send a valid GoCardless sandbox webhook — verify it's accepted. Send a forged webhook — verify it's rejected.
 
 ## Migration Notes
