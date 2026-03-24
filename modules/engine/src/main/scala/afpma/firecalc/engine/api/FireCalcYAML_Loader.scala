@@ -67,39 +67,31 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     val chimneyPipeMappings   = pipeChain.chimneyPipeMappings
 
     // ── Post-firebox topology ────────────────────────────────────────────
-    // Build descriptor slots and validate the topology grammar. Currently
-    // the topology is fixed (flue → connector → chimney) so validation
-    // always passes, but this validates the invariant early and prepares
-    // for dynamic post-firebox pipe lists in DTO V5.
+    // Generic slot-indexed build results. Each slot carries a type-erased
+    // pipe model, an erased IdsMapping (Int → Option[Int]), and the final
+    // PipeFrame used to chain into the next slot.
+    //
+    // The typed fields above (fluePipe, connectorPipe, etc.) remain for
+    // backward compat with the EN15544 strict application which needs
+    // concrete pipe types. Eventually those can be derived from slotBuildResults.
 
-    import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+    val slotBuildResults: Vector[SlotBuildResult] =
+        PipeChainGeneric.build(fcProj.post_firebox_pipes)
+
     import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
 
-    private val postFireboxSlots: Vector[PostFireboxPipeDescrSlot] = PipeChain_15544_Strict.toSlots(
-        PipeChain_15544_Strict.Descriptors(
-            flue      = fcProj.flue_pipe_descr,
-            connector = fcProj.connector_pipe_descr,
-            chimney   = fcProj.chimney_pipe_descr
-        )
-    )
-
-    @scala.annotation.nowarn("msg=unused private member")
-    private val postFireboxChain: PostFireboxPipeChain =
+    // Topology grammar validation (permissive — errors are exposed, not thrown)
+    val topologyValidation: Validated[NonEmptyList[afpma.firecalc.engine.ops.generic.TopologyError], PostFireboxPipeChain] =
         PostFireboxPipeChain.validated(
-            postFireboxSlots.map { slot =>
+            fcProj.post_firebox_pipes.map { slot =>
                 slot match
                     case FlueSlot(_)         => PipeSlot.noop(FluePipeT, "Flue")
                     case ThermalFlueSlot(_)  => PipeSlot.noop(FluePipeT, "Flue")
                     case ConnectorSlot(_)    => PipeSlot.noop(ConnectorPipeT, "Connector")
                     case ChimneySlot(_)      => PipeSlot.noop(ChimneyPipeT, "Chimney")
-            }
-        ) match
-            case Validated.Valid(chain) => chain
-            case Validated.Invalid(errors) =>
-                throw new IllegalArgumentException(
-                    s"Invalid post-firebox pipe topology: ${errors.toList.mkString(", ")}"
-                )
+            }.toVector
+        )
 
     // EN15544 Strict
 
