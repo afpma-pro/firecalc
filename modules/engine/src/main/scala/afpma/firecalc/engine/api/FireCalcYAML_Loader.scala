@@ -66,6 +66,12 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     val connectorPipeMappings = pipeChain.connectorPipeMappings
     val chimneyPipeMappings   = pipeChain.chimneyPipeMappings
 
+    // ── Post-firebox topology ────────────────────────────────────────────
+    // When DTO V5 introduces dynamic post-firebox pipe lists, validate the
+    // topology here using PostFireboxPipeChain.validated(...) before proceeding
+    // to build the EN15544 application. Currently the topology is fixed
+    // (flue → connector → chimney) so validation is not needed.
+
     // EN15544 Strict
 
     import afpma.firecalc.engine.api.v0_2024_10
