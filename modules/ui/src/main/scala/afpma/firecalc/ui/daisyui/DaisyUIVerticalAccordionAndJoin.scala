@@ -166,9 +166,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
         ),
         FlowOnlyAirIntakePipePanel                       (),
         FireboxPanel                                     (),
-        FluePipePanel                                    (),
-        ConnectorPipePanel                               (),
-        ChimneyPipePanel                                 (),
+        PostFireboxPipePanels                            (),
         DaisyUIVerticalAccordionAndJoin.Element          (
             idx           = 10,
             title         = Title.WithQuadrionSubtotal(
