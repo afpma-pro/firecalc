@@ -279,6 +279,12 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     given Params_13384  = p
                     en13384_application.chimney_PipeResult.toValidatedNel
 
+        /** All post-firebox pipe results as a vector: [flue, connector, chimney].
+          * Convenience accessor for consumers that want to iterate over all post-firebox results.
+          */
+        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]] =
+            (flue_PipeResult, connector_PipeResult, chimney_PipeResult).mapN(Vector(_, _, _))
+
         // Section "4.8.4", "Flue gas temperature in the connector pipe"
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean] =
             connector_PipeResult.map(_.gas_temp_mean: t_connector_pipe_mean)

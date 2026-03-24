@@ -1,0 +1,32 @@
+{
+  "template": "refactor",
+  "templateName": "Refactor / Migration",
+  "description": "generic-topo",
+  "branch": "gsd/refactor/generic-topo",
+  "phases": [
+    {
+      "name": "inventory",
+      "index": 0,
+      "status": "active"
+    },
+    {
+      "name": "plan",
+      "index": 1,
+      "status": "pending"
+    },
+    {
+      "name": "migrate",
+      "index": 2,
+      "status": "pending"
+    },
+    {
+      "name": "verify",
+      "index": 3,
+      "status": "pending"
+    }
+  ],
+  "currentPhase": 0,
+  "startedAt": "2026-03-24T15:50:40.467Z",
+  "updatedAt": "2026-03-24T15:50:40.467Z",
+  "artifactDir": "/workspace/.gsd/workflows/refactors/260324-4-generic-topo"
+}

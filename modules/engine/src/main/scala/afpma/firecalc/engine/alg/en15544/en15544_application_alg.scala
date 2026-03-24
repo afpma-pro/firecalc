@@ -268,6 +268,11 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val connector_PipeResult    : VNelMcalcErr[PipeResult]
         lazy val chimney_PipeResult      : VNelMcalcErr[PipeResult]
 
+        /** All post-firebox pipe results as a vector: [flue, connector, chimney].
+          * Convenience accessor for consumers that want to iterate over all post-firebox results.
+          */
+        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]]
+
         // Derived temperatures (Section 4.8.4 – 4.8.5)
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean]
         lazy val t_chimney_entrance   : VNelMcalcErr[t_chimney_entrance]
