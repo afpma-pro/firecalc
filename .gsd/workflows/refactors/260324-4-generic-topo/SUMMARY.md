@@ -1,53 +1,55 @@
-# Summary: Generic Post-Firebox Pipe Topology Refactor (Final)
+# Final Summary: Generic Post-Firebox Pipe Topology Refactor
 
-## Branch: `gsd/refactor/generic-topo` — 10 commits
+## Branch: `gsd/refactor/generic-topo` — 17 commits, 46 files changed (+2703 / -869)
 
-## Commits
-```
-79602ab refactor(dto,engine,ui): wave 8 — MCE ThermalFlueSlot + GraphDataConverter generalization
-499f3d4 docs: final refactor summary — all waves complete
-1a37bd1 refactor(dto,engine,ui): wave 7 — DTO V5 schema with post_firebox_pipes
-31b7b70 docs: update refactor summary and plan for waves 6b-6d
-0e008f4 refactor(ui): wave 6c — add generic post-firebox topology signals
-bb9bd1e refactor(dto,engine): wave 6b — PostFireboxPipeDescrSlot tagged union + topology validation
-09ac622 refactor(engine): wave 6a — mark topology validation extension point in YAML loader
-0f421bc refactor(engine): waves 4+5 — add postFireboxPipeResults vector accessor
-1809451 refactor(engine): wave 3 — EN13384 application uses generic pipe chain internally
-8c59318 refactor(engine): wave 1 — core typeclass infrastructure for generic pipe topology
-```
+## What Was Built
 
-## Architecture
+A complete generic N-pipe topology system replacing the hardcoded 3-pipe (flue → connector → chimney) post-firebox layout. Full stack: engine, DTO, UI.
 
-### Engine Layer
-- **PostFireboxPipeChain** — validated topology container enforcing grammar rules
-- **CanComputePipeResult** — path-dependent typeclass with zero-cast `mkSlot`, 3 factories (forFlowOnly15544, forThermal13384, forFlowOnly13384)
-- **PipeSlot** — existential wrapper hiding description algebra
-- **UpstreamState** — inter-pipe state propagation (temp, density, velocity)
-- **TopologyError** — validation error ADT (4 grammar rules)
-- EN13384 `postFireboxChainResults` replaces manual density/velocity threading
-- EN15544 `postFireboxPipeResults` vector accessor on AtParams
+### Engine Layer (Waves 1, 3, 4-5, 6a, 8, 9)
+- **CanComputePipeResult** typeclass — path-dependent types with zero-cast `mkSlot`
+- **PostFireboxPipeChain** — validated topology container with grammar rules
+- **PipeSlot/UpstreamState/TopologyError** — generic state propagation and validation
+- **PipeChainGeneric** — builds `Vector[SlotBuildResult]` from any `Seq[PostFireboxPipeDescrSlot]` with automatic frame chaining
+- **SlotBuildResult** — type-erased container (pipe model + IdsMapping as `Int→Option[Int]` + final PipeFrame)
+- EN13384/EN15544 applications use the generic chain internally
 
-### DTO Layer
-- **PostFireboxPipeDescrSlot** — tagged union enum (FlueSlot, ThermalFlueSlot, ConnectorSlot, ChimneySlot)
-- **FireCalcYAML_V5** — `post_firebox_pipes: Seq[PostFireboxPipeDescrSlot]` replaces 3 fixed fields
-- V4→V5 migration, full V1→V5 chain tested
-- Backward-compat accessors for flue_pipe_descr/connector_pipe_descr/chimney_pipe_descr
+### DTO Layer (Waves 6b, 7, 8)
+- **PostFireboxPipeDescrSlot** — tagged union: FlueSlot, ThermalFlueSlot, ConnectorSlot, ChimneySlot
+- **FireCalcYAML_V5** — `post_firebox_pipes: Seq[PostFireboxPipeDescrSlot]` replacing 3 fixed fields
+- Full V1→V2→V3→V4→V5 migration chain
 
-### UI Layer
-- `postFireboxDescrSlots_sig` / `postFireboxPipeResults_sig` reactive signals
-- Zoom lenses write through `post_firebox_pipes`
-- AppStateSchema_V5 for localStorage
-- `GraphDataConverter.convertGeneric` for variable-length post-firebox pipes
+### UI Layer (Waves 6c, 7, 10, 11, 12, 13)
+- **postFireboxSlots_var** — writable Var driving add/remove/reorder
+- **Slot-indexed signals** — build results, frame chain, position tracking, per-slot accessors
+- **DynamicFlowOnlyPipeSlotPanel** / **DynamicThermalPipeSlotPanel** — parameterized panels replacing FluePipePanel/ConnectorPipePanel/ChimneyPipePanel
+- **PostFireboxPipePanels** — container component with [+ Flue] [+ Connector] [+ Chimney] toolbar, per-slot reorder/remove controls, inline topology validation
+- GraphPanel uses `convertGeneric` with slot-indexed results
+- Viz3DPanel uses `slotPositions_sig`
+
+### Removed (Wave 13)
+- FluePipePanel.scala, ConnectingPipePanel.scala, ChimneyPipePanel.scala
+- 17 named per-pipe signals from Variables.scala
+- Net: -749 lines of dead code
 
 ## Test Results
 - **DTO**: 70/70 pass
-- **Engine**: 194/201 pass (7 pre-existing, 0 regressions)
-- **Full stack**: dto (JVM+JS), engine, ui compile cleanly
+- **Engine**: 202/209 pass (7 pre-existing, 0 regressions)
+- **Full stack compiles**: dto (JVM+JS), engine, ui — zero sbt warnings
 
-## Remaining (Separate Feature Milestone)
-Dynamic UI pipe panels (add/remove/reorder pipe slots in accordion). Requires:
-- New container component managing Vector[PostFireboxPipeDescrSlot]
-- Per-slot collapsible accordion with correct PipePanel subtype
-- Frame propagation re-wiring between dynamic slots
-- Position tracking for 3D viz
-- Full UX design for add/remove/reorder interactions
+## Commit Log
+```
+e22694d wave 13 — cleanup: remove dead panels + wire GraphPanel/Viz3DPanel
+862b699 wave 12 — dynamic pipe panel container + toolbar
+c6f902e wave 11 — parameterized DynamicPipeSlotPanel
+22d1934 wave 10 — generic slot-indexed reactive state in Variables.scala
+ee529c1 wave 9 — generic PipeChainGeneric with slot-indexed results
+79602ab wave 8 — MCE ThermalFlueSlot + GraphDataConverter generalization
+1a37bd1 wave 7 — DTO V5 schema with post_firebox_pipes
+0e008f4 wave 6c — add generic post-firebox topology signals
+bb9bd1e wave 6b — PostFireboxPipeDescrSlot tagged union + topology validation
+09ac622 wave 6a — mark topology validation extension point in YAML loader
+0f421bc waves 4+5 — add postFireboxPipeResults vector accessor
+1809451 wave 3 — EN13384 application uses generic pipe chain internally
+8c59318 wave 1 — core typeclass infrastructure for generic pipe topology
+```
