@@ -6,11 +6,15 @@
 package afpma.firecalc.ui.viz
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.engine.models.PipeResult
+import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.graph.*
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.LAMINAR_VIZ_DEBOUNCE_MS
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.*
+
+import cats.data.Validated
 
 import com.raquo.laminar.api.L.*
 
@@ -29,9 +33,7 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
             .combineWith(
                 results_en15544_combustion_air_pipe,
                 results_en15544_firebox_pipe,
-                results_en15544_channel_pipe,
-                results_en15544_connector_pipe,
-                results_en15544_chimney_pipe
+                postFireboxPipeResults_sig
             )
             .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
@@ -50,10 +52,22 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
             div(
                 cls := "flex-1 relative overflow-hidden",
                 onUnmountCallback { _ => disposeCurrentChart() },
-                child <-- allPipeResultsSig.map { (airIntake, combustionAir, firebox, flue, connector, chimney) =>
+                child <-- allPipeResultsSig.map { (airIntake, combustionAir, firebox, postFireboxResults) =>
                     disposeCurrentChart()
-                    val chartData = GraphDataConverter.convert(
-                        airIntake, combustionAir, firebox, flue, connector, chimney
+                    // Build labelled post-firebox pipes from the results vector
+                    val labels = Vector("Flue", "Connector", "Chimney")
+                    val postFireboxPipes: Vector[(String, VNelMcalcErr[PipeResult])] =
+                        postFireboxResults match
+                            case Validated.Valid(results) =>
+                                results.zipWithIndex.map { (pr, i) =>
+                                    val label = labels.lift(i).getOrElse(s"Pipe $i")
+                                    (label, Validated.validNel(pr))
+                                }
+                            case Validated.Invalid(errs) =>
+                                // On error, produce a single error entry
+                                Vector(("Flue", Validated.invalidNel(errs.head)))
+                    val chartData = GraphDataConverter.convertGeneric(
+                        airIntake, combustionAir, firebox, postFireboxPipes
                     )
                     if chartData.series.isEmpty then
                         div(

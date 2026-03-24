@@ -176,92 +176,11 @@ val air_intake_mappings_vnel_signal =
 val firebox_var =
     engineStateVar.zoomLazy(_.firebox)((ast, x) => ast.copy(firebox = x))
 
-// FluePipe
-
-val fluepipe_incrdescr_var = engineStateVar.zoomLazy(_.flue_pipe_descr): (g, x) =>
-    g.copy(post_firebox_pipes = g.post_firebox_pipes.map {
-        case PostFireboxPipeDescrSlot.FlueSlot(_) => PostFireboxPipeDescrSlot.FlueSlot(x)
-        case other                                => other
-    })
-
-val fluepipe_vnel_signal = engineStateHelperVar.signal.map(_.fluePipe)
-
-val fluepipe_mappings_vnel_signal =
-    engineStateHelperVar.signal.map(_.fluePipeMappings)
-
-// Connecting Pipe
-
-val connector_pipe_incrdescr_var =
-    engineStateVar.zoomLazy(_.connector_pipe_descr): (g, x) =>
-        g.copy(post_firebox_pipes = g.post_firebox_pipes.map {
-            case PostFireboxPipeDescrSlot.ConnectorSlot(_) => PostFireboxPipeDescrSlot.ConnectorSlot(x)
-            case other                                     => other
-        })
-
-val connector_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.connectorPipe)
-val connector_pipe_mappings_vnel_signal =
-    engineStateHelperVar.signal.map(_.connectorPipeMappings)
-
-// Chimney Pipe
-
-val chimney_pipe_incrdescr_var =
-    engineStateVar.zoomLazy(_.chimney_pipe_descr): (g, x) =>
-        g.copy(post_firebox_pipes = g.post_firebox_pipes.map {
-            case PostFireboxPipeDescrSlot.ChimneySlot(_) => PostFireboxPipeDescrSlot.ChimneySlot(x)
-            case other                                    => other
-        })
-
-val chimney_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.chimneyPipe)
-val chimney_pipe_mappings_vnel_signal =
-    engineStateHelperVar.signal.map(_.chimneyPipeMappings)
-
-// Final frames: flue pipe's final frame seeds the connector, connector's seeds the chimney.
-// These are derived from the incremental descriptions directly (no engine run needed).
+// ── Air intake position tracking ─────────────────────────────────
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.FluePipe_Module_15544
-import afpma.firecalc.engine.models.ConnectorPipe_Module
-
-lazy val fluepipe_finalFrame_sig: Signal[Option[PipeFrame]] =
-    fluepipe_incrdescr_var.signal.map: descr =>
-        val (_, finalFrameV) = FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr)
-        finalFrameV.toOption.flatten
-    .distinct
-
-lazy val connectorpipe_finalFrame_sig: Signal[Option[PipeFrame]] =
-    connector_pipe_incrdescr_var.signal.combineWith(fluepipe_finalFrame_sig).map: (descr, flueFinalFrame) =>
-        val (_, finalFrameV) = ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(descr, flueFinalFrame)
-        finalFrameV.toOption.flatten
-    .distinct
-
-// Position tracking: cumulative XYZ coordinates for each pipe's physical segments.
-// Chained: connector starts at flue's finalPoint, chimney starts at connector's finalPoint.
-// Air intake and flue pipe both start at origin (firebox outlet not modeled spatially).
-
 import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
 import afpma.firecalc.engine.models.geometry.Vec3
-
-lazy val fluepipe_positions_sig: Signal[PipePositionResult] =
-    fluepipe_incrdescr_var.signal
-        .combineWith(firebox_var.signal)
-        .map: (descr, firebox) =>
-            val fbHeightM = firebox.firebox_height.value
-            PositionTracker.computeFlowOnly15544(descr, externalFrame = None, startPoint = Vec3(0, 0, fbHeightM + 1.0))
-        .distinct
-
-lazy val connectorpipe_positions_sig: Signal[PipePositionResult] =
-    connector_pipe_incrdescr_var.signal
-        .combineWith(fluepipe_finalFrame_sig, fluepipe_positions_sig)
-        .map: (descr, flueFinalFrame, fluePositions) =>
-            PositionTracker.computeThermal13384(descr, flueFinalFrame, fluePositions.finalPoint)
-        .distinct
-
-lazy val chimneypipe_positions_sig: Signal[PipePositionResult] =
-    chimney_pipe_incrdescr_var.signal
-        .combineWith(connectorpipe_finalFrame_sig, connectorpipe_positions_sig)
-        .map: (descr, connFinalFrame, connPositions) =>
-            PositionTracker.computeThermal13384(descr, connFinalFrame, connPositions.finalPoint)
-        .distinct
 
 lazy val airintake_positions_sig: Signal[PipePositionResult] =
     air_intake_incrdescr_var.signal.map: descr =>
@@ -358,16 +277,7 @@ def slotMappingFnSig(idx: Int): Signal[ValidatedNel[IncrementalValidation_Error,
             Validated.invalidNel(FluePipeNotDefinedYet) // fallback — slot doesn't exist
         )
 
-// ── Backward-compat signals ──────────────────────────────────────
-// These derive from the slot vector but expose the same types as before.
-// Consumed by: FluePipePanel, ConnectorPipePanel, ChimneyPipePanel,
-// GraphPanel, Viz3DPanel. Will be removed when those are migrated.
-
-/** The descriptor slots as a signal (backward compat). */
-lazy val postFireboxDescrSlots_sig: Signal[Vector[PostFireboxPipeDescrSlot]] =
-    postFireboxSlots_var.signal.map(_.toVector).distinct
-
-/** All post-firebox pipe results as a vector (backward compat). */
+/** All post-firebox pipe results as a vector. */
 lazy val postFireboxPipeResults_sig: Signal[VNelMcalcErr[Vector[PipeResult]]] =
     results_en15544_strict_sig.map: vnelAppl =>
         vnelAppl.andThen(_.primary.postFireboxPipeResults)
@@ -438,16 +348,6 @@ lazy val results_en15544_combustion_air_pipe: Signal[VNelMcalcErr[PipeResult]] =
 lazy val results_en15544_firebox_pipe: Signal[VNelMcalcErr[PipeResult]] =
     results_en15544_outputs.map: outputs =>
         outputs.andThen(_.pipesResult_15544.map(_.firebox))
-
-lazy val results_en15544_channel_pipe  : Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.flue))
-lazy val results_en15544_connector_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.connector))
-lazy val results_en15544_chimney_pipe  : Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.chimney))
 
 lazy val results_en15544_estimated_output_temperatures: Signal[VNelMcalcErr[EstimatedOutputTemperatures]] =
     results_en15544_strict_sig.mapVNelE(strict =>
