@@ -234,6 +234,12 @@ function buildChartConfig(
         ticks: {
             maxRotation: 0,
         },
+        afterBuildTicks(scale: any) {
+            if (!scale.ticks.some((t: any) => t.value === 0)) {
+                scale.ticks.push({ value: 0 });
+                scale.ticks.sort((a: any, b: any) => a.value - b.value);
+            }
+        },
     };
     if (data.xMin !== undefined) xScale.min = data.xMin;
     if (data.xMax !== undefined) xScale.max = data.xMax;
