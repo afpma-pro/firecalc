@@ -674,6 +674,7 @@ enum VizElementId:
     case ConnectorPipeElement(elementIndex: Int)
     case ChimneyPipeElement(elementIndex: Int)
     case AirIntakePipeElement(elementIndex: Int)
+    case PostFireboxSlotElement(slotIndex: Int, elementIndex: Int)
     case FireboxElement
 
 object VizElementId:
@@ -682,6 +683,7 @@ object VizElementId:
         case s"Connector #$idx"  => idx.toIntOption.map(ConnectorPipeElement(_))
         case s"Chimney #$idx"    => idx.toIntOption.map(ChimneyPipeElement(_))
         case s"Air Intake #$idx" => idx.toIntOption.map(AirIntakePipeElement(_))
+        case s"Slot$si #$ei"     => for s <- si.trim.toIntOption; e <- ei.toIntOption yield PostFireboxSlotElement(s, e)
         case "Firebox"           => Some(FireboxElement)
         case _                   => None
 
