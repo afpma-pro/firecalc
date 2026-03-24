@@ -371,6 +371,7 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     // simple instance of tree (for testing only)
     lazy val tagTreeMenu = TagTreeMenu(
         shortcut_start_new_pipe,
+        shortcut_add_new_connector,
         prop_elements,
         geom_elements
     )
@@ -382,6 +383,16 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
             elems = (
                 summon[D[SetMaterial]].default,
                 summon[D[SetInnerShape]].default
+            )
+        )
+
+    lazy val shortcut_add_new_connector =
+        TagTreeMenu.Shortcut  (
+            txt   = I18N.set_prop.shortcuts.add_new_connector,
+            elems = (
+                SetRoughness(1.mm),
+                SetInnerShape(Circle(180.mm)),
+                AddSectionSlopped("connecteur", 6.cm)
             )
         )
 

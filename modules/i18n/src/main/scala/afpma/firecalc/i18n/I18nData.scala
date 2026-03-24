@@ -768,7 +768,8 @@ object I18nData:
 
     object SetProp:
         case class Shortcuts(
-            start_a_new_pipe: String
+            start_a_new_pipe: String,
+            add_new_connector: String,
         )
 
     case class TechnicalSpecficiations(
