@@ -209,7 +209,14 @@ object GraphDataConverter:
                 bandStart = pipeEnd
             }
 
-            ChartData(series = series, yAxes = yAxes, xAxisLabel = xLabel, backgroundBands = bands.result(), xMin = Some(0.0), xMax = Some(runningLength + 0.5))
+            ChartData(
+                series = series, 
+                yAxes = yAxes, 
+                xAxisLabel = xLabel, 
+                backgroundBands = bands.result(), 
+                xMin = Some(-0.5), 
+                xMax = Some(runningLength + 0.5)
+            )
 
     /** Build data points for a given series type.
       * Returns an origin point at x=0 (inlet condition) followed by one point per section
