@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
+import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, PostFireboxPipeChain, UpstreamState}
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.MecaFlu_Error.given
 import afpma.firecalc.engine.utils.*
@@ -104,55 +105,46 @@ abstract class EN13384_1_A1_2019_Common_Application(
     lazy val last_known_density_before_connector_pipe : WithParams_13384[Option[Density]]      = None
     lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] = None
 
-    override def connector_PipeResult =
-        val tw   = LoadQty.summon match
+    /** Compute all post-firebox pipe results via the generic chain.
+      *
+      * Builds a `PostFireboxPipeChain` from the connector + chimney pipe
+      * descriptions, then left-folds upstream state through each slot.
+      * This replaces the manual density/velocity threading that was previously
+      * done between `connector_PipeResult` and `chimney_PipeResult`.
+      */
+    private def postFireboxChainResults: PipeResultOp[WithParams_13384[Either[MecaFlu_Error, Vector[PipeResult]]]] =
+        val tc = CanComputePipeResult.forThermal13384(
+            en13384,
+            HeatingAppliance.FlueGas.summon,
+            HeatingAppliance.MassFlows.summon,
+            HeatingAppliance.Powers.summon,
+            HeatingAppliance.Efficiency.summon
+        )
+        val connSlot = ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)(
+            onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
+            onFullDescr = fd => tc.mkSlot(ConnectorPipeT, "Connector", FlueGas, ConnectorPipe_Module.unwrap(fd))
+        )
+        val chimSlot = tc.mkSlot(ChimneyPipeT, "Chimney", FlueGas, ChimneyPipe_Module.unwrap(inputs.pipes.chimney))
+
+        val chain = PostFireboxPipeChain.validated(Vector(connSlot, chimSlot)) match
+            case Validated.Valid(c)   => c
+            case Validated.Invalid(e) => throw new IllegalStateException(s"Invalid post-firebox topology: $e")
+
+        val tw = LoadQty.summon match
             case LoadQty.Nominal => T_WN
             case LoadQty.Reduced => T_Wmin
-        ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)(
-            onWithout   = PipeResult.useless(ConnectorPipeT, tw).asRight,
-            onFullDescr = fd =>
-                ops_en13384.ThermalMecaFlu_13384.makePipeResult                (
-                    fd                 = ConnectorPipe_Module.unwrap(fd),
-                    hafg               = HeatingAppliance.FlueGas.summon,
-                    hamf               = HeatingAppliance.MassFlows.summon,
-                    hapwr              = HeatingAppliance.Powers.summon,
-                    haeff              = HeatingAppliance.Efficiency.summon,
-                    temp_start         = tw,
-                    last_pipe_density  = last_known_density_before_connector_pipe,
-                    last_pipe_velocity = last_known_velocity_before_connector_pipe,
-                    gas                = FlueGas
-                )
+        val initialUpstream = UpstreamState(
+            temp_start         = tw,
+            last_pipe_density  = last_known_density_before_connector_pipe,
+            last_pipe_velocity = last_known_velocity_before_connector_pipe
         )
+        chain.computeAll(Params_13384.summon, initialUpstream, computeAt)
+
+    override def connector_PipeResult =
+        postFireboxChainResults.map(_.head)
 
     override def chimney_PipeResult =
-        connector_PipeResult.flatMap: cp =>
-            val last_pipe_density                  =
-                ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)  (
-                    onWithout   = last_known_density_before_connector_pipe,
-                    onFullDescr = _ =>
-                        computeAt match
-                            case ComputeAt.Mean   => cp.last_density_mean
-                            case ComputeAt.Middle => cp.last_density_middle
-                )
-            val last_pipe_velocity                 =
-                ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)  (
-                    onWithout   = last_known_velocity_before_connector_pipe,
-                    onFullDescr = _ =>
-                        computeAt match
-                            case ComputeAt.Mean   => cp.last_velocity_mean
-                            case ComputeAt.Middle => cp.last_velocity_middle
-                )
-            ops_en13384.ThermalMecaFlu_13384.makePipeResult(
-                fd                 = ChimneyPipe_Module.unwrap(inputs.pipes.chimney),
-                hafg               = HeatingAppliance.FlueGas.summon,
-                hamf               = HeatingAppliance.MassFlows.summon,
-                hapwr              = HeatingAppliance.Powers.summon,
-                haeff              = HeatingAppliance.Efficiency.summon,
-                temp_start         = cp.gas_temp_end,
-                last_pipe_density  = last_pipe_density,
-                last_pipe_velocity = last_pipe_velocity,
-                gas                = FlueGas
-            )
+        postFireboxChainResults.map(_.last)
 
     override final def pipesResult_13384_VNelS =
         PipesResult_13384_VNelString(
