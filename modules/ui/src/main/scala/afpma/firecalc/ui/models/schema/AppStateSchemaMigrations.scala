@@ -21,6 +21,7 @@ import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import org.scalajs.dom
 import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4
+import afpma.firecalc.ui.models.schema.v5.AppStateSchema_V5
 
 /**
  * Schema migration manager for AppState persistence.
@@ -65,7 +66,7 @@ object AppStateSchemaMigrations:
     import afpma.firecalc.dto.transformers.given
 
     /** Current schema version - increment when adding new schema versions */
-    val CURRENT_SCHEMA_VERSION = 4
+    val CURRENT_SCHEMA_VERSION = 5
 
     /**
      * Chimney transformer from AppStateSchema_V1 to AppStateSchema_V2.
@@ -104,18 +105,19 @@ object AppStateSchemaMigrations:
                 None
 
             case Some(1) =>
-                // V1 - decode and migrate to V4
+                // V1 - decode and migrate to V5
                 decodeV1(rawData)
                     .flatMap(migrateFromV1ToV2)
                     .flatMap(migrateFromV2ToV3)
-                    .flatMap(migrateFromV3ToV4) match
-                        case Success(v4) => Some(v4)
+                    .flatMap(migrateFromV3ToV4)
+                    .flatMap(migrateFromV4ToV5) match
+                        case Success(v5) => Some(v5)
                         case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V1 to V4: ${e.getMessage()}")
+                            dom.console.error(s"Failed to migrate V1 to V5: ${e.getMessage()}")
                             None
 
             case Some(2) =>
-                // V2 - decode and migrate to V4
+                // V2 - decode and migrate to V5
                 // Fallback: old V2 data may use V1 Firebox structure (before Firebox_V2 was created).
                 // Decode as V1 then migrate V1→V2 (Chimney adds height_of_first_row_of_air_injectors = 5.cm).
                 decodeV2(rawData)
@@ -124,22 +126,33 @@ object AppStateSchemaMigrations:
                         decodeV1(rawData).flatMap(migrateFromV1ToV2)
                     }
                     .flatMap(migrateFromV2ToV3)
-                    .flatMap(migrateFromV3ToV4) match
-                        case Success(v4) => Some(v4)
+                    .flatMap(migrateFromV3ToV4)
+                    .flatMap(migrateFromV4ToV5) match
+                        case Success(v5) => Some(v5)
                         case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V2 to V4: ${e.getMessage()}")
+                            dom.console.error(s"Failed to migrate V2 to V5: ${e.getMessage()}")
                             None
 
             case Some(3) =>
-                // V3 - decode and migrate to V4
+                // V3 - decode and migrate to V5
                 decodeV3(rawData)
-                    .flatMap(migrateFromV3ToV4) match
-                        case Success(v4) => Some(v4)
+                    .flatMap(migrateFromV3ToV4)
+                    .flatMap(migrateFromV4ToV5) match
+                        case Success(v5) => Some(v5)
                         case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V3 to V4: ${e.getMessage()}")
+                            dom.console.error(s"Failed to migrate V3 to V5: ${e.getMessage()}")
                             None
 
             case Some(4) =>
+                // V4 - decode and migrate to V5
+                decodeV4(rawData)
+                    .flatMap(migrateFromV4ToV5) match
+                        case Success(v5) => Some(v5)
+                        case Failure(e)  =>
+                            dom.console.error(s"Failed to migrate V4 to V5: ${e.getMessage()}")
+                            None
+
+            case Some(5) =>
                 // Current version - decode directly
                 AppStateSchemaHelper.decodeFromYaml(rawData).toOption
 
@@ -185,6 +198,16 @@ object AppStateSchemaMigrations:
                     case Left(err)     => Failure(new RuntimeException(s"Failed to decode V3: ${err.getMessage()}"))
             case Left(err)   => Failure(new RuntimeException(s"Failed to parse V3 YAML: ${err.getMessage()}"))
 
+    /** Decode V4 schema from YAML string. */
+    private def decodeV4(yaml: String): Try[AppStateSchema_V4] =
+        import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4.given
+        yamlParser.parse(yaml) match
+            case Right(json) =>
+                json.as[AppStateSchema_V4] match
+                    case Right(schema) => Success(schema)
+                    case Left(err)     => Failure(new RuntimeException(s"Failed to decode V4: ${err.getMessage()}"))
+            case Left(err)   => Failure(new RuntimeException(s"Failed to parse V4 YAML: ${err.getMessage()}"))
+
     /** Decode V2 schema from YAML string. */
     private def decodeV2(yaml: String): Try[AppStateSchema_V2] =
         import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2.given
@@ -214,6 +237,24 @@ object AppStateSchemaMigrations:
         Try {
             dom.console.log("Migrating AppStateSchema from V3 to V4")
             schema.transformInto[AppStateSchema_V4]
+        }
+
+    /**
+     * Migrate from V4 to V5 schema.
+     *
+     * Manually migrates engine_state from FireCalcYAML_V4 to FireCalcYAML_V5 using
+     * FireCalcYAMLMigrations.migrateV4ToV5 (restructures pipe fields into post_firebox_pipes).
+     */
+    private def migrateFromV4ToV5(schema: AppStateSchema_V4): Try[AppStateSchema_V5] =
+        Try {
+            import afpma.firecalc.dto.FireCalcYAMLMigrations
+            dom.console.log("Migrating AppStateSchema from V4 to V5")
+            AppStateSchema_V5(
+                version        = common.AppStateSchema_Version(5),
+                engine_state   = FireCalcYAMLMigrations.migrateV4ToV5(schema.engine_state),
+                sensitive_data = schema.sensitive_data,
+                billing_data   = schema.billing_data
+            )
         }
 
     /**

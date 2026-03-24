@@ -11,9 +11,10 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
-import afpma.firecalc.dto.v4.FireCalcYAML_V4
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.TypeOfAppliance
+import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 
@@ -101,8 +102,7 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         AddThermalPipeElement_13384_V3.AddSectionVertical("sortie de toit", 60.0.cm)
     )
 
-    private val project: FireCalcYAML_V4 = FireCalcYAML_V4(
-        version                        = FireCalcYAML_V4.VERSION,
+    private val project = FireCalcYAML_V5(
         locale                         = Locale(Languages.Fr, None),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -124,9 +124,11 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         ),
         air_intake_descr               = Seq.empty,
         firebox                        = singleTestedFirebox,
-        flue_pipe_descr                = fluePipeDescr,
-        connector_pipe_descr           = connectorPipeDescr,
-        chimney_pipe_descr             = chimneyPipeDescr
+        post_firebox_pipes             = Seq(
+            PostFireboxPipeDescrSlot.FlueSlot(fluePipeDescr),
+            PostFireboxPipeDescrSlot.ConnectorSlot(connectorPipeDescr),
+            PostFireboxPipeDescrSlot.ChimneySlot(chimneyPipeDescr)
+        )
     )
 
     // --------------------------------------------------------------------- //
@@ -145,13 +147,13 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
 
     "SingleTested YAML round-trip then EN15544 strict" should
         "produce a valid application after encode → decode" in {
-        val yamlTry = FireCalcYAML_V4.encodeToYaml(project)
+        val yamlTry = FireCalcYAML_V5.encodeToYaml(project)
         withClue(s"Encoding failed: ${yamlTry.failed.toOption}\n") {
             yamlTry.isSuccess shouldBe true
         }
         val yaml = yamlTry.get
 
-        val decodedTry = FireCalcYAML_V4.decodeFromYaml(yaml)
+        val decodedTry = FireCalcYAML_V5.decodeFromYaml(yaml)
         withClue(s"Decoding failed: ${decodedTry.failed.toOption}\nYAML:\n$yaml\n") {
             decodedTry.isSuccess shouldBe true
         }

@@ -178,7 +178,11 @@ val firebox_var =
 
 // FluePipe
 
-val fluepipe_incrdescr_var = engineStateVar.zoomLazy(_.flue_pipe_descr)((g, x) => g.copy(flue_pipe_descr = x))
+val fluepipe_incrdescr_var = engineStateVar.zoomLazy(_.flue_pipe_descr): (g, x) =>
+    g.copy(post_firebox_pipes = g.post_firebox_pipes.map {
+        case PostFireboxPipeDescrSlot.FlueSlot(_) => PostFireboxPipeDescrSlot.FlueSlot(x)
+        case other                                => other
+    })
 
 val fluepipe_vnel_signal = engineStateHelperVar.signal.map(_.fluePipe)
 
@@ -188,7 +192,11 @@ val fluepipe_mappings_vnel_signal =
 // Connecting Pipe
 
 val connector_pipe_incrdescr_var =
-    engineStateVar.zoomLazy(_.connector_pipe_descr)((g, x) => g.copy(connector_pipe_descr = x))
+    engineStateVar.zoomLazy(_.connector_pipe_descr): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.map {
+            case PostFireboxPipeDescrSlot.ConnectorSlot(_) => PostFireboxPipeDescrSlot.ConnectorSlot(x)
+            case other                                     => other
+        })
 
 val connector_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.connectorPipe)
 val connector_pipe_mappings_vnel_signal =
@@ -197,7 +205,11 @@ val connector_pipe_mappings_vnel_signal =
 // Chimney Pipe
 
 val chimney_pipe_incrdescr_var =
-    engineStateVar.zoomLazy(_.chimney_pipe_descr)((g, x) => g.copy(chimney_pipe_descr = x))
+    engineStateVar.zoomLazy(_.chimney_pipe_descr): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.map {
+            case PostFireboxPipeDescrSlot.ChimneySlot(_) => PostFireboxPipeDescrSlot.ChimneySlot(x)
+            case other                                    => other
+        })
 
 val chimney_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.chimneyPipe)
 val chimney_pipe_mappings_vnel_signal =

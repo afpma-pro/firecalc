@@ -11,6 +11,8 @@ import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
 import scala.util.Failure
 import scala.util.Success
@@ -46,16 +48,36 @@ object FireCalcYAMLMigrations:
     def migrateV3ToV4(v3: FireCalcYAML_V3): FireCalcYAML_V4 =
         v3.transformInto[FireCalcYAML_V4]
 
+    def migrateV4ToV5(v4: FireCalcYAML_V4): FireCalcYAML_V5 =
+        FireCalcYAML_V5(
+            version                        = FireCalcYAML_V5.VERSION,
+            locale                         = v4.locale,
+            display_units                  = v4.display_units,
+            standard_or_computation_method = v4.standard_or_computation_method,
+            project_description            = v4.project_description,
+            local_conditions               = v4.local_conditions,
+            stove_params                   = v4.stove_params,
+            air_intake_descr               = v4.air_intake_descr,
+            firebox                        = v4.firebox,
+            post_firebox_pipes             = Seq(
+                PostFireboxPipeDescrSlot.FlueSlot(v4.flue_pipe_descr),
+                PostFireboxPipeDescrSlot.ConnectorSlot(v4.connector_pipe_descr),
+                PostFireboxPipeDescrSlot.ChimneySlot(v4.chimney_pipe_descr)
+            )
+        )
+
     def upgradeToCurrent(dto: Any): Either[Throwable, FireCalcYAML] =
         dto match
+            case fcv5: FireCalcYAML_V5 =>
+                Right(fcv5)
             case fcv4: FireCalcYAML_V4 =>
-                Right(fcv4)
+                Right(migrateV4ToV5(fcv4))
             case fcv3: FireCalcYAML_V3 =>
-                Right((migrateV3ToV4)(fcv3))
+                Right((migrateV3ToV4 andThen migrateV4ToV5)(fcv3))
             case fcv2: FireCalcYAML_V2 =>
-                Right((migrateV2ToV3 andThen migrateV3ToV4)(fcv2))
+                Right((migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5)(fcv2))
             case fcv1: FireCalcYAML_V1 =>
-                Right((migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4)(fcv1))
+                Right((migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5)(fcv1))
             case other =>
                 Left(new Exception(s"Unsupported file version: ${other.getClass().getName}"))
 
@@ -87,13 +109,15 @@ object FireCalcYAMLMigrations:
             case None          =>
                 Left("Could not detect version field in YAML")
             case Some(1)       =>
-                decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4)
+                decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5)
             case Some(2)       =>
-                decodeV2(json).map(migrateV2ToV3 andThen migrateV3ToV4)
+                decodeV2(json).map(migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5)
             case Some(3)       =>
-                decodeV3(json).map(migrateV3ToV4)
+                decodeV3(json).map(migrateV3ToV4 andThen migrateV4ToV5)
             case Some(4)       =>
-                decodeV4(json)
+                decodeV4(json).map(migrateV4ToV5)
+            case Some(5)       =>
+                decodeV5(json)
             case Some(version) =>
                 Left(s"Unknown FireCalcYAML version: $version")
 
@@ -124,6 +148,11 @@ object FireCalcYAMLMigrations:
         // Use the decoder from V4/FireCalcYAML_V4.scala
         import FireCalcYAML_V4.decoder
         json.as[FireCalcYAML_V4].left.map(e => s"Failed to decode V4: ${e.getMessage()}")
+
+    /** Decode V5 from JSON using FireCalcYAML_V5 decoder. */
+    private def decodeV5(json: Json): Either[String, FireCalcYAML_V5] =
+        import FireCalcYAML_V5.decoder
+        json.as[FireCalcYAML_V5].left.map(e => s"Failed to decode V5: ${e.getMessage()}")
 
     /** Try-based wrapper for decodeAndMigrate for Scala.js compatibility. */
     def decodeAndMigrateTry(yaml: String): Try[FireCalcYAML] =
