@@ -178,20 +178,20 @@ object GraphDataConverter:
 
             val series = Vector(
                 ChartSeries(
-                    id    = "temperature", name = I18N_UI.graph.temperature,
-                    color = TemperatureColor, points = tempPoints, yAxisId = "temp"
+                    id    = "pressure", name = I18N_UI.graph.pressure,
+                    color = PressureColor, points = pressPoints, yAxisId = "right"
                 ),
                 ChartSeries(
                     id    = "velocity", name = I18N_UI.graph.velocity,
                     color = VelocityColor, points = velocityPoints, yAxisId = "right"
                 ),
                 ChartSeries(
-                    id    = "elevation", name = I18N_UI.graph.elevation,
-                    color = ElevationColor, points = elevPoints, yAxisId = "right", dashed = true
+                    id    = "temperature", name = I18N_UI.graph.temperature,
+                    color = TemperatureColor, points = tempPoints, yAxisId = "temp"
                 ),
                 ChartSeries(
-                    id    = "pressure", name = I18N_UI.graph.pressure,
-                    color = PressureColor, points = pressPoints, yAxisId = "right"
+                    id    = "elevation", name = I18N_UI.graph.elevation,
+                    color = ElevationColor, points = elevPoints, yAxisId = "right", dashed = true
                 )
             )
 
