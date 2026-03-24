@@ -938,7 +938,8 @@ object I18nData:
             layer_requires_section_geometry           : String,
             layers_require_inner_shape                : String,
             direction_change_requires_section_geometry: String,
-            final_dir_without_initial_direction       : String
+            final_dir_without_initial_direction       : String,
+            geometry_without_initial_direction        : String
         )
 
         case class Conflicts(

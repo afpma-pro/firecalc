@@ -28,6 +28,7 @@ import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
+import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
 
 import cats.data.*
 import cats.syntax.all.*
@@ -129,12 +130,18 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         incrDescrs: Vector[Id_IncrDescr],
         finalState: PropsState
     ): ValidatedResult[Unit] =
-        val hasFinalDir = incrDescrs.exists:
-            case (_, dc: AddDirectionChange) => dc.absDir.isDefined
-            case _                           => false
-        if hasFinalDir && finalState.initialFrame.isEmpty then
-            FinalDirWithoutInitialDirection(pt).invalidNel
-        else ().validNel
+        val hasGeometry = incrDescrs.exists:
+            case (_, _: AddElement) => true
+            case _                  => false
+        if hasGeometry && finalState.initialFrame.isEmpty then
+            GeometryWithoutInitialDirection(pt).invalidNel
+        else
+            val hasFinalDir = incrDescrs.exists:
+                case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+                case _                           => false
+            if hasFinalDir && finalState.initialFrame.isEmpty then
+                FinalDirWithoutInitialDirection(pt).invalidNel
+            else ().validNel
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,

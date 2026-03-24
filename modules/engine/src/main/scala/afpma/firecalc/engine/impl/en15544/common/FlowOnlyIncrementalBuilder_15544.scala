@@ -112,12 +112,18 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         incrDescrs: Vector[Id_IncrDescr],
         finalState: PropsState
     ): ValidatedResult[Unit] =
-        val hasFinalDir = incrDescrs.exists:
-            case (_, dc: AddDirectionChange) => dc.absDir.isDefined
-            case _                           => false
-        if hasFinalDir && finalState.initialFrame.isEmpty then
-            FinalDirWithoutInitialDirection(pt).invalidNel
-        else ().validNel
+        val hasGeometry = incrDescrs.exists:
+            case (_, _: AddElement) => true
+            case _                  => false
+        if hasGeometry && finalState.initialFrame.isEmpty then
+            GeometryWithoutInitialDirection(pt).invalidNel
+        else
+            val hasFinalDir = incrDescrs.exists:
+                case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+                case _                           => false
+            if hasFinalDir && finalState.initialFrame.isEmpty then
+                FinalDirWithoutInitialDirection(pt).invalidNel
+            else ().validNel
 
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[Length] =

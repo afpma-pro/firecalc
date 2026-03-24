@@ -139,6 +139,23 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         if s.initialFrame.isDefined then s
         else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
 
+    override protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] =
+        val hasGeometry = incrDescrs.exists:
+            case (_, _: AddElement) => true
+            case _                  => false
+        if hasGeometry && finalState.initialFrame.isEmpty then
+            GeometryWithoutInitialDirection(pt).invalidNel
+        else
+            val hasFinalDir = incrDescrs.exists:
+                case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+                case _                           => false
+            if hasFinalDir && finalState.initialFrame.isEmpty then
+                FinalDirWithoutInitialDirection(pt).invalidNel
+            else ().validNel
+
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
         convStep: ConversionStep
