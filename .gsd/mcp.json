@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "socraticode": {
+        "command": "npx",
+        "args": [
+            "-y",
+            "socraticode"
+        ],
+        "type": "stdio"
+    },
+    "firecalc-metals": {
+      "url": "http://127.0.0.1:38615/mcp",
+      "type": "streamable-http",
+      "description": "Scala Metals MCP Server for enhanced Scala language support",
+      "alwaysAllow": [
+        "glob-search",
+        "typed-glob-search",
+        "get-docs",
+        "get-usages",
+        "find-dep",
+        "list-modules",
+        "format-file",
+        "generate-scalafix-rule",
+        "run-scalafix-rule",
+        "list-scalafix-rules",
+        "import-build",
+        "inspect",
+        "compile-module",
+        "compile-file"
+      ],
+      "timeout": 300,
+      "disabled": false
+    }
+  }
+}
