@@ -1,65 +1,72 @@
 # Summary: Generic Post-Firebox Pipe Topology Refactor
 
+## Branch: `gsd/refactor/generic-topo` — 6 commits
+
 ## What was done
 
-### Wave 1: Core Typeclass Infrastructure ✅
+### Wave 1: Core Typeclass Infrastructure ✅ (`8c59318`)
 Created 5 new files in `engine/ops/generic/`:
 - **TopologyError** — validation error ADT (4 grammar rules)
 - **UpstreamState** — inter-pipe state propagation (temp, density, velocity)
 - **PipeSlot** — existential wrapper hiding the description algebra + `noop` factory
 - **CanComputePipeResult** — path-dependent typeclass with zero-cast `mkSlot`, 3 factory functions (`forFlowOnly15544`, `forThermal13384`, `forFlowOnly13384`)
 - **PostFireboxPipeChain** — validated topology container, region accessors, `computeAll` left-fold
-
-13 topology validation tests pass.
+- 13 topology validation tests pass.
 
 ### Wave 2: Skipped (content merged into Wave 1)
-`PostFireboxPipeChain` already provides region accessors and `computeAll`.
 
-### Wave 3: EN13384 Application Migration ✅
-Replaced manual density/velocity threading between connector→chimney in `en13384_common_application.scala` with `PostFireboxPipeChain.computeAll` fold via `CanComputePipeResult.forThermal13384`. All EN13384 integration tests pass (C2, C16).
+### Wave 3: EN13384 Application Migration ✅ (`1809451`)
+Replaced manual density/velocity threading between connector→chimney in `en13384_common_application.scala` with `PostFireboxPipeChain.computeAll` fold via `CanComputePipeResult.forThermal13384`.
 
-### Waves 4+5: EN15544 Strict + MCE ✅
-Added `postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]]` to `AtParams` trait and `CommonAtParams` implementation. EN15544 connector/chimney already benefit from Wave 3's chain through the inner EN13384 application.
+### Waves 4+5: EN15544 Strict + MCE ✅ (`0f421bc`)
+Added `postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]]` to `AtParams` trait and `CommonAtParams` implementation.
 
-### Wave 6a: YAML Loader Extension Point ✅
+### Wave 6a: YAML Loader Extension Point ✅ (`09ac622`)
 Marked topology validation extension point in `FireCalcYAML_Loader.scala`.
 
-### Wave 6b: DTO V5 — Deferred
-Requires new schema (`post_firebox_pipes: Seq[PostFireboxPipeDescr_V5]`), V4→V5 migration, circe codecs. This is a separate milestone-sized effort.
+### Wave 6b: DTO Type + Topology Validation ✅ (`bb9bd1e`)
+- New `PostFireboxPipeDescrSlot` enum (FlueSlot/ConnectorSlot/ChimneySlot) in DTO module with circe codecs
+- `PipeChain_15544_Strict.toSlots`/`fromSlots` and `PipeChain_13384.toSlots`/`fromSlots` conversions
+- `FireCalcYAML_Loader`: actual topology validation via `PostFireboxPipeChain.validated` at load time
 
-### Wave 6c: UI Dynamic Pipe Panels — Deferred
-Requires DTO V5, new reactive state management, pipe panel add/remove/reorder UI, schema migration for localStorage. Separate milestone.
+### Wave 6c: UI Integration Signals ✅ (`0e008f4`)
+- `postFireboxDescrSlots_sig`: derives `Vector[PostFireboxPipeDescrSlot]` from the three individual pipe descriptor vars
+- `postFireboxPipeResults_sig`: extracts `Vector[PipeResult]` from EN15544 Strict application
 
-## Files Changed (8 files, 6 new)
+## Full stack compilation: ✅
+- `dto` (JVM + JS), `engine`, `ui` all compile cleanly with zero warnings
 
-### New files
-| File | Lines |
-|------|-------|
-| `engine/ops/generic/TopologyError.scala` | 28 |
-| `engine/ops/generic/UpstreamState.scala` | 52 |
-| `engine/ops/generic/PipeSlot.scala` | 42 |
-| `engine/ops/generic/CanComputePipeResult.scala` | 116 |
-| `engine/ops/generic/PostFireboxPipeChain.scala` | 141 |
-| `engine/test/.../PostFireboxPipeChainSuite.scala` | 105 |
+## Test results: 194/201 pass (7 pre-existing failures, 0 regressions)
 
-### Modified files
+## Files Changed
+
+### New files (7)
+| File | Purpose |
+|------|---------|
+| `engine/ops/generic/TopologyError.scala` | Validation error ADT |
+| `engine/ops/generic/UpstreamState.scala` | Inter-pipe state propagation |
+| `engine/ops/generic/PipeSlot.scala` | Existential pipe slot wrapper |
+| `engine/ops/generic/CanComputePipeResult.scala` | Typeclass with 3 factory functions |
+| `engine/ops/generic/PostFireboxPipeChain.scala` | Validated topology + computeAll |
+| `engine/test/.../PostFireboxPipeChainSuite.scala` | 13 topology validation tests |
+| `dto/v4/PostFireboxPipeDescrSlot.scala` | Tagged union enum + circe codecs |
+
+### Modified files (6)
 | File | Change |
 |------|--------|
 | `impl/en13384/en13384_common_application.scala` | connector/chimney via chain fold |
 | `alg/en15544/en15544_application_alg.scala` | `postFireboxPipeResults` on `AtParams` |
 | `impl/en15544/common/en15544_common_application.scala` | `postFireboxPipeResults` implementation |
-| `api/FireCalcYAML_Loader.scala` | Extension point comment |
+| `api/FireCalcYAML_Loader.scala` | Topology validation at load time |
+| `models/PipeChain.scala` | `toSlots`/`fromSlots` on PipeChain builders |
+| `dto/all.scala` | Export `PostFireboxPipeDescrSlot` |
+| `ui/models/Variables.scala` | Generic topology signals |
 
-## Commits
-1. `refactor(engine): wave 1 — core typeclass infrastructure for generic pipe topology`
-2. `refactor(engine): wave 3 — EN13384 application uses generic pipe chain internally`
-3. `refactor(engine): waves 4+5 — add postFireboxPipeResults vector accessor`
-4. `refactor(engine): wave 6a — mark topology validation extension point in YAML loader`
-
-## Remaining Work (DTO V5 + UI)
-The engine core is ready for N-pipe topologies. To unlock the UI:
-1. **DTO V5**: New `PostFireboxPipeDescr_V5` tagged union, `FireCalcYAML_V5` with `post_firebox_pipes: Seq[...]`, V4→V5 migration
-2. **UI State**: `Signal[Vector[PipeSlotUI]]` replacing individual pipe vars in `Variables.scala`
-3. **UI Panels**: Dynamic pipe add/remove/reorder panels with topology validation
-4. **GraphDataConverter**: Iterate over generic pipe list
-5. **Schema migration**: LocalStorage V4→V5
+## Remaining Work (DTO V5 + Dynamic UI Panels)
+The engine, DTO, and UI foundations are ready for N-pipe topologies. To unlock dynamic pipe management:
+1. **DTO V5**: `FireCalcYAML_V5` with `post_firebox_pipes: Seq[PostFireboxPipeDescrSlot]` replacing the 3 fixed fields
+2. **V4→V5 migration**: Convert existing 3-field layout to slot vector
+3. **UI Panels**: Pipe add/remove/reorder with topology validation feedback
+4. **MCE support**: Add `ThermalFlueSlot` variant to `PostFireboxPipeDescrSlot` for MCE flue pipes
+5. **GraphDataConverter**: Accept variable-length post-firebox pipe vector
+6. **LocalStorage migration**: V4→V5 schema for persisted state
