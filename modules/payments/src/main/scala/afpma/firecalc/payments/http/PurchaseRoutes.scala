@@ -8,6 +8,7 @@ package afpma.firecalc.payments.http
 import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.shared.api
+import afpma.firecalc.payments.util.LogSanitizer
 import afpma.firecalc.payments.shared.api.ErrorResponseEnvelope
 
 import cats.effect.Async
@@ -33,7 +34,7 @@ class PurchaseRoutes[F[_]: Async](
                 for
                     createRequest <- req.asJsonDecode[api.v1.CreatePurchaseIntentRequest]
                     _             <- logger.info(
-                        s"Received create purchase intent request for: ${createRequest.customer.email}"
+                        s"Received create purchase intent request for: ${LogSanitizer.maskEmail(createRequest.customer.email)}"
                     )
                     token         <- purchaseService.createPurchaseIntent(createRequest)
                     response      <- Ok(api.v1.CreatePurchaseIntentResponse(token.value.toString).asJson)

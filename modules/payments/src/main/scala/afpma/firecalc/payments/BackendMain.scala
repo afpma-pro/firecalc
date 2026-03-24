@@ -16,6 +16,7 @@ import afpma.firecalc.reports.YAMLDecodingException
 import afpma.firecalc.reports.YAMLFileReadException
 
 import afpma.firecalc.payments.config.ConfigLoader
+import afpma.firecalc.payments.config.LoggingConfig
 import afpma.firecalc.payments.db.Migrations
 import afpma.firecalc.payments.domain.OrderStatus
 import afpma.firecalc.payments.email.*
@@ -25,6 +26,7 @@ import afpma.firecalc.payments.i18n.implicits.I18N_Payments
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.service.InvoiceNumberService
+import afpma.firecalc.payments.util.LogSanitizer
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
@@ -45,6 +47,7 @@ import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.CORS
 import org.http4s.server.middleware.Logger
+import org.typelevel.ci.CIString
 import org.typelevel.log4cats
 import org.typelevel.log4cats.Logger as Log4CatsLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -256,9 +259,9 @@ object Main extends IOApp:
     ): IO[Unit] =
         emailResult match
             case EmailSent          =>
-                IO.println(s"[EMAIL-SERVICE] Email successfully sent to ${recipient}")
+                IO.println(s"[EMAIL-SERVICE] Email successfully sent to ${LogSanitizer.maskEmail(recipient)}")
             case EmailFailed(error) =>
-                IO.println(s"[EMAIL-SERVICE] Failed to send email to ${recipient}: $error") *>
+                IO.println(s"[EMAIL-SERVICE] Failed to send email to ${LogSanitizer.maskEmail(recipient)}: $error") *>
                     IO.raiseError(
                         EmailSendingFailedException  (
                             orderId   = context.order.id.value,
@@ -266,6 +269,16 @@ object Main extends IOApp:
                             reason    = s"Error: $error"
                         )
                     )
+
+    /** Apply logging configuration programmatically via logback's LoggerContext API. */
+    private def applyLoggingConfig(loggingConfig: LoggingConfig): Unit =
+        import ch.qos.logback.classic.{Level, LoggerContext}
+        val ctx = org.slf4j.LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+        ctx.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
+            .setLevel(Level.valueOf(loggingConfig.rootLevel.toUpperCase))
+        loggingConfig.packageOverrides.foreach((pkg, level) =>
+            ctx.getLogger(pkg).setLevel(Level.valueOf(level.toUpperCase))
+        )
 
     def run(args: List[String]): IO[ExitCode] =
         // Fail fast if FIRECALC_ENV is not explicitly set.
@@ -287,6 +300,13 @@ object Main extends IOApp:
 
                 // Load payments configuration first
                 paymentsConfig <- ConfigLoader.loadPaymentsConfig[IO]()
+                _              <- IO.delay(applyLoggingConfig(paymentsConfig.loggingConfig))
+                _              <- logger.info(
+                    s"Log level configured: root=${paymentsConfig.loggingConfig.rootLevel}" +
+                        (if paymentsConfig.loggingConfig.packageOverrides.nonEmpty
+                         then s", overrides=${paymentsConfig.loggingConfig.packageOverrides}"
+                         else "")
+                )
                 _              <- logger.info(s"Loaded payments config for environment: ${paymentsConfig.environment}")
                 _              <- logger.info(s"Using database: ${paymentsConfig.databaseConfig.filename}")
 
@@ -363,7 +383,7 @@ object Main extends IOApp:
                                 (
                                     for
                                         _ <- logger.info(
-                                            s"[REPORT-GENERATION] Order ${context.order.id} completed for customer ${context.customer.email}"
+                                            s"[REPORT-GENERATION] Order ${context.order.id} completed for customer ${LogSanitizer.maskEmail(context.customer.email)}"
                                         )
 
                                         // Check ProductMetadata exists
@@ -398,7 +418,7 @@ object Main extends IOApp:
 
                                         // Send email to user containing PDF invoice and PDF report
                                         _ <- logger
-                                            .info(s"[EMAIL-NOTIFIER] Sending email to ${newContext.customer.email}")
+                                            .info(s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(newContext.customer.email)}")
                                         _ <- logger.info(
                                             s"[EMAIL-NOTIFIER] Product: ${newContext.product.name} - Amount: ${newContext.order.amount} ${newContext.order.currency}"
                                         )
@@ -506,7 +526,7 @@ object Main extends IOApp:
                             Set(domain.OrderStatus.Failed, domain.OrderStatus.Cancelled),
                             { context =>
                                 val adminEmail = paymentsConfig.adminConfig.email
-                                IO.println(s"[EMAIL-NOTIFIER] Sending email to ${context.customer.email}") *>
+                                IO.println(s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(context.customer.email)}") *>
                                     IO.println(
                                         s"[EMAIL-NOTIFIER] Product: ${context.product.name} - Amount: ${context.order.amount}"
                                     )
@@ -522,7 +542,7 @@ object Main extends IOApp:
                                     .sendAdminNotification(adminNotif)
                                     .flatMap:
                                         handleEmailResult(
-                                            s"admin notification with PDF invoice ${context.order.invoiceNumber} for customer ${context.customer.email}",
+                                            s"admin notification with PDF invoice ${context.order.invoiceNumber} for customer ${LogSanitizer.maskEmail(context.customer.email)}",
                                             context,
                                             adminEmail
                                         )
@@ -556,14 +576,21 @@ object Main extends IOApp:
                         sourceRoutes   = SourceRoutes.create[IO]
 
                         // Apply selective logging middleware to each route group
+                        // SEC-006: Disable body logging on sensitive routes to prevent PII leakage
                         purchaseRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders = true,
-                            logBody    = true
+                            logHeaders        = true,
+                            logBody           = false,
+                            redactHeadersWhen = name =>
+                                Logger.defaultRedactHeadersWhen(name) ||
+                                    name == CIString("Authorization")
                         )(purchaseRoutes.routes_V1)
 
                         webhookRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders = true,
-                            logBody    = true
+                            logHeaders        = true,
+                            logBody           = false,
+                            redactHeadersWhen = name =>
+                                Logger.defaultRedactHeadersWhen(name) ||
+                                    name == CIString("Webhook-Signature")
                         )(webhookRoutes.routes_V1)
 
                         staticRoutes_V1_WithLogging = Logger.httpRoutes(

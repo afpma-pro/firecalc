@@ -12,6 +12,7 @@ import afpma.firecalc.payments.repository.CustomerRepository
 import afpma.firecalc.payments.repository.impl.CustomerSyntax.*
 import afpma.firecalc.payments.repository.impl.dsl.MoleculeDomain.*
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.util.LogSanitizer
 import afpma.firecalc.payments.utils.*
 
 import cats.effect.kernel.Async
@@ -30,7 +31,7 @@ class MoleculeCustomerRepository[F[_]: Async: Logger](using conn: Conn, ec: Exec
 
     def findByEmail(email: String): F[Option[domain.Customer]] =
         for
-            _      <- logger.debug(s"Finding customer by email: $email")
+            _      <- logger.debug(s"Finding customer by email: ${LogSanitizer.maskEmail(email)}")
             result <- future2AsyncF {
                 Customer.customerId
                     .email(email)
@@ -95,7 +96,7 @@ class MoleculeCustomerRepository[F[_]: Async: Logger](using conn: Conn, ec: Exec
 
     def create(customerInfo: CustomerInfo): F[domain.Customer] =
         for
-            _   <- logger.info(s"Creating customer with email: ${customerInfo.email}")
+            _   <- logger.info(s"Creating customer with email: ${LogSanitizer.maskEmail(customerInfo.email)}")
             now <- Async[F].delay(Instant.now())
             customerId = UUID.randomUUID()
             _ <- future2AsyncF {
@@ -130,7 +131,7 @@ class MoleculeCustomerRepository[F[_]: Async: Logger](using conn: Conn, ec: Exec
 
     def createFull(customer: domain.Customer): F[Boolean] =
         for
-            _   <- logger.info(s"Creating customer with email: ${customer.email}")
+            _   <- logger.info(s"Creating customer with email: ${LogSanitizer.maskEmail(customer.email)}")
             now <- Async[F].delay(Instant.now())
             customerId = UUID.randomUUID()
             _ <- future2AsyncF {
@@ -187,7 +188,7 @@ class MoleculeCustomerRepository[F[_]: Async: Logger](using conn: Conn, ec: Exec
 
     def findByEmailAndUpdate(email: String, newCustomerInfo: CustomerInfo): F[Option[domain.Customer]] =
         for
-            _                <- logger.info(s"Finding and updating customer with email: $email")
+            _                <- logger.info(s"Finding and updating customer with email: ${LogSanitizer.maskEmail(email)}")
             existingCustomer <- findByEmail(email)
             result           <- existingCustomer match
                 case Some(customer) =>
@@ -240,8 +241,8 @@ class MoleculeCustomerRepository[F[_]: Async: Logger](using conn: Conn, ec: Exec
                             createdAt         = customer.createdAt,
                             updatedAt         = now
                         )
-                        _                  <- logger.info(s"Successfully updated customer with email: $email")
+                        _                  <- logger.info(s"Successfully updated customer with email: ${LogSanitizer.maskEmail(email)}")
                     yield Some(updatedCustomer)
                 case None           =>
-                    logger.info(s"Customer with email $email not found") *> Async[F].pure(None)
+                    logger.info(s"Customer with email ${LogSanitizer.maskEmail(email)} not found") *> Async[F].pure(None)
         yield result

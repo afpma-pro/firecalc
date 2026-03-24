@@ -19,7 +19,8 @@ case class PaymentsConfig(
     invoiceConfig               : InvoiceConfig,
     adminConfig                 : AdminConfig,
     reportAsDraft               : Boolean,
-    jwtConfig                   : JwtConfig
+    jwtConfig                   : JwtConfig,
+    loggingConfig               : LoggingConfig = LoggingConfig()
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
     require(
@@ -74,3 +75,20 @@ case class JwtConfig(
     require(expirationMinutes > 0, "JWT expiration minutes must be positive")
     require(issuer.nonEmpty, "JWT issuer cannot be empty")
 }
+
+case class LoggingConfig(
+    rootLevel       : String             = "INFO",
+    packageOverrides: Map[String, String] = Map.empty
+) {
+    LoggingConfig.requireValidLevel(rootLevel, "root-level")
+    packageOverrides.foreach((pkg, level) => LoggingConfig.requireValidLevel(level, s"package '$pkg'"))
+}
+
+object LoggingConfig:
+    val ValidLevels: Set[String] = Set("TRACE", "DEBUG", "INFO", "WARN", "ERROR", "OFF")
+
+    private[config] def requireValidLevel(level: String, context: String): Unit =
+        require(
+            ValidLevels.contains(level.toUpperCase),
+            s"Invalid log level '$level' for $context. Must be one of ${ValidLevels.mkString(", ")}"
+        )

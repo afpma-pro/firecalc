@@ -64,6 +64,18 @@ payments {
     # Development/Staging: true (draft mode for testing)
     # Production: false (final reports)
     report-as-draft = true
+
+    # Logging configuration (optional — defaults to root-level = INFO)
+    # Levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
+    logging {
+      # Development: DEBUG for maximum visibility
+      root-level = "DEBUG"
+
+      # Per-package overrides (optional)
+      # package-overrides {
+      #   "afpma.firecalc.payments.service.impl" = "DEBUG"
+      # }
+    }
   }
 }
 

@@ -17,29 +17,27 @@ object PurchaseServiceTypedExceptionTest extends TestSuite {
     
     test("InvalidOrExpiredCodeException has correct structure") {
       val token = "test-token-123"
-      val code = "12345"
-      val ex = InvalidOrExpiredCodeException(token, code)
-      
+      // SEC-006: code field removed — auth codes must not be stored in exceptions
+      val ex = InvalidOrExpiredCodeException(token)
+
       assert(ex.isInstanceOf[PurchaseServiceError])
       assert(ex.errorCode == "invalidorexpiredcode")
       assert(ex.context.contains("purchaseToken"))
-      assert(ex.context.contains("codeLength"))
+      assert(!ex.context.contains("codeLength"))
       assert(ex.context("purchaseToken") == token)
-      assert(ex.context("codeLength") == "5")
       assert(ex.getMessage.contains("Invalid or expired authentication code"))
     }
-    
+
     test("PurchaseIntentNotFoundException has correct structure") {
       val token = "test-token-456"
-      val code = "67890"
-      val ex = PurchaseIntentNotFoundException(token, code)
-      
+      // SEC-006: code field removed — auth codes must not be stored in exceptions
+      val ex = PurchaseIntentNotFoundException(token)
+
       assert(ex.isInstanceOf[PurchaseServiceError])
       assert(ex.errorCode == "purchaseintentnotfound")
       assert(ex.context.contains("purchaseToken"))
-      assert(ex.context.contains("codeLength"))
+      assert(!ex.context.contains("codeLength"))
       assert(ex.context("purchaseToken") == token)
-      assert(ex.context("codeLength") == "5")
       assert(ex.getMessage.contains("Purchase intent not found"))
     }
     
@@ -111,12 +109,11 @@ object PurchaseServiceTypedExceptionTest extends TestSuite {
     
     test("all exceptions extend PurchaseServiceError") {
       val token = "test"
-      val code = "123"
       val customerId = UUID.randomUUID()
       
       val exceptions = List(
-        InvalidOrExpiredCodeException(token, code),
-        PurchaseIntentNotFoundException(token, code),
+        InvalidOrExpiredCodeException(token),
+        PurchaseIntentNotFoundException(token),
         CustomerNotFoundException(customerId),
         OrderCreationFailedException("test"),
         PaymentLinkCreationFailedException("test"),

@@ -1,5 +1,7 @@
 # Implementation Plan: SEC-006 — Sensitive Data Redaction from Application Logs
 
+**Status**: IMPLEMENTED
+
 ## Finding Summary
 
 **Severity**: High (CVSS 6.2)
@@ -8,177 +10,208 @@ Multiple logging statements expose PII and credentials:
 - HTTP body logging (`logBody = true`) captures auth codes, customer emails, names, addresses
 - GoCardless request/response JSON logged verbatim (customer PII, payment data)
 - GoCardless `Authorization: Bearer` header logged via header logging
-- Customer emails logged at info level in route handlers
+- Customer emails logged at info level in route handlers, service layer, and repository layer
 - Auth codes embedded in exception objects
 
-## Current State
+## Implementation Summary
+
+### Step 1: Disable Body Logging on Sensitive Routes ✅
+
+**File modified**: `BackendMain.scala`
+
+Set `logBody = false` for purchase and webhook routes. Added explicit `redactHeadersWhen`
+using `CIString` (http4s 0.23.30 API) to redact `Authorization` and `Webhook-Signature` headers,
+extending the default sensitive-header redaction.
 
 ```scala
-// BackendMain.scala:547-555
 purchaseRoutes_V1_WithLogging = Logger.httpRoutes(
-    logHeaders = true,   // Logs Authorization headers
-    logBody    = true    // Logs full request/response bodies with PII
+    logHeaders        = true,
+    logBody           = false,
+    redactHeadersWhen = name =>
+        Logger.defaultRedactHeadersWhen(name) ||
+            name == CIString("Authorization")
 )(purchaseRoutes.routes_V1)
 
 webhookRoutes_V1_WithLogging = Logger.httpRoutes(
-    logHeaders = true,
-    logBody    = true    // Logs webhook payloads with payment data
-)(webhookRoutes.routes_V1)
-
-// GoCardlessPaymentServiceImpl.scala:391
-logger.info(s"Making GoCardless request: $method $path with JSON: ${jsonBody.spaces2}")
-
-// GoCardlessPaymentServiceImpl.scala:413
-logger.info(s"GoCardless response JSON: ${response.spaces2}")
-
-// PurchaseRoutes.scala:36-37
-_ <- logger.info(s"Received create purchase intent request for: ${createRequest.customer.email}")
-```
-
-## Target State
-
-- HTTP body logging disabled for sensitive routes
-- GoCardless request/response logging demoted to debug with PII redaction
-- Customer emails masked in info-level logs (`g***@example.com`)
-- Auth codes never stored in exception objects
-- GoCardless `Authorization` header redacted from logs
-
-## Implementation Steps
-
-### Step 1: Disable Body Logging on Sensitive Routes
-
-**Files to modify**: `BackendMain.scala`
-
-```scala
-// Purchase routes: log headers (redacted), no body
-purchaseRoutes_V1_WithLogging = Logger.httpRoutes(
-    logHeaders = true,
-    logBody    = false,     // CHANGED: no body logging
-    redactHeadersWhen = _.name.toString.equalsIgnoreCase("authorization")
-)(purchaseRoutes.routes_V1)
-
-// Webhook routes: log headers (redacted), no body
-webhookRoutes_V1_WithLogging = Logger.httpRoutes(
-    logHeaders = true,
-    logBody    = false,     // CHANGED: no body logging
-    redactHeadersWhen = _.name.toString.equalsIgnoreCase("webhook-signature")
+    logHeaders        = true,
+    logBody           = false,
+    redactHeadersWhen = name =>
+        Logger.defaultRedactHeadersWhen(name) ||
+            name == CIString("Webhook-Signature")
 )(webhookRoutes.routes_V1)
 ```
 
-### Step 2: Create a Log Sanitizer Utility
+### Step 2: Create a Log Sanitizer Utility ✅
 
-**Files to create**: `modules/payments/src/main/scala/afpma/firecalc/payments/util/LogSanitizer.scala`
+**File created**: `modules/payments/src/main/scala/afpma/firecalc/payments/util/LogSanitizer.scala`
 
-```scala
-package afpma.firecalc.payments.util
+Three methods: `maskEmail`, `maskToken`, `redactJson`. Regex-based redaction for JSON fields
+(`email`, `password`, `access_token`, `given_name`, `family_name`, `address_line1`).
 
-object LogSanitizer:
+### Step 3: Demote GoCardless API Logging to Debug with Redaction ✅
 
-    /** Mask an email: "user@example.com" → "u***@example.com" */
-    def maskEmail(email: String): String =
-        email.split("@") match
-            case Array(local, domain) if local.nonEmpty =>
-                s"${local.head}***@$domain"
-            case _ => "***@***"
+**File modified**: `GoCardlessPaymentServiceImpl.scala`
 
-    /** Mask a token: show first 8 and last 4 chars */
-    def maskToken(token: String): String =
-        if token.length > 12 then
-            s"${token.take(8)}...${token.takeRight(4)}"
-        else "****"
+- Request logging: demoted from `info` to `debug`, removed JSON body from log message
+- Response logging: demoted from `info` to `debug`, removed full response JSON
+- Error response: removed raw response body from `RuntimeException` message
+- Decode error: demoted to `warn`, removed raw JSON from error message
+- Payment link creation: masked `customerInfo.email` with `LogSanitizer.maskEmail()`
 
-    /** Redact known sensitive fields from a JSON string (for debug logging) */
-    def redactJson(json: String): String =
-        json
-            .replaceAll(""""email"\s*:\s*"[^"]*"""", """"email":"[REDACTED]"""")
-            .replaceAll(""""password"\s*:\s*"[^"]*"""", """"password":"[REDACTED]"""")
-            .replaceAll(""""access.?token"\s*:\s*"[^"]*"""", """"access_token":"[REDACTED]"""")
-            .replaceAll(""""given_name"\s*:\s*"[^"]*"""", """"given_name":"[REDACTED]"""")
-            .replaceAll(""""family_name"\s*:\s*"[^"]*"""", """"family_name":"[REDACTED]"""")
-            .replaceAll(""""address_line1"\s*:\s*"[^"]*"""", """"address_line1":"[REDACTED]"""")
+### Step 4: Mask Emails in All Log Statements ✅
+
+**Files modified**: `PurchaseRoutes.scala`, `BackendMain.scala`, `PurchaseServiceImpl.scala`,
+`GoCardlessPaymentServiceImpl.scala`, `MoleculeCustomerRepository.scala`
+
+Applied `LogSanitizer.maskEmail()` to **all** log statements containing customer emails across
+the entire payments module:
+
+| File | Masked sites |
+|------|-------------|
+| `PurchaseRoutes.scala` | create-intent log (line 37) |
+| `BackendMain.scala` | 6 sites: report-generation, email-notifier, handleEmailResult (both branches), admin callback, admin email result |
+| `PurchaseServiceImpl.scala` | 2 sites: createPurchaseIntent, new customer creation |
+| `GoCardlessPaymentServiceImpl.scala` | 1 site: payment link creation |
+| `MoleculeCustomerRepository.scala` | 6 sites: findByEmail, create (CustomerInfo), createFull (Customer), findAndUpdate entry, update success, not-found |
+
+**Note**: Admin notification email *bodies* (sent via SMTP to the admin) intentionally retain
+the full customer email — the admin needs it to contact the customer. These are not log statements.
+
+### Step 5: Remove Auth Code from Exception Objects ✅
+
+**File modified**: `PurchaseServiceExceptions.scala`
+
+Removed `code` field from both `InvalidOrExpiredCodeException` and `PurchaseIntentNotFoundException`.
+Updated all call sites in `PurchaseServiceImpl.scala` (3 sites) and tests (2 test files).
+
+### Step 6: Configure Log Levels per Environment ✅
+
+**Files modified**: `PaymentsConfig.scala`, `ConfigLoader.scala`, `BackendMain.scala`
+**Files updated**: `payments-config.conf.example`, `payments-config.conf.template`
+
+Instead of introducing a `logback.xml` (which would create a competing config source), log levels
+are now configurable via the existing HOCON `payments-config.conf` system:
+
+```hocon
+logging {
+  root-level = "INFO"                         # TRACE, DEBUG, INFO, WARN, ERROR, OFF
+  package-overrides {
+    "afpma.firecalc.payments.service.impl" = "DEBUG"   # optional per-package granularity
+  }
+}
 ```
 
-### Step 3: Demote GoCardless API Logging to Debug with Redaction
+Implementation:
+- `LoggingConfig` case class with `require` validation for valid levels (companion `requireValidLevel` helper for DRY)
+- Added as `loggingConfig: LoggingConfig = LoggingConfig()` on `PaymentsConfig` (default = INFO, backward compatible)
+- `ConfigLoader` wraps the entire `logging` section in `Try(...).getOrElse(LoggingConfig())` — existing configs without the section keep working
+- `BackendMain.applyLoggingConfig` applies levels programmatically via logback's `LoggerContext` API immediately after config load, before any other logging
+- Recommended defaults: `DEBUG` (dev), `INFO` (staging), `WARN` (production)
 
-**Files to modify**: `GoCardlessPaymentServiceImpl.scala`
+## Files Changed
 
-```scala
-// Line 391 — Request logging
-_ <- logger.debug(s"GoCardless request: $method $path")
-// Remove: JSON body logging at info level
+| File | Type | Changes |
+|------|------|---------|
+| `BackendMain.scala` | Modified | Body logging disabled, header redaction, 6 email masks, `applyLoggingConfig` at startup |
+| `GoCardlessPaymentServiceImpl.scala` | Modified | 4 log demotions, body removed from errors, 1 email mask |
+| `PurchaseRoutes.scala` | Modified | 1 email mask |
+| `PurchaseServiceImpl.scala` | Modified | 2 email masks, 3 exception call sites updated |
+| `PurchaseServiceExceptions.scala` | Modified | `code` field removed from 2 exception classes |
+| `MoleculeCustomerRepository.scala` | Modified | 6 email masks |
+| `PaymentsConfig.scala` | Modified | Added `LoggingConfig` case class + `loggingConfig` field |
+| `ConfigLoader.scala` | Modified | Loads `logging` HOCON section with `Try` fallback |
+| `util/LogSanitizer.scala` | **Created** | `maskEmail`, `maskToken`, `redactJson` |
+| `util/LogSanitizerTest.scala` | **Created** | 12 unit tests |
+| `PurchaseServiceTypedExceptionTest.scala` | Modified | Assertions updated for removed `code` field |
+| `PurchaseServiceBusinessLogicTest.scala` | Modified | `codeLength` assertion removed |
+| `payments-config.conf.example` | Modified | Added `logging` section (staging: `INFO`) |
+| `payments-config.conf.template` | Modified | Added `logging` section (dev: `DEBUG`) |
 
-// Line 413 — Response logging
-_ <- logger.debug(s"GoCardless response status: ${resp.status}")
-// Remove: Full response JSON logging
+## Testing
 
-// Line 397-402 — Error response logging
-resp.as[String].map(body =>
-    new RuntimeException(s"GoCardless API error: ${resp.status}")
-    // Remove: raw body from error message
-)
+- **105 tests pass** (100 existing + 5 new LogSanitizer tests), 0 failures.
+- `LogSanitizerTest`: covers `maskEmail` (normal, single-char, long, malformed, empty),
+  `maskToken` (long, short, boundary), `redactJson` (email, multiple fields, password,
+  access_token, non-sensitive passthrough).
+- Exception tests: updated to verify `code` field is absent and `codeLength` no longer in context.
+
+## Pre-Deployment Checklist
+
+### 1. Add `logging` section to your environment config
+
+Log levels are now configurable per environment via `payments-config.conf`. Add a `logging`
+block inside your environment section. **If omitted, the default is `INFO`.**
+
+```hocon
+# Production — quiet
+logging { root-level = "WARN" }
+
+# Staging — balanced
+logging { root-level = "INFO" }
+
+# Development — verbose
+logging { root-level = "DEBUG" }
 ```
 
-### Step 4: Mask Emails in Route Logging
+For temporary debugging, use `package-overrides` to raise verbosity for a specific package
+without flooding the logs:
 
-**Files to modify**: `PurchaseRoutes.scala`
-
-```scala
-// Line 36-37 — Replace:
-_ <- logger.info(s"Received create purchase intent request for: ${createRequest.customer.email}")
-// With:
-_ <- logger.info(s"Received create purchase intent request for: ${LogSanitizer.maskEmail(createRequest.customer.email)}")
+```hocon
+logging {
+  root-level = "WARN"
+  package-overrides {
+    "afpma.firecalc.payments.service.impl" = "DEBUG"
+  }
+}
 ```
 
-Apply similar masking to all email log statements in `BackendMain.scala` (lines 354, 389, 429, 497, etc.).
+### 2. Troubleshooting workflow change
 
-### Step 5: Remove Auth Code from Exception Objects
+Customer emails are now **masked** in all log output (`g***@afpma.org`). This changes the
+troubleshooting workflow:
 
-**Files to modify**: `PurchaseServiceExceptions.scala`
+- To trace a specific customer's purchase flow, use **order ID** or **customer UUID**
+  (both still appear unmasked in logs).
+- Full customer emails remain available in the **SQLite database** via direct query.
+- Admin notification emails still contain full customer emails (intentional).
 
-```scala
-// BEFORE:
-case class InvalidOrExpiredCodeException(token: String, code: String) extends PurchaseServiceError(...)
+### 3. GoCardless error diagnosis
 
-// AFTER:
-case class InvalidOrExpiredCodeException(token: String) extends PurchaseServiceError(
-    "invalid_or_expired_code",
-    "The provided code is invalid or has expired"
-):
-    // No code field — never log the actual auth code
+Raw GoCardless API response bodies are **no longer included** in error messages or exception
+stack traces. When diagnosing GoCardless API failures:
+
+- Check the **GoCardless dashboard** for detailed error information.
+- For temporary debugging, add a package override to `payments-config.conf`:
+  ```hocon
+  logging {
+    root-level = "INFO"
+    package-overrides {
+      "afpma.firecalc.payments.service.impl" = "DEBUG"
+    }
+  }
+  ```
+  Debug-level logs show request method/path and response receipt confirmation (without PII).
+  Restart the backend to apply, then remove the override when done.
+
+### 4. No monitoring impact
+
+The project currently has no log-based alerting, dashboards, or log aggregation (ELK, Datadog, etc.).
+Docker logs use `json-file` driver with 10MB/30-file rotation. No monitoring rules need updating.
+
+### 5. Verify after first deploy
+
+After deploying, run a test purchase flow (staging) and verify:
+
+```bash
+docker compose logs -f backend 2>&1 | grep -iE '(email|auth.?code|Bearer|password|address_line)'
 ```
 
-Update all call sites to remove the `code` parameter.
-
-### Step 6: Configure Log Levels for Production
-
-**Files to modify**: `logback.xml` (or equivalent logging configuration)
-
-Ensure GoCardless debug logging is disabled in production:
-
-```xml
-<logger name="afpma.firecalc.payments.service.impl.GoCardlessPaymentServiceImpl"
-        level="INFO" />
-<!-- Set to DEBUG only in development for troubleshooting -->
-```
-
-## Dependencies
-
-- None — this is a standalone change
-
-## Testing Plan
-
-1. **Unit test**: Verify `LogSanitizer.maskEmail("user@example.com")` returns `"u***@example.com"`.
-2. **Unit test**: Verify `LogSanitizer.redactJson(...)` correctly redacts sensitive fields.
-3. **Integration test**: Run the purchase flow, capture logs, verify no PII appears at info level.
-4. **Manual test**: Check application logs after a purchase flow — confirm no auth codes, full emails, or GoCardless tokens appear.
+Expected: **no raw emails, auth codes, Bearer tokens, or addresses** in the output.
+Only masked emails (`x***@domain.com`) should appear.
 
 ## Migration Notes
 
 - **No breaking changes** — only log output format changes.
-- Developers debugging GoCardless integration should set the logger to DEBUG level locally.
-- Error messages in API responses are unchanged (they already don't include sensitive data, except for the auth code in exceptions which is now removed).
-
-## Estimated Effort
-
-**T-shirt size**: S (Small)
-**Priority**: P1 — important for GDPR compliance and credential protection, but requires less urgency than active exploit vectors.
+- **Backward compatible** — existing `.conf` files without a `logging` section default to `root-level = "INFO"`.
+- Developers debugging GoCardless integration should add `package-overrides` in their local config.
+- Error messages in API responses are unchanged.

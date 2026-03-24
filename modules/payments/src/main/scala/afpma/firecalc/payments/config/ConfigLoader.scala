@@ -174,7 +174,19 @@ object ConfigLoader:
                     secret            = jwtSection.getString("secret"),
                     expirationMinutes = Try(jwtSection.getInt("expiration-minutes")).getOrElse(60),
                     issuer            = Try(jwtSection.getString("issuer")).getOrElse("firecalc-payments")
-                )
+                ),
+                loggingConfig                = Try(envConfig.getConfig("logging")).map { loggingSection =>
+                    import scala.jdk.CollectionConverters.*
+                    LoggingConfig(
+                        rootLevel        = Try(loggingSection.getString("root-level")).getOrElse("INFO"),
+                        packageOverrides = Try(
+                            loggingSection.getConfig("package-overrides")
+                                .entrySet().asScala
+                                .map(e => e.getKey -> e.getValue.unwrapped().toString)
+                                .toMap
+                        ).getOrElse(Map.empty)
+                    )
+                }.getOrElse(LoggingConfig())
             )
         }
 

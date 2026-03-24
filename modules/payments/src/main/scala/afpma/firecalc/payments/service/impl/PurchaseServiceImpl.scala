@@ -14,6 +14,7 @@ import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -34,7 +35,7 @@ class PurchaseServiceImpl[F[_]: Async](
 
     def createPurchaseIntent(request: CreatePurchaseIntentRequest): F[PurchaseToken] =
         for
-            _ <- logger.info(s"Creating purchase intent for email: ${request.customer.email}")
+            _ <- logger.info(s"Creating purchase intent for email: ${LogSanitizer.maskEmail(request.customer.email)}")
 
             // Validate email address at API entry point
             validatedEmail <- EmailAddress.fromString(request.customer.email) match {
@@ -80,7 +81,7 @@ class PurchaseServiceImpl[F[_]: Async](
                     logger.info(s"Using existing customer: ${existingCustomer.id}") *>
                         Async[F].pure(existingCustomer)
                 case None                   =>
-                    logger.info(s"Creating new customer for email: ${validatedEmail}") *>
+                    logger.info(s"Creating new customer for email: ${LogSanitizer.maskEmail(validatedEmail)}") *>
                         customerRepo.create(request.customer)
 
             // Store productMetadata if present and get productMetadataId
@@ -169,7 +170,7 @@ class PurchaseServiceImpl[F[_]: Async](
     private def validateAuthenticationCode(token: PurchaseToken, code: String): F[PurchaseIntent] =
         for
             intent <- purchaseIntentRepo.findByToken(token)
-                .flatMap(_.liftTo[F](PurchaseIntentNotFoundException(token.value.toString, code)))
+                .flatMap(_.liftTo[F](PurchaseIntentNotFoundException(token.value.toString)))
 
             // Check lockout before doing anything else
             _ <- Async[F].raiseError(TooManyAttemptsException(token.value.toString))
@@ -177,7 +178,7 @@ class PurchaseServiceImpl[F[_]: Async](
 
             // Check expiry
             now <- Async[F].delay(Instant.now())
-            _   <- Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString, code))
+            _   <- Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString))
                        .whenA(now.isAfter(intent.expiresAt))
 
             // Constant-time comparison to prevent timing attacks
@@ -187,7 +188,7 @@ class PurchaseServiceImpl[F[_]: Async](
             )
 
             _ <- (purchaseIntentRepo.incrementFailedAttempts(token) *>
-                     Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString, code)))
+                     Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString)))
                      .whenA(!isValid)
         yield intent
 

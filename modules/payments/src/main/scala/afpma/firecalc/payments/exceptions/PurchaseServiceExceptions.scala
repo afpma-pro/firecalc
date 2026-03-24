@@ -47,15 +47,14 @@ final case class TooManyIntentsForEmailException(
 }
 
 // Authentication related errors
+// SEC-006: Removed `code` field — auth codes must never be stored in exception objects
 final case class InvalidOrExpiredCodeException(
-    token: String,
-    code : String
+    token: String
 ) extends PurchaseServiceError(
         "Invalid or expired authentication code for purchase token"
     ) {
     override def context: Map[String, String] = Map(
-        "purchaseToken" -> token,
-        "codeLength"    -> code.length.toString
+        "purchaseToken" -> token
     )
 }
 
@@ -72,15 +71,14 @@ final case class AuthenticationFailedException(
 }
 
 // Resource not found errors
+// SEC-006: Removed `code` field — auth codes must never be stored in exception objects
 final case class PurchaseIntentNotFoundException(
-    token: String,
-    code : String
+    token: String
 ) extends PurchaseServiceError(
-        "Purchase intent not found for the provided token and code"
+        "Purchase intent not found for the provided token"
     ) {
     override def context: Map[String, String] = Map(
-        "purchaseToken" -> token,
-        "codeLength"    -> code.length.toString
+        "purchaseToken" -> token
     )
 }
 

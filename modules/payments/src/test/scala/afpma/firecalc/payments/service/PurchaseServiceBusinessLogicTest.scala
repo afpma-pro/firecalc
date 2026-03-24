@@ -497,7 +497,6 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
         case Left(ex: InvalidOrExpiredCodeException) =>
           assert(ex.errorCode == "invalidorexpiredcode")
           assert(ex.context("purchaseToken") == token.value.toString)
-          assert(ex.context("codeLength") == "10")
         case Left(other) =>
           throw new Exception(s"Expected InvalidOrExpiredCodeException but got ${other.getClass}")
         case Right(_) =>

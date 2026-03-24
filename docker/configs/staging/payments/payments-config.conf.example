@@ -137,6 +137,27 @@ payments {
     # Staging: true (clearly marks reports as non-production)
     # Production: false (final reports)
     report-as-draft = true
+
+    # ---------------------------------------------------------------------
+    # Logging Configuration
+    # ---------------------------------------------------------------------
+    # Controls log verbosity at startup. Optional — defaults to INFO.
+    # Levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
+    #
+    # Recommended per environment:
+    #   Development: DEBUG (maximum visibility)
+    #   Staging:     INFO  (balanced)
+    #   Production:  WARN  (quiet, errors only)
+    logging {
+      root-level = "INFO"
+
+      # Per-package overrides (optional)
+      # Useful for debugging specific libraries without drowning in noise
+      # package-overrides {
+      #   "afpma.firecalc.payments.service.impl" = "DEBUG"
+      #   "org.http4s"                            = "DEBUG"
+      # }
+    }
   }
 }
 

@@ -15,7 +15,6 @@ import afpma.firecalc.payments.shared.api.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 
-import molecule.db.common.spi.Conn
 import utest.*
 
 /**
