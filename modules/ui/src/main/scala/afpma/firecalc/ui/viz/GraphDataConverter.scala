@@ -219,9 +219,10 @@ object GraphDataConverter:
             )
 
     /** Build data points for a given series type.
-      * Returns an origin point at x=0 (inlet condition) followed by one point per section
-      * at xEnd (section exit). Temperature and velocity use boundary values (_start/_end)
-      * so the curve is physically continuous across section transitions.
+      * Returns an origin point at x=0 (inlet condition) followed by two points per section:
+      * one at xStart (section inlet) and one at xEnd (section exit).
+      * Temperature and velocity use genuine _start/_end boundary values.
+      * Elevation and pressure ramp within each section using cumulative accumulators.
       */
     private def buildSeriesPoints(
         sections : Vector[PlottableSection],
@@ -255,11 +256,47 @@ object GraphDataConverter:
             formattedValue = originFmt
         )
 
-        // Section boundary points at xEnd using _end values
-        val boundaryPoints = sections.zipWithIndex.map { case (ps, idx) =>
+        // Two points per section: start (inlet) + end (exit)
+        val sectionPoints = sections.zipWithIndex.flatMap { case (ps, idx) =>
             val section = ps.section
 
-            val (yVal, fmtVal) = seriesId match
+            // --- Start point at xStart ---
+            val (yStart, fmtStart) = seriesId match
+                case "temperature" =>
+                    val t = section.gas_temp_start
+                    (t.value, t.showP_orImpUnitsTemp[Fahrenheit])
+                case "velocity" =>
+                    val v = section.v_start
+                    (v.value, v.showP_orImpUnits[Foot / Second])
+                case "elevation" =>
+                    val h = cumulativeHeight.withUnit[Meter]
+                    (cumulativeHeight, h.showP_orImpUnits[Foot])
+                case "pressure" =>
+                    val p = cumulativePressure.withUnit[Pascal]
+                    (cumulativePressure, p.showP)
+                case _ => (0.0, "")
+
+            val startPoint = DataPoint(
+                x              = ps.xStart,
+                y              = yStart,
+                tooltipTitle   = buildTooltipTitleStart(sections, idx),
+                tooltipExtra   = ps.pipeName,
+                formattedValue = fmtStart
+            )
+
+            // --- Update accumulators between start and end ---
+            seriesId match
+                case "elevation" =>
+                    cumulativeHeight += section.effective_height.value
+                case "pressure" =>
+                    val net = section.`ph-(pR+pu)` match
+                        case Validated.Valid(p) => p.value
+                        case _                 => 0.0
+                    cumulativePressure += net
+                case _ => ()
+
+            // --- End point at xEnd ---
+            val (yEnd, fmtEnd) = seriesId match
                 case "temperature" =>
                     val t = section.gas_temp_end
                     (t.value, t.showP_orImpUnitsTemp[Fahrenheit])
@@ -267,38 +304,37 @@ object GraphDataConverter:
                     val v = section.v_end
                     (v.value, v.showP_orImpUnits[Foot / Second])
                 case "elevation" =>
-                    cumulativeHeight += section.effective_height.value
                     val h = cumulativeHeight.withUnit[Meter]
                     (cumulativeHeight, h.showP_orImpUnits[Foot])
                 case "pressure" =>
-                    val net = section.`ph-(pR+pu)` match
-                        case Validated.Valid(p) => p.value
-                        case _                 => 0.0
-                    cumulativePressure += net
                     val p = cumulativePressure.withUnit[Pascal]
                     (cumulativePressure, p.showP)
                 case _ => (0.0, "")
 
-            val tooltipTitle = buildTooltipTitle(sections, idx)
-            val tooltipExtra = ps.pipeName
-
-            DataPoint(
+            val endPoint = DataPoint(
                 x              = ps.xEnd,
-                y              = yVal,
-                tooltipTitle   = tooltipTitle,
-                tooltipExtra   = tooltipExtra,
-                formattedValue = fmtVal
+                y              = yEnd,
+                tooltipTitle   = buildTooltipTitleEnd(sections, idx),
+                tooltipExtra   = ps.pipeName,
+                formattedValue = fmtEnd
             )
+
+            Vector(startPoint, endPoint)
         }
 
-        originPoint +: boundaryPoints
+        originPoint +: sectionPoints
 
-    /** Build tooltip title showing section transition.
-      * - First point: "→ {name}"
-      * - Last point: "{name} →"
-      * - Middle: "{name_current} → {name_next}"
-      */
-    private def buildTooltipTitle(sections: Vector[PlottableSection], idx: Int): String =
+    /** Tooltip for a section's START point: entering this section. */
+    private def buildTooltipTitleStart(sections: Vector[PlottableSection], idx: Int): String =
+        val currentName = sections(idx).section.section_name
+        if idx == 0 then
+            s"→ $currentName"
+        else
+            val prevName = sections(idx - 1).section.section_name
+            s"$prevName → $currentName"
+
+    /** Tooltip for a section's END point: leaving this section. */
+    private def buildTooltipTitleEnd(sections: Vector[PlottableSection], idx: Int): String =
         val currentName = sections(idx).section.section_name
         if idx == sections.size - 1 then
             s"$currentName →"
