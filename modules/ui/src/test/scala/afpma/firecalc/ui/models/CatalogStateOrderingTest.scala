@@ -5,17 +5,12 @@
 
 package afpma.firecalc.ui.models
 
-import scala.collection.immutable.ListMap
-
-import afpma.firecalc.units.all.given
-import afpma.firecalc.units.coulombutils.*
-
-import afpma.firecalc.catalog.*
 import afpma.firecalc.dto.all.*
 
 import coulomb.*
 import coulomb.syntax.*
 
+import afpma.firecalc.catalog.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
