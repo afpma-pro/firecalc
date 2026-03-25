@@ -156,17 +156,17 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                span(cls := "text-[0.5rem] opacity-60", I18N_UI.direction_badge.abs_dir_label),
+                span(cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label),
                 badgeText(dir)
             )
         else
             div(
                 cls := "flex flex-col",
-                label(cls := "fieldset-label text-[0.5rem]", I18N_UI.direction_badge.abs_dir_label),
+                label(cls := "fieldset-label text-[0.75rem]", I18N_UI.direction_badge.abs_dir_label),
                 span(
                     cls <-- isCompatibleSig.map:
-                        case Some(false) => "select select-xs pointer-events-none text-warning"
-                        case _           => "select select-xs pointer-events-none",
+                        case Some(false) => "input input-xs pointer-events-none bg-base-200 text-warning"
+                        case _           => "input input-xs pointer-events-none bg-base-200",
                     badgeText(dir)
                 )
             )
@@ -177,27 +177,35 @@ case class DirectionBadgeComponent(
      * Selecting an item writes to absDirVar and closes the dropdown.
      */
     private def editableBadge(dir: Vec3, fdVar: Var[Option[AbsoluteDirection]]): HtmlElement =
+        val presetsSig: Signal[List[(Vec3, Double)]] =
+            frameBefore.combineWith(deflectionAngle).map:
+                case (Some(frame), Some(deflDeg)) => frame.reachableCardinals(deflDeg)
+                case _                            => Nil
+
         val dropdown = details(
             cls := "dropdown",
             summary(
                 if compact then
-                    cls <-- isCompatibleSig.map:
-                        case Some(false) => "inline-flex items-center gap-1 badge badge-warning badge-sm font-mono cursor-pointer list-none"
-                        case _           => "inline-flex items-center gap-1 badge badge-ghost badge-sm font-mono cursor-pointer list-none"
+                    cls <-- isCompatibleSig.combineWith(presetsSig).map: (compat, presets) =>
+                        val warn  = if compat.contains(false) then "badge-warning" else "badge-ghost"
+                        val inter = if presets.nonEmpty then " cursor-pointer list-none" else ""
+                        s"inline-flex items-center gap-1 badge $warn badge-sm font-mono$inter"
                 else
-                    cls <-- isCompatibleSig.map:
-                        case Some(false) => "select select-xs cursor-pointer list-none text-warning"
-                        case _           => "select select-xs cursor-pointer list-none",
+                    cls <-- isCompatibleSig.combineWith(presetsSig).map: (compat, presets) =>
+                        val warn = if compat.contains(false) then " text-warning" else ""
+                        if presets.nonEmpty then s"select select-xs cursor-pointer list-none$warn"
+                        else s"input input-xs pointer-events-none bg-base-200$warn",
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                when(compact)(span(cls := "text-[0.5rem] opacity-60", I18N_UI.direction_badge.abs_dir_label)),
-                badgeText(dir)
+                when(compact)(span(cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label)),
+                child.text <-- presetsSig.map: presets =>
+                    if presets.isEmpty then toArrowString(dir)
+                    else badgeText(dir)
             ),
-            child <-- frameBefore.combineWith(deflectionAngle).map:
-                case (None, _) | (_, None) => emptyNode
-                case (Some(frame), Some(deflDeg)) =>
-                    val presets = frame.reachableCardinals(deflDeg)
+            child <-- presetsSig.map:
+                case Nil => emptyNode
+                case presets =>
                     ul(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
                         presets.map: (cardinalVec, _) =>
