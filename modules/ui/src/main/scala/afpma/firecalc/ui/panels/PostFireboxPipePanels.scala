@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.panels
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -20,8 +21,13 @@ import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
 
-/** Dynamic container that renders N pipe panels from the post-firebox slot vector.
+/** Dynamic container that renders pipe panels from the post-firebox slot vector.
   * Replaces the hardcoded FluePipePanel/ConnectorPipePanel/ChimneyPipePanel.
+  *
+  * IMPORTANT: Panels are created once from the initial slot vector and reused.
+  * Dynamic add/remove/reorder rebuilds the panel list by setting a flag that
+  * triggers a full re-render via `child <--`. This avoids Laminar anti-patterns
+  * around creating elements inside Signal.map.
   */
 final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) extends Component:
 
@@ -47,11 +53,16 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Slot mutation helpers ────────────────────────────────────
 
+    /** Trigger variable — incremented on every structural mutation to force panel rebuild. */
+    private val structureVersion: Var[Int] = Var(0)
+
     private def addSlot(slot: PostFireboxPipeDescrSlot): Unit =
         postFireboxSlots_var.update(slots => slots :+ slot)
+        structureVersion.update(_ + 1)
 
     private def removeSlot(idx: Int): Unit =
         postFireboxSlots_var.update(slots => slots.zipWithIndex.collect { case (s, i) if i != idx => s })
+        structureVersion.update(_ + 1)
 
     private def moveSlot(fromIdx: Int, toIdx: Int): Unit =
         postFireboxSlots_var.update: slots =>
@@ -61,6 +72,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 val elem = buf.remove(fromIdx)
                 buf.insert(toIdx, elem)
                 buf.toSeq
+        structureVersion.update(_ + 1)
 
     // ── Toolbar ──────────────────────────────────────────────────
 
@@ -105,7 +117,6 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     private def slotControls(idx: Int, totalSlots: Int): HtmlElement =
         div(
             cls := "flex items-center gap-1 mr-2",
-            // Move up
             if idx > 0 then
                 button(
                     cls := "btn btn-ghost btn-xs btn-circle",
@@ -113,7 +124,6 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                     onClick --> { _ => moveSlot(idx, idx - 1) }
                 )
             else emptyNode,
-            // Move down
             if idx < totalSlots - 1 then
                 button(
                     cls := "btn btn-ghost btn-xs btn-circle",
@@ -121,7 +131,6 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                     onClick --> { _ => moveSlot(idx, idx + 1) }
                 )
             else emptyNode,
-            // Remove
             button(
                 cls := "btn btn-ghost btn-xs btn-circle text-error",
                 lucide.`trash-2`(stroke_width = 1.5),
@@ -129,28 +138,32 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             )
         )
 
-    // ── Render all slot panels ───────────────────────────────────
+    // ── Build panels from current slot snapshot ──────────────────
 
-    private lazy val panelsSig: Signal[Seq[HtmlElement]] =
-        postFireboxSlots_var.signal.map: slots =>
+    /** Build a stable panel list from the current slots.
+      * Called once at init and after each structural mutation.
+      */
+    private def buildPanels(slots: Seq[PostFireboxPipeDescrSlot]): HtmlElement =
+        div(
             slots.zipWithIndex.map: (slot, idx) =>
                 val panel = DynamicPipeSlotPanel.forSlot(idx, slot)
                 div(
                     cls := "relative",
-                    // Slot controls overlay (top-right of accordion panel)
                     div(
                         cls := "absolute top-1 right-10 z-50",
                         slotControls(idx, slots.size)
                     ),
                     panel.node
                 )
+        )
 
     // ── Main node ────────────────────────────────────────────────
 
     override lazy val node: HtmlElement = div(
         toolbar,
         child.maybe <-- topologyWarning,
-        div(children <-- panelsSig)
+        child <-- structureVersion.signal.map: _ =>
+            buildPanels(postFireboxSlots_var.now())
     )
 
 end PostFireboxPipePanels

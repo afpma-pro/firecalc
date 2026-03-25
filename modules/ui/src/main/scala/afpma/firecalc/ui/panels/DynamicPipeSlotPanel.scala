@@ -17,7 +17,6 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.*
 
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
