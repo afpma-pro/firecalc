@@ -575,8 +575,14 @@ object VizElementId:
         case _                   => None
 
 // Ephemeral hover/select state (not persisted to localStorage)
-val vizHoveredElement: Var[Option[VizElementId]]  = Var(None)
-val vizSelectedElement: Var[Option[VizElementId]] = Var(None)
+// Set-based to support highlighting multiple elements (e.g. two neighbors at a graph boundary)
+val vizHoveredElement: Var[Set[VizElementId]]  = Var(Set.empty)
+val vizSelectedElement: Var[Set[VizElementId]] = Var(Set.empty)
+
+/** Toggle selection: if clicking the same set, deselect; otherwise select the new set. */
+def toggleVizSelection(newSelection: Set[VizElementId]): Unit =
+    if newSelection.nonEmpty && newSelection == vizSelectedElement.now() then vizSelectedElement.set(Set.empty)
+    else vizSelectedElement.set(newSelection)
 
 // ============================================================================
 // UI STATE (persisted to localStorage, with migration from VIZ_CAMERA_STATE)

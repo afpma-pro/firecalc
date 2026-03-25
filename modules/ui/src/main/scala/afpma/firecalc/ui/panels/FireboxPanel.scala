@@ -139,7 +139,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
             idAttr := "viz-fieldset-firebox",
             cls <-- vizHighlightSignal,
             vizSelectedElement.signal.changes.collect {
-                case Some(VizElementId.FireboxElement) => ()
+                case s if s.contains(VizElementId.FireboxElement) => ()
             } --> Observer[Unit] { _ =>
                 panelOpened.set(true)
                 dom.window.setTimeout(

@@ -16,7 +16,8 @@ import org.scalajs.dom
 @JSImport("/afpma/firecalc/graph/graph-viz.js", "initGraphViz")
 private[graph] object GraphVizFacade extends js.Object:
     def apply(
-        container: dom.HTMLElement,
-        data     : ChartDataJS,
-        config   : GraphConfigJS
+        container   : dom.HTMLElement,
+        data        : ChartDataJS,
+        config      : GraphConfigJS,
+        onPointClick: js.UndefOr[js.Function1[js.Array[String], Unit]] = js.undefined
     ): GraphVizHandleJS = js.native

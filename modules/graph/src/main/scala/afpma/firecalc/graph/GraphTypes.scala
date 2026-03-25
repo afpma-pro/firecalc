@@ -11,7 +11,8 @@ case class DataPoint(
     tooltipTitle  : String = "",
     tooltipExtra  : String = "",
     formattedValue: String = "",
-    segmentColor  : String = ""   // non-empty → override series color for this point/segment
+    segmentColor    : String = "",        // non-empty → override series color for this point/segment
+    highlightTargets: Vector[String] = Vector.empty  // VizElementId-compatible names for graph-click highlighting
 )
 
 case class ChartSeries(

@@ -10,29 +10,32 @@ import scala.scalajs.js
 /** Non-native JS trait facades mirroring the TypeScript interfaces in graph-viz.ts. */
 
 trait DataPointJS extends js.Object:
-    var x             : Double
-    var y             : Double
-    var tooltipTitle  : String
-    var tooltipExtra  : String
-    var formattedValue: String
-    var segmentColor  : String
+    var x               : Double
+    var y               : Double
+    var tooltipTitle    : String
+    var tooltipExtra    : String
+    var formattedValue  : String
+    var segmentColor    : String
+    var highlightTargets: js.Array[String]
 
 object DataPointJS:
     def apply(
-        x             : Double,
-        y             : Double,
-        tooltipTitle  : String = "",
-        tooltipExtra  : String = "",
-        formattedValue: String = "",
-        segmentColor  : String = ""
+        x               : Double,
+        y               : Double,
+        tooltipTitle    : String = "",
+        tooltipExtra    : String = "",
+        formattedValue  : String = "",
+        segmentColor    : String = "",
+        highlightTargets: js.Array[String] = js.Array()
     ): DataPointJS =
         js.Dynamic.literal(
-            x              = x,
-            y              = y,
-            tooltipTitle   = tooltipTitle,
-            tooltipExtra   = tooltipExtra,
-            formattedValue = formattedValue,
-            segmentColor   = segmentColor
+            x                = x,
+            y                = y,
+            tooltipTitle     = tooltipTitle,
+            tooltipExtra     = tooltipExtra,
+            formattedValue   = formattedValue,
+            segmentColor     = segmentColor,
+            highlightTargets = highlightTargets
         ).asInstanceOf[DataPointJS]
 
 trait ChartSeriesJS extends js.Object:

@@ -49,6 +49,11 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             def getAll: Seq[(IdIncr, IdEl)] = m.map(kv => (kv._1, kv._2)).toSeq
             def get      (i: IdIncr): Option[IdEl] = m.get(i)
             def getUnsafe(i: Int   ): Option[IdEl] = m.get(i)
+            /** Reverse map: PipeIdx (section_id) → descriptor index.
+              * Inside the opaque scope: IdIncr = Int, IdEl = PipeIdx.
+              */
+            def reverseToIntMap: Map[Int, Int] =
+                m.map { case (descrIdx, pipeIdx) => (pipeIdx.unwrap, descrIdx) }
 
     type SetProp <: IncrDescr
     type AddElement <: IncrDescr

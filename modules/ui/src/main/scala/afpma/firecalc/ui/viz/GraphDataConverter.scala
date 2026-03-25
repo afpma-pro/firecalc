@@ -46,11 +46,48 @@ object GraphDataConverter:
 
     /** A flattened section with its pipe context and cumulative x position. */
     private case class PlottableSection(
-        pipeName   : String,
-        section    : PipeSectionResult[?],
-        xStart     : Double,  // cumulative length at section start
-        xEnd       : Double   // cumulative length at section end
+        pipeName    : String,
+        section     : PipeSectionResult[?],
+        xStart      : Double,  // cumulative length at section start
+        xEnd        : Double,  // cumulative length at section end
+        elementIndex: Int      // per-pipe element index (for VizElementId mapping)
     )
+
+    // Pipe names that map to VizElementId variants
+    private val HighlightablePipes = Set("Flue", "Connector", "Chimney", "Air Intake")
+
+    /** Build a VizElementId-compatible name for a section, or None if not highlightable.
+      * Returns None for auto-inserted elements (elementIndex < 0) and non-highlightable pipes.
+      */
+    private def vizName(ps: PlottableSection): Option[String] =
+        if ps.elementIndex < 0 then None // auto-inserted element — not in pipe panel
+        else if ps.pipeName == "Firebox" then Some("Firebox") // singleton — no index suffix
+        else if HighlightablePipes.contains(ps.pipeName) then Some(s"${ps.pipeName} #${ps.elementIndex}")
+        else None // "Registre d'air", "Combustion Air" — not highlightable
+
+    private def isDirectionChange(ps: PlottableSection): Boolean =
+        ps.section.section_length.value == 0.0
+
+    /** Find the nearest highlightable neighbor in the given direction.
+      * Skips auto-inserted elements and non-highlightable sections.
+      */
+    private def findNeighbor(sections: Vector[PlottableSection], fromIdx: Int, scanRange: Range): Option[PlottableSection] =
+        scanRange.collectFirst { case i if vizName(sections(i)).isDefined => sections(i) }
+
+    /** Highlight targets at a section boundary.
+      * If the neighbor is a direction change, highlight only it.
+      * Otherwise highlight both the current section and the neighbor.
+      */
+    private def highlightAtBoundary(
+        sections : Vector[PlottableSection],
+        idx      : Int,
+        scanRange: Range
+    ): Vector[String] =
+        val currentName  = vizName(sections(idx))
+        val neighbor     = findNeighbor(sections, idx, scanRange)
+        val neighborName = neighbor.flatMap(vizName)
+        if neighbor.exists(isDirectionChange) then neighborName.toVector
+        else (currentName ++ neighborName).toVector
 
     // Series colors
     private val TemperatureColor = "#E63946"
@@ -88,13 +125,17 @@ object GraphDataConverter:
                 _v_end = v_end
             )
 
+    /** @param pipeIdxToDescrIdx  Per-pipe reverse IdsMapping: section_id (PipeIdx) → descriptor index.
+      *                            Only needed for highlightable pipes (Flue, Connector, Chimney, Air Intake).
+      */
     def convert(
-        airIntake    : VNelMcalcErr[PipeResult],
-        combustionAir: VNelMcalcErr[PipeResult],
-        firebox      : VNelMcalcErr[PipeResult],
-        flue         : VNelMcalcErr[PipeResult],
-        connector    : VNelMcalcErr[PipeResult],
-        chimney      : VNelMcalcErr[PipeResult]
+        airIntake       : VNelMcalcErr[PipeResult],
+        combustionAir   : VNelMcalcErr[PipeResult],
+        firebox         : VNelMcalcErr[PipeResult],
+        flue            : VNelMcalcErr[PipeResult],
+        connector       : VNelMcalcErr[PipeResult],
+        chimney         : VNelMcalcErr[PipeResult],
+        pipeIdxToDescrIdx: Map[String, Map[Int, Int]] = Map.empty
     )(using Locale, DisplayUnits): ChartData =
 
         val accumulated = PipesResult_15544_VNelString(
@@ -138,14 +179,22 @@ object GraphDataConverter:
         var runningLength = 0.0
         
         val allSections: Vector[PlottableSection] = pipes.flatMap { (pipeName, result) =>
+            val reverseMap = pipeIdxToDescrIdx.getOrElse(pipeName, Map.empty)
             result match
                 case Validated.Valid(pr: PipeResult.WithSections) =>
-                    pr.elements.map { section =>
+                    pr.elements.zipWithIndex.map { case (section, seqIdx) =>
+                        val sectionId = section.section_id.unwrap
+                        // Use IdsMapping reverse map to get the descriptor index (matching pipe panel / 3D viz).
+                        // If sectionId is NOT in a non-empty reverseMap, this is an auto-inserted element
+                        // (e.g. SectionGeometryChange) — mark with -1 so vizName returns None.
+                        val descrIdx =
+                            if reverseMap.nonEmpty then reverseMap.getOrElse(sectionId, -1)
+                            else seqIdx // no mapping available — fall back to sequential index
                         val xStart = runningLength
                         runningLength += section.section_length.value
-                        PlottableSection(pipeName, section, xStart, xEnd = runningLength)
+                        PlottableSection(pipeName, section, xStart, xEnd = runningLength, elementIndex = descrIdx)
                     }
-                case Validated.Valid(pr: PipeResult) if pipeName == "Registre d'air" || pipeName == "Air Intake" => 
+                case Validated.Valid(pr: PipeResult) if pipeName == "Registre d'air" || pipeName == "Air Intake" =>
                     val xStart = runningLength
                     val section = make_PipeSectionResult_Manual(
                         section_name = pr.typ.show,
@@ -153,8 +202,8 @@ object GraphDataConverter:
                         v_end = pr.v_end.getOrElse(0.m_per_s)
                     )
                     runningLength += section.section_length.value
-                    Vector(PlottableSection(pipeName, section, xStart, xEnd = runningLength))
-                case _ => 
+                    Vector(PlottableSection(pipeName, section, xStart, xEnd = runningLength, elementIndex = 0))
+                case _ =>
                     Vector.empty
         }
 
@@ -249,12 +298,14 @@ object GraphDataConverter:
                 (0.0, 0.pascals.showP)
             case _ => (0.0, "")
 
+        val originTargets = highlightAtBoundary(sections, 0, scanRange = 0 until 0)
         val originPoint = DataPoint(
-            x              = 0.0,
-            y              = originY,
-            tooltipTitle   = s"→ ${firstSection.section_name}",
-            tooltipExtra   = sections.head.pipeName,
-            formattedValue = originFmt
+            x                = 0.0,
+            y                = originY,
+            tooltipTitle     = s"→ ${firstSection.section_name}",
+            tooltipExtra     = sections.head.pipeName,
+            formattedValue   = originFmt,
+            highlightTargets = originTargets
         )
 
         // Two points per section: start (inlet) + end (exit)
@@ -278,13 +329,15 @@ object GraphDataConverter:
                     (cumulativePressure, p.showP)
                 case _ => (0.0, "")
 
+            val startTargets = highlightAtBoundary(sections, idx, scanRange = idx - 1 to 0 by -1)
             val startPoint = DataPoint(
-                x              = ps.xStart,
-                y              = yStart,
-                tooltipTitle   = buildTooltipTitleStart(sections, idx),
-                tooltipExtra   = ps.pipeName,
-                formattedValue = fmtStart,
-                segmentColor   = segColor
+                x                = ps.xStart,
+                y                = yStart,
+                tooltipTitle     = buildTooltipTitleStart(sections, idx),
+                tooltipExtra     = ps.pipeName,
+                formattedValue   = fmtStart,
+                segmentColor     = segColor,
+                highlightTargets = startTargets
             )
 
             // --- Update accumulators between start and end ---
@@ -314,13 +367,15 @@ object GraphDataConverter:
                     (cumulativePressure, p.showP)
                 case _ => (0.0, "")
 
+            val endTargets = highlightAtBoundary(sections, idx, scanRange = idx + 1 until sections.size)
             val endPoint = DataPoint(
-                x              = ps.xEnd,
-                y              = yEnd,
-                tooltipTitle   = buildTooltipTitleEnd(sections, idx),
-                tooltipExtra   = ps.pipeName,
-                formattedValue = fmtEnd,
-                segmentColor   = segColor
+                x                = ps.xEnd,
+                y                = yEnd,
+                tooltipTitle     = buildTooltipTitleEnd(sections, idx),
+                tooltipExtra     = ps.pipeName,
+                formattedValue   = fmtEnd,
+                segmentColor     = segColor,
+                highlightTargets = endTargets
             )
 
             Vector(startPoint, endPoint)

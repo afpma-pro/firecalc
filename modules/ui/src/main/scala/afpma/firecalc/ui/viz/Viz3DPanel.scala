@@ -89,12 +89,12 @@ final case class Viz3DPanel()(using Locale) extends Component:
           disposeCurrentViz()
         },
         vizSelectedElement.signal.changes
-          .collect { case Some(_) => () }
+          .collect { case s if s.nonEmpty => () }
           .flatMapSwitch(_ => EventStream.fromValue(()).delay(15000))
-          --> Observer[Unit](_ => vizSelectedElement.set(None)),
+          --> Observer[Unit](_ => vizSelectedElement.set(Set.empty)),
         child <-- allPositionsSig.map { (flue, connector, chimney, airIntake, firebox) =>
           disposeCurrentViz()
-          vizHoveredElement.set(None)
+          vizHoveredElement.set(Set.empty)
           val fbWidthCm = firebox.firebox_width.value * M_TO_CM
           val fbDepthCm = firebox.firebox_depth.value * M_TO_CM
           val displayNames = VizConverter.PipeDisplayNames(
@@ -136,16 +136,11 @@ final case class Viz3DPanel()(using Locale) extends Component:
               ),
               DisplayType.FullShape,
               Some[Option[FireCalcFilaireLine] => Unit] {
-                case Some(line) =>
-                  val newId   = line.name.flatMap(VizElementId.fromName)
-                  val current = vizSelectedElement.now()
-                  if newId == current then vizSelectedElement.set(None)
-                  else vizSelectedElement.set(newId)
-                case None =>
-                  vizSelectedElement.set(None)
+                case Some(line) => toggleVizSelection(line.name.flatMap(VizElementId.fromName).toSet)
+                case None       => vizSelectedElement.set(Set.empty)
               },
               Some[Option[FireCalcFilaireLine] => Unit] { lineOpt =>
-                vizHoveredElement.set(lineOpt.flatMap(_.name.flatMap(VizElementId.fromName)))
+                vizHoveredElement.set(lineOpt.flatMap(_.name.flatMap(VizElementId.fromName)).toSet)
               }
             )
             currentHandle = Some(vizResult.handle)

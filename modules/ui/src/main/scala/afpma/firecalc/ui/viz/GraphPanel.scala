@@ -24,6 +24,25 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
         currentHandle.foreach(_.dispose())
         currentHandle = None
 
+    /** Reverse IdsMapping per pipe: section_id (PipeIdx) → descriptor index.
+      * Required to produce VizElementId-compatible names matching the pipe panel and 3D viz.
+      */
+    private lazy val pipeIdxMappingSig: Signal[Map[String, Map[Int, Int]]] =
+        air_intake_mappings_vnel_signal
+            .combineWith(
+                fluepipe_mappings_vnel_signal,
+                connector_pipe_mappings_vnel_signal,
+                chimney_pipe_mappings_vnel_signal
+            )
+            .map { (aiM, fM, coM, chM) =>
+                Map(
+                    "Air Intake" -> aiM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap),
+                    "Flue"       -> fM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap),
+                    "Connector"  -> coM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap),
+                    "Chimney"    -> chM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap)
+                )
+            }
+
     private lazy val allPipeResultsSig =
         results_en15544_air_intake_pipe
             .combineWith(
@@ -31,7 +50,8 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                 results_en15544_firebox_pipe,
                 results_en15544_channel_pipe,
                 results_en15544_connector_pipe,
-                results_en15544_chimney_pipe
+                results_en15544_chimney_pipe,
+                pipeIdxMappingSig
             )
             .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
@@ -50,20 +70,26 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
             div(
                 cls := "flex-1 relative overflow-hidden",
                 onUnmountCallback { _ => disposeCurrentChart() },
-                child <-- allPipeResultsSig.map { (airIntake, combustionAir, firebox, flue, connector, chimney) =>
-                    disposeCurrentChart()
-                    val chartData = GraphDataConverter.convert(
-                        airIntake, combustionAir, firebox, flue, connector, chimney
-                    )
-                    if chartData.series.isEmpty then
-                        div(
-                            cls := "flex items-center justify-center h-full text-base-content/40",
-                            I18N_UI.graph.no_data
+                child <-- allPipeResultsSig.map { (airIntake, combustionAir, firebox, flue, connector, chimney, mappings) =>
+                        disposeCurrentChart()
+                        val chartData = GraphDataConverter.convert(
+                            airIntake, combustionAir, firebox, flue, connector, chimney,
+                            pipeIdxToDescrIdx = mappings
                         )
-                    else
-                        val vizResult = GraphViz.render(chartData)
-                        currentHandle = Some(vizResult.handle)
-                        foreignHtmlElement(vizResult.element)
+                        if chartData.series.isEmpty then
+                            div(
+                                cls := "flex items-center justify-center h-full text-base-content/40",
+                                I18N_UI.graph.no_data
+                            )
+                        else
+                            val vizResult = GraphViz.render(
+                                chartData,
+                                onPointClick = Some { targets =>
+                                    toggleVizSelection(targets.flatMap(VizElementId.fromName(_)).toSet)
+                                }
+                            )
+                            currentHandle = Some(vizResult.handle)
+                            foreignHtmlElement(vizResult.element)
                 }
             )
         )

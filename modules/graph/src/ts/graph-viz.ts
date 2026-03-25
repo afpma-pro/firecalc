@@ -37,6 +37,7 @@ interface DataPointJS {
     tooltipExtra: string;
     formattedValue: string;
     segmentColor: string;
+    highlightTargets: string[];
 }
 
 interface ChartSeriesJS {
@@ -116,12 +117,30 @@ const graphVizPlugin = {
 export function initGraphViz(
     container: HTMLElement,
     data: ChartDataJS,
-    config: GraphConfigJS
+    config: GraphConfigJS,
+    onPointClick?: (targets: string[]) => void
 ): GraphVizHandleJS {
     const canvas = document.createElement('canvas');
     container.appendChild(canvas);
 
     const chartConfig = buildChartConfig(data, config);
+
+    // Add click handler: highlight pipe panel elements when a data point is clicked
+    if (onPointClick) {
+        chartConfig.options!.onClick = (_event: any, _elements: any[], chart: any) => {
+            const nearest = chart.getElementsAtEventForMode(
+                _event, 'nearest', { intersect: false }, false
+            );
+            if (nearest.length > 0) {
+                const el = nearest[0];
+                const raw = chart.data.datasets[el.datasetIndex].data[el.index] as DataPointJS;
+                onPointClick(raw?.highlightTargets || []);
+            } else {
+                onPointClick([]);
+            }
+        };
+    }
+
     const chart = new Chart(canvas, chartConfig);
     (chart as any)._backgroundBands = data.backgroundBands;
 

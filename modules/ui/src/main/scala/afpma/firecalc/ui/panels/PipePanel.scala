@@ -476,20 +476,21 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             //     children <-- welems_var.signal.map(_.map(x => p(x.toString)))
             // )
         ),
-        vizSelectedElement.signal.changes.collect {
-            case Some(id) if ownsVizElement(id) => id
-        } --> Observer[VizElementId] { vizId =>
-            panelOpened.set(true)
-            val domId = vizFieldsetId(vizElementIndex(vizId))
-            dom.window.setTimeout(
-                () => {
-                    Option(dom.document.getElementById(domId)).foreach(
-                        _.asInstanceOf[js.Dynamic].scrollIntoView(
-                            js.Dynamic.literal(behavior = "smooth", block = "center")
+        vizSelectedElement.signal.changes
+            .map(_.filter(ownsVizElement))
+            .collect { case s if s.nonEmpty => s.head }
+            --> Observer[VizElementId] { vizId =>
+                panelOpened.set(true)
+                val domId = vizFieldsetId(vizElementIndex(vizId))
+                dom.window.setTimeout(
+                    () => {
+                        Option(dom.document.getElementById(domId)).foreach(
+                            _.asInstanceOf[js.Dynamic].scrollIntoView(
+                                js.Dynamic.literal(behavior = "smooth", block = "center")
+                            )
                         )
-                    )
-                },
-                300
-            )
-        }
+                    },
+                    300
+                )
+            }
     )

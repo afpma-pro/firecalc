@@ -24,8 +24,9 @@ object GraphViz:
 
     /** Render a line chart from the given data. */
     def render(
-        data   : ChartData,
-        config : GraphVizConfig = GraphVizConfig()
+        data        : ChartData,
+        config      : GraphVizConfig = GraphVizConfig(),
+        onPointClick: Option[Vector[String] => Unit] = None
     ): GraphVizResult =
         val container = dom.document.createElement("div").asInstanceOf[dom.HTMLDivElement]
         container.className = "graph-viz"
@@ -38,7 +39,12 @@ object GraphViz:
             maintainAspectRatio = config.maintainAspectRatio
         )
 
-        val handle = GraphVizFacade(container, dataJs, configJs)
+        val clickCb: js.UndefOr[js.Function1[js.Array[String], Unit]] = onPointClick match
+            case Some(cb) =>
+                ((targets: js.Array[String]) => cb(targets.toVector)): js.Function1[js.Array[String], Unit]
+            case None => js.undefined
+
+        val handle = GraphVizFacade(container, dataJs, configJs, clickCb)
         GraphVizResult(container, handle)
 
     /** Update an existing chart with new data. */
@@ -49,12 +55,13 @@ object GraphViz:
         val seriesJs = js.Array(data.series.map { s =>
             val pointsJs = js.Array(s.points.map { p =>
                 DataPointJS(
-                    x              = p.x,
-                    y              = p.y,
-                    tooltipTitle   = p.tooltipTitle,
-                    tooltipExtra   = p.tooltipExtra,
-                    formattedValue = p.formattedValue,
-                    segmentColor   = p.segmentColor
+                    x                = p.x,
+                    y                = p.y,
+                    tooltipTitle     = p.tooltipTitle,
+                    tooltipExtra     = p.tooltipExtra,
+                    formattedValue   = p.formattedValue,
+                    segmentColor     = p.segmentColor,
+                    highlightTargets = js.Array(p.highlightTargets*)
                 )
             }*)
             ChartSeriesJS(
