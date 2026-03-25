@@ -14,6 +14,8 @@ import afpma.firecalc.engine.standard.PressureLossMustBeDefined
 import afpma.firecalc.engine.standard.PressureLossTableError
 
 import cats.syntax.validated.*
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 
 /**
  * Combustion air pipe for [[Door15aFirebox_Catalog]] fireboxes.
@@ -37,6 +39,7 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends FireboxToCom
                 case Right(pl) =>
                     CombustionAirPipe_Module_15544.incremental
                         .define(
+                            setInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal),
                             innerShape(firebox.actualAirIntakePipeShape),
                             addPressureDiff("door_15a_pressure_loss", pl)
                         )

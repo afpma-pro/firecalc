@@ -30,6 +30,7 @@ object TraditionalFireboxToFireboxInternalPipes_15544_Strict
             import firebox.*
             CombustionAirPipe_Module_15544.incremental
                 .define(
+                    setInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
                     innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
                     roughness        (3.mm), // TOFIX: 3mm or 2mm ???
                     addFlowResistance(

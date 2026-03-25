@@ -42,8 +42,9 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     "returns proper pipe" in {
                         given NbOfFlows = 1.flow
                         val d0 = 100.mm
-                        val p = 
+                        val p =
                             builder.define(
+                                setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal),
                                 innerShape(square(d0)),
                                 roughness(2.mm),
                                 addSectionHorizontal("first", 2.meters)
