@@ -94,12 +94,17 @@ object FireboxXlsxImporter:
     private def readPressureLossTable(sheet: org.apache.poi.ss.usermodel.Sheet): String =
         import PressureRows.*
         val headerRow = sheet.getRow(HeaderRow)
-        if headerRow == null then return ""
+        if headerRow == null then
+            throw IllegalArgumentException("Pressure loss table: header row (row 3) is missing")
 
         // Read SB column headers
         val sbValues = (SbFirstCol to SbLastCol).flatMap: col =>
             readDouble(headerRow, col).orElse(readString(headerRow, col).flatMap(_.toDoubleOption))
-        if sbValues.isEmpty then return ""
+        if sbValues.isEmpty then
+            throw IllegalArgumentException(
+                "Pressure loss table: no valid SB values found in header row (row 3, columns B-I). " +
+                    "Replace template placeholders ('sB 1', 'sB 2', ...) with numeric SB values in cm (e.g., 1.6, 2.4, 3.2, 4.0).",
+            )
 
         val sb = new StringBuilder()
         sb.append("mb_in_kg/sb_in_cm")
@@ -111,7 +116,10 @@ object FireboxXlsxImporter:
             val row = sheet.getRow(rowIdx)
             sb.append(mb.toString)
             for col <- SbFirstCol to (SbFirstCol + sbValues.size - 1) do
-                val value = if row != null then readDouble(row, col).map(_.toInt.toString).getOrElse("") else ""
+                val value =
+                    if row != null then
+                        readDouble(row, col).map(v => if v == v.floor then v.toInt.toString else v.toString).getOrElse("")
+                    else ""
                 sb.append(s"\t$value")
             sb.append("\n")
 

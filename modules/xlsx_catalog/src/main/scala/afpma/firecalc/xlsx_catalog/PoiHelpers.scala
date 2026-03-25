@@ -36,8 +36,9 @@ object PoiHelpers:
         Option(row.getCell(col)).flatMap: cell =>
             cell.getCellType match
                 case CellType.NUMERIC => Some(cell.getNumericCellValue)
-                case CellType.STRING  =>
-                    cell.getStringCellValue.trim.toDoubleOption
+                case CellType.STRING =>
+                    val s = cell.getStringCellValue.trim
+                    s.toDoubleOption.orElse(s.replace(",", ".").toDoubleOption)
                 case _ => None
 
     def readInt(row: Row, col: Int): Option[Int] =
