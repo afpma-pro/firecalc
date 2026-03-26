@@ -137,6 +137,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
             opened  = panelOpened
         ).node.amend(
             idAttr := "viz-fieldset-firebox",
+            cls := "pipe-type-firebox",
             cls <-- vizHighlightSignal,
             vizSelectedElement.signal.changes.collect {
                 case s if s.contains(VizElementId.FireboxElement) => ()

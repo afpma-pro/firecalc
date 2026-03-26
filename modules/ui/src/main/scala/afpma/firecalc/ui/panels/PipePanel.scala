@@ -163,6 +163,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     protected def vizFieldsetId(idx: Int): String = s"viz-fieldset-$vizFieldsetIdPrefix-$idx"
 
+    /** CSS class that sets --pipe-border-color and --pipe-bg-color custom properties. */
+    protected lazy val pipeTypeCls: String = s"pipe-type-$vizFieldsetIdPrefix"
+
     private def vizHighlightSignal(i: Int): Signal[String] =
         vizHoveredElement.signal
             .combineWith(vizSelectedElement.signal)
@@ -246,6 +249,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 ).amend(
                     binders,
                     idAttr := vizFieldsetId(i),
+                    cls := pipeTypeCls,
                     cls <-- vizHighlightSignal(i)
                 )
 
@@ -257,18 +261,18 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 val node = formNode
                 val isDirectionChange = badgeFinalDirVar(elem_v).isDefined
                 val dcIcon = Option.when(isDirectionChange)(span(lucide.`corner-down-right`(16, 16)))
+                val sectionCls = if isDirectionChange then "pipe-section-dc" else "pipe-section-straight"
                 val header_and_node = renderIncrDescr(title, node, isProperty, legendIcon = dcIcon).amend(
                     binders,
                     idAttr := vizFieldsetId(i),
+                    cls := s"$pipeTypeCls $sectionCls",
                     cls <-- vizHighlightSignal(i)
                 )
                 val summary_node = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon)
                 if !isProperty then
                     header_and_node.amend(cls := "ml-[20px]")
                     summary_node.amend(cls := "ml-[20px]")
-                if isDirectionChange then
-                    header_and_node.amend(cls := "elem-direction-change")
-                    summary_node.amend(cls := "elem-direction-change")
+                summary_node.amend(cls := s"$pipeTypeCls $sectionCls")
                 val incrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
                 given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
