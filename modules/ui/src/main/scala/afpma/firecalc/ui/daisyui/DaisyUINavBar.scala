@@ -121,9 +121,24 @@ object DaisyUINavBar:
                     )
                 ),
                 div(cls := "flex-grow"),
-                // Group 4: 3D & Graph toggles
+                // Group 4: Expert, 3D & Graph toggles
                 div(
                     cls := "flex flex-row items-center gap-x-2",
+                    // Expert mode toggle
+                    div(
+                        cls := "flex items-center h-6",
+                        DaisyUITooltip(
+                            ttContent  = div(I18N_UI.tooltips.display_details),
+                            element    = div(
+                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls("bg-base-300 text-base-content border-base-content/30") <-- expertModeOn,
+                                cls("text-base-content/40 hover:text-base-content") <-- expertModeOff,
+                                lucide.`flask-conical`(stroke_width = 1.5),
+                                onClick.mapToUnit --> { _ => expertModeVar.update(!_) }
+                            ),
+                            ttPosition = "tooltip-bottom"
+                        )
+                    ),
                     // 3D visualization toggle
                     div(
                         cls := "flex items-center h-6",
@@ -214,29 +229,6 @@ object DaisyUINavBar:
 
                 // Order PDF Report Modal
                 OrderPDFReportModalComponent(),
-
-                // Expert (show detailed values in panels)
-
-                div(
-                    cls := "flex items-stretch gap-2",
-                    DaisyUITooltip (
-                        ttContent  = div(I18N_UI.tooltips.display_details),
-                        element    = div(
-                            tabIndex := 0,
-                            role     := "button",
-                            cls      := "btn btn-outline hover:btn-secondary rounded-field",
-                            cls("text-base-content") <-- expertModeOn,
-                            cls("text-base-content/40 hover:text-base-content") <-- expertModeOff,
-                            lucide.`flask-conical`(stroke_width = 1.5),
-                            onClick.mapToUnit --> { _ =>
-                                // toggle expert mode
-                                if (expertModeVar.now() == true) expertModeVar.set(false)
-                                else expertModeVar.set(true)
-                            }
-                        ),
-                        ttPosition = "tooltip-bottom"
-                    )
-                ),
 
                 // LANGUAGE button
                 div(
