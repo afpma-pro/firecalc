@@ -531,7 +531,10 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
                 val modal = FireboxCatalogSelectComponent(
                     entriesSignal = door15aFireboxesSignal,
-                    onSelect      = Observer(v.set)
+                    onSelect = Observer { entry =>
+                        val ml = stove_params_var.now().maximum_load
+                        v.set(if ml.isDefined then entry.copy(load_size_nominal = ml) else entry)
+                    }
                 )
                 div(
                     syncLoadToMax,
