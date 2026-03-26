@@ -199,7 +199,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
         // Full form node (used inline for non-property, or inside dialog for property)
         val formNode = div(
-            cls := "flex flex-row justify-center items-end gap-2",
+            cls := "flex flex-row justify-start items-end gap-2",
             div(cls := "flex-none", elem_v.as_HtmlElement),
             extraNode,
             mkBadge(),
