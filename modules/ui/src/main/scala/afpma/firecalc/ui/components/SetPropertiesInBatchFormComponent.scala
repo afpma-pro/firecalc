@@ -14,6 +14,7 @@ import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
 import afpma.firecalc.dto.common.DisplayUnits
+import org.scalajs.dom.HTMLDialogElement
 
 /**
  * Accordion form component for editing a [[SetPropertiesInBatch]] value, with a catalog
@@ -39,7 +40,14 @@ case class SetPropertiesInBatchFormComponent(
 
     private val modal = PipeCatalogSelectComponent(
         entriesSignal = entriesSignal,
-        onSelect      = Observer(v.set)
+        onSelect = Observer { entry =>
+            v.set(entry)
+            // Close the parent property-edit dialog (opened by PipePanel)
+            Option(node.ref.closest("dialog.modal")).foreach {
+                case d: HTMLDialogElement => d.close()
+                case _                   => ()
+            }
+        }
     )
 
     val node: HtmlElement =
