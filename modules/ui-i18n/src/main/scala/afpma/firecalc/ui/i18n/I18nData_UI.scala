@@ -42,6 +42,7 @@ object I18nData_UI:
     case class Buttons(
         select                    : String,
         add                       : String,
+        auto_calc                 : String,
         cancel                    : String,
         close                     : String,
         import_catalog            : String,
@@ -271,7 +272,10 @@ object I18nData_UI:
         ph_static_pressure                : String,
         pr_loss_to_friction               : String,
         pu_loss_to_turn                   : String,
-        net_gain_or_loss                  : String
+        net_gain_or_loss                  : String,
+        auto_calc_needs_direction         : String,
+        auto_calc_needs_shape             : String,
+        auto_calc_needs_direction_shape   : String
     )
 case class DefaultElementNames(
     straight_element           : String,
