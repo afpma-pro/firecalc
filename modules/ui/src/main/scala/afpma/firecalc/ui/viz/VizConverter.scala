@@ -9,6 +9,7 @@ import afpma.firecalc.engine.models.geometry.{PipeSegmentPosition, PipePositionR
 import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.filaire.FilaireTypes.*
 import afpma.firecalc.filaire.FilaireTypes.CrossSection
+import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 
 object VizConverter:
 
@@ -57,7 +58,7 @@ object VizConverter:
       direction   = Vector(0.0, 0.0, 1.0),
       length      = Length(heightCm),
       color       = FireboxColor,
-      shape       = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
+      shape       = CrossSection.Rectangle(Cm(depthCm), Cm(widthCm)),
       name        = Some("Firebox"),
       displayName = displayName
     )
@@ -68,13 +69,13 @@ object VizConverter:
     * @param depthCm  firebox depth in cm (Front-Rear axis)
     */
   def airDistribToLine(widthCm: Double, depthCm: Double, displayName: Option[String] = None): FireCalcFilaireLine =
-    val heightCm = 20.0
+    val heightCm = AIR_DISTRIB_HEIGHT_M * 100.0
     FireCalcFilaireLine(
       origin      = Origin(0.0, 0.0, -heightCm),
       direction   = Vector(0.0, 0.0, 1.0),
       length      = Length(heightCm),
       color       = AirDistribColor,
-      shape       = CrossSection.Rectangle(Cm(widthCm), Cm(depthCm)),
+      shape       = CrossSection.Rectangle(Cm(depthCm), Cm(widthCm)),
       name        = Some("Air Distribution"),
       displayName = displayName
     )

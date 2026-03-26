@@ -105,9 +105,9 @@ object FilaireTypes:
     /** Returns the cross-section extent along `queryAxis`, given the pipe runs along `pipeDirection`.
       *
       * For axis-aligned pipe directions, the cross-section's local width/height map to construction axes:
-      *   - Pipe ±X (Right/Left): width → Y (Rear), height → Z (Up)
-      *   - Pipe ±Y (Rear/Front): width → X (Right), height → Z (Up)
-      *   - Pipe ±Z (Up/Down): width → X (Right), height → Y (Rear)
+      *   - Pipe ±X (Right/Left): width → Z (Up), height → Y (Rear)
+      *   - Pipe ±Y (Rear/Front): width → Z (Up), height → X (Right)
+      *   - Pipe ±Z (Up/Down): width → Y (Rear), height → X (Right)
       *
       * When orientation ≠ 0°, the rectangle is rotated around the pipe axis, causing
       * the bounding extent to change: extent = |w·cos(θ)| + |h·sin(θ)| or |w·sin(θ)| + |h·cos(θ)|
@@ -162,12 +162,12 @@ object FilaireTypes:
 
     /** Determines which dimension (width or height) corresponds to the query axis.
       *
-      * Axis mapping table:
+      * Axis mapping table (matches TypeScript buildLocalFrame: width → right vector, height → up vector):
       * | Pipe direction | width maps to | height maps to |
       * |----------------|---------------|----------------|
-      * | ±X (Right/Left)| Y (Rear)      | Z (Up)         |
-      * | ±Y (Rear/Front)| X (Right)     | Z (Up)         |
-      * | ±Z (Up/Down)   | X (Right)     | Y (Rear)       |
+      * | ±X (Right/Left)| Z (Up)        | Y (Rear)       |
+      * | ±Y (Rear/Front)| Z (Up)        | X (Right)      |
+      * | ±Z (Up/Down)   | Y (Rear)      | X (Right)      |
       */
     private def determineQueryDimension(pipeDir: Vector, queryAxis: Vector): Dimension =
       // Check which axis the pipe runs along
@@ -181,19 +181,19 @@ object FilaireTypes:
       val isQueryZ = math.abs(queryAxis.dz) > 1.0 - AxisEpsilon
 
       if isPipeX then
-        // Pipe along X: width → Y, height → Z
-        if isQueryY then Dimension.Width
-        else if isQueryZ then Dimension.Height
+        // Pipe along X: width → Z, height → Y
+        if isQueryZ then Dimension.Width
+        else if isQueryY then Dimension.Height
         else Dimension.Width // fallback
       else if isPipeY then
-        // Pipe along Y: width → X, height → Z
-        if isQueryX then Dimension.Width
-        else if isQueryZ then Dimension.Height
+        // Pipe along Y: width → Z, height → X
+        if isQueryZ then Dimension.Width
+        else if isQueryX then Dimension.Height
         else Dimension.Width // fallback
       else if isPipeZ then
-        // Pipe along Z: width → X, height → Y
-        if isQueryX then Dimension.Width
-        else if isQueryY then Dimension.Height
+        // Pipe along Z: width → Y, height → X
+        if isQueryY then Dimension.Width
+        else if isQueryX then Dimension.Height
         else Dimension.Width // fallback
       else
         // Non-axis-aligned pipe direction - default to width
