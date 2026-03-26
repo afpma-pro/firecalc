@@ -21,6 +21,7 @@ import org.scalajs.dom
 import org.scalajs.dom.HTMLDialogElement
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 case class CatalogManagerDialog()(using Locale) extends Component:
 
@@ -32,52 +33,69 @@ case class CatalogManagerDialog()(using Locale) extends Component:
 
     private def close(): Unit = dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
 
-    private def handleFileLoad(file: dom.File): Unit =
-        FileSystemService.readFileFromInput(file).foreach:
-            case Left(err) =>
-                errorMessageVar.set(Some(err))
-            case Right((content, _)) =>
-                CatalogParser.parse(content) match
-                    case Left(parseError) =>
-                        val msg = parseError match
-                            case CatalogParseError.InvalidFile(detail) =>
-                                I18N_UI.catalog.errors.invalid_file.replace("{detail}", detail)
-                            case CatalogParseError.MissingVersion =>
-                                I18N_UI.catalog.errors.missing_version
-                            case CatalogParseError.VersionTooNew(found, supported) =>
-                                I18N_UI.catalog.errors.version_too_new
-                                    .replace("{found}", found.unwrap.toString)
-                                    .replace("{supported}", supported.unwrap.toString)
-                            case CatalogParseError.MigrationFailed(version, detail) =>
-                                I18N_UI.catalog.errors.migration_failed
-                                    .replace("{version}", version.unwrap.toString)
-                                    .replace("{detail}", detail)
-                            case CatalogParseError.DecodeError(category, detail) =>
-                                I18N_UI.catalog.errors.decode_error
-                                    .replace("{category}", category)
-                                    .replace("{detail}", detail)
-                        errorMessageVar.set(Some(msg))
-                    case Right(catalogFile) =>
-                        val merged = CatalogState.merge(catalogStateVar.now(), catalogFile)
-                        catalogStateVar.set(merged)
-                        val (images, warnings) = CatalogState.extractImages(catalogFile)
-                        if images.nonEmpty then
-                            CatalogImageStore.putAll(images).recover { case e =>
-                                dom.console.warn(s"Failed to store catalog images: ${e.getMessage}")
-                            }
-                        if warnings.nonEmpty then
-                            dom.console.warn(s"Catalog image warnings: ${warnings.mkString(", ")}")
-                        errorMessageVar.set(None)
+    private def formatParseError(parseError: CatalogParseError): String = parseError match
+        case CatalogParseError.InvalidFile(detail) =>
+            I18N_UI.catalog.errors.invalid_file.replace("{detail}", detail)
+        case CatalogParseError.MissingVersion =>
+            I18N_UI.catalog.errors.missing_version
+        case CatalogParseError.VersionTooNew(found, supported) =>
+            I18N_UI.catalog.errors.version_too_new
+                .replace("{found}", found.unwrap.toString)
+                .replace("{supported}", supported.unwrap.toString)
+        case CatalogParseError.MigrationFailed(version, detail) =>
+            I18N_UI.catalog.errors.migration_failed
+                .replace("{version}", version.unwrap.toString)
+                .replace("{detail}", detail)
+        case CatalogParseError.DecodeError(category, detail) =>
+            I18N_UI.catalog.errors.decode_error
+                .replace("{category}", category)
+                .replace("{detail}", detail)
+
+    private def handleFilesLoad(files: List[dom.File]): Unit =
+        Future.traverse(files)(FileSystemService.readFileFromInput).foreach: results =>
+            val errors  = List.newBuilder[String]
+            var allImages    = Map.empty[String, String]
+            var allWarnings  = List.empty[String]
+
+            val catalogFiles = results.zip(files).flatMap:
+                case (Left(err), file) =>
+                    errors += s"${file.name}: $err"
+                    None
+                case (Right((content, _)), file) =>
+                    CatalogParser.parse(content) match
+                        case Left(parseError) =>
+                            errors += s"${file.name}: ${formatParseError(parseError)}"
+                            None
+                        case Right(catalogFile) =>
+                            val (images, warnings) = CatalogState.extractImages(catalogFile)
+                            allImages = allImages ++ images
+                            allWarnings = allWarnings ++ warnings
+                            Some(catalogFile)
+
+            if catalogFiles.nonEmpty then
+                val merged = catalogFiles.foldLeft(catalogStateVar.now())(CatalogState.merge)
+                catalogStateVar.set(merged)
+                if allImages.nonEmpty then
+                    CatalogImageStore.putAll(allImages).recover { case e =>
+                        dom.console.warn(s"Failed to store catalog images: ${e.getMessage}")
+                    }
+                if allWarnings.nonEmpty then
+                    dom.console.warn(s"Catalog image warnings: ${allWarnings.mkString(", ")}")
+
+            val errorList = errors.result()
+            if errorList.nonEmpty then errorMessageVar.set(Some(errorList.mkString("\n")))
+            else errorMessageVar.set(None)
 
     private lazy val fileInput: Input = input(
-        typ    := "file",
-        accept := FIRECALC_CATALOG_FILE_EXTENSION,
-        cls    := "hidden",
+        typ      := "file",
+        accept   := FIRECALC_CATALOG_FILE_EXTENSION,
+        multiple := true,
+        cls      := "hidden",
         onChange --> { ev =>
             val target = ev.target.asInstanceOf[dom.html.Input]
-            val files  = target.files
-            if files.length > 0 then handleFileLoad(files(0))
-            target.value = "" // Reset so same file can be re-selected
+            val files  = List.tabulate(target.files.length)(target.files(_))
+            if files.nonEmpty then handleFilesLoad(files)
+            target.value = "" // Reset so same files can be re-selected
         }
     )
 
@@ -138,7 +156,8 @@ case class CatalogManagerDialog()(using Locale) extends Component:
                 cls     := "mb-4",
                 display <-- errorMessageVar.signal.map(_.fold("none")(_ => "")),
                 div(
-                    cls := "alert alert-error text-sm",
+                    cls        := "alert alert-error text-sm",
+                    whiteSpace := "pre-line",
                     child.text <-- errorMessageVar.signal.map(_.getOrElse(""))
                 )
             ),
