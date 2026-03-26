@@ -7,6 +7,7 @@ package afpma.firecalc.payments.service
 
 import java.io.File
 
+import afpma.firecalc.payments.GenerateExampleProjectFixture
 import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict
 
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
@@ -23,20 +24,6 @@ import utest.*
 
 object PdfReportGenerationTest extends TestSuite {
 
-  // To regenerate the base64 resource file from the YAML source:
-  //   base64 -w 0 modules/payments/src/main/resources/project.fcalc > modules/payments/src/main/resources/project.fcalc.base64
-  //
-  // Read the base64 encoded YAML content from resources
-  def readBase64Content(): String = {
-    val stream = getClass.getResourceAsStream("/project.fcalc.base64")
-    if (stream == null) {
-      throw new RuntimeException("Resource /project.fcalc.base64 not found")
-    }
-    val content = Source.fromInputStream(stream).mkString
-    stream.close()
-    content.trim()
-  }
-
   val tests = Tests {
 
     test("generate PDF from FileDescriptionWithContent") {
@@ -44,8 +31,8 @@ object PdfReportGenerationTest extends TestSuite {
       given Locale = Locales.fr // Using French locale as in the YAML project
 
       IO.blocking {
-        // Read base64 content from resources
-        val base64Content = readBase64Content()
+        // Generate base64 content from ExampleProject_15544
+        val base64Content = GenerateExampleProjectFixture.generateBase64Content()
 
         // Create FileDescriptionWithContent with base64 content
         val fileDesc = FileDescriptionWithContent(
@@ -79,7 +66,7 @@ object PdfReportGenerationTest extends TestSuite {
                       // Verify PDF file exists and has content
                       assert(pdfFile.exists())
                       assert(pdfFile.length() > 0)
-                      
+
                       val pdfPath = pdfFile.getAbsolutePath
                       println(s"[TEST] Successfully generated PDF: $pdfPath")
 
@@ -96,8 +83,8 @@ object PdfReportGenerationTest extends TestSuite {
                 tempFile.delete()
               }
             }
-          
-          case Left(error) => 
+
+          case Left(error) =>
             throw new RuntimeException(s"Failed to convert file: $error")
         }
       }.unsafeRunSync()

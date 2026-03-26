@@ -158,12 +158,29 @@ See [AGPLV3_NETWORK_COMPLIANCE.md](AGPLV3_NETWORK_COMPLIANCE.md) for:
 - Integration tests
 - Invoice generation tests
 - Product catalog tests
+- PDF report generation tests
 
 **Test Database:**
 - Uses in-memory SQLite (`:memory:`)
 - Consistent configuration with production
 - Fast test execution
 - Isolated test runs
+
+### Test Fixtures
+
+The PDF report generation test (`PdfReportGenerationTest`) generates its YAML input
+at test time from `ExampleProject_15544` (engine module) via `GenerateExampleProjectFixture`.
+This keeps the test data automatically in sync with the engine model.
+
+To regenerate the static `project.fcalc` and `project.fcalc.base64` resource files
+for manual integration testing of the backend:
+
+```bash
+sbt "payments/runMain afpma.firecalc.payments.GenerateExampleProjectFixture"
+```
+
+This writes both files to `src/main/resources/`. Run it after any engine model change
+that affects pipe descriptors or validation rules.
 
 ## 📖 API Documentation
 

@@ -1,4 +1,4 @@
-version: 1
+version: 4
 locale: "fr"
 display_units: "SI"
 standard_or_computation_method: "EN 15544:2023"
@@ -8,7 +8,7 @@ project_description:
   country: "France"
 local_conditions: 
   altitude: 
-    value: "128"
+    value: "128.0"
     unit: "meter"
   coastal_region: false
   chimney_termination: 
@@ -29,10 +29,10 @@ stove_params:
     unit: "kilogram"
   nominal_heat_output: !!null
   heating_cycle: 
-    value: "12"
+    value: "12.0"
     unit: "hour"
   min_efficiency: 
-    value: "78"
+    value: "78.0"
     unit: "percent"
   facing_type: "WithoutAirGap"
   inner_construction_material: "WithinSpecs"
@@ -49,6 +49,9 @@ firebox:
     firebox_height: 
       value: "0.78"
       unit: "meter"
+    height_of_lowest_opening: 
+      value: "0.05"
+      unit: "meter"
     pressure_loss_coefficient_from_door: 
       value: "0.3"
       unit: "1"
@@ -62,6 +65,21 @@ firebox:
       value: "0.2"
       unit: "meter"
 flue_pipe_descr: 
+  - 
+    SetInitialPosition: 
+      x: 
+        value: "-0.21"
+        unit: "meter"
+      y: 
+        value: "0.1"
+        unit: "meter"
+      z: 
+        value: "0.63"
+        unit: "meter"
+  - 
+    SetInitialDirection: 
+      azimuth: "Left"
+      inclination: "Horizontal"
   - 
     SetRoughness: 
       roughness: 
@@ -78,18 +96,20 @@ flue_pipe_descr:
             value: "0.23"
             unit: "meter"
   - 
-    AddSectionHorizontal: 
+    AddSectionSlopped: 
       name: "sortie foyer"
-      horizontal_length: 
+      length: 
         value: "0.317"
         unit: "meter"
   - 
     AddSharpeAngle_0_to_180: 
       name: "virage avant descente"
       angle: 
-        value: "90"
+        value: "90.0"
         unit: "degree"
-      roll: !!null
+      absDir: 
+        azimuth: !!null
+        inclination: "Down"
   - 
     SetInnerShape: 
       shape: 
@@ -101,18 +121,20 @@ flue_pipe_descr:
             value: "0.22"
             unit: "meter"
   - 
-    AddSectionVertical: 
+    AddSectionSlopped: 
       name: "descente"
-      elevation_gain: 
-        value: "-0.8150000000000001"
+      length: 
+        value: "0.8150000000000001"
         unit: "meter"
   - 
     AddSharpeAngle_0_to_180: 
       name: "virage avant banc avant"
       angle: 
-        value: "90"
+        value: "90.0"
         unit: "degree"
-      roll: !!null
+      absDir: 
+        azimuth: "Left"
+        inclination: "Horizontal"
   - 
     SetInnerShape: 
       shape: 
@@ -124,18 +146,20 @@ flue_pipe_descr:
             value: "0.24"
             unit: "meter"
   - 
-    AddSectionHorizontal: 
+    AddSectionSlopped: 
       name: "banc avant"
-      horizontal_length: 
+      length: 
         value: "1.792"
         unit: "meter"
   - 
     AddSharpeAngle_0_to_180: 
       name: "virage avant bout du banc"
       angle: 
-        value: "90"
+        value: "90.0"
         unit: "degree"
-      roll: !!null
+      absDir: 
+        azimuth: "Rear"
+        inclination: "Horizontal"
   - 
     SetInnerShape: 
       shape: 
@@ -147,18 +171,20 @@ flue_pipe_descr:
             value: "0.24"
             unit: "meter"
   - 
-    AddSectionHorizontal: 
+    AddSectionSlopped: 
       name: "bout du banc"
-      horizontal_length: 
+      length: 
         value: "0.437"
         unit: "meter"
   - 
     AddSharpeAngle_0_to_180: 
       name: "virage avant banc arrière"
       angle: 
-        value: "90"
+        value: "90.0"
         unit: "degree"
-      roll: !!null
+      absDir: 
+        azimuth: "Right"
+        inclination: "Horizontal"
   - 
     SetInnerShape: 
       shape: 
@@ -170,18 +196,20 @@ flue_pipe_descr:
             value: "0.24"
             unit: "meter"
   - 
-    AddSectionHorizontal: 
+    AddSectionSlopped: 
       name: "arrière banc"
-      horizontal_length: 
+      length: 
         value: "2.073"
         unit: "meter"
   - 
     AddSharpeAngle_0_to_180: 
       name: "virage avant vers remontée"
       angle: 
-        value: "90"
+        value: "90.0"
         unit: "degree"
-      roll: !!null
+      absDir: 
+        azimuth: "Rear"
+        inclination: "Horizontal"
   - 
     SetInnerShape: 
       shape: 
@@ -193,18 +221,20 @@ flue_pipe_descr:
             value: "0.24"
             unit: "meter"
   - 
-    AddSectionHorizontal: 
+    AddSectionSlopped: 
       name: "vers remontée"
-      horizontal_length: 
+      length: 
         value: "0.437"
         unit: "meter"
   - 
     AddSharpeAngle_0_to_180: 
       name: "virage avant remontée"
       angle: 
-        value: "90"
+        value: "90.0"
         unit: "degree"
-      roll: !!null
+      absDir: 
+        azimuth: !!null
+        inclination: "Up"
   - 
     SetInnerShape: 
       shape: 
@@ -216,9 +246,9 @@ flue_pipe_descr:
             value: "0.22"
             unit: "meter"
   - 
-    AddSectionVertical: 
+    AddSectionSlopped: 
       name: "remontée"
-      elevation_gain: 
+      length: 
         value: "0.98"
         unit: "meter"
 connector_pipe_descr: 
@@ -252,29 +282,35 @@ connector_pipe_descr:
     AddSectionVertical: 
       name: "conduit simple peau 1 "
       elevation_gain: 
-        value: "0.4090000000000001"
+        value: "0.40900000000000003"
         unit: "meter"
   - 
     AddSharpeAngle_0_to_90: 
       name: "coude angle vif 30°"
       angle: 
-        value: "30"
+        value: "30.0"
         unit: "degree"
+      absDir: 
+        azimuth: "Front"
+        inclination: 
+          Custom: 
+            value: "60.0"
+            unit: "degree"
   - 
     AddSectionSlopped: 
       name: "conduit simple peau 2"
       length: 
         value: "0.707"
         unit: "meter"
-      elevation_gain: 
-        value: "0.5"
-        unit: "meter"
   - 
     AddSharpeAngle_0_to_90_Unsafe: 
       name: "coude angle vif 30°"
       angle: 
-        value: "30"
+        value: "30.0"
         unit: "degree"
+      absDir: 
+        azimuth: !!null
+        inclination: "Up"
   - 
     AddSectionVertical: 
       name: "conduit simple peau 2"
@@ -283,28 +319,33 @@ connector_pipe_descr:
         unit: "meter"
 chimney_pipe_descr: 
   - 
-    SetRoughness: 
-      roughness: 
-        value: "0.001"
-        unit: "meter"
-  - 
-    SetInnerShape: 
-      shape: 
-        Circle: 
-          diameter: 
-            value: "0.2"
-            unit: "meter"
-  - 
-    SetLayers: 
-      layers: 
+    SetPropertiesInBatch: 
+      batch_name: "POUJOULAT 200mm DPI"
+      props: 
         - 
-          FromThermalResistanceUsingThickness: 
-            thickness: 
-              value: "0.025"
+          SetRoughness: 
+            roughness: 
+              value: "0.001"
               unit: "meter"
-            thermal_resistance: 
-              value: "0.44"
-              unit: "(meter^2 Kelvin)/watt"
+        - 
+          SetInnerShape: 
+            shape: 
+              Circle: 
+                diameter: 
+                  value: "0.2"
+                  unit: "meter"
+        - 
+          SetLayers: 
+            layers: 
+              - 
+                FromThermalResistanceUsingThickness: 
+                  thickness: 
+                    value: "0.025"
+                    unit: "meter"
+                  thermal_resistance: 
+                    value: "0.44"
+                    unit: "(meter^2 Kelvin)/watt"
+      image: !!null
   - 
     SetPipeLocation: 
       pipe_location: "HeatedArea"
@@ -330,7 +371,7 @@ chimney_pipe_descr:
     AddSectionVertical: 
       name: "extérieur"
       elevation_gain: 
-        value: "1.50"
+        value: "0.9"
         unit: "meter"
   - 
     SetPipeLocation: 
