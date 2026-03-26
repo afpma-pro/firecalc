@@ -130,15 +130,11 @@ object DaisyUINavBar:
                         DaisyUITooltip(
                             ttContent  = div("3D"),
                             element    = div(
-                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
-                                cls("text-base-content") <-- viz3DPanelOn,
+                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls("bg-base-300 text-base-content border-base-content/30") <-- viz3DPanelOn,
                                 cls("text-base-content/40 hover:text-base-content") <-- viz3DPanelOff,
                                 lucide.box(stroke_width = 1.5, w = 16, h = 16),
-                                onClick.mapToUnit --> { _ =>
-                                    val wasOn = viz3DPanelVar.now()
-                                    viz3DPanelVar.set(!wasOn)
-                                    if !wasOn then graphPanelVar.set(false)
-                                }
+                                onClick.mapToUnit --> { _ => viz3DPanelVar.update(!_) }
                             ),
                             ttPosition = "tooltip-bottom"
                         )
@@ -149,15 +145,11 @@ object DaisyUINavBar:
                         DaisyUITooltip(
                             ttContent  = div(I18N_UI.graph.title),
                             element    = div(
-                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
-                                cls("text-base-content") <-- graphPanelOn,
+                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls("bg-base-300 text-base-content border-base-content/30") <-- graphPanelOn,
                                 cls("text-base-content/40 hover:text-base-content") <-- graphPanelOff,
                                 lucide.`chart-line`(stroke_width = 1.5, w = 16, h = 16),
-                                onClick.mapToUnit --> { _ =>
-                                    val wasOn = graphPanelVar.now()
-                                    graphPanelVar.set(!wasOn)
-                                    if !wasOn then viz3DPanelVar.set(false)
-                                }
+                                onClick.mapToUnit --> { _ => graphPanelVar.update(!_) }
                             ),
                             ttPosition = "tooltip-bottom"
                         )

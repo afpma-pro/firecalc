@@ -60,6 +60,9 @@ object FilaireLinesViz:
     ): FilaireVizResult =
         val container = dom.document.createElement("div").asInstanceOf[dom.HTMLDivElement]
         container.className = "filaire-viz"
+        container.style.width = "100%"
+        container.style.height = "100%"
+        container.style.overflow = "hidden"
 
         // Flat list of all lines across all groups (for click/hover callback lookup)
         val allLines = groups.flatMap(_.lines)
