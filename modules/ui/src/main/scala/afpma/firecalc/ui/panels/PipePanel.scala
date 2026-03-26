@@ -255,15 +255,20 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             case _ =>
                 // Standard rendering (non-property or no Show instance)
                 val node = formNode
-                val header_and_node = renderIncrDescr(title, node, isProperty).amend(
+                val isDirectionChange = badgeFinalDirVar(elem_v).isDefined
+                val dcIcon = Option.when(isDirectionChange)(span(lucide.`corner-down-right`(16, 16)))
+                val header_and_node = renderIncrDescr(title, node, isProperty, legendIcon = dcIcon).amend(
                     binders,
                     idAttr := vizFieldsetId(i),
                     cls <-- vizHighlightSignal(i)
                 )
-                val summary_node = wrapLine(title, mkBadge(compact = true), isProperty)
+                val summary_node = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon)
                 if !isProperty then
                     header_and_node.amend(cls := "ml-[20px]")
                     summary_node.amend(cls := "ml-[20px]")
+                if isDirectionChange then
+                    header_and_node.amend(cls := "elem-direction-change")
+                    summary_node.amend(cls := "elem-direction-change")
                 val incrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
                 given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
@@ -309,16 +314,17 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             children(detailed_columns) <-- expertModeOn
         )
 
-    def wrapLine(title: String, content: HtmlElement, isProperty: Boolean): HtmlElement =
+    def wrapLine(title: String, content: HtmlElement, isProperty: Boolean, legendIcon: Option[HtmlElement] = None): HtmlElement =
         DaisyUIInputs.FieldsetLegendWithContent    (
             if isProperty then None else Some(title),
             content,
             bgClass     = if (isProperty) "bg-base-100" else "bg-base-200",
-            borderClass = if (isProperty) "border-none" else "border-base-content/30"
+            borderClass = if (isProperty) "border-none" else "border-base-content/30",
+            legendIcon  = legendIcon
         )
 
-    protected def renderIncrDescr(title: String, el: HtmlElement, isProperty: Boolean): HtmlElement =
-        wrapLine(title, el, isProperty)
+    protected def renderIncrDescr(title: String, el: HtmlElement, isProperty: Boolean, legendIcon: Option[HtmlElement] = None): HtmlElement =
+        wrapLine(title, el, isProperty, legendIcon)
 
     /** Build a reverse mapping from engine PipeIdx → UI IdIncr
       * so that error messages can reference the element number the user sees.

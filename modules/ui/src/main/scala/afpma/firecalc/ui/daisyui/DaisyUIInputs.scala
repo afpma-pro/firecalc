@@ -240,11 +240,12 @@ object DaisyUIInputs:
         legendOpt  : Option[String],
         content    : HtmlElement,
         bgClass    : String,
-        borderClass: String
+        borderClass: String,
+        legendIcon : Option[HtmlElement] = None
     ) extends Component:
         val node = fieldSet(
             cls := s"fieldset w-full $bgClass border $borderClass py-2 px-4 rounded-box",
-            legendOpt.map(l => legend(cls := "fieldset-legend", l)), // show title if defined
+            legendOpt.map(l => legend(cls := "fieldset-legend", legendIcon, l)), // show title if defined
             content
         )
 

@@ -107,6 +107,21 @@ object lucide:
         path(d := "m18 15-6-6-6 6")
     )
 
+    def `corner-down-right`(w: Int = 24, h: Int = 24, stroke_width: Double = 2) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-corner-down-right-icon lucide-corner-down-right",
+        path(d := "M15 10l5 5-5 5"),
+        path(d := "M4 4v7a4 4 0 0 0 4 4h12")
+    )
+
     def `chevron-right` = svg(
         xmlns          := "http://www.w3.org/2000/svg",
         width          := "24",
