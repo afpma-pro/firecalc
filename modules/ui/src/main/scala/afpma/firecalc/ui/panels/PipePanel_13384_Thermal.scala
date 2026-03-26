@@ -101,10 +101,14 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                 frameMap.get(idx).flatMap: frameBefore =>
                     elem match
                         case dc: AddDirectionChange =>
-                            dc.absDir.map: fd =>
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                idx -> frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
+                            val dir = dc.absDir match
+                                case Some(fd) =>
+                                    val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                    val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                    frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
+                                case None =>
+                                    frameBefore.direction
+                            Some(idx -> dir)
                         case _: AddThermalPipeElement_13384 =>
                             Some(idx -> frameBefore.direction)
                         case _ => None
