@@ -180,7 +180,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         isProperty      : Boolean,
         extra           : Var[AA] => HtmlElement                              = (_: Var[AA]) => span(),
         badgeFinalDirVar: Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None,
-        afterBadge      : Var[AA] => HtmlElement                              = (_: Var[AA]) => span()
+        afterBadge      : Var[AA] => HtmlElement                              = (_: Var[AA]) => span(),
+        propertyShow    : Option[Show[AA]]                                    = None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode         = extra(elem_v)
@@ -196,62 +197,112 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             compact           = compact
         ).node
 
-        // Badge shown both in the expanded header (full node) and the collapsed summary row.
-        // Two separate instances are required — a single Laminar node can only be mounted once.
-        val node = div(
-            cls := "flex flex-row items-end gap-2",
-            div(cls := "flex-1", elem_v.as_HtmlElement),
+        // Full form node (used inline for non-property, or inside dialog for property)
+        val formNode = div(
+            cls := "flex flex-row justify-center items-end gap-2",
+            div(cls := "flex-none", elem_v.as_HtmlElement),
             extraNode,
             mkBadge(),
             afterBadgeNode
         )
-        val header_and_node = renderIncrDescr(title, node, isProperty).amend(
-            binders,
-            idAttr := vizFieldsetId(i),
-            cls <-- vizHighlightSignal(i)
-        )
-        val summary_node    = wrapLine(title, mkBadge(compact = true), isProperty)
-        if !isProperty then
-            header_and_node.amend(cls := "ml-[20px]")
-            summary_node.amend(cls := "ml-[20px]")
-        val complexIncrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
-        given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
-        given Show[Pressure]          = Show.show(v => "%.1f Pa".format(v.value))
-        given Show[TCelsius]          = Show.show(v => "%.0f °C".format(v.value))
-        given Show[TempD[Fahrenheit]] = shows.defaults.show_Fahrenheit_0
-        given Show[Length]            = Show.show(v => "%.2f".format(v.value))
-        given Show[ζ]                 = Show.show(z => "%.1f ζ".format(z))
+        val (complexIncrNode, detailed_columns) = propertyShow match
+            case Some(show) if isProperty =>
+                // Compact property rendering with click-to-edit dialog
+                lazy val dialogNode: HtmlElement = dialogTag(
+                    cls := "modal",
+                    div(
+                        cls := "modal-box w-11/12 max-w-5xl",
+                        h3(cls := "font-bold text-lg mb-4", title),
+                        formNode,
+                        div(
+                            cls := "modal-action",
+                            button(
+                                cls := "btn btn-sm btn-primary",
+                                I18N_UI.buttons.close,
+                                onClick --> { _ =>
+                                    dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
+                                }
+                            )
+                        )
+                    ),
+                    form(method := "dialog", cls := "modal-backdrop", button("close"))
+                )
 
-        val detailed_columns = Seq(
-            td(
-                cls := s"$expertColCls font-normal",
-                text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle))
-            ),
-            td(
-                cls := s"$expertColCls font-normal",
-                text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch])
-            ),
-            td(
-                cls := s"$expertColCls font-normal",
-                text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit])
-            ),
-            td(
-                cls := s"$expertColCls font-normal",
-                text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]))
-            ),
-            td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
-            td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
-            td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
-            td(
-                cls := s"$expertColCls font-normal",
-                text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP))
-            ),
-            td(
-                cls := s"$expertColCls font-normal",
-                text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero))
-            )
-        )
+                val compactNode = div(
+                    cls := "cursor-pointer py-1",
+                    span(
+                        cls := "underline decoration-dashed decoration-base-content/50 hover:decoration-base-content",
+                        text <-- elem_v.signal.map(a => s"$title: ${show.show(a)}")
+                    ),
+                    onClick --> { _ =>
+                        dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
+                    }
+                )
+
+                val propertyWrapper = div(
+                    wrapLine(title, compactNode, isProperty = true),
+                    dialogNode
+                ).amend(
+                    binders,
+                    idAttr := vizFieldsetId(i),
+                    cls <-- vizHighlightSignal(i)
+                )
+
+                val incrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, propertyWrapper, Some(span()))
+                (incrNode, Seq.empty)
+
+            case _ =>
+                // Standard rendering (non-property or no Show instance)
+                val node = formNode
+                val header_and_node = renderIncrDescr(title, node, isProperty).amend(
+                    binders,
+                    idAttr := vizFieldsetId(i),
+                    cls <-- vizHighlightSignal(i)
+                )
+                val summary_node = wrapLine(title, mkBadge(compact = true), isProperty)
+                if !isProperty then
+                    header_and_node.amend(cls := "ml-[20px]")
+                    summary_node.amend(cls := "ml-[20px]")
+                val incrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
+
+                given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
+                given Show[Pressure]          = Show.show(v => "%.1f Pa".format(v.value))
+                given Show[TCelsius]          = Show.show(v => "%.0f °C".format(v.value))
+                given Show[TempD[Fahrenheit]] = shows.defaults.show_Fahrenheit_0
+                given Show[Length]            = Show.show(v => "%.2f".format(v.value))
+                given Show[ζ]                 = Show.show(z => "%.1f ζ".format(z))
+
+                val cols = Seq(
+                    td(
+                        cls := s"$expertColCls font-normal",
+                        text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle))
+                    ),
+                    td(
+                        cls := s"$expertColCls font-normal",
+                        text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch])
+                    ),
+                    td(
+                        cls := s"$expertColCls font-normal",
+                        text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit])
+                    ),
+                    td(
+                        cls := s"$expertColCls font-normal",
+                        text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]))
+                    ),
+                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
+                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
+                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
+                    td(
+                        cls := s"$expertColCls font-normal",
+                        text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP))
+                    ),
+                    td(
+                        cls := s"$expertColCls font-normal",
+                        text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero))
+                    )
+                )
+                (incrNode, cols)
 
         tr(
             td(complexIncrNode),
@@ -260,10 +311,10 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     def wrapLine(title: String, content: HtmlElement, isProperty: Boolean): HtmlElement =
         DaisyUIInputs.FieldsetLegendWithContent    (
-            Some(title),
+            if isProperty then None else Some(title),
             content,
             bgClass     = if (isProperty) "bg-base-100" else "bg-base-200",
-            borderClass = if (isProperty) "border-base-300 border-dashed" else "border-base-content/30"
+            borderClass = if (isProperty) "border-none" else "border-base-content/30"
         )
 
     protected def renderIncrDescr(title: String, el: HtmlElement, isProperty: Boolean): HtmlElement =

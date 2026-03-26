@@ -4,30 +4,37 @@
  */
 
 package afpma.firecalc.ui.panels
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 
-import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.i18n.implicits.given
 
-import afpma.firecalc.catalog.{CasingPreset, CatalogCategory, CatalogCategoryInstances}
-import afpma.firecalc.catalog.CatalogCategoryInstances.given
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
+
+import afpma.firecalc.ui.i18n.implicits.given
+
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
-import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.models.casingPresetsSignal
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
+import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.services.CatalogImageStore
-import afpma.firecalc.ui.i18n.implicits.given
 
-import coulomb.policy.standard.given
+import cats.Show
 
 import com.raquo.laminar.api.L.*
 
+import coulomb.policy.standard.given
+
+import afpma.firecalc.catalog.CasingPreset
+import afpma.firecalc.catalog.CatalogCategory
+import afpma.firecalc.catalog.CatalogCategoryInstances
+import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import io.taig.babel.Locale
 
 trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
@@ -41,6 +48,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
 
     private given thermalHorizontalForm_13384: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
     import thermalHorizontalForm_13384.given
+
+    private given thermalPropertyShow_13384: ThermalPropertyShow_13384 = ThermalPropertyShow_13384()
+    import thermalPropertyShow_13384.given
 
     /** Override to supply an inherited PipeFrame from the previous pipe.
      *  Defaults to no external frame (first pipe in a sequence, or direction tracking inactive).
@@ -154,47 +164,47 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetPropertiesInBatch, XtraOutputs), HtmlElement] {
                 case (i, aa: SetPropertiesInBatch, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetPropertiesInBatch](iaax._1, I18N.set_prop.SetPropertiesInBatch, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetPropertiesInBatch](iaax._1, I18N.set_prop.SetPropertiesInBatch, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetPropertiesInBatch]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, LinedFlue, XtraOutputs), HtmlElement] {
                 case (i, aa: LinedFlue, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[LinedFlue](iaax._1, I18N.set_prop.LinedFlue, iaax._2, sig, isProperty = true)
+                renderElemTyped[LinedFlue](iaax._1, I18N.set_prop.LinedFlue, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[LinedFlue]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInnerShape, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInnerShape, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetInnerShape](iaax._1, I18N.set_prop.SetInnerShape, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetInnerShape](iaax._1, I18N.set_prop.SetInnerShape, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInnerShape]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetOuterShape, XtraOutputs), HtmlElement] {
                 case (i, aa: SetOuterShape, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetOuterShape](iaax._1, I18N.set_prop.SetOuterShape, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetOuterShape](iaax._1, I18N.set_prop.SetOuterShape, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetOuterShape]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetThickness, XtraOutputs), HtmlElement] {
                 case (i, aa: SetThickness, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetThickness](iaax._1, I18N.set_prop.SetThickness, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetThickness](iaax._1, I18N.set_prop.SetThickness, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetThickness]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetRoughness, XtraOutputs), HtmlElement] {
                 case (i, aa: SetRoughness, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetRoughness](iaax._1, I18N.set_prop.SetRoughness, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetRoughness](iaax._1, I18N.set_prop.SetRoughness, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetRoughness]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetMaterial, XtraOutputs), HtmlElement] {
                 case (i, aa: SetMaterial, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetMaterial](iaax._1, I18N.set_prop.SetMaterial, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetMaterial](iaax._1, I18N.set_prop.SetMaterial, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetMaterial]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetLayer, XtraOutputs), HtmlElement] {
                 case (i, aa: SetLayer, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetLayer](iaax._1, I18N.set_prop.SetLayer, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetLayer](iaax._1, I18N.set_prop.SetLayer, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetLayer]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetLayers, XtraOutputs), HtmlElement] {
                 case (i, aa: SetLayers, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetLayers](iaax._1, I18N.set_prop.SetLayers, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetLayers](iaax._1, I18N.set_prop.SetLayers, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetLayers]]))
             }
             .handleCase[
                 (Int, ThermalPipeDescr_13384, XtraOutputs),
@@ -206,7 +216,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.set_prop.SetAirSpaceAfterLayers,
                     iaax._2,
                     sig,
-                    isProperty = true
+                    isProperty = true,
+                    propertyShow = Some(summon[Show[SetAirSpaceAfterLayers]])
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetPipeLocation, XtraOutputs), HtmlElement] {
@@ -217,28 +228,29 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.set_prop.SetPipeLocation,
                     iaax._2,
                     sig,
-                    isProperty = true
+                    isProperty = true,
+                    propertyShow = Some(summon[Show[SetPipeLocation]])
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetDuctType, XtraOutputs), HtmlElement] {
                 case (i, aa: SetDuctType, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetDuctType](iaax._1, I18N.set_prop.SetDuctType, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetDuctType](iaax._1, I18N.set_prop.SetDuctType, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetDuctType]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInitialDirection, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialDirection]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInitialPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialPosition]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetFinalPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetFinalPosition]]))
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetNumberOfFlows, XtraOutputs), HtmlElement] {
                 case (i, aa: SetNumberOfFlows, x) => (i, aa, x)
@@ -248,7 +260,8 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     I18N.set_prop.SetNumberOfFlows,
                     iaax._2,
                     sig,
-                    isProperty = true
+                    isProperty = true,
+                    propertyShow = Some(summon[Show[SetNumberOfFlows]])
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddSectionSlopped, XtraOutputs), HtmlElement] {

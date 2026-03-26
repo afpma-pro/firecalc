@@ -4,22 +4,28 @@
  */
 
 package afpma.firecalc.ui.panels
-import afpma.firecalc.dto.all.*
-
-import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
 import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.implicits.given
 
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
+
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.instances.*
-import afpma.firecalc.ui.models.{anglePresetsSignal, flowResistancePresetsSignal}
+import afpma.firecalc.ui.models.anglePresetsSignal
+import afpma.firecalc.ui.models.flowResistancePresetsSignal
 
-import coulomb.policy.standard.given
+import cats.Show
 
 import com.raquo.laminar.api.L.*
+
+import coulomb.policy.standard.given
 
 import io.taig.babel.Locale
 
@@ -34,6 +40,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     private given flowOnlyHorizontalForm_13384: FlowOnlyHorizontalForm_13384 = FlowOnlyHorizontalForm_13384()
     import flowOnlyHorizontalForm_13384.given
+
+    private given flowOnlyPropertyShow_13384: FlowOnlyPropertyShow_13384 = FlowOnlyPropertyShow_13384()
+    import flowOnlyPropertyShow_13384.given
 
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal.map: elems =>
@@ -120,17 +129,17 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetInnerShape, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInnerShape, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetInnerShape](iaax._1, I18N.set_prop.SetInnerShape, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetInnerShape](iaax._1, I18N.set_prop.SetInnerShape, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInnerShape]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetRoughness, XtraOutputs), HtmlElement] {
                 case (i, aa: SetRoughness, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetRoughness](iaax._1, I18N.set_prop.SetRoughness, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetRoughness](iaax._1, I18N.set_prop.SetRoughness, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetRoughness]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetMaterial, XtraOutputs), HtmlElement] {
                 case (i, aa: SetMaterial, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetMaterial](iaax._1, I18N.set_prop.SetMaterial, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetMaterial](iaax._1, I18N.set_prop.SetMaterial, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetMaterial]]))
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_13384, XtraOutputs),
@@ -142,23 +151,24 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     I18N.set_prop.SetNumberOfFlows,
                     iaax._2,
                     sig,
-                    isProperty = true
+                    isProperty = true,
+                    propertyShow = Some(summon[Show[SetNumberOfFlows]])
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInitialDirection, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetInitialDirection](iaax._1, I18N.set_prop.SetInitialDirection, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialDirection]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInitialPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialPosition]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetFinalPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true)
+                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetFinalPosition]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSectionSlopped, XtraOutputs), HtmlElement] {
                 case (i, aa: AddSectionSlopped, x) => (i, aa, x)

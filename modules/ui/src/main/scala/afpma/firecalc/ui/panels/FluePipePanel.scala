@@ -11,27 +11,31 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 
-import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
-
-import cats.data.Validated
-
-import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.i18n.implicits.given
-import afpma.firecalc.ui.utils.flatMapVNelE
+
+import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.engine.standard.VNelMcalcErr
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.utils.flatMapVNelE
 
-import coulomb.policy.standard.given
+import cats.Show
+import cats.data.Validated
 
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
 
+import coulomb.policy.standard.given
+
 import io.taig.babel.Locale
+
 
 final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
@@ -49,6 +53,9 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
 
     private given flowOnlyHorizontalForm_15544: FlowOnlyHorizontalForm_15544 = FlowOnlyHorizontalForm_15544()
     import flowOnlyHorizontalForm_15544.given
+
+    private given flowOnlyPropertyShow_15544: FlowOnlyPropertyShow_15544 = FlowOnlyPropertyShow_15544()
+    import flowOnlyPropertyShow_15544.given
 
     type In  = FlowOnlyPipeDescr_15544
     type Out = FluePipe_15544
@@ -210,17 +217,17 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInnerShape, XtraOutputs), HtmlElement] {
                 case (i, incr: SetInnerShape, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInnerShape](iix._1, I18N.set_prop.SetInnerShape, iix._2, sig, isProperty = true)
+                renderElemTyped[SetInnerShape](iix._1, I18N.set_prop.SetInnerShape, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInnerShape]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetRoughness, XtraOutputs), HtmlElement] {
                 case (i, incr: SetRoughness, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetRoughness](iix._1, I18N.set_prop.SetRoughness, iix._2, sig, isProperty = true)
+                renderElemTyped[SetRoughness](iix._1, I18N.set_prop.SetRoughness, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetRoughness]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetMaterial, XtraOutputs), HtmlElement] {
                 case (i, incr: SetMaterial, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetMaterial](iix._1, I18N.set_prop.SetMaterial, iix._2, sig, isProperty = true)
+                renderElemTyped[SetMaterial](iix._1, I18N.set_prop.SetMaterial, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetMaterial]]))
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
@@ -232,23 +239,24 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
                     I18N.set_prop.SetNumberOfFlows,
                     iix._2,
                     sig,
-                    isProperty = true
+                    isProperty = true,
+                    propertyShow = Some(summon[Show[SetNumberOfFlows]])
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
                 case (i, incr: SetInitialDirection, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInitialDirection](iix._1, I18N.set_prop.SetInitialDirection, iix._2, sig, isProperty = true)
+                renderElemTyped[SetInitialDirection](iix._1, I18N.set_prop.SetInitialDirection, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialDirection]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
                 case (i, incr: SetInitialPosition, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInitialPosition](iix._1, I18N.set_prop.SetInitialPosition, iix._2, sig, isProperty = true)
+                renderElemTyped[SetInitialPosition](iix._1, I18N.set_prop.SetInitialPosition, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialPosition]]))
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
                 case (i, incr: SetFinalPosition, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetFinalPosition](iix._1, I18N.set_prop.SetFinalPosition, iix._2, sig, isProperty = true)
+                renderElemTyped[SetFinalPosition](iix._1, I18N.set_prop.SetFinalPosition, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetFinalPosition]]))
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
