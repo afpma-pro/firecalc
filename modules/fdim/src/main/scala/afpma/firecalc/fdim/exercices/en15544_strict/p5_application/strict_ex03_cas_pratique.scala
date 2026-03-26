@@ -63,7 +63,9 @@ object strict_ex03_cas_pratique
         h78_largeurEspaceInterparoisDuFoyer_S               = 3.5.cm,
         h79_largeurRenfortMedianLateraux                    = 3.cm,
         h80_largeurRenfortMedianArriere                     = 3.cm,
-        h81_debordDesRenfortsDansLesAngles                  = 3.cm,
+        r1                                                  = 3.cm,
+        r2                                                  = 3.cm,
+        r3                                                  = 3.cm,
         h82_hauteurDesInjecteurs_Z                          = 0.8.cm,
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X            = 10.cm,
     )

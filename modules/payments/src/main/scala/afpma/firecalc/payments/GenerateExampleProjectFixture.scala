@@ -7,7 +7,8 @@ package afpma.firecalc.payments
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.FireCalcYAML_V4
+import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
 
@@ -26,8 +27,8 @@ import io.taig.babel.Locale
  */
 object GenerateExampleProjectFixture:
 
-    /** Constructs the same FireCalcYAML_V4 as EngineState.example_projet_15544 (UI module). */
-    def exampleFireCalcYaml: FireCalcYAML_V4 = FireCalcYAML_V4(
+    /** Constructs the same FireCalcYAML as EngineState.example_projet_15544 (UI module). */
+    def exampleFireCalcYaml: FireCalcYAML = FireCalcYAML_V5(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
