@@ -246,9 +246,9 @@ lazy val connectorpipe_positions_sig: Signal[PipePositionResult] =
 
 lazy val chimneypipe_positions_sig: Signal[PipePositionResult] =
     chimney_pipe_incrdescr_var.signal
-        .combineWith(connectorpipe_finalFrame_sig, connectorpipe_positions_sig)
-        .map: (descr, connFinalFrame, connPositions) =>
-            PositionTracker.computeThermal13384(descr, connFinalFrame, connPositions.finalPoint)
+        .combineWith(connectorpipe_finalFrame_sig, fluepipe_finalFrame_sig, connectorpipe_positions_sig)
+        .map: (descr, connFinalFrame, flueFinalFrame, connPositions) =>
+            PositionTracker.computeThermal13384(descr, connFinalFrame.orElse(flueFinalFrame), connPositions.finalPoint)
         .distinct
 
 lazy val airintake_positions_sig: Signal[PipePositionResult] =

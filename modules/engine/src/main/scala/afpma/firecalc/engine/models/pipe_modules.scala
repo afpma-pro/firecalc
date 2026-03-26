@@ -149,7 +149,7 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
         externalInitialFrame: Option[PipeFrame] = None
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
         if (incrSeq.isEmpty)
-            ((IdsMapping.empty, Without).validNel[IncrementalValidation_Error], None.validNel)
+            ((IdsMapping.empty, Without).validNel[IncrementalValidation_Error], externalInitialFrame.validNel)
         else
             val result = incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame)
             (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))

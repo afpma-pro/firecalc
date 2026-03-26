@@ -55,7 +55,9 @@ final case class ChimneyPipePanel()(using Locale, DisplayUnits) extends PipePane
 
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] = chimney_pipe_incrdescr_var
 
-    override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] = connectorpipe_finalFrame_sig
+    override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] =
+        connectorpipe_finalFrame_sig.combineWith(fluepipe_finalFrame_sig).map:
+            (connFrame, flueFrame) => connFrame.orElse(flueFrame)
 
     type PipeIdsMapping = afpma.firecalc.engine.models.ChimneyPipe_Module.IdsMapping
 

@@ -49,9 +49,10 @@ object PipeChain_15544_Strict:
             ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(d.connector, flueFinalFrame)
         val connectorFinalFrame = connectorFinalFrameV.toOption.flatten
 
-        // Chimney pipe with connector's final frame
+        // Chimney pipe with connector's final frame, falling back to flue's frame
+        val chimneyExternalFrame = connectorFinalFrame.orElse(flueFinalFrame)
         val chimneyPipeResult =
-            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorFinalFrame)
+            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, chimneyExternalFrame)
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
@@ -94,9 +95,10 @@ object PipeChain_15544_MCE:
             ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(d.connector, flueFinalFrame)
         val connectorFinalFrame = connectorFinalFrameV.toOption.flatten
 
-        // Chimney pipe with connector's final frame
+        // Chimney pipe with connector's final frame, falling back to flue's frame
+        val chimneyExternalFrame = connectorFinalFrame.orElse(flueFinalFrame)
         val chimneyPipeResult =
-            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorFinalFrame)
+            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, chimneyExternalFrame)
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
