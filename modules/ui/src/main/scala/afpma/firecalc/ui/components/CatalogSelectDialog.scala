@@ -53,7 +53,7 @@ case class CatalogSelectDialog[A](
     private lazy val dialogNode: HtmlElement = dialogTag(
         cls := "modal",
         div(
-            cls := "modal-box w-11/12 max-w-3xl",
+            cls := "modal-box w-11/12 max-w-3xl min-h-[40vh]",
             h3(
                 cls := "font-bold text-lg mb-4",
                 I18N_UI.catalog._self

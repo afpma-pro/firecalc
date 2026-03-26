@@ -15,10 +15,10 @@ import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
 import afpma.firecalc.dto.common.DisplayUnits
 
-/** Reusable inline datalist search-and-select widget for catalog entries.
+/** Reusable inline search-and-select widget for catalog entries.
   *
-  * Renders a search input with a datalist of entries, updating a selected entry var reactively. Unlike
-  * [[CatalogSelectDialog]], this is NOT a modal — it can be embedded inline in any parent component.
+  * Renders a search input with a filtered dropdown of entries, updating a selected entry var reactively.
+  * Unlike [[CatalogSelectDialog]], this is NOT a modal — it can be embedded inline in any parent component.
   *
   * @tparam A
   *   The catalog entry type
@@ -27,7 +27,7 @@ import afpma.firecalc.dto.common.DisplayUnits
   * @param entryKey
   *   Extract the searchable display key from an entry (e.g. reference, batch_name)
   * @param datalistId
-  *   Unique HTML id for the datalist element (must differ per instance)
+  *   Unused — kept for API compatibility
   * @param previewContent
   *   Optional function that renders preview content given the selected entry signal
   */
@@ -47,9 +47,6 @@ case class CatalogSearchWidget[A](
         searchQueryVar.set(None)
         selectedEntryVar.set(None)
 
-    private val listAttr: HtmlAttr[String] =
-        htmlAttr("list", com.raquo.laminar.codecs.StringAsIsCodec)
-
     val node: HtmlElement = div(
         child <-- entriesSignal.map(_.isEmpty).map {
             case true =>
@@ -58,24 +55,39 @@ case class CatalogSearchWidget[A](
                     I18N_UI.catalog.no_catalog_loaded
                 )
             case false =>
-                span(
-                    label(
-                        cls := "input input-md",
-                        input(
-                            cls         := "field-sizing-content min-w-[14ch]",
-                            tpe         := "text",
-                            placeholder := I18N_UI.placeholders.search,
-                            listAttr    := datalistId,
-                            value <-- searchQueryVar.signal.map(_.getOrElse("")),
-                            onInput.mapToValue
-                                .map(s => if s.isEmpty() then None else Some(s)) --> searchQueryVar.writer,
-                            onFocus --> Observer[org.scalajs.dom.FocusEvent](_ => searchQueryVar.set(None)),
-                            onClick --> Observer[org.scalajs.dom.MouseEvent](_ => searchQueryVar.set(None))
-                        )
+                div(
+                    cls := "dropdown dropdown-bottom w-full",
+                    input(
+                        cls         := "input w-full input-md",
+                        tpe         := "text",
+                        placeholder := I18N_UI.placeholders.search,
+                        value <-- searchQueryVar.signal.map(_.getOrElse("")),
+                        onInput.mapToValue
+                            .map(s => if s.isEmpty() then None else Some(s)) --> searchQueryVar.writer,
+                        onFocus --> Observer[org.scalajs.dom.FocusEvent](_ => searchQueryVar.set(None)),
+                        onClick --> Observer[org.scalajs.dom.MouseEvent](_ => searchQueryVar.set(None))
                     ),
-                    dataList(
-                        idAttr   := datalistId,
-                        children <-- entriesSignal.map(_.map(e => option(value := entryKey(e))))
+                    ul(
+                        tabIndex := -1,
+                        cls      := "dropdown-content menu bg-base-100 rounded-box z-10 max-h-80 w-full flex-nowrap overflow-y-auto p-2 shadow-md",
+                        children <-- entriesSignal.combineWith(searchQueryVar.signal).map { (entries, queryOpt) =>
+                            val filtered = queryOpt match
+                                case None | Some("") => entries
+                                case Some(q)         => entries.filter(e => entryKey(e).toLowerCase.contains(q.toLowerCase))
+                            filtered.map { e =>
+                                val key = entryKey(e)
+                                li(a(
+                                    key,
+                                    onMouseDown --> Observer[org.scalajs.dom.MouseEvent] { ev =>
+                                        ev.preventDefault()
+                                        searchQueryVar.set(Some(key))
+                                        Option(org.scalajs.dom.document.activeElement).foreach(
+                                            _.asInstanceOf[org.scalajs.dom.html.Element].blur()
+                                        )
+                                    }
+                                ))
+                            }
+                        }
                     )
                 )
         },
