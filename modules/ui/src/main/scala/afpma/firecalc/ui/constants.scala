@@ -10,3 +10,7 @@ val LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS              = 1000
 val LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS        = 100
 val LAMINAR_COMPUTE_RESULTS_DELAY_MS                = 1000
 val LAMINAR_VIZ_DEBOUNCE_MS                         = 300
+
+/** Height of the air distribution box in meters (20 cm).
+  * Single source of truth — used by VizConverter and AutoCalcHelper. */
+val AIR_DISTRIB_HEIGHT_M                            = 0.20

@@ -57,6 +57,12 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
     private given flowOnlyPropertyShow_15544: FlowOnlyPropertyShow_15544 = FlowOnlyPropertyShow_15544()
     import flowOnlyPropertyShow_15544.given
 
+    private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544] = AutoCalcHelper.ElemExtractors(
+        asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
+        asDirectionChange  = { case dc: AddDirectionChange       => (dc.angle, dc.absDir) },
+        asInnerShape       = { case sis: SetInnerShape           => sis.shape }
+    )
+
     type In  = FlowOnlyPipeDescr_15544
     type Out = FluePipe_15544
     type PT  = FluePipeT
@@ -157,89 +163,50 @@ final case class FluePipePanel()(using Locale, DisplayUnits) extends PipePanel:
             builder.result()
 
     private def autoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
-        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
-            val hasFrame = frameMap.contains(posIdx)
-            val hasShape = elems.filter(_._1 < posIdx).exists:
-                case (_, _: SetInnerShape) => true
-                case _                     => false
-            val enabled = hasFrame && hasShape
-            val tooltip =
-                if enabled then None
-                else Some((hasFrame, hasShape) match
-                    case (false, false) => I18N_UI.tooltips.auto_calc_needs_direction_shape
-                    case (false, true)  => I18N_UI.tooltips.auto_calc_needs_direction
-                    case (true, false)  => I18N_UI.tooltips.auto_calc_needs_shape
-                    case _              => ""
-                )
-            (enabled, tooltip)
+        AutoCalcHelper.mkStatusSig(
+            hasFrameSig = frameBeforeByIdx.map(_.contains(posIdx)),
+            hasShapeSig = welems_var.signal.map(_.filter(_._1 < posIdx).exists: (_, e) =>
+                summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544]].asInnerShape.isDefinedAt(e)
+            )
+        )
 
     private def autoCalcExtra(posIdx: Int): Var[SetInitialPosition] => HtmlElement =
-        elemVar =>
-            val statusSig   = autoCalcStatusSig(posIdx)
-            val disabledSig = statusSig.map(!_._1)
-            val tooltipSig  = statusSig.map(_._2.getOrElse(""))
-            div(
-                cls("tooltip")     <-- disabledSig,
-                cls("tooltip-top") <-- disabledSig,
-                dataAttr("tip")    <-- tooltipSig,
-                button(
-                    cls := "btn btn-sm btn-secondary",
-                    disabled <-- disabledSig,
-                    I18N_UI.buttons.auto_calc,
-                    onClick --> { _ =>
-                        computeAutoPosition(posIdx).foreach(elemVar.set)
-                    }
-                )
-            )
+        AutoCalcHelper.autoCalcButton(
+            autoCalcStatusSig(posIdx),
+            () => computeAutoPosition(posIdx)
+        )
 
+    /**
+     * Compute the initial position (x, y, z) of the flue pipe exit on the firebox boundary.
+     *
+     * Uses AutoCalcHelper.replayFrame to accumulate the effective PipeFrame at `posIdx`,
+     * and AutoCalcHelper.lastShapeBefore for the pipe cross-section.
+     *
+     * Position algorithm (top-aligned on firebox):
+     *   - Vertical (Up): center of firebox top face → (0, 0, firebox_height)
+     *   - Non-vertical: side face, top of pipe opening = firebox top
+     *     → z = firebox_height − innerHeight / 2
+     *     → x, y via per-axis normalization (see AutoCalcHelper.projectOnBoundary)
+     */
     private def computeAutoPosition(posIdx: Int): Option[SetInitialPosition] =
-        val elems  = welems_var.now()
-        val before = elems.filter(_._1 < posIdx)
-        // Compute the effective PipeFrame at posIdx (same logic as frameBeforeByIdx)
-        val frameOpt =
-            var frame: Option[PipeFrame] = None
-            for (_, elem) <- elems.filter(_._1 <= posIdx) do
-                elem match
-                    case SetInitialDirection(az, incl) =>
-                        val azDeg = AzimuthDirection.toDegrees(az)
-                        val elDeg = InclinationDirection.toDegrees(incl)
-                        frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                    case dc: AddDirectionChange =>
-                        for
-                            f  <- frame
-                            fd <- dc.absDir
-                        do
-                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                            frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                    case _ => ()
-            frame
-        val shapeOpt = before
-            .collect { case (_, sis: SetInnerShape) => sis.shape }
-            .lastOption
+        val elems    = welems_var.now()
+        val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
+        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
         for
             frame <- frameOpt
             shape <- shapeOpt
         yield
             val fb  = firebox_var.now()
-            val fbH = fb.firebox_height.value
-            val fbW = fb.firebox_width.value
-            val fbD = fb.firebox_depth.value
-            val innerH: Double = shape match
-                case Circle(d)       => d.value
-                case Square(s)       => s.value
-                case Rectangle(_, b) => b.value
-            val dir = frame.direction
-            if math.abs(dir.z) > 0.99 then
-                SetInitialPosition(0.0.m, 0.0.m, fbH.m)
-            else
-                val z  = (fbH - innerH / 2.0).m
-                val hw = fbW / 2.0
-                val hd = fbD / 2.0
-                val tx = if math.abs(dir.x) > 1e-9 then hw / math.abs(dir.x) else Double.MaxValue
-                val ty = if math.abs(dir.y) > 1e-9 then hd / math.abs(dir.y) else Double.MaxValue
-                val t  = math.min(tx, ty)
-                SetInitialPosition((t * dir.x).m, (t * dir.y).m, z)
+            val box = AutoCalcHelper.TargetBox(
+                centerX   = 0.0,
+                centerY   = 0.0,
+                halfWidth = fb.firebox_width.value / 2.0,
+                halfDepth = fb.firebox_depth.value / 2.0,
+                bottomZ   = 0.0,
+                height    = fb.firebox_height.value
+            )
+            val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
+            SetInitialPosition(x.m, y.m, z.m)
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>

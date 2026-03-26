@@ -27,12 +27,21 @@ import com.raquo.laminar.api.L.*
 
 import coulomb.policy.standard.given
 
+import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
+import afpma.firecalc.ui.models.firebox_var
+
 import io.taig.babel.Locale
 
 trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
+
+    private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384] = AutoCalcHelper.ElemExtractors(
+        asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
+        asDirectionChange  = { case dc: AddDirectionChange       => (dc.angle, dc.absDir) },
+        asInnerShape       = { case sis: SetInnerShape           => sis.shape }
+    )
 
     type In = FlowOnlyPipeDescr_13384
 
@@ -67,6 +76,60 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                             frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                     case _ => ()
             builder.result()
+
+    // ── Auto-calc: air distribution box position ─────────────────────────
+
+    /**
+     * Status signal for the air intake auto-calc button.
+     * Uses FINAL state (any direction + any shape in entire list), since we're
+     * aligning the pipe's endpoint to the air distrib box.
+     */
+    private lazy val airIntakeAutoCalcStatusSig: Signal[(Boolean, Option[String])] =
+        AutoCalcHelper.mkStatusSig(
+            hasFrameSig = frameBeforeByIdx.map(_.nonEmpty),
+            hasShapeSig = welems_var.signal.map(_.exists: (_, e) =>
+                summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384]].asInnerShape.isDefinedAt(e)
+            )
+        )
+
+    /**
+     * Compute position on the air distribution box boundary.
+     *
+     * Uses the FINAL pipe direction (replays all elements) since we're aligning
+     * the end of the last element to the air distrib box.
+     *
+     * The air distrib box is centered at (0, 0) with same width/depth as the firebox,
+     * bottom at z = −AIR_DISTRIB_HEIGHT_M, top at z = 0 (firebox floor).
+     *
+     * Z alignment (non-vertical): lowest point of pipe opening = air distrib bottom.
+     * Vertical Up: center of bottom face.
+     * Vertical Down: center of top face.
+     */
+    private def computeAirDistribPosition: Option[(Double, Double, Double)] =
+        val elems    = welems_var.now()
+        val frameOpt = AutoCalcHelper.replayFrame(elems, Int.MaxValue)
+        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, Int.MaxValue)
+        for
+            frame <- frameOpt
+            shape <- shapeOpt
+        yield
+            val fb  = firebox_var.now()
+            val box = AutoCalcHelper.TargetBox(
+                centerX   = 0.0,
+                centerY   = 0.0,
+                halfWidth = fb.firebox_width.value / 2.0,
+                halfDepth = fb.firebox_depth.value / 2.0,
+                bottomZ   = -AIR_DISTRIB_HEIGHT_M,
+                height    = AIR_DISTRIB_HEIGHT_M
+            )
+            AutoCalcHelper.computeBottomAlignedPosition(frame, shape, box)
+
+    /** Auto-calc button helper — generic over SetInitialPosition / SetFinalPosition. */
+    private def airIntakeAutoCalcExtra[A](ctor: (Length, Length, Length) => A): Var[A] => HtmlElement =
+        AutoCalcHelper.autoCalcButton(
+            airIntakeAutoCalcStatusSig,
+            () => computeAirDistribPosition.map((x, y, z) => ctor(x.m, y.m, z.m))
+        )
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
@@ -167,12 +230,22 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInitialPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetInitialPosition](iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialPosition]]))
+                renderElemTyped[SetInitialPosition](
+                    iaax._1, I18N.set_prop.SetInitialPosition, iaax._2, sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetInitialPosition]]),
+                    extra        = airIntakeAutoCalcExtra(SetInitialPosition.apply)
+                )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetFinalPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
-                renderElemTyped[SetFinalPosition](iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetFinalPosition]]))
+                renderElemTyped[SetFinalPosition](
+                    iaax._1, I18N.set_prop.SetFinalPosition, iaax._2, sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetFinalPosition]]),
+                    extra        = airIntakeAutoCalcExtra(SetFinalPosition.apply)
+                )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSectionSlopped, XtraOutputs), HtmlElement] {
                 case (i, aa: AddSectionSlopped, x) => (i, aa, x)
