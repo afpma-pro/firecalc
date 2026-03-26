@@ -130,6 +130,28 @@ object AutoCalcHelper:
         (x, y)
 
     /**
+     * Ray-box intersection: find where a ray from the box center in direction −dir
+     * exits the box surface. This gives the entry point where a pipe flowing in
+     * direction `dir` would connect to the box while pointing at the center.
+     *
+     * Used by air intake pipe (computeBottomAlignedPosition) where the pipe
+     * physically enters the box and must aim at its center.
+     *
+     * For near-vertical directions (small horizontal component), returns the box center.
+     */
+    def rayIntersectBoxSurface(dir: Vec3, box: TargetBox): (Double, Double) =
+        // Ray from center in direction opposite to flow
+        val dx = -dir.x
+        val dy = -dir.y
+        val tx = if math.abs(dx) > 1e-9 then box.halfWidth / math.abs(dx) else Double.MaxValue
+        val ty = if math.abs(dy) > 1e-9 then box.halfDepth / math.abs(dy) else Double.MaxValue
+        val t  = math.min(tx, ty)
+        if t == Double.MaxValue then
+            (box.centerX, box.centerY)
+        else
+            (box.centerX + dx * t, box.centerY + dy * t)
+
+    /**
      * Compute position on a box boundary for a pipe exiting at the TOP.
      * Used by flue pipe: top of pipe opening = firebox top.
      *
@@ -150,12 +172,12 @@ object AutoCalcHelper:
      * Compute position on a box boundary for a pipe ENTERING the box.
      * Used by air intake pipe: bottom of pipe opening = air distrib bottom.
      *
-     * The pipe's flow direction points TOWARDS the box, so the entry face is
-     * OPPOSITE to the flow direction. We negate the direction for XY projection.
+     * Uses ray-box intersection (not per-axis normalization) so the pipe's
+     * flow direction vector points toward the box center from the entry point.
      *
      *   - Vertical Up (dir.z > 0.99): enters from below → center of bottom face
      *   - Vertical Down (dir.z < −0.99): enters from above → center of top face
-     *   - Non-vertical: enters from the opposite side → negate dir for projection
+     *   - Non-vertical: ray from center in −dir hits box surface at entry point
      */
     def computeBottomAlignedPosition(frame: PipeFrame, shape: PipeShape, box: TargetBox): (Double, Double, Double) =
         val dir = frame.direction
@@ -166,9 +188,8 @@ object AutoCalcHelper:
         else
             val ih     = innerHeight(shape)
             val z      = box.bottomZ + ih / 2.0
-            // Negate direction: pipe flows TOWARDS the box, entry face is on the opposite side
-            val negDir = Vec3(-dir.x, -dir.y, -dir.z)
-            val (x, y) = projectOnBoundary(negDir, box)
+            // Ray-box intersection: entry point where dir aims at center
+            val (x, y) = rayIntersectBoxSurface(dir, box)
             (x, y, z)
 
     // ── Reactive UI helpers ──────────────────────────────────────────────
