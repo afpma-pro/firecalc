@@ -83,26 +83,28 @@ object defaultable:
 
     given firebox_ecolabeled_minimal: Defaultable[Firebox.Ecolabeled] = Defaultable:
         Firebox.Ecolabeled                 (
-            heat_output_reduced                  = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
-            version                              = Left("Version 1"),
-            air_intake_shape                     = None,
-            firebox_depth                        = 33.cm,
-            firebox_width                        = 33.cm,
-            firebox_height                       = 50.cm,
-            height_of_first_row_of_air_injectors = 5.cm,
-            door_opening_width                   = 30.cm,
-            glass_width                          = 25.cm,
-            glass_height                         = 25.cm,
-            ash_pit_height                       = 5.cm,
-            air_manifold_height                  = 8.cm,
-            firebox_floor_thickness              = 4.cm,
-            firebox_inner_wall_thickness         = 6.cm,
-            firebox_outer_wall_thickness         = 6.cm,
-            air_column_thickness                 = 3.cm,
-            width_between_two_air_columns_sides  = 3.cm,
-            width_between_two_air_columns_rear   = 3.cm,
-            reinforcement_bars_offset_in_corners = 1.cm,
-            injector_height                      = 0.3.mm
+            heat_output_reduced                     = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
+            version                                 = Left("Version 1"),
+            air_intake_shape                        = None,
+            firebox_depth                           = 33.cm,
+            firebox_width                           = 33.cm,
+            firebox_height                          = 50.cm,
+            height_of_first_row_of_air_injectors    = 5.cm,
+            door_opening_width                      = 30.cm,
+            glass_width                             = 25.cm,
+            glass_height                            = 25.cm,
+            ash_pit_height                          = 5.cm,
+            air_manifold_height                     = 8.cm,
+            firebox_floor_thickness                 = 4.cm,
+            firebox_inner_wall_thickness            = 6.cm,
+            firebox_outer_wall_thickness            = 6.cm,
+            air_column_thickness                    = 3.cm,
+            width_between_two_air_columns_sides     = 3.cm,
+            width_between_two_air_columns_rear      = 3.cm,
+            reinforcement_bars_offset_in_corners_R1 = 1.cm,
+            reinforcement_bars_offset_in_corners_R2 = 1.cm,
+            reinforcement_bars_offset_in_corners_R3 = 1.cm,
+            injector_height                         = 0.3.mm
         )
 
     given firebox_single_tested_minimal: Defaultable[Firebox.SingleTested] = Defaultable:

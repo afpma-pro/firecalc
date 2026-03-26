@@ -6,7 +6,7 @@
 package afpma.firecalc.engine.models.en15544.firebox
 
 import afpma.firecalc.dto.v4.Firebox_V3
-import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v5.Firebox_V4
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -31,7 +31,7 @@ object single_tested:
      * Efficiency placeholder fields are set to None.validNel — overwritten by the engine
      * during calculation.
      */
-    private def buildEmissionsValues(dto: Firebox_V3.SingleTested): EmissionsAndEfficiencyValues =
+    private def buildEmissionsValues(dto: Firebox_V4.SingleTested): EmissionsAndEfficiencyValues =
         import FireboxTransformers.toTestEmissionValue
         val ev = dto.emissions_values
         EmissionsAndEfficiencyValues(
@@ -51,11 +51,11 @@ object single_tested:
             )
         )
 
-    /** Primary transformer: [[Firebox_V3.SingleTested]] → [[Firebox_15544.SingleTested]]. */
-    given transformer_SingleTested: Transformer[Firebox_V3.SingleTested, Firebox_15544.SingleTested] =
+    /** Primary transformer: [[Firebox_V4.SingleTested]] → [[Firebox_15544.SingleTested]]. */
+    given transformer_SingleTested: Transformer[Firebox_V4.SingleTested, Firebox_15544.SingleTested] =
         import afpma.firecalc.engine.models.en15544.typedefs.σ_CO2
         Transformer
-            .define[Firebox_V3.SingleTested, Firebox_15544.SingleTested]
+            .define[Firebox_V4.SingleTested, Firebox_15544.SingleTested]
             .enableDefaultValues
             .withFieldComputed(_.reference, dto => LocalizedString(_ => dto.reference))
             .withFieldComputed(_.glass_area, _.glass_area: GlassArea)

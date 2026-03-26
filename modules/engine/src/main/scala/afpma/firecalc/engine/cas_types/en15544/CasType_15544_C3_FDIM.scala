@@ -89,7 +89,9 @@ object CasPratique_15544_FDIM_EX_03
         h78_largeurEspaceInterparoisDuFoyer_S           = 2.cm,
         h79_largeurRenfortMedianLateraux                = 6.cm,
         h80_largeurRenfortMedianArriere                 = 6.cm,
-        h81_debordDesRenfortsDansLesAngles              = 3.cm,
+        r1                                              = 3.cm,
+        r2                                              = 3.cm,
+        r3                                              = 3.cm,
         h82_hauteurDesInjecteurs_Z                      = 0.5.cm,
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = 10.cm
     )

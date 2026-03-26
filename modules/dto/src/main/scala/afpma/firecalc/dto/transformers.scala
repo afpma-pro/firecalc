@@ -8,6 +8,7 @@ package afpma.firecalc.dto
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.*
+import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
@@ -22,6 +23,18 @@ import afpma.firecalc.dto.common.AirSpaceDetailed_V1.WithAirSpace
 object transformers:
 
     // Firebox_V1 -> Firebox_V2
+
+    // V1 → V2 Migration
+    // The new `height_of_first_row_of_air_injectors` field has a default value (5.cm)
+    // in the Firebox case classes, so Chimney can derive the transformer automatically
+    // since the Circe decoder will use the default when deserializing V1 JSON.
+
+    given Transformer[FireCalcYAML_V1, FireCalcYAML_V2] =
+        Transformer
+            .define[FireCalcYAML_V1, FireCalcYAML_V2]
+            .withFieldConst(_.version, FireCalcYAML_V2.VERSION)
+            .withFieldComputed(_.firebox, _.firebox.transformInto[v2.Firebox_V2])
+            .buildTransformer
 
     given Transformer[v1.Firebox_V1.Traditional, v2.Firebox_V2.Traditional] =
         Transformer
@@ -261,5 +274,15 @@ object transformers:
             case El2.AddSectionShapeChange(n, s) => El3.AddSectionShapeChange(n, s)
             case El2.AddFlowResistance(n, z, cs) => El3.AddFlowResistance(n, z, cs)
             case El2.AddPressureDiff(n, p)       => El3.AddPressureDiff(n, p)
+
+    // V4 to V5 Migration
+
+    given Transformer[v4.Firebox_V3.Ecolabeled, v5.Firebox_V4.Ecolabeled] =
+    Transformer
+        .define[v4.Firebox_V3.Ecolabeled, v5.Firebox_V4.Ecolabeled]
+        .withFieldRenamed(_.reinforcement_bars_offset_in_corners, _.reinforcement_bars_offset_in_corners_R1)
+        .withFieldRenamed(_.reinforcement_bars_offset_in_corners, _.reinforcement_bars_offset_in_corners_R2)
+        .withFieldRenamed(_.reinforcement_bars_offset_in_corners, _.reinforcement_bars_offset_in_corners_R3)
+        .buildTransformer
         
         

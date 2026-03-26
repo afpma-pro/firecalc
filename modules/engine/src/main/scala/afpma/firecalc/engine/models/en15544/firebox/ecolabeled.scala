@@ -50,7 +50,9 @@ sealed trait Ecolabeled extends CertifiedDesign:
     val h78_largeurEspaceInterparoisDuFoyer_S          : Length
     val h79_largeurRenfortMedianLateraux               : Length
     val h80_largeurRenfortMedianArriere                : Length
-    val h81_debordDesRenfortsDansLesAngles             : Length
+    val r1                                             : Length
+    val r2                                             : Length
+    val r3                                             : Length
     val h82_hauteurDesInjecteurs_Z                     : Length
     val h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
     val version: Ecolabeled.Version
@@ -73,7 +75,6 @@ sealed trait Ecolabeled extends CertifiedDesign:
     lazy val c11_largeurEspaceInterParoisFoyer_S = h78_largeurEspaceInterparoisDuFoyer_S
     lazy val c12_largeurRenfortMedianLateraux    = h79_largeurRenfortMedianLateraux
     lazy val c13_largeurRenfortMedianArriere     = h80_largeurRenfortMedianArriere
-    lazy val c14_debordDesRenfortsDansLesAngles  = h81_debordDesRenfortsDansLesAngles
 
     lazy val c15_hauterDesInjecteurs       = h82_hauteurDesInjecteurs_Z
 
@@ -88,9 +89,9 @@ sealed trait Ecolabeled extends CertifiedDesign:
     lazy val c21_largeurDesInjecteursSousPorte = c4_largeurPorteDansMaconnerie - 6.cm
 
     lazy val c24_largeurDesColonnesAirLaterales =
-        c3_profondeurFoyer - c14_debordDesRenfortsDansLesAngles - c12_largeurRenfortMedianLateraux
+        c3_profondeurFoyer - r2 - c12_largeurRenfortMedianLateraux - r3
     lazy val c25_largeurDesColonnesAirArrieres  =
-        c2_largeurFoyer - 2.0 * c14_debordDesRenfortsDansLesAngles - c13_largeurRenfortMedianArriere
+        c2_largeurFoyer - 2.0 * r1 - c13_largeurRenfortMedianArriere
 
 end Ecolabeled
 
@@ -123,25 +124,27 @@ object Ecolabeled:
                     I.version_2_air_intake_shape :: "" :: x.arriveeAirGeometryOpt.map(_.showP).getOrElse("-") :: Nil
                 )
             val list            =
-                (I18N.firebox.typ                             :: ""           :: I18N.firebox_names.ecolabeled_v1                            :: Nil) ::
-                    (I.version                                :: ""           :: version                                                     :: Nil) ::
-                    version_details                           ::  
-                    (I18N.firebox.firebox_width               :: "h11 / A"    :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
-                    (I18N.firebox.firebox_depth               :: "h11 / B"    :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
-                    (I18N.firebox.firebox_height              :: "h11 / H"    :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
-                    (I.door_opening_width                     :: "h70"        :: h70_largeurPorteDansMaconnerie.to_cm.showP                  :: Nil) ::
-                    (I.glass_width                            :: "h71"        :: h71_largeurVitre.to_cm.showP                                :: Nil) ::
-                    (I.glass_height                           :: "h72"        :: h72_hauteurVitre.to_cm.showP                                :: Nil) ::
-                    (I.ash_pit_height_AF                      :: "h74 / AF"   :: h74_hauteur_de_cendrier_AF.to_cm.showP                      :: Nil) ::
-                    (I.air_manifold_height_W                  :: "h75 / W"    :: h75_hauteurArriveeConduitAir_DessousSoleFoyer_W.to_cm.showP :: Nil) ::
-                    (I.firebox_floor_thickness                :: "h76"        :: h76_epaisseurSole.to_cm.showP                               :: Nil) ::
-                    (I.inner_wall_thickness_D1                :: "h77 / D1"   :: h77_epaisseurParoiInterneFoyer_D1.to_cm.showP               :: Nil) ::
-                    (I.air_column_thickness_S                 :: "h78 / S"    :: h78_largeurEspaceInterparoisDuFoyer_S.to_cm.showP           :: Nil) ::
-                    (I.width_between_two_air_columns_sides_E  :: "h79 / E"    :: h79_largeurRenfortMedianLateraux.to_cm.showP                :: Nil) ::
-                    (I.width_between_two_air_columns_rear_E   :: "h80 / E"    :: h80_largeurRenfortMedianArriere.to_cm.showP                 :: Nil) ::
-                    (I.reinforcement_bars_offset_in_corners   :: "h81"        :: h81_debordDesRenfortsDansLesAngles.to_cm.showP              :: Nil) ::
-                    (I.injector_height_Z                      :: "h82 / Z"    :: h82_hauteurDesInjecteurs_Z.to_mm.showP                      :: Nil) ::
-                    (I.height_of_first_row_of_air_injectors_X :: "h83 / X"    :: h83_hauteurEntreLaSoleEtLe1erInjecteur_X.to_cm.showP        :: Nil) ::
+                (I18N.firebox.typ                              :: ""   :: I18N.firebox_names.ecolabeled_v1                            :: Nil) ::
+                    (I.version                                 :: ""   :: version                                                     :: Nil) ::
+                    version_details                            ::  
+                    (I18N.firebox.firebox_width                :: "A"  :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
+                    (I18N.firebox.firebox_depth                :: "B"  :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
+                    (I18N.firebox.firebox_height               :: "H"  :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
+                    (I.door_opening_width                      :: ""   :: h70_largeurPorteDansMaconnerie.to_cm.showP                  :: Nil) ::
+                    (I.glass_width                             :: ""   :: h71_largeurVitre.to_cm.showP                                :: Nil) ::
+                    (I.glass_height                            :: ""   :: h72_hauteurVitre.to_cm.showP                                :: Nil) ::
+                    (I.ash_pit_height_AF                       :: "AF" :: h74_hauteur_de_cendrier_AF.to_cm.showP                      :: Nil) ::
+                    (I.air_manifold_height_W                   :: "W"  :: h75_hauteurArriveeConduitAir_DessousSoleFoyer_W.to_cm.showP :: Nil) ::
+                    (I.firebox_floor_thickness                 :: ""   :: h76_epaisseurSole.to_cm.showP                               :: Nil) ::
+                    (I.inner_wall_thickness_D1                 :: "D1" :: h77_epaisseurParoiInterneFoyer_D1.to_cm.showP               :: Nil) ::
+                    (I.air_column_thickness_S                  :: "S"  :: h78_largeurEspaceInterparoisDuFoyer_S.to_cm.showP           :: Nil) ::
+                    (I.width_between_two_air_columns_sides_E   :: "E"  :: h79_largeurRenfortMedianLateraux.to_cm.showP                :: Nil) ::
+                    (I.width_between_two_air_columns_rear_E    :: "E"  :: h80_largeurRenfortMedianArriere.to_cm.showP                 :: Nil) ::
+                    (I.reinforcement_bars_offset_in_corners_R1 :: "R1" :: r1.to_cm.showP                                              :: Nil) ::
+                    (I.reinforcement_bars_offset_in_corners_R2 :: "R2" :: r2.to_cm.showP                                              :: Nil) ::
+                    (I.reinforcement_bars_offset_in_corners_R3 :: "R3" :: r3.to_cm.showP                                              :: Nil) ::
+                    (I.injector_height_Z                       :: "Z"  :: h82_hauteurDesInjecteurs_Z.to_mm.showP                      :: Nil) ::
+                    (I.height_of_first_row_of_air_injectors_X  :: "X"  :: h83_hauteurEntreLaSoleEtLe1erInjecteur_X.to_cm.showP        :: Nil) ::
                     Nil
             list.filter(_.nonEmpty)
 
@@ -163,7 +166,9 @@ object Ecolabeled_V1:
         h78_largeurEspaceInterparoisDuFoyer_S          : Length,
         h79_largeurRenfortMedianLateraux               : Length,
         h80_largeurRenfortMedianArriere                : Length,
-        h81_debordDesRenfortsDansLesAngles             : Length,
+        r1                                             : Length,
+        r2                                             : Length,
+        r3                                             : Length,
         h82_hauteurDesInjecteurs_Z                     : Length,
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
     ): Ecolabeled_V1 =
@@ -184,7 +189,9 @@ object Ecolabeled_V1:
             h78_largeurEspaceInterparoisDuFoyer_S,
             h79_largeurRenfortMedianLateraux,
             h80_largeurRenfortMedianArriere,
-            h81_debordDesRenfortsDansLesAngles,
+            r1,
+            r2,
+            r3,
             h82_hauteurDesInjecteurs_Z,
             h83_hauteurEntreLaSoleEtLe1erInjecteur_X
         ) with Ecolabeled_V1 {
@@ -209,7 +216,9 @@ object Ecolabeled_V2:
         h78_largeurEspaceInterparoisDuFoyer_S          : Length,
         h79_largeurRenfortMedianLateraux               : Length,
         h80_largeurRenfortMedianArriere                : Length,
-        h81_debordDesRenfortsDansLesAngles             : Length,
+        r1                                             : Length,
+        r2                                             : Length,
+        r3                                             : Length,
         h82_hauteurDesInjecteurs_Z                     : Length,
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
     ): Ecolabeled_V2 =
@@ -230,7 +239,9 @@ object Ecolabeled_V2:
             h78_largeurEspaceInterparoisDuFoyer_S,
             h79_largeurRenfortMedianLateraux,
             h80_largeurRenfortMedianArriere,
-            h81_debordDesRenfortsDansLesAngles,
+            r1,
+            r2,
+            r3,
             h82_hauteurDesInjecteurs_Z,
             h83_hauteurEntreLaSoleEtLe1erInjecteur_X
         ) with Ecolabeled_V2 {
@@ -255,7 +266,9 @@ private sealed abstract class Ecolabeled_V1_or_V2_Impl(
     val h78_largeurEspaceInterparoisDuFoyer_S          : Length,
     val h79_largeurRenfortMedianLateraux               : Length,
     val h80_largeurRenfortMedianArriere                : Length,
-    val h81_debordDesRenfortsDansLesAngles             : Length,
+    val r1                                             : Length,
+    val r2                                             : Length,
+    val r3                                             : Length,
     val h82_hauteurDesInjecteurs_Z                     : Length,
     val h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
 ) extends Ecolabeled {

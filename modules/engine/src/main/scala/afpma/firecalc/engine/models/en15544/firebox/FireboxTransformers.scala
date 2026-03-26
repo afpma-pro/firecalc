@@ -20,8 +20,8 @@ import io.scalaland.chimney.dsl.*
 
 object FireboxTransformers:
 
-    given transformer_Firebox_Firebox_15544: Transformer[Firebox, Firebox_15544] = { ccui =>
-        ccui match
+    given transformer_Firebox_Firebox_15544: Transformer[Firebox, Firebox_15544] = { fb =>
+        fb match
             case x: Firebox.Traditional  =>
                 transformer_Standard_TraditionalFirebox.transform(x)
             case x: Firebox.Ecolabeled   =>
@@ -95,7 +95,9 @@ object FireboxTransformers:
                     h78_largeurEspaceInterparoisDuFoyer_S           = air_column_thickness,
                     h79_largeurRenfortMedianLateraux                = width_between_two_air_columns_sides,
                     h80_largeurRenfortMedianArriere                 = width_between_two_air_columns_rear,
-                    h81_debordDesRenfortsDansLesAngles              = reinforcement_bars_offset_in_corners,
+                    r1                                              = reinforcement_bars_offset_in_corners_R1,
+                    r2                                              = reinforcement_bars_offset_in_corners_R2,
+                    r3                                              = reinforcement_bars_offset_in_corners_R3,
                     h82_hauteurDesInjecteurs_Z                      = injector_height,
                     h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = height_of_first_row_of_air_injectors
                 )
@@ -117,7 +119,9 @@ object FireboxTransformers:
                     h78_largeurEspaceInterparoisDuFoyer_S           = air_column_thickness,
                     h79_largeurRenfortMedianLateraux                = width_between_two_air_columns_sides,
                     h80_largeurRenfortMedianArriere                 = width_between_two_air_columns_rear,
-                    h81_debordDesRenfortsDansLesAngles              = reinforcement_bars_offset_in_corners,
+                    r1                                              = reinforcement_bars_offset_in_corners_R1,
+                    r2                                              = reinforcement_bars_offset_in_corners_R2,
+                    r3                                              = reinforcement_bars_offset_in_corners_R3,
                     h82_hauteurDesInjecteurs_Z                      = injector_height,
                     h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = height_of_first_row_of_air_injectors
                 )
@@ -133,49 +137,53 @@ object FireboxTransformers:
         e match
             case _: firebox.Ecolabeled_V1 =>
                 Firebox.Ecolabeled                 (
-                    heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
-                    version                              = Left("Version 1"),
-                    air_intake_shape                     = None,
-                    firebox_depth                        = h11_profondeurDuFoyer,
-                    firebox_width                        = h12_largeurDuFoyer,
-                    firebox_height                       = h13_hauteurDuFoyer,
-                    door_opening_width                   = h70_largeurPorteDansMaconnerie,
-                    glass_width                          = h71_largeurVitre,
-                    glass_height                         = h72_hauteurVitre,
-                    ash_pit_height                       = h74_hauteur_de_cendrier_AF,
-                    air_manifold_height                  = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W,
-                    firebox_floor_thickness              = h76_epaisseurSole,
-                    firebox_inner_wall_thickness         = h77_epaisseurParoiInterneFoyer_D1,
-                    firebox_outer_wall_thickness         = epaisseurParoiExterneFoyer_D2,
-                    air_column_thickness                 = h78_largeurEspaceInterparoisDuFoyer_S,
-                    width_between_two_air_columns_sides  = h79_largeurRenfortMedianLateraux,
-                    width_between_two_air_columns_rear   = h80_largeurRenfortMedianArriere,
-                    reinforcement_bars_offset_in_corners = h81_debordDesRenfortsDansLesAngles,
-                    injector_height                      = h82_hauteurDesInjecteurs_Z,
-                    height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
+                    heat_output_reduced                     = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
+                    version                                 = Left("Version 1"),
+                    air_intake_shape                        = None,
+                    firebox_depth                           = h11_profondeurDuFoyer,
+                    firebox_width                           = h12_largeurDuFoyer,
+                    firebox_height                          = h13_hauteurDuFoyer,
+                    door_opening_width                      = h70_largeurPorteDansMaconnerie,
+                    glass_width                             = h71_largeurVitre,
+                    glass_height                            = h72_hauteurVitre,
+                    ash_pit_height                          = h74_hauteur_de_cendrier_AF,
+                    air_manifold_height                     = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W,
+                    firebox_floor_thickness                 = h76_epaisseurSole,
+                    firebox_inner_wall_thickness            = h77_epaisseurParoiInterneFoyer_D1,
+                    firebox_outer_wall_thickness            = epaisseurParoiExterneFoyer_D2,
+                    air_column_thickness                    = h78_largeurEspaceInterparoisDuFoyer_S,
+                    width_between_two_air_columns_sides     = h79_largeurRenfortMedianLateraux,
+                    width_between_two_air_columns_rear      = h80_largeurRenfortMedianArriere,
+                    reinforcement_bars_offset_in_corners_R1 = r1,
+                    reinforcement_bars_offset_in_corners_R2 = r2,
+                    reinforcement_bars_offset_in_corners_R3 = r3,
+                    injector_height                         = h82_hauteurDesInjecteurs_Z,
+                    height_of_first_row_of_air_injectors    = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
                 )
             case _: firebox.Ecolabeled_V2 =>
                 Firebox.Ecolabeled                 (
-                    heat_output_reduced                  = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
-                    version                              = Right("Version 2"),
-                    air_intake_shape                     = arriveeAirGeometryOpt,
-                    firebox_depth                        = h11_profondeurDuFoyer,
-                    firebox_width                        = h12_largeurDuFoyer,
-                    firebox_height                       = h13_hauteurDuFoyer,
-                    door_opening_width                   = h70_largeurPorteDansMaconnerie,
-                    glass_width                          = h71_largeurVitre,
-                    glass_height                         = h72_hauteurVitre,
-                    ash_pit_height                       = h74_hauteur_de_cendrier_AF,
-                    air_manifold_height                  = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W,
-                    firebox_floor_thickness              = h76_epaisseurSole,
-                    firebox_inner_wall_thickness         = h77_epaisseurParoiInterneFoyer_D1,
-                    firebox_outer_wall_thickness         = epaisseurParoiExterneFoyer_D2,
-                    air_column_thickness                 = h78_largeurEspaceInterparoisDuFoyer_S,
-                    width_between_two_air_columns_sides  = h79_largeurRenfortMedianLateraux,
-                    width_between_two_air_columns_rear   = h80_largeurRenfortMedianArriere,
-                    reinforcement_bars_offset_in_corners = h81_debordDesRenfortsDansLesAngles,
-                    injector_height                      = h82_hauteurDesInjecteurs_Z,
-                    height_of_first_row_of_air_injectors = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
+                    heat_output_reduced                     = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
+                    version                                 = Right("Version 2"),
+                    air_intake_shape                        = arriveeAirGeometryOpt,
+                    firebox_depth                           = h11_profondeurDuFoyer,
+                    firebox_width                           = h12_largeurDuFoyer,
+                    firebox_height                          = h13_hauteurDuFoyer,
+                    door_opening_width                      = h70_largeurPorteDansMaconnerie,
+                    glass_width                             = h71_largeurVitre,
+                    glass_height                            = h72_hauteurVitre,
+                    ash_pit_height                          = h74_hauteur_de_cendrier_AF,
+                    air_manifold_height                     = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W,
+                    firebox_floor_thickness                 = h76_epaisseurSole,
+                    firebox_inner_wall_thickness            = h77_epaisseurParoiInterneFoyer_D1,
+                    firebox_outer_wall_thickness            = epaisseurParoiExterneFoyer_D2,
+                    air_column_thickness                    = h78_largeurEspaceInterparoisDuFoyer_S,
+                    width_between_two_air_columns_sides     = h79_largeurRenfortMedianLateraux,
+                    width_between_two_air_columns_rear      = h80_largeurRenfortMedianArriere,
+                    reinforcement_bars_offset_in_corners_R1 = r1,
+                    reinforcement_bars_offset_in_corners_R2 = r2,
+                    reinforcement_bars_offset_in_corners_R3 = r3,
+                    injector_height                         = h82_hauteurDesInjecteurs_Z,
+                    height_of_first_row_of_air_injectors    = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
                 )
             case _ => throw new Exception("not implemented")
 

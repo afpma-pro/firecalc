@@ -200,6 +200,9 @@ object I18nData:
             width_between_two_air_columns_sides_E    : String,
             width_between_two_air_columns_rear_E     : String,
             reinforcement_bars_offset_in_corners     : String,
+            reinforcement_bars_offset_in_corners_R1  : String,
+            reinforcement_bars_offset_in_corners_R2  : String,
+            reinforcement_bars_offset_in_corners_R3  : String,
             injector_height_Z                        : String,
             injector_surface_area                    : String,
             injector_surface_area_obstructed_max_perc: StringFormat1

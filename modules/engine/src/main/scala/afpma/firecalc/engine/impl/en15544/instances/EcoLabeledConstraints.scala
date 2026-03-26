@@ -157,7 +157,6 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
 
             val c19  = firebox.c19_largeurDesInjecteursLateraux
             val c20  = firebox.c20_largeurDesInjecteursArrieres
-            val c14  = firebox.c14_debordDesRenfortsDansLesAngles
 
             val largeurRenfortMedianLateraux_max = c19 * 0.2
             if (firebox.h79_largeurRenfortMedianLateraux > largeurRenfortMedianLateraux_max)
@@ -180,14 +179,22 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
                 )
 
             val DEBORD_MAX = 4.5.cm
-            if (c14 > DEBORD_MAX)
-                buf.append(
-                    TermValueShouldBeLessOrEqThan(
-                        I18N.firebox.ecolabeled.reinforcement_bars_offset_in_corners,
-                        c14.to_cm,
-                        DEBORD_MAX.to_cm
-                    )
+            val I18N_ECO = I18N.firebox.ecolabeled
+            for 
+                (rxString, rx) <- Seq(
+                    (I18N_ECO.reinforcement_bars_offset_in_corners_R1, firebox.r1),
+                    (I18N_ECO.reinforcement_bars_offset_in_corners_R2, firebox.r2),
+                    (I18N_ECO.reinforcement_bars_offset_in_corners_R3, firebox.r3)
                 )
+            yield
+                if (rx > DEBORD_MAX)
+                    buf.append(
+                        TermValueShouldBeLessOrEqThan(
+                            rxString,
+                            rx.to_cm,
+                            DEBORD_MAX.to_cm
+                        )
+                    )
 
             val Z_MIN = 6.mm
             val Z_MAX = 8.mm

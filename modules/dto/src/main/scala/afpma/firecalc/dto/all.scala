@@ -97,8 +97,6 @@ object all:
 
     export afpma.firecalc.dto.v2.Firebox_V2
     export afpma.firecalc.dto.v4.Firebox_V3
-    export afpma.firecalc.dto.v4.Firebox_V3 as Firebox
-    export afpma.firecalc.dto.v4.Firebox_V3.TestStandard
 
     // V3
 
@@ -162,3 +160,9 @@ object all:
     export afpma.firecalc.dto.v4.AbsoluteDirection
 
     export afpma.firecalc.dto.v4.TypeOfAppliance
+
+    // V5
+
+    export afpma.firecalc.dto.v5.Firebox_V4 as Firebox
+    export afpma.firecalc.dto.v5.Firebox_V4.TestStandard
+

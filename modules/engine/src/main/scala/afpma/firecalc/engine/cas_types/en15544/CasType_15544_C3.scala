@@ -91,7 +91,9 @@ object CasType_15544_C3
         h78_largeurEspaceInterparoisDuFoyer_S           = 3.5.cm,
         h79_largeurRenfortMedianLateraux                = 4.5.cm, // prop 10% ???
         h80_largeurRenfortMedianArriere                 = 4.5.cm, // prop 10% ???
-        h81_debordDesRenfortsDansLesAngles              = 4.5.cm, // prop 10% ???
+        r1                                              = 4.5.cm, // prop 10% ???
+        r2                                              = 4.5.cm, // prop 10% ???
+        r3                                              = 4.5.cm, // prop 10% ???
         h82_hauteurDesInjecteurs_Z                      = 0.8.cm,
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = 10.cm
     )
