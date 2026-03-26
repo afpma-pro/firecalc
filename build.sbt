@@ -106,10 +106,10 @@ ThisBuild / startYear           := Some(2025)
 ThisBuild / licenses            := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage            := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version         = "0.3.0-b15-SNAPSHOT"
-lazy val reports_base_version   = "0.9.0-b15-SNAPSHOT"
-lazy val payments_base_version  = "0.9.0-b15-SNAPSHOT"
-lazy val ui_base_version        = "0.9.0-b15-SNAPSHOT"
+lazy val engine_version         = "0.3.0-b15"
+lazy val reports_base_version   = "0.9.0-b15"
+lazy val payments_base_version  = "0.9.0-b15"
+lazy val ui_base_version        = "0.9.0-b15"
 
 // Repository information (single source of truth)
 lazy val githubOwner            = "afpma-pro"
@@ -1011,6 +1011,7 @@ lazy val payments = (project in file("modules/payments"))
     Compile / run / fork := true,
     Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
 
+    assembly / mainClass       := Some("afpma.firecalc.payments.Main"),
     assembly / assemblyJarName := "firecalc-payments-assembly.jar",
 
     // Merge strategy for conflicting files
