@@ -55,7 +55,7 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                     // Left: accordion (full width or 2/3 when right panel open)
                     div(
                         cls <-- anyPanelOn.map(on =>
-                            if on then "w-2/3 overflow-y-auto"
+                            if on then "w-2/3"
                             else "w-full"),
                         DaisyUIVerticalAccordionAndJoin(),
                         Footer()

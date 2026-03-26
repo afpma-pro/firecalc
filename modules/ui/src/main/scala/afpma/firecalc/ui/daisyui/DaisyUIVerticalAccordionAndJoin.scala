@@ -85,7 +85,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
                     .combineWith(filename_var.signal)
                     .map: (prj, fname) =>
                         div(
-                            cls := "flex flex-row max-w-3/4",
+                            cls := "flex flex-row",
                             div(
                                 cls := "flex-auto w-60",
                                 text <-- clientProjectDataVar.signal.map { cpd =>
@@ -121,7 +121,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
                         val pn_value_show = pn_value.map(_.showP_orImpUnits[BTU / Hour]).getOrElse("-")
                         val pn_show = s"${I18N.technical_specifications.nominal_heat_output_short} = ${pn_value_show}"
                         div(
-                            cls := "flex flex-row max-w-3/4",
+                            cls := "flex flex-row",
                             div(cls := "flex-grow w-36", mb_show),
                             div(cls := "flex-grow w-36", pn_show),
                             div(
@@ -219,7 +219,7 @@ object DaisyUIVerticalAccordionAndJoin:
                     )
                 ),
                 div                (
-                    cls := "relative px-0 collapse-content text-sm top-0",
+                    cls := "relative px-0 collapse-content text-sm top-0 overflow-x-clip",
                     content
                 )
             )
