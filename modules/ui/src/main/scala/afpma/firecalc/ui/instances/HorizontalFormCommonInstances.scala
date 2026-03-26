@@ -153,7 +153,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     // QtyD[Degree] = Angle
 
     given horizontal_form_Angle: DaisyUIHorizontalForm[Angle] =
-        import defaultable.qty_d.angle.zero
+        import defaultable.qty_d.angle.ninety
         import vv.angle.validOption_whenPositive
         DaisyUIHorizontalForm.forQtyD[Degree]
 

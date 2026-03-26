@@ -82,12 +82,12 @@ object defaultable_13384:
             def default = AddSectionVertical(I18N.add_element.AddSectionVertical, 1.meters)
         given Locale => Defaultable[AddAngleAdjustable]           :
             def default =
-                AddAngleAdjustable(I18N.add_element.AddAngleAdjustable, qty_d.angle.zero.default, zeta.default)
+                AddAngleAdjustable(I18N.add_element.AddAngleAdjustable, qty_d.angle.ninety.default, zeta.default)
         given Locale => Defaultable[AddSharpeAngle_0_to_90]       :
-            def default = AddSharpeAngle_0_to_90(I18N.add_element.AddSharpeAngle_0_to_90, qty_d.angle.zero.default)
+            def default = AddSharpeAngle_0_to_90(I18N.add_element.AddSharpeAngle_0_to_90, qty_d.angle.ninety.default)
         given Locale => Defaultable[AddSharpeAngle_0_to_90_Unsafe]:
             def default =
-                AddSharpeAngle_0_to_90_Unsafe(I18N.add_element.AddSharpeAngle_0_to_90_Unsafe, qty_d.angle.zero.default)
+                AddSharpeAngle_0_to_90_Unsafe(I18N.add_element.AddSharpeAngle_0_to_90_Unsafe, qty_d.angle.ninety.default)
         given Locale => Defaultable[AddSmoothCurve_90]            :
             def default =
                 AddSmoothCurve_90(I18N.add_element.AddSmoothCurve_90, curvature_radius = radiusOfCurvature.default)

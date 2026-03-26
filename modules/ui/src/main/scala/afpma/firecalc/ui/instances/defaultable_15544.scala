@@ -58,7 +58,7 @@ object defaultable_15544:
             def default = AddSectionVertical(I18N.add_element.AddSectionVertical, 1.meters)
         given Locale => Defaultable[AddSharpeAngle_0_to_180]:
             def default =
-                AddSharpeAngle_0_to_180(I18N.add_element.AddSharpeAngle_0_to_180, qty_d.angle.zero.default, None)
+                AddSharpeAngle_0_to_180(I18N.add_element.AddSharpeAngle_0_to_180, qty_d.angle.ninety.default, None)
         given Locale => Defaultable[AddCircularArc_60]      :
             def default = AddCircularArc_60(I18N.add_element.AddCircularArc_60)
         given Locale => Defaultable[AddSectionShapeChange]  :

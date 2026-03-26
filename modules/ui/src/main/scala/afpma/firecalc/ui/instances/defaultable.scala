@@ -202,6 +202,10 @@ object defaultable:
             Defaultable(None)
 
         object angle      :
+            given ninety: Defaultable[Angle]:
+                def default: Angle = 90.degrees
+            
+            @deprecated
             given zero: Defaultable[Angle] = zeroWithUnit[Degree]
         object area       :
             given zero: Defaultable[Area] = zeroWithUnit[Meter ^ 2]
