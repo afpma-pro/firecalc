@@ -42,9 +42,9 @@ final case class ChimneyWallOutputTempIndicator()(using Locale, DisplayUnits) ex
     lazy val node: HtmlElement =
         IndicatorWithErrorTooltip     (
             indicator      = Indicator(
-                Seq       (
-                    (IndicatorConfig.green, chimney_wall_temp_above_condensation_temp_sig       ),
-                    (IndicatorConfig.rose, chimney_wall_temp_above_condensation_temp_sig.map(!_))
+                style_sig    = chimney_wall_temp_above_condensation_temp_sig.map(above =>
+                    if above then Some(IndicatorConfig.green)
+                    else          Some(IndicatorConfig.rose)
                 ),
                 title        = p(
                     I18N_UI.indicators.chimney_wall_out_temp_line1,

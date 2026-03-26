@@ -8,28 +8,27 @@ package afpma.firecalc.ui.tailwind
 import afpma.firecalc.ui.Component
 
 import com.raquo.laminar.api.L.*
-import com.raquo.laminar.modifiers.CompositeKeySetter
 
 final case class Indicator(
-    config_and_sig_mods: Seq[(IndicatorConfig, Signal[Boolean])],
-    title              : HtmlElement,
-    subtitle_sig       : Signal[String]
-)                         (child: HtmlElement)
+    style_sig   : Signal[Option[IndicatorConfig]],
+    title       : HtmlElement,
+    subtitle_sig: Signal[String]
+)(child: HtmlElement)
     extends Component:
 
-    val configs_mods = config_and_sig_mods.map((icfg, bsig) => icfg.classes <-- bsig)
+    private lazy val style_classes: Signal[String] =
+        style_sig.map(_.fold("")(_.classString))
 
-    // def body: HtmlElement = ???
     lazy val node: HtmlElement =
         div(
             cls := "inline-block mx-2",
             div(
                 cls := "flex flex-col",
                 div(
-                    configs_mods,
+                    cls <-- style_classes,
                     cls := "relative border-3 border-solid rounded-lg",
                     div(
-                        configs_mods,
+                        cls <-- style_classes,
                         cls := "absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-3/4 px-2 text-center font-semibold bg-white w-4/5",
                         p(
                             cls := "leading-tight text-xs",
@@ -42,7 +41,7 @@ final case class Indicator(
                     )
                 ),
                 div(
-                    configs_mods,
+                    cls <-- style_classes,
                     cls := "text-center text-xs",
                     p(
                         text <-- subtitle_sig
@@ -52,8 +51,7 @@ final case class Indicator(
         )
 
 final case class IndicatorConfig(style: IndicatorConfig.IndicatorStyle):
-    def classes: CompositeKeySetter[HtmlAttr[String], HtmlElement] =
-        style.classes
+    def classString: String = style.classString
 
 object IndicatorConfig:
 
@@ -63,13 +61,11 @@ object IndicatorConfig:
     val sky   = IndicatorConfig(IndicatorStyle.Sky)
 
     sealed trait IndicatorStyle extends Product with Serializable:
-        self =>
-        def classes: CompositeKeySetter[HtmlAttr[String], HtmlElement] =
-            self match
-                case IndicatorStyle.Amber => cls("text-amber-400 border-amber-400")
-                case IndicatorStyle.Green => cls("text-green-500 border-green-500")
-                case IndicatorStyle.Rose  => cls("text-rose-500 border-rose-500")
-                case IndicatorStyle.Sky   => cls("text-sky-500 border-sky-500")
+        def classString: String = this match
+            case IndicatorStyle.Amber => "text-amber-400 border-amber-400"
+            case IndicatorStyle.Green => "text-green-500 border-green-500"
+            case IndicatorStyle.Rose  => "text-rose-500 border-rose-500"
+            case IndicatorStyle.Sky   => "text-sky-500 border-sky-500"
 
     object IndicatorStyle:
         case object Amber extends IndicatorStyle

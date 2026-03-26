@@ -30,12 +30,20 @@ final case class EquilibriumIndicator()(using Locale, DisplayUnits) extends Comp
 
     given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
 
-    private val pc_sig = results_en15544_pressure_requirements
+    private lazy val pc_sig = results_en15544_pressure_requirements
 
     lazy val node: HtmlElement =
         val tooMuchDraft      = pc_sig.mapAndFoldVNelE(_.isTooMuchDraft, false)
         val tooMuchResistance = pc_sig.mapAndFoldVNelE(_.isTooMuchResistance, false)
         val hasError          = tooMuchDraft.combineWith(tooMuchResistance).map((a, b) => a || b)
+
+        val styleSig: Signal[Option[IndicatorConfig]] =
+            pc_sig.mapAndFoldVNelE(
+                pr =>
+                    if pr.isInValidRange then Some(IndicatorConfig.green)
+                    else                      Some(IndicatorConfig.rose),
+                None
+            )
 
         val tooltipMessage = tooMuchDraft.combineWith(tooMuchResistance).map { (draft, resistance) =>
             if draft then p(I18N_UI.indicators.too_much_draft)
@@ -44,11 +52,7 @@ final case class EquilibriumIndicator()(using Locale, DisplayUnits) extends Comp
         }
         IndicatorWithErrorTooltip     (
             indicator      = Indicator(
-                Seq(
-                    (IndicatorConfig.green, pc_sig.mapAndFoldVNelE(_.isInValidRange, false)),
-                    (IndicatorConfig.rose, tooMuchDraft                                    ),
-                    (IndicatorConfig.rose, tooMuchResistance                               )
-                ),
+                style_sig    = styleSig,
                 title        = p(I18N_UI.indicators.equilibrium),
                 subtitle_sig = tooMuchDraft.combineWith(tooMuchResistance).flatMapSwitch { (draft, resistance) =>
                     if (draft)

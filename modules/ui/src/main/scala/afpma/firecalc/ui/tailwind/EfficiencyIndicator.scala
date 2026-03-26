@@ -57,9 +57,9 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Compo
     lazy val node: HtmlElement =
         IndicatorWithErrorTooltip     (
             indicator      = Indicator(
-                Seq(
-                    (IndicatorConfig.green, effInRange_sig),
-                    (IndicatorConfig.rose, hasError       )
+                style_sig    = effInRange_sig.map(inRange =>
+                    if inRange then Some(IndicatorConfig.green)
+                    else            Some(IndicatorConfig.rose)
                 ),
                 title        = p(I18N_UI.indicators.efficiency),
                 subtitle_sig = flueGasTemp_sig
