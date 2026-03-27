@@ -26,7 +26,6 @@ import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.EN13384_FormulaError
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.units.coulombutils.{*, given}
-import afpma.firecalc.engine.standard.MecaFlu_Error.given // ShowUsingLocale[MecaFlu_Error]
 import afpma.firecalc.engine.ops.MecaFluOps
 
 import algebra.instances.all.given
@@ -34,8 +33,6 @@ import coulomb.*
 import coulomb.syntax.*
 import coulomb.policy.standard.given
 import coulomb.ops.standard.all.{given}
-import io.taig.babel.Locales
-import io.taig.babel.Locale
 
 trait ThermalMecaFlu_Helpers:
 
@@ -326,22 +323,13 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         )
 
     val crossSectionArea: PositionOpX[Start | End, Area] =
-        crossSectionAreaE.fold(
-            e => {
-                given Locale = Locales.en
-                throw new Exception(e.show)
-            },
-            identity
-        )
+        crossSectionAreaE.fold(throwMecaFluError, identity)
 
     // ambiant air
     val tu: Option[TKelvin] = airSpaceDetailedE match
         case Left(err)  =>
             if (section_length == 0.meters) None
-            else {
-                given Locale = Locales.en;
-                throw new Exception(err.show)
-            }
+            else throwMecaFluError(err)
         case Right(asd) =>
             T_u(using asd).toOption
 
@@ -391,10 +379,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     val tc = tk.to_degC
                     (tc, tc, tc)
                 case Invalid(e) =>
-                    given Locale = Locales.en
-                    throw new Exception(
-                        s"${curr.fullRef}: could not determine T_mB : ${e.map(_.show).toList.mkString(", ")}"
-                    )
+                    throwMecaFluError(MecaFlu_Error.HeatTransferCoefficientErrors(e, curr.typ))
         else if (tu.isDefined && tu.get.to_degC == te.to_degC) (te, te, te)
         else
             val tmiddle  : TCelsius =
