@@ -11,6 +11,7 @@ import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.components.GlobalErrorDialog
 import afpma.firecalc.ui.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
@@ -70,27 +71,25 @@ object FireCalcProjet:
     case class BackupComponent()(using Locale) extends Component:
 
         val isProcessingVar = Var(false)
-        val errorVar        = Var[Option[String]](None)
 
         def saveYaml(engineState: EngineState): Unit =
             import scala.concurrent.ExecutionContext.Implicits.global
             import afpma.firecalc.dto.FireCalcYAMLMigrations
 
             isProcessingVar.set(true)
-            errorVar.set       (None)
 
             // Convert state to YAML using dto module
             FireCalcYAMLMigrations.encodeToYamlTry(engineState) match
                 case Failure(ex) =>
-                    errorVar.set       (Some(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage)))
-                    isProcessingVar.set(false                                                             )
+                    GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage))
+                    isProcessingVar.set(false)
 
                 case Success(yamlContent) =>
                     // Use FileSystemService which handles both browser and Electron
                     FileSystemService.saveFile(filename_var.now(), yamlContent).foreach {
                         case Left(error) =>
-                            errorVar.set       (Some(error))
-                            isProcessingVar.set(false      )
+                            GlobalErrorDialog.showGenericError(error)
+                            isProcessingVar.set(false)
 
                         case Right(_) =>
                             isProcessingVar.set(false)
@@ -112,24 +111,11 @@ object FireCalcProjet:
                     ttPosition = "tooltip-bottom"
                 )
 
-                // Processing indicator
-                // child <-- isProcessingVar.signal.map {
-                //     case true => div(cls := "processing", "Preparing download...")
-                //     case false => emptyNode
-                // },
-
-                // Error message
-                // child <-- errorVar.signal.map {
-                //     case Some(msg) => div(cls := "error-message", s"Error: $msg")
-                //     case None => emptyNode
-                // }
-
             )
 
     case class UploadComponent()(using Locale) extends Component:
 
         val isLoadingVar = Var(false)
-        val errorVar     = Var[Option[String]](None)
         val fileNameVar  = Var[Option[String]](None)
 
         /** Load project from file content */
@@ -137,17 +123,16 @@ object FireCalcProjet:
             import afpma.firecalc.dto.FireCalcYAMLMigrations
 
             scala.scalajs.js.Dynamic.global.console.log(s"Loading file: $fileName")
-            fileNameVar.set                            (Some(fileName)            )
-            isLoadingVar.set                           (true                      )
-            errorVar.set                               (None                      )
+            fileNameVar.set (Some(fileName))
+            isLoadingVar.set(true          )
 
             // Use migration-aware decoder that handles V1→V2 upgrades automatically
             FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
                 case Failure(e) =>
-                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project"                                  )
-                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                                                   )
-                    errorVar.set                               (Some(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage)))
-                    isLoadingVar.set                           (false                                                            )
+                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project")
+                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                 )
+                    GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage))
+                    isLoadingVar.set(false)
 
                 case Success(nextEngineState) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
@@ -160,12 +145,11 @@ object FireCalcProjet:
             import scala.concurrent.ExecutionContext.Implicits.global
 
             isLoadingVar.set(true)
-            errorVar.set    (None)
 
             FileSystemService.openFile().foreach {
                 case Left(error) =>
-                    errorVar.set    (Some(error))
-                    isLoadingVar.set(false      )
+                    GlobalErrorDialog.showGenericError(error)
+                    isLoadingVar.set(false)
 
                 case Right(None) =>
                     // User cancelled
@@ -180,12 +164,11 @@ object FireCalcProjet:
             import scala.concurrent.ExecutionContext.Implicits.global
 
             isLoadingVar.set(true)
-            errorVar.set    (None)
 
             FileSystemService.readFileFromInput(file).foreach {
                 case Left(error) =>
-                    errorVar.set    (Some(error))
-                    isLoadingVar.set(false      )
+                    GlobalErrorDialog.showGenericError(error)
+                    isLoadingVar.set(false)
 
                 case Right((content, fileName)) =>
                     loadFromContent(content, fileName)
@@ -224,11 +207,5 @@ object FireCalcProjet:
                         }
                     ),
                     ttPosition = "tooltip-bottom"
-                ),
-
-                // Error message
-                child <-- errorVar.signal.map {
-                    case Some(msg) => div(cls := "error-message", I18N_UI.errors.error_prefix.apply(msg))
-                    case None      => emptyNode
-                }
+                )
             )
