@@ -234,6 +234,7 @@ function seriesToDataset(s: ChartSeriesJS): ChartDataset<'line'> {
         yAxisID: s.yAxisId,
         pointRadius: 2,
         pointHoverRadius: 4,
+        pointHitRadius: 15,
         tension: 0.0, // no curve smoothing
         fill: false,
         // Per-segment color override (driven by segmentColor metadata from Scala)
@@ -299,11 +300,12 @@ function buildChartConfig(
             maintainAspectRatio: config.maintainAspectRatio,
             interaction: {
                 mode: 'index',
-                intersect: false,
+                intersect: true,
             },
             plugins: {
                 tooltip: {
                     enabled: true,
+                    position: 'nearest',
                     callbacks: {
                         title(items: TooltipItem<'line'>[]) {
                             if (!items.length) return '';
