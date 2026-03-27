@@ -35,15 +35,16 @@ object CatalogParser:
         json.hcursor.downField("catalog_version").as[FireCalc_Version].toOption
 
     private def decodeAndMigrate(json: Json, version: FireCalc_Version): Either[CatalogParseError, CatalogFile] =
-        if version > CatalogMigrations.CURRENT_VERSION then
+        if version.unwrap > CatalogMigrations.CURRENT_VERSION.unwrap then
             Left(CatalogParseError.VersionTooNew(version, CatalogMigrations.CURRENT_VERSION))
-        else if version == CatalogMigrations.CURRENT_VERSION then
-            decodeCurrent(json, version)
+        else if version.unwrap >= CatalogMigrations.OLDEST_SUPPORTED_VERSION.unwrap then
+            // V4 and V5 catalog types are structurally identical — decode with current decoders.
+            // When a future version changes catalog types, add version-specific migration here.
+            decodeCurrent(json, CatalogMigrations.CURRENT_VERSION)
         else
-            // Future: apply migration chain here using dto Chimney transformers
             Left(CatalogParseError.MigrationFailed(
                 version,
-                s"No migration path from V${version.unwrap} to V${CatalogMigrations.CURRENT_VERSION.unwrap}"
+                s"Version V${version.unwrap} is too old; oldest supported is V${CatalogMigrations.OLDEST_SUPPORTED_VERSION.unwrap}"
             ))
 
     private def decodeCurrent(json: Json, version: FireCalc_Version): Either[CatalogParseError, CatalogFile] =

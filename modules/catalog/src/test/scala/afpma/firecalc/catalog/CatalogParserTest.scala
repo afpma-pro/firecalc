@@ -142,7 +142,7 @@ class CatalogParserTest extends FunSuite:
         val result = CatalogParser.parse(yaml)
         assert(result.isRight, s"Expected Right but got: $result")
         val file = result.toOption.get
-        assertEquals(file.catalog_version.unwrap, 4)
+        assertEquals(file.catalog_version.unwrap, 5) // V4 sample migrated to current
         assert(file.catalog_name.nonEmpty)
         import CatalogCategoryInstances.given
         val fireboxes = file.entriesFor[Firebox.Door15aFirebox_Catalog]
