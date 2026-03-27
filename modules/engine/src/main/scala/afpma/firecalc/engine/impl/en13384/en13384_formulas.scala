@@ -332,7 +332,12 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
                                 debug(s"Rth = ${tr.show} [ig = ${ig.show} & og = ${og.show}]")
                                 (og, trdhsum + tr / dhi, Status.Ok).asRight
                             case AppendLayerDescr.AirSpaceUsingOuterShape(osh, _, _)         =>
-                                val dn                    = (osh.dh - ig.dh) / 2.0
+                                // be conservative and take the min between the width and depth of the outershape
+                                val osh_conservative = osh match
+                                    case PipeShape.Circle(d) => d
+                                    case PipeShape.Square(a) => a
+                                    case PipeShape.Rectangle(a, b) => if (a <= b) then a else b
+                                val dn                    = (osh_conservative - ig.dh) / 2.0
                                 val t_emittingSurfaceTemp = mean_gas_temp
                                 deadAirSpaceThermalResistance(t_emittingSurfaceTemp, dn, ig).map: tr =>
                                     debug(
@@ -2079,10 +2084,11 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
 
         ei match
             case Left(err: ReadTableError) =>
-                EN13384_FormulaError
-                    .ThermalResistanceComputationFailed(
-                        err.msg
-                    )
+                // NOTE 2:
+                if (t_interpol.to_degC.value > 200 || dn_in_meters.value > 0.05) 
+                then Right(SquareMeterKelvinPerWatt(0))
+                else EN13384_FormulaError
+                    .ThermalResistanceComputationFailed(err.msg)
                     .asLeft
             case Right(rth)                =>
 
