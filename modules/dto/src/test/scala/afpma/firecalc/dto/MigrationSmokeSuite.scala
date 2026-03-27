@@ -7,7 +7,6 @@ package afpma.firecalc.dto
 
 import afpma.firecalc.dto.common.FireCalc_Version
 import afpma.firecalc.dto.generators.AllGenerators
-import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
 import scala.util.Using
 
