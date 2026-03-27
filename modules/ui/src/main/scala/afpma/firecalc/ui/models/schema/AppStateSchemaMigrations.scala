@@ -134,23 +134,13 @@ object AppStateSchemaMigrations:
 
             case Some(3) =>
                 // V3 - decode and migrate to V4
-                decodeV3(rawData) match
-                    case Failure(errV3) =>
-                        // because of failed migration deployed
-                        dom.console.warn("V3 decode failed, trying to decode as V4 version (bypassing 'version = 3' key)")
-                        decodeV4(rawData)
-                            .flatMap(migrateFromV4ToV5) match
-                                case Success(v_latest) => Some(v_latest)
-                                case Failure(e)  =>
-                                    dom.console.error(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
-                                    None
-                    case Success(decV3) =>
-                        migrateFromV3ToV4(decV3)
-                            .flatMap(migrateFromV4ToV5) match
-                                case Success(v_latest) => Some(v_latest)
-                                case Failure(e)  =>
-                                    dom.console.error(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
-                                    None
+                decodeV3(rawData) 
+                    .flatMap(migrateFromV3ToV4)
+                    .flatMap(migrateFromV4ToV5) match
+                        case Success(v_latest) => Some(v_latest)
+                        case Failure(e)  =>
+                            dom.console.error(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
+                            None
 
             case Some(4) =>
                 // V4 - decode and migrate to V5
