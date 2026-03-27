@@ -25,15 +25,12 @@ import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.engine.standard.MecaFlu_Error.given // ShowUsingLocale[MecaFlu_Error]
 import afpma.firecalc.engine.ops.MecaFluOps
 
 import algebra.instances.all.given
 import coulomb.*
 import coulomb.policy.standard.given
 import coulomb.ops.standard.all.{given}
-import io.taig.babel.Locales
-import io.taig.babel.Locale
 
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import FlowOnlyPipeDescr_13384.*
@@ -102,6 +99,8 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
                 override given en13384: EN13384_1_A1_2019_Application_Alg = alg
             }.asRight
         catch
+            case mee: MecaFlu_Error.MecaFluErrorException =>
+                Left(mee.error)
             case e =>
                 e.printStackTrace(                                                 )
                 Left             (MecaFlu_Error.UnexpectedThrowable(e, fd.pipeType))
@@ -136,6 +135,9 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
 
     private val DEBUG = false
     private inline def debug(msg: String): Unit = if (DEBUG) println(msg) else ()
+
+    private def throwMecaFluError(err: MecaFlu_Error): Nothing =
+        throw MecaFlu_Error.MecaFluErrorException(err)
 
     private def en13384_density_mean(
         gas_temp_mean: TCelsius,
@@ -176,13 +178,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
         )
 
     val crossSectionArea: PositionOpX[Start | End, Area] =
-        crossSectionAreaE.fold(
-            e => {
-                given Locale = Locales.en
-                throw new Exception(e.show)
-            },
-            identity
-        )
+        crossSectionAreaE.fold(throwMecaFluError, identity)
 
     given PipeType = gp.pipeEl.typ
 
@@ -211,10 +207,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                     val tc = tk.to_degC
                     (tc, tc, tc)
                 case Invalid(e) =>
-                    given Locale = Locales.en
-                    throw new Exception(
-                        s"${curr.fullRef}: could not determine T_mB : ${e.map(_.show).toList.mkString(", ")}"
-                    )
+                    throwMecaFluError(MecaFlu_Error.HeatTransferCoefficientErrors(e, curr.typ))
         else
             throw new Exception("Invalid pipe type : only 'AirIntakePipeT' is expected here")
 

@@ -142,6 +142,8 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
                 override given shortSection: ShortSectionAlg = ssa
             }.asRight
         catch
+            case mee: MecaFlu_Error.MecaFluErrorException =>
+                Left(mee.error)
             case e =>
                 // println(e.printStackTrace())
                 Left(MecaFlu_Error.UnexpectedThrowable(e, fd.pipeType))
@@ -164,6 +166,9 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
     val gas    = gip.gas
     val curr   = gip.pipeEl
     val params = gip.params
+
+    private def throwMecaFluError(err: MecaFlu_Error): Nothing =
+        throw MecaFlu_Error.MecaFluErrorException(err)
 
     given Option[LoadQty] = Some(loadQty)
     given DraftCondition  = params
@@ -221,7 +226,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
                     case PressureDiff(_, Some(crossSection))           => Some(crossSection)
                     case _                                             => None
             )
-            .fold(e => throw new Exception(e.toString), identity)
+            .fold(throwMecaFluError, identity)
 
     val crossSectionArea: PositionOp[Area] =
         QtyDAtPosition
