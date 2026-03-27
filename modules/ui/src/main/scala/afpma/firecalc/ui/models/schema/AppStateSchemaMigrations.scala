@@ -150,7 +150,7 @@ object AppStateSchemaMigrations:
                         case Failure(e)  =>
                             dom.console.error(s"Failed to migrate V4 to $V_LATEST: ${e.getMessage()}")
                             None
-                AppStateSchemaHelper.decodeFromYaml(rawData).toOption
+                AppStateSchemaHelper.decodeFromYaml(rawData).toOption // COMMENT ME ONCE THE V4->V5 BUG HAS BEEN REPRODUCED MANUALLY IN TEST
 
             case Some(5) =>
                 // Current version - decode directly

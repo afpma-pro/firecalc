@@ -350,4 +350,41 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     // Then - modification should be preserved
     decodedSchema.engine_state.project_description.reference.shouldBe("MODIFIED-TEST-001")
   }
+
+  behavior of "SchemaMigrations V4 to V5 migration (version bumping)"
+
+  /**
+   * Reproduces the bug where V4→V5 migration does not bump version fields.
+   *
+   * Strategy: take a valid V5 schema (with Traditional firebox — identical between V4 and V5),
+   * downgrade the version markers to 4 in the YAML, then feed to migrateToLatest.
+   * The migration should produce a schema with version=5 and engine_state.version=5.
+   */
+  it should "bump AppStateSchema version from 4 to 5" in {
+    // Given - create a valid V5 schema, encode to YAML, downgrade version markers to 4
+    val v5Schema = AppStateSchemaHelper.createInitialSchema()
+    val v5Yaml   = AppStateSchemaHelper.encodeToYaml(v5Schema).get
+    val v4Yaml   = v5Yaml.replaceAll("version: 5", "version: 4")
+
+    // When - migrate from V4 to latest
+    val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
+
+    // Then - schema version should be bumped to 5
+    result shouldBe defined
+    result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+  }
+
+  it should "bump engine_state version from 4 to 5" in {
+    // Given
+    val v5Schema = AppStateSchemaHelper.createInitialSchema()
+    val v5Yaml   = AppStateSchemaHelper.encodeToYaml(v5Schema).get
+    val v4Yaml   = v5Yaml.replaceAll("version: 5", "version: 4")
+
+    // When
+    val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
+
+    // Then - engine_state version should also be bumped to 5
+    result shouldBe defined
+    result.get.engine_state.version.unwrap shouldBe 5
+  }
 }
