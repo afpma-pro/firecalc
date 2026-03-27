@@ -21,9 +21,42 @@ import io.circe.Json
 import io.circe.syntax.*
 import io.circe.yaml.scalayaml.parser as yamlParser
 import io.circe.yaml.scalayaml.printer as yamlPrinter
-import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 
+/**
+ * Entry point for loading, migrating, and encoding FireCalcYAML project files (.fcalc).
+ *
+ * ## Version History & Migration Bug Context
+ *
+ * Before March 2026, the Chimney transformers for V2→V3, V3→V4, and V4→V5 did NOT
+ * explicitly set the `version` field via `.withFieldConst`. Chimney auto-derived
+ * transformers that silently copied the source version number instead of bumping it.
+ * Only V1→V2 had a correct transformer from the start.
+ *
+ * This produced corrupted files in the wild where the `version` field says N but the
+ * data is actually in V(N+1) format. For example, a file saved after a V4→V5 migration
+ * would contain `version: 4` with V5 firebox fields (reinforcement_bars_offset_in_corners_R1/R2/R3
+ * instead of the V4 field reinforcement_bars_offset_in_corners). Reloading such a file
+ * selects the V4 decoder (based on the version marker), which fails on the V5 fields.
+ *
+ * ## Fix (March 2026)
+ *
+ * 1. **Compile-time prevention**: `FireCalc_Version.V[N]` opaque literal types make each
+ *    version field a distinct type. Chimney can no longer auto-derive version-copying
+ *    transformers — it fails to compile, forcing explicit `.withFieldConst`.
+ *    See [[FireCalc_Version.V]] and [[transformers]].
+ *
+ * 2. **Runtime recovery**: `decodeWithFallback` handles legacy corrupted files by trying
+ *    the next version's decoder (with a patched version field) when the primary decoder fails.
+ *
+ * ## Corrupted file landscape
+ *
+ * | Version marker | Actual data | Affected versions | Notes |
+ * |---|---|---|---|
+ * | `version: 2` | V3 data | V2→V3 migration | No user report, defensive fix |
+ * | `version: 3` | V4 data | V3→V4 migration | Known issue, pre-existing fallback |
+ * | `version: 4` | V5 data | V4→V5 migration | User-reported bug (March 2026) |
+ */
 object FireCalcYAMLMigrations:
 
     def migrateV1ToV2(v1: FireCalcYAML_V1): FireCalcYAML_V2 =
@@ -73,6 +106,10 @@ object FireCalcYAMLMigrations:
     /**
      * Decode JSON and migrate to latest FireCalcYAML version.
      *
+     * For versions 2, 3, and 4: if the primary decoder fails, a fallback is attempted
+     * using the next version's decoder. This handles legacy corrupted files where the
+     * version field was not bumped during migration (see class-level scaladoc).
+     *
      * @param json Circe JSON value
      * @return Either[String, FireCalcYAML] - Left with error message, Right with migrated schema
      */
@@ -81,28 +118,58 @@ object FireCalcYAMLMigrations:
             case None          =>
                 Left("Could not detect version field in YAML")
             case Some(1)       =>
+                // V1→V2 always had a correct transformer — no corrupted V1-marker files exist
                 decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5)
             case Some(2)       =>
-                decodeV2(json).map(migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5)
+                decodeWithFallback(json, 2, decodeV2, migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5,
+                                         3, decodeV3, migrateV3ToV4 andThen migrateV4ToV5)
             case Some(3)       =>
-                decodeV3(json) match
-                    case Left(errV3) =>
-                        decodeV4(json) match // try to bypass relying on the 'version' key because a failed migration made V4 projects be stored with a 'version = 3' key
-                            case Left(errV4) => 
-                                Left(
-                                    s"""|Could not decode FireCalcYAML version: got 'version = 3' (error=$errV3))
-                                        |
-                                        |Attempt to decode as 'version = 4' also failed (error=$errV4)""".stripMargin
-                                )
-                            case Right(fcv4) => Right(migrateV4ToV5(fcv4))
-                    case Right(fcv3) =>
-                        Right((migrateV3ToV4 andThen migrateV4ToV5)(fcv3))
+                decodeWithFallback(json, 3, decodeV3, migrateV3ToV4 andThen migrateV4ToV5,
+                                         4, decodeV4, migrateV4ToV5)
             case Some(4)       =>
-                decodeV4(json).map(migrateV4ToV5)
+                decodeWithFallback(json, 4, decodeV4, migrateV4ToV5,
+                                         5, decodeV5, identity)
             case Some(5)       =>
                 decodeV5(json)
             case Some(version) =>
                 Left(s"Unknown FireCalcYAML version: $version")
+
+    /**
+     * Try the primary decoder; if it fails, patch the JSON version field and try the
+     * fallback decoder. This handles legacy files where a buggy migration wrote V(N+1)
+     * data with a `version: N` marker.
+     *
+     * The JSON version field must be patched because `Decoder[FireCalc_Version.V[N]]`
+     * validates that the version number matches N exactly.
+     *
+     * @param json            original JSON with the version marker as found in the file
+     * @param primaryVersion  the version number found in the file (N)
+     * @param primaryDecode   decoder for version N
+     * @param primaryMigrate  migration chain from version N to current
+     * @param fallbackVersion the next version number to try (N+1)
+     * @param fallbackDecode  decoder for version N+1
+     * @param fallbackMigrate migration chain from version N+1 to current
+     */
+    private def decodeWithFallback[A <: FireCalcYAML_Format, B <: FireCalcYAML_Format](
+        json: Json,
+        primaryVersion:  Int, primaryDecode:  Json => Either[String, A], primaryMigrate:  A => FireCalcYAML,
+        fallbackVersion: Int, fallbackDecode: Json => Either[String, B], fallbackMigrate: B => FireCalcYAML
+    ): Either[String, FireCalcYAML] =
+        primaryDecode(json) match
+            case Right(decoded) =>
+                Right(primaryMigrate(decoded))
+            case Left(primaryErr) =>
+                // Fallback: patch the version field so the stricter V[N+1] decoder accepts it
+                val patchedJson = json.mapObject(_.add("version", Json.fromInt(fallbackVersion)))
+                fallbackDecode(patchedJson) match
+                    case Right(decoded) =>
+                        Right(fallbackMigrate(decoded))
+                    case Left(fallbackErr) =>
+                        Left(
+                            s"""|Could not decode FireCalcYAML version: got 'version = $primaryVersion' (error=$primaryErr))
+                                |
+                                |Attempt to decode as 'version = $fallbackVersion' also failed (error=$fallbackErr)""".stripMargin
+                        )
 
     /** Detect version from JSON. */
     private def detectVersion(json: Json): Option[Int] =
@@ -110,31 +177,26 @@ object FireCalcYAMLMigrations:
 
     /** Decode V1 from JSON using FireCalcYAML_V1 decoder. */
     private def decodeV1(json: Json): Either[String, FireCalcYAML_V1] =
-        // Use the decoder from v1/FireCalcYAML_V1.scala
         import FireCalcYAML_V1.decoder
         json.as[FireCalcYAML_V1].left.map(e => s"Failed to decode V1: ${e.getMessage()}")
 
     /** Decode V2 from JSON using FireCalcYAML_V2 decoder. */
     private def decodeV2(json: Json): Either[String, FireCalcYAML_V2] =
-        // Use the decoder from v2/FireCalcYAML_V2.scala
         import FireCalcYAML_V2.decoder
         json.as[FireCalcYAML_V2].left.map(e => s"Failed to decode V2: ${e.getMessage()}")
 
     /** Decode V3 from JSON using FireCalcYAML_V3 decoder. */
     private def decodeV3(json: Json): Either[String, FireCalcYAML_V3] =
-        // Use the decoder from V3/FireCalcYAML_V3.scala
         import FireCalcYAML_V3.decoder
         json.as[FireCalcYAML_V3].left.map(e => s"Failed to decode V3: ${e.getMessage()}")
 
     /** Decode V4 from JSON using FireCalcYAML_V4 decoder. */
     private def decodeV4(json: Json): Either[String, FireCalcYAML_V4] =
-        // Use the decoder from V4/FireCalcYAML_V4.scala
         import FireCalcYAML_V4.decoder
         json.as[FireCalcYAML_V4].left.map(e => s"Failed to decode V4: ${e.getMessage()}")
 
     /** Decode V5 from JSON using FireCalcYAML_V5 decoder. */
     private def decodeV5(json: Json): Either[String, FireCalcYAML_V5] =
-        // Use the decoder from V5/FireCalcYAML_V5.scala
         import FireCalcYAML_V5.decoder
         json.as[FireCalcYAML_V5].left.map(e => s"Failed to decode V5: ${e.getMessage()}")
 

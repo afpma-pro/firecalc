@@ -12,6 +12,8 @@ import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
+import afpma.firecalc.dto.v5
+import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
 import cats.syntax.all.*
 
@@ -284,5 +286,38 @@ object transformers:
         .withFieldRenamed(_.reinforcement_bars_offset_in_corners, _.reinforcement_bars_offset_in_corners_R2)
         .withFieldRenamed(_.reinforcement_bars_offset_in_corners, _.reinforcement_bars_offset_in_corners_R3)
         .buildTransformer
-        
-        
+
+    // ─── Top-level FireCalcYAML transformers (version bumping) ───────────────────
+    //
+    // IMPORTANT: Every cross-version FireCalcYAML transformer MUST include:
+    //   .withFieldConst(_.version, FireCalcYAML_VN.VERSION)
+    //
+    // Without this, Chimney would fail to compile thanks to the FireCalc_Version.V[N]
+    // literal types — V[4] and V[5] are incompatible types, so Chimney cannot auto-copy
+    // the version field.
+    //
+    // Before March 2026, V2→V3, V3→V4, and V4→V5 lacked explicit transformers.
+    // Chimney auto-derived them, silently copying the source version number. This produced
+    // corrupted files in the wild (e.g. version:4 with V5 data). See FireCalcYAMLMigrations
+    // for fallback recovery logic.
+    //
+    // V1→V2 (above) was the only transformer that correctly used .withFieldConst from the start.
+
+    given Transformer[FireCalcYAML_V2, FireCalcYAML_V3] =
+        Transformer
+            .define[FireCalcYAML_V2, FireCalcYAML_V3]
+            .withFieldConst(_.version, FireCalcYAML_V3.VERSION)
+            .buildTransformer
+
+    given Transformer[FireCalcYAML_V3, FireCalcYAML_V4] =
+        Transformer
+            .define[FireCalcYAML_V3, FireCalcYAML_V4]
+            .withFieldConst(_.version, FireCalcYAML_V4.VERSION)
+            .buildTransformer
+
+    given Transformer[FireCalcYAML_V4, FireCalcYAML_V5] =
+        Transformer
+            .define[FireCalcYAML_V4, FireCalcYAML_V5]
+            .withFieldConst(_.version, FireCalcYAML_V5.VERSION)
+            .withFieldComputed(_.firebox, _.firebox.transformInto[v5.Firebox_V4])
+            .buildTransformer

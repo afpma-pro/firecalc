@@ -23,7 +23,7 @@ import io.taig.babel.Locale
  *   (default 5.cm provided by Chimney V1→V2 transformer in transformers.scala, NOT by Circe decoder)
  */
 final case class FireCalcYAML_V2(
-    version                       : FireCalc_Version = FireCalcYAML_V2.VERSION,
+    version                       : FireCalc_Version.V[2] = FireCalcYAML_V2.VERSION,
     locale                        : Locale,
     display_units                 : DisplayUnits,
     standard_or_computation_method: StandardOrComputationMethod,
@@ -39,8 +39,8 @@ final case class FireCalcYAML_V2(
 
 trait FireCalcYAML_V2_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V2]:
 
-    type Version = FireCalc_Version
-    final val VERSION = FireCalc_Version(2)
+    type Version = FireCalc_Version.V[2]
+    final val VERSION: FireCalc_Version.V[2] = FireCalc_Version.v[2]
 
     import CommonInstances.given
     import V1Instances.given

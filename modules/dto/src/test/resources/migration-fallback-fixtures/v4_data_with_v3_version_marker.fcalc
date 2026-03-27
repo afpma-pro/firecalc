@@ -1,0 +1,199 @@
+version: 3
+locale: "fr"
+display_units: "SI"
+standard_or_computation_method: "EN 15544:2023"
+project_description: 
+  reference: "01-Colonne ascendante"
+  date: ""
+  country: "France"
+local_conditions: 
+  altitude: 
+    value: "200"
+    unit: "meter"
+  coastal_region: false
+  chimney_termination: 
+    chimney_location_on_roof: 
+      chimney_height_above_ridgeline: "MoreThan40cm"
+      horizontal_distance_between_chimney_and_ridgeline: !!null
+      slope: !!null
+      outside_air_intake_and_chimney_locations: !!null
+      horizontal_distance_between_chimney_and_ridgeline_bis: !!null
+    adjacent_buildings: 
+      horizontal_distance_between_chimney_and_adjacent_buildings: "MoreThan15m"
+      horizontal_angle_between_chimney_and_adjacent_buildings: !!null
+      vertical_angle_between_chimney_and_adjacent_buildings: !!null
+stove_params: 
+  sizing_method: "MaxLoad"
+  maximum_load: 
+    value: "14.5"
+    unit: "kilogram"
+  nominal_heat_output: !!null
+  heating_cycle: 
+    value: "8"
+    unit: "hour"
+  min_efficiency: 
+    value: "70"
+    unit: "percent"
+  facing_type: "WithoutAirGap"
+  inner_construction_material: "WithinSpecs"
+air_intake_descr: 
+firebox: 
+  Traditional: 
+    heat_output_reduced: !!null
+    firebox_depth: 
+      value: "0.44200000000000006"
+      unit: "meter"
+    firebox_width: 
+      value: "0.332"
+      unit: "meter"
+    firebox_height: 
+      value: "0.6409999999999999"
+      unit: "meter"
+    height_of_lowest_opening: 
+      value: "0.05"
+      unit: "meter"
+    pressure_loss_coefficient_from_door: 
+      value: "0.3"
+      unit: "1"
+    total_air_intake_surface_area_on_door: 
+      value: "0.0097"
+      unit: "meter^2"
+    glass_width: 
+      value: "0.3"
+      unit: "meter"
+    glass_height: 
+      value: "0.3"
+      unit: "meter"
+flue_pipe_descr: 
+  - 
+    SetInitialPosition: 
+      x: 
+        value: "0.165"
+        unit: "meter"
+      y: 
+        value: "0.11"
+        unit: "meter"
+      z: 
+        value: "0.445"
+        unit: "meter"
+  - 
+    SetInitialDirection: 
+      azimuth: "Right"
+      inclination: "Horizontal"
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.003"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.141"
+            unit: "meter"
+          b: 
+            value: "0.153"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "élément droit"
+      length: 
+        value: "0.24600000000000002"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "Vers remontée↱"
+      angle: 
+        value: "90"
+        unit: "degree"
+      absDir: 
+        azimuth: !!null
+        inclination: "Up"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.141"
+            unit: "meter"
+          b: 
+            value: "0.141"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "élément droit"
+      length: 
+        value: "2.9530000000000003"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.15"
+            unit: "meter"
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.001"
+        unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "élément droit"
+      length: 
+        value: "0.06"
+        unit: "meter"
+connector_pipe_descr: 
+chimney_pipe_descr: 
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.001"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.15"
+            unit: "meter"
+  - 
+    SetLayers: 
+      layers: 
+        - 
+          FromThermalResistanceUsingThickness: 
+            thickness: 
+              value: "0.025"
+              unit: "meter"
+            thermal_resistance: 
+              value: "0.26"
+              unit: "(meter^2 Kelvin)/watt"
+  - 
+    SetPipeLocation: 
+      pipe_location: "HeatedArea"
+  - 
+    AddSectionVertical: 
+      name: "conduit double peau isolé."
+      elevation_gain: 
+        value: "0.40399999999999997"
+        unit: "meter"
+  - 
+    SetPipeLocation: 
+      pipe_location: "OutsideOrExterior"
+  - 
+    AddSectionVertical: 
+      name: "conduit double peau isolé."
+      elevation_gain: 
+        value: "0.9309999999999999"
+        unit: "meter"
+  - 
+    AddFlowResistance: 
+      name: "Chapeau"
+      zeta: 
+        value: "1.5"
+        unit: "1"
+      cross_section: 
+        type: "option_of_either"
+        none_or_left_or_right: "none"
+        value: !!null

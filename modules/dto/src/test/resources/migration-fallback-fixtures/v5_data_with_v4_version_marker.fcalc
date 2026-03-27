@@ -1,0 +1,458 @@
+version: 4
+locale: "fr"
+display_units: "SI"
+standard_or_computation_method: "EN 15544:2023"
+project_description: 
+  reference: "06 PDM foyer éco-labellisé KOV"
+  date: "26 mars 2026"
+  country: "France"
+local_conditions: 
+  altitude: 
+    value: "128"
+    unit: "meter"
+  coastal_region: false
+  chimney_termination: 
+    chimney_location_on_roof: 
+      chimney_height_above_ridgeline: "MoreThan40cm"
+      horizontal_distance_between_chimney_and_ridgeline: !!null
+      slope: !!null
+      outside_air_intake_and_chimney_locations: !!null
+      horizontal_distance_between_chimney_and_ridgeline_bis: !!null
+    adjacent_buildings: 
+      horizontal_distance_between_chimney_and_adjacent_buildings: "MoreThan15m"
+      horizontal_angle_between_chimney_and_adjacent_buildings: !!null
+      vertical_angle_between_chimney_and_adjacent_buildings: !!null
+stove_params: 
+  sizing_method: "NominalHeatOutput"
+  maximum_load: !!null
+  nominal_heat_output: 
+    value: "4.056"
+    unit: "kilo watt"
+  heating_cycle: 
+    value: "12"
+    unit: "hour"
+  min_efficiency: 
+    value: "78"
+    unit: "percent"
+  facing_type: "WithoutAirGap"
+  inner_construction_material: "WithinSpecs"
+air_intake_descr: 
+  - 
+    SetInitialDirection: 
+      azimuth: "Left"
+      inclination: "Horizontal"
+  - 
+    SetMaterial: 
+      material: 
+        Plastic: 
+          roughness: 
+            value: "0.001"
+            unit: "meter"
+  - 
+    AddFlowResistance: 
+      name: "Grille pressée"
+      zeta: 
+        value: "1.23"
+        unit: "1"
+      cross_section: 
+        type: "option_of_either"
+        none_or_left_or_right: "right"
+        value: 
+          Circle: 
+            diameter: 
+              value: "0.1524"
+              unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.1524"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "PVC élément droit "
+      length: 
+        value: "3.7"
+        unit: "meter"
+  - 
+    AddAngleAdjustable: 
+      name: "NICOLL - COUDE PVC 90° – Øi152,4 Øe160"
+      angle: 
+        value: "90"
+        unit: "degree"
+      zeta: 
+        value: "0.361811023622047"
+        unit: "1"
+      absDir: 
+        azimuth: !!null
+        inclination: "Up"
+  - 
+    AddSectionSlopped: 
+      name: "PVC remontée dans dalle"
+      length: 
+        value: "0.39"
+        unit: "meter"
+  - 
+    AddFlowResistance: 
+      name: "Clapet rotatif"
+      zeta: 
+        value: "0.25"
+        unit: "1"
+      cross_section: 
+        type: "option_of_either"
+        none_or_left_or_right: "right"
+        value: 
+          Circle: 
+            diameter: 
+              value: "0.1524"
+              unit: "meter"
+firebox: 
+  Ecolabeled: 
+    heat_output_reduced: !!null
+    version: 
+      type: "either"
+      left_or_right: "left"
+      value: "Version 1"
+    air_intake_shape: !!null
+    firebox_depth: 
+      value: "0.44"
+      unit: "meter"
+    firebox_width: 
+      value: "0.42"
+      unit: "meter"
+    firebox_height: 
+      value: "0.68"
+      unit: "meter"
+    height_of_first_row_of_air_injectors: 
+      value: "0.12"
+      unit: "meter"
+    door_opening_width: 
+      value: "0.42"
+      unit: "meter"
+    glass_width: 
+      value: "0.3"
+      unit: "meter"
+    glass_height: 
+      value: "0.3"
+      unit: "meter"
+    ash_pit_height: 
+      value: "0.12"
+      unit: "meter"
+    air_manifold_height: 
+      value: "0.11"
+      unit: "meter"
+    firebox_floor_thickness: 
+      value: "0.1"
+      unit: "meter"
+    firebox_inner_wall_thickness: 
+      value: "0.06"
+      unit: "meter"
+    firebox_outer_wall_thickness: 
+      value: "0.06"
+      unit: "meter"
+    air_column_thickness: 
+      value: "0.021"
+      unit: "meter"
+    width_between_two_air_columns_sides: 
+      value: "0.06"
+      unit: "meter"
+    width_between_two_air_columns_rear: 
+      value: "0.06"
+      unit: "meter"
+    reinforcement_bars_offset_in_corners_R1: 
+      value: "0.02"
+      unit: "meter"
+    reinforcement_bars_offset_in_corners_R2: 
+      value: "0.02"
+      unit: "meter"
+    reinforcement_bars_offset_in_corners_R3: 
+      value: "0.02"
+      unit: "meter"
+    injector_height: 
+      value: "0.008"
+      unit: "meter"
+flue_pipe_descr: 
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.251"
+            unit: "meter"
+          b: 
+            value: "0.23"
+            unit: "meter"
+  - 
+    SetMaterial: 
+      material: 
+        BlocsDeChamotte: 
+          roughness: 
+            value: "0.003"
+            unit: "meter"
+  - 
+    SetInitialDirection: 
+      azimuth: "Rear"
+      inclination: "Horizontal"
+  - 
+    SetInitialPosition: 
+      x: 
+        value: "-0.11"
+        unit: "meter"
+      y: 
+        value: "0.22"
+        unit: "meter"
+      z: 
+        value: "0.5650000000000001"
+        unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "sortie foyer"
+      length: 
+        value: "0.317"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "Angle vif de 0 à 180° ↱"
+      angle: 
+        value: "90"
+        unit: "degree"
+      absDir: 
+        azimuth: !!null
+        inclination: "Down"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.251"
+            unit: "meter"
+          b: 
+            value: "0.22"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "Descente"
+      length: 
+        value: "0.8150000000000001"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "Angle vif de 0 à 180° ↱"
+      angle: 
+        value: "90"
+        unit: "degree"
+      absDir: 
+        azimuth: "Left"
+        inclination: "Horizontal"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.22"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "Banc aller"
+      length: 
+        value: "1.7919999999999998"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "Angle vif de 0 à 180° ↱"
+      angle: 
+        value: "90"
+        unit: "degree"
+      absDir: 
+        azimuth: "Rear"
+        inclination: "Horizontal"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.2"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "Bout du banc"
+      length: 
+        value: "0.43700000000000006"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "Angle vif de 0 à 180° ↱"
+      angle: 
+        value: "90"
+        unit: "degree"
+      absDir: 
+        azimuth: "Right"
+        inclination: "Horizontal"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.19"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "Banc retour"
+      length: 
+        value: "2.073"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "Angle vif de 0 à 180° ↱"
+      angle: 
+        value: "90"
+        unit: "degree"
+      absDir: 
+        azimuth: "Front"
+        inclination: "Horizontal"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.21"
+            unit: "meter"
+          b: 
+            value: "0.24"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "vers remontée"
+      length: 
+        value: "0.43700000000000006"
+        unit: "meter"
+  - 
+    AddSharpeAngle_0_to_180: 
+      name: "Angle vif de 0 à 180° ↱"
+      angle: 
+        value: "90"
+        unit: "degree"
+      absDir: 
+        azimuth: !!null
+        inclination: "Up"
+  - 
+    SetInnerShape: 
+      shape: 
+        Rectangle: 
+          a: 
+            value: "0.21"
+            unit: "meter"
+          b: 
+            value: "0.22"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "Remontée"
+      length: 
+        value: "0.98"
+        unit: "meter"
+  - 
+    SetRoughness: 
+      roughness: 
+        value: "0.001"
+        unit: "meter"
+  - 
+    SetInnerShape: 
+      shape: 
+        Circle: 
+          diameter: 
+            value: "0.2"
+            unit: "meter"
+  - 
+    AddSectionSlopped: 
+      name: "Manchette CF DPI"
+      length: 
+        value: "0.05"
+        unit: "meter"
+connector_pipe_descr: 
+chimney_pipe_descr: 
+  - 
+    SetPipeLocation: 
+      pipe_location: "HeatedArea"
+  - 
+    SetInitialDirection: 
+      azimuth: "Rear"
+      inclination: "Up"
+  - 
+    SetPropertiesInBatch: 
+      batch_name: "EKA - COMPLEX D - ISO 25MM - Ø200"
+      props: 
+        - 
+          SetMaterial: 
+            material: 
+              WeldedSteel: 
+                roughness: 
+                  value: "0.001"
+                  unit: "meter"
+        - 
+          SetInnerShape: 
+            shape: 
+              Circle: 
+                diameter: 
+                  value: "0.2"
+                  unit: "meter"
+        - 
+          SetLayers: 
+            layers: 
+              - 
+                FromThermalResistanceUsingThickness: 
+                  thickness: 
+                    value: "0.025"
+                    unit: "meter"
+                  thermal_resistance: 
+                    value: "0.44"
+                    unit: "(meter^2 Kelvin)/watt"
+      image: !!null
+  - 
+    AddSectionSlopped: 
+      name: "élément droit"
+      length: 
+        value: "4.75"
+        unit: "meter"
+  - 
+    SetPipeLocation: 
+      pipe_location: "UnheatedInside"
+  - 
+    AddSectionSlopped: 
+      name: "élément droit"
+      length: 
+        value: "0.65"
+        unit: "meter"
+  - 
+    SetPipeLocation: 
+      pipe_location: "OutsideOrExterior"
+  - 
+    AddSectionSlopped: 
+      name: "élément droit"
+      length: 
+        value: "0.9"
+        unit: "meter"
+  - 
+    AddFlowResistance: 
+      name: "Chapeau pare-pluie Eka "
+      zeta: 
+        value: "1"
+        unit: "1"
+      cross_section: 
+        type: "option_of_either"
+        none_or_left_or_right: "right"
+        value: 
+          Circle: 
+            diameter: 
+              value: "0.2"
+              unit: "meter"

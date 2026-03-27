@@ -82,6 +82,38 @@ object AppStateSchemaMigrations:
             )
             .buildTransformer
 
+
+    // ─── Explicit AppStateSchema version-bumping transformers ────────────────────
+    //
+    // Each transformer MUST use .withFieldConst(_.version, ...) to bump the schema version.
+    // Without these, Chimney auto-derives transformers that copy the version field from the
+    // source schema, resulting in the migrated schema retaining the old version number.
+    //
+    // Before March 2026, only V1→V2 had an explicit transformer. V2→V3, V3→V4, and V4→V5
+    // relied on Chimney auto-derivation which silently copied the version. Additionally,
+    // the case Some(4) branch in migrateToLatest had a stray
+    // `AppStateSchemaHelper.decodeFromYaml(rawData).toOption` line that was the last expression
+    // in the block — making the entire V4→V5 migration dead code (the migration ran but its
+    // result was discarded in favor of a direct V5 decode of the raw V4 data).
+
+    given Transformer[AppStateSchema_V2, AppStateSchema_V3] =
+        Transformer
+            .define[AppStateSchema_V2, AppStateSchema_V3]
+            .withFieldConst(_.version, AppStateSchema_Version(3))
+            .buildTransformer
+
+    given Transformer[AppStateSchema_V3, AppStateSchema_V4] =
+        Transformer
+            .define[AppStateSchema_V3, AppStateSchema_V4]
+            .withFieldConst(_.version, AppStateSchema_Version(4))
+            .buildTransformer
+
+    given Transformer[AppStateSchema_V4, AppStateSchema_V5] =
+        Transformer
+            .define[AppStateSchema_V4, AppStateSchema_V5]
+            .withFieldConst(_.version, AppStateSchema_V5.VERSION)
+            .buildTransformer
+
     /**
      * Migrate raw YAML data to the latest schema version.
      *
@@ -144,13 +176,12 @@ object AppStateSchemaMigrations:
 
             case Some(4) =>
                 // V4 - decode and migrate to V5
-                decodeV4(rawData) 
+                decodeV4(rawData)
                     .flatMap(migrateFromV4ToV5) match
                         case Success(v_latest) => Some(v_latest)
                         case Failure(e)  =>
                             dom.console.error(s"Failed to migrate V4 to $V_LATEST: ${e.getMessage()}")
                             None
-                AppStateSchemaHelper.decodeFromYaml(rawData).toOption // COMMENT ME ONCE THE V4->V5 BUG HAS BEEN REPRODUCED MANUALLY IN TEST
 
             case Some(5) =>
                 // Current version - decode directly

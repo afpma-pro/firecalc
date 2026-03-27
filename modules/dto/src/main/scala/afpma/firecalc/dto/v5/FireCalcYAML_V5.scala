@@ -24,7 +24,9 @@ import io.taig.babel.Locale
  *   - bump to Firebox_V4 : R1,R2,R3,Y,Lr,Lt,Zt values for ecolabeled firebox
  */
 final case class FireCalcYAML_V5(
-    version                       : FireCalc_Version = FireCalcYAML_V5.VERSION,
+    // FireCalc_Version.V[5] is a singleton literal type — prevents Chimney from auto-copying
+    // the version field during migrations. See FIreCalc_Version.scala for details.
+    version                       : FireCalc_Version.V[5] = FireCalcYAML_V5.VERSION,
     locale                        : Locale,
     display_units                 : DisplayUnits,
     standard_or_computation_method: StandardOrComputationMethod,
@@ -40,8 +42,8 @@ final case class FireCalcYAML_V5(
 
 trait FireCalcYAML_V5_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V5]:
 
-    type Version = FireCalc_Version
-    final val VERSION = FireCalc_Version(5)
+    type Version = FireCalc_Version.V[5]
+    final val VERSION: FireCalc_Version.V[5] = FireCalc_Version.v[5]
 
     import CommonInstances.given
     import V5Instances.given

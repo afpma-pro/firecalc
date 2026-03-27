@@ -9,6 +9,8 @@ import afpma.firecalc.dto.common.FireCalc_Version
 import afpma.firecalc.dto.generators.AllGenerators
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
+import scala.util.Using
+
 import org.scalactic.anyvals.PosInt
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
@@ -114,6 +116,32 @@ class MigrationSmokeSuite
                 // if version is still 4 but data is in V5 format, the V4 decoder fails
                 val reloaded = FireCalcYAMLMigrations.decodeAndMigrate(yaml.toOption.get)
                 reloaded shouldBe a[Right[?, ?]]
+        }
+    }
+
+    "Legacy file: V5 data with V4 version marker (failed migration artifact)" - {
+
+        val fixtureYaml: String =
+            Using.resource(getClass.getResourceAsStream("/migration-fallback-fixtures/v5_data_with_v4_version_marker.fcalc")): stream =>
+                new String(stream.readAllBytes(), "UTF-8")
+
+        "should recover via V5 fallback decoder" in {
+            val result = FireCalcYAMLMigrations.decodeAndMigrate(fixtureYaml)
+            result shouldBe a[Right[?, ?]]
+            result.toOption.get.version.unwrap shouldBe 5
+        }
+    }
+
+    "Legacy file: V4 data with V3 version marker (failed migration artifact)" - {
+
+        val fixtureYaml: String =
+            Using.resource(getClass.getResourceAsStream("/migration-fallback-fixtures/v4_data_with_v3_version_marker.fcalc")): stream =>
+                new String(stream.readAllBytes(), "UTF-8")
+
+        "should recover via V4 fallback decoder and migrate to V5" in {
+            val result = FireCalcYAMLMigrations.decodeAndMigrate(fixtureYaml)
+            result shouldBe a[Right[?, ?]]
+            result.toOption.get.version.unwrap shouldBe 5
         }
     }
 

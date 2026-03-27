@@ -24,7 +24,7 @@ import io.taig.babel.Locale
  * - Material_15544_V2 is to replace Material_15544
  */
 final case class FireCalcYAML_V3(
-    version                       : FireCalc_Version,
+    version                       : FireCalc_Version.V[3] = FireCalcYAML_V3.VERSION,
     locale                        : Locale,
     display_units                 : DisplayUnits,
     standard_or_computation_method: StandardOrComputationMethod,
@@ -40,8 +40,8 @@ final case class FireCalcYAML_V3(
 
 trait FireCalcYAML_V3_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V3]:
 
-    type Version = FireCalc_Version
-    final val VERSION = FireCalc_Version(3)
+    type Version = FireCalc_Version.V[3]
+    final val VERSION: FireCalc_Version.V[3] = FireCalc_Version.v[3]
     
     import CommonInstances.given
     import V3Instances.given
