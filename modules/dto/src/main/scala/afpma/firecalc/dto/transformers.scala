@@ -12,7 +12,6 @@ import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
-import afpma.firecalc.dto.v5
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
 import cats.syntax.all.*
