@@ -26,10 +26,13 @@ import cats.syntax.all.*
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
-
+import com.raquo.laminar.codecs.*
+import LaminarFormFactory.DISABLED_SIG
 import scala.annotation.nowarn
 
 object DaisyUIInputs:
+
+    val disabledAttr : HtmlAttr[Boolean] = htmlAttr("disabled", BooleanAsAttrPresenceCodec)
 
     val DEFAULT_PLACEHOLDER = "..."
 
@@ -136,11 +139,12 @@ object DaisyUIInputs:
     final case class DoubleFieldsetLabelAndInput(
         labelOpt     : Option[String],
         dVar         : Var[Option[Double]],
-        placeholder  : String        = DEFAULT_PLACEHOLDER,
-        optionalField: OptionalField = OptionalField.No
+        placeholder  : String          = DEFAULT_PLACEHOLDER,
+        optionalField: OptionalField   = OptionalField.No,
+        disabled     : Signal[Boolean] = DISABLED_SIG,
     ) extends FieldsetLabelAndInput[Double](labelOpt, optionalField = OptionalField.No):
         def inputNode: L.HtmlElement =
-            NumberInputOnly(dVar, placeholder, optionalField)
+            NumberInputOnly(dVar, placeholder, optionalField, disabled = disabled)
 
     object DoubleFieldsetLabelAndInput extends CommonRenderingFactory[Double]:
         @nowarn def make(v: Var[Option[Double]], label: Option[String], optionalField: OptionalField)(using
@@ -315,21 +319,26 @@ object DaisyUIInputs:
 
     final case class LabelledNumberInputWithUnitAndTooltip(
         v            : Var[Option[Double]],
-        labelStart   : Option[String] = None,
-        ttStart      : HtmlElement    = span(),
-        labelEnd     : Option[String] = None,
-        ttEnd        : HtmlElement    = span(),
-        placeholder  : String         = DEFAULT_PLACEHOLDER,
-        optionalField: OptionalField  = OptionalField.No
+        labelStart   : Option[String]  = None,
+        ttStart      : HtmlElement     = span(),
+        labelEnd     : Option[String]  = None,
+        ttEnd        : HtmlElement     = span(),
+        placeholder  : String          = DEFAULT_PLACEHOLDER,
+        optionalField: OptionalField   = OptionalField.No,
+        disabled     : Signal[Boolean] = DISABLED_SIG,
     ) extends LabelledInputWithUnitAndTooltip(
             labelStart,
             ttStart,
             labelEnd,
             ttEnd
         ):
-        def inputNode = NumberInputOnly(v, placeholder, optionalField).inputNoLabel // TOFIX
+        def inputNode = NumberInputOnly(v, placeholder, optionalField, disabled = disabled).inputNoLabel // TOFIX
     object LabelledNumberInputWithUnitAndTooltip extends CommonRenderingFactory[Double]:
-        @nowarn def make(v: Var[Option[Double]], label: Option[String], optionalField: OptionalField)(using
+        @nowarn def make(
+            v: Var[Option[Double]], 
+            label: Option[String], 
+            optionalField: OptionalField, 
+        )(using
             ValidateVar[Option[Double]]
         ): L.HtmlElement =
             LabelledNumberInputWithUnitAndTooltip(v, labelStart = label, optionalField = optionalField)
@@ -634,7 +643,8 @@ object DaisyUIInputs:
         valueOptVar  : Var[Option[Double]],
         placeholder  : String        = DEFAULT_PLACEHOLDER,
         optionalField: OptionalField = OptionalField.No,
-        inputCls     : String        = ""
+        inputCls     : String        = "",
+        disabled     : Signal[Boolean] = DISABLED_SIG,
     ) extends Component:
 
         val inputNoLabel = input(
@@ -642,6 +652,7 @@ object DaisyUIInputs:
             tpe           := "number",
             L.placeholder := placeholder,
             value <-- valueOptVar.signal.map(_.fold("")(_.formatPrecise())),
+            disabledAttr <-- disabled,
             onInput.mapToValue // FIXME: string ending with "." such as "12." are returned as empty string instead of "12," or "12", this returns None
                 .map(
                     _.replaceAll("\\,$", "") // prevent "12," value to not be parsed as Some(12)
@@ -669,7 +680,8 @@ object DaisyUIInputs:
         optionalField    : OptionalField  = OptionalField.No,
         sunitsVar        : Var[List[SUnit[?]]],
         sunitCurrentVar  : Var[SUnit[?]],
-        validate         : (Option[Double], SUnit[?]) => VNelString[Unit] // = (_, _) => Valid(())
+        validate         : (Option[Double], SUnit[?]) => VNelString[Unit], // = (_, _) => Valid(())
+        disabled         : Signal[Boolean] = DISABLED_SIG,
     ) extends Component:
 
         val vnelErrorsVar =
@@ -682,7 +694,7 @@ object DaisyUIInputs:
         val isDoubleValid: Option[Double] => Boolean = d => validate(d, sunitCurrentVar.now()).isValid
 
         private def _inputRegular =
-            DoubleFieldsetLabelAndInput(fieldNameOpt, doubleOptVar, placeholder, optionalField)
+            DoubleFieldsetLabelAndInput(fieldNameOpt, doubleOptVar, placeholder, optionalField, disabled = disabled)
             // NumberInputOnly(doubleOptVar, placeholder)
 
         def inputWithFloatingLabel =
@@ -769,12 +781,13 @@ object DaisyUIInputs:
         case class WithUnits(
             sunitsVar        : Var[List[SUnit[?]]],
             sunitCurrentVar  : Var[SUnit[?]],
-            withFloatingLabel: Boolean
+            withFloatingLabel: Boolean,
+            disabled         : Signal[Boolean] = DISABLED_SIG,
         ) extends CommonRenderingFactory[Double]:
             def make(
                 v            : Var[Option[Double]],
                 label        : Option[String],
-                optionalField: OptionalField
+                optionalField: OptionalField,
             )(using
                 ValidateVar[Option[Double]]
             ): L.HtmlElement =
@@ -787,7 +800,8 @@ object DaisyUIInputs:
                     sunitsVar         = sunitsVar,
                     sunitCurrentVar   = sunitCurrentVar,
                     withFloatingLabel = withFloatingLabel,
-                    validate          = validate
+                    validate          = validate,
+                    disabled          = disabled,
                 )
 
     final case class TextInputWithFloatingLabelAndTooltipValidation(

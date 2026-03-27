@@ -205,7 +205,13 @@ object I18nData:
             reinforcement_bars_offset_in_corners_R3  : String,
             injector_height_Z                        : String,
             injector_surface_area                    : String,
-            injector_surface_area_obstructed_max_perc: StringFormat1
+            injector_surface_area_obstructed_max_perc: StringFormat1,
+            injector_width_rear_wall_Lr              : String,
+            injector_width_side_wall_Ls              : String,
+            injector_width_door_wall_Lt              : String,
+            injector_height_door_wall_Zt             : String,
+            air_column_thickness_door_wall_St        : String,
+            computed_values                          : String,
         )
 
         case class Tested(

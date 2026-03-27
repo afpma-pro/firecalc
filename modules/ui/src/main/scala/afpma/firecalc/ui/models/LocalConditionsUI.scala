@@ -196,7 +196,7 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     given form_z_geodetical_height: DisplayUnits => DaisyUIVerticalForm[QtyD[Meter]] =
         import defaultable.given_z_geodetical_height
         import vv.meter.valid_whenPositive
-        dual.given_dual_z_geodetical_height.form_DaisyUIVerticalForm
+        dual.given_dual_z_geodetical_height.form_DaisyUIVerticalForm()
             .withFieldName(I18N.local_conditions.altitude)
 
     // LocalConditions Clone

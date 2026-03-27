@@ -102,7 +102,7 @@ object Ecolabeled_To_FireboxInternalPipes_15544_MCE
                 ),
                 addSectionVertical  (
                     "remontée dans les colonnes d'air",
-                    h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0 + h76_epaisseurSole + c18_hauteurEntreLesInjecteurs * 2.0
+                    h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0 + h76_epaisseurSole + c18_hauteurEntreLesInjecteurs_Y * 2.0
                 ),
 
                 addSharpAngle_90deg ("virage 90° avant injecteur", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right

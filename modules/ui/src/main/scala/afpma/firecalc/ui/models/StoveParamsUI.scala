@@ -80,7 +80,7 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
 
     given form_option_mB: DaisyUIVerticalForm[Option[QtyD[Kilogram]]] =
         import vv.kilogram.valid_whenStrictlyPositive
-        given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form_DaisyUIVerticalForm
+        given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form_DaisyUIVerticalForm()
         DaisyUIVerticalForm
             .conditionalOn[StoveParams, QtyD[Kilogram]](
                 stove_params_var,
@@ -90,7 +90,7 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
 
     given form_option_pn: DaisyUIVerticalForm[Option[QtyD[Kilo * Watt]]] =
         import vv.kilowatt.valid_whenStrictlyPositive
-        given DF[Power] = dual.given_dual_Power.form_DaisyUIVerticalForm
+        given DF[Power] = dual.given_dual_Power.form_DaisyUIVerticalForm()
         DaisyUIVerticalForm
             .conditionalOn[StoveParams, QtyD[Kilo * Watt]](
                 stove_params_var,

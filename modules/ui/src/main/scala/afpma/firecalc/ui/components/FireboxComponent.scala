@@ -18,6 +18,8 @@ import afpma.firecalc.ui.formgen.as_HtmlElement
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
+import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
+
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
@@ -25,6 +27,9 @@ import coulomb.policy.standard.given
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
+import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm.autoOverwriteFieldNames
+
+import io.scalaland.chimney.dsl.*
 
 import io.taig.babel.Locale
 
@@ -34,7 +39,6 @@ case class FireboxComponent(
     extends Component:
 
     val vertical_form = new VerticalFormCommonInstances()
-    import vertical_form.given
 
     import FireboxComponent.*
 
@@ -67,12 +71,48 @@ case class FireboxComponent(
         div(cls := "row-span-1 col-span-1", afpma_prse_top_img )
     )
 
-    val node = div(
-        cls := "grid grid-flow-col grid-cols-3 grid-rows-2 gap-10",
-        div(cls := "row-span-2", v.as_HtmlElement),
-        children(nodeSeq_Ecolabeled_V1) <-- showEcolabeledV1Img,
-        children(nodeSeq_Ecolabeled_V2) <-- showEcolabeledV2Img,
-        children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg
+    lazy val node = 
+        import vertical_form.given
+        div(
+            cls := "grid grid-flow-col grid-cols-3 grid-rows-2 gap-10",
+            div(cls := "row-span-2", 
+                v.as_HtmlElement,
+                outputResults
+            ),
+            children(nodeSeq_Ecolabeled_V1) <-- showEcolabeledV1Img,
+            children(nodeSeq_Ecolabeled_V2) <-- showEcolabeledV2Img,
+            children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg
+        )
+
+    val DISABLED_TRUE_SIG = Var(true).signal
+
+    given DaisyUIVerticalForm[QtyD[Meter]] = 
+        val dual: DualCommonInstances = new DualCommonInstances()
+        import defaultable.qty_d.centimeter.zero
+        import defaultable.qty_d.meter.zero
+        import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
+        import afpma.firecalc.units.all.sunit_Centimeter
+        DaisyUIVerticalForm
+            .mkFromOptionFor_UseDefaultableIfEmptyInput(
+                DaisyUIVerticalForm.forOptionQtyD_default[Centimeter](
+                    disabled = DISABLED_TRUE_SIG
+                )
+            )
+        dual.given_dual_Length_cm.form_DaisyUIVerticalForm(disabled = DISABLED_TRUE_SIG)
+
+    given DaisyUIVerticalForm[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs] = 
+        import hastranslations.given
+        DaisyUIVerticalForm
+        .autoDerived[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs]
+        .autoOverwriteFieldNames
+
+    val outputResults = div(
+        child <-- firebox_var.signal.map:
+            case fb: Firebox.Ecolabeled => 
+                import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
+                val eco = fb.transformInto[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled]
+                Var(eco.outputs).as_HtmlElement
+            case _ => emptyNode
     )
 
 object FireboxComponent:

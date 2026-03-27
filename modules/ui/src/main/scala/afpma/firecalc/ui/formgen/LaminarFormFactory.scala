@@ -71,6 +71,8 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
     type D_to_DF[A]       = Defaultable[A] ?=> DF[A]
     type DOpt_to_DFOpt[A] = Defaultable[Option[A]] ?=> DF[Option[A]]
 
+    export LaminarFormFactory.DISABLED_SIG
+
     def makeFor[A](d: Defaultable[A])(
         renderFunc: (Var[A], FormConfig) => HtmlElement
     ): VV_to_DF[A] =
@@ -158,7 +160,7 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
             )
 
     // DaisyUIVerticalForm[Option[A]] + Defaultable[A] <=> DaisyUIVerticalForm[A]
-    protected def mkFromOptionFor_UseDefaultableIfEmptyInput[A](
+    def mkFromOptionFor_UseDefaultableIfEmptyInput[A](
         underlying: DF[Option[A]]
     ): D_to_DF[A] =
         import underlying.given_ValidateVar
@@ -390,12 +392,14 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
         updateFieldName       : Option[String] => Option[String],
         optionalField         : OptionalField,
         getValueFromF         : F[U] => Double,
-        makeFWithUnitFromValue: Double => F[U]
+        makeFWithUnitFromValue: Double => F[U],
+        disabled              : Signal[Boolean] = DISABLED_SIG,
     ): VVOpt_to_DFOpt[F[U]] =
         val sunits           = List(SUnit[U])
         val renderingFactory = mkRenderingFactoryForNumberWithUnitsAndValidation(
             sunitsVar       = Var(sunits),
-            sunitCurrentVar = Var(sunits.head)
+            sunitCurrentVar = Var(sunits.head),
+            disabled        = disabled,
         )
         forOptionK_withRenderingFactory(
             updateFieldName,
@@ -425,13 +429,15 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
 
     def forOptionQtyD[U: SUnit](
         updateFieldName       : Option[String] => Option[String],
-        optionalField         : OptionalField = OptionalField.No
+        optionalField         : OptionalField   = OptionalField.No,
+        disabled              : Signal[Boolean] = DISABLED_SIG,
     ): VVOpt_to_DFOpt[QtyD[U]] =
         forOptionK[QtyD, U](
             updateFieldName        = updateFieldName,
             optionalField          = optionalField,
             getValueFromF          = _.value,
-            makeFWithUnitFromValue = _.withUnit[U]
+            makeFWithUnitFromValue = _.withUnit[U],
+            disabled               = disabled,
         )
 
     def forOptionQtyD_withRenderingFactory[U: SUnit](
@@ -458,15 +464,18 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
             makeFWithUnitFromValue = _.withTemperature[U]
         )
 
-    def forOptionQtyD_default[U: SUnit]: VVOpt_to_DFOpt[QtyD[U]] =
+    def forOptionQtyD_default[U: SUnit](
+        disabled: Signal[Boolean] = DISABLED_SIG
+    ): VVOpt_to_DFOpt[QtyD[U]] =
         forOptionQtyD[U](
             updateFieldName = identity,
-            optionalField   = OptionalField.No
+            optionalField   = OptionalField.No,
+            disabled        = disabled
         )
 
     // switch to def ???
     given given_forOptionQtyD_default: [U: SUnit] => ValidateVar[Option[QtyD[U]]] => DF[Option[QtyD[U]]] =
-        forOptionQtyD_default[U]
+        forOptionQtyD_default[U]()
 
     def forOptionTempD_default[U: SUnit]: VVOpt_to_DFOpt[TempD[U]] =
         forOptionTempD[U](
@@ -526,7 +535,8 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
 
     protected def mkRenderingFactoryForNumberWithUnitsAndValidation(
         sunitsVar      : Var[List[SUnit[?]]],
-        sunitCurrentVar: Var[SUnit[?]]
+        sunitCurrentVar: Var[SUnit[?]],
+        disabled     : Signal[Boolean] = DISABLED_SIG,
     ): CommonRenderingFactory[Double]
 
     protected def mkRenderingFactoryForEnum_UsingShowAsId[A: Show](
@@ -848,6 +858,8 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
         self.derived[OptionOfEither[L, R]]
 
 object LaminarFormFactory:
+
+    val DISABLED_SIG = Var(false).signal
 
     case class WrappedWithEphemeralId[A](id: Int, a: A)
     // def validateVarInstance(using vva: ValidateVar[A]): ValidateVar[WrappedWithEphemeralId[A]] =

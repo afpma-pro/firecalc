@@ -79,12 +79,12 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_AreaInCm2: DisplayUnits => DaisyUIHorizontalForm[AreaInCm2] =
         import defaultable.qty_d.area_in_cm2.zero
         import vv.area_in_cm2.valid_whenStrictlyPositive
-        given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm
+        given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm()
 
     given horizontal_form_Option_AreaInCm2: DisplayUnits => DaisyUIHorizontalForm[Option[AreaInCm2]] =
         import defaultable.qty_d.option.area_in_cm2.zero
         import vv.area_in_cm2.validOption_whenStrictlyPositive
-        given_dual_Option_Area.form_DaisyUIHorizontalForm
+        given_dual_Option_Area.form_DaisyUIHorizontalForm()
 
     // given horizontal_form_AddFlowResistance: Locale => DaisyUI5HorizontalForm[AddFlowResistance] =
     //     DaisyUI5HorizontalForm.autoDerived[AddFlowResistance]
@@ -110,19 +110,19 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_PipeShape_Circle: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Circle] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm()
         autoDeriveAndOverwriteFieldNames[PipeShape.Circle]
 
     given horizontal_form_PipeShape_Square: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Square] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm()
         autoDeriveAndOverwriteFieldNames[PipeShape.Square]
 
     given horizontal_form_PipeShape_Rectangle: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape.Rectangle] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[QtyD[Meter]] = given_dual_Length_mm_cm.form_DaisyUIHorizontalForm()
         autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
 
     given horizontal_form_PipeShape: DisplayUnits => Locale => DaisyUIHorizontalForm[PipeShape] =
@@ -166,7 +166,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     given horizontal_form_Option_Kilowatt: DaisyUIHorizontalForm[Option[QtyD[Kilo * Watt]]] =
         import vv.kilowatt.validOption_whenStrictlyPositive
-        DaisyUIHorizontalForm.forOptionQtyD_default[Kilo * Watt]
+        DaisyUIHorizontalForm.forOptionQtyD_default[Kilo * Watt]()
 
     // QtyD[Meter]
 
@@ -178,12 +178,12 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     val horizontal_form_Length_cm_m: DaisyUIHorizontalForm[QtyD[Meter]] =
         import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.meter.zero
-        given_dual_Length_cm_m.form_DaisyUIHorizontalForm
+        given_dual_Length_cm_m.form_DaisyUIHorizontalForm()
 
     val horizontal_form_Length_mm_cm: DaisyUIHorizontalForm[QtyD[Meter]] =
         import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.meter.zero
-        given_dual_Length_mm_cm.form_DaisyUIHorizontalForm
+        given_dual_Length_mm_cm.form_DaisyUIHorizontalForm()
 
     val horizontal_form_QtyD_Pascal: DaisyUIHorizontalForm[QtyD[Pascal]] =
         import ValidateVarCommonInstances.valid_always.given
@@ -214,7 +214,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     val horizontal_form_Roughness: DaisyUIHorizontalForm[QtyD[Meter]] =
         import defaultable.given_Roughness
         import vv.meter.valid_whenStrictlyPositive
-        given_dual_Roughness.form_DaisyUIHorizontalForm
+        given_dual_Roughness.form_DaisyUIHorizontalForm()
             .withFieldName(I18N.terms.roughness)
 
     given horizontal_form_TCelsius: Locale => DaisyUIHorizontalForm[TCelsius] =
@@ -232,7 +232,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         import vv.area_in_cm2.valid_whenStrictlyPositive
 
         given DaisyUIHorizontalForm[PipeShape]  = horizontal_form_PipeShape
-        given DaisyUIHorizontalForm[AreaInCm2]  = given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm
+        given DaisyUIHorizontalForm[AreaInCm2]  = given_dual_Area_cm2_or_in2.form_DaisyUIHorizontalForm()
             .withFieldName(I18N.terms.area)
 
         DaisyUIHorizontalForm.optionOfEither[AreaInCm2, PipeShape](
@@ -256,7 +256,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         // DaisyUIHorizontalForm.forValidatedQtyD_NoneAsDefault[Meter]()(
         //     using given_forOptionQtyD_default
         // )
-        given_dual_Thickness.form_DaisyUIHorizontalForm
+        given_dual_Thickness.form_DaisyUIHorizontalForm()
 
     // Zeta ζ
 

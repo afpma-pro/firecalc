@@ -294,20 +294,17 @@ object DaisyUIHorizontalForm
     override val optionDoubleFactory    = DaisyUIInputs.LabelledNumberInputWithUnitAndTooltip
     override val optionLocalDateFactory = DaisyUIInputs.LabelledLocalDateInputWithUnitAndTooltip
 
-    override def forOptionQtyD_default[U: SUnit] = forOptionQtyD[U](
-        updateFieldName = identity,
-        optionalField   = OptionalField.No
-    )
-
     protected def mkRenderingFactoryForNumberWithUnitsAndValidation(
         sunitsVar      : Var[List[SUnit[?]]],
-        sunitCurrentVar: Var[SUnit[?]]
+        sunitCurrentVar: Var[SUnit[?]],
+        disabled       : Signal[Boolean] = DISABLED_SIG,
     ): CommonRenderingFactory[Double] =
         DaisyUIInputs.NumberInputWithUnitsAndFloatingLabelAndTooltipValidation
             .WithUnits(
                 sunitsVar,
                 sunitCurrentVar,
-                withFloatingLabel = true
+                withFloatingLabel = true,
+                disabled
             )
 
     protected def mkRenderingFactoryForEnum_UsingShowAsId[A: Show](

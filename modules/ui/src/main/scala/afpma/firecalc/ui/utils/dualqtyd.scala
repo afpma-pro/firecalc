@@ -18,7 +18,7 @@ import cats.syntax.all.*
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
-
+import LaminarFormFactory.DISABLED_SIG
 import coulomb.conversion.UnitConversion
 
 import scala.annotation.nowarn
@@ -123,7 +123,9 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
 
         (curr_ovalue_var, curr_sunit_var, sunits, binders)
 
-    def form_DaisyUIVerticalForm(using
+    def form_DaisyUIVerticalForm(
+        disabled: Signal[Boolean] = DISABLED_SIG
+    )(using
         d   : Defaultable[QFinal],
         vvqf: ValidateVar[QFinal]
     ): DaisyUIVerticalForm[QFinal] =
@@ -145,13 +147,16 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
                         validate          = (cov, csu) =>
                             val curr_fv = currentOValueToCurrentFValue(cov, d.default, csu)
                             val qf      = getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(curr_fv)
-                            vvqf.validate(qf)
+                            vvqf.validate(qf),
+                        disabled          = disabled
                     )
                     .amend(binders)
             end render
     end form_DaisyUIVerticalForm
 
-    def form_DaisyUIHorizontalForm(using
+    def form_DaisyUIHorizontalForm(
+        disabled: Signal[Boolean] = DISABLED_SIG
+    )(using
         d   : Defaultable[QFinal],
         vvqf: ValidateVar[QFinal]
     ): DaisyUIHorizontalForm[QFinal] =
@@ -173,7 +178,8 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
                         validate          = (cov, csu) =>
                             val curr_fv = currentOValueToCurrentFValue(cov, d.default, csu)
                             val qf      = getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(curr_fv)
-                            vvqf.validate(qf)
+                            vvqf.validate(qf),
+                        disabled          = disabled
                     )
                     .amend(binders)
             end render

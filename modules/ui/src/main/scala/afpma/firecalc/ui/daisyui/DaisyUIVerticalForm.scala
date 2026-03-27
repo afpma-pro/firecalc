@@ -119,13 +119,15 @@ object DaisyUIVerticalForm extends LaminarFormFactory[DaisyUIVerticalForm] with 
 
     protected def mkRenderingFactoryForNumberWithUnitsAndValidation(
         sunitsVar      : Var[List[SUnit[?]]],
-        sunitCurrentVar: Var[SUnit[?]]
+        sunitCurrentVar: Var[SUnit[?]],
+        disabled       : Signal[Boolean] = DISABLED_SIG,
     ): CommonRenderingFactory[Double] =
         DaisyUIInputs.NumberInputWithUnitsAndFloatingLabelAndTooltipValidation
             .WithUnits(
                 sunitsVar,
                 sunitCurrentVar,
-                withFloatingLabel = false
+                withFloatingLabel = false,
+                disabled
             )
 
     protected def mkRenderingFactoryForEnum_UsingShowAsId[A: Show](

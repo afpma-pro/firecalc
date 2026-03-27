@@ -108,7 +108,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     val vertical_form_Option_QtyD_Minute: DaisyUIVerticalForm[Option[QtyD[Minute]]] =
         import vv.minute.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Minute]
+        DaisyUIVerticalForm.forOptionQtyD_default[Minute]()
 
     given given_QtyD_Minute: Defaultable[QtyD[Minute]] => DaisyUIVerticalForm[QtyD[Minute]] =
         import vv.minute.validOption_whenStrictlyPositive
@@ -124,7 +124,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     given given_Option_QtyD_Kilowatt: DaisyUIVerticalForm[Option[QtyD[Kilo * Watt]]] =
         import vv.kilowatt.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Kilo * Watt]
+        DaisyUIVerticalForm.forOptionQtyD_default[Kilo * Watt]()
 
     given given_QtyD_Percent: Defaultable[QtyD[Percent]] => DaisyUIVerticalForm[QtyD[Percent]] =
         import vv.percent.validOption_whenPositive
@@ -132,11 +132,11 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     val vertical_form_Option_QtyD_Percent: DaisyUIVerticalForm[Option[QtyD[Percent]]] =
         import vv.percent.validOption_whenPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Percent]
+        DaisyUIVerticalForm.forOptionQtyD_default[Percent]()
 
     val vertical_form_Option_QtyD_Kilogram: DaisyUIVerticalForm[Option[QtyD[Kilogram]]] =
         import vv.kilogram.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Kilogram]
+        DaisyUIVerticalForm.forOptionQtyD_default[Kilogram]()
 
     given given_QtyD_Dimensionless: Defaultable[QtyD[1]] => DaisyUIVerticalForm[QtyD[1]] =
         import vv.unitless.validOption_whenPositive
@@ -144,7 +144,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     val vertical_form_Option_QtyD_Dimensionless: DaisyUIVerticalForm[Option[QtyD[1]]] =
         import vv.unitless.validOption_whenPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[1]
+        DaisyUIVerticalForm.forOptionQtyD_default[1]()
 
     given given_TCelsius: Defaultable[TCelsius] => DaisyUIVerticalForm[TCelsius] =
         import vv.temp.celsius.validOption_whenPositive
@@ -184,12 +184,12 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     val vertical_form_Length_cm: DF[Length] =
         import vv.meter.valid_whenStrictlyPositive
         import defaultable.qty_d.meter.zero
-        given_dual_Length_cm.form_DaisyUIVerticalForm
+        given_dual_Length_cm.form_DaisyUIVerticalForm()
 
     val vertical_form_Length_mm_cm: DF[Length] =
         import vv.meter.valid_whenStrictlyPositive
         import defaultable.qty_d.meter.zero
-        given_dual_Length_mm_cm.form_DaisyUIVerticalForm
+        given_dual_Length_mm_cm.form_DaisyUIVerticalForm()
 
     // Business logic types
 
@@ -204,13 +204,13 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     given vertical_form_AreaInCm2: DF[AreaInCm2] =
         import defaultable.qty_d.area_in_cm2.zero
         import vv.area_in_cm2.valid_whenStrictlyPositive
-        given_dual_Area_cm2_or_in2.form_DaisyUIVerticalForm
+        given_dual_Area_cm2_or_in2.form_DaisyUIVerticalForm()
 
     // Area : cm2 + m2
     given vertical_form_Area_cm2_m2: DF[Area] =
         import defaultable.qty_d.area.zero
         import vv.area.valid_whenStrictlyPositive
-        given_dual_Area_cm2_m2_or_in2.form_DaisyUIVerticalForm
+        given_dual_Area_cm2_m2_or_in2.form_DaisyUIVerticalForm()
             .withFieldName(I18N.terms.area)
 
     // Firebox
@@ -392,7 +392,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             given DF[Option[EmissionValueU]] =
                 given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
                 val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
-                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
+                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
                 underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
             given DF[TestEmissionValue_DTO] =
                 DaisyUIVerticalForm.autoDerived[TestEmissionValue_DTO].autoOverwriteFieldNames
@@ -442,7 +442,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         // Optional centimeter (sb_min, sb_max)
         val vertical_form_Option_QtyD_Centimeter: DF[Option[QtyD[Centimeter]]] =
             import vv.centimeter.validOption_whenStrictlyPositive
-            DaisyUIVerticalForm.forOptionQtyD_default[Centimeter]
+            DaisyUIVerticalForm.forOptionQtyD_default[Centimeter]()
         given optCm: DF[Option[QtyD[Centimeter]]] = vertical_form_Option_QtyD_Centimeter
 
         // Plain Option[Mass] — mb_min and mb_max are independent supplier constraints, no stove_params link.
@@ -487,7 +487,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             given DF[Option[EmissionValueU]] =
                 given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
                 val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
-                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
+                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
                 underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
             // TestEmissionValue_DTO
             given DF[TestEmissionValue_DTO] =
