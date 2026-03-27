@@ -83,6 +83,7 @@ object I18nData_UI:
             migration_failed: String,
             decode_error    : String,
             storage_full    : String,
+            cache_reset     : String,
         )
 
     case class ClientProjectData(

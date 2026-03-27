@@ -518,6 +518,9 @@ import afpma.firecalc.ui.models.UIState
 import afpma.firecalc.ui.models.UIState.given
 import io.circe.Encoder
 import io.circe.parser
+import org.scalajs.dom
+
+lazy val catalogDecodeFailed: Var[Boolean] = Var(false)
 
 lazy val catalogWebStorageVar: WebStorageVar[CatalogState] =
     WebStorageVar
@@ -528,7 +531,10 @@ lazy val catalogWebStorageVar: WebStorageVar[CatalogState] =
             decode           = (raw: String) =>
                 parser.decode[CatalogState](raw) match
                     case Right(state) => Success(state)
-                    case Left(_)      => Success(CatalogState.empty),
+                    case Left(err)    =>
+                        dom.console.warn(s"[FireCalc] Catalog cache decode failed, resetting to empty. Error: ${err.getMessage}")
+                        catalogDecodeFailed.set(true)
+                        Success(CatalogState.empty),
             default          = Success(CatalogState.empty),
             syncDistinctByFn = _ == _
         )
@@ -587,8 +593,6 @@ def toggleVizSelection(newSelection: Set[VizElementId]): Unit =
 // ============================================================================
 // UI STATE (persisted to localStorage, with migration from VIZ_CAMERA_STATE)
 // ============================================================================
-
-import org.scalajs.dom
 
 private def migrateOldCameraState(): Option[CameraState] =
     try

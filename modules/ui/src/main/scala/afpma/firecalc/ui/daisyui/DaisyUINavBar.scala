@@ -331,5 +331,20 @@ object DaisyUINavBar:
                     )
                 )
             ),
-            catalogManagerDialog.node
+            catalogManagerDialog.node,
+
+            // Dismissible warning banner when catalog cache was reset (e.g., after DTO version bump)
+            div(
+                cls     := "fixed bottom-4 right-4 z-50 max-w-md",
+                display <-- catalogDecodeFailed.signal.map(if _ then "" else "none"),
+                div(
+                    cls := "alert alert-warning shadow-lg text-sm",
+                    span(I18N_UI.catalog.errors.cache_reset),
+                    button(
+                        cls     := "btn btn-sm btn-ghost",
+                        "✕",
+                        onClick --> { _ => catalogDecodeFailed.set(false) }
+                    )
+                )
+            )
         )
