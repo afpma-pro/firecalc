@@ -975,6 +975,7 @@ object I18nData:
         thermal_resistance_requires_straight_section        : StringFormat1,
         thermal_resistance_calculation_errors               : StringFormat1,
         heat_transfer_coefficient_errors                    : StringFormat1,
+        mean_temperature_calculation_errors                 : StringFormat1,
         no_straight_section_for_temperature_calc            : StringFormat1,
 
         // Firebox type errors

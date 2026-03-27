@@ -673,6 +673,12 @@ object standard {
             override val sectionTyp: PipeType
         ) extends MecaFlu_Error
 
+        // Mean temperature calculation errors (T_mB)
+        case class MeanTemperatureCalculationErrors(
+            errors                 : cats.data.NonEmptyList[EN13384_Error],
+            override val sectionTyp: PipeType
+        ) extends MecaFlu_Error
+
         // Temperature calculation errors (context-aware)
         case class NoStraightSectionDefinedForTemperatureCalc(sectionRef: String, override val sectionTyp: PipeType)
             extends MecaFlu_Error
@@ -700,6 +706,8 @@ object standard {
                 I18N.mecaflu.errors.thermal_resistance_calculation_errors(errs.toList.map(_.show).mkString(", "))
             case HeatTransferCoefficientErrors(errs, _)             =>
                 I18N.mecaflu.errors.heat_transfer_coefficient_errors(errs.toList.map(_.show).mkString(", "))
+            case MeanTemperatureCalculationErrors(errs, _)          =>
+                I18N.mecaflu.errors.mean_temperature_calculation_errors(errs.toList.map(_.show).mkString(", "))
             case NoStraightSectionDefinedForTemperatureCalc(ref, _) =>
                 I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
             case x: SingularFlowResistanceCoeffError                => x.show

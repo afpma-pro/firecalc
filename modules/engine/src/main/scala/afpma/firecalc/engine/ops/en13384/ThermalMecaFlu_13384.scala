@@ -95,7 +95,7 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
         last_pipe_velocity: Option[FlowVelocity],
         gas               : Gas
     )(using params: Params_13384, alg: EN13384_1_A1_2019_Application_Alg): Either[MecaFlu_Error, PipeResult] =
-        try
+        MecaFluOps.catchMecaFluErrors(fd.pipeType):
             new MecaFlu_13384_PipeResult_Impl(
                 fd,
                 hafg,
@@ -109,13 +109,7 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
                 params
             ) {
                 override given en13384: EN13384_1_A1_2019_Application_Alg = alg
-            }.asRight
-        catch
-            case mee: MecaFlu_Error.MecaFluErrorException =>
-                Left(mee.error)
-            case e =>
-                e.printStackTrace(                                                 )
-                Left             (MecaFlu_Error.UnexpectedThrowable(e, fd.pipeType))
+            }
 
 private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     gp                   : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
@@ -323,13 +317,13 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         )
 
     val crossSectionArea: PositionOpX[Start | End, Area] =
-        crossSectionAreaE.fold(throwMecaFluError, identity)
+        crossSectionAreaE.fold(MecaFluOps.throwMecaFluError, identity)
 
     // ambiant air
     val tu: Option[TKelvin] = airSpaceDetailedE match
         case Left(err)  =>
             if (section_length == 0.meters) None
-            else throwMecaFluError(err)
+            else MecaFluOps.throwMecaFluError(err)
         case Right(asd) =>
             T_u(using asd).toOption
 
@@ -357,9 +351,6 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                 curr.typ
             )
 
-    private def throwMecaFluError(err: MecaFlu_Error): Nothing =
-        throw MecaFlu_Error.MecaFluErrorException(err)
-
     private def _compute_K_tm(tu: TCelsius, slen: Length): Either[MecaFlu_Error, (Dimensionless, TCelsius)] =
         for
             K_using_te        <- liftK(compute_K(te, massFlow, exteriorAir, slen))
@@ -379,14 +370,14 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     val tc = tk.to_degC
                     (tc, tc, tc)
                 case Invalid(e) =>
-                    throwMecaFluError(MecaFlu_Error.HeatTransferCoefficientErrors(e, curr.typ))
+                    MecaFluOps.throwMecaFluError(MecaFlu_Error.MeanTemperatureCalculationErrors(e, curr.typ))
         else if (tu.isDefined && tu.get.to_degC == te.to_degC) (te, te, te)
         else
             val tmiddle  : TCelsius =
                 debug     ("\n// tmiddle")
                 tu.map: tu =>
                     _compute_K_tm(tu, section_length / 2.0).fold(
-                        throwMecaFluError,
+                        MecaFluOps.throwMecaFluError,
                         (_K, _) => en13384.T_o_calc(tu, te, _K): TCelsius
                     )
                 .getOrElse(temp_start    )
@@ -394,7 +385,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                 debug     ("\n// to" )
                 tu.map: tu =>
                     _compute_K_tm(tu, section_length).fold(
-                        throwMecaFluError,
+                        MecaFluOps.throwMecaFluError,
                         (_K_using_tm, _) => en13384.T_o_calc(tu, te, _K_using_tm): TCelsius
                     )
                 .getOrElse(temp_start)
@@ -402,7 +393,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                 debug     ("\n// tmean")
                 tu.map: tu =>
                     _compute_K_tm(tu, section_length).fold(
-                        throwMecaFluError,
+                        MecaFluOps.throwMecaFluError,
                         (_, tm) => tm
                     )
                 .getOrElse(temp_start  )
