@@ -359,7 +359,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     case AirSpaceDetailed_V2.WithAirSpace_V2(width, _, _) => width * 2.0
                     case _                                                => 0.0.meters
                 val totalRequiredDh = expandedLinerDh + airSpaceWidthMeters
-                if totalRequiredDh >= cis.dh then
+                if totalRequiredDh > cis.dh then
                     return CasingTooSmallForLiner(s"${totalRequiredDh.show}", cis.dh.show, pt).invalidNel
             case _ => // cannot check — proceed
 
