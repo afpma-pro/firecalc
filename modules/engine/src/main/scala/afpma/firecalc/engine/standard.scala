@@ -619,6 +619,11 @@ object standard {
     sealed trait MecaFlu_Error extends MCalc_Error with HasSectionTypError
 
     object MecaFlu_Error:
+        /** Exception bridge: carries a structured MecaFlu_Error through lazy-val evaluation
+          * to the try/catch boundary in makePipeResult. */
+        final class MecaFluErrorException(val error: MecaFlu_Error)
+            extends Exception(error.getClass.getSimpleName)
+
         // Firebox type errors
         case class UnexpectedFireboxType(reason: String) extends MecaFlu_Error:
             override def sectionTyp: PipeType = FireboxPipeT

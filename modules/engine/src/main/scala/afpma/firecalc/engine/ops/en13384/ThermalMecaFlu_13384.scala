@@ -114,6 +114,8 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
                 override given en13384: EN13384_1_A1_2019_Application_Alg = alg
             }.asRight
         catch
+            case mee: MecaFlu_Error.MecaFluErrorException =>
+                Left(mee.error)
             case e =>
                 e.printStackTrace(                                                 )
                 Left             (MecaFlu_Error.UnexpectedThrowable(e, fd.pipeType))
@@ -258,22 +260,15 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         gas_massflow  : MassFlow,
         exteriorAir   : ExteriorAir,
         section_length: QtyD[Meter]
-    ): Dimensionless =
+    ): ValidatedNel[PipeWithGasFlowOps.Error, Dimensionless] =
         val o_pgf = mkPipeWithGasFlowWithLength(gas_temp, gas_massflow, exteriorAir, section_length)
-        val K     =
-            o_pgf
-                .map: pgf =>
-                    pgf
-                        .K(S_H = en13384.S_H)
-                        .fold(
-                            nel => throw new Exception(s"${curr.fullRef} : ${nel.toList.mkString(" ++ ")}"),
-                            K => K
-                        )
-                .getOrElse(0.0.withUnit[1])
-        debug(
-            s"""|K = ${K.show} \t (T_approx = ${gas_temp.show} \t SH = ${en13384.S_H.show} \t gmf = ${gas_massflow.show} \t ext_air = ${exteriorAir})""".stripMargin
-        )
-        K
+        o_pgf.map: pgf =>
+                pgf.K(S_H = en13384.S_H).map: K =>
+                    debug(
+                        s"""|K = ${K.show} \t (T_approx = ${gas_temp.show} \t SH = ${en13384.S_H.show} \t gmf = ${gas_massflow.show} \t ext_air = ${exteriorAir})""".stripMargin
+                    )
+                    K
+            .getOrElse(0.0.withUnit[1].validNel)
 
     // private def compute_K_b(
     //     gas_temp: TempD[Celsius],
@@ -367,38 +362,29 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
 
     val te = temp_start
 
-    private def _compute_K_tm(tu: TCelsius, slen: Length): (Dimensionless, TCelsius) =
-        debug("---------"       )
-        debug(s"${curr.fullRef}")
-        debug("---------"       )
-        debug(s"tu = ${tu.show}")
-        debug(s"te = ${te.show}")
-        val K_using_te = compute_K(te, massFlow, exteriorAir, slen)
-        debug(s"K_using_te = ${K_using_te.show}")
-        debug("."                               )
-        val tm_approx: TCelsius =
-            if (slen == 0.meters)
-                temp_start
-            else
-                en13384.T_m_calc(tu, te, K_using_te)
-        debug(s"tm_approx = ${tm_approx.show}")
-        val K_using_tm_approx = compute_K(tm_approx, massFlow, exteriorAir, slen)
-        debug(s"K_using_tm_approx = ${K_using_tm_approx.show}")
-        debug("."                                             )
-        val tm: TCelsius =
-            if (slen == 0.meters)
-                temp_start
-            else
-                en13384.T_m_calc(tu, te, K_using_tm_approx)
-        val K_using_tm = compute_K(tm, massFlow, exteriorAir, slen)
-        debug(s"K_using_tm = ${K_using_tm.show}")
-        debug(s"tm = ${tm.show}"                )
-        (K_using_tm, tm)
+    private def liftK(v: ValidatedNel[PipeWithGasFlowOps.Error, Dimensionless]): Either[MecaFlu_Error, Dimensionless] =
+        v.toEither.leftMap: nel =>
+            MecaFlu_Error.HeatTransferCoefficientErrors(
+                nel.map(_.withSectionTyp(curr.typ)),
+                curr.typ
+            )
+
+    private def throwMecaFluError(err: MecaFlu_Error): Nothing =
+        throw MecaFlu_Error.MecaFluErrorException(err)
+
+    private def _compute_K_tm(tu: TCelsius, slen: Length): Either[MecaFlu_Error, (Dimensionless, TCelsius)] =
+        for
+            K_using_te        <- liftK(compute_K(te, massFlow, exteriorAir, slen))
+            tm_approx         : TCelsius = if (slen == 0.meters) temp_start else en13384.T_m_calc(tu, te, K_using_te)
+            K_using_tm_approx <- liftK(compute_K(tm_approx, massFlow, exteriorAir, slen))
+            tm                : TCelsius = if (slen == 0.meters) temp_start else en13384.T_m_calc(tu, te, K_using_tm_approx)
+            K_using_tm        <- liftK(compute_K(tm, massFlow, exteriorAir, slen))
+        yield (K_using_tm, tm)
 
     // if tu (ambiant) == te (entry)
     // then return directly
     // otherwise compute tmiddle, to, etc..
-    val (tmiddle, to, temp_mean) =
+    val (tmiddle, to, temp_mean): (TCelsius, TCelsius, TCelsius) =
         if (curr.typ == AirIntakePipeT || curr.typ == CombustionAirPipeT)
             en13384.T_mB match
                 case Valid(tk)  =>
@@ -414,20 +400,26 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
             val tmiddle  : TCelsius =
                 debug     ("\n// tmiddle")
                 tu.map: tu =>
-                    val (_K, _) = _compute_K_tm(tu, section_length / 2.0)
-                    en13384.T_o_calc(tu, te, _K): TCelsius
+                    _compute_K_tm(tu, section_length / 2.0).fold(
+                        throwMecaFluError,
+                        (_K, _) => en13384.T_o_calc(tu, te, _K): TCelsius
+                    )
                 .getOrElse(temp_start    )
             val to       : TCelsius =
                 debug     ("\n// to" )
                 tu.map: tu =>
-                    val (_K_using_tm, _) = _compute_K_tm(tu, section_length)
-                    en13384.T_o_calc(tu, te, _K_using_tm): TCelsius
+                    _compute_K_tm(tu, section_length).fold(
+                        throwMecaFluError,
+                        (_K_using_tm, _) => en13384.T_o_calc(tu, te, _K_using_tm): TCelsius
+                    )
                 .getOrElse(temp_start)
             val temp_mean: TCelsius =
                 debug     ("\n// tmean")
                 tu.map: tu =>
-                    val (_, tm) = _compute_K_tm(tu, section_length)
-                    tm
+                    _compute_K_tm(tu, section_length).fold(
+                        throwMecaFluError,
+                        (_, tm) => tm
+                    )
                 .getOrElse(temp_start  )
             (tmiddle, to, temp_mean)
 
