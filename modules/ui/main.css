@@ -123,6 +123,6 @@ tr.insert-sep td {
 
 /* Direction change: neutral grey border-left, default background */
 .pipe-section-dc {
-    --pipe-border-color: var(--color-base-300);
+    --pipe-border-color: oklch(70% 0.001 247.838);
     border-left: 4px solid var(--pipe-border-color);
 }
