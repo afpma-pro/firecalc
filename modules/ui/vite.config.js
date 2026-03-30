@@ -93,15 +93,18 @@ export default defineConfig(({ mode }) => {
                 // 1. GitHub source maps: Only in development for Scala.js debugging
                 const githubSourceMaps = mode === 'development' ? ' https://raw.githubusercontent.com' : '';
                 
-                // 2. Unsafe eval: Only in development (may be needed by Scala.js dev workflow)
-                //    Remove in staging/production for better security
-                //    Keep 'unsafe-inline' in all modes (required for inline <script> tags in index.html)
+                // 2. Unsafe eval/inline: Only in development (needed by Vite HMR + Scala.js dev workflow)
+                //    Production has no inline <script> tags, so 'unsafe-inline' is not needed.
                 const scriptSrc = mode === 'development'
                     ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
-                    : `script-src 'self' 'unsafe-inline'`;
+                    : `script-src 'self'`;
                 
-                // Build the CSP policy
-                const cspContent = `default-src 'self'; connect-src 'self' https://1.1.1.1 ${backendUrl}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;`;
+                // 3. Additional hardening directives (production only)
+                const hardeningDirectives = mode === 'development'
+                    ? ''
+                    : " frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+
+                const cspContent = `default-src 'self'; connect-src 'self' https://1.1.1.1 ${backendUrl}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;${hardeningDirectives}`;
                 
                 console.log(`[CSP] ${mode} mode - Backend: ${backendUrl}`);
                 console.log(`[CSP] ${mode} mode - GitHub: ${githubSourceMaps ? 'enabled' : 'disabled'}`);
