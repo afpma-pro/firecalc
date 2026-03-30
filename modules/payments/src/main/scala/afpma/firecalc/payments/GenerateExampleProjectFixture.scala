@@ -28,7 +28,8 @@ import io.taig.babel.Locale
 object GenerateExampleProjectFixture:
 
     /** Constructs the same FireCalcYAML as EngineState.example_projet_15544 (UI module). */
-    def exampleFireCalcYaml: FireCalcYAML = FireCalcYAML_V5(
+    def exampleFireCalcYaml: FireCalcYAML =
+        FireCalcYAMLMigrations.migrateV5ToV6(FireCalcYAML_V5(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -44,7 +45,7 @@ object GenerateExampleProjectFixture:
         flue_pipe_descr                = ExampleProject_15544.accumulateur_descr,
         connector_pipe_descr           = ExampleProject_15544.conduit_raccordement_descr,
         chimney_pipe_descr             = ExampleProject_15544.conduit_fumees_descr
-    )
+    ))
 
     /** Encodes the example project to a YAML string. */
     def generateYamlContent(): String =
