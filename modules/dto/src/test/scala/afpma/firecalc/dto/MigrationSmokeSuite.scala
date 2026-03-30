@@ -104,12 +104,13 @@ class MigrationSmokeSuite
                 v5.version.unwrap shouldBe 5
         }
 
-        "V4 to V5 round-trip: migrated V4 should be re-loadable after encode" in forAll(AllGenerators.genFireCalcYAML_V4) {
+        "V4 to V5 to V6 round-trip: migrated V4 should be re-loadable after encode" in forAll(AllGenerators.genFireCalcYAML_V4) {
             v4 =>
-                // Migrate V4 → V5
+                // Migrate V4 → V5 → V6
                 val v5 = FireCalcYAMLMigrations.migrateV4ToV5(v4)
-                // Encode V5 to YAML
-                val yaml = FireCalcYAMLMigrations.encodeToYaml(v5)
+                val v6 = FireCalcYAMLMigrations.migrateV5ToV6(v5)
+                // Encode V6 to YAML
+                val yaml = FireCalcYAMLMigrations.encodeToYaml(v6)
                 yaml shouldBe a[Right[?, ?]]
                 // Decode and migrate again — this is the user's failing scenario:
                 // if version is still 4 but data is in V5 format, the V4 decoder fails
@@ -127,7 +128,7 @@ class MigrationSmokeSuite
         "should recover via V5 fallback decoder" in {
             val result = FireCalcYAMLMigrations.decodeAndMigrate(fixtureYaml)
             result shouldBe a[Right[?, ?]]
-            result.toOption.get.version.unwrap shouldBe 5
+            result.toOption.get.version.unwrap shouldBe 6
         }
     }
 
@@ -137,10 +138,10 @@ class MigrationSmokeSuite
             Using.resource(getClass.getResourceAsStream("/migration-fallback-fixtures/v4_data_with_v3_version_marker.fcalc")): stream =>
                 new String(stream.readAllBytes(), "UTF-8")
 
-        "should recover via V4 fallback decoder and migrate to V5" in {
+        "should recover via V4 fallback decoder and migrate to V6" in {
             val result = FireCalcYAMLMigrations.decodeAndMigrate(fixtureYaml)
             result shouldBe a[Right[?, ?]]
-            result.toOption.get.version.unwrap shouldBe 5
+            result.toOption.get.version.unwrap shouldBe 6
         }
     }
 

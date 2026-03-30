@@ -13,6 +13,8 @@ import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
+import afpma.firecalc.dto.v6.FireCalcYAML_V6
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 
 import cats.syntax.all.*
 
@@ -319,4 +321,15 @@ object transformers:
             .define[FireCalcYAML_V4, FireCalcYAML_V5]
             .withFieldConst(_.version, FireCalcYAML_V5.VERSION)
             .withFieldComputed(_.firebox, _.firebox.transformInto[v5.Firebox_V4])
+            .buildTransformer
+
+    given Transformer[FireCalcYAML_V5, FireCalcYAML_V6] =
+        Transformer
+            .define[FireCalcYAML_V5, FireCalcYAML_V6]
+            .withFieldConst(_.version, FireCalcYAML_V6.VERSION)
+            .withFieldComputed(_.post_firebox_pipes, v5 => Seq(
+                PostFireboxPipeDescrSlot.FlueSlot(v5.flue_pipe_descr),
+                PostFireboxPipeDescrSlot.ConnectorSlot(v5.connector_pipe_descr),
+                PostFireboxPipeDescrSlot.ChimneySlot(v5.chimney_pipe_descr)
+            ))
             .buildTransformer

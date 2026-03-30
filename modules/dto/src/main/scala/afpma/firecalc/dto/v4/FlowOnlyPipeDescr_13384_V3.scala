@@ -88,6 +88,11 @@ object AddFlowOnlyPipeElement_13384_V3:
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_13384_V3
 
+    /** Legacy section type — treated as `AddSectionSlopped(name, length = horizontal_length)` by the engine.
+      * The `horizontal_length` parameter is actually the pipe length along the current frame direction.
+      * Actual elevation gain is auto-computed as `length × sin(inclination)` from the current direction frame.
+      * Kept for backward compatibility; prefer `AddSectionSlopped` for new code.
+      */
     @Transl(I(_.add_element.AddSectionHorizontal))
     case class AddSectionHorizontal(
         @Transl(I(_.terms.name))
@@ -96,6 +101,11 @@ object AddFlowOnlyPipeElement_13384_V3:
         horizontal_length: Length
     ) extends AddFlowOnlyPipeElement_13384_V3
 
+    /** Legacy section type — treated as `AddSectionSlopped(name, length = elevation_gain)` by the engine.
+      * The `elevation_gain` parameter is actually the pipe length along the current frame direction.
+      * Actual elevation gain is auto-computed as `length × sin(inclination)` from the current direction frame.
+      * Kept for backward compatibility; prefer `AddSectionSlopped` for new code.
+      */
     @Transl(I(_.add_element.AddSectionVertical))
     case class AddSectionVertical(
         @Transl(I(_.terms.name))
