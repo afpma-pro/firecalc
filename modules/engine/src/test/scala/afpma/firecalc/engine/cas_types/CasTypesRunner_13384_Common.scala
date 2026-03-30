@@ -153,14 +153,11 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
         ex: ProjectDescr_Alg
     ): VNelMcalcErr[EN13384_1_A1_2019_Common_Application]
 
-    /**
-     * Compute and show results comparing with expected values.
-     */
-    def compute_and_show_results(
+    private def compute_and_show_results_impl(
         ex: ProjectDescr_Alg,
         compareTo: CasType13384_Result,
-    ): Unit =
-        val out = (
+    )(emit: String => Unit): VNelMcalcErr[Unit] =
+        (
             extractEn13384Appl(ex),
             ex.heatingAppliance
         ).mapN: (
@@ -186,18 +183,29 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
                 result_lowest
             )
             val results = CasType13384_Results(result :: compareTo :: Nil)
-            println(results.showAsCliTable)
+            emit(results.showAsCliTable)
 
-        out.fold(
+    /**
+     * Compute and show results comparing with expected values.
+     */
+    def compute_and_show_results(
+        ex: ProjectDescr_Alg,
+        compareTo: CasType13384_Result,
+    ): Unit =
+        compute_and_show_results_impl(ex, compareTo)(println).fold(
             nel => nel.toList.foreach(e => fail(e.show)),
             _ => ()
         )
 
-    /**
-     * Run a full EN 13384 cas type test with detailed output.
-     */
-    def run_cas_type_13384(ex: ProjectDescr_Alg): Unit =
-        val out = (
+    def compute_and_show_results_asString(
+        ex: ProjectDescr_Alg,
+        compareTo: CasType13384_Result,
+    ): VNelMcalcErr[String] =
+        val sb = new StringBuilder
+        compute_and_show_results_impl(ex, compareTo)(s => sb.append(s).append("\n")).map(_ => sb.toString)
+
+    private def run_cas_type_13384_impl(ex: ProjectDescr_Alg)(emit: String => Unit): VNelMcalcErr[Unit] =
+        (
             extractEn13384Appl(ex),
             ex.heatingAppliance
         ).mapN: (
@@ -221,9 +229,9 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
                 using _heatingAppliance
             )
 
-            def seperate_tables = println("\n".repeat(3))
+            def seperate_tables = emit("\n".repeat(3))
 
-            println("""|=============================================
+            emit("""|=============================================
                         |
                         | DESCRIPTION
                         |
@@ -231,31 +239,31 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
 
             seperate_tables
 
-            println(ex.project.showAsCliTable)
+            emit(ex.project.showAsCliTable)
 
             seperate_tables
 
-            println(en13384_appl.inputs.localConditions.showAsCliTable)
+            emit(en13384_appl.inputs.localConditions.showAsCliTable)
 
             seperate_tables
 
-            println(en13384_appl.inputs.nationalAcceptedData.showAsCliTable)
+            emit(en13384_appl.inputs.nationalAcceptedData.showAsCliTable)
 
             seperate_tables
 
-            println(en13384_appl.inputs.flueGasCondition.showAsCliTable)
+            emit(en13384_appl.inputs.flueGasCondition.showAsCliTable)
 
             seperate_tables
 
-            println(en13384_appl.reference_temperatures.showAsCliTable)
+            emit(en13384_appl.reference_temperatures.showAsCliTable)
 
             seperate_tables
 
             val _ =
                 import Params_13384.givens.DraftMin_LoadNominal
-                println(Params_13384.show)
+                emit(Params_13384.show)
                 val pr = en13384_appl.pipesResult_13384
-                println(
+                emit(
                     pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
                 )
 
@@ -263,15 +271,15 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
 
             val _ =
                 import Params_13384.givens.DraftMax_LoadNominal
-                println(Params_13384.show)
+                emit(Params_13384.show)
                 val pr = en13384_appl.pipesResult_13384
-                println(
+                emit(
                     pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
                 )
 
             seperate_tables
 
-            println("""|=============================================
+            emit("""|=============================================
                         |
                         | CONFORMITÉ avec EN 13384-1
                         |
@@ -279,14 +287,14 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
 
             seperate_tables
 
-            println(HeatingAppliance.summon.showAsCliTable)
+            emit(HeatingAppliance.summon.showAsCliTable)
 
             seperate_tables
 
             val pressure_cond_nominal =
                 import LoadQty.givens.nominal
                 en13384_appl.pressureRequirements
-            println(
+            emit(
                 pressure_cond_nominal.mapShow(
                     "EXIGENCES DE PRESSION (EN 13384-1) // Allure nominale"
                 )(_.showAsCliTable)
@@ -297,7 +305,7 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
             val pressure_cond_lowest =
                 import LoadQty.givens.reduced
                 en13384_appl.pressureRequirements
-            println(
+            emit(
                 pressure_cond_lowest.mapShow(
                     "EXIGENCES DE PRESSION (EN 13384-1) // Allure réduite"
                 )(_.showAsCliTable)
@@ -308,19 +316,27 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
             val temperature_req_at_nominal =
                 import LoadQty.givens.nominal
                 en13384_appl.temperatureRequirements
-            println(temperature_req_at_nominal.showAsCliTable)
+            emit(temperature_req_at_nominal.showAsCliTable)
 
             seperate_tables
 
             val temperature_req_at_lowest =
                 import LoadQty.givens.reduced
                 en13384_appl.temperatureRequirements
-            println(temperature_req_at_lowest.showAsCliTable)
+            emit(temperature_req_at_lowest.showAsCliTable)
 
             seperate_tables
 
-        out.fold(
+    /**
+     * Run a full EN 13384 cas type test with detailed output.
+     */
+    def run_cas_type_13384(ex: ProjectDescr_Alg): Unit =
+        run_cas_type_13384_impl(ex)(println).fold(
             nel => nel.toList.foreach(e => fail(e.show)),
             _ => ()
         )
+
+    def run_cas_type_13384_asString(ex: ProjectDescr_Alg): VNelMcalcErr[String] =
+        val sb = new StringBuilder
+        run_cas_type_13384_impl(ex)(s => sb.append(s).append("\n")).map(_ => sb.toString)
 end CasTypesRunner_13384_Common

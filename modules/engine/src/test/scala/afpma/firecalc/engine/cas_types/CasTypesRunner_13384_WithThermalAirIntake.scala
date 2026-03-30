@@ -26,4 +26,9 @@ trait CasTypesRunner_13384_WithThermalAirIntake
     ): Unit =
         run_cas_type_13384(ex)
 
+    def run_cas_type_13384_withThermalAirIntake_asString(
+        ex: v2024_10_Alg & v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg
+    ): VNelMcalcErr[String] =
+        run_cas_type_13384_asString(ex)
+
 end CasTypesRunner_13384_WithThermalAirIntake
