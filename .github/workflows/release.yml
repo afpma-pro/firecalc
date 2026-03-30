@@ -110,7 +110,12 @@ jobs:
       - name: Install Electron dependencies
         working-directory: web
         run: npm ci
-        
+
+      - name: Audit npm dependencies
+        run: |
+          cd modules/ui && npm audit --audit-level=high
+          cd ../../web && npm audit --audit-level=high
+
       - name: Build Electron App (Linux)
         if: matrix.os == 'ubuntu-latest'
         working-directory: web
