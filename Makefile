@@ -14,7 +14,7 @@ GITHUB_REPO_OWNER ?= $(shell grep 'lazy val githubOwner' build.sbt | sed 's/.*= 
 GITHUB_REPO_NAME ?= $(shell grep 'lazy val githubRepo' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 
 ## MAIN ##############################
-.PHONY: check clean fmt ui-setup electron-setup ui-status
+.PHONY: check clean fmt ui-setup electron-setup ui-status run-validation update-validation
 
 ## ================================
 ## UTILITY TARGETS
@@ -523,3 +523,26 @@ docker-deploy-restart:
 docker-deploy-logs:
 	@cd docker && docker compose logs -f
 
+
+## ================================
+## ENGINE VALIDATION
+## ================================
+
+# Run engine golden-file validation tests
+run-validation:
+	sbt --client "engineValidation/test"
+
+# Update golden reference files from current output.
+# Review changes with 'git diff' before committing.
+update-validation:
+	@cp "modules/engine/validation/cas_types_13384/current/C2.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_13384/C2.afpma.txt"
+	@cp "modules/engine/validation/cas_types_13384/current/C16.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_13384/C16.afpma.txt"
+	@cp "modules/engine/validation/cas_types_15544/current/01 - Colonne ascendante.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_15544/01 - Colonne ascendante.afpma.txt"
+	@cp "modules/engine/validation/cas_types_15544/current/02 - Kachelofen.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_15544/02 - Kachelofen.afpma.txt"
+	@cp "modules/engine/validation/cas_types_15544/current/03 - Cas pratique.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_15544/03 - Cas pratique.afpma.txt"
+	@echo "Golden files updated. Review with 'git diff' before committing."
