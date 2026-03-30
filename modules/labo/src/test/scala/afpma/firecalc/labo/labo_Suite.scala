@@ -21,11 +21,11 @@ class labo_Suite extends ConfigurationRunners_Labo {
         "01_echangeur" - {
             
             "01_cloche_medianne_entree_haute_config_1" in {
-                run_15544_mce_for_lab_comparison(`01_cloche_medianne_entree_haute_config_1`)
+                run_15544_mce_for_lab_comparison(`01_cloche_medianne_entree_haute_config_1`, "01_cloche_medianne_entree_haute_config_1.csv")
             }
 
             "07_cloche_intermediaire_entre_basse_avec_colonne_config_1" in {
-                run_15544_mce_for_lab_comparison(`07_cloche_intermediaire_entre_basse_avec_colonne_config_1`)
+                run_15544_mce_for_lab_comparison(`07_cloche_intermediaire_entre_basse_avec_colonne_config_1`, "07_cloche_intermediaire_entre_basse_avec_colonne_config_1.csv")
             }
         }
     }

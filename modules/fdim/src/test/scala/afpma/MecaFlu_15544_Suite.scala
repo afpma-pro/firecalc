@@ -71,13 +71,13 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
                 // val next = channel_pipe_elems.elems.tail.head
                 val r = FlowOnlyMecaFlu_15544.makePipeSectionResult(
                     gip, nominal, None, None, 2.m_per_s.some, 1.kg_per_m3.some, gas_temp)(using en15544)
-                println(r.show)
+                succeed
             }
 
             "computing result on pipe should work" in {
                 val pr = FlowOnlyMecaFlu_15544.makePipeResult(
                     channel_pipe_full_descr.unwrap, FlueGas, nominal, en15544.z_geodetical_height, p)(using en15544, en15544.ssalg)
-                println(pr.map(_.show).toValidatedNel.getOrThrow)
+                pr.toOption shouldBe defined
             }
         }
 

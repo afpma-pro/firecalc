@@ -114,7 +114,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                             3.1.m_per_s.some,
                             FlueGas
                         )(using p, en15544.en13384_application).toValidatedNel
-                println(r.toOption.get.show)
+                r.toOption shouldBe defined
             }
         }
 
@@ -143,7 +143,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     last_InnerGeom        = None,
                     prevO                 = None
                 )(using en13384)
-                println(r.show)
+                succeed
             }
         }
 

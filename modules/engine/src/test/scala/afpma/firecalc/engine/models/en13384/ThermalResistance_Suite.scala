@@ -51,11 +51,6 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
             val trLinear = e0 / λ0
             val trRound_exp = dhi / ( 2.0 * λ0 ) * math.log( (dho / dhi).value )
 
-            println(s"""|trRound (actual)   = $trRound
-                        |trRound (expected) = $trRound_exp
-                        |trLinear (approx)  = $trLinear
-                        |"""".stripMargin)
-
             trRound_exp.value `shouldEqual` (trRound.value +- 0.001)
             trRound.value `shouldEqual` (trLinear.value +- 0.01)
 
@@ -80,11 +75,6 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
 
                 val trLinear = e0 / λ0
                 val trRound_exp = dhi / ( 2.0 * λ0 ) * math.log( (dho / dhi).value )
-
-                println(s"""|trRound (actual)   = $trRound
-                            |trRound (expected) = $trRound_exp
-                            |trLinear (approx)  = $trLinear
-                            |"""".stripMargin)
 
                 trRound_exp.value `shouldEqual` (trRound.value +- 0.001)
                 trRound.value `shouldEqual` (trLinear.value +- 0.01)
@@ -154,11 +144,6 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                     startGeom = innerShape,
                     layers = layers
                 )
-
-                println(s"""|dhi = ${dhi.showP}
-                            |dho = ${layers.compute_outer_shape(innerShape).dh.showP}
-                            |R = ${tr.showP}
-                            |"""".stripMargin)
 
                 tr.isRight `shouldBe` true
                 tr.toOption.get.value `shouldEqual` (0.162 +- 0.01)

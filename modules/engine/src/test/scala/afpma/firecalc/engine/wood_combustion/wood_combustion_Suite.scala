@@ -14,10 +14,23 @@ import afpma.firecalc.engine.utils
 import coulomb.*
 import coulomb.policy.standard.given
 
+import java.io.{File, FileOutputStream, PrintStream}
+import java.nio.file.Files
+
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
+import scala.util.Using
+
 class wood_combustion_Suite extends AnyFreeSpec with Matchers:
+
+    private val logFile = new File("modules/engine/src/test/resources/test-output/wood_combustion_Suite.log")
+    locally { logFile.getParentFile.mkdirs(); Files.write(logFile.toPath, Array.emptyByteArray) }
+
+    private def withLog(body: => Unit): Unit =
+        Using.resource(new FileOutputStream(logFile, true)): fos =>
+            Using.resource(new PrintStream(fos)): ps =>
+                Console.withOut(ps)(body)
 
     val wl = 14.kg
     val wm = afpma.firecalc.engine.wood_combustion.Wood.HumidMass(wl)
@@ -63,66 +76,70 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
 
             val ci_stoecchio = afpma.firecalc.engine.wood_combustion.CombustionInputs.byMass(wm)(mix(lambda = 1.0))
 
-            println(s"masse matière seche = ${w.mass_dry.showP}")
+            withLog {
+                println(s"masse matière seche = ${w.mass_dry.showP}")
 
-            println(s"masse H2O = ${w.mass_H2O.showP}")
-            println(s"masse C = ${w.mass_atomic_el("C").showP}")
-            println(s"masse H = ${w.mass_atomic_el("H").showP}")
-            println(s"masse O = ${w.mass_atomic_el("O").showP}")
-            println(s"masse N = ${w.mass_atomic_el("N").showP}")
-            println("")
-            println(s"bois // nb moles H2O = ${w.moles_H2O.showP}")
-            println(s"bois // nb moles C = ${w.moles_el("C").showP}")
-            println(s"bois // nb moles H = ${w.moles_el("H").showP}")
-            println(s"bois // nb moles O = ${w.moles_el("O").showP}")
-            println(s"bois // nb moles N = ${w.moles_el("N").showP}")
-            println("")
-            println(s"air (si λ = 1) // nb moles H2O = ${extAir.moles_H2O(w, lambda = 1).showP}")
-            println(s"air (si λ = 1) // nb moles O   = ${extAir.moles_O(w, lambda = 1).showP}")
-            println(s"air (si λ = 1) // nb moles N   = ${extAir.moles_N(w, lambda = 1).showP}")
-            println("")
-            println(s"combustion sans CO (si λ = 1) // nb moles CO2 = ${ci_stoecchio.output_perfect_moles("CO2").showP}")
-            println(s"combustion sans CO (si λ = 1) // nb moles H2O = ${ci_stoecchio.output_perfect_moles_H2O.showP}")
-            println(s"combustion sans CO (si λ = 1) // nb moles O2  = ${ci_stoecchio.output_perfect_moles("O2").showP}")
-            println(s"combustion sans CO (si λ = 1) // nb moles N2  = ${ci_stoecchio.output_perfect_moles("N2").showP}")
-            println("")
-            println("")
-            println("")
-            
-            println(s"""| totaux            entrée \t | \t sortie \t
-                        |     C         =   ${ci_stoecchio.input_all_moles_el("C").showP}\t ${ci_stoecchio.output_perfect_moles("C").showP}    
-                        |     H         =   ${ci_stoecchio.input_all_moles_el("H").showP}\t ${ci_stoecchio.output_perfect_moles("H").showP}    
-                        |     O         =   ${ci_stoecchio.input_all_moles_el("O").showP}\t ${ci_stoecchio.output_perfect_moles("O").showP}    
-                        |     N         =   ${ci_stoecchio.input_all_moles_el("N").showP}\t ${ci_stoecchio.output_perfect_moles("N").showP}    
-                        |
-                        | total sortie
-                        |
-                        | """.stripMargin)
+                println(s"masse H2O = ${w.mass_H2O.showP}")
+                println(s"masse C = ${w.mass_atomic_el("C").showP}")
+                println(s"masse H = ${w.mass_atomic_el("H").showP}")
+                println(s"masse O = ${w.mass_atomic_el("O").showP}")
+                println(s"masse N = ${w.mass_atomic_el("N").showP}")
+                println("")
+                println(s"bois // nb moles H2O = ${w.moles_H2O.showP}")
+                println(s"bois // nb moles C = ${w.moles_el("C").showP}")
+                println(s"bois // nb moles H = ${w.moles_el("H").showP}")
+                println(s"bois // nb moles O = ${w.moles_el("O").showP}")
+                println(s"bois // nb moles N = ${w.moles_el("N").showP}")
+                println("")
+                println(s"air (si λ = 1) // nb moles H2O = ${extAir.moles_H2O(w, lambda = 1).showP}")
+                println(s"air (si λ = 1) // nb moles O   = ${extAir.moles_O(w, lambda = 1).showP}")
+                println(s"air (si λ = 1) // nb moles N   = ${extAir.moles_N(w, lambda = 1).showP}")
+                println("")
+                println(s"combustion sans CO (si λ = 1) // nb moles CO2 = ${ci_stoecchio.output_perfect_moles("CO2").showP}")
+                println(s"combustion sans CO (si λ = 1) // nb moles H2O = ${ci_stoecchio.output_perfect_moles_H2O.showP}")
+                println(s"combustion sans CO (si λ = 1) // nb moles O2  = ${ci_stoecchio.output_perfect_moles("O2").showP}")
+                println(s"combustion sans CO (si λ = 1) // nb moles N2  = ${ci_stoecchio.output_perfect_moles("N2").showP}")
+                println("")
+                println("")
+                println("")
+
+                println(s"""| totaux            entrée \t | \t sortie \t
+                            |     C         =   ${ci_stoecchio.input_all_moles_el("C").showP}\t ${ci_stoecchio.output_perfect_moles("C").showP}
+                            |     H         =   ${ci_stoecchio.input_all_moles_el("H").showP}\t ${ci_stoecchio.output_perfect_moles("H").showP}
+                            |     O         =   ${ci_stoecchio.input_all_moles_el("O").showP}\t ${ci_stoecchio.output_perfect_moles("O").showP}
+                            |     N         =   ${ci_stoecchio.input_all_moles_el("N").showP}\t ${ci_stoecchio.output_perfect_moles("N").showP}
+                            |
+                            | total sortie
+                            |
+                            | """.stripMargin)
+            }
 
             val ci = afpma.firecalc.engine.wood_combustion.CombustionInputs.byMass(wm)(mix(lambda = 1.6))
 
-            println(s"air (si λ = 1.6) // nb moles H2O = ${extAir.moles_H2O(w, lambda = 1.6).showP}")
-            println(s"air (si λ = 1.6) // nb moles O   = ${extAir.moles_O(w, lambda = 1.6).showP}")
-            println(s"air (si λ = 1.6) // nb moles N   = ${extAir.moles_N(w, lambda = 1.6).showP}")
-            println("")
-            println(s"combustion sans CO (si λ = 1.6) // nb moles CO2 = ${ci.output_perfect_moles("CO2").showP}")
-            println(s"combustion sans CO (si λ = 1.6) // nb moles H2O = ${ci.output_perfect_moles_H2O.showP}")
-            println(s"combustion sans CO (si λ = 1.6) // nb moles O2  = ${ci.output_perfect_moles("O2").showP}")
-            println(s"combustion sans CO (si λ = 1.6) // nb moles N2  = ${ci.output_perfect_moles("N2").showP}")
-            println("")
-            println(s"""| totaux            entrée \t | \t sortie \t
-                        |     C         =   ${ci.input_all_moles_el("C").showP}\t ${ci.output_perfect_moles("C").showP}    
-                        |     H         =   ${ci.input_all_moles_el("H").showP}\t ${ci.output_perfect_moles("H").showP}    
-                        |     O         =   ${ci.input_all_moles_el("O").showP}\t ${ci.output_perfect_moles("O").showP}    
-                        |     N         =   ${ci.input_all_moles_el("N").showP}\t ${ci.output_perfect_moles("N").showP}    
-                        |
-                        | total sortie
-                        |
-                        | """.stripMargin)
+            withLog {
+                println(s"air (si λ = 1.6) // nb moles H2O = ${extAir.moles_H2O(w, lambda = 1.6).showP}")
+                println(s"air (si λ = 1.6) // nb moles O   = ${extAir.moles_O(w, lambda = 1.6).showP}")
+                println(s"air (si λ = 1.6) // nb moles N   = ${extAir.moles_N(w, lambda = 1.6).showP}")
+                println("")
+                println(s"combustion sans CO (si λ = 1.6) // nb moles CO2 = ${ci.output_perfect_moles("CO2").showP}")
+                println(s"combustion sans CO (si λ = 1.6) // nb moles H2O = ${ci.output_perfect_moles_H2O.showP}")
+                println(s"combustion sans CO (si λ = 1.6) // nb moles O2  = ${ci.output_perfect_moles("O2").showP}")
+                println(s"combustion sans CO (si λ = 1.6) // nb moles N2  = ${ci.output_perfect_moles("N2").showP}")
+                println("")
+                println(s"""| totaux            entrée \t | \t sortie \t
+                            |     C         =   ${ci.input_all_moles_el("C").showP}\t ${ci.output_perfect_moles("C").showP}
+                            |     H         =   ${ci.input_all_moles_el("H").showP}\t ${ci.output_perfect_moles("H").showP}
+                            |     O         =   ${ci.input_all_moles_el("O").showP}\t ${ci.output_perfect_moles("O").showP}
+                            |     N         =   ${ci.input_all_moles_el("N").showP}\t ${ci.output_perfect_moles("N").showP}
+                            |
+                            | total sortie
+                            |
+                            | """.stripMargin)
+            }
 
             val cif = afpma.firecalc.engine.wood_combustion.CombustionInputs.byMassFlow(wm.toHumidMassFlow(combDuration))(mix(lambda = 1.6))
-            
-            println(cif.output_perfect_massflow_tot.showP)
+
+            withLog { println(cif.output_perfect_massflow_tot.showP) }
             cif.output_perfect_massflow_tot.toUnit[Gram / Second].value `shouldEqual` (exp_mass_flow.value +- 0.1)
         }
 
@@ -150,18 +167,19 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
                 val xC_dry = wood.atomic_composition.get("C").get
                 val xC_wet = wood.wood_el_from_dry_to_wet(xC_dry)
 
-                println(s"""| teneur en eau du bois = ${w.showP}
-                            | humidité du bois      = ${h.showP}
-                            |
-                            | xC_wet = ${xC_wet.showP}
-                            | xC_dry = ${xC_dry.showP}
-                            |""".stripMargin)
-
+                withLog {
+                    println(s"""| teneur en eau du bois = ${w.showP}
+                                | humidité du bois      = ${h.showP}
+                                |
+                                | xC_wet = ${xC_wet.showP}
+                                | xC_dry = ${xC_dry.showP}
+                                |""".stripMargin)
+                }
 
                 val wComb = new WoodCombustionImpl
-                
+
                 import wComb.*
-                
+
                 val wm = afpma.firecalc.engine.wood_combustion.Wood.HumidMass(1.kg)
 
                 val mix = CombustionMix(
@@ -177,14 +195,17 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
                 val fgCO2_hum = ci.output_perfect_percbyvol_humid("CO2")
                 val fgCO2_dry = ci.output_perfect_percbyvol_dry("CO2")
                 val fgH2O = ci.output_perfect_percbyvol_humid_H2O
-                println(s"""| Pour λ = 2.95
-                            |
-                            | CO2 : ${fgCO2_hum} (en volume sur humide)
-                            | CO2 : ${fgCO2_dry} (en volume sur sec)
-                            |
-                            | H2O : ${fgH2O.showP} (en volume)
-                            |""".stripMargin)
+                withLog {
+                    println(s"""| Pour λ = 2.95
+                                |
+                                | CO2 : ${fgCO2_hum} (en volume sur humide)
+                                | CO2 : ${fgCO2_dry} (en volume sur sec)
+                                |
+                                | H2O : ${fgH2O.showP} (en volume)
+                                |""".stripMargin)
+                }
 
+                fgCO2_dry.value shouldEqual (7.05 +- 1.0)
             }
         }
 
@@ -210,17 +231,21 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
 
             val fg_o2_dry_2 = wood.o2_dry_from_lambda(lambda2)
             val fg_co2_dry_2 = wood.co2_dry_from_o2_dry(fg_o2_dry_2)
-            
-            println(s"co2 max dry = ${wood.co2_max_dry} ")
-            println(s"co2 max wet = ${wood.co2_max_wet} ")
-            
-            // println(s"v0d_a0_ratio = ${wood.v0d_a0_ratio} ")
-            println(s"fg_o2_dry_2 = $fg_o2_dry_2 ")
-            
-            println(s"lambdafromO2dry = $lambdafromO2dry")
-            println(s"lambda2 = $lambda2 par rapport à 2.95 ???")
-            
-            println(s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %")
+
+            withLog {
+                println(s"co2 max dry = ${wood.co2_max_dry} ")
+                println(s"co2 max wet = ${wood.co2_max_wet} ")
+
+                // println(s"v0d_a0_ratio = ${wood.v0d_a0_ratio} ")
+                println(s"fg_o2_dry_2 = $fg_o2_dry_2 ")
+
+                println(s"lambdafromO2dry = $lambdafromO2dry")
+                println(s"lambda2 = $lambda2 par rapport à 2.95 ???")
+
+                println(s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %")
+            }
+
+            lambda2 shouldBe > (0.0)
         }
 
         "λ = ??? correpond à %CO2 dry de 12%" in {
@@ -246,13 +271,17 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
             // val fg_co2_dry_2 = wood.co2_dry_from_o2_dry(fg_o2_dry_2)
             val fg_co2_dry_2 = wood.co2_dry_from_lambda(1.85)
 
-            println(s"co2 max dry = ${wood.co2_max_dry} ")
-            println(s"co2 max wet = ${wood.co2_max_wet} ")
+            withLog {
+                println(s"co2 max dry = ${wood.co2_max_dry} ")
+                println(s"co2 max wet = ${wood.co2_max_wet} ")
 
-            // println(s"v0d_a0_ratio = ${wood.v0d_a0_ratio} ")
-            println(s"fg_o2_dry_2 = $fg_o2_dry_2 ")
-            println(s"lambda2 = $lambda2 par rapport à 2.95 ???")
-            println(s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %")
+                // println(s"v0d_a0_ratio = ${wood.v0d_a0_ratio} ")
+                println(s"fg_o2_dry_2 = $fg_o2_dry_2 ")
+                println(s"lambda2 = $lambda2 par rapport à 2.95 ???")
+                println(s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %")
+            }
+
+            lambda2 shouldBe > (0.0)
         }
 
         "Wood" - {
@@ -272,29 +301,32 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
 
                 val lambda = 2.0
 
-                println(s"""| V_a   = ${wood.V_a.showP}
-                            | 
-                            | V_CO2 = ${wood.V_CO2.showP}
-                            | V_H2O = ${wood.V_H2O.showP}
-                            | V_O2  = ${wood.V_O2.showP}
-                            |
-                            | V_fp  = ${wood.V_fp.showP}
-                            | V_hum = ${wood.V_hum.showP}
-                            | V_f   = ${wood.V_f.showP}
-                            |
-                            | co2_max_dry   = ${wood.co2_max_dry.showP}
-                            | co2_max_wet   = ${wood.co2_max_wet.showP}
-                            |
-                            | co2_dry_from_lambda(${lambda})   = ${wood.co2_dry_from_lambda(lambda).showP}
-                            | co2_wet_from_lambda(${lambda})   = ${wood.co2_wet_from_lambda(lambda).showP}
-                            |
-                            | o2_dry(_from_lambdal(${lambda})    = ${wood.o2_dry_from_lambda(lambda).showP}
-                            | o2_wet(_from_lambdal(${lambda})    = ${wood.o2_wet_from_lambda(lambda).showP}
-                            | 
-                            | fluegas_h2o_for_lambda(${lambda})  = ${wood.fluegas_h2o_for_lambda(lambda).showP}
-                            |
-                            |""".stripMargin)
+                withLog {
+                    println(s"""| V_a   = ${wood.V_a.showP}
+                                |
+                                | V_CO2 = ${wood.V_CO2.showP}
+                                | V_H2O = ${wood.V_H2O.showP}
+                                | V_O2  = ${wood.V_O2.showP}
+                                |
+                                | V_fp  = ${wood.V_fp.showP}
+                                | V_hum = ${wood.V_hum.showP}
+                                | V_f   = ${wood.V_f.showP}
+                                |
+                                | co2_max_dry   = ${wood.co2_max_dry.showP}
+                                | co2_max_wet   = ${wood.co2_max_wet.showP}
+                                |
+                                | co2_dry_from_lambda(${lambda})   = ${wood.co2_dry_from_lambda(lambda).showP}
+                                | co2_wet_from_lambda(${lambda})   = ${wood.co2_wet_from_lambda(lambda).showP}
+                                |
+                                | o2_dry(_from_lambdal(${lambda})    = ${wood.o2_dry_from_lambda(lambda).showP}
+                                | o2_wet(_from_lambdal(${lambda})    = ${wood.o2_wet_from_lambda(lambda).showP}
+                                |
+                                | fluegas_h2o_for_lambda(${lambda})  = ${wood.fluegas_h2o_for_lambda(lambda).showP}
+                                |
+                                |""".stripMargin)
+                }
 
+                wood.V_a.value should be > (0.0)
             }
         }
     }

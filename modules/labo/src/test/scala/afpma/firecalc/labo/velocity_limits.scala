@@ -93,19 +93,15 @@ class velocity_limits_Suite extends AnyFreeSpec with Matchers with ScalaCheckDri
         val rePrint = vre.fold(identity, identity)
 
         vre match
-            case Left(err) => 
-                println(s"ERROR: invalid 'Re' for: tm = ${tm.show} \t dh = ${dh.show} \t | wm = ${wm.show} \t | $rePrint")
-                fail(err)
+            case Left(err) =>
+                fail(s"invalid 'Re' for: tm = ${tm.show}, dh = ${dh.show}, wm = ${wm.show} | $rePrint")
             case Right(_) =>
                 val psi         = en13384_formulas.solvepsi(dh, rug, re)
                 val psi_smooth  = en13384_formulas.solvepsi_smooth(dh, re)
-                println(s"psi = $psi")
-                println(s"psi smooth = $psi_smooth")
                 val v = validate_psi_ratio(psi, psi_smooth)
                 val vPrint = v.fold(identity, identity)
                 if (v.isLeft)
                     val err = s"ERROR: invalid 'psi / psi_smooth' ratio for: tm = ${tm.show} \t dh = ${dh.show} \t | wm = ${wm.show} \t | rug = ${rug.show} | $vPrint"
-                    println(err)
                     fail(err)
                 succeed
     }
@@ -120,11 +116,6 @@ class velocity_limits_Suite extends AnyFreeSpec with Matchers with ScalaCheckDri
                 forAll(tmGen, dhGen, wmGen): (tm, dh, wm) =>
                     val re = R_e(wm, tm, dh)
                     val vre = validate_R_e(re).map(_.show)
-                    val rePrint = vre.fold(identity, identity)
-                    val ηA = η_A(tm)
-                    if (vre.isLeft)
-                        println(s"\t\t tm = ${tm.show} \t dh = ${dh.show} | wm = ${wm.show} | ηA = ${ηA.show} \t | $rePrint")                    
-                    
                     vre.isRight shouldBe true
             }
         }
@@ -162,9 +153,8 @@ class velocity_limits_Suite extends AnyFreeSpec with Matchers with ScalaCheckDri
                 val rePrint = vre.fold(identity, identity)
     
                 vre match
-                    case Left(err) => 
-                        println(s"ERROR: invalid 'Re' for: tm = ${tm.show} \t dh = ${dh.show} \t | wm = ${wm.show} \t | $rePrint")
-                        fail(err)
+                    case Left(err) =>
+                        fail(s"invalid 'Re' for: tm = ${tm.show}, dh = ${dh.show}, wm = ${wm.show} | $rePrint")
                     case Right(_) =>
                         val psi         = en13384_formulas.solvepsi(dh, rug, re)
                         val psi_smooth  = en13384_formulas.solvepsi_smooth(dh, re)
@@ -172,7 +162,6 @@ class velocity_limits_Suite extends AnyFreeSpec with Matchers with ScalaCheckDri
                         val vPrint = v.fold(identity, identity)
                         if (v.isLeft)
                             val err = s"ERROR: invalid 'psi / psi_smooth' ratio for: tm = ${tm.show} \t dh = ${dh.show} \t | wm = ${wm.show} \t | rug = ${rug.show} | $vPrint"
-                            println(err)
                             fail(err)
                         succeed
         }

@@ -68,7 +68,6 @@ object PdfReportGenerationTest extends TestSuite {
                       assert(pdfFile.length() > 0)
 
                       val pdfPath = pdfFile.getAbsolutePath
-                      println(s"[TEST] Successfully generated PDF: $pdfPath")
 
                       // Test successful - PDF generation works
                       assert(pdfPath.endsWith(".pdf"))

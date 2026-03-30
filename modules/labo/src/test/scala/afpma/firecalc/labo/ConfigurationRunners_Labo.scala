@@ -22,6 +22,10 @@ import cats.syntax.all.*
 
 import coulomb.*
 
+import java.io.{File, FileOutputStream, PrintStream}
+
+import scala.util.Using
+
 import io.taig.babel.Languages
 import io.taig.babel.Locale
 import org.scalatest.freespec.AnyFreeSpec
@@ -327,17 +331,21 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         //         nel.toList.map(_.show).foreach(println)
         //         fail()
 
-    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg) =
+    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg, outputFile: String) =
         import scala.language.adhocExtensions
 
         val config = ex_15544_labo
-
-        val out = config.en15544_Alg.map: mce_labo =>
-            showForMCEComparisonWithLabData(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
-        out.fold(
-            nel => nel.toList.foreach(e => fail(e.show)),
-            _ => ()
-        )
+        val dir = new File("modules/labo/src/test/resources/test-output")
+        dir.mkdirs()
+        Using.resource(new FileOutputStream(new File(dir, outputFile))): fos =>
+            Using.resource(new PrintStream(fos)): ps =>
+                Console.withOut(ps):
+                    val out = config.en15544_Alg.map: mce_labo =>
+                        showForMCEComparisonWithLabData(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
+                    out.fold(
+                        nel => nel.toList.foreach(e => fail(e.show)),
+                        _ => ()
+                    )
     end run_15544_mce_for_lab_comparison
 
 
