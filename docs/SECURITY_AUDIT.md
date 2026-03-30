@@ -571,3 +571,188 @@ Implementation plans for all Critical and High findings are in [`docs/security/`
 | [plan-SEC-005-webhook-enforcement.md](security/plan-SEC-005-webhook-enforcement.md) | SEC-005 | P0 |
 | [plan-SEC-006-log-scrubbing.md](security/plan-SEC-006-log-scrubbing.md) | SEC-006 | P1 |
 | [plan-SEC-007-proxy-replacement.md](security/plan-SEC-007-proxy-replacement.md) | SEC-007 | P1 |
+
+---
+
+## Remediation Status
+
+**Remediation date**: 2026-03-30
+**Branch**: `local-security-audit`
+**Remediation by**: Claude Opus 4.6 (automated implementation, human-supervised)
+
+### Overview
+
+All **Critical** and **High** findings have been fully remediated. All **Medium** findings have been remediated (one with partial scope — see Divergences). **Low** and **Informational** findings remain open.
+
+| Severity | Total | Remediated | Remaining |
+|----------|-------|------------|-----------|
+| Critical | 2 | 2 | 0 |
+| High | 5 | 5 | 0 |
+| Medium | 11 | 11 | 0 |
+| Low | 10 | 0 | 10 |
+| Informational | 7 | 0 (positive controls) | 0 |
+
+### Per-Finding Status
+
+| ID | Status | Commit | Notes |
+|----|--------|--------|-------|
+| SEC-001 | **FIXED** | `1dcd848` | HMAC-SHA256 signed tokens replace forgeable JWT |
+| SEC-002 | **FIXED** | `b4d2c6d` | .gitignore patterns, pre-commit secret scan, gitleaks CI |
+| SEC-003 | **FIXED** | `f0cd301` | SecureRandom, failed_attempts tracking, brute-force lockout |
+| SEC-004 | **FIXED** | `09755c8` | Atomic rawTransact check-and-mark, SQLite integration tests |
+| SEC-005 | **FIXED** | `3dd8e20` | Mandatory HMAC in all environments, timing-safe comparison |
+| SEC-006 | **FIXED** | `0c5aebf` | logBody=false, LogSanitizer utility, email masking, log level config |
+| SEC-007 | **FIXED** | `42ac770` | Official nginx:1.27-alpine + certbot/certbot:v2.11.0 |
+| SEC-008 | **FIXED** | `7bd9692` | Removed unsafe-inline from production CSP, added frame-ancestors/base-uri/form-action |
+| SEC-009 | **FIXED** | `42ac770` | HSTS + Permissions-Policy added in SEC-007 implementation |
+| SEC-010 | **FIXED** | `c93f64b` | client_max_body_size 50m in nginx, EntityLimiter 50MB in http4s |
+| SEC-011 | **PARTIAL** | `323b2bd` | Database directory chmod 700; SQLCipher not adopted (see Divergences) |
+| SEC-012 | **FIXED** | `e8abda8` | electron-builder updated (0 vulns), npm audit added to CI |
+| SEC-013 | **FIXED** | `4c170aa` | Source maps dev-only in Vite, nginx returns 404 for .map files |
+| SEC-014 | **FIXED** | `771e0d9` | Order status state machine with valid transition map + test suite |
+| SEC-015 | **FIXED** | `9d93e7d` | Atomic UPDATE ... RETURNING for invoice counter |
+| SEC-016 | **FIXED** | `36505bb` | Configurable CORS origin whitelist via payments-config.conf |
+| SEC-017 | **FIXED** | `d5d54d7` | Deprecated actions replaced with softprops/action-gh-release@v2, sbt unified to 1.11.6 |
+| SEC-018 | **FIXED** | *(pre-existing)* | No default FIRECALC_ENV — already remediated before this audit |
+
+### Divergences from Original Remediation Plans
+
+1. **SEC-007 — HSTS without `preload` directive**: The plan suggested `preload` in the HSTS header. Implementation uses `max-age=63072000; includeSubDomains` without `preload`. Reason: adding `preload` requires confirming that ALL subdomains of the domain support HTTPS. Once submitted to the HSTS preload list, it is difficult to reverse. This should be enabled after manual verification of all subdomains.
+
+2. **SEC-009 — Bundled into SEC-007**: HSTS and Permissions-Policy headers were implemented as part of the SEC-007 nginx replacement rather than as a standalone fix. Both HTTPS server blocks (UI and API) now include these headers.
+
+3. **SEC-010 — Body size limit raised to 50MB**: The plan suggested 5MB. Implementation uses 50MB at both nginx and http4s layers. Reason: the `create-intent` endpoint accepts base64-encoded project files (`.fcalc` files) that can legitimately exceed 5MB. The 50MB limit provides protection against abuse while accommodating real-world payloads.
+
+4. **SEC-011 — Filesystem hardening only, no SQLCipher**: The plan recommended SQLCipher for encryption at rest. Implementation applies `chmod 700` on the database directory in the Dockerfile and documents the SQLCipher recommendation. Reason: adopting SQLCipher requires a native dependency change (sqlite-jdbc → sqlcipher-jdbc), Molecule ORM compatibility validation, and key management infrastructure. This is deferred as a separate initiative.
+
+5. **SEC-014 — Processing state added**: The state machine includes a `Processing` intermediate state (`Pending → Processing → Confirmed → PaidOut`) that was not explicitly mentioned in the original finding. This matches the actual `OrderStatus` enum values discovered in the codebase.
+
+6. **SEC-016 — Backward-compatible default**: The CORS whitelist defaults to `List("*")` (allow all) when no `cors-allowed-origins` config is present. This preserves backward compatibility for existing deployments. Production environments MUST explicitly configure allowed origins.
+
+7. **SEC-018 — Already fixed**: The Dockerfile no longer contained `ENV FIRECALC_ENV=staging` and docker-compose.yml already used `${FIRECALC_ENV:?...}`. This was remediated in a prior commit, predating this audit session.
+
+### Attack Chains — Post-Remediation Assessment
+
+**Chain 1 (Payment Fraud via Auth Bypass)**: **BROKEN** at every link.
+- SEC-003: Auth codes now use SecureRandom, have attempt limits and lockout
+- SEC-004: Atomic transaction prevents race condition / duplicate orders
+- SEC-001: Tokens are HMAC-SHA256 signed, unforgeable
+
+**Chain 2 (Webhook Spoofing for Order Manipulation)**: **BROKEN** at every link.
+- SEC-018: No default environment — explicit config required
+- SEC-005: HMAC verification mandatory in all environments
+- SEC-014: State machine rejects invalid transitions (e.g., Cancelled → Confirmed)
+
+**Chain 3 (PII Exfiltration via Log Access)**: **BROKEN**.
+- SEC-006: PII redacted from all log output, GoCardless tokens removed
+
+**Chain 4 (Credential Exposure via Git)**: **BROKEN**.
+- SEC-002: .gitignore patterns, pre-commit secret scanning, gitleaks CI
+
+---
+
+## Manual Verification Checklist
+
+The following verifications **must** be performed manually after deploying the SEC fixes. Automated tests cover logic correctness, but these checks validate the fixes in context.
+
+### Infrastructure (SEC-007, SEC-009, SEC-010)
+
+- [ ] **TLS proxy migration**: After deploying the new nginx + certbot setup, verify both domains serve HTTPS:
+  ```bash
+  curl -I https://${UI_DOMAIN}/
+  curl -I https://${API_DOMAIN}/v1/healthcheck
+  ```
+- [ ] **Certificate provisioning**: Run `init-letsencrypt.sh` on first deploy. Verify:
+  ```bash
+  docker compose exec certbot certbot certificates
+  # Should list both UI_DOMAIN and API_DOMAIN with valid expiry
+  ```
+- [ ] **Certificate renewal**: Test automatic renewal:
+  ```bash
+  docker compose run --rm certbot renew --dry-run
+  ```
+- [ ] **HSTS header**: Verify `Strict-Transport-Security` is present:
+  ```bash
+  curl -sI https://${UI_DOMAIN}/ | grep -i strict-transport
+  # Expected: Strict-Transport-Security: max-age=63072000; includeSubDomains
+  ```
+- [ ] **HSTS preload readiness**: Before enabling `preload`, verify ALL subdomains support HTTPS at https://hstspreload.org
+- [ ] **Permissions-Policy header**:
+  ```bash
+  curl -sI https://${UI_DOMAIN}/ | grep -i permissions-policy
+  ```
+- [ ] **Body size limit**: Test rejection of oversized payloads:
+  ```bash
+  dd if=/dev/zero bs=1M count=60 | curl -X POST -d @- https://${API_DOMAIN}/v1/purchase/create-intent -w "%{http_code}"
+  # Expected: 413 (Request Entity Too Large)
+  ```
+- [ ] **SSL Labs scan**: Run https://www.ssllabs.com/ssltest/ against both domains. Target: A+ rating.
+
+### Authentication & Authorization (SEC-001, SEC-003, SEC-005)
+
+- [ ] **Token forgery**: Attempt to use a hand-crafted token (e.g., `hmac_<UUID>_<timestamp>_<fake-sig>`). Must be rejected.
+- [ ] **Brute-force lockout**: Send 6 incorrect auth codes for the same purchase intent. The 6th should return a lockout error, not "invalid code".
+- [ ] **Webhook HMAC**: Send a POST to `/v1/webhooks/gocardless` with an invalid `Webhook-Signature` header. Must be rejected in ALL environments (staging included).
+- [ ] **Webhook replay**: Send the same valid webhook event twice. The second should be a no-op (order already in terminal state).
+
+### Data Protection (SEC-002, SEC-006, SEC-011)
+
+- [ ] **Secrets in git**: Run gitleaks on the repository:
+  ```bash
+  gitleaks detect --source . --verbose
+  ```
+- [ ] **Pre-commit hook**: Stage a file containing `AKIA` or `ghp_` prefix and attempt to commit. Must be blocked.
+- [ ] **Log scrubbing**: Run a test purchase flow and inspect logs:
+  ```bash
+  docker compose logs -f backend 2>&1 | grep -iE '(email|auth.?code|Bearer|password|address_line)'
+  # Expected: Only masked emails (x***@domain.com), no raw PII
+  ```
+- [ ] **Database permissions**: Verify inside the container:
+  ```bash
+  docker compose exec backend ls -la /app/databases
+  # Expected: drwx------ (700) owned by appuser
+  ```
+
+### Application Security (SEC-008, SEC-013, SEC-014, SEC-015, SEC-016)
+
+- [ ] **CSP header**: Verify production build CSP has no `unsafe-inline` in `script-src`:
+  ```bash
+  curl -sI https://${UI_DOMAIN}/ | grep -i content-security-policy
+  # script-src should be 'self' only (no 'unsafe-inline')
+  ```
+- [ ] **Source maps blocked**: Attempt to fetch a source map:
+  ```bash
+  curl -s -o /dev/null -w "%{http_code}" https://${UI_DOMAIN}/assets/main.js.map
+  # Expected: 404
+  ```
+- [ ] **CORS policy**: Test cross-origin request from unauthorized origin:
+  ```bash
+  curl -H "Origin: https://evil.com" -I https://${API_DOMAIN}/v1/purchase/create-intent
+  # Expected: No Access-Control-Allow-Origin header in response
+  ```
+  Then test from allowed origin:
+  ```bash
+  curl -H "Origin: https://${UI_DOMAIN}" -I https://${API_DOMAIN}/v1/purchase/create-intent
+  # Expected: Access-Control-Allow-Origin: https://${UI_DOMAIN}
+  ```
+- [ ] **Order state machine**: Use the GoCardless dashboard to send a test webhook event attempting to transition a `PaidOut` order to `Confirmed`. Check backend logs for "Invalid order status transition" warning.
+- [ ] **Invoice number uniqueness**: Trigger two simultaneous purchases and verify distinct invoice numbers are assigned (no duplicates in the database).
+
+### CI/CD (SEC-012, SEC-017)
+
+- [ ] **npm audit in CI**: Push a branch and verify the GitHub Actions workflow includes the "Audit npm dependencies" step and it passes.
+- [ ] **Release workflow**: Trigger a test release (or inspect a dry-run) to verify `softprops/action-gh-release@v2` creates releases and uploads assets correctly.
+
+### Configuration (SEC-016, SEC-018)
+
+- [ ] **CORS whitelist configured**: Verify production `payments-config.conf` has explicit `cors-allowed-origins`:
+  ```hocon
+  cors-allowed-origins = ["https://firecalc.afpma.pro"]
+  ```
+  Do NOT leave it as `["*"]` in production.
+- [ ] **FIRECALC_ENV explicit**: Verify production `.env` explicitly sets `FIRECALC_ENV=production`. Remove the `.env` temporarily and verify `docker compose up` fails with an error message.
+- [ ] **Rotate credentials**: If staging credentials were ever committed to git history, rotate them:
+  - GoCardless sandbox access token
+  - GoCardless webhook secret
+  - SMTP password
+  - JWT/HMAC secret
