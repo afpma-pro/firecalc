@@ -60,6 +60,14 @@ payments {
       email = "admin-dev@example.com"
     }
     
+    jwt {
+      # Required: set JWT_SECRET environment variable, or replace with a hardcoded string (32+ chars).
+      # Generate with: openssl rand -base64 32
+      secret = ${JWT_SECRET}
+      expiration-minutes = 60
+      issuer = "firecalc-payments"
+    }
+
     # Report configuration
     # Development/Staging: true (draft mode for testing)
     # Production: false (final reports)

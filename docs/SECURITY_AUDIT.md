@@ -756,3 +756,105 @@ The following verifications **must** be performed manually after deploying the S
   - GoCardless webhook secret
   - SMTP password
   - JWT/HMAC secret
+
+---
+
+## Deployment Migration Guide
+
+This section lists **mandatory steps** for safely deploying the security branch. Items are ordered by priority.
+
+### BLOCKING — Deployment will fail without these
+
+**1. Add `jwt` section to all payments-config.conf files**
+
+SEC-001 introduced HMAC-SHA256 token signing. The backend requires a new `jwt` config section and will **crash at startup** without it.
+
+```hocon
+# Add inside the environment block (e.g., staging { ... })
+jwt {
+  secret = ${JWT_SECRET}        # or a hardcoded 32+ char string
+  expiration-minutes = 60
+  issuer = "firecalc-payments"
+}
+```
+
+Generate the secret: `openssl rand -base64 32`
+
+Set `JWT_SECRET` in your `.env` file or export it before starting the backend.
+
+**2. Rebuild the backend JAR**
+
+SEC-001 added a new dependency (`jwt-circe`). An old assembly JAR will fail at runtime with `ClassNotFoundException`. Rebuild with:
+```bash
+sbt "payments/assembly"
+```
+
+**3. Run Flyway migration V11 with exclusive database access**
+
+SEC-003 added `V11__add_failed_attempts_to_purchase_intent.sql` which recreates the `PurchaseIntent` table. Ensure no concurrent connections to the database during migration (stop the backend, run migration, then restart).
+
+**4. First-time TLS certificate provisioning (Docker deployments only)**
+
+SEC-007 replaced the TLS proxy. On first deploy with the new stack:
+```bash
+cd docker
+./init-letsencrypt.sh    # Bootstraps self-signed cert, then obtains real cert
+docker compose up -d     # Start all 4 services
+```
+
+Existing `letsencrypt-certs` volumes are preserved. If upgrading from the old `danieldent/nginx-ssl-proxy`, the certbot `live/` directory may already exist in the volume. Run `init-letsencrypt.sh` regardless — it handles both fresh and existing volumes.
+
+### IMPORTANT — Security is degraded without these
+
+**5. Configure CORS allowed origins (SEC-016)**
+
+The default is `["*"]` (allow all) for backward compatibility. Production and staging MUST set explicit origins:
+```hocon
+cors-allowed-origins = ["https://firecalc.afpma.pro"]
+```
+
+**6. Add `logging` section to payments-config.conf (optional but recommended)**
+
+SEC-006 added configurable log levels. Without the section, defaults to `INFO` (safe). Recommended:
+```hocon
+logging {
+  root-level = "WARN"   # production
+  # root-level = "INFO" # staging
+  # root-level = "DEBUG" # development
+}
+```
+
+**7. Existing auth tokens are invalidated**
+
+SEC-001 changed the token format from plain strings to HMAC-SHA256 JWTs. All existing client sessions will be logged out on first request after deployment. This is intentional — the old tokens were forgeable. No action needed, but inform users if applicable.
+
+**8. Verify CI release workflow after merge**
+
+SEC-017 replaced deprecated GitHub Actions. The new `softprops/action-gh-release@v2` uses `files:` glob patterns instead of individual upload steps. Trigger a test release (or dry-run) to confirm artifacts are uploaded correctly. Also: `max-parallel: 1` was added to the matrix strategy — builds will be slower but more stable.
+
+### RECOMMENDED — Best practice
+
+**9. Run gitleaks on the full repository history**
+```bash
+gitleaks detect --source . --verbose
+```
+If any secrets were previously committed on `main`, rotate them immediately.
+
+**10. Verify electron-builder packaging**
+
+SEC-012 bumped `electron-builder` from `^25.1.8` to `^26.8.1` (major version). Test desktop app packaging on all platforms (Linux, Windows, macOS).
+
+**11. Consider HSTS preload after verifying subdomains**
+
+SEC-007/009 added HSTS without `preload`. Once all subdomains are confirmed HTTPS-only, update `nginx-proxy-custom.conf.template`:
+```nginx
+add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+```
+Then submit to https://hstspreload.org.
+
+**12. Plan SQLCipher adoption (SEC-011)**
+
+Database is currently plaintext with `chmod 700` hardening. For full encryption at rest, evaluate:
+- `sqlcipher-jdbc` as a drop-in replacement for `sqlite-jdbc`
+- Key management via `payments-config.conf`
+- Migration path for existing unencrypted databases
