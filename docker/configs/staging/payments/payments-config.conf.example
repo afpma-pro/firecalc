@@ -158,6 +158,14 @@ payments {
       #   "org.http4s"                            = "DEBUG"
       # }
     }
+
+    # ---------------------------------------------------------------------
+    # CORS Configuration (SEC-016)
+    # ---------------------------------------------------------------------
+    # List of origins allowed to make cross-origin requests.
+    # Use ["*"] to allow all origins (NOT recommended for staging/production).
+    # UPDATE THIS with your actual staging frontend URL.
+    cors-allowed-origins = ["https://staging.firecalc.afpma.pro"]
   }
 }
 

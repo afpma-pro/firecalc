@@ -310,6 +310,11 @@ object Main extends IOApp:
                 )
                 _              <- logger.info(s"Loaded payments config for environment: ${paymentsConfig.environment}")
                 _              <- logger.info(s"Using database: ${paymentsConfig.databaseConfig.filename}")
+                _              <- logger.info(
+                    if (paymentsConfig.corsAllowedOrigins.contains("*"))
+                    then "CORS policy: allowing all origins (default)"
+                    else s"CORS policy: allowing origins ${paymentsConfig.corsAllowedOrigins.mkString(", ")}"
+                )
 
                 // Run migrations with configured database
                 _ <- Migrations.migrate[IO](s"jdbc:sqlite:${paymentsConfig.databaseConfig.path}")
@@ -618,8 +623,17 @@ object Main extends IOApp:
                         allRoutes_V1 =
                             purchaseRoutes_V1_WithLogging <+> webhookRoutes_V1_WithLogging <+> staticRoutes_V1_WithLogging <+> healthRoutes_V1_WithLogging <+> sourceRoutes_WithLogging
 
-                        // Apply CORS middleware to allow cross-origin requests from frontend
-                        corsRoutes = CORS.policy.withAllowOriginAll.withAllowCredentials(false).apply(allRoutes_V1)
+                        // SEC-016: Apply CORS middleware with configurable origin whitelist
+                        corsPolicy = {
+                            val base = CORS.policy.withAllowCredentials(false)
+                            if (paymentsConfig.corsAllowedOrigins.contains("*"))
+                                base.withAllowOriginAll
+                            else {
+                                val allowed = paymentsConfig.corsAllowedOrigins.map(CIString(_)).toSet
+                                base.withAllowOriginHostCi(origin => allowed.contains(origin))
+                            }
+                        }
+                        corsRoutes = corsPolicy.apply(allRoutes_V1)
 
                         // Create HttpApp
                         httpApp = corsRoutes.orNotFound

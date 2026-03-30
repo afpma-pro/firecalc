@@ -57,6 +57,11 @@ payments {
     # Development/Staging: true (draft mode for testing)
     # Production: false (final reports)
     report-as-draft = true
+
+    # SEC-016: CORS allowed origins
+    # List of origins allowed to make cross-origin requests.
+    # UPDATE THIS with your actual staging frontend URL.
+    cors-allowed-origins = ["https://staging.firecalc.afpma.pro"]
   }
 }
 

@@ -186,7 +186,11 @@ object ConfigLoader:
                                 .toMap
                         ).getOrElse(Map.empty)
                     )
-                }.getOrElse(LoggingConfig())
+                }.getOrElse(LoggingConfig()),
+                corsAllowedOrigins           = Try {
+                    import scala.jdk.CollectionConverters.*
+                    envConfig.getStringList("cors-allowed-origins").asScala.toList
+                }.getOrElse(List("*"))
             )
         }
 

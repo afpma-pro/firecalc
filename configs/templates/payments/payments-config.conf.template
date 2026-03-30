@@ -76,6 +76,12 @@ payments {
       #   "afpma.firecalc.payments.service.impl" = "DEBUG"
       # }
     }
+
+    # SEC-016: CORS allowed origins (optional — defaults to ["*"])
+    # List of origins allowed to make cross-origin requests.
+    # Use ["*"] to allow all origins (development only, not recommended for production).
+    # Example: ["https://firecalc.afpma.pro", "https://staging.firecalc.afpma.pro"]
+    # cors-allowed-origins = ["*"]
   }
 }
 

@@ -20,7 +20,8 @@ case class PaymentsConfig(
     adminConfig                 : AdminConfig,
     reportAsDraft               : Boolean,
     jwtConfig                   : JwtConfig,
-    loggingConfig               : LoggingConfig = LoggingConfig()
+    loggingConfig               : LoggingConfig      = LoggingConfig(),
+    corsAllowedOrigins          : List[String]        = List("*")
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
     require(
