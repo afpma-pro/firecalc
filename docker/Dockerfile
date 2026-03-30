@@ -79,8 +79,11 @@ COPY modules/reports/src/main/resources/logo.jpg /app/modules/reports/src/main/r
 # These directories are intended to be mounted as volumes at runtime:
 # - /app/configs: Application configuration files (YAML, CONF)
 # - /app/databases: SQLite database files
+# SEC: Database directory gets restrictive permissions (owner-only access)
+# to protect PII and payment data at the filesystem level.
 RUN mkdir -p /app/configs /app/databases && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /app && \
+    chmod 700 /app/databases
 
 # Switch to non-root user
 USER appuser

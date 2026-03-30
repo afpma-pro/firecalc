@@ -86,7 +86,7 @@ server {
     }
 
     # Request body size limit (SEC-010)
-    client_max_body_size 5m;
+    client_max_body_size 50m;
 
     # API-specific security headers
     add_header X-Frame-Options "DENY" always;

@@ -576,8 +576,8 @@ object Main extends IOApp:
                         healthRoutes   = HealthCheckRoutes.create[IO]
                         sourceRoutes   = SourceRoutes.create[IO]
 
-                        // SEC-010: Enforce 5 MB request body size limit on routes that accept bodies
-                        maxBodySize        = 5L * 1024 * 1024
+                        // SEC-010: Enforce 50 MB request body size limit on routes that accept bodies
+                        maxBodySize        = 50L * 1024 * 1024
                         purchaseRoutes_V1  = EntityLimiter.httpRoutes(purchaseRoutes.routes_V1, maxBodySize)
                         webhookRoutes_V1   = EntityLimiter.httpRoutes(webhookRoutes.routes_V1, maxBodySize)
 

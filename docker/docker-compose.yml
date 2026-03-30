@@ -63,6 +63,8 @@ services:
 
       # Database directory (read-write)
       # SQLite database files with persistent storage
+      # SEC: For production, consider SQLCipher for encryption at rest.
+      # The Dockerfile sets 700 permissions on /app/databases (owner-only).
       - ./databases:/app/databases:rw
 
     # Network configuration

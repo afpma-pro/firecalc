@@ -338,10 +338,18 @@ mkdir -p docker/databases/staging
 
 # Set ownership to match container user (UID 999) and secure permissions
 sudo chown -R 999:999 docker/databases
-sudo chmod -R 755 docker/databases
+sudo chmod -R 700 docker/databases
 ```
 
 **Why UID 999?** The Docker container runs as non-root user `appuser` with UID 999 for security. The database directory must be owned by this user to allow write access.
+
+> **Security: Database Encryption at Rest**
+>
+> The SQLite database stores customer PII and payment data. The following hardening measures apply:
+>
+> - **Filesystem permissions**: The Dockerfile sets `chmod 700` on `/app/databases`, restricting access to the `appuser` owner only. The host-side directory should also use `chmod 700` (as shown above).
+> - **SQLCipher**: For production environments handling sensitive data, consider replacing the standard SQLite library with [SQLCipher](https://www.zetetic.net/sqlcipher/) to encrypt the database at rest. This requires a native dependency change and is not included by default.
+> - **Backups**: Database backup files contain the same sensitive data and should be encrypted (e.g., `gpg --symmetric`) and stored with restrictive permissions.
 
 ### Step 8: Build and Deploy
 
