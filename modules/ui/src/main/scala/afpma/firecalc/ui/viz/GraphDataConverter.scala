@@ -5,6 +5,8 @@
 
 package afpma.firecalc.ui.viz
 
+import algebra.instances.all.given
+
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
@@ -16,15 +18,15 @@ import afpma.firecalc.engine.models.PipeResult.PipeResultFromSections
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.standard.*
 
+import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.displayUnits
 import afpma.firecalc.ui.showP_orImpUnits
 import afpma.firecalc.ui.showP_orImpUnitsTemp
 
-import cats.data.Validated
-import cats.implicits.catsSyntaxValidatedId
-import cats.implicits.toShow
+import cats.data.{Validated, ValidatedNel}
+import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -33,7 +35,6 @@ import coulomb.syntax.*
 import afpma.firecalc.graph.*
 import io.taig.babel.Locale
 import afpma.firecalc.engine.models.PipesResult_15544_VNelString
-import cats.data.ValidatedNel
 import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
 
 
@@ -56,14 +57,19 @@ object GraphDataConverter:
     // Pipe names that map to VizElementId variants
     private val HighlightablePipes = Set("Flue", "Connector", "Chimney", "Air Intake")
 
+    /** Regex matching slot-indexed pipe names: "Slot0:Flue", "Slot1:Connector", etc. */
+    private val SlotPipePattern = """Slot(\d+):(\w+)""".r
+
     /** Build a VizElementId-compatible name for a section, or None if not highlightable.
       * Returns None for auto-inserted elements (elementIndex < 0) and non-highlightable pipes.
       */
     private def vizName(ps: PlottableSection): Option[String] =
         if ps.elementIndex < 0 then None // auto-inserted element — not in pipe panel
         else if ps.pipeName == "Firebox" then Some("Firebox") // singleton — no index suffix
-        else if HighlightablePipes.contains(ps.pipeName) then Some(s"${ps.pipeName} #${ps.elementIndex}")
-        else None // "Registre d'air", "Combustion Air" — not highlightable
+        else ps.pipeName match
+            case SlotPipePattern(slotIdx, _) => Some(s"Slot$slotIdx #${ps.elementIndex}")
+            case name if HighlightablePipes.contains(name) => Some(s"${ps.pipeName} #${ps.elementIndex}")
+            case _ => None // "Registre d'air", "Combustion Air" — not highlightable
 
     private def isDirectionChange(ps: PlottableSection): Boolean =
         ps.section.section_length.value == 0.0
@@ -103,9 +109,23 @@ object GraphDataConverter:
         "Registre d'air" -> "rgba(88, 184, 255, 0.12)",   // Same as Combustion Air
         "Firebox"        -> "rgba(188, 33, 50, 0.12)",    // Red #BC2132
         "Flue"           -> "rgba(238, 102, 34, 0.12)",   // Orange #E62
-        "Connector"      -> "rgba(245, 147, 49, 0.12)",   // OrangeYellow #F59331
+        "Connector"      -> "rgba(245, 147, 49, 0.20)",   // OrangeYellow #F59331 (higher opacity to differentiate from Flue)
         "Chimney"        -> "rgba(255, 220, 56, 0.12)"    // Yellow #FFDC38
     )
+
+    /** Resolve band color for a pipe name, handling slot-indexed names like "Slot0:Flue". */
+    private def bandColorFor(pipeName: String): String = pipeName match
+        case SlotPipePattern(_, baseType) => BandColors.getOrElse(baseType, "transparent")
+        case name                        => BandColors.getOrElse(name, "transparent")
+
+    /** Human-readable display label for a pipe name, translating slot-indexed names via I18N.
+      * "Slot0:Flue" → "Carneaux" (FR) / "Channels" (EN), etc.
+      */
+    private def displayLabel(pipeName: String)(using Locale): String = pipeName match
+        case SlotPipePattern(_, "Flue")      => I18N.panels.channel_pipe
+        case SlotPipePattern(_, "Connector") => I18N.panels.connector_pipe
+        case SlotPipePattern(_, "Chimney")   => I18N.panels.chimney_pipe
+        case other                           => other
 
     private def make_PipeSectionResult_Manual(
         section_name: String,
@@ -255,7 +275,7 @@ object GraphDataConverter:
             pipes.foreach { (pipeName, _) =>
                 val pipeEnd = allSections.filter(_.pipeName == pipeName).lastOption.map(_.xEnd).getOrElse(bandStart)
                 if pipeEnd > bandStart then
-                    bands += BackgroundBand(bandStart, pipeEnd, BandColors.getOrElse(pipeName, "transparent"), pipeName)
+                    bands += BackgroundBand(bandStart, pipeEnd, bandColorFor(pipeName), displayLabel(pipeName))
                 bandStart = pipeEnd
             }
 
@@ -268,6 +288,148 @@ object GraphDataConverter:
                 xMax = Some(runningLength + 0.5)
             )
 
+    /** Convert pipe results to chart data, accepting post-firebox pipes as a generic vector.
+      *
+      * Pre-firebox pipes (airIntake, combustionAir, firebox) are still named because they're
+      * fixed in the topology. Post-firebox pipes come from PostFireboxPipeChain results
+      * and are matched by position: (0) flue, (1) connector, (2) chimney.
+      *
+      * Delegates to [[convert]] after extracting the named post-firebox pipes.
+      */
+    def convertGeneric(
+        airIntake        : VNelMcalcErr[PipeResult],
+        combustionAir    : VNelMcalcErr[PipeResult],
+        firebox          : VNelMcalcErr[PipeResult],
+        postFireboxPipes : Vector[(String, VNelMcalcErr[PipeResult])],
+        pipeIdxToDescrIdx: Map[String, Map[Int, Int]] = Map.empty
+    )(using Locale, DisplayUnits): ChartData =
+
+        // All pipe results in order, for delta_pressure accumulation
+        val allPipeResults: Vector[VNelMcalcErr[PipeResult]] =
+            Vector(airIntake, combustionAir, firebox) ++ postFireboxPipes.map(_._2)
+
+        val delta_pressure: ValidatedNel[MecaFlu_Error, Pressure] =
+            allPipeResults
+                .traverse[[x] =>> ValidatedNel[MecaFlu_Error, x], PipeResult] { vnel =>
+                    vnel.leftMap(_.map {
+                        case e: MecaFlu_Error => e
+                        case other => UnexpectedThrowable(new Exception(other.toString), sectionTyp = CombustionAirPipeT)
+                    })
+                }
+                .andThen: prs =>
+                    val prsList = prs.toList
+                    val Σ_ph: Pressure = prsList.foldLeft(0.0.pascals)(_ + _.ph)
+                    val Σ_pR: Pressure = prsList.foldLeft(0.0.pascals)(_ + _.pRs) + prsList.foldLeft(0.0.pascals)(_ + _.pRg)
+                    val Σ_pu = monoids.monoidSumVNelPressure[MecaFlu_Error].combineAll(prsList.map(_.pu))
+                    Σ_pu.map(pu => Σ_ph + (0.0.pascals - Σ_pR) + (0.0.pascals - pu))
+
+        val registreAirSectionVNel = airIntake.map: air_intake_res =>
+            make_PipeSectionResult_Manual("registre d'air",
+                pu = delta_pressure,
+                v_end = air_intake_res.v_end.getOrElse(0.m_per_s)
+            )
+
+        val registreAir: VNelMcalcErr[PipeResult] = registreAirSectionVNel.map: registreAirSection =>
+            new PipeResultFromSections(Vector(registreAirSection)) {
+                val density_mean: Option[Density] = None
+                val gas_temp_mean: TCelsius = 0.degreesCelsius
+            }
+
+        val pipes: Vector[(String, VNelMcalcErr[PipeResult])] =
+            Vector(
+                ("Air Intake",     airIntake),
+                ("Registre d'air", registreAir),
+                ("Combustion Air", combustionAir),
+                ("Firebox",        firebox)
+            ) ++ postFireboxPipes
+
+        // Flatten all sections with cumulative x positions
+        var runningLength = 0.0
+
+        val allSections: Vector[PlottableSection] = pipes.flatMap { (pipeName, result) =>
+            val reverseMap = pipeIdxToDescrIdx.getOrElse(pipeName, Map.empty)
+            result match
+                case Validated.Valid(pr: PipeResult.WithSections) =>
+                    pr.elements.zipWithIndex.map { case (section, seqIdx) =>
+                        val sectionId = section.section_id.unwrap
+                        val descrIdx =
+                            if reverseMap.nonEmpty then reverseMap.getOrElse(sectionId, -1)
+                            else seqIdx
+                        val xStart = runningLength
+                        runningLength += section.section_length.value
+                        PlottableSection(pipeName, section, xStart, xEnd = runningLength, elementIndex = descrIdx)
+                    }
+                case Validated.Valid(pr: PipeResult) if pipeName == "Registre d'air" || pipeName == "Air Intake" =>
+                    val xStart = runningLength
+                    val section = make_PipeSectionResult_Manual(
+                        section_name = pr.typ.show,
+                        pu = pr.pu,
+                        v_end = pr.v_end.getOrElse(0.m_per_s)
+                    )
+                    runningLength += section.section_length.value
+                    Vector(PlottableSection(pipeName, section, xStart, xEnd = runningLength, elementIndex = 0))
+                case _ =>
+                    Vector.empty
+        }
+
+        if allSections.isEmpty then
+            ChartData(series = Vector.empty, yAxes = Vector.empty, xAxisLabel = "")
+        else
+            val tempPoints     = buildSeriesPoints(allSections, "temperature")
+            val velocityPoints = buildSeriesPoints(allSections, "velocity")
+            val elevPoints     = buildSeriesPoints(allSections, "elevation")
+            val pressPoints    = buildSeriesPoints(allSections, "pressure")
+
+            val tempLabel  = displayUnits(s"${I18N_UI.graph.temperature} (°C)", s"${I18N_UI.graph.temperature} (°F)")
+            val rightLabel = displayUnits(
+                s"${I18N_UI.graph.pressure} (Pa) – ${I18N_UI.graph.velocity} (m/s) – ${I18N_UI.graph.elevation} (m)",
+                s"${I18N_UI.graph.pressure} (Pa) – ${I18N_UI.graph.velocity} (ft/s) – ${I18N_UI.graph.elevation} (ft)"
+            )
+            val xLabel     = displayUnits(s"${I18N_UI.graph.length} (m)", s"${I18N_UI.graph.length} (ft)")
+
+            val series = Vector(
+                ChartSeries(
+                    id = "pressure", name = I18N_UI.graph.pressure,
+                    color = PressureColor, points = pressPoints, yAxisId = "right"
+                ),
+                ChartSeries(
+                    id = "velocity", name = I18N_UI.graph.velocity,
+                    color = VelocityColor, points = velocityPoints, yAxisId = "right"
+                ),
+                ChartSeries(
+                    id = "temperature", name = I18N_UI.graph.temperature,
+                    color = TemperatureColor, points = tempPoints, yAxisId = "temp"
+                ),
+                ChartSeries(
+                    id = "elevation", name = I18N_UI.graph.elevation,
+                    color = ElevationColor, points = elevPoints, yAxisId = "right", dashed = true
+                )
+            )
+
+            val yAxes = Vector(
+                YAxisConfig(id = "temp",  label = tempLabel, position = YAxisPosition.Left),
+                YAxisConfig(id = "right", label = rightLabel, position = YAxisPosition.Right, stepSize = Some(5.0))
+            )
+
+            // Build background bands from pipe group boundaries
+            val bands = Vector.newBuilder[BackgroundBand]
+            var bandStart = 0.0
+            pipes.foreach { (pipeName, _) =>
+                val pipeEnd = allSections.filter(_.pipeName == pipeName).lastOption.map(_.xEnd).getOrElse(bandStart)
+                if pipeEnd > bandStart then
+                    bands += BackgroundBand(bandStart, pipeEnd, bandColorFor(pipeName), displayLabel(pipeName))
+                bandStart = pipeEnd
+            }
+
+            ChartData(
+                series = series,
+                yAxes = yAxes,
+                xAxisLabel = xLabel,
+                backgroundBands = bands.result(),
+                xMin = Some(-0.5),
+                xMax = Some(runningLength + 0.5)
+            )
+
     /** Build data points for a given series type.
       * Returns an origin point at x=0 (inlet condition) followed by two points per section:
       * one at xStart (section inlet) and one at xEnd (section exit).
@@ -277,7 +439,7 @@ object GraphDataConverter:
     private def buildSeriesPoints(
         sections : Vector[PlottableSection],
         seriesId : String
-    )(using DisplayUnits): Vector[DataPoint] =
+    )(using Locale, DisplayUnits): Vector[DataPoint] =
         if sections.isEmpty then return Vector.empty
 
         var cumulativeHeight   = 0.0
@@ -303,7 +465,7 @@ object GraphDataConverter:
             x                = 0.0,
             y                = originY,
             tooltipTitle     = s"→ ${firstSection.section_name}",
-            tooltipExtra     = sections.head.pipeName,
+            tooltipExtra     = displayLabel(sections.head.pipeName),
             formattedValue   = originFmt,
             highlightTargets = originTargets
         )
@@ -334,7 +496,7 @@ object GraphDataConverter:
                 x                = ps.xStart,
                 y                = yStart,
                 tooltipTitle     = buildTooltipTitleStart(sections, idx),
-                tooltipExtra     = ps.pipeName,
+                tooltipExtra     = displayLabel(ps.pipeName),
                 formattedValue   = fmtStart,
                 segmentColor     = segColor,
                 highlightTargets = startTargets
@@ -372,7 +534,7 @@ object GraphDataConverter:
                 x                = ps.xEnd,
                 y                = yEnd,
                 tooltipTitle     = buildTooltipTitleEnd(sections, idx),
-                tooltipExtra     = ps.pipeName,
+                tooltipExtra     = displayLabel(ps.pipeName),
                 formattedValue   = fmtEnd,
                 segmentColor     = segColor,
                 highlightTargets = endTargets

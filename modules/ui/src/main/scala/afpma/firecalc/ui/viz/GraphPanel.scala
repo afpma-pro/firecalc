@@ -5,12 +5,18 @@
 
 package afpma.firecalc.ui.viz
 
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.engine.models.PipeResult
+import afpma.firecalc.engine.models.SlotBuildResult
+import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.graph.*
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.LAMINAR_VIZ_DEBOUNCE_MS
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.*
+
+import cats.data.Validated
 
 import com.raquo.laminar.api.L.*
 
@@ -24,34 +30,13 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
         currentHandle.foreach(_.dispose())
         currentHandle = None
 
-    /** Reverse IdsMapping per pipe: section_id (PipeIdx) → descriptor index.
-      * Required to produce VizElementId-compatible names matching the pipe panel and 3D viz.
-      */
-    private lazy val pipeIdxMappingSig: Signal[Map[String, Map[Int, Int]]] =
-        air_intake_mappings_vnel_signal
-            .combineWith(
-                fluepipe_mappings_vnel_signal,
-                connector_pipe_mappings_vnel_signal,
-                chimney_pipe_mappings_vnel_signal
-            )
-            .map { (aiM, fM, coM, chM) =>
-                Map(
-                    "Air Intake" -> aiM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap),
-                    "Flue"       -> fM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap),
-                    "Connector"  -> coM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap),
-                    "Chimney"    -> chM.fold(_ => Map.empty[Int, Int], _.reverseToIntMap)
-                )
-            }
-
     private lazy val allPipeResultsSig =
         results_en15544_air_intake_pipe
             .combineWith(
                 results_en15544_combustion_air_pipe,
                 results_en15544_firebox_pipe,
-                results_en15544_channel_pipe,
-                results_en15544_connector_pipe,
-                results_en15544_chimney_pipe,
-                pipeIdxMappingSig
+                postFireboxPipeResults_sig,
+                slotBuildResults_sig
             )
             .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
@@ -70,26 +55,69 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
             div(
                 cls := "flex-1 relative overflow-hidden",
                 onUnmountCallback { _ => disposeCurrentChart() },
-                child <-- allPipeResultsSig.map { (airIntake, combustionAir, firebox, flue, connector, chimney, mappings) =>
-                        disposeCurrentChart()
-                        val chartData = GraphDataConverter.convert(
-                            airIntake, combustionAir, firebox, flue, connector, chimney,
-                            pipeIdxToDescrIdx = mappings
-                        )
-                        if chartData.series.isEmpty then
-                            div(
-                                cls := "flex items-center justify-center h-full text-base-content/40",
-                                I18N_UI.graph.no_data
-                            )
-                        else
-                            val vizResult = GraphViz.render(
-                                chartData,
-                                onPointClick = Some { targets =>
-                                    toggleVizSelection(targets.flatMap(VizElementId.fromName(_)).toSet)
+                child <-- allPipeResultsSig.map { (airIntake, combustionAir, firebox, postFireboxResults, slotResults) =>
+                    disposeCurrentChart()
+                    val slots = postFireboxSlots_var.now()
+                    val postFireboxPipes: Vector[(String, VNelMcalcErr[PipeResult])] =
+                        postFireboxResults match
+                            case Validated.Valid(results) =>
+                                results.zipWithIndex.map { (pr, i) =>
+                                    val label = slots.lift(i).map {
+                                        case _: PostFireboxPipeDescrSlot.FlueSlot        => s"Slot$i:Flue"
+                                        case _: PostFireboxPipeDescrSlot.ThermalFlueSlot => s"Slot$i:Flue"
+                                        case _: PostFireboxPipeDescrSlot.ConnectorSlot   => s"Slot$i:Connector"
+                                        case _: PostFireboxPipeDescrSlot.ChimneySlot     => s"Slot$i:Chimney"
+                                    }.getOrElse(s"Slot$i:Pipe")
+                                    (label, Validated.validNel(pr))
                                 }
-                            )
-                            currentHandle = Some(vizResult.handle)
-                            foreignHtmlElement(vizResult.element)
+                            case Validated.Invalid(errs) =>
+                                Vector(("Flue", Validated.invalidNel(errs.head)))
+                    val chartData = GraphDataConverter.convertGeneric(
+                        airIntake, combustionAir, firebox, postFireboxPipes,
+                        pipeIdxToDescrIdx = buildPipeIdxToDescrIdx(postFireboxPipes, slots, slotResults)
+                    )
+                    if chartData.series.isEmpty then
+                        div(
+                            cls := "flex items-center justify-center h-full text-base-content/40",
+                            I18N_UI.graph.no_data
+                        )
+                    else
+                        val vizResult = GraphViz.render(
+                            chartData,
+                            onPointClick = Some { targets =>
+                                toggleVizSelection(targets.flatMap(VizElementId.fromName(_)).toSet)
+                            }
+                        )
+                        currentHandle = Some(vizResult.handle)
+                        foreignHtmlElement(vizResult.element)
                 }
             )
         )
+
+    /** Build a per-pipe reverse mapping from section_id → descriptor_index.
+      *
+      * The `idsMappingFn` in each `SlotBuildResult` maps `descrIdx → Option[sectionId]`.
+      * We invert it: for each descriptor index 0..N, probe the function and collect
+      * `sectionId → descrIdx` pairs. The resulting map is keyed by pipe name (e.g. "Slot0:Flue").
+      */
+    private def buildPipeIdxToDescrIdx(
+        postFireboxPipes: Vector[(String, VNelMcalcErr[PipeResult])],
+        slots           : Seq[PostFireboxPipeDescrSlot],
+        slotResults     : Vector[SlotBuildResult]
+    ): Map[String, Map[Int, Int]] =
+        postFireboxPipes.zipWithIndex.flatMap { case ((pipeName, _), slotIdx) =>
+            for
+                sbr       <- slotResults.lift(slotIdx)
+                mappingFn <- sbr.idsMappingFn.toOption
+            yield
+                val descrCount = slots.lift(slotIdx).map {
+                    case PostFireboxPipeDescrSlot.FlueSlot(d)        => d.size
+                    case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) => d.size
+                    case PostFireboxPipeDescrSlot.ConnectorSlot(d)   => d.size
+                    case PostFireboxPipeDescrSlot.ChimneySlot(d)     => d.size
+                }.getOrElse(0)
+                val reverseMap = (0 until descrCount).flatMap { descrIdx =>
+                    mappingFn(descrIdx).map(sectionId => sectionId -> descrIdx)
+                }.toMap
+                pipeName -> reverseMap
+        }.toMap

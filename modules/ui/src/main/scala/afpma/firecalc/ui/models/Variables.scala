@@ -175,80 +175,11 @@ val air_intake_mappings_vnel_signal =
 val firebox_var =
     engineStateVar.zoomLazy(_.firebox)((ast, x) => ast.copy(firebox = x))
 
-// FluePipe
-
-val fluepipe_incrdescr_var = engineStateVar.zoomLazy(_.flue_pipe_descr)((g, x) => g.copy(flue_pipe_descr = x))
-
-val fluepipe_vnel_signal = engineStateHelperVar.signal.map(_.fluePipe)
-
-val fluepipe_mappings_vnel_signal =
-    engineStateHelperVar.signal.map(_.fluePipeMappings)
-
-// Connecting Pipe
-
-val connector_pipe_incrdescr_var =
-    engineStateVar.zoomLazy(_.connector_pipe_descr)((g, x) => g.copy(connector_pipe_descr = x))
-
-val connector_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.connectorPipe)
-val connector_pipe_mappings_vnel_signal =
-    engineStateHelperVar.signal.map(_.connectorPipeMappings)
-
-// Chimney Pipe
-
-val chimney_pipe_incrdescr_var =
-    engineStateVar.zoomLazy(_.chimney_pipe_descr)((g, x) => g.copy(chimney_pipe_descr = x))
-
-val chimney_pipe_vnel_signal          = engineStateHelperVar.signal.map(_.chimneyPipe)
-val chimney_pipe_mappings_vnel_signal =
-    engineStateHelperVar.signal.map(_.chimneyPipeMappings)
-
-// Final frames: flue pipe's final frame seeds the connector, connector's seeds the chimney.
-// These are derived from the incremental descriptions directly (no engine run needed).
+// ── Air intake position tracking ─────────────────────────────────
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.FluePipe_Module_15544
-import afpma.firecalc.engine.models.ConnectorPipe_Module
-
-lazy val fluepipe_finalFrame_sig: Signal[Option[PipeFrame]] =
-    fluepipe_incrdescr_var.signal.map: descr =>
-        val (_, finalFrameV) = FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr)
-        finalFrameV.toOption.flatten
-    .distinct
-
-lazy val connectorpipe_finalFrame_sig: Signal[Option[PipeFrame]] =
-    connector_pipe_incrdescr_var.signal.combineWith(fluepipe_finalFrame_sig).map: (descr, flueFinalFrame) =>
-        val (_, finalFrameV) = ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(descr, flueFinalFrame)
-        finalFrameV.toOption.flatten
-    .distinct
-
-// Position tracking: cumulative XYZ coordinates for each pipe's physical segments.
-// Chained: connector starts at flue's finalPoint, chimney starts at connector's finalPoint.
-// Air intake and flue pipe both start at origin (firebox outlet not modeled spatially).
-
 import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
 import afpma.firecalc.engine.models.geometry.Vec3
-
-lazy val fluepipe_positions_sig: Signal[PipePositionResult] =
-    fluepipe_incrdescr_var.signal
-        .combineWith(firebox_var.signal)
-        .map: (descr, firebox) =>
-            val fbHeightM = firebox.firebox_height.value
-            PositionTracker.computeFlowOnly15544(descr, externalFrame = None, startPoint = Vec3(0, 0, fbHeightM + 1.0))
-        .distinct
-
-lazy val connectorpipe_positions_sig: Signal[PipePositionResult] =
-    connector_pipe_incrdescr_var.signal
-        .combineWith(fluepipe_finalFrame_sig, fluepipe_positions_sig)
-        .map: (descr, flueFinalFrame, fluePositions) =>
-            PositionTracker.computeThermal13384(descr, flueFinalFrame, fluePositions.finalPoint)
-        .distinct
-
-lazy val chimneypipe_positions_sig: Signal[PipePositionResult] =
-    chimney_pipe_incrdescr_var.signal
-        .combineWith(connectorpipe_finalFrame_sig, fluepipe_finalFrame_sig, connectorpipe_positions_sig)
-        .map: (descr, connFinalFrame, flueFinalFrame, connPositions) =>
-            PositionTracker.computeThermal13384(descr, connFinalFrame.orElse(flueFinalFrame), connPositions.finalPoint)
-        .distinct
 
 lazy val airintake_positions_sig: Signal[PipePositionResult] =
     air_intake_incrdescr_var.signal.map: descr =>
@@ -259,6 +190,96 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
             finalPoint = Some(Vec3(0, 0, -1.0))
         )
     .distinct
+
+// ── Post-firebox generic topology ─────────────────────────────────
+// Slot-indexed reactive state for dynamic N-pipe UI.
+
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.engine.models.SlotBuildResult
+import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
+
+// ── Primary Var: the post-firebox pipe slots ─────────────────────
+
+/** Writable Var for the post-firebox pipe slot vector.
+  * Mutations here (add/remove/reorder/edit) propagate through engineStateVar
+  * and trigger re-computation of all derived signals.
+  */
+lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot]] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes): (g, x) =>
+        g.copy(post_firebox_pipes = x)
+
+// ── Slot-indexed build results ───────────────────────────────────
+
+/** Generic slot-indexed build results from PipeChainGeneric.
+  * Each SlotBuildResult carries type-erased pipe, IdsMapping (Int → Option[Int]),
+  * and final PipeFrame — indexed by slot position.
+  */
+lazy val slotBuildResults_sig: Signal[Vector[SlotBuildResult]] =
+    engineStateHelperVar.signal.map(_.slotBuildResults)
+
+/** Topology validation: permissive — errors are exposed as TopologyError values. */
+lazy val topologyValidation_sig: Signal[Validated[cats.data.NonEmptyList[TopologyError], PostFireboxPipeChain]] =
+    engineStateHelperVar.signal.map(_.topologyValidation)
+
+// ── Slot-indexed frame chain ─────────────────────────────────────
+
+/** Final PipeFrame per slot, extracted from slotBuildResults.
+  * slotFinalFrames(i) is the frame after all elements in slot i,
+  * and serves as the initial frame for slot i+1.
+  */
+lazy val slotFinalFrames_sig: Signal[Vector[Option[PipeFrame]]] =
+    slotBuildResults_sig.map(_.map(_.finalFrame))
+
+/** The initial frame for slot at index `idx`: None for slot 0,
+  * otherwise the final frame of the previous slot.
+  */
+def slotInitialFrameSig(idx: Int): Signal[Option[PipeFrame]] =
+    if idx <= 0 then Signal.fromValue(None)
+    else slotFinalFrames_sig.map(frames => frames.lift(idx - 1).flatten)
+
+// ── Slot-indexed position tracking ───────────────────────────────
+
+lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
+    postFireboxSlots_var.signal
+        .combineWith(slotFinalFrames_sig, firebox_var.signal)
+        .map: (slots, frames, firebox) =>
+            val fbHeightM = firebox.firebox_height.value
+            slots.zipWithIndex.foldLeft((Vector.empty[PipePositionResult], Vec3(0, 0, fbHeightM + 1.0))):
+                case ((results, startPoint), (slot, idx)) =>
+                    val prevFrame = if idx == 0 then None else frames.lift(idx - 1).flatten
+                    val pos = slot match
+                        case PostFireboxPipeDescrSlot.FlueSlot(descr) =>
+                            PositionTracker.computeFlowOnly15544(descr, externalFrame = prevFrame, startPoint = startPoint)
+                        case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
+                            PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
+                        case PostFireboxPipeDescrSlot.ConnectorSlot(descr) =>
+                            PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
+                        case PostFireboxPipeDescrSlot.ChimneySlot(descr) =>
+                            PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
+                    (results :+ pos, pos.finalPoint)
+            ._1
+        .distinct
+
+// ── Per-slot accessor helpers ────────────────────────────────────
+
+/** Per-slot pipe result (type-erased). Returns Invalid if slot index out of bounds. */
+def slotPipeResultSig(idx: Int): Signal[ValidatedNel[IncrementalValidation_Error, Any]] =
+    slotBuildResults_sig.map: results =>
+        results.lift(idx).map(_.pipe).getOrElse(
+            Validated.invalidNel(FluePipeNotDefinedYet) // fallback — slot doesn't exist
+        )
+
+/** Per-slot IdsMapping function (Int → Option[Int]). Returns Invalid if slot index out of bounds. */
+def slotMappingFnSig(idx: Int): Signal[ValidatedNel[IncrementalValidation_Error, Int => Option[Int]]] =
+    slotBuildResults_sig.map: results =>
+        results.lift(idx).map(_.idsMappingFn).getOrElse(
+            Validated.invalidNel(FluePipeNotDefinedYet) // fallback — slot doesn't exist
+        )
+
+/** All post-firebox pipe results as a vector. */
+lazy val postFireboxPipeResults_sig: Signal[VNelMcalcErr[Vector[PipeResult]]] =
+    results_en15544_strict_sig.map: vnelAppl =>
+        vnelAppl.andThen(_.primary.postFireboxPipeResults)
 
 // Results for EN15544 Strict
 
@@ -326,16 +347,6 @@ lazy val results_en15544_combustion_air_pipe: Signal[VNelMcalcErr[PipeResult]] =
 lazy val results_en15544_firebox_pipe: Signal[VNelMcalcErr[PipeResult]] =
     results_en15544_outputs.map: outputs =>
         outputs.andThen(_.pipesResult_15544.map(_.firebox))
-
-lazy val results_en15544_channel_pipe  : Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.flue))
-lazy val results_en15544_connector_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.connector))
-lazy val results_en15544_chimney_pipe  : Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.chimney))
 
 lazy val results_en15544_estimated_output_temperatures: Signal[VNelMcalcErr[EstimatedOutputTemperatures]] =
     results_en15544_strict_sig.mapVNelE(strict =>
@@ -558,6 +569,7 @@ enum VizElementId:
     case ConnectorPipeElement(elementIndex: Int)
     case ChimneyPipeElement(elementIndex: Int)
     case AirIntakePipeElement(elementIndex: Int)
+    case PostFireboxSlotElement(slotIndex: Int, elementIndex: Int)
     case FireboxElement
 
 object VizElementId:
@@ -566,6 +578,7 @@ object VizElementId:
         case s"Connector #$idx"  => idx.toIntOption.map(ConnectorPipeElement(_))
         case s"Chimney #$idx"    => idx.toIntOption.map(ChimneyPipeElement(_))
         case s"Air Intake #$idx" => idx.toIntOption.map(AirIntakePipeElement(_))
+        case s"Slot$si #$ei"     => for s <- si.trim.toIntOption; e <- ei.toIntOption yield PostFireboxSlotElement(s, e)
         case "Firebox"           => Some(FireboxElement)
         case _                   => None
 

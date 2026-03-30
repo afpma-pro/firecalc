@@ -12,6 +12,7 @@ import io.circe.Json
 import io.circe.syntax.*
 
 import afpma.firecalc.ui.models.schema.AppStateSchema
+import afpma.firecalc.ui.models.schema.AppStateSchema.given
 
 final class UndoManager(maxDepth: Int = 1000):
 

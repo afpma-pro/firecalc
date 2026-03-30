@@ -7,6 +7,9 @@ package afpma.firecalc.ui.viz
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.engine.models.{FluePipeT, ConnectorPipeT, ChimneyPipeT, PipeType}
+import afpma.firecalc.engine.models.geometry.{PipePositionResult, Vec3}
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.filaire.*
@@ -63,8 +66,8 @@ final case class Viz3DPanel()(using Locale) extends Component:
     currentHandle = None
 
   private lazy val allPositionsSig =
-    fluepipe_positions_sig
-      .combineWith(connectorpipe_positions_sig, chimneypipe_positions_sig, airintake_positions_sig, firebox_var.signal)
+    slotPositions_sig
+      .combineWith(airintake_positions_sig, firebox_var.signal)
       .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
   lazy val node: HtmlElement =
@@ -92,7 +95,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
           .collect { case s if s.nonEmpty => () }
           .flatMapSwitch(_ => EventStream.fromValue(()).delay(15000))
           --> Observer[Unit](_ => vizSelectedElement.set(Set.empty)),
-        child <-- allPositionsSig.map { (flue, connector, chimney, airIntake, firebox) =>
+        child <-- allPositionsSig.map { (slotPositions, airIntake, firebox) =>
           disposeCurrentViz()
           vizHoveredElement.set(Set.empty)
           val fbWidthCm = firebox.firebox_width.value * M_TO_CM
@@ -112,7 +115,20 @@ final case class Viz3DPanel()(using Locale) extends Component:
             displayName = Some(displayNames.firebox)
           )
           val airDistribLine = VizConverter.airDistribToLine(fbWidthCm, fbDepthCm, displayName = Some(displayNames.airDistribution))
-          val groups = VizConverter.allPipesToGroups(flue, connector, chimney, airIntake, fireboxLine, airDistribLine, Some(displayNames))
+          val emptyPos  = PipePositionResult(Seq.empty, Vec3(0, 0, 0), None)
+          // Build slot descriptors from the actual slot vector
+          val slots = postFireboxSlots_var.now()
+          val postFireboxSlotDescs: scala.collection.immutable.Vector[(PipeType, String, String, PipePositionResult)] =
+            slots.zipWithIndex.map: (slot, idx) =>
+              val (pt, displayName) = slot match
+                case _: PostFireboxPipeDescrSlot.FlueSlot        => (FluePipeT, displayNames.flue)
+                case _: PostFireboxPipeDescrSlot.ThermalFlueSlot => (FluePipeT, displayNames.flue)
+                case _: PostFireboxPipeDescrSlot.ConnectorSlot   => (ConnectorPipeT, displayNames.connector)
+                case _: PostFireboxPipeDescrSlot.ChimneySlot     => (ChimneyPipeT, displayNames.chimney)
+              val pos = slotPositions.lift(idx).getOrElse(emptyPos)
+              (pt: PipeType, s"Slot$idx", displayName, pos)
+            .toVector
+          val groups = VizConverter.allPipesToGroupsGeneric(postFireboxSlotDescs, airIntake, fireboxLine, airDistribLine)
           if groups.forall(_.lines.isEmpty) then
             div(
               cls := "flex items-center justify-center h-full text-base-content/40",

@@ -395,6 +395,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
         statusIcon.map(n => Some(div(n)))
 
+    /** Optional prefix element rendered before the title in the accordion header. */
+    protected def accordionTitlePrefix: Option[HtmlElement] = None
+
     override def renderContent: HtmlElement =
         DaisyUIVerticalAccordionAndJoin.Element    (
             idx     = 0,
@@ -406,7 +409,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     .combineWith(panelOpened.signal)
                     .map((expert, open) =>
                         Option.when(expert && open)(detailed_headers_title)
-                    )
+                    ),
+                titlePrefix          = accordionTitlePrefix
             ),
             content = content,
             opened  = panelOpened

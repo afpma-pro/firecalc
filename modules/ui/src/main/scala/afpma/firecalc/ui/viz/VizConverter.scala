@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.viz
 
 import afpma.firecalc.engine.models.geometry.{PipeSegmentPosition, PipePositionResult, Vec3}
+import afpma.firecalc.engine.models.{FluePipeT, ConnectorPipeT, ChimneyPipeT, PipeType}
 import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.filaire.FilaireTypes.*
 import afpma.firecalc.filaire.FilaireTypes.CrossSection
@@ -109,6 +110,36 @@ object VizConverter:
       ),
       FireCalcFilaireGroup(
         pipeToLines(airIntake, AirIntakeColor, "Air Intake", displayNames.map(_.airIntake)),
+        Some("Air Intake")
+      )
+    )
+
+  /** Color for a given pipe type. */
+  def colorForPipeType(pt: PipeType): LineColor = pt match
+    case FluePipeT      => FlueColor
+    case ConnectorPipeT => ConnectorColor
+    case ChimneyPipeT   => ChimneyColor
+    case _              => FlueColor
+
+  /** Build groups from a generic N-slot post-firebox vector.
+    * Each slot is `(PipeType, internalName, displayName, PipePositionResult)`.
+    * `internalName` is used for click-target identification (must match `VizElementId.fromName` format, e.g. "Slot0").
+    * `displayName` is shown in the 3D viz tooltip/label (can be translated).
+    */
+  def allPipesToGroupsGeneric(
+      postFireboxSlots: scala.collection.immutable.Vector[(PipeType, String, String, PipePositionResult)],
+      airIntake       : PipePositionResult,
+      fireboxLine     : FireCalcFilaireLine,
+      airDistribLine  : FireCalcFilaireLine
+  ): FireCalcFilaireGroups =
+    val exhaustLines = postFireboxSlots.toList.flatMap: (pt, name, displayName, pos) =>
+      pipeToLines(pos, colorForPipeType(pt), name, Some(displayName))
+    List(
+      FireCalcFilaireGroup(List(airDistribLine), Some("Air Distribution")),
+      FireCalcFilaireGroup(List(fireboxLine), Some("Firebox")),
+      FireCalcFilaireGroup(exhaustLines, Some("Exhaust")),
+      FireCalcFilaireGroup(
+        pipeToLines(airIntake, AirIntakeColor, "Air Intake", Some("Air Intake")),
         Some("Air Intake")
       )
     )

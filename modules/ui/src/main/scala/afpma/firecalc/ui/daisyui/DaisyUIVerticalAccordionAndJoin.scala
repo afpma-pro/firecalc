@@ -169,9 +169,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
         ),
         FlowOnlyAirIntakePipePanel                       (),
         FireboxPanel                                     (),
-        FluePipePanel                                    (),
-        ConnectorPipePanel                               (),
-        ChimneyPipePanel                                 (),
+        PostFireboxPipePanels                            (),
         DaisyUIVerticalAccordionAndJoin.Element          (
             idx           = 10,
             title         = Title.WithQuadrionSubtotal(
@@ -231,7 +229,8 @@ object DaisyUIVerticalAccordionAndJoin:
         title               : String,
         xtra_sig            : Signal[Option[HtmlElement]],
         quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]],
-        bottomContent_sig   : Signal[Option[HtmlElement]] = Signal.fromValue(None)
+        bottomContent_sig   : Signal[Option[HtmlElement]] = Signal.fromValue(None),
+        titlePrefix         : Option[HtmlElement]         = None
     ) extends Component:
 
         protected def TitleChild = div(cls := "flex-none w-64", title)
@@ -240,6 +239,7 @@ object DaisyUIVerticalAccordionAndJoin:
         val node = div(
             div(
                 cls := "flex items-center",
+                titlePrefix.getOrElse(emptyNode),
                 TitleChild,
                 XtraFlexChild, // grows and shrink
                 child <-- quadrionSubtotal_sig.map(_.map(_.node).getOrElse(emptyNode)),
@@ -296,16 +296,18 @@ object DaisyUIVerticalAccordionAndJoin:
             )
 
         final case class WithTitleOnly(
-            title   : String,
-            xtra_sig: Signal[Option[HtmlElement]] = Signal.fromValue(None)
-        ) extends Title(title, xtra_sig, quadrionSubtotal_sig = Signal.fromValue(None))
+            title      : String,
+            xtra_sig   : Signal[Option[HtmlElement]] = Signal.fromValue(None),
+            titlePrefix: Option[HtmlElement]         = None
+        ) extends Title(title, xtra_sig, quadrionSubtotal_sig = Signal.fromValue(None), titlePrefix = titlePrefix)
 
         final case class WithQuadrionSubtotal(
             title               : String,
             xtra_sig            : Signal[Option[HtmlElement]]            = Signal.fromValue(None),
             quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]],
-            bottomContent_sig   : Signal[Option[HtmlElement]]            = Signal.fromValue(None)
-        ) extends Title(title, xtra_sig, quadrionSubtotal_sig, bottomContent_sig)
+            bottomContent_sig   : Signal[Option[HtmlElement]]            = Signal.fromValue(None),
+            titlePrefix         : Option[HtmlElement]                    = None
+        ) extends Title(title, xtra_sig, quadrionSubtotal_sig, bottomContent_sig, titlePrefix)
 
         final case class QuadrionValueWithTooltip(
             value      : String | Option[Double],
