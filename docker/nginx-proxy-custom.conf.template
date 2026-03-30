@@ -6,18 +6,15 @@
 # =============================================================================
 # FireCalc Custom Nginx Proxy Configuration
 # =============================================================================
-# This configuration handles TWO domains in a single nginx-ssl-proxy instance:
+# This configuration handles TWO domains in a single nginx instance:
 # - UI_DOMAIN: Proxies to ui-server for static files
 # - API_DOMAIN: Proxies to backend for API requests
+#
+# Processed by the official nginx image's envsubst mechanism.
+# Only ${UI_DOMAIN} and ${API_DOMAIN} are substituted (controlled by
+# NGINX_ENVSUBST_FILTER in docker-compose.yml).
+# SSL defaults, rate-limiting zones, and resolver are in nginx.conf.
 # =============================================================================
-
-# =============================================================================
-# Rate Limiting Zones (SEC-003)
-# =============================================================================
-# Limit verification attempts: 10 req/s per IP, burst of 5
-limit_req_zone $binary_remote_addr zone=api_auth:10m rate=10r/s;
-# Limit intent creation: 2 req/s per IP, burst of 3
-limit_req_zone $binary_remote_addr zone=api_intent:10m rate=2r/s;
 
 # Upstream for UI static files
 upstream ui_upstream {
@@ -36,26 +33,18 @@ server {
     listen 443 ssl http2;
     server_name ${UI_DOMAIN};
 
-    ssl_certificate /etc/letsencrypt/fullchain-copy.pem;
-    ssl_certificate_key /etc/letsencrypt/privkey-copy.pem;
+    ssl_certificate /etc/letsencrypt/live/${UI_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${UI_DOMAIN}/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/${UI_DOMAIN}/fullchain.pem;
 
-    # SSL configuration
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    ssl_trusted_certificate /etc/letsencrypt/fullchain-copy.pem;
-    resolver 8.8.8.8 208.67.222.222 valid=300s;
-    resolver_timeout 5s;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
-    ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 5m;
-    ssl_dhparam /etc/nginx/dhparams.pem;
+    # HSTS (SEC-009)
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
     # Let's Encrypt challenge location
     location /.well-known/acme-challenge {
         default_type "text/plain";
-        root /usr/share/nginx/html;
+        root /var/www/certbot;
         try_files $uri =404;
     }
 
@@ -81,26 +70,18 @@ server {
     listen 443 ssl http2;
     server_name ${API_DOMAIN};
 
-    ssl_certificate /etc/letsencrypt/fullchain-copy.pem;
-    ssl_certificate_key /etc/letsencrypt/privkey-copy.pem;
+    ssl_certificate /etc/letsencrypt/live/${UI_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${UI_DOMAIN}/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/${UI_DOMAIN}/fullchain.pem;
 
-    # SSL configuration
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    ssl_trusted_certificate /etc/letsencrypt/fullchain-copy.pem;
-    resolver 8.8.8.8 208.67.222.222 valid=300s;
-    resolver_timeout 5s;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
-    ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 5m;
-    ssl_dhparam /etc/nginx/dhparams.pem;
+    # HSTS (SEC-009)
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
     # Let's Encrypt challenge location
     location /.well-known/acme-challenge {
         default_type "text/plain";
-        root /usr/share/nginx/html;
+        root /var/www/certbot;
         try_files $uri =404;
     }
 
@@ -163,7 +144,7 @@ server {
     # Let's Encrypt challenge location (HTTP)
     location /.well-known/acme-challenge {
         default_type "text/plain";
-        root /usr/share/nginx/html;
+        root /var/www/certbot;
         try_files $uri =404;
     }
 

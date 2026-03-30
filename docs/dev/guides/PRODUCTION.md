@@ -377,7 +377,7 @@ find $BACKUP_DIR -name "*.db.gz" -mtime +7 -delete
 ### Security Checklist
 
 - [ ] All credentials stored securely (environment variables or secret manager)
-- [ ] SSL/TLS certificates valid and auto-renewing
+- [ ] SSL/TLS certificates valid and auto-renewing (managed by certbot sidecar)
 - [ ] Firewall configured (only necessary ports open)
 - [ ] Database file permissions restricted (600)
 - [ ] Application runs as non-root user

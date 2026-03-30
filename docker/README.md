@@ -52,6 +52,10 @@ docker/
 ├── .env                      # Your actual environment variables (git-ignored)
 ├── docker-compose.yml        # Docker orchestration
 ├── Dockerfile                # Application container definition
+├── nginx.conf                # Global nginx configuration
+├── nginx-proxy-custom.conf.template  # Domain proxy config (envsubst template)
+├── nginx-ui-server.conf      # UI static file server configuration
+├── init-letsencrypt.sh       # Initial certificate provisioning script
 ├── CONFIG_SETUP.md           # Comprehensive setup guide
 ├── README.md                 # This file
 │
@@ -104,7 +108,8 @@ docker compose logs -f
 
 # View specific service logs
 docker compose logs -f backend
-docker compose logs -f nginx-ssl-proxy
+docker compose logs -f nginx
+docker compose logs -f certbot
 
 # Restart services
 docker compose restart
@@ -136,6 +141,7 @@ Before deploying:
 - [ ] UI built: `../web/dist-app/index.html` exists
 - [ ] Database directory has proper ownership: `sudo chown -R 999:999 docker/databases && sudo chmod -R 755 docker/databases`
 - [ ] UI dist-app has proper ownership: `sudo chown -R $USER:$USER web/dist-app` (if needed)
+- [ ] Initial certificates provisioned: `./init-letsencrypt.sh`
 
 ## Deployment Environments
 

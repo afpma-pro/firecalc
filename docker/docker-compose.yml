@@ -7,9 +7,11 @@
 # FireCalc Payments Backend - Docker Compose Configuration
 # =============================================================================
 # This file orchestrates the FireCalc payments backend service with SSL
-# termination via nginx-ssl-proxy. The setup includes:
+# termination via official nginx + certbot. The setup includes:
 # - Backend service running the Scala payments application
-# - Nginx SSL proxy for HTTPS termination and routing
+# - UI server for static files (nginx:alpine)
+# - Nginx reverse proxy for HTTPS termination and routing (nginx:1.27-alpine)
+# - Certbot sidecar for automated Let's Encrypt certificate renewal
 # - Shared internal network for secure inter-service communication
 # - Volume mounts for configuration and database persistence
 #
@@ -30,49 +32,49 @@ services:
   # ===========================================================================
   # Scala-based payments backend service handling payment processing,
   # invoice generation, and database operations. This service is not directly
-  # exposed to the internet; all traffic comes through the nginx-ssl-proxy.
+  # exposed to the internet; all traffic comes through the nginx proxy.
   backend:
     # Build configuration
     build:
       context: ..                    # Build from project root
       dockerfile: docker/Dockerfile  # Use Dockerfile in docker/ directory
-    
+
     image: firecalc-payments:latest
     container_name: firecalc-payments-backend
-    
+
     # Restart policy: always restart unless explicitly stopped
     restart: unless-stopped
-    
+
     # Environment variables
     # FIRECALC_ENV determines which configuration file to load
     # Additional env vars can be added via the .env file
     environment:
       - FIRECALC_ENV=${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
-    
+
     # Load additional environment variables from .env file
     env_file:
       - .env
-    
+
     # Volume mounts for configuration and data persistence
     volumes:
       # Configuration files (read-only)
       # Contains YAML/CONF files for application settings
       - ./configs:/app/configs:ro
-      
+
       # Database directory (read-write)
       # SQLite database files with persistent storage
       - ./databases:/app/databases:rw
-    
+
     # Network configuration
     # Only expose port internally to the docker network
-    # Not published to host - only accessible via nginx-ssl-proxy
+    # Not published to host - only accessible via nginx proxy
     networks:
       - firecalc-network
-    
+
     # Expose port 8181 internally (not to host)
     expose:
       - "8181"
-    
+
     # Health check configuration
     # Verifies the application is responsive
     healthcheck:
@@ -81,7 +83,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    
+
     # Resource limits (optional - uncomment and adjust as needed)
     # deploy:
     #   resources:
@@ -91,7 +93,7 @@ services:
     #     reservations:
     #       cpus: '1.0'
     #       memory: 1G
-    
+
     # Logging configuration
     logging:
       driver: "json-file"
@@ -106,23 +108,23 @@ services:
   ui-server:
     image: nginx:alpine
     container_name: firecalc-ui-server
-    
+
     restart: unless-stopped
-    
+
     volumes:
       - ../web/dist-app:/usr/share/nginx/html:ro
       - ./nginx-ui-server.conf:/etc/nginx/conf.d/default.conf:ro
-    
+
     networks:
       - firecalc-network
-    
+
     healthcheck:
       test: ["CMD", "test", "-f", "/usr/share/nginx/html/index.html"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 5s
-    
+
     logging:
       driver: "json-file"
       options:
@@ -130,60 +132,84 @@ services:
         max-file: "30"
 
   # ===========================================================================
-  # Nginx SSL Proxy - Unified SSL/TLS Termination
+  # Nginx Reverse Proxy - Unified SSL/TLS Termination
   # ===========================================================================
-  # Single proxy handling both UI and API domains
-  # Routes based on server_name to appropriate upstream
-  nginx-ssl-proxy:
-    image: danieldent/nginx-ssl-proxy:latest
-    container_name: firecalc-ssl-proxy
-    
+  # Official nginx image handling both UI and API domains.
+  # Routes based on server_name to appropriate upstream.
+  # SSL configuration in nginx.conf; domain templates in nginx-proxy-custom.conf.template.
+  # The built-in envsubst mechanism processes *.template files in /etc/nginx/templates/,
+  # outputting to /etc/nginx/conf.d/. NGINX_ENVSUBST_FILTER restricts substitution
+  # to UI_DOMAIN and API_DOMAIN so that nginx variables ($host, $uri, etc.) are preserved.
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: firecalc-nginx
+
     restart: unless-stopped
-    
+
     ports:
       - "443:443"
       - "80:80"
-    
+
     environment:
-      # Primary domain for certificate (will handle both via custom config)
-      - SERVERNAME=${UI_DOMAIN}
-      - EXTRANAMES=${API_DOMAIN}
-      - UPSTREAM=ui-server:80
-      - HTTPS_REDIRECT=true
       - UI_DOMAIN=${UI_DOMAIN}
       - API_DOMAIN=${API_DOMAIN}
-    
-    env_file:
-      - .env
-    
-    # Custom entrypoint to process template with environment variables
-    entrypoint: /bin/sh
-    command: >
-      -c "envsubst '$${UI_DOMAIN} $${API_DOMAIN}' < /tmp/nginx-proxy-custom.conf.template > /etc/nginx/conf.d/default.conf &&
-          exec /init"
-    
+      # Only substitute UI_DOMAIN and API_DOMAIN — protect nginx variables ($host, $uri, etc.)
+      - NGINX_ENVSUBST_FILTER=^(UI_DOMAIN|API_DOMAIN)$$
+
     volumes:
-      - letsencrypt-certs:/etc/letsencrypt
-      - ui-webroot:/usr/share/nginx/html
-      # Mount as template, will be processed by entrypoint
-      - ./nginx-proxy-custom.conf:/tmp/nginx-proxy-custom.conf.template:ro
-    
+      # Global nginx config (no envsubst — mounted directly)
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Domain proxy config (envsubst template — processed on startup)
+      - ./nginx-proxy-custom.conf.template:/etc/nginx/templates/nginx-proxy-custom.conf.template:ro
+      # UI server config (no envsubst — uses $uri etc., mounted directly to conf.d/)
+      - ./nginx-ui-server.conf:/etc/nginx/conf.d/nginx-ui-server.conf:ro
+      # Let's Encrypt certificates (read-only — certbot manages them)
+      - letsencrypt-certs:/etc/letsencrypt:ro
+      # ACME challenge webroot (read-only — certbot writes challenges)
+      - certbot-webroot:/var/www/certbot:ro
+
     depends_on:
       ui-server:
         condition: service_started
       backend:
         condition: service_healthy
-    
+
     networks:
       - firecalc-network
-    
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-    
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # Certbot - Automated Let's Encrypt Certificate Renewal
+  # ===========================================================================
+  # Runs a renewal check every 12 hours. Certificates are shared with nginx
+  # via the letsencrypt-certs volume. Initial provisioning is handled by
+  # init-letsencrypt.sh (run once before first deployment).
+  certbot:
+    image: certbot/certbot:v2.11.0
+    container_name: firecalc-certbot
+
+    restart: unless-stopped
+
+    volumes:
+      - letsencrypt-certs:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+
+    # Renewal loop: attempt renewal every 12 hours, then sleep
+    entrypoint: /bin/sh
+    command: -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
+
     logging:
       driver: "json-file"
       options:
@@ -208,18 +234,18 @@ networks:
 # =============================================================================
 # Named volumes for data persistence
 volumes:
-  # Let's Encrypt certificates (shared for both domains)
+  # Let's Encrypt certificates (shared between nginx and certbot)
   letsencrypt-certs:
     driver: local
-  
-  # Webroot for Let's Encrypt challenges
-  ui-webroot:
+
+  # Webroot for Let's Encrypt ACME challenges
+  certbot-webroot:
     driver: local
 
 # =============================================================================
 # Production Deployment Notes
 # =============================================================================
-# 
+#
 # 1. DNS Configuration:
 #    - Ensure DOMAIN in .env points to a valid DNS A/AAAA record
 #    - DNS must resolve to the server's public IP address
@@ -236,7 +262,7 @@ volumes:
 #    UI_DOMAIN=firecalc.staging.example.com
 #    API_DOMAIN=api.staging.example.com
 #    FIRECALC_ENV=staging
-#    # Optional: LETSENCRYPT_EMAIL=admin@example.com
+#    LETSENCRYPT_EMAIL=admin@example.com
 #    ```
 #
 #    Note: Both domains must have DNS A/AAAA records pointing to this server
@@ -247,12 +273,14 @@ volumes:
 #    - Create configs/ directory with necessary YAML/CONF files
 #    - Ensure databases/ directory exists (will be created if missing)
 #    - Review and update .env file with production values
+#    - Run init-letsencrypt.sh to provision initial certificates
 #
 # 5. SSL Certificate Management:
-#    - First run may take a few minutes to obtain certificates
-#    - Monitor logs: docker compose logs -f nginx-ssl-proxy
-#    - Certificates auto-renew before expiration
+#    - Run init-letsencrypt.sh once before first deployment
+#    - The certbot sidecar automatically renews certificates every 12 hours
+#    - Monitor logs: docker compose logs -f certbot
 #    - Volume letsencrypt-certs persists certificates
+#    - Test renewal: docker compose run --rm certbot renew --dry-run
 #
 # 6. Monitoring and Maintenance:
 #    - Check service health: docker compose ps
@@ -271,11 +299,13 @@ volumes:
 #    - Use secrets management for sensitive data (not in .env)
 #    - Regular security updates: docker compose pull
 #    - Review and rotate database encryption keys
+#    - HSTS enabled with 2-year max-age
 #
 # 9. Troubleshooting:
 #    - Certificate issues: Check DNS resolution and port accessibility
 #    - Backend not responding: Check health endpoint and logs
 #    - Connection refused: Verify network configuration
 #    - Database locked: Ensure proper volume permissions
+#    - Certbot errors: docker compose logs certbot
 #
 # =============================================================================

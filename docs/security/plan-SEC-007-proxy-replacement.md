@@ -6,6 +6,8 @@
 
 The TLS proxy uses `danieldent/nginx-ssl-proxy:latest` — a personal/community Docker image with no maintenance guarantees. The `:latest` tag is unpinned. This image terminates all HTTPS traffic for both the UI and API domains, making it the most security-critical component in the stack.
 
+**Status**: IMPLEMENTED
+
 ## Current State
 
 ```yaml

@@ -98,8 +98,10 @@ docker/
 ├── docker-compose.yml            # Docker orchestration
 ├── Dockerfile                    # Application container definition
 ├── CONFIG_SETUP.md               # This file
+├── nginx.conf                    # Global nginx configuration
+├── nginx-proxy-custom.conf.template  # Domain proxy config (envsubst template)
 ├── nginx-ui-server.conf          # UI static file server configuration
-├── nginx-proxy-custom.conf       # SSL proxy configuration (both domains)
+├── init-letsencrypt.sh           # Initial certificate provisioning script
 │
 ├── configs/
 │   └── staging/                  # Staging environment configs (git-ignored)
@@ -122,10 +124,11 @@ docker/
         └── firecalc-payments-staging.db
 ```
 
-**Nginx Architecture:** FireCalc uses a three-container architecture:
+**Nginx Architecture:** FireCalc uses a four-container architecture:
 1. **backend** - Scala payments application (port 8181)
 2. **ui-server** - nginx:alpine serving static UI files (port 80, internal)
-3. **nginx-ssl-proxy** - Single SSL termination proxy handling both UI and API domains with automatic Let's Encrypt certificates (ports 443/80)
+3. **nginx** - Official nginx:1.27-alpine reverse proxy handling both UI and API domains with HTTPS termination (ports 443/80)
+4. **certbot** - certbot/certbot:v2.11.0 sidecar for automated Let's Encrypt certificate renewal (every 12 hours)
 
 ## Step-by-Step Setup
 
@@ -389,24 +392,31 @@ sudo chmod -R 755 docker/databases
    
    # Watch specific service
    docker compose logs -f backend
-   docker compose logs -f nginx-ssl-proxy
-   
+   docker compose logs -f nginx
+   docker compose logs -f certbot
+
    # Check service status
    docker compose ps
    ```
 
-4. **Wait for SSL certificates**
-   - First startup takes 2-5 minutes to obtain Let's Encrypt certificates for BOTH domains
-   - Monitor the nginx-ssl-proxy logs:
+4. **Provision SSL certificates (first time only)**
+   - Before the first deployment, run the certificate provisioning script:
      ```bash
-     docker compose logs -f nginx-ssl-proxy
+     cd docker
+     ./init-letsencrypt.sh
      ```
-   - Once ready, you'll see "Certificate obtained successfully"
-   - The nginx-ssl-proxy container automatically handles:
-     - SSL certificate generation for both domains (single certificate with SANs)
+   - This generates self-signed bootstrap certs, starts nginx, obtains real Let's Encrypt
+     certificates via certbot, and reloads nginx.
+   - Subsequent certificate renewals are automatic (certbot sidecar checks every 12 hours).
+   - Monitor certificate status:
+     ```bash
+     docker compose logs -f certbot
+     ```
+   - The nginx + certbot architecture handles:
+     - HTTPS termination for both domains (single certificate with SANs)
      - HTTP to HTTPS redirects
-     - Certificate renewal before expiration
-     - Routing to appropriate upstream based on domain (UI → ui-server, API → backend)
+     - Automatic certificate renewal before expiration
+     - Routing to appropriate upstream based on domain (UI -> ui-server, API -> backend)
 
 5. **Access the services**
    - **UI**: https://firecalc.staging.example.com (port 443)
@@ -420,7 +430,7 @@ sudo chmod -R 755 docker/databases
    curl -s https://api.staging.example.com/v1/healthcheck
    
    # Check certificate includes both domains
-   docker exec firecalc-ssl-proxy openssl x509 -in /etc/letsencrypt/fullchain-copy.pem -noout -text | grep DNS
+   docker compose exec nginx openssl x509 -in /etc/letsencrypt/live/${UI_DOMAIN}/fullchain.pem -noout -text | grep DNS
    ```
    
    Expected healthcheck output:
