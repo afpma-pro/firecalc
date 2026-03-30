@@ -379,6 +379,19 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(i18n, units, dto)
 
 
+// =========
+// engine-validation (golden-file validation tests for engine)
+
+lazy val engineValidation = (project in file("modules/engine-validation"))
+  .settings(
+    commonSettings,
+    name := "firecalc-engine-validation",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:32"),
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+  )
+  .dependsOn(engine.jvm, engine.jvm % "test->test")
+
 
 // =========
 // viz (3D visualization library - framework-agnostic, Scala.js only)
