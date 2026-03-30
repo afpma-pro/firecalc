@@ -85,6 +85,9 @@ server {
         try_files $uri =404;
     }
 
+    # Request body size limit (SEC-010)
+    client_max_body_size 5m;
+
     # API-specific security headers
     add_header X-Frame-Options "DENY" always;
     add_header X-Content-Type-Options "nosniff" always;

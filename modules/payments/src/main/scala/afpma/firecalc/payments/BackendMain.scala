@@ -46,6 +46,7 @@ import org.http4s.*
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.CORS
+import org.http4s.server.middleware.EntityLimiter
 import org.http4s.server.middleware.Logger
 import org.typelevel.ci.CIString
 import org.typelevel.log4cats
@@ -575,6 +576,11 @@ object Main extends IOApp:
                         healthRoutes   = HealthCheckRoutes.create[IO]
                         sourceRoutes   = SourceRoutes.create[IO]
 
+                        // SEC-010: Enforce 5 MB request body size limit on routes that accept bodies
+                        maxBodySize        = 5L * 1024 * 1024
+                        purchaseRoutes_V1  = EntityLimiter.httpRoutes(purchaseRoutes.routes_V1, maxBodySize)
+                        webhookRoutes_V1   = EntityLimiter.httpRoutes(webhookRoutes.routes_V1, maxBodySize)
+
                         // Apply selective logging middleware to each route group
                         // SEC-006: Disable body logging on sensitive routes to prevent PII leakage
                         purchaseRoutes_V1_WithLogging = Logger.httpRoutes(
@@ -583,7 +589,7 @@ object Main extends IOApp:
                             redactHeadersWhen = name =>
                                 Logger.defaultRedactHeadersWhen(name) ||
                                     name == CIString("Authorization")
-                        )(purchaseRoutes.routes_V1)
+                        )(purchaseRoutes_V1)
 
                         webhookRoutes_V1_WithLogging = Logger.httpRoutes(
                             logHeaders        = true,
@@ -591,7 +597,7 @@ object Main extends IOApp:
                             redactHeadersWhen = name =>
                                 Logger.defaultRedactHeadersWhen(name) ||
                                     name == CIString("Webhook-Signature")
-                        )(webhookRoutes.routes_V1)
+                        )(webhookRoutes_V1)
 
                         staticRoutes_V1_WithLogging = Logger.httpRoutes(
                             logHeaders = true,
