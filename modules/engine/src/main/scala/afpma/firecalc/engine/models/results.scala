@@ -194,6 +194,35 @@ object PipeResult:
     def useless(pt: PipeType, gas_temp: TCelsius): PipeResult =
         useless(pt: PipeType, 0.pascals, gas_temp: TCelsius)
 
+    /** Useless result that propagates upstream density/velocity for noop slots. */
+    def useless(
+        pt          : PipeType,
+        gas_temp    : TCelsius,
+        lastDensity : Option[Density],
+        lastVelocity: Option[FlowVelocity]
+    ): PipeResult = fromValues(
+        pt                   = pt,
+        lengthSum            = 0.m,
+        heightSum            = 0.m,
+        pd                   = None,
+        ζ                    = None,
+        pu                   = (0.pascals).validNel,
+        pRs                  = 0.pascals,
+        pRg                  = 0.pascals,
+        ph                   = 0.pascals,
+        gas_temp_start       = gas_temp,
+        gas_temp_middle      = gas_temp,
+        gas_temp_end         = gas_temp,
+        density_middle       = None,
+        density_mean         = None,
+        v_start              = None,
+        v_end                = None,
+        last_density_mean    = lastDensity,
+        last_density_middle  = lastDensity,
+        last_velocity_mean   = lastVelocity,
+        last_velocity_middle = lastVelocity
+    )
+
     def useless(pt: PipeType, pu: Pressure, gas_temp: TCelsius) = fromValues(
         pt                   = pt,
         lengthSum            = 0.m,

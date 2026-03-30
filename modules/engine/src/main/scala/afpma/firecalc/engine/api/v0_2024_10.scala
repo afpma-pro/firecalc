@@ -258,6 +258,12 @@ object v0_2024_10:
         with HasFluePipe_Alg:
         self =>
 
+        /** The ordered post-firebox pipe descriptor slots from the DTO.
+          * Defaults to empty; override with the actual `post_firebox_pipes` from FireCalcYAML V6
+          * to support arbitrary N-pipe topologies.
+          */
+        def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] = Seq.empty
+
         type EN15544_Alg <: EN15544_V_2023_Common_Application {
             type AirIntakePipe_Module_T     = self.AirIntakePipe_Module_T
             type CombustionAirPipe_Module_T = self.CombustionAirPipe_Module_T
@@ -367,7 +373,7 @@ object v0_2024_10:
         override type EN15544_Alg = EN15544_Strict_Application
 
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Strict_Application] = en15544_inputsVNel.map:
-            i => EN15544_Strict_Application.make(EN15544_Strict_Formulas.make)(i)
+            i => EN15544_Strict_Application.make(EN15544_Strict_Formulas.make)(i, postFireboxPipeSlots)
 
     trait StoveProjectDescr_15544_MCE_Alg
         extends StoveProjectDescr_15544_Alg

@@ -40,6 +40,19 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     lazy val inputs: Inputs_15544
 
+    /** The ordered post-firebox pipe descriptor slots from the DTO.
+      * Defaults to the classic 3-pipe vector (flue, connector, chimney) for backward
+      * compatibility.  Override with the actual `post_firebox_pipes` from FireCalcYAML V6
+      * to support arbitrary N-pipe topologies.
+      */
+    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+        import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+        Seq(
+            FlueSlot(Seq.empty),
+            ConnectorSlot(Seq.empty),
+            ChimneySlot(Seq.empty)
+        )
+
     export EN15544_V_2023_Application_Alg.{ErrorGen}
 
     type VNel[A] = ValidatedNel[ErrorGen, A]
@@ -73,18 +86,16 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         override lazy val inputs = en13384_inputs
 
         override lazy val last_known_density_before_connector_pipe: WithParams_13384[Option[Density]] =
+            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
             computeAt match
-                case ComputeAt.Mean   =>
-                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_density_mean)
-                case ComputeAt.Middle =>
-                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_density_middle)
+                case ComputeAt.Mean   => pr.flatMap(_.last_density_mean).orElse(pr.flatMap(_.last_density_middle))
+                case ComputeAt.Middle => pr.flatMap(_.last_density_middle)
 
         override lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] =
+            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
             computeAt match
-                case ComputeAt.Mean   =>
-                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_velocity_mean)
-                case ComputeAt.Middle =>
-                    atParamsFor(summon[Params_13384]).flue_PipeResult.toOption.flatMap(_.last_velocity_middle)
+                case ComputeAt.Mean   => pr.flatMap(_.last_velocity_mean).orElse(pr.flatMap(_.last_velocity_middle))
+                case ComputeAt.Middle => pr.flatMap(_.last_velocity_middle)
 
         // 7.8.4
         // Températures moyennes pour le calcul de pression
@@ -267,6 +278,11 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val flue_PipeResult         : VNelMcalcErr[PipeResult]
         lazy val connector_PipeResult    : VNelMcalcErr[PipeResult]
         lazy val chimney_PipeResult      : VNelMcalcErr[PipeResult]
+
+        /** All post-firebox pipe results as a vector: [flue, connector, chimney].
+          * Convenience accessor for consumers that want to iterate over all post-firebox results.
+          */
+        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]]
 
         // Derived temperatures (Section 4.8.4 – 4.8.5)
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean]

@@ -394,7 +394,16 @@ object FluePipe_Module_15544
     def mkPipeFromIncrDescrWithFinalFrame(
         incrSeq: Seq[incremental.IncrDescr]
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
-        val result = incremental.define(incrSeq*).toFullDescrWithFinalFrame()
+        mkPipeFromIncrDescrWithFinalFrame(incrSeq, externalInitialFrame = None)
+
+    /** Build the flue pipe with an optional external initial frame (from the previous slot's final frame).
+      * When the pipe itself has no SetInitialDirection, the external frame is used as the starting direction.
+      */
+    def mkPipeFromIncrDescrWithFinalFrame(
+        incrSeq             : Seq[incremental.IncrDescr],
+        externalInitialFrame: Option[PipeFrame]
+    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
+        val result = incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame)
         (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
 
     extension (fp: FluePipe_15544)

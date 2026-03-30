@@ -131,13 +131,14 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
         gas                : Gas,
         loadQty            : LoadQty,
         z_geodetical_height: z_geodetical_height,
-        params             : DraftCondition
+        params             : DraftCondition,
+        tempStartOverride  : Option[TCelsius] = None
     )(using
         alg: ApplicationAlg,
         ssa: ShortSectionAlg
     ): Either[MecaFlu_Error, PipeResult] =
         MecaFluOps.catchMecaFluErrors(fd.pipeType):
-            new FlowOnlyMecaFlu_15544_PipeResult_Impl(fd, gas, loadQty, z_geodetical_height, params) {
+            new FlowOnlyMecaFlu_15544_PipeResult_Impl(fd, gas, loadQty, z_geodetical_height, params, tempStartOverride) {
                 override given en15544     : ApplicationAlg  = alg
                 override given shortSection: ShortSectionAlg = ssa
             }
@@ -370,7 +371,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
     gas                : Gas,
     loadQty            : LoadQty,
     z_geodetical_height: z_geodetical_height,
-    params             : DraftCondition
+    params             : DraftCondition,
+    tempStartOverride  : Option[TCelsius] = None
 ) extends PipeResult.WithSections:
 
     import FlowOnlyMecaFlu_15544_PipeResult_Impl.*
@@ -399,7 +401,18 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
             case FireboxPipeT       =>
                 QtyDAtPosition.constant(en15544.t_BR).atPos
             case FluePipeT          =>
-                en15544.t_fluepipe(totalLengthUntil(elem))
+                tempStartOverride match
+                    case Some(tStart) =>
+                        // Non-first flue pipe: use upstream temperature as reference for exponential decay
+                        // t(L) = tStart * exp(-0.83 * L / L_Z_calculated)
+                        val lzCalc = en15544.L_Z_calculated
+                        QtyDAtPosition.from(
+                            start  = (tStart.value * math.exp(-0.83 * fd.totalLengthUntilStartOf(elem).value / lzCalc.value)).degreesCelsius,
+                            middle = (tStart.value * math.exp(-0.83 * fd.totalLengthUntilMiddleOf(elem).value / lzCalc.value)).degreesCelsius,
+                            end    = (tStart.value * math.exp(-0.83 * fd.totalLengthUntilEndOf(elem).value / lzCalc.value)).degreesCelsius
+                        ).atPos
+                    case None =>
+                        en15544.t_fluepipe(totalLengthUntil(elem))
             case _                  =>
                 throw new Exception(s"${elem.fullRef}: could not determine 'temperature' for gas '$gas'")
 

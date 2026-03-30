@@ -761,6 +761,11 @@ object standard {
     case object ChimneyPipeNotDefinedYet extends NotDefinedYet:
         override final def sectionTyp: PipeType = ChimneyPipeT
 
+    /** A pipe slot of the expected type was not found in the post-firebox slot vector. */
+    case class PipeSlotNotFound(sectionTyp: PipeType) extends NotDefinedYet:
+        def showUsingLocale: Locale ?=> String =
+            s"No ${sectionTyp} pipe slot found in post-firebox topology"
+
     case class AddElementMissingAfterSetProp[Id_IncrDescr <: Matchable](
         sectionTyp: PipeType,
         lastElRef : Option[String]
@@ -773,6 +778,7 @@ object standard {
             e match
                 case FluePipeNotDefinedYet                   => I18N.incremental_validation.not_defined_yet.flue_pipe
                 case ChimneyPipeNotDefinedYet                => I18N.incremental_validation.not_defined_yet.chimney_pipe
+                case e @ PipeSlotNotFound(_)                 => e.showUsingLocale
                 case e @ AddElementMissingAfterSetProp(_, _) => e.showUsingLocale
 
     // Property must be set errors (with operation name)

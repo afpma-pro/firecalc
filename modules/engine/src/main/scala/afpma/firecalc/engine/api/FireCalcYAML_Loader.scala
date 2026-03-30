@@ -44,36 +44,49 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             FlowOnlyAirIntakePipe_Module_13384.mkPipeFromIncrDescr(fcProj.air_intake_descr)
         }
 
-    private val pipeChain = traced("pipeChain") {
-        PipeChain_15544_Strict.build(
-            PipeChain_15544_Strict.Descriptors(
-                flue      = fcProj.flue_pipe_descr,
-                connector = fcProj.connector_pipe_descr,
-                chimney   = fcProj.chimney_pipe_descr
-            )
-        )
-    }
-
-    val fluePipeResult      = pipeChain.fluePipeResult
-    val connectorPipeResult = pipeChain.connectorPipeResult
-    val chimneyPipeResult   = pipeChain.chimneyPipeResult
-
     val airIntakePipe: ValidatedNel[IncrementalValidation_Error, FlowOnlyAirIntakePipe_13384] =
         traced("airIntakePipe") { FlowOnlyAirIntakePipe_Module_13384.extractPipe(airIntakePipeResult) }
-    val fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_15544]              =
-        traced("fluePipe") { pipeChain.fluePipe }
-    val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]               =
-        traced("connectorPipe") { pipeChain.connectorPipe }
-    val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]                 =
-        traced("chimneyPipe") { pipeChain.chimneyPipe }
 
     val airIntakePipeMappings: Validated[NonEmptyList[
         IncrementalValidation_Error
     ], FlowOnlyAirIntakePipe_Module_13384.incremental.IdsMapping] =
         traced("airIntakePipeMappings") { FlowOnlyAirIntakePipe_Module_13384.extractIdsMapping(airIntakePipeResult) }
-    val fluePipeMappings      = traced("fluePipeMappings") { pipeChain.fluePipeMappings }
-    val connectorPipeMappings = traced("connectorPipeMappings") { pipeChain.connectorPipeMappings }
-    val chimneyPipeMappings   = traced("chimneyPipeMappings") { pipeChain.chimneyPipeMappings }
+
+    // ── Post-firebox topology ────────────────────────────────────────────
+    // Single build path: PipeChainGeneric produces a Vector[SlotBuildResult]
+    // with frame chaining. The typed pipe accessors below (fluePipe, etc.)
+    // are derived from these results by finding the first matching slot type
+    // and downcasting the type-erased pipe.
+
+    val slotBuildResults: Vector[SlotBuildResult] =
+        traced("slotBuildResults") { PipeChainGeneric.build(fcProj.post_firebox_pipes) }
+
+    /** Find the first SlotBuildResult matching the given PipeType and downcast its pipe. */
+    private def firstPipeOfType[P](pt: PipeType): ValidatedNel[IncrementalValidation_Error, P] =
+        slotBuildResults.find(_.pipeType == pt) match
+            case Some(sbr) => sbr.pipe.map(_.asInstanceOf[P])
+            case None      => Validated.invalidNel(PipeSlotNotFound(pt))
+
+    val fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_15544] = traced("fluePipe") { firstPipeOfType(FluePipeT) }
+    val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  = traced("connectorPipe") { firstPipeOfType(ConnectorPipeT) }
+    val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = traced("chimneyPipe") { firstPipeOfType(ChimneyPipeT) }
+
+    import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+    import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
+
+    // Topology grammar validation (permissive — errors are exposed, not thrown)
+    val topologyValidation: Validated[NonEmptyList[afpma.firecalc.engine.ops.generic.TopologyError], PostFireboxPipeChain] =
+        traced("topologyValidation") {
+            PostFireboxPipeChain.validated(
+                fcProj.post_firebox_pipes.map { slot =>
+                    slot match
+                        case FlueSlot(_)         => PipeSlot.noop(FluePipeT, "Flue")
+                        case ThermalFlueSlot(_)  => PipeSlot.noop(FluePipeT, "Flue")
+                        case ConnectorSlot(_)    => PipeSlot.noop(ConnectorPipeT, "Connector")
+                        case ChimneySlot(_)      => PipeSlot.noop(ChimneyPipeT, "Chimney")
+                }.toVector
+            )
+        }
 
     // EN15544 Strict
 
@@ -121,6 +134,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             val fluePipe                        = validatedFluePipe
             val connectorPipe                   = self.connectorPipe
             val chimneyPipe                     = validatedChimneyPipe
+            override def postFireboxPipeSlots   = fcProj.post_firebox_pipes
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
         traced("stoveProjectDescr_EN15544_Strict") {
