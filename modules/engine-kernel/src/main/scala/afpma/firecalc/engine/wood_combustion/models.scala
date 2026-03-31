@@ -297,5 +297,4 @@ case class ExteriorAir(
     def p : Pressure   = pressure
     // def composition ???
 
-object WoodCombustion:
-    val default: WoodCombustionAlg = new WoodCombustionImpl
+object WoodCombustion

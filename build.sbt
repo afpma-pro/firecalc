@@ -174,7 +174,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -341,6 +341,37 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(dto)
 
 // =========
+// engine-kernel (pure algebras, typeclasses, models, error types — stable foundation)
+
+lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/engine-kernel"))
+  .settings(
+    commonSettings,
+    name := "firecalc-engine-kernel",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:32"),
+    libraryDependencies += "com.manyangled"             %%% "coulomb-core"                       % "0.8.0",
+    libraryDependencies += "com.manyangled"             %%% "coulomb-units"                      % "0.8.0",
+    libraryDependencies += "org.typelevel"              %%% "cats-core"                          % "2.13.0",
+    libraryDependencies += "org.typelevel"              %%% "cats-effect"                        % "3.6.1",
+    libraryDependencies += "org.typelevel"              %%% "kittens"                            % "3.5.0",
+    libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"                          % "1.9.12",
+
+    // Test
+    libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
+    libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
+
+    // i18n
+    libraryDependencies += "io.taig" %%% "babel-circe"   % "0.5.3",
+    libraryDependencies += "io.taig" %%% "babel-generic" % "0.5.3",
+    libraryDependencies += "io.taig" %%% "babel-loader"  % "0.5.3",
+  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(i18n, units, dto)
+
+// =========
 // engine
 
 lazy val engine = crossProject(JVMPlatform, JSPlatform)
@@ -376,7 +407,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(i18n, units, dto)
+  .dependsOn(engine_kernel, i18n, units, dto)
 
 // =========
 // engine-13384-strict (EN 13384 implementation — physically separated from core engine)
