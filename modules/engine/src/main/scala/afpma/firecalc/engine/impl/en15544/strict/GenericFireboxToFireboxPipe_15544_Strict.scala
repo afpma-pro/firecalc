@@ -23,8 +23,7 @@ given FireboxToFireboxPipe_15544_Strict[Firebox_15544] = GenericFireboxToFirebox
 given FireboxToFireboxPipe_15544_Strict[SingleTested] =
     GenericFireboxToFireboxPipe_15544_Strict.makeFor[SingleTested]
 
-trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544]
-    extends FireboxToFireboxPipe_15544_Strict[FB] {
+trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544] extends FireboxToFireboxPipe_15544_Strict[FB] {
 
     /** Default direction for firebox pipe. Override to change the initial direction. */
     protected def fireboxInitialDirection: (AzimuthDirection, InclinationDirection) =
@@ -40,8 +39,8 @@ trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544]
                 .define(
                     setInitialDirection(az, incl),
                     innerShape(rectangle(width, depth)),
-                    roughness         (2.mm), // TOFIX: 3mm or 2mm ???
-                    addSectionVertical(
+                    roughness          (2.mm    ), // TOFIX: 3mm or 2mm ???
+                    addSectionVertical (
                         "ascension dans foyer",
                         // TOFIX: found in CalculPdM-v0.2.30
                         // - we consider the whole vertical length ? but different injection height...

@@ -29,7 +29,6 @@ object DynamicFrictionCoeffOp:
     // ERROR TYPES
     // export afpma.firecalc.engine.standard.PressureLossCoeff_Error
     export afpma.firecalc.engine.standard.SingularFlowResistanceCoeffErrorI
-    
 
     // according to EN 13384-1:2015+A1:2019
 
@@ -75,14 +74,17 @@ object DynamicFrictionCoeffOp:
             val data = TSVTableString.fromString(tsvTableRawString)
             for
                 yHeader <- yHeaderSelectFunc(yCriteria)
-                out     <- data.getUsingLinearInterpolation(xHeader, yHeader)(
-                    xi
-                ).left.map: _ =>
-                    CouldNotComputeIndividualCoefficientForShape[S](
-                        shape,
-                        sectionTyp,
-                        s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, xi=$xi"
+                out     <- data
+                    .getUsingLinearInterpolation(xHeader, yHeader)(
+                        xi
                     )
+                    .left
+                    .map: _ =>
+                        CouldNotComputeIndividualCoefficientForShape[S](
+                            shape,
+                            sectionTyp,
+                            s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, xi=$xi"
+                        )
             yield out.ea: ζ
     }
 

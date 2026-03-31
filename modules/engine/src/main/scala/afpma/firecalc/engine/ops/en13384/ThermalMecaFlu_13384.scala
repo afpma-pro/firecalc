@@ -13,7 +13,7 @@ import cats.data.Validated.*
 import cats.syntax.all.*
 
 import afpma.firecalc.engine.alg.en13384.*
-import afpma.firecalc.engine.models                       // scalafix:ok
+import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.*
@@ -256,12 +256,14 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         section_length: QtyD[Meter]
     ): ValidatedNel[PipeWithGasFlowOps.Error, Dimensionless] =
         val o_pgf = mkPipeWithGasFlowWithLength(gas_temp, gas_massflow, exteriorAir, section_length)
-        o_pgf.map: pgf =>
-                pgf.K(S_H = en13384.S_H).map: K =>
-                    debug(
-                        s"""|K = ${K.show} \t (T_approx = ${gas_temp.show} \t SH = ${en13384.S_H.show} \t gmf = ${gas_massflow.show} \t ext_air = ${exteriorAir})""".stripMargin
-                    )
-                    K
+        o_pgf
+            .map: pgf =>
+                pgf.K(S_H = en13384.S_H)
+                    .map: K =>
+                        debug(
+                            s"""|K = ${K.show} \t (T_approx = ${gas_temp.show} \t SH = ${en13384.S_H.show} \t gmf = ${gas_massflow.show} \t ext_air = ${exteriorAir})""".stripMargin
+                        )
+                        K
             .getOrElse(0.0.withUnit[1].validNel)
 
     // private def compute_K_b(
@@ -356,11 +358,11 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
 
     private def _compute_K_tm(tu: TCelsius, slen: Length): Either[MecaFlu_Error, (Dimensionless, TCelsius)] =
         for
-            K_using_te        <- liftK(compute_K(te, massFlow, exteriorAir, slen))
-            tm_approx         : TCelsius = if (slen == 0.meters) temp_start else en13384.T_m_calc(tu, te, K_using_te)
+            K_using_te <- liftK(compute_K(te, massFlow, exteriorAir, slen))
+            tm_approx: TCelsius = if (slen == 0.meters) temp_start else en13384.T_m_calc(tu, te, K_using_te)
             K_using_tm_approx <- liftK(compute_K(tm_approx, massFlow, exteriorAir, slen))
-            tm                : TCelsius = if (slen == 0.meters) temp_start else en13384.T_m_calc(tu, te, K_using_tm_approx)
-            K_using_tm        <- liftK(compute_K(tm, massFlow, exteriorAir, slen))
+            tm: TCelsius = if (slen == 0.meters) temp_start else en13384.T_m_calc(tu, te, K_using_tm_approx)
+            K_using_tm <- liftK(compute_K(tm, massFlow, exteriorAir, slen))
         yield (K_using_tm, tm)
 
     // if tu (ambiant) == te (entry)
@@ -594,7 +596,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
             case el: (DirectionChange | SectionGeometryChange | SingularFlowResistance) =>
                 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
                 el.dynamicFrictionCoeff match
-                    case Valid(zeta)  =>
+                    case Valid(zeta)         =>
                         val pu = MecaFluOps.whenGasType(gp.pipeEl.typ)(
                             ifCombustionAir = en13384.P_B_dynamicFriction(
                                 zeta,
@@ -720,32 +722,32 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                             .NoStraightSectionDefinedForTemperatureCalc(s"last attempt is ${curr.el}", curr.typ)
                             .asLeft
 
-    val section_id             = curr.idx
-    val section_name           = curr.name
-    val section_typ            = curr.typ
-    val descr                  = curr.el
-    val n_flows                = curr.nf
-    val air_space_detailed     = airSpaceDetailedE.toOption
-    val temperature_amb        = tu.map(_.to_degC)
-    val thermal_resistance     = en13384_tr
-    val gas_temp_start         = temperature(using Position.Start)
-    val gas_temp_middle        = temperature(using Position.Middle)
-    val gas_temp_mean          = (temp_mean: TCelsius).some
-    val gas_temp_end           = temperature(using Position.End)
-    val v_start                = flowVelocity(using Position.Start)
-    val v_middle               = flowVelocity_middle.some
-    val v_mean                 = en13384_flowVelocity_mean.some
-    val v_end                  = flowVelocity(using Position.End)
-    val mass_flow              = massFlow
-    val innerShape_middle      = innerShape(using Position.Middle)
-    val innerShape_end         = innerShape(using Position.End)
-    val crossSectionArea_end   = crossSectionArea(using Position.End)
-    val pu                     = v_zetaO_dynamicFriction.map(_._2)
-    val zeta                   = v_zetaO_dynamicFriction.toOption.flatMap(_._1)
-    val pd                     = dynamicPressure_mean.some
-    val pRs = staticFriction
-    val pRg = vChangeFriction
-    val ph  = standingPressure
+    val section_id           = curr.idx
+    val section_name         = curr.name
+    val section_typ          = curr.typ
+    val descr                = curr.el
+    val n_flows              = curr.nf
+    val air_space_detailed   = airSpaceDetailedE.toOption
+    val temperature_amb      = tu.map(_.to_degC)
+    val thermal_resistance   = en13384_tr
+    val gas_temp_start       = temperature(using Position.Start)
+    val gas_temp_middle      = temperature(using Position.Middle)
+    val gas_temp_mean        = (temp_mean: TCelsius).some
+    val gas_temp_end         = temperature(using Position.End)
+    val v_start              = flowVelocity(using Position.Start)
+    val v_middle             = flowVelocity_middle.some
+    val v_mean               = en13384_flowVelocity_mean.some
+    val v_end                = flowVelocity(using Position.End)
+    val mass_flow            = massFlow
+    val innerShape_middle    = innerShape(using Position.Middle)
+    val innerShape_end       = innerShape(using Position.End)
+    val crossSectionArea_end = crossSectionArea(using Position.End)
+    val pu                   = v_zetaO_dynamicFriction.map(_._2)
+    val zeta                 = v_zetaO_dynamicFriction.toOption.flatMap(_._1)
+    val pd                   = dynamicPressure_mean.some
+    val pRs                  = staticFriction
+    val pRg                  = vChangeFriction
+    val ph                   = standingPressure
 
 private abstract trait MecaFlu_13384_PipeResult_Impl(
     fd                : PipeFullDescrG[PipeElDescr],

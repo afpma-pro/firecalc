@@ -5,7 +5,11 @@
 
 package afpma.firecalc.engine.ops.en13384
 
-import afpma.firecalc.engine.alg.en13384.{EN13384_1_A1_2019_Application_Alg, EN13384_1_A1_2019_Formulas_Alg, Params_13384}
+import afpma.firecalc.engine.alg.en13384.{
+    EN13384_1_A1_2019_Application_Alg,
+    EN13384_1_A1_2019_Formulas_Alg,
+    Params_13384
+}
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
@@ -14,14 +18,15 @@ import afpma.firecalc.engine.ops.{ExteriorAirOps, GasOps, PipeWithGasFlowOps}
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, UpstreamState}
 import afpma.firecalc.engine.standard.{EN13384_FormulaError, MecaFlu_Error}
 
-/** EN 13384 factory extension methods for core ops companion objects.
-  *
-  * Extracted from the companion objects in `ops/` so that the core `ops`
-  * package does not depend on `ops.en13384` or `ops.en15544`.
-  * These extensions are automatically visible within the `ops.en13384` package,
-  * and can be imported at external call sites via
-  * `import afpma.firecalc.engine.ops.en13384.*`.
-  */
+/**
+ * EN 13384 factory extension methods for core ops companion objects.
+ *
+ * Extracted from the companion objects in `ops/` so that the core `ops`
+ * package does not depend on `ops.en13384` or `ops.en15544`.
+ * These extensions are automatically visible within the `ops.en13384` package,
+ * and can be imported at external call sites via
+ * `import afpma.firecalc.engine.ops.en13384.*`.
+ */
 
 // ── GasOps ──────────────────────────────────────────────────────────────
 
@@ -64,7 +69,11 @@ extension (obj: CanComputePipeResult.type)
                 params  : Params_13384
             ): Either[MecaFlu_Error, PipeResult] =
                 ThermalMecaFlu_13384.makePipeResult(
-                    fd, hafg, hamf, hapwr, haeff,
+                    fd,
+                    hafg,
+                    hamf,
+                    hapwr,
+                    haeff,
                     upstream.temp_start,
                     upstream.last_pipe_density,
                     upstream.last_pipe_velocity,
@@ -89,7 +98,11 @@ extension (obj: CanComputePipeResult.type)
                 params  : Params_13384
             ): Either[MecaFlu_Error, PipeResult] =
                 FlowOnlyMecaFlu_13384.makePipeResult(
-                    fd, hafg, hamf, hapwr, haeff,
+                    fd,
+                    hafg,
+                    hamf,
+                    hapwr,
+                    haeff,
                     upstream.temp_start,
                     upstream.last_pipe_velocity,
                     gas

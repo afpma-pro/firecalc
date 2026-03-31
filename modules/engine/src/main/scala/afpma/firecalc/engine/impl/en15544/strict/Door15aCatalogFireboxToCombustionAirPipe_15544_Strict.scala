@@ -28,20 +28,22 @@ given door15aCatalogFireboxToCombustionAirPipe: FireboxToCombustionAirPipe_15544
 given door15aCatalogFireboxToFireboxPipe: FireboxToFireboxPipe_15544_Strict[Door15aFirebox_Catalog] =
     new GenericFireboxToFireboxPipe_15544_Strict[Door15aFirebox_Catalog] {}
 
-object Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
+object Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
+    extends Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
 
-trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict extends FireboxToCombustionAirPipe_15544_Strict[Door15aFirebox_Catalog]:
+trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
+    extends FireboxToCombustionAirPipe_15544_Strict[Door15aFirebox_Catalog]:
     extension (firebox: Door15aFirebox_Catalog)
         override def toCombustionAirPipe_FullDescr =
             import CombustionAirPipe_Module_15544.*
 
             firebox.pressure_loss match
-                case Right(pl) =>
+                case Right(pl)          =>
                     CombustionAirPipe_Module_15544.incremental
                         .define(
                             setInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal),
-                            innerShape(firebox.actualAirIntakePipeShape),
-                            addPressureDiff("door_15a_pressure_loss", pl)
+                            innerShape         (firebox.actualAirIntakePipeShape                       ),
+                            addPressureDiff    ("door_15a_pressure_loss", pl                           )
                         )
                         .toFullDescr()
                         .extractPipe

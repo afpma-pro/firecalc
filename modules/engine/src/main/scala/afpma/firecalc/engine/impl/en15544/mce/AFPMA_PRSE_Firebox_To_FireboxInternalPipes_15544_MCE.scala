@@ -22,14 +22,14 @@ import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
 given FireboxToCombustionAirPipe_15544_MCE[AFPMA_PRSE] = AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
-given FireboxToFireboxPipe_15544_MCE[AFPMA_PRSE]      = AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
+given FireboxToFireboxPipe_15544_MCE[AFPMA_PRSE]       = AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
 
 object AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
     extends FireboxToInternalPipes_15544_MCE[AFPMA_PRSE]
     with HasFireboxDimensionsToFireboxPipe_15544_MCE[AFPMA_PRSE]:
 
     extension (firebox: AFPMA_PRSE)
-        override def toCombustionAirPipe_FullDescr = 
+        override def toCombustionAirPipe_FullDescr =
             import CombustionAirPipe_Module_13384.*
             import firebox.*
 
@@ -37,17 +37,19 @@ object AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom =>
                     CombustionAirPipe_Module_13384.incremental
                         .define(
-                            setInitialDirection (azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
-                            
-                            pipeLocation        (PipeLocation.HeatedArea                  ), // added for EN13384
-                            innerShape          (arriveeAirGeometry                       ),
-                            layer               (e = 1.cm, λ = 1.3.W_per_mK               ), // added for EN13384
-                            
+                            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
+                            pipeLocation       (PipeLocation.HeatedArea                                               ), // added for EN13384
+                            innerShape         (arriveeAirGeometry                                                    ),
+                            layer              (e       = 1.cm, λ                            = 1.3.W_per_mK           ), // added for EN13384
+
                             addSectionVertical  (
                                 "remontée dans chambre de détente",
                                 (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U) / 2.0
                             ),
-                            addSharpAngle_90deg ("virage vers colonnes d'air", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left (but arbitrary)
+                            addSharpAngle_90deg (
+                                "virage vers colonnes d'air",
+                                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+                            ), // Left (but arbitrary)
                             innerShape(
                                 rectangle(
                                     a = arriveeAirGeometry.perimeterWetted,
@@ -58,7 +60,10 @@ object AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
                                 "longueur jusqu'au milieu des colonnes d'air",
                                 (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0           ) / 4.0 + 7.1.cm
                             ),
-                            addSharpAngle_90deg ("virage au pied des colonnes d'air", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)), // Up
+                            addSharpAngle_90deg (
+                                "virage au pied des colonnes d'air",
+                                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
+                            ), // Up
                             innerShape(
                                 rectangle(
                                     a = 3.2.cm,
@@ -74,7 +79,10 @@ object AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
                                 "remontée dans les colonnes d'air",
                                 h91_hauteurDuCendrier_AF + h92_epaisseurSole_S + h93_hauteurEmbaseDessousSoleFoyer_V - h95_hauteurPassageVersColonneAir_W / 2.0 + 13.5.cm
                             ),
-                            addSharpAngle_90deg ("virage avant canal horizontal injecteur", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+                            addSharpAngle_90deg (
+                                "virage avant canal horizontal injecteur",
+                                AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                            ), // Right
                             innerShape(
                                 rectangle(
                                     a =

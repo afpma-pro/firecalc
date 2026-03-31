@@ -127,9 +127,12 @@ object CasType_13384_C16
     val airIntakePipe = // "Tube Flexible en Inox"
         import AirIntakePipe_Module.*
         define(
-            setInitialDirection(azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // Front
+            setInitialDirection    (
+                azimuth     = AzimuthDirection.Front,
+                inclination = InclinationDirection.Horizontal
+            ), // Front
 
-            pipeLocation(PipeLocation.HeatedArea), // to check
+            pipeLocation           (PipeLocation.HeatedArea), // to check
 
             roughness(5.mm), // ConduitFlexibleInox = 5mm
 
@@ -140,48 +143,74 @@ object CasType_13384_C16
             ), // ajouté dans QC2 (cf hypothese général entrée d'air avec zeta = 1.7)
 
             innerShape(circle(50.mm)),
-            layer                          (e                 = 0.2.mm, tr = 0.0.m2_K_per_W),
-            addSectionHorizontal           ("hz", 25.cm                                    ),
+            layer                          (e = 0.2.mm, tr = 0.0.m2_K_per_W),
+            addSectionHorizontal           ("hz", 25.cm                    ),
             // turn right - final direction = 'Left'
-            addCoudeCourbe90               ("coude 90° #1", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)),
-            addSectionHorizontal           ("hz", 50.cm                                    ),
+            addCoudeCourbe90               (
+                "coude 90° #1",
+                R                  = 50.mm,
+                absDir             = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+            ),
+            addSectionHorizontal           ("hz", 50.cm                    ),
             // turn left - final direction = 'Front'
-            addCoudeCourbe90               ("coude 90° #2", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
-            addSectionHorizontal           ("hz", 50.cm                                    ),
+            addCoudeCourbe90               (
+                "coude 90° #2",
+                R                  = 50.mm,
+                absDir             = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+            ),
+            addSectionHorizontal           ("hz", 50.cm                    ),
             // turn upwards - final direction = 'Up'
-            addCoudeCourbe90               ("coude 90° #3", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)),
-            addSectionVertical             ("vertical", 35.cm                              ),
+            addCoudeCourbe90               (
+                "coude 90° #3",
+                R                  = 50.mm,
+                absDir             = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)
+            ),
+            addSectionVertical             ("vertical", 35.cm              ),
             // turn - final direction = 'Right'
-            addCoudeCourbe90               ("coude 90° #4", R = 50.mm, absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)),
-            addSectionHorizontal           ("hz", 50.cm                                    ),
-            addSectionHorizontal           ("hz", 25.cm                                    )
+            addCoudeCourbe90               (
+                "coude 90° #4",
+                R                  = 50.mm,
+                absDir             = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+            ),
+            addSectionHorizontal           ("hz", 50.cm                    ),
+            addSectionHorizontal           ("hz", 25.cm                    )
         ).toFullDescr().extractPipe
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
+        Seq (
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)              ),
-            layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
-            pipeLocation(PipeLocation.HeatedArea      ),
+            layer              (e       = 1.mm, tr                           = 0.0.m2_K_per_W                 ),
+            pipeLocation       (PipeLocation.HeatedArea                                                       ),
 
             // pb: sortie arrière sans longueur horizontale ???
             // car sinon impossible d'avoir un enchainement horizontal + coude 90 + dévoiement à 45°
             // tel que H utile = 2.10 et L developée = 2.18 m
 
-            addSectionHorizontal("avant té ?",         8.cm                                   ),
-            addSharpAngle_90deg ("té 90°",             AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
-            addSectionVertical  ("montée",             70.cm                                  ),
-            addSharpAngle_45deg ("dévoiement 45°",     AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))), // Rear-Up (azimuth=0° inclination=45°)
-            addSectionSloppedForceManualElevationGain("dévoiement", 70.cm, 70.cm), // approx to match C16 (50cm otherwise)
-            addSharpAngle_45deg ("fin dévoiement 45°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
-            addSectionVertical  ("avant plafond",      70.cm)
+            addSectionHorizontal                     ("avant té ?", 8.cm                                                         ),
+            addSharpAngle_90deg                      ("té 90°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSectionVertical                       ("montée", 70.cm                                                            ),
+            addSharpAngle_45deg                      (
+                "dévoiement 45°",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Custom(45.degrees))
+            ), // Rear-Up (azimuth=0° inclination=45°)
+            addSectionSloppedForceManualElevationGain(
+                "dévoiement",
+                70.cm,
+                70.cm
+            ), // approx to match C16 (50cm otherwise)
+            addSharpAngle_45deg                      (
+                "fin dévoiement 45°",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+            ), // Up
+            addSectionVertical                       ("avant plafond", 70.cm                                                     )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        Seq(
+        Seq (
             // initial direction inherited from last connector pipe element = Up
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)              ),

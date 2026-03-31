@@ -17,7 +17,7 @@ object SectionDSL_15544_Instances:
     given flowOnly15544: SectionDSL[FlowOnlyPipeDescr_15544] with
         def addSectionSlopped(
             name  : String,
-            length: QtyD[Meter],
+            length: QtyD[Meter]
         ) =
             AddFlowOnlyPipeElement_15544.AddSectionSlopped(
                 name,
@@ -27,7 +27,7 @@ object SectionDSL_15544_Instances:
         def addSectionSloppedForceManualElevationGain(
             name          : String,
             length        : QtyD[Meter],
-            elevation_gain: QtyD[Meter],
+            elevation_gain: QtyD[Meter]
         ) =
             AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain(
                 name,

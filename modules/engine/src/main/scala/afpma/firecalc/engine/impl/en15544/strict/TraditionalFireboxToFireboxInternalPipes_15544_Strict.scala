@@ -17,23 +17,24 @@ import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 import coulomb.*
 import coulomb.policy.standard.given
 
-given FireboxToCombustionAirPipe_15544_Strict[TraditionalFirebox] = TraditionalFireboxToFireboxInternalPipes_15544_Strict
-given FireboxToFireboxPipe_15544_Strict[TraditionalFirebox]      = TraditionalFireboxToFireboxInternalPipes_15544_Strict
+given FireboxToCombustionAirPipe_15544_Strict[TraditionalFirebox] =
+    TraditionalFireboxToFireboxInternalPipes_15544_Strict
+given FireboxToFireboxPipe_15544_Strict[TraditionalFirebox]       = TraditionalFireboxToFireboxInternalPipes_15544_Strict
 
 object TraditionalFireboxToFireboxInternalPipes_15544_Strict
     extends FireboxToInternalPipes_15544_Strict[TraditionalFirebox]
     with GenericFireboxToFireboxPipe_15544_Strict[TraditionalFirebox]:
 
     extension (firebox: TraditionalFirebox)
-        override def toCombustionAirPipe_FullDescr = 
+        override def toCombustionAirPipe_FullDescr =
             import CombustionAirPipe_Module_15544.*
             import firebox.*
             CombustionAirPipe_Module_15544.incremental
                 .define(
                     setInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
                     innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
-                    roughness        (3.mm), // TOFIX: 3mm or 2mm ???
-                    addFlowResistance(
+                    roughness          (3.mm                                                  ), // TOFIX: 3mm or 2mm ???
+                    addFlowResistance  (
                         "porte",
                         h66_coeffPerteDeChargePorte,
                         cross_section = h67_sectionCumuleeEntreeAirPorte

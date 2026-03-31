@@ -15,7 +15,7 @@ trait GenericFirebox15544ToCombustionAirPipe_15544_MCE[FB <: Firebox_15544]
     extends FireboxToCombustionAirPipe_15544_MCE[FB] {
 
     extension (firebox: FB)
-        override def toCombustionAirPipe_FullDescr = 
+        override def toCombustionAirPipe_FullDescr =
             CombustionAirPipe_Module_13384.without.validNel
 }
 

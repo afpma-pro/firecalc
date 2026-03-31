@@ -38,7 +38,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                     case CircularArc60                    => ZERO
                     case SectionGeometryChange(_, _)      => ZERO
                     case SingularFlowResistance(_, _)     => ZERO
-                    case PressureDiff(_, _)                  => ZERO
+                    case PressureDiff(_, _)               => ZERO
     }
 
     override given hasVerticalElev: HasVerticalElev[PipeElDescr]:
@@ -56,7 +56,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr]:
         extension (el: PipeElDescr)
             def innerShape(oPrevGeom: Option[PipeShape]): Option[PositionOp[PipeShape]] =
-                
+
                 def makeQtyAtPositionForGeometryTransition(
                     from: PipeShape,
                     to  : PipeShape

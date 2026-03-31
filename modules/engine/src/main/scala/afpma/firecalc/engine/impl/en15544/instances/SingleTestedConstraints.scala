@@ -22,14 +22,14 @@ import afpma.firecalc.engine.standard.*
 
 import io.taig.babel.Locale
 
-/** EN 15544 constraints for [[SingleTested]] fireboxes.
+/**
+ * EN 15544 constraints for [[SingleTested]] fireboxes.
  *
  * Clause 4.3.1 does not apply to tested fireboxes, so all §4.3.1.x sizing
  * constraints are removed via [[RemovedFireboxSizingConstraints]].
  * Only m_B bounds (from type-test data) and λ bounds are retained.
  */
-given singleTestedConstraints
-    : (FireboxConstraints[SingleTested] & RemovedFireboxSizingConstraints[SingleTested]) =
+given singleTestedConstraints: (FireboxConstraints[SingleTested] & RemovedFireboxSizingConstraints[SingleTested]) =
     new FireboxConstraints_Strict[SingleTested] with RemovedFireboxSizingConstraints[SingleTested]:
 
         // ── 4.2.1 – m_B: from type-test data ─────────────────────────────────
@@ -41,7 +41,7 @@ given singleTestedConstraints
                 firebox.minimumFuelMass.map(TermConstraint.Min.apply)
             val maxConstraint: Option[TermConstraint[m_B]] =
                 Some(TermConstraint.Max(firebox.maximumFuelMass))
-            Seq(minConstraint, maxConstraint)
+            Seq     (minConstraint, maxConstraint               )
 
         // ── 4.2.2 – m_B_min: not constrained for SingleTested ────────────────
         override def m_B_min_constraints(
@@ -82,7 +82,7 @@ given singleTestedConstraints
         ): Option[TermConstraint[Unit]] =
             import afpma.firecalc.engine.models.en15544.typedefs.given_TermDefDetails_Unit
             Some(
-                TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed](
+                TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed]  (
                     value   = (),
                     isValid = _ =>
                         if firebox.is_glass_surface_ratio_below_one_fifth
@@ -95,10 +95,9 @@ given singleTestedConstraints
         override def firebox_custom_constraints(
             firebox: SingleTested,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] = 
+        )(using Locale): List[FireboxError] =
             AllTermConstraints(pellets_load_burn_duration_constraints(firebox))
                 .checkAllAndCombineWhenDefined(firebox.pellets_load_burn_duration)
-                .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
-                match
-                    case Some(xs) => xs
-                    case None => Nil
+                .map(_.foldToErrDeep(InvalidFireboxConstraint.apply)) match
+                case Some(xs) => xs
+                case None     => Nil

@@ -16,18 +16,18 @@ trait CustomCatsMatchers {
     def beValid[E, A] =
         Matcher { (v: Validated[E, A]) =>
             MatchResult(
-            v.toOption.isDefined == true,
-            s"${v} was not valid",
-            s"${v} was valid"
+                v.toOption.isDefined == true,
+                s"${v} was not valid",
+                s"${v} was valid"
             )
         }
 
     def beInvalid[E, A] =
         Matcher { (v: Validated[E, A]) =>
             MatchResult(
-            v.toOption.isDefined == false,
-            s"${v} was valid",
-            s"${v} was invalid"
+                v.toOption.isDefined == false,
+                s"${v} was valid",
+                s"${v} was invalid"
             )
         }
 }

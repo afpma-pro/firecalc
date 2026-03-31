@@ -22,25 +22,24 @@ object FireboxTransformers:
 
     given transformer_Firebox_Firebox_15544: Transformer[Firebox, Firebox_15544] = { fb =>
         fb match
-            case x: Firebox.Traditional  =>
+            case x : Firebox.Traditional            =>
                 transformer_Standard_TraditionalFirebox.transform(x)
-            case x: Firebox.Ecolabeled   =>
+            case x : Firebox.Ecolabeled             =>
                 transformer_Ecolabeled_Ecolabeled.transform(x)
-            case x: Firebox.AFPMA_PRSE   =>
+            case x : Firebox.AFPMA_PRSE             =>
                 transformer_AFPMA_PRSE.transform(x)
-            case st: Firebox.SingleTested =>
+            case st: Firebox.SingleTested           =>
                 val singleTestedT = afpma.firecalc.engine.models.en15544.firebox.single_tested.transformer_SingleTested
                 singleTestedT.transform(st)
                 // throw new UnsupportedOperationException(
                 //     "SingleTested fireboxes cannot be converted to Firebox_15544 — they use their own test data"
                 // )
-            case x: Firebox.Door15aFirebox_Catalog =>
+            case x : Firebox.Door15aFirebox_Catalog =>
                 transformer_dto_Door15aFirebox_Catalog_to_Door15aFirebox_Catalog.transform(x)
     }
 
     // mappings to engine model
-    given transformer_Standard_TraditionalFirebox
-        : Transformer[Firebox.Traditional, firebox.TraditionalFirebox] =
+    given transformer_Standard_TraditionalFirebox: Transformer[Firebox.Traditional, firebox.TraditionalFirebox] =
         Transformer
             .define[Firebox.Traditional, firebox.TraditionalFirebox]
             .enableDefaultValues
@@ -54,18 +53,18 @@ object FireboxTransformers:
             .withFieldRenamed(_.glass_height, _.h72_hauteurVitre)
             .buildTransformer
 
-    given transformer_inv_TraditionalFirebox_Standard
-        : Transformer[firebox.TraditionalFirebox, Firebox.Traditional] =
+    given transformer_inv_TraditionalFirebox_Standard: Transformer[firebox.TraditionalFirebox, Firebox.Traditional] =
         import HeatOutputReduced.{NotDefined, HalfOfNominal}
         Transformer
             .define[firebox.TraditionalFirebox, Firebox.Traditional]
             .enableDefaultValues
             .withFieldComputed(
-                _.heat_output_reduced, 
-                trad => 
-                    val res: NotDefined | HalfOfNominal = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(trad.pn_reduced)
+                _.heat_output_reduced,
+                trad =>
+                    val res: NotDefined | HalfOfNominal =
+                        legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(trad.pn_reduced)
                     res
-                )
+            )
             .withFieldRenamed(_.h11_profondeurDuFoyer, _.firebox_depth)
             .withFieldRenamed(_.h12_largeurDuFoyer, _.firebox_width)
             .withFieldRenamed(_.h13_hauteurDuFoyer, _.firebox_height)
@@ -126,17 +125,20 @@ object FireboxTransformers:
                     h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = height_of_first_row_of_air_injectors
                 )
 
-    private def legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(p: HeatOutputReduced): HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal =
+    private def legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(
+        p: HeatOutputReduced
+    ): HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal =
         p match
             case nd: HeatOutputReduced.NotDefined    => nd
-            case h: HeatOutputReduced.HalfOfNominal  => h
-            case HeatOutputReduced.FromTypeTest(v)   => HeatOutputReduced.HalfOfNominal.makeFromValue(v) // safe default, prevent throwing
+            case h : HeatOutputReduced.HalfOfNominal => h
+            case HeatOutputReduced.FromTypeTest(v) =>
+                HeatOutputReduced.HalfOfNominal.makeFromValue(v) // safe default, prevent throwing
 
     given transformer_inv_Ecolabeled: Transformer[firebox.Ecolabeled, Firebox.Ecolabeled] = e =>
         import e.*
         e match
             case _: firebox.Ecolabeled_V1 =>
-                Firebox.Ecolabeled                 (
+                Firebox.Ecolabeled                    (
                     heat_output_reduced                     = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                                 = Left("Version 1"),
                     air_intake_shape                        = None,
@@ -161,7 +163,7 @@ object FireboxTransformers:
                     height_of_first_row_of_air_injectors    = h83_hauteurEntreLaSoleEtLe1erInjecteur_X
                 )
             case _: firebox.Ecolabeled_V2 =>
-                Firebox.Ecolabeled                 (
+                Firebox.Ecolabeled                    (
                     heat_output_reduced                     = legacy_HeatOutputReduced_to_NotDefined_or_HalfOfNominal(pn_reduced),
                     version                                 = Right("Version 2"),
                     air_intake_shape                        = arriveeAirGeometryOpt,
@@ -217,48 +219,48 @@ object FireboxTransformers:
 
     given transformer_dto_Door15aFirebox_Catalog_to_Door15aFirebox_Catalog
         : Transformer[Firebox.Door15aFirebox_Catalog, en15544.std.Door15aFirebox_Catalog] = dto_fb =>
-            import dto_fb.*
-            import cats.data.Validated.valid
-            Door15aFirebox_Catalog_DatabaseEntry(
-                uniq_id                    = reference,
-                mb                         = load_size_nominal,
-                sb                         = sb,
-                dimensions                 = Dimensions(
-                    base = Dimensions.Base.Squared(
-                        width = firebox_width,
-                        depth = firebox_depth
-                    ),
-                    height = firebox_height
+        import dto_fb.*
+        import cats.data.Validated.valid
+        Door15aFirebox_Catalog_DatabaseEntry                    (
+            uniq_id                     = reference,
+            mb                          = load_size_nominal,
+            sb                          = sb,
+            dimensions                  = Dimensions(
+                base   = Dimensions.Base.Squared(
+                    width = firebox_width,
+                    depth = firebox_depth
                 ),
-                sb_min                     = sb_min.map(v => v: SB),
-                sb_max                     = sb_max.map(v => v: SB),
-                mb_min                     = mb_min,
-                mb_max                     = mb_max,
-                pressure_loss_table_raw    = pressure_loss_table_raw,
-                expectedAirIntakePipeShapes = expectedAirIntakePipeShapes,
-                actualAirIntakePipeShape   = actualAirIntakePipeShape,
-                co2_dry_nominal            = co2_dry_nominal: σ_CO2,
-                co2_dry_lowest             = co2_dry_lowest.map(v => v: σ_CO2),
-                emissions_values           = EmissionsAndEfficiencyValues(
-                    firebox_name                       = emissions_values.firebox_name,
-                    accredited_or_notified_body        = emissions_values.accredited_or_notified_body,
-                    test_reports                       = emissions_values.test_reports,
-                    min_efficiency_firebox_nominal     = None,
-                    min_efficiency_full_stove_nominal  = valid(None),
-                    min_efficiency_firebox_reduced     = None,
-                    min_efficiency_full_stove_reduced  = valid(None),
-                    min_seasonal_efficiency_full_stove = valid(None),
-                    emissions_values                   = EmissionValues(
-                        co   = toTestEmissionValue(emissions_values.emissions_values.co),
-                        dust = toTestEmissionValue(emissions_values.emissions_values.dust),
-                        ogc  = toTestEmissionValue(emissions_values.emissions_values.ogc),
-                        nox  = toTestEmissionValue(emissions_values.emissions_values.nox)
-                    )
-                ),
-                glass_area                 = glass_area: GlassArea,
-                height_of_lowest_opening   = height_of_lowest_opening,
-                pn_reduced                 = heat_output_reduced,
-            )
+                height = firebox_height
+            ),
+            sb_min                      = sb_min.map(v => v: SB),
+            sb_max                      = sb_max.map(v => v: SB),
+            mb_min                      = mb_min,
+            mb_max                      = mb_max,
+            pressure_loss_table_raw     = pressure_loss_table_raw,
+            expectedAirIntakePipeShapes = expectedAirIntakePipeShapes,
+            actualAirIntakePipeShape    = actualAirIntakePipeShape,
+            co2_dry_nominal             = co2_dry_nominal: σ_CO2,
+            co2_dry_lowest              = co2_dry_lowest.map(v => v: σ_CO2),
+            emissions_values            = EmissionsAndEfficiencyValues(
+                firebox_name                       = emissions_values.firebox_name,
+                accredited_or_notified_body        = emissions_values.accredited_or_notified_body,
+                test_reports                       = emissions_values.test_reports,
+                min_efficiency_firebox_nominal     = None,
+                min_efficiency_full_stove_nominal  = valid(None),
+                min_efficiency_firebox_reduced     = None,
+                min_efficiency_full_stove_reduced  = valid(None),
+                min_seasonal_efficiency_full_stove = valid(None),
+                emissions_values                   = EmissionValues(
+                    co   = toTestEmissionValue(emissions_values.emissions_values.co),
+                    dust = toTestEmissionValue(emissions_values.emissions_values.dust),
+                    ogc  = toTestEmissionValue(emissions_values.emissions_values.ogc),
+                    nox  = toTestEmissionValue(emissions_values.emissions_values.nox)
+                )
+            ),
+            glass_area                  = glass_area: GlassArea,
+            height_of_lowest_opening    = height_of_lowest_opening,
+            pn_reduced                  = heat_output_reduced
+        )
 
     private[firebox] def toTestEmissionValue(dto: TestEmissionValue_DTO): TestEmissionValue =
         TestEmissionValue(

@@ -85,4 +85,3 @@ object ShortSection:
             else PipeDescrWindow(ζα1_prev, ζα2_prev, dc01, s1, o_dc12).validNel
 
     end PipeDescrWindow
-

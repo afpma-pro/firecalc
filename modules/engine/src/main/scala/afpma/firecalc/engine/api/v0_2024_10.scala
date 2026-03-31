@@ -5,51 +5,26 @@
 
 package afpma.firecalc.engine.api
 
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.LocalizedAlg
 
-import afpma.firecalc.engine.impl.en15544.strict.*
-import afpma.firecalc.engine.impl.en15544.mce.*
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
-import afpma.firecalc.engine.impl.en13384.EN13384_WithFlowOnlyAirIntake_Application
-import afpma.firecalc.engine.impl.en13384.EN13384_WithThermalAirIntake_Application
-import afpma.firecalc.engine.impl.en13384.HasTypeMembers_13384_WithFlowOnlyAirIntake
-import afpma.firecalc.engine.impl.en13384.HasTypeMembers_13384_WithThermalAirIntake
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
-import afpma.firecalc.engine.impl.en15544.labo.EN15544_Labo_Application
-import afpma.firecalc.engine.impl.en15544.labo.EN15544_Labo_Application.LabConditions
-import afpma.firecalc.engine.impl.en15544.labo.EN15544_Labo_Formulas
-import afpma.firecalc.engine.impl.en15544.mce.EN15544_MCE_Application
-import afpma.firecalc.engine.impl.en15544.mce.EN15544_MCE_Formulas
-import afpma.firecalc.engine.impl.en15544.mce.HasTypeMembers_15544_MCE
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
-import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
-import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithThermalAirIntake
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
-import afpma.firecalc.engine.models.en13384.std.Wood
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.engine.models.en15544.std.Design
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
-import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType
-import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType
 import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.engine.standard.StoveParamsSizingInputMissing
 import afpma.firecalc.engine.standard.VNelMcalcErr
-import afpma.firecalc.engine.wood_combustion.*
-import afpma.firecalc.engine.wood_combustion.bs845.BS845_Impl
 
 import cats.data.ValidatedNel
 import cats.syntax.all.*
@@ -57,28 +32,17 @@ import cats.syntax.all.*
 import io.taig.babel.Language
 import io.taig.babel.Languages
 
-object v0_2024_10:
-
-    trait SimpleStoveProjectDescrFr_15544_Strict_Alg
-        extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Alg
-        with v0_2024_10.StoveProjectDescr_15544_Strict_Alg
-
-    trait SimpleStoveProjectDescrFr_15544_MCE_Alg
-        extends v0_2024_10.StoveProjectDescr_15544_MCE_Alg
-        with v0_2024_10.SimpleStoveProjectDescrFr_Alg
-
-    trait SimpleStoveProjectDescrFr_15544_Labo_Alg
-        extends v0_2024_10.StoveProjectDescr_15544_Labo_Alg
-        with v0_2024_10.SimpleStoveProjectDescrFr_Alg
-
-    trait SimpleStoveProjectDescrFr_Alg extends StoveProjectDescr_Alg:
-        val exercice_name: String
-        override val project: ProjectDescr = ProjectDescr.empty.copy(reference = exercice_name)
-        val language        : Language     = Languages.Fr
-
-    trait SimpleStoveProjectDescrFr_15544_Alg
-        extends v0_2024_10.StoveProjectDescr_15544_Alg
-        with SimpleStoveProjectDescrFr_Alg
+/**
+ * Core abstract algebra traits — no imports from impl.en15544.strict, impl.en15544.mce,
+ * impl.en15544.labo, or impl.en13384.
+ *
+ * Concrete wiring is provided by the mixin traits:
+ *   - [[v0_2024_10_strict_members]]  (EN 15544 strict)
+ *   - [[v0_2024_10_mce_members]]     (EN 15544 MCE)
+ *   - [[v0_2024_10_labo_members]]    (EN 15544 labo)
+ *   - [[v0_2024_10_13384_members]]   (EN 13384)
+ */
+trait v0_2024_10_core:
 
     trait StoveProjectDescr_Alg extends LocalizedAlg:
         def project         : ProjectDescr     = ProjectDescr.empty
@@ -87,6 +51,13 @@ object v0_2024_10:
             c = project.country,
             t = typeOfAppliance
         )
+
+    trait SimpleStoveProjectDescrFr_Alg extends StoveProjectDescr_Alg:
+        val exercice_name: String
+        override val project: ProjectDescr = ProjectDescr.empty.copy(reference = exercice_name)
+        val language        : Language     = Languages.Fr
+
+    trait SimpleStoveProjectDescrFr_15544_Alg extends StoveProjectDescr_15544_Alg with SimpleStoveProjectDescrFr_Alg
 
     // Flue Pipe
 
@@ -125,20 +96,6 @@ object v0_2024_10:
 
         lazy val design: Design = Design(firebox = self.firebox)
 
-    trait Firebox_15544_Strict_Alg extends HasFirebox_15544_Alg with HasFireboxInternalPipes_15544_Strict_Alg:
-        protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_Strict[FB]
-        protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_Strict[FB]
-
-        override def combustionAirPipe = { given FireboxToCombustionAirPipe_15544_Strict[FB] = toCombustionAirPipeTC; firebox.toCombustionAirPipe_FullDescr }
-        override def fireboxPipe       = { given FireboxToFireboxPipe_15544_Strict[FB] = toFireboxPipeTC; firebox.toFireboxPipe_FullDescr }
-
-    trait Firebox_15544_MCE_Alg extends HasFirebox_15544_Alg with HasFireboxInternalPipes_15544_MCE_Alg:
-        protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_MCE[FB]
-        protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_MCE[FB]
-
-        override def combustionAirPipe = { given FireboxToCombustionAirPipe_15544_MCE[FB] = toCombustionAirPipeTC; firebox.toCombustionAirPipe_FullDescr }
-        override def fireboxPipe       = { given FireboxToFireboxPipe_15544_MCE[FB] = toFireboxPipeTC; firebox.toFireboxPipe_FullDescr }
-
     // Stove Project Description
 
     trait StoveProjectDescr_13384_Alg extends StoveProjectDescr_Alg with HasTypeMembers_13384_Alg:
@@ -163,94 +120,6 @@ object v0_2024_10:
 
         def heatingAppliance: ValidatedNel[MCalc_Error, HeatingAppliance]
 
-    trait StoveProjectDescr_13384_WithFlowOnlyAirIntake_Alg
-        extends StoveProjectDescr_13384_Alg
-        with HasTypeMembers_13384_WithFlowOnlyAirIntake:
-        self =>
-
-        def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
-            (
-                airIntakePipe,
-                connectorPipe,
-                chimneyPipe
-            ).mapN: (_airIntake, _connector, _chimney) =>
-                new Pipes_13384_WithFlowOnlyAirIntake:
-                    override val airIntake = _airIntake
-                    override val connector = _connector
-                    override val chimney   = _chimney
-
-        def inputsVNel: VNelMcalcErr[Inputs_13384] =
-            // ensure type of appliance matches with fuel type
-            val checkApplianceAndFuel: VNelMcalcErr[Unit] =
-                (typeOfAppliance, fuelType) match
-                    case (TypeOfAppliance.Pellets, FuelType.Pellets                ) =>
-                        ().validNel // OK
-                    case (TypeOfAppliance.Pellets, ft @ FuelType.WoodLog30pHumidity) =>
-                        InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType.invalidNel
-                    case (TypeOfAppliance.WoodLogs, FuelType.Pellets               ) =>
-                        InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType.invalidNel
-                    case (TypeOfAppliance.WoodLogs, _                              ) =>
-                        ().validNel // OK
-            (
-                checkApplianceAndFuel,
-                en13384_pipesVNel
-            ).mapN: (_, pipes) =>
-                Inputs_13384_WithFlowOnlyAirIntake(
-                    pipes,
-                    en13384NationalAcceptedData,
-                    fuelType,
-                    localConditions,
-                    flueGasCondition
-                )
-
-        lazy val en13384_appl: VNelMcalcErr[EN13384_WithFlowOnlyAirIntake_Application] = inputsVNel.map: i =>
-            val f = new EN13384_1_A1_2019_Formulas
-            EN13384_WithFlowOnlyAirIntake_Application.make(f, i)
-
-    trait StoveProjectDescr_13384_WithThermalAirIntake_Alg
-        extends StoveProjectDescr_13384_Alg
-        with HasTypeMembers_13384_WithThermalAirIntake:
-        self =>
-
-        def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
-            (
-                airIntakePipe,
-                connectorPipe,
-                chimneyPipe
-            ).mapN: (_airIntake, _connector, _chimney) =>
-                new Pipes_13384_WithThermalAirIntake:
-                    override val airIntake = _airIntake
-                    override val connector = _connector
-                    override val chimney   = _chimney
-
-        def en13384_inputsVNel: VNelMcalcErr[Inputs_13384] =
-            // ensure type of appliance matches with fuel type
-            val checkApplianceAndFuel: VNelMcalcErr[Unit] =
-                (typeOfAppliance, fuelType) match
-                    case (TypeOfAppliance.Pellets, FuelType.Pellets                ) =>
-                        ().validNel // OK
-                    case (TypeOfAppliance.Pellets, ft @ FuelType.WoodLog30pHumidity) =>
-                        InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType.invalidNel
-                    case (TypeOfAppliance.WoodLogs, FuelType.Pellets               ) =>
-                        InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType.invalidNel
-                    case (TypeOfAppliance.WoodLogs, _                              ) =>
-                        ().validNel // OK
-            (
-                checkApplianceAndFuel,
-                en13384_pipesVNel
-            ).mapN: (_, pipes) =>
-                Inputs_13384_WithThermalAirIntake(
-                    pipes,
-                    en13384NationalAcceptedData,
-                    fuelType,
-                    localConditions,
-                    flueGasCondition
-                )
-
-        lazy val en13384_appl: VNelMcalcErr[EN13384_WithThermalAirIntake_Application] = en13384_inputsVNel.map: i =>
-            val f = new EN13384_1_A1_2019_Formulas
-            EN13384_WithThermalAirIntake_Application.make(f, i)
-
     trait StoveProjectDescr_15544_Alg
         extends StoveProjectDescr_13384_Alg
         with HasTypeMembers_15544_Alg
@@ -258,10 +127,11 @@ object v0_2024_10:
         with HasFluePipe_Alg:
         self =>
 
-        /** The ordered post-firebox pipe descriptor slots from the DTO.
-          * Defaults to empty; override with the actual `post_firebox_pipes` from FireCalcYAML V6
-          * to support arbitrary N-pipe topologies.
-          */
+        /**
+         * The ordered post-firebox pipe descriptor slots from the DTO.
+         * Defaults to empty; override with the actual `post_firebox_pipes` from FireCalcYAML V6
+         * to support arbitrary N-pipe topologies.
+         */
         def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] = Seq.empty
 
         type EN15544_Alg <: EN15544_V_2023_Common_Application {
@@ -561,5 +431,5 @@ object v0_2024_10:
     object StoveProjectDescr:
 
         def makeFor_EN15544_Strict(fc: FireCalcYAML): StoveProjectDescr_15544_Strict_Alg =
-            val loader = new FireCalcYAML_Loader(fc)
+            val loader = new afpma.firecalc.engine.impl.en15544.strict.FireCalcYAML_Loader(fc)
             loader.stoveProjectDescr_EN15544_Strict

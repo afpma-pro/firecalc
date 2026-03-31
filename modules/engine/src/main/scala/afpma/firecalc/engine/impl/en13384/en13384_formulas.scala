@@ -333,9 +333,9 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
                                 (og, trdhsum + tr / dhi, Status.Ok).asRight
                             case AppendLayerDescr.AirSpaceUsingOuterShape(osh, _, _)         =>
                                 // be conservative and take the min between the width and depth of the outershape
-                                val osh_conservative = osh match
-                                    case PipeShape.Circle(d) => d
-                                    case PipeShape.Square(a) => a
+                                val osh_conservative      = osh match
+                                    case PipeShape.Circle(d)       => d
+                                    case PipeShape.Square(a)       => a
                                     case PipeShape.Rectangle(a, b) => if (a <= b) then a else b
                                 val dn                    = (osh_conservative - ig.dh) / 2.0
                                 val t_emittingSurfaceTemp = mean_gas_temp
@@ -675,7 +675,7 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
 
                 // TypeLameAir.AvecLameAirVentileeDansSensCiruclationFumees
                 AirSpace.DeadAirSpace
-            case _                                                                                        =>
+            case _                                                                                           =>
                 AirSpace.DeadAirSpace
 
     // Section "5.7.2"
@@ -2085,11 +2085,12 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
         ei match
             case Left(err: ReadTableError) =>
                 // NOTE 2:
-                if (t_interpol.to_degC.value > 200 || dn_in_meters.value > 0.05) 
+                if (t_interpol.to_degC.value > 200 || dn_in_meters.value > 0.05)
                 then Right(SquareMeterKelvinPerWatt(0))
-                else EN13384_FormulaError
-                    .ThermalResistanceComputationFailed(err)
-                    .asLeft
+                else
+                    EN13384_FormulaError
+                        .ThermalResistanceComputationFailed(err)
+                        .asLeft
             case Right(rth)                =>
 
                 // __INTERPRETATION__ (?)

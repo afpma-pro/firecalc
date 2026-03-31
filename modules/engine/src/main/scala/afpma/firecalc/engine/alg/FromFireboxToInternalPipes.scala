@@ -6,4 +6,6 @@
 package afpma.firecalc.engine.alg
 import afpma.firecalc.engine.models.en15544.std.*
 
-trait FromFireboxToInternalPipes[FB <: Firebox_15544] extends FireboxToFireboxPipe[FB] with FireboxToCombustionAirPipe[FB]
+trait FromFireboxToInternalPipes[FB <: Firebox_15544]
+    extends FireboxToFireboxPipe[FB]
+    with FireboxToCombustionAirPipe[FB]

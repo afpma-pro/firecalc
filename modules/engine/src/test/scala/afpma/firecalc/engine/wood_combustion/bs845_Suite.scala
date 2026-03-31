@@ -26,11 +26,11 @@ class bs845_Suite extends AnyFreeSpec with Matchers {
 
     "Wood composition helpers" - {
 
-        val o2_perc_vol = 7.9.percent
+        val o2_perc_vol     = 7.9.percent
         val expected_lambda = 1.6
-               
+
         s"lambda = $expected_lambda if %O2 ≃ ${o2_perc_vol.showP}" in {
-            wood.lambda_from_o2_dry(o2_perc_vol) `shouldEqual` (expected_lambda +- 0.1)
+            wood.lambda_from_o2_dry(o2_perc_vol) `shouldEqual`           (expected_lambda +- 0.1  )
             wood.o2_dry_from_lambda(expected_lambda).value `shouldEqual` (o2_perc_vol.value +- 0.1)
         }
 
@@ -58,21 +58,21 @@ class bs845_Suite extends AnyFreeSpec with Matchers {
         "perfect_combustion_efficiency given % O2 dry" - {
             "η ≃ 84.1% when tg = 100°C and O2 ≃ 8%" in {
                 val co2_dry = wood.co2_dry_from_o2_dry(8.percent)
-                val eff = bs845.perfect_combustion_efficiency_given_CO2_dry(
-                    wood, 
-                    t_flue_gas      = 100.degreesCelsius,
-                    t_ambiant_air   = 0.degreesCelsius,
-                    co2_dry_perc    = co2_dry
+                val eff     = bs845.perfect_combustion_efficiency_given_CO2_dry(
+                    wood,
+                    t_flue_gas    = 100.degreesCelsius,
+                    t_ambiant_air = 0.degreesCelsius,
+                    co2_dry_perc  = co2_dry
                 )
                 eff.value `shouldEqual` (84.4 +- 0.1)
             }
 
             "η ≃ 46.2% when tg = 550°C and CO2 dry ≃ 10%" in {
                 val eff = bs845.perfect_combustion_efficiency_given_CO2_dry(
-                    wood, 
-                    t_flue_gas      = 550.degreesCelsius,
-                    t_ambiant_air   = 0.degreesCelsius,
-                    co2_dry_perc    = 10.percent
+                    wood,
+                    t_flue_gas    = 550.degreesCelsius,
+                    t_ambiant_air = 0.degreesCelsius,
+                    co2_dry_perc  = 10.percent
                 )
                 eff.value `shouldEqual` (46.2 +- 0.1)
             }

@@ -124,7 +124,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                                                             lastNel.fullRef,
                                                             ls.geometry.dh.showP
                                                         )
-                                                        .invalidNel[Vector[R]]
+                                                            .invalidNel[Vector[R]]
                                             case dc          : DirectionChange =>
                                                 acc.appended(nel.copy(el = dc)).validNel
 
@@ -132,7 +132,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                                         nel.el match
                                             case _: DirectionChange =>
                                                 TwoSuccessDirectionChangeNotAllowed(lastNel.name, nel.name)
-                                                .invalidNel[Vector[R]]
+                                                    .invalidNel[Vector[R]]
                                             case s: StraightSection => acc.appended(nel.copy(el = s)).validNel
             }
         vreduced.map(_.mapWithIndex: (r, idx) =>

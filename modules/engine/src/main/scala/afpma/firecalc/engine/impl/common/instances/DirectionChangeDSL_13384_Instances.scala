@@ -44,9 +44,9 @@ object DirectionChangeDSL_13384_Instances:
             AddThermalPipeElement_13384.AddElbows_4x22p5(name, R, Some(absDir))
 
         def addAngleSpecifique(
-            name    : String,
-            angle   : QtyD[Degree],
-            zeta    : Double,
+            name  : String,
+            angle : QtyD[Degree],
+            zeta  : Double,
             absDir: AbsoluteDirection
         ) =
             AddThermalPipeElement_13384.AddAngleAdjustable(
@@ -86,9 +86,9 @@ object DirectionChangeDSL_13384_Instances:
             AddFlowOnlyPipeElement_13384.AddElbows_4x22p5(name, R, Some(absDir))
 
         def addAngleSpecifique(
-            name    : String,
-            angle   : QtyD[Degree],
-            zeta    : Double,
+            name  : String,
+            angle : QtyD[Degree],
+            zeta  : Double,
             absDir: AbsoluteDirection
         ) =
             AddFlowOnlyPipeElement_13384.AddAngleAdjustable(

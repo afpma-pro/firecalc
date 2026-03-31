@@ -108,7 +108,9 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
                     xHeader = "Efficiency",
                     yHeader = "Factor a"
                 )(xi = nmin.value)
-            result.left.foreach(err => Log.warning(s"[EN15544] Table 1 Factor a interpolation failed for nmin=${nmin.value}: $err"))
+            result.left.foreach(err =>
+                Log.warning(s"[EN15544] Table 1 Factor a interpolation failed for nmin=${nmin.value}: $err")
+            )
             result.toOption.map(_.unitless)
 
     override lazy val Table_1_Factor_b_opt_calc =
@@ -119,7 +121,9 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
                     xHeader = "Efficiency",
                     yHeader = "Factor b"
                 )(xi = nmin.value)
-            result.left.foreach(err => Log.warning(s"[EN15544] Table 1 Factor b interpolation failed for nmin=${nmin.value}: $err"))
+            result.left.foreach(err =>
+                Log.warning(s"[EN15544] Table 1 Factor b interpolation failed for nmin=${nmin.value}: $err")
+            )
             result.toOption.map(_.unitless)
 
     override lazy val L_Z_min_calc = (ab: Table_1_Factor_a_or_b, mb: m_B) =>
@@ -202,7 +206,7 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
             t.meanFireboxTemperature
                 .map(_.toUnit[Celsius])
                 .getOrElse(t_BR_default)
-        case _: Firebox_15544 =>
+        case _: Firebox_15544              =>
             t_BR_default
 
     // Section "4.8.3", "Flue gas temperature in the flue pipe"
@@ -213,7 +217,7 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
 
     override lazy val t_burnout_calc =
         case t: Firebox_15544.SingleTested => t.tBurnout.toUnit[Celsius]
-        case _: Firebox_15544  => t_burnout_default
+        case _: Firebox_15544              => t_burnout_default
 
     override lazy val t_fluepipe_calc =
         (tburnout, lz, lzCalculated) =>

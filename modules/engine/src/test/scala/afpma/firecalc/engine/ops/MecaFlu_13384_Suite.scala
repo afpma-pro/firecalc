@@ -61,7 +61,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
     //     dynamicfrictioncoeff.mkInstanceForNamedPipesConcat(channel_pipe_full_descr.elementsUnwrap)(using en15544.ssalg)
 
     // import LoadQty.givens.nominal
-    
+
     // val p = PressureRequirements.DraftMaxOrPositivePressureMin
 
     // "MecaFlu_EN13384" - {
@@ -70,7 +70,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
 
     //         "config_07 / Colonne P09 / L=44.4cm H=44.4cm" - {
     //             // val el = ???
-    //             // val gip = GasInPipeEl[NamedPipeElDescrG[FluePipe_Module_13384.El], Gas, PressureRequirements](FlueGas, el, p)       
+    //             // val gip = GasInPipeEl[NamedPipeElDescrG[FluePipe_Module_13384.El], Gas, PressureRequirements](FlueGas, el, p)
     //             // val r = MecaFlu_EN13384.makePipeSectionResult(
     //             //     gip, nominal, None, gas_temp, en15544.z_geodetical_height)(using en15544)
     //             // println(r.show)
@@ -82,9 +82,6 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
 
     // TODO: copy paste to handle (done from 15544 Suite)
 
-    
-    
-
     // val ep = en15544.pressReq_from_Params_15544(using p)
 
     "on ChimneyPipe (using EN15544 strict)" - {
@@ -92,28 +89,30 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
         "cas type 15544 - C2" - {
 
             "PipeResult" in {
-                val f = EN15544_Strict_Formulas.make
-                val inputs = CasType_15544_C2.en15544_inputsVNel.toOption.get
-                val en15544 = EN15544_Strict_Application.make(f)(inputs)
+                val f             = EN15544_Strict_Formulas.make
+                val inputs        = CasType_15544_C2.en15544_inputsVNel.toOption.get
+                val en15544       = EN15544_Strict_Application.make(f)(inputs)
                 val chimney_elems = CasType_15544_C2.chimneyPipe.toOption.get
-                val p = Params_13384.DraftMin_LoadNominal
-                val r = 
+                val p             = Params_13384.DraftMin_LoadNominal
+                val r             =
                     (
                         en15544.en13384_heatingAppliance_powers,
-                        en15544.en13384_heatingAppliance_efficiency,
+                        en15544.en13384_heatingAppliance_efficiency
                     )
                     .mapN_andThen: (ha_pow, ha_eff) =>
-                        ThermalMecaFlu_13384.makePipeResult(
-                            chimney_elems.unwrap,
-                            en15544.en13384_heatingAppliance_fluegas,
-                            en15544.en13384_heatingAppliance_massFlows,
-                            ha_pow,
-                            ha_eff,
-                            201.degreesCelsius,
-                            1.kg_per_m3.some,
-                            3.1.m_per_s.some,
-                            FlueGas
-                        )(using p, en15544.en13384_application).toValidatedNel
+                        ThermalMecaFlu_13384
+                            .makePipeResult(
+                                chimney_elems.unwrap,
+                                en15544.en13384_heatingAppliance_fluegas,
+                                en15544.en13384_heatingAppliance_massFlows,
+                                ha_pow,
+                                ha_eff,
+                                201.degreesCelsius,
+                                1.kg_per_m3.some,
+                                3.1.m_per_s.some,
+                                FlueGas
+                            )(using p, en15544.en13384_application)
+                            .toValidatedNel
                 r.toOption shouldBe defined
             }
         }
@@ -121,24 +120,24 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
         "cas type 13384 - C16" - {
 
             "PipeSectionResult" in {
-                val f = EN13384_1_A1_2019_Formulas.make
-                val inputs = CasType_13384_C16.en13384_inputsVNel.toOption.get
-                val ha = CasType_13384_C16.heatingAppliance.toOption.get
-                val en13384 = EN13384_WithThermalAirIntake_Application.make(f, inputs)
+                val f             = EN13384_1_A1_2019_Formulas.make
+                val inputs        = CasType_13384_C16.en13384_inputsVNel.toOption.get
+                val ha            = CasType_13384_C16.heatingAppliance.toOption.get
+                val en13384       = EN13384_WithThermalAirIntake_Application.make(f, inputs)
                 val chimney_elems = CasType_13384_C16.chimneyPipe.toOption.get
-                val first = chimney_elems.elems.head
-                val p = Params_13384.DraftMin_LoadNominal
-                val gip = GasInPipeEl[NamedPipeElDescrG[ChimneyPipe_Module.El], Gas, Params_13384](FlueGas, first, p)
-                val r = ThermalMecaFlu_13384.makePipeSectionResult(
-                    gip, 
+                val first         = chimney_elems.elems.head
+                val p             = Params_13384.DraftMin_LoadNominal
+                val gip           = GasInPipeEl[NamedPipeElDescrG[ChimneyPipe_Module.El], Gas, Params_13384](FlueGas, first, p)
+                val r             = ThermalMecaFlu_13384.makePipeSectionResult(
+                    gip,
                     ha.fluegas,
                     ha.massFlows,
                     ha.powers,
                     ha.efficiency,
-                    temp_start            = 550.degreesCelsius, 
+                    temp_start            = 550.degreesCelsius,
                     last_pipe_density     = 0.393.kg_per_m3.some, // for PG calculation
-                    last_pipe_velocity    = 5.24.m_per_s.some, // for PG calculation
-                    last_AirSpaceDetailed       = None,
+                    last_pipe_velocity    = 5.24.m_per_s.some,    // for PG calculation
+                    last_AirSpaceDetailed = None,
                     last_CrossSectionArea = None,
                     last_InnerGeom        = None,
                     prevO                 = None
@@ -147,9 +146,6 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             }
         }
 
-        
     }
 
-    
 }
-

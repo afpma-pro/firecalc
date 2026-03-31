@@ -30,18 +30,18 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
     given Locale = Locales.en // acceptable to force Locale in tests
 
     private def showForMCEComparisonWithLabData(
-        ex: StoveProjectDescr_Alg,
+        ex      : StoveProjectDescr_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap: _en15544.AtParams
+        ap      : _en15544.AtParams
     ) =
 
         import ex.given_Locale
         given _en15544.Params_15544 = ap.params
 
-        given LocalRegulations = ex.localRegulations
+        given LocalRegulations            = ex.localRegulations
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
 
-        val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
+        val showAsTableInstances         = new afpma.firecalc.engine.ops.ShowAsTableInstances
         val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
         val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
 
@@ -50,12 +50,12 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         import showAsTableInstances_EN13384.given
 
         println(_en15544.inputs.en13384NationalAcceptedData.showAsCliTable)
-        println("\n")
-        println(_en15544.inputs.localConditions.showAsCliTable)
-        println("\n")
-        println(_en15544.inputs.flueGasCondition.showAsCliTable)
-        println("\n")
-        println(_en15544.citedConstraints.showAsCliTable)
+        println("\n"                                                      )
+        println(_en15544.inputs.localConditions.showAsCliTable            )
+        println("\n"                                                      )
+        println(_en15544.inputs.flueGasCondition.showAsCliTable           )
+        println("\n"                                                      )
+        println(_en15544.citedConstraints.showAsCliTable                  )
         // println(inputs.pipes.showAsCliTable)
 
         println(_en15544.inputs.design.firebox.showAsCliTable)
@@ -71,51 +71,55 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         println(pipesResult_15544.showAsCliTable)
 
         println(ap.pressureRequirement_EN15544.toOption.map(_.showAsCliTable).getOrElse("ERROR (pressure requirement)"))
-        println(ap.t_chimney_wall_top.getOrThrow.showAsCliTable)
+        println(ap.t_chimney_wall_top.getOrThrow.showAsCliTable                                                        )
 
-        println(_en15544.efficiencies_values.showAsCliTable)
-        println(ap.flue_gas_triple_of_variates.toOption.map(_.showAsCliTable).getOrElse("ERROR (flue gas triple of variates)"))
+        println(_en15544.efficiencies_values.showAsCliTable    )
+        println(
+            ap.flue_gas_triple_of_variates.toOption
+                .map(_.showAsCliTable)
+                .getOrElse("ERROR (flue gas triple of variates)")
+        )
         println(ap.estimated_output_temperatures.showAsCliTable)
 
         _en15544.pressureRequirements_EN13384 match
-            case Validated.Valid(a) =>
+            case Validated.Valid(a)     =>
                 println(a.showAsCliTable)
             case Validated.Invalid(nel) =>
-                println("ERROR (pressure requirements EN13384)")
-                nel.toList.map(_.show).foreach(println)
-                fail()
+                println                       ("ERROR (pressure requirements EN13384)")
+                nel.toList.map(_.show).foreach(println                                )
+                fail                          (                                       )
 
     private def showDetailedNoteAsText(
-        ex: StoveProjectDescr_Alg,
+        ex      : StoveProjectDescr_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap: _en15544.AtParams
+        ap      : _en15544.AtParams
     ) =
 
         println("-------------------------------------------------")
-        println(s"CONFIGURATION = ${ex.project.reference}")
+        println(s"CONFIGURATION = ${ex.project.reference}"         )
         println("-------------------------------------------------")
 
         import ex.given_Locale
         given _en15544.Params_15544 = ap.params
 
-        given LocalRegulations = ex.localRegulations
+        given LocalRegulations            = ex.localRegulations
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
-        
-        val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
+
+        val showAsTableInstances         = new afpma.firecalc.engine.ops.ShowAsTableInstances
         val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
         val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
-        
+
         import showAsTableInstances.given
         import showAsTableInstances_EN15544.given
         import showAsTableInstances_EN13384.given
 
         println(_en15544.inputs.en13384NationalAcceptedData.showAsCliTable)
-        println("\n")
-        println(_en15544.inputs.localConditions.showAsCliTable)
-        println("\n")
-        println(_en15544.inputs.flueGasCondition.showAsCliTable)
-        println("\n")
-        println(_en15544.citedConstraints.showAsCliTable)
+        println("\n"                                                      )
+        println(_en15544.inputs.localConditions.showAsCliTable            )
+        println("\n"                                                      )
+        println(_en15544.inputs.flueGasCondition.showAsCliTable           )
+        println("\n"                                                      )
+        println(_en15544.citedConstraints.showAsCliTable                  )
         // println(inputs.pipes.showAsCliTable)
 
         println(_en15544.inputs.design.firebox.showAsCliTable)
@@ -131,34 +135,39 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         println(pipesResult_15544.showAsCliTable)
 
         println(ap.pressureRequirement_EN15544.toOption.map(_.showAsCliTable).getOrElse("ERROR (pressure requirement)"))
-        println(ap.t_chimney_wall_top.getOrThrow.showAsCliTable)
+        println(ap.t_chimney_wall_top.getOrThrow.showAsCliTable                                                        )
 
-        println(_en15544.efficiencies_values.showAsCliTable)
-        println(ap.flue_gas_triple_of_variates.toOption.map(_.showAsCliTable).getOrElse("ERROR (flue gas triple of variates)"))
+        println(_en15544.efficiencies_values.showAsCliTable    )
+        println(
+            ap.flue_gas_triple_of_variates.toOption
+                .map(_.showAsCliTable)
+                .getOrElse("ERROR (flue gas triple of variates)")
+        )
         println(ap.estimated_output_temperatures.showAsCliTable)
 
         _en15544.pressureRequirements_EN13384 match
-            case Validated.Valid(a) =>
+            case Validated.Valid(a)     =>
                 println(a.showAsCliTable)
             case Validated.Invalid(nel) =>
-                println("ERROR (pressure requirements EN13384)")
-                nel.toList.map(_.show).foreach(println)
-                fail()
+                println                       ("ERROR (pressure requirements EN13384)")
+                nel.toList.map(_.show).foreach(println                                )
+                fail                          (                                       )
 
     def run_exercice_15544_strict(ex_15544_strict: StoveProjectDescr_15544_Strict_Alg) =
-            val out = ex_15544_strict.en15544_Alg.map: _strict =>
-                showDetailedNoteAsText(ex_15544_strict, _strict, _strict.atDraftMin_LoadNominal)
-            out.fold(
-                nel => nel.toList.foreach(e => fail(e.show)),
-                _ => ()
-            )
+        val out = ex_15544_strict.en15544_Alg.map: _strict =>
+            showDetailedNoteAsText(ex_15544_strict, _strict, _strict.atDraftMin_LoadNominal)
+        out.fold(
+            nel => nel.toList.foreach(e => fail(e.show)),
+            _ => ()
+        )
     end run_exercice_15544_strict
 
     def run_exercice_15544_mce(ex_15544_mce: StoveProjectDescr_15544_MCE_Alg) =
         val out = ex_15544_mce.en15544_Alg.map: _mce =>
             showDetailedNoteAsText(ex_15544_mce, _mce, _mce.atDraftMax_LoadNominal)
         out.fold(
-            nel => nel.toList.foreach(println), _ => ()
+            nel => nel.toList.foreach(println),
+            _ => ()
         )
     end run_exercice_15544_mce
 
@@ -168,14 +177,13 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         val config = ex_15544_labo
 
         val out = config.en15544_Alg.map: mce_labo =>
-
-            println("[ at load = nominal ]")
+            println("[ at load = nominal ]"                             )
             println(s"CO2 wet = ${config.fluegas_co2_wet_nominal.showP}")
             println(s"CO2 dry = ${config.fluegas_co2_dry_nominal.showP}")
- 
+
             println(s"O2 wet  = ${config.fluegas_o2_wet_nominal.showP}")
             println(s"O2 dry  = ${config.fluegas_o2_dry_nominal.showP}")
-            println("")
+            println(""                                                 )
 
             showDetailedNoteAsText(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
 
@@ -197,6 +205,5 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
             _ => ()
         )
     end run_15544_mce_for_lab_comparison
-
 
 }

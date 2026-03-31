@@ -16,9 +16,9 @@ import org.scalatest.matchers.should.Matchers
 
 class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
 
-    private val emptyFlue     = FlueSlot(Seq.empty)
+    private val emptyFlue      = FlueSlot(Seq.empty)
     private val emptyConnector = ConnectorSlot(Seq.empty)
-    private val emptyChimney  = ChimneySlot(Seq.empty)
+    private val emptyChimney   = ChimneySlot(Seq.empty)
 
     "PipeChainGeneric.build" should "produce 3 SlotBuildResults for standard topology" in {
         val results = PipeChainGeneric.build(Seq(emptyFlue, emptyConnector, emptyChimney))
@@ -51,7 +51,7 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
 
     it should "produce idsMappingFn that returns None for unmapped indices" in {
         val results = PipeChainGeneric.build(Seq(emptyFlue))
-        val fn = results(0).idsMappingFn
+        val fn      = results(0).idsMappingFn
         fn.isValid shouldBe true
         fn.toOption.get.apply(0) shouldBe None // empty pipe has no mappings
         fn.toOption.get.apply(99) shouldBe None
@@ -59,7 +59,7 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
 
     it should "handle ThermalFlueSlot (MCE variant)" in {
         val thermalFlue = ThermalFlueSlot(Seq.empty)
-        val results = PipeChainGeneric.build(Seq(thermalFlue, emptyConnector, emptyChimney))
+        val results     = PipeChainGeneric.build(Seq(thermalFlue, emptyConnector, emptyChimney))
         results.size shouldBe 3
         results(0).pipeType shouldBe FluePipeT
         results(0).label shouldBe "Flue"
@@ -70,15 +70,15 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness(1.mm),
+            SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical("sec1", 100.cm)
+            AddSectionVertical ("sec1", 100.cm                                )
         )
-        val results = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), emptyConnector, emptyChimney))
+        val results   = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), emptyConnector, emptyChimney))
         results(0).pipe.isValid shouldBe true
         // With actual descriptors + direction, the idsMappingFn should map index 3 (the AddSection) to a section result index
         results(0).idsMappingFn.isValid shouldBe true
-        val fn = results(0).idsMappingFn.toOption.get
+        val fn        = results(0).idsMappingFn.toOption.get
         // Index 3 is the AddSectionVertical → should map to a section result
         fn(3).isDefined shouldBe true
         // Properties (indices 0-2) shouldn't map to section results
@@ -95,20 +95,20 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         // Flue with direction → produces a final frame
         val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness(1.mm),
+            SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical("sec1", 100.cm)
+            AddSectionVertical ("sec1", 100.cm                                )
         )
         // Connector with minimal thermal config — no initial direction, relies on flue's frame
         val connDescr = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)),
-            SetThermalPipeProp_13384_V3.SetMaterial(Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer(2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness(1.mm),
-            SetThermalPipeProp_13384_V3.SetPipeLocation(PipeLocation.HeatedArea),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec1", 100.cm)
+            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
+            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
+            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384_V3.AddSectionVertical("sec1", 100.cm                   )
         )
-        val results = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), ConnectorSlot(connDescr), emptyChimney))
+        val results   = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), ConnectorSlot(connDescr), emptyChimney))
 
         // Flue produced a final frame
         results(0).finalFrame.isDefined shouldBe true

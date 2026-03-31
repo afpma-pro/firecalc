@@ -8,7 +8,8 @@ package afpma.firecalc.engine.alg.en15544
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
 
-/** Computed stove-level values made available to stove constraint generators.
+/**
+ * Computed stove-level values made available to stove constraint generators.
  *
  * Unlike [[ConstraintContext]] which is firebox-scoped, this context captures
  * data that belongs to the stove as a whole, independently of the firebox type.
@@ -17,7 +18,8 @@ case class StoveConstraintContext(
     t_n: t_n
 )
 
-/** Typeclass providing EN 15544 constraint sequences for stove-level terms.
+/**
+ * Typeclass providing EN 15544 constraint sequences for stove-level terms.
  *
  * Stove-level constraints are independent of the firebox variant and are
  * therefore not part of [[FireboxConstraints]].

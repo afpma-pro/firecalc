@@ -206,22 +206,26 @@ object MecaFluOps:
     // Error Handling Helpers
     // ============================================
 
-    /** Throw a structured MecaFlu_Error as an exception.
-      * Used within lazy-val pipe section implementations; caught by [[catchMecaFluErrors]]. */
+    /**
+     * Throw a structured MecaFlu_Error as an exception.
+     * Used within lazy-val pipe section implementations; caught by [[catchMecaFluErrors]].
+     */
     def throwMecaFluError(err: MecaFlu_Error): Nothing =
         throw MecaFlu_Error.MecaFluErrorException(err)
 
-    /** Execute a block and catch MecaFlu errors into Either.
-      * Used as the try/catch wrapper in all makePipeResult methods. */
+    /**
+     * Execute a block and catch MecaFlu errors into Either.
+     * Used as the try/catch wrapper in all makePipeResult methods.
+     */
     def catchMecaFluErrors[A](pipeType: PipeType)(f: => A): Either[MecaFlu_Error, A] =
         try f.asRight
         catch
             case mee: MecaFlu_Error.MecaFluErrorException =>
-                mee.printStackTrace()
-                Left(mee.error)
+                mee.printStackTrace(         )
+                Left               (mee.error)
             case e =>
-                e.printStackTrace()
-                Left(MecaFlu_Error.UnexpectedThrowable(e, pipeType))
+                e.printStackTrace(                                              )
+                Left             (MecaFlu_Error.UnexpectedThrowable(e, pipeType))
 
     // ============================================
     // Pipe Section Accumulator State

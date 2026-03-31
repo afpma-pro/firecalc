@@ -67,57 +67,95 @@ object CasType_15544_C2
             0.3.unitless, // ??? in basic2plus, not specified in EN15544 (what about in some test report ?)
         h67_sectionCumuleeEntreeAirPorte = 250.cm2,
         h71_largeurVitre                 = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        h72_hauteurVitre                 = 0.cm,  // TODO: à spécifier (nouveauté EN15544:2023)
-        ash_pit_height                   = 5.cm,
+        h72_hauteurVitre                 = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                   = 5.cm
     )
 
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
             // direction "Rear"
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // "Rear"
-            roughness                (3.mm                                                ),
+            setInitialDirection      (
+                azimuth     = AzimuthDirection.Rear,
+                inclination = InclinationDirection.Horizontal
+            ), // "Rear"
+            roughness                (3.mm              ),
             innerShape(rectangle(23.cm, 25.1.cm)),
-            addSectionHorizontal     ("Car. 1", 31.7.cm                                   ),
-            addSharpAngle_90deg      ("virage 90° 1-2 (descente)", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
+            addSectionHorizontal     ("Car. 1", 31.7.cm ),
+            addSharpAngle_90deg      (
+                "virage 90° 1-2 (descente)",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+            ), // Down
             innerShape(rectangle(25.1.cm, 22.cm)),
-            addSectionVertical       ("Car. 2", -81.5.cm                                  ),
-            addSharpAngle_90deg      ("virage 90° 2-3 (-> gauche)", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+            addSectionVertical       ("Car. 2", -81.5.cm),
+            addSharpAngle_90deg      (
+                "virage 90° 2-3 (-> gauche)",
+                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+            ), // Left
             innerShape(rectangle(24.cm, 20.cm)  ),
-            addSectionHorizontal     ("Car. 3", 179.2.cm                                  ),
-            addSharpAngle_90deg      ("virage 90° 3-4", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
-            addSectionHorizontal     ("Car. 4", 22.cm                                     ),
-            addSharpAngle_90deg      ("virage 90° 4-5", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
-            addSectionHorizontal     ("Car. 5", 8.cm                                      ),
-            addSharpAngle_90deg      ("virage 90° 5-6", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // Rear
-            addSectionHorizontal     ("Car. 6", 22.cm                                     ),
-            addSharpAngle_90deg      ("virage 90° 6-7", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+            addSectionHorizontal     ("Car. 3", 179.2.cm),
+            addSharpAngle_90deg      (
+                "virage 90° 3-4",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+            ), // Rear
+            addSectionHorizontal     ("Car. 4", 22.cm   ),
+            addSharpAngle_90deg      (
+                "virage 90° 4-5",
+                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+            ), // Left
+            addSectionHorizontal     ("Car. 5", 8.cm    ),
+            addSharpAngle_90deg      (
+                "virage 90° 5-6",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+            ), // Rear
+            addSectionHorizontal     ("Car. 6", 22.cm   ),
+            addSharpAngle_90deg      (
+                "virage 90° 6-7",
+                AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+            ), // Right
             innerShape(rectangle(24.cm, 19.cm)  ),
-            addSectionHorizontal     ("Car. 7", 190.cm                                    ),
-            addSharpAngle_0_to_180deg("virage 20°", 20.degrees, AbsoluteDirection(AzimuthDirection.Custom(70.degrees), InclinationDirection.Horizontal)), // azimuth=90°-20°=70°
-            addSectionHorizontal     ("Car. 8", 30.cm                                     ),
-            addSharpAngle_0_to_180deg("virage 70°", 70.degrees, AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)), // towards Rear
+            addSectionHorizontal     ("Car. 7", 190.cm  ),
+            addSharpAngle_0_to_180deg(
+                "virage 20°",
+                20.degrees,
+                AbsoluteDirection(AzimuthDirection.Custom(70.degrees), InclinationDirection.Horizontal)
+            ), // azimuth=90°-20°=70°
+            addSectionHorizontal     ("Car. 8", 30.cm   ),
+            addSharpAngle_0_to_180deg(
+                "virage 70°",
+                70.degrees,
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+            ), // towards Rear
             innerShape(rectangle(24.cm, 21.cm)  ),
-            addSectionHorizontal     ("Car. 9", 33.7.cm                                   ),
-            addSharpAngle_90deg      ("virage 90° 9-10", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // "Up"
+            addSectionHorizontal     ("Car. 9", 33.7.cm ),
+            addSharpAngle_90deg      (
+                "virage 90° 9-10",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+            ), // "Up"
             innerShape(rectangle(21.cm, 22.cm)  ),
-            addSectionVertical       ("Car. 10", 98.cm                                    )
+            addSectionVertical       ("Car. 10", 98.cm  )
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
+        Seq (
             // "Up" inherited from last element of flue pipe
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)              ),
-            layer              (e                                = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-            pipeLocation       (PipeLocation.HeatedArea                                                    ),
-            addSectionVertical ("Car. 11", 60.cm                                                           ),
+            layer              (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
+            pipeLocation       (PipeLocation.HeatedArea                     ),
+            addSectionVertical ("Car. 11", 60.cm                            ),
             // arbitrary
-            addSharpAngle_45deg("virage 45° 11-12", AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Custom(45.degrees))), // towards Front-Up at 45°
-            addSectionSlopped  ("Car. 12", 50.cm                                                            ),
-            addSharpAngle_45deg("virage 45° 12-13", AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)), // towards Up
-            addSectionVertical ("Car. 13", 60.cm                                                           )
+            addSharpAngle_45deg(
+                "virage 45° 11-12",
+                AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Custom(45.degrees))
+            ), // towards Front-Up at 45°
+            addSectionSlopped  ("Car. 12", 50.cm                            ),
+            addSharpAngle_45deg(
+                "virage 45° 12-13",
+                AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)
+            ), // towards Up
+            addSectionVertical ("Car. 13", 60.cm                            )
         )
 
     val chimneyPipeDescr =

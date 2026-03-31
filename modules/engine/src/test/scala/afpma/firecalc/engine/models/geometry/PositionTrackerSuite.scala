@@ -32,7 +32,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
 
     "PositionTracker.computeFlowOnly15544" should "place end point at (0,0,1) for single vertical section" in {
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
+        val elems  = Seq(
             AddSectionVertical("v", 1.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
@@ -45,9 +45,9 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     it should "place end point at (0,2,0) for horizontal section with Rear direction" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-            AddSectionHorizontal("h", 2.0.meters)
+        val elems  = Seq(
+            SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+            AddSectionHorizontal("h", 2.0.meters                                       )
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         assertVec3Approx(result.finalPoint, Vec3(0, 2, 0))
@@ -58,9 +58,9 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     it should "place end point at (0,4,3) for slopped section (5m length, 3m elevation gain)" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-            AddSectionSloppedForceManualElevationGain("s", 5.0.meters, 3.0.meters)
+        val elems  = Seq(
+            SetInitialDirection                      (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+            AddSectionSloppedForceManualElevationGain("s", 5.0.meters, 3.0.meters                           )
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         // horizontal distance = sqrt(25 - 9) = 4, elevation = 3 → (0, 4, 3)
@@ -74,10 +74,14 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     it should "place end point at (2,0,0) after 90° bend (roll=90°) from Rear + horizontal section" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),  // Rear direction
-            AddSharpeAngle_0_to_180("dc", 90.0.degrees, Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))),
-            AddSectionHorizontal("h", 2.0.meters)
+        val elems  = Seq(
+            SetInitialDirection    (AzimuthDirection.Rear, InclinationDirection.Horizontal), // Rear direction
+            AddSharpeAngle_0_to_180(
+                "dc",
+                90.0.degrees,
+                Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))
+            ),
+            AddSectionHorizontal   ("h", 2.0.meters                                       )
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         // After 90° bend with roll=90° from Rear frame, new direction is Right (+X)
@@ -91,10 +95,10 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     it should "accumulate positions: vertical (0,0,1) then horizontal (0,2,1)" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-            AddSectionVertical("v", 1.0.meters),
-            AddSectionHorizontal("h", 2.0.meters)
+        val elems  = Seq(
+            SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+            AddSectionVertical  ("v", 1.0.meters                                       ),
+            AddSectionHorizontal("h", 2.0.meters                                       )
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         assertApprox(result.finalPoint.x, 0.0, "x")
@@ -108,11 +112,11 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     it should "respect second SetInitialDirection: end at (1,1,0)" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),   // az=0=Rear
-            AddSectionHorizontal("h1", 1.0.meters),          // goes to (0,1,0)
-            SetInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal),  // az=90=Right
-            AddSectionHorizontal("h2", 1.0.meters)           // goes to (1,1,0)
+        val elems  = Seq(
+            SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal ), // az=0=Rear
+            AddSectionHorizontal("h1", 1.0.meters                                       ), // goes to (0,1,0)
+            SetInitialDirection (AzimuthDirection.Right, InclinationDirection.Horizontal), // az=90=Right
+            AddSectionHorizontal("h2", 1.0.meters                                       )  // goes to (1,1,0)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         assertApprox(result.finalPoint.x, 1.0, "x")
@@ -125,9 +129,9 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     it should "fall back to Rear for horizontal section when frame direction is Up" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),  // Up direction (el=90°)
-            AddSectionHorizontal("h", 1.0.meters)
+        val elems  = Seq(
+            SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Up), // Up direction (el=90°)
+            AddSectionHorizontal("h", 1.0.meters                               )
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         // Frame direction is Up (+Z), horizontal projection is zero → falls back to Rear
@@ -149,13 +153,13 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
 
     it should "place end at (0,0,-2) for downward vertical section with length=2" in {
         import AddFlowOnlyPipeElement_15544_V3.*
-        val elems = Seq(
+        val elems  = Seq(
             AddSectionVertical("down", -2.0.meters)
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
-        assertApprox(result.finalPoint.x, 0.0, "x")
-        assertApprox(result.finalPoint.y, 0.0, "y")
-        assertApprox(result.finalPoint.z, -2.0, "z")
+        assertApprox(result.finalPoint.x, 0.0, "x"             )
+        assertApprox(result.finalPoint.y, 0.0, "y"             )
+        assertApprox(result.finalPoint.z, -2.0, "z"            )
         result.segments.size shouldBe 1
         assertApprox(result.segments.head.length, 2.0, "length")
     }

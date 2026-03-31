@@ -168,10 +168,10 @@ object standard {
         case e: FireboxHeightOutOfRange       => Show[FireboxHeightOutOfRange].show(e)
         case e: InjectorVelocityBelowMinimum  => Show[InjectorVelocityBelowMinimum].show(e)
         case e: InjectorVelocityAboveMaximum  => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: MissingFlowRate                => Show[MissingFlowRate].show(e)
-        case e: AirIntakePipeShapeMismatch     => e.show
-        case e: FireboxErrorCustom             => e.reason
-        case e: InvalidFireboxConstraint       => e.show
+        case e: MissingFlowRate               => Show[MissingFlowRate].show(e)
+        case e: AirIntakePipeShapeMismatch    => e.show
+        case e: FireboxErrorCustom            => e.reason
+        case e: InvalidFireboxConstraint      => e.show
 
     case class InvalidFireboxConstraint(error: TermConstraintError[?]) extends FireboxError
     object InvalidFireboxConstraint:
@@ -294,10 +294,10 @@ object standard {
     sealed trait FluePipeError extends EN15544_Error with HasSectionTypError
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
-        case err: FlueGasVelocityError          => err.show
-        case err: FluePipeInvalidGeometryRatio  => err.show
-        case err: FluePipeErrorCustom           => err.reason
-        case err: FluePipeLengthBelowMinimum    => err.show
+        case err: FlueGasVelocityError         => err.show
+        case err: FluePipeInvalidGeometryRatio => err.show
+        case err: FluePipeErrorCustom          => err.reason
+        case err: FluePipeLengthBelowMinimum   => err.show
 
     case class FlueGasVelocityError(
         sectionId  : Int,
@@ -510,31 +510,32 @@ object standard {
     object FluePipeShapeSequenceError:
 
         // s"missing section geometry change : current section '${nel.fullRef}' (dh = ${currStraight.geometry.dh}) AND last section '${lastNel.fullRef}' (dh = ${ls.geometry.dh})"
-        case class MissingSectionGeometryChange(pipeRef1: String, dh1: String, pipeRef2: String, dh2: String) extends FluePipeShapeSequenceError
+        case class MissingSectionGeometryChange(pipeRef1: String, dh1: String, pipeRef2: String, dh2: String)
+            extends FluePipeShapeSequenceError
         case class CanNotStartWithADirectionChange(pipeName: String) extends FluePipeShapeSequenceError
-        case class CanNotEndWithADirectionChange(pipeName: String) extends FluePipeShapeSequenceError
-        case class TwoSuccessDirectionChangeNotAllowed(pipeName1: String, pipeName2: String) extends FluePipeShapeSequenceError
-        case class TwoSuccessStraightSectionNotAllowed(pipeName1: String, pipeName2: String) extends FluePipeShapeSequenceError
-        case class HolesShouldNotHappen(holeAfterPipeName: String) extends FluePipeShapeSequenceError
-        
+        case class CanNotEndWithADirectionChange(pipeName: String)   extends FluePipeShapeSequenceError
+        case class TwoSuccessDirectionChangeNotAllowed(pipeName1: String, pipeName2: String)
+            extends FluePipeShapeSequenceError
+        case class TwoSuccessStraightSectionNotAllowed(pipeName1: String, pipeName2: String)
+            extends FluePipeShapeSequenceError
+        case class HolesShouldNotHappen(holeAfterPipeName: String)   extends FluePipeShapeSequenceError
+
         // ShowUsingLocale for formula errors (delegates to i18n)
         given ShowUsingLocale[FluePipeShapeSequenceError] = showUsingLocale:
             case MissingSectionGeometryChange(p1, dh1, p2, dh2) =>
                 I18N.en15544_errors.missing_section_geometry_change(p1, dh1, p2, dh2)
-            case CanNotStartWithADirectionChange(n1) =>
+            case CanNotStartWithADirectionChange(n1)            =>
                 I18N.en15544_errors.can_not_start_with_a_direction_change(n1)
-            case CanNotEndWithADirectionChange(n)    =>
+            case CanNotEndWithADirectionChange(n)               =>
                 I18N.en15544_errors.can_not_end_with_a_direction_change(n)
-            case TwoSuccessDirectionChangeNotAllowed(n1, n2) =>
+            case TwoSuccessDirectionChangeNotAllowed(n1, n2)    =>
                 I18N.en15544_errors.two_successive_direction_change_not_allowed(n1, n2)
-            case TwoSuccessStraightSectionNotAllowed(n1, n2) =>
+            case TwoSuccessStraightSectionNotAllowed(n1, n2)    =>
                 I18N.en15544_errors.two_successive_straight_section_not_allowed(n1, n2)
-            case HolesShouldNotHappen(h) =>
+            case HolesShouldNotHappen(h)                        =>
                 I18N.en15544_errors.holes_should_not_happen(h)
 
-
         // given Show[FluePipeShapeSequenceError] = Show.show(x => s"FLUE PIPE DESCR ERROR: ${x.msg}")
-
 
     case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)
         extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT) derives Show
@@ -646,10 +647,11 @@ object standard {
     sealed trait MecaFlu_Error extends MCalc_Error with HasSectionTypError
 
     object MecaFlu_Error:
-        /** Exception bridge: carries a structured MecaFlu_Error through lazy-val evaluation
-          * to the try/catch boundary in makePipeResult. */
-        final class MecaFluErrorException(val error: MecaFlu_Error)
-            extends Exception(error.getClass.getSimpleName)
+        /**
+         * Exception bridge: carries a structured MecaFlu_Error through lazy-val evaluation
+         * to the try/catch boundary in makePipeResult.
+         */
+        final class MecaFluErrorException(val error: MecaFlu_Error) extends Exception(error.getClass.getSimpleName)
 
         // Firebox type errors
         case class UnexpectedFireboxType(reason: String) extends MecaFlu_Error:
@@ -716,7 +718,7 @@ object standard {
             case UnexpectedPipeType(reason, _)                      => I18N.mecaflu.errors.unexpected_pipe_type(reason)
             case CouldNotDetermineCrossSectionArea(ref, _)          =>
                 I18N.mecaflu.errors.could_not_determine_cross_section_area(ref)
-            case x: CouldNotDetermineAirSpaceDetailed               => x.show
+            case x: CouldNotDetermineAirSpaceDetailed => x.show
             case UseUnsafeToSkipRatioValidationError(reason, _)     =>
                 I18N.mecaflu.errors.use_unsafe_to_skip_ratio_validation(reason)
             case DynamicFrictionError(reason, _)                    => I18N.mecaflu.errors.dynamic_friction_error(reason)
@@ -737,20 +739,20 @@ object standard {
                 I18N.mecaflu.errors.mean_temperature_calculation_errors(errs.toList.map(_.show).mkString(", "))
             case NoStraightSectionDefinedForTemperatureCalc(ref, _) =>
                 I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
-            case x: SingularFlowResistanceCoeffError                => x.show
-            case x: FluePipeShapeSequenceError                      => x.show
+            case x: SingularFlowResistanceCoeffError => x.show
+            case x: FluePipeShapeSequenceError => x.show
 
     // Incremental Builder Validation Errors
 
     sealed trait IncrementalValidation_Error extends MCalc_Error with HasSectionTypError
 
     given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
-        case e: NotDefinedYet              => Show[NotDefinedYet].show(e)
-        case e: PropertyMustBeSet          => Show[PropertyMustBeSet].show(e)
-        case e: PropertyMustBeDefined      => Show[PropertyMustBeDefined].show(e)
-        case e: PrerequisiteNotMet         => Show[PrerequisiteNotMet].show(e)
-        case e: ConflictDetected           => Show[ConflictDetected].show(e)
-        case e: ForbiddenElementPosition   => Show[ForbiddenElementPosition].show(e)
+        case e: NotDefinedYet            => Show[NotDefinedYet].show(e)
+        case e: PropertyMustBeSet        => Show[PropertyMustBeSet].show(e)
+        case e: PropertyMustBeDefined    => Show[PropertyMustBeDefined].show(e)
+        case e: PrerequisiteNotMet       => Show[PrerequisiteNotMet].show(e)
+        case e: ConflictDetected         => Show[ConflictDetected].show(e)
+        case e: ForbiddenElementPosition => Show[ForbiddenElementPosition].show(e)
 
     // Pipe undefined
     sealed trait NotDefinedYet extends IncrementalValidation_Error
@@ -812,10 +814,10 @@ object standard {
     // Property must be defined errors (without operation name)
     sealed trait PropertyMustBeDefined extends IncrementalValidation_Error
 
-    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)                extends PropertyMustBeDefined
-    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)              extends PropertyMustBeDefined
-    case class PressureLossMustBeDefined(sectionTyp: PipeType)                   extends PropertyMustBeDefined
-    case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType)      extends PropertyMustBeDefined
+    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)                    extends PropertyMustBeDefined
+    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)                 extends PropertyMustBeDefined
+    case class PressureLossMustBeDefined(sectionTyp: PipeType)                      extends PropertyMustBeDefined
+    case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType) extends PropertyMustBeDefined
 
     object PropertyMustBeDefined:
         given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
@@ -836,7 +838,7 @@ object standard {
     case class LayersRequireInnerShape(sectionTyp: PipeType)                extends PrerequisiteNotMet
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
     case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
-    case class GeometryWithoutInitialDirection(sectionTyp: PipeType)      extends PrerequisiteNotMet
+    case class GeometryWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
@@ -855,14 +857,13 @@ object standard {
     // Conflict errors
     sealed trait ConflictDetected extends IncrementalValidation_Error
 
-    case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)                   extends ConflictDetected
-    case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType) extends ConflictDetected
+    case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)                             extends ConflictDetected
+    case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType)           extends ConflictDetected
     case class FlowResistanceRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
     case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
-    case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType)
-        extends ConflictDetected
+    case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
 
     object ConflictDetected:
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
@@ -876,9 +877,9 @@ object standard {
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
             case FlowResistanceRequiresGeometry(op, _, _)         =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case PressureDiffRequiresGeometry(op, _, _)         =>
+            case PressureDiffRequiresGeometry(op, _, _)           =>
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
-            case CasingTooSmallForLiner(linerDh, casingDh, _)  =>
+            case CasingTooSmallForLiner(linerDh, casingDh, _)     =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
 
     // Forbidden element position errors

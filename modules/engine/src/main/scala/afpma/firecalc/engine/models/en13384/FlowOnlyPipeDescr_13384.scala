@@ -147,31 +147,59 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
                 case x: CoudeCourbe60         => Show[CoudeCourbe60].show(x)
                 case x: CoudeCourbe60_Unsafe  => Show[CoudeCourbe60_Unsafe].show(x)
 
-    case class AngleSpecifique(ɣ: QtyD[Degree], zeta: ζ, override val angleN2: Option[QtyD[Degree]] = None) extends DirectionChange(ɣ, angleN2) derives Show
+    case class AngleSpecifique(ɣ: QtyD[Degree], zeta: ζ, override val angleN2: Option[QtyD[Degree]] = None)
+        extends DirectionChange(ɣ, angleN2) derives Show
 
-    case class AngleVifDe0A90(ɣ: QtyD[Degree], Ld: QtyD[Meter], Dh: QtyD[Meter], override val angleN2: Option[QtyD[Degree]] = None) extends DirectionChange(ɣ, angleN2) derives Show
+    case class AngleVifDe0A90(
+        ɣ                   : QtyD[Degree],
+        Ld                  : QtyD[Meter],
+        Dh                  : QtyD[Meter],
+        override val angleN2: Option[QtyD[Degree]] = None
+    ) extends DirectionChange(ɣ, angleN2) derives Show
 
     // __INTERPRETATION__
-    case class AngleVifDe0A90_Unsafe(ɣ: QtyD[Degree], Ld: QtyD[Meter], Dh: QtyD[Meter], override val angleN2: Option[QtyD[Degree]] = None) extends DirectionChange(ɣ, angleN2)
-        derives Show
+    case class AngleVifDe0A90_Unsafe(
+        ɣ                   : QtyD[Degree],
+        Ld                  : QtyD[Meter],
+        Dh                  : QtyD[Meter],
+        override val angleN2: Option[QtyD[Degree]] = None
+    ) extends DirectionChange(ɣ, angleN2) derives Show
 
-    case class CoudeCourbe90(R: QtyD[Meter], Dh: QtyD[Meter], Ld: QtyD[Meter], override val angleN2: Option[QtyD[Degree]] = None) extends DirectionChange(90.degrees, angleN2)
-        derives Show
+    case class CoudeCourbe90(
+        R                   : QtyD[Meter],
+        Dh                  : QtyD[Meter],
+        Ld                  : QtyD[Meter],
+        override val angleN2: Option[QtyD[Degree]] = None
+    ) extends DirectionChange(90.degrees, angleN2) derives Show
 
     // __INTERPRETATION__
-    case class CoudeCourbe90_Unsafe(R: QtyD[Meter], Dh: QtyD[Meter], Ld: QtyD[Meter], override val angleN2: Option[QtyD[Degree]] = None) // __INTERPRETATION__
+    case class CoudeCourbe90_Unsafe(
+        R                   : QtyD[Meter],
+        Dh                  : QtyD[Meter],
+        Ld                  : QtyD[Meter],
+        override val angleN2: Option[QtyD[Degree]] = None
+    ) // __INTERPRETATION__
         extends DirectionChange(90.degrees, angleN2) derives Show
 
-    case class CoudeCourbe60(R: QtyD[Meter], Dh: QtyD[Meter], Ld: QtyD[Meter], override val angleN2: Option[QtyD[Degree]] = None) extends DirectionChange(60.degrees, angleN2)
-        derives Show
+    case class CoudeCourbe60(
+        R                   : QtyD[Meter],
+        Dh                  : QtyD[Meter],
+        Ld                  : QtyD[Meter],
+        override val angleN2: Option[QtyD[Degree]] = None
+    ) extends DirectionChange(60.degrees, angleN2) derives Show
 
     // __INTERPRETATION__
-    case class CoudeCourbe60_Unsafe(R: QtyD[Meter], Dh: QtyD[Meter], Ld: QtyD[Meter], override val angleN2: Option[QtyD[Degree]] = None) // __INTERPRETATION__
+    case class CoudeCourbe60_Unsafe(
+        R                   : QtyD[Meter],
+        Dh                  : QtyD[Meter],
+        Ld                  : QtyD[Meter],
+        override val angleN2: Option[QtyD[Degree]] = None
+    ) // __INTERPRETATION__
         extends DirectionChange(60.degrees, angleN2) derives Show
     sealed abstract class CoudeASegment90(
-        val nSeg         : 2 | 3 | 4,
-        val R            : QtyD[Meter],
-        val Dh           : QtyD[Meter],
+        val nSeg            : 2 | 3 | 4,
+        val R               : QtyD[Meter],
+        val Dh              : QtyD[Meter],
         override val angleN2: Option[QtyD[Degree]] = None
     ) extends DirectionChange(90.degrees, angleN2) derives Show
     case class CoudeASegment90Avec2A45(

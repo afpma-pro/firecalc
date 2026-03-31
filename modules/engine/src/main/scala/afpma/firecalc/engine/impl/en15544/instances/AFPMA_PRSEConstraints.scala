@@ -13,7 +13,8 @@ import afpma.firecalc.engine.standard.*
 
 import io.taig.babel.Locale
 
-/** EN 15544 constraints for [[AFPMA_PRSE]] fireboxes.
+/**
+ * EN 15544 constraints for [[AFPMA_PRSE]] fireboxes.
  *
  * This firebox design is not yet validated: all computations raise an error
  * to warn the user.

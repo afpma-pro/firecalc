@@ -62,6 +62,7 @@ object readtable:
         else
             val data = TSVTableString.fromString(tsvTableRawString)
             data.getUsingBilinearInterpolation(xHeader, yHeader, zHeader)(xi, yi)
-                .left.map: err =>
+                .left
+                .map: err =>
                     CouldNotInterpolate(resName, xHeader, yHeader, zHeader, xi, yi, err)
     }

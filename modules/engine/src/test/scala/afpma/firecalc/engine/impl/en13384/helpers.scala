@@ -16,8 +16,8 @@ import org.scalatest.matchers.should.*
 trait IncrementalHelper_13384:
     self: AnyFreeSpec & Matchers =>
 
-    def equivalent_StraightSections(x: PipeElDescr, y: PipeElDescr) = 
-        
+    def equivalent_StraightSections(x: PipeElDescr, y: PipeElDescr) =
+
         x.isInstanceOf[en13384_StraightSection] shouldBe true
         y.isInstanceOf[en13384_StraightSection] shouldBe true
 

@@ -29,7 +29,7 @@ import org.scalatest.matchers.should.*
 
 class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
 
-    val en13384 = new EN13384_1_A1_2019_Formulas {}
+    val en13384                = new EN13384_1_A1_2019_Formulas {}
     given io.taig.babel.Locale = Locales.en
 
     "ThermalResistance" - {
@@ -48,13 +48,12 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                 λ0
             )
 
-            val trLinear = e0 / λ0
-            val trRound_exp = dhi / ( 2.0 * λ0 ) * math.log( (dho / dhi).value )
+            val trLinear    = e0 / λ0
+            val trRound_exp = dhi / (2.0 * λ0) * math.log((dho / dhi).value)
 
             trRound_exp.value `shouldEqual` (trRound.value +- 0.001)
-            trRound.value `shouldEqual` (trLinear.value +- 0.01)
+            trRound.value `shouldEqual`     (trLinear.value +- 0.01)
 
-            
         }
 
         "example for 'e' = 0.1 mm" - {
@@ -73,11 +72,11 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                     λ0
                 )
 
-                val trLinear = e0 / λ0
-                val trRound_exp = dhi / ( 2.0 * λ0 ) * math.log( (dho / dhi).value )
+                val trLinear    = e0 / λ0
+                val trRound_exp = dhi / (2.0 * λ0) * math.log((dho / dhi).value)
 
                 trRound_exp.value `shouldEqual` (trRound.value +- 0.001)
-                trRound.value `shouldEqual` (trLinear.value +- 0.01)
+                trRound.value `shouldEqual`     (trLinear.value +- 0.01)
 
             }
         }
@@ -91,17 +90,17 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                 val dhi: D_h = 100.mm
 
                 import afpma.firecalc.dto.all.*
-                
+
                 val layers = List(
                     FromLambdaUsingThickness(0.4.mm, 15.W_per_mK),
-                    FromLambdaUsingThickness(e0, λ0),
-                    FromLambdaUsingThickness(0.4.mm, 15.W_per_mK),
+                    FromLambdaUsingThickness(e0, λ0             ),
+                    FromLambdaUsingThickness(0.4.mm, 15.W_per_mK)
                 )
 
                 val tr = en13384.thermal_resistance_for_layers_calc(
                     mean_gas_temp = 0.degreesCelsius,
-                    startGeom = PipeShape.circle(dhi),
-                    layers = layers
+                    startGeom     = PipeShape.circle(dhi),
+                    layers        = layers
                 )
 
                 // println(s"""|dhi = ${dhi.showP}
@@ -112,7 +111,7 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                 tr.toOption.get.value `shouldEqual` (0.5755 +- 0.01)
             }
 
-            "selon cas type 13384 - C2 (avec t = 40°C)" in {   
+            "selon cas type 13384 - C2 (avec t = 40°C)" in {
 
                 val dhi: D_h = 100.mm
                 val innerShape = PipeShape.circle(dhi)
@@ -121,28 +120,26 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
 
                 val layers = List(
                     // tubaginox
-                    FromThermalResistanceUsingThickness(
-                        thickness   = 2.4.mm,
-                        thermal_resistance          = 0.0.m2_K_per_W), 
+                    FromThermalResistanceUsingThickness(thickness = 2.4.mm, thermal_resistance = 0.0.m2_K_per_W),
 
                     // lame d'air ventilée selon DTU 24.1 (ouverture de 20cm2 en bas et 5cm2 en haut)
-                    AirSpaceUsingOuterShape(
-                        PipeShape.rectangle(20.cm, 20.cm), 
-                        VentilDirection.SameDirAsFlueGas, 
+                    AirSpaceUsingOuterShape                     (
+                        PipeShape.rectangle(20.cm, 20.cm),
+                        VentilDirection.SameDirAsFlueGas,
                         VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
                     ),
 
                     // boisseau
-                    FromThermalResistanceUsingThickness(
-                        thickness           = 11.5.cm,
-                        thermal_resistance  = 0.12.m2_K_per_W,
+                    FromThermalResistanceUsingThickness         (
+                        thickness          = 11.5.cm,
+                        thermal_resistance = 0.12.m2_K_per_W
                     )
                 )
 
                 val tr = en13384.thermal_resistance_for_layers_calc(
                     mean_gas_temp = 40.degreesCelsius,
-                    startGeom = innerShape,
-                    layers = layers
+                    startGeom     = innerShape,
+                    layers        = layers
                 )
 
                 tr.isRight `shouldBe` true

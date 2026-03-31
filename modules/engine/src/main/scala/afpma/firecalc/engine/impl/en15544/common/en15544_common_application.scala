@@ -19,6 +19,7 @@ import cats.syntax.all.catsSyntaxTuple5Semigroupal
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
+import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.alg.en15544
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
@@ -66,6 +67,55 @@ object EN15544_V_2023_Common_Application:
 abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_Application_Alg with FireboxOps {
     en15544 =>
 
+    // ─── EN13384ForApp: concrete type + bridge class ──────────────────────
+
+    type EN13384ForApp = EN13384_For_15544_Application
+
+    /**
+     * Bridge from EN15544 to EN13384: extends the concrete EN13384 implementation
+     * but overrides specific behaviors for EN 15544 usage.
+     * Moved here from the algebra trait to keep alg/ free of impl/ dependencies.
+     */
+    abstract class EN13384_For_15544_Application(
+        override val formulas: EN13384_1_A1_2019_Formulas_Alg
+    ) extends EN13384_1_A1_2019_Common_Application(formulas) {
+        override type AirIntakePipe_Module_T = en15544.AirIntakePipe_Module_T
+        override val AirIntakePipe_Module = en15544.AirIntakePipe_Module
+
+        override type Pipes_13384 = en15544.Pipes_13384
+
+        override type Inputs_13384 = en15544.Inputs_13384
+
+        override lazy val inputs = en13384_inputs
+
+        override lazy val last_known_density_before_connector_pipe: WithParams_13384[Option[Density]] =
+            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
+            computeAt match
+                case ComputeAt.Mean   => pr.flatMap(_.last_density_mean).orElse(pr.flatMap(_.last_density_middle))
+                case ComputeAt.Middle => pr.flatMap(_.last_density_middle)
+
+        override lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] =
+            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
+            computeAt match
+                case ComputeAt.Mean   => pr.flatMap(_.last_velocity_mean).orElse(pr.flatMap(_.last_velocity_middle))
+                case ComputeAt.Middle => pr.flatMap(_.last_velocity_middle)
+
+        // 7.8.4
+        // Températures moyennes pour le calcul de pression
+
+        /** température moyenne de l'air de combustion sur la longueur du conduit d'air comburant, en K */
+        override def T_mB
+            : (DraftCondition) ?=> Validated[NonEmptyList[EN13384_Error], CombustionAirMeanTemperature.Type] =
+            // flow only pipes are necessarily considered non concentric
+            // otherwise we would have to compute thermal variations
+            val dt = DuctType.NonConcentricDuctsHighThermalResistance
+            val tl: afpma.firecalc.engine.models.en13384.typedefs.T_L = T_L
+            formulas.T_mB_calc(dt, tl).withSectionTyp(AirIntakePipeT)
+
+        /** Lookup the pre-built AtParams instance matching the given EN13384 params */
+        def atParamsFor(p: Params_13384): AtParams
+    }
+
     val formulas: EN15544_V_2023_Formulas_Alg
 
     // aliases
@@ -82,7 +132,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     /** Build the constraint context from sizing results. */
     lazy val constraintContext: ConstraintContext =
-        ConstraintContext(
+        ConstraintContext     (
             m_B      = m_B,
             O_BR     = firebox_sizing.O_BR,
             A_BR_min = firebox_sizing.A_BR_min,
@@ -231,18 +281,19 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     // ─── CommonAtParams: params-dependent layer implementation ────────────
 
-    /** Abstract inner class implementing `AtParams` for the common application.
-      * Subclasses (strict/MCE) must extend this to provide pipe result implementations.
-      */
+    /**
+     * Abstract inner class implementing `AtParams` for the common application.
+     * Subclasses (strict/MCE) must extend this to provide pipe result implementations.
+     */
     abstract class CommonAtParams(override val params: Params_15544) extends AtParams:
         // Extract DraftCondition and LoadQty from params via intermediate vals
         // to avoid diverging implicit search through params_15544_to_13384 / params_13384_to_15544
-        private val _dc: DraftCondition  = params._1
-        private val _lq: LoadQty         = params._2
-        private given DraftCondition     = _dc
+        private val _dc: DraftCondition = params._1
+        private val _lq: LoadQty        = params._2
+        private given DraftCondition  = _dc
         @scala.annotation.nowarn("msg=unused private member")
-        private given LoadQty            = _lq
-        private given Option[LoadQty]    = Some(_lq)
+        private given LoadQty         = _lq
+        private given Option[LoadQty] = Some(_lq)
 
         // Pipe results — abstract ones (defined in strict/MCE subclasses)
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
@@ -262,7 +313,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     given HeatingAppliance.Efficiency   = ha_eff
                     given HeatingAppliance.Temperatures = ha_temp
                     val p: Params_13384 = params
-                    given Params_13384  = p
+                    given Params_13384 = p
                     en13384_application.connector_PipeResult.toValidatedNel
 
         lazy val chimney_PipeResult: VNelMcalcErr[PipeResult] =
@@ -277,12 +328,13 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     given HeatingAppliance.Efficiency   = ha_eff
                     given HeatingAppliance.Temperatures = ha_temp
                     val p: Params_13384 = params
-                    given Params_13384  = p
+                    given Params_13384 = p
                     en13384_application.chimney_PipeResult.toValidatedNel
 
-        /** All post-firebox pipe results as a vector: [flue, connector, chimney].
-          * Convenience accessor for consumers that want to iterate over all post-firebox results.
-          */
+        /**
+         * All post-firebox pipe results as a vector: [flue, connector, chimney].
+         * Convenience accessor for consumers that want to iterate over all post-firebox results.
+         */
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]] =
             (flue_PipeResult, connector_PipeResult, chimney_PipeResult).mapN(Vector(_, _, _))
 
@@ -341,7 +393,8 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             η.map(η =>
                 EN16510_1_2022_Formulas.η_s(
                     η,
-                    f2 = CorrectionFactor_F2.ControleDeLaPuissanceThermiqueAUnPalier_PasDeControleDeLaTemperatureDeLaPiece,
+                    f2 =
+                        CorrectionFactor_F2.ControleDeLaPuissanceThermiqueAUnPalier_PasDeControleDeLaTemperatureDeLaPiece,
                     f3 = CorrectionFactors_F3.noFactors,
                     f4 = CorrectionFactor_F4.NoAuxilaryElecConsumption
                 )
@@ -366,7 +419,9 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         lazy val flue_gas_triple_of_variates: VNelMcalcErr[FlueGasTripleOfVariates] =
             val mg_vnel: VNelMcalcErr[m_G] = m_G match
                 case None       =>
-                    Validated.invalidNel(UnexpectedDevError("m_G could not be computed, LoadQty not defined / missing ?"))
+                    Validated.invalidNel(
+                        UnexpectedDevError("m_G could not be computed, LoadQty not defined / missing ?")
+                    )
                 case Some(vnel) => vnel
             (
                 required_delivery_pressure,
@@ -390,7 +445,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
         // Aggregated pipe results — abstract (defined in strict/MCE subclasses)
         lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString
-        lazy val outputs: Outputs
+        lazy val outputs                : Outputs
 
         // Validations
         def validateVelocitiesInFluePipe(): VNelMcalcErr[Unit] =
@@ -404,9 +459,9 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
         def validateVelocitiesInPipes(): VNel[Unit] =
             List(
-                validateVelocitiesInFluePipe(),
+                validateVelocitiesInFluePipe     (),
                 validateVelocitiesInConnectorPipe(),
-                validateVelocitiesInChimneyPipe()
+                validateVelocitiesInChimneyPipe  ()
             ).sequence[[x] =>> VNelMcalcErr[x], Unit].map(_ => ())
 
         def validatePressureRequirements_EN15544(): VNelMcalcErr[Unit] =
@@ -451,7 +506,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     case Validated.Valid(lzMin) =>
                         if pr.lengthSum.value >= lzMin.unwrap.value then ().validNel
                         else FluePipeLengthBelowMinimum(pr.lengthSum, lzMin.unwrap).invalidNel
-                    case Validated.Invalid(_) => ().validNel // can't check if L_Z_min computation failed
+                    case Validated.Invalid(_)   => ().validNel // can't check if L_Z_min computation failed
 
         def validateCitedConstraints(): VNelMcalcErr[Unit] =
             val base = citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
@@ -459,8 +514,8 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
         def validateFireboxSpecificConstraints(): ValidatedNel[FireboxError, Unit] =
             val fbCtx = FireboxConstraintContext(
-                mB                = m_B,
-                flow_rate         = V_L,
+                mB                 = m_B,
+                flow_rate          = V_L,
                 airIntakePipeShape = {
                     val p = inputs.pipes
                     p.AirIntakePipe_Module.foldPipeCanBe(p.airIntake)(
@@ -469,12 +524,14 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     )
                 }
             )
-            Validated.fromOption(
-                NonEmptyList.fromList(
-                    fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
-                ),
-                ()
-            ).swap
+            Validated
+                .fromOption(
+                    NonEmptyList.fromList(
+                        fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
+                    ),
+                    ()
+                )
+                .swap
     end CommonAtParams
 
     // ─── Pre-built AtParams instances ───────────────────────────────────
@@ -482,9 +539,9 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     // CommonAtParams subclass that provides pipe result implementations.
 
     lazy val atDraftMin_LoadNominal: AtParams
-    lazy val atDraftMin_LoadMin   : Option[AtParams]
+    lazy val atDraftMin_LoadMin    : Option[AtParams]
     lazy val atDraftMax_LoadNominal: AtParams
-    lazy val atDraftMax_LoadMin   : Option[AtParams]
+    lazy val atDraftMax_LoadMin    : Option[AtParams]
 
     def atParamsFor(p: Params_13384): AtParams = p match
         case Params_13384.DraftMin_LoadNominal => atDraftMin_LoadNominal
@@ -497,7 +554,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             atDraftMax_LoadMin.getOrElse(
                 throw IllegalStateException(s"No AtParams for DraftMax_LoadMin: m_B_min is not defined")
             )
-        case other =>
+        case other                             =>
             throw IllegalStateException(s"Unexpected Params_13384 value: $other")
 
     // Section "3.3"
@@ -525,17 +582,15 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     def t_n: t_n =
         inputs.stoveParams.heating_cycle
 
-
     // If tested fireboxs are used, the maximum load at nominal heat output shall be the maximum
     // fuel mass according to the type test.
     def m_B: m_B =
         inputs.design.firebox match
             case dcc: Firebox_15544.SingleTested => dcc.maximumFuelMass
-            case _  : Firebox_15544 =>
+            case _  : Firebox_15544              =>
                 inputs.stoveParams.mB_or_pn match
                     case Left(mb) => mb
                     case Right(_) => formulas.m_B_calc(P_n, t_n, n_min)
-            
 
     given Conversion[LoadQty, Option[Mass]] = (lq: LoadQty) =>
         lq match
@@ -550,14 +605,14 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         inputs.design.firebox.pn_reduced match
             case _: (HeatOutputReduced.HalfOfNominal | HeatOutputReduced.FromTypeTest) =>
                 inputs.design.firebox.min_load match
-                    case MinLoad.NotDefined => None
-                    case MinLoad.HalfOfMaxLoad(Some(min)) => 
+                    case MinLoad.NotDefined               => None
+                    case MinLoad.HalfOfMaxLoad(Some(min)) =>
                         // The minimum load shall be calculated as 50 % of the maximum load
                         require(min == formulas.m_B_min_calc(m_B))
                         (min: m_B_min).some
-                    case MinLoad.HalfOfMaxLoad(None) => 
+                    case MinLoad.HalfOfMaxLoad(None)      =>
                         formulas.m_B_min_calc(m_B).some
-                    case MinLoad.FromTypeTest(min) =>
+                    case MinLoad.FromTypeTest(min)        =>
                         // If tested fireboxs are used, the minimum load at reduced heat output shall be the minimum
                         // fuel mass according to the type test.
                         (min: m_B_min).some
@@ -605,7 +660,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             case Some(aorb) =>
                 formulas.L_Z_min_calc(aorb, m_B).validNel
             case None       =>
-                // interpolation failed                
+                // interpolation failed
                 EN15544_ErrorMessage(
                     "interpolation failed: could not retrieve 'a' or 'b' factor in 'Table 1'",
                     FireboxPipeT
@@ -815,13 +870,13 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     private def heatingAppliance_draft_max: VNelMcalcErr[Pressure] =
         given Params_13384 = Params_15544.DraftMin_LoadNominal
-        val ap = atDraftMin_LoadNominal
+        val ap             = atDraftMin_LoadNominal
         (
             ap.Σ_p_R_and_Σ_p_u,
             ap.outputs.pipesResult_15544.map(_.Σ_ph_until_fluepipe_end: Pressure),
-            airIntake_PipeResult.andThen(_.en13384_pr_all), // FIXME: fast bug fix, rewrite me
-            ap.connector_PipeResult.andThen(_.en13384_pr_all),
-            ap.chimney_PipeResult.andThen  (_.en13384_pr_all)
+            airIntake_PipeResult.andThen    (_.en13384_pr_all                   ), // FIXME: fast bug fix, rewrite me
+            ap.connector_PipeResult.andThen (_.en13384_pr_all                   ),
+            ap.chimney_PipeResult.andThen   (_.en13384_pr_all                   )
         )
             .mapN:
                 (
@@ -906,7 +961,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     final def combustionAir_PipeResult_whenEmpty: WithParams_15544[VNelMcalcErr[PipeResult]] =
         PipeResult
-            .useless(
+            .useless      (
                 pt       = CombustionAirPipeT,
                 pu       = 0.0.pascals,
                 gas_temp = t_combustion_air
@@ -1024,20 +1079,20 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     final def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit] =
         val ap = atDraftMin_LoadNominal
         List(
-            validateFluePipeShape                    (),
-            ap.validateVelocitiesInPipes             (),
-            ap.validatePressureRequirements_EN15544  (),
+            validateFluePipeShape                            (),
+            ap.validateVelocitiesInPipes                     (),
+            ap.validatePressureRequirements_EN15544          (),
             ap.validateChimneyWallTempIsAboveCondensationTemp(),
-            
+
             // validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
-            
+
             // According to french officials, Ecodesign is not applicable to one-off stoves
             // So this EN 16510 constraint does not need to pass. Even if it does in practice.
-            // ap.validateSeasonalEfficiency(countryCode), 
-            
-            ap.validateCitedConstraints              (),
+            // ap.validateSeasonalEfficiency(countryCode),
+
+            ap.validateCitedConstraints          (),
             // Firebox
-            ap.validateFireboxSpecificConstraints    ()
+            ap.validateFireboxSpecificConstraints()
             // TODO: any missing validation ?
             // - extra conditions for EN 13384 ?
         ).sequence[VNel, Unit].map(_ => ())

@@ -25,7 +25,8 @@ import coulomb.policy.standard.given
 
 import io.taig.babel.Locale
 
-/** EN 15544 constraints for [[TraditionalFirebox]] fireboxes.
+/**
+ * EN 15544 constraints for [[TraditionalFirebox]] fireboxes.
  *
  * Extends the default constraint set, overriding only m_B bounds (min=10kg,
  * max=40kg) and specific constraint validation (injector air velocity check).
@@ -56,7 +57,7 @@ given traditionalConstraints: FireboxConstraints[TraditionalFirebox] =
                         flow_rate / firebox.h67_sectionCumuleeEntreeAirPorte
                     val injector_velocity_rate_min = 2.m_per_s
                     val injector_velocity_rate_max = 4.m_per_s
-                    if (injection_velocity_rate < injector_velocity_rate_min)
+                    if      (injection_velocity_rate < injector_velocity_rate_min)
                         InjectorVelocityBelowMinimum(
                             injection_velocity_rate.showP,
                             injector_velocity_rate_min.showP

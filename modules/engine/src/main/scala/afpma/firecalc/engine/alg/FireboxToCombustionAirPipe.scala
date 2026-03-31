@@ -12,6 +12,6 @@ import cats.data.ValidatedNel
 trait FireboxToCombustionAirPipe[FB <: Firebox_15544]:
 
     type CombustionAirPipe_FullDescr
-    
+
     extension (firebox: FB)
         def toCombustionAirPipe_FullDescr: ValidatedNel[IncrementalValidation_Error, CombustionAirPipe_FullDescr]

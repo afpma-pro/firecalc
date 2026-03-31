@@ -92,13 +92,13 @@ abstract class EN15544_MCE_Application(
     lazy val en13384_η_WN: VNelMcalcErr[Percentage] =
         Validated.validNel:
             inputs.design.firebox match
-                case tstd: SingleTested         => tstd.efficiency_nominal
+                case tstd: SingleTested  => tstd.efficiency_nominal
                 case _   : Firebox_15544 => en13384_η_W_calc(inputs.fluegas_co2_dry_nominal)
 
     lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] =
         (
             inputs.design.firebox match
-                case tstd: SingleTested         => tstd.efficiency_reduced
+                case tstd: SingleTested  => tstd.efficiency_reduced
                 case _   : Firebox_15544 => inputs.fluegas_co2_dry_lowest.map(en13384_η_W_calc)
         ).map(Validated.validNel)
 
@@ -107,12 +107,12 @@ abstract class EN15544_MCE_Application(
 
     lazy val en13384_fluegas_σ_CO2_dry_nominal: Percentage =
         inputs.design.firebox match
-            case tt: SingleTested         => tt.co2_dry_nominal
+            case tt: SingleTested  => tt.co2_dry_nominal
             case _ : Firebox_15544 => fluegas_σ_CO2_dry_nominal
 
     lazy val en13384_fluegas_σ_CO2_dry_lowest: Option[Percentage] =
         inputs.design.firebox match
-            case tt: SingleTested         => tt.co2_dry_lowest
+            case tt: SingleTested  => tt.co2_dry_lowest
             case _ : Firebox_15544 => fluegas_σ_CO2_dry_lowest
 
     lazy val en13384_fluegas_σ_H2O_nominal: Option[Percentage] = inputs.fluegas_h2o_perc_vol_nominal
@@ -320,7 +320,7 @@ abstract class EN15544_MCE_Application(
     class MCEAtParams(p: Params_15544) extends CommonAtParams(p):
 
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult] =
-            CombustionAirPipe_Module_13384.foldPipeCanBe(inputs.pipes.combustionAir)(
+            CombustionAirPipe_Module_13384.foldPipeCanBe(inputs.pipes.combustionAir)  (
                 onWithout   = combustionAir_PipeResult_whenEmpty(using p),
                 onFullDescr = fd => combustionAir_PipeResult_whenExists(fd)(using p)
             )
@@ -334,7 +334,7 @@ abstract class EN15544_MCE_Application(
                     .mapN_andThen: (ha_pow, ha_eff) =>
                         given Params_13384 = p: Params_13384
                         ops_en13384.ThermalMecaFlu_13384
-                            .makePipeResult(
+                            .makePipeResult                (
                                 fd                 = FireboxPipe_Module_13384.unwrap(inputs.pipes.firebox),
                                 hafg               = en13384_heatingAppliance_fluegas,
                                 hamf               = en13384_heatingAppliance_massFlows,
@@ -362,7 +362,7 @@ abstract class EN15544_MCE_Application(
                     .mapN_andThen: (ha_pow, ha_eff) =>
                         given Params_13384 = p: Params_13384
                         ops_en13384.ThermalMecaFlu_13384
-                            .makePipeResult(
+                            .makePipeResult                (
                                 fd                 = FluePipe_Module_13384.unwrap(inputs.pipes.flue),
                                 hafg               = en13384_heatingAppliance_fluegas,
                                 hamf               = en13384_heatingAppliance_massFlows,
@@ -382,7 +382,7 @@ abstract class EN15544_MCE_Application(
                             .toValidatedNel
 
         lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString =
-            PipesResult_15544_VNelString(
+            PipesResult_15544_VNelString    (
                 airIntake     = airIntake_PipeResult(using p),
                 combustionAir = combustionAir_PipeResult,
                 firebox       = firebox_PipeResult,
@@ -403,8 +403,8 @@ abstract class EN15544_MCE_Application(
 
     // ─── Pre-built AtParams instances ───────────────────────────────────
 
-    lazy val atDraftMin_LoadNominal: AtParams = new MCEAtParams(Params_15544.DraftMin_LoadNominal)
-    lazy val atDraftMin_LoadMin: Option[AtParams] = m_B_min.map(_ => new MCEAtParams(Params_15544.DraftMin_LoadMin))
-    lazy val atDraftMax_LoadNominal: AtParams = new MCEAtParams(Params_15544.DraftMax_LoadNominal)
-    lazy val atDraftMax_LoadMin: Option[AtParams] = m_B_min.map(_ => new MCEAtParams(Params_15544.DraftMax_LoadMin))
+    lazy val atDraftMin_LoadNominal: AtParams         = new MCEAtParams(Params_15544.DraftMin_LoadNominal)
+    lazy val atDraftMin_LoadMin    : Option[AtParams] = m_B_min.map(_ => new MCEAtParams(Params_15544.DraftMin_LoadMin))
+    lazy val atDraftMax_LoadNominal: AtParams         = new MCEAtParams(Params_15544.DraftMax_LoadNominal)
+    lazy val atDraftMax_LoadMin    : Option[AtParams] = m_B_min.map(_ => new MCEAtParams(Params_15544.DraftMax_LoadMin))
 }

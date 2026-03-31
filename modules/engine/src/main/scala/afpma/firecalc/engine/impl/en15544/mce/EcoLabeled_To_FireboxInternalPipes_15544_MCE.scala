@@ -23,28 +23,31 @@ import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
 given FireboxToCombustionAirPipe_15544_MCE[Ecolabeled] = Ecolabeled_To_FireboxInternalPipes_15544_MCE
-given FireboxToFireboxPipe_15544_MCE[Ecolabeled]      = Ecolabeled_To_FireboxInternalPipes_15544_MCE
+given FireboxToFireboxPipe_15544_MCE[Ecolabeled]       = Ecolabeled_To_FireboxInternalPipes_15544_MCE
 
 object Ecolabeled_To_FireboxInternalPipes_15544_MCE
     extends FireboxToInternalPipes_15544_MCE[Ecolabeled]
     with HasFireboxDimensionsToFireboxPipe_15544_MCE[Ecolabeled]:
 
     extension (firebox: Ecolabeled)
-        override def toCombustionAirPipe_FullDescr = 
+        override def toCombustionAirPipe_FullDescr =
             import CombustionAirPipe_Module_13384.*
             import firebox.*
 
             val TOFIX_ARBITRARY_LENGTH = 15.cm
 
             val start_00_common = Seq(
-                setInitialDirection (azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // Front (arbitrary)
-                roughness           (3.mm                               ),
-                pipeLocation        (PipeLocation.HeatedArea            ), // added for EN13384
+                setInitialDirection    (
+                    azimuth     = AzimuthDirection.Front,
+                    inclination = InclinationDirection.Horizontal
+                ), // Front (arbitrary)
+                roughness              (3.mm                   ),
+                pipeLocation           (PipeLocation.HeatedArea) // added for EN13384
             )
 
-            val CHAMBRE_DETENTE_INNER_SHAPE = 
+            val CHAMBRE_DETENTE_INNER_SHAPE =
                 innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = h11_profondeurDuFoyer - 6.cm))
-            
+
             val DEFAULT_LAYER = layer(e = 1.cm, λ = 1.3.W_per_mK) // added for EN13384
 
             val start_01_version_1 = Seq(
@@ -52,48 +55,69 @@ object Ecolabeled_To_FireboxInternalPipes_15544_MCE
                 CHAMBRE_DETENTE_INNER_SHAPE,
                 DEFAULT_LAYER,
                 addSectionHorizontal("-", 0.cm), // so that a turn is allowed by the engine
-                
+
                 // other possible approximation :
                 // - air intake -> center of chambre de détente
                 // innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = TOFIX_ARBITRARY_LENGTH * 2.0)), // switch width to depth if Right or Left
                 // addSectionHorizontal("-", (h11_profondeurDuFoyer - 6.cm) / 2.0)
 
-                addSharpAngle_90deg("angle vif 90°", AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)), // Up
+                addSharpAngle_90deg(
+                    "angle vif 90°",
+                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)
+                ), // Up
 
                 // center of chambre de détente | down limit of chambre de détente -> floor / red-line
                 CHAMBRE_DETENTE_INNER_SHAPE,
-                addSectionVertical("chambre de détente (-> Haut)", TOFIX_ARBITRARY_LENGTH), // TOFIX (source: CalculPdM v0.2.34)
+                addSectionVertical (
+                    "chambre de détente (-> Haut)",
+                    TOFIX_ARBITRARY_LENGTH
+                ) // TOFIX (source: CalculPdM v0.2.34)
             )
 
-            val air_intake_equivalent_shape = 
+            val air_intake_equivalent_shape =
                 circle(
-                    arriveeAirGeometryOpt.map(_.perimeterWetted)
-                    .getOrElse(throw new IllegalStateException("dev error: input air geometry should be defined for V2 eco-labeled fireboxs"))
+                    arriveeAirGeometryOpt
+                        .map(_.perimeterWetted)
+                        .getOrElse(
+                            throw new IllegalStateException(
+                                "dev error: input air geometry should be defined for V2 eco-labeled fireboxs"
+                            )
+                        )
                 )
 
             val start_01_version_2 = Seq(
                 innerShape(air_intake_equivalent_shape),
-                DEFAULT_LAYER,
+                DEFAULT_LAYER
             )
 
             val end_common = Seq(
                 // Up + length = W/2
-                addSectionVertical("vers centre chambre de détente", h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0),
+                addSectionVertical  (
+                    "vers centre chambre de détente",
+                    h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0
+                ),
 
                 // Turn 90°
-                addSharpAngle_90deg("angle vif 90°", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+                addSharpAngle_90deg (
+                    "angle vif 90°",
+                    AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+                ), // Left
 
-                innerShape(rectangle(
-                    a = c24_largeurDesColonnesAirLaterales * 2.0 + c25_largeurDesColonnesAirArrieres,
-                    b = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W
-                )),
+                innerShape(
+                    rectangle(
+                        a = c24_largeurDesColonnesAirLaterales * 2.0 + c25_largeurDesColonnesAirArrieres,
+                        b = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W
+                    )
+                ),
                 addSectionHorizontal(
                     "vers colonnes d'air",
                     (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + h77_epaisseurParoiInterneFoyer_D1 + h78_largeurEspaceInterparoisDuFoyer_S / 2.0
                 ),
+                addSharpAngle_90deg (
+                    "virage au pied des colonnes d'air",
+                    AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
+                ), // Up
 
-                addSharpAngle_90deg ("virage au pied des colonnes d'air", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)), // Up
-                
                 innerShape(
                     rectangle(
                         a = 2 * c24_largeurDesColonnesAirLaterales + c25_largeurDesColonnesAirArrieres,
@@ -104,9 +128,11 @@ object Ecolabeled_To_FireboxInternalPipes_15544_MCE
                     "remontée dans les colonnes d'air",
                     h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0 + h76_epaisseurSole + c18_hauteurEntreLesInjecteurs_Y * 2.0
                 ),
+                addSharpAngle_90deg (
+                    "virage 90° avant injecteur",
+                    AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                ), // Right
 
-                addSharpAngle_90deg ("virage 90° avant injecteur", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
-                
                 innerShape(
                     rectangle(
                         a = c19_largeurDesInjecteursLateraux * 4.0 * 2.0

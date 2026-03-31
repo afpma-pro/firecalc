@@ -13,19 +13,19 @@ import cats.syntax.validated.catsSyntaxValidatedId
 
 // Generic Firebox_15544
 
-given FireboxToCombustionAirPipe_15544_Strict[Firebox_15544] = 
+given FireboxToCombustionAirPipe_15544_Strict[Firebox_15544] =
     GenericFirebox15544ToCombustionAirPipe_15544_Strict.makeFor[Firebox_15544]
 
 // SingleTested
 
-given FireboxToCombustionAirPipe_15544_Strict[SingleTested] = 
+given FireboxToCombustionAirPipe_15544_Strict[SingleTested] =
     GenericFirebox15544ToCombustionAirPipe_15544_Strict.makeFor[SingleTested]
 
 trait GenericFirebox15544ToCombustionAirPipe_15544_Strict[FB <: Firebox_15544]
     extends FireboxToCombustionAirPipe_15544_Strict[FB] {
 
     extension (firebox: FB)
-        override def toCombustionAirPipe_FullDescr = 
+        override def toCombustionAirPipe_FullDescr =
             CombustionAirPipe_Module_15544.without.validNel
 }
 

@@ -36,15 +36,16 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
     //   idx 4: AddSharpeAngle       (add element → PipeIdx 1)
     //   idx 5: AddSectionVertical   (add element → PipeIdx 2)
     private val simpleDescr: Seq[FlowOnlyPipeDescr_15544] = Seq(
-        SetFlowOnlyPipeProp_15544.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-        SetFlowOnlyPipeProp_15544.SetRoughness(3.0.mm),
+        SetFlowOnlyPipeProp_15544.SetInitialDirection       (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+        SetFlowOnlyPipeProp_15544.SetRoughness              (3.0.mm                                                ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 12.2.cm)),
-        AddFlowOnlyPipeElement_15544.AddSectionHorizontal("section1", 50.cm),
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal   ("section1", 50.cm                                     ),
         AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
-            "angle1", 90.0.degrees,
+            "angle1",
+            90.0.degrees,
             absDir = Some(AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up))
         ),
-        AddFlowOnlyPipeElement_15544.AddSectionVertical("section2", 100.cm),
+        AddFlowOnlyPipeElement_15544.AddSectionVertical     ("section2", 100.cm                                    )
     )
 
     private lazy val simpleResult = FluePipe_Module_15544.mkPipeFromIncrDescr(simpleDescr)
@@ -54,9 +55,9 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
         val reverseMap = idsMapping.reverseToIntMap
 
         reverseMap.size shouldBe 3
-        reverseMap(0) shouldBe 3  // AddSectionHorizontal
-        reverseMap(1) shouldBe 4  // AddSharpeAngle
-        reverseMap(2) shouldBe 5  // AddSectionVertical
+        reverseMap(0) shouldBe 3 // AddSectionHorizontal
+        reverseMap(1) shouldBe 4 // AddSharpeAngle
+        reverseMap(2) shouldBe 5 // AddSectionVertical
     }
 
     "simple descriptor fullDescr" should "have same element count as IdsMapping" in {
@@ -84,16 +85,17 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
     //   PipeIdx 2: SectionGeometryChange (AUTO-INSERTED — no IdsMapping entry!)
     //   PipeIdx 3: StraightSection (from AddSectionVertical at idx 6)
     private val geomChangeDescr: Seq[FlowOnlyPipeDescr_15544] = Seq(
-        SetFlowOnlyPipeProp_15544.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-        SetFlowOnlyPipeProp_15544.SetRoughness(3.0.mm),
+        SetFlowOnlyPipeProp_15544.SetInitialDirection       (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+        SetFlowOnlyPipeProp_15544.SetRoughness              (3.0.mm                                                ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 12.2.cm)),
-        AddFlowOnlyPipeElement_15544.AddSectionHorizontal("section1", 50.cm),
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal   ("section1", 50.cm                                     ),
         AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
-            "angle1", 90.0.degrees,
+            "angle1",
+            90.0.degrees,
             absDir = Some(AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up))
         ),
-        SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Circle(15.0.cm)),  // geometry change!
-        AddFlowOnlyPipeElement_15544.AddSectionVertical("section2", 100.cm),
+        SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Circle(15.0.cm)            ), // geometry change!
+        AddFlowOnlyPipeElement_15544.AddSectionVertical     ("section2", 100.cm                                    )
     )
 
     private lazy val geomChangeResult = FluePipe_Module_15544.mkPipeFromIncrDescr(geomChangeDescr)
@@ -120,9 +122,9 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
         reverseMap.contains(2) shouldBe false
 
         // User-defined elements:
-        reverseMap(0) shouldBe 3  // AddSectionHorizontal at descriptor idx 3
-        reverseMap(1) shouldBe 4  // AddSharpeAngle at descriptor idx 4
-        reverseMap(3) shouldBe 6  // AddSectionVertical at descriptor idx 6 (PipeIdx 3, NOT 2!)
+        reverseMap(0) shouldBe 3 // AddSectionHorizontal at descriptor idx 3
+        reverseMap(1) shouldBe 4 // AddSharpeAngle at descriptor idx 4
+        reverseMap(3) shouldBe 6 // AddSectionVertical at descriptor idx 6 (PipeIdx 3, NOT 2!)
 
         // Verify PipeIdx values in fullDescr
         fullDescr.elems.map(_.idx.unwrap) shouldBe Vector(0, 1, 2, 3)

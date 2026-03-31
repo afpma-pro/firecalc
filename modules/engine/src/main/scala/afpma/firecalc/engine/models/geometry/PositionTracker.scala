@@ -23,10 +23,11 @@ object PositionTracker:
     private def toVec3(x: Length, y: Length, z: Length): Vec3 =
         Vec3(x.toUnit[Meter].value, y.toUnit[Meter].value, z.toUnit[Meter].value)
 
-    /** Scan a descriptor sequence for SetInitialPosition / SetFinalPosition.
-      * The last positional instruction (by index) wins; the two are mutually exclusive.
-      * Returns the effective (startPoint, finalPoint) to use.
-      */
+    /**
+     * Scan a descriptor sequence for SetInitialPosition / SetFinalPosition.
+     * The last positional instruction (by index) wins; the two are mutually exclusive.
+     * Returns the effective (startPoint, finalPoint) to use.
+     */
     private def resolvePositionOverrides[A](
         elems     : Seq[A],
         startPoint: Vec3,
@@ -37,8 +38,8 @@ object PositionTracker:
         val positionOverride: Option[PositionOverride] =
             elems.zipWithIndex.collect(extract).maxByOption(_._2).map(_._1)
         positionOverride match
-            case Some(InitialOverride(pos)) => (pos, None)
-            case Some(FinalOverride(pos))   => (startPoint, Some(pos))
+            case Some(InitialOverride(pos)) => (pos, None             )
+            case Some(FinalOverride(pos))   => (startPoint, Some(pos) )
             case None                       => (startPoint, finalPoint)
 
     /** Apply the final-position translate post-processing if needed. */
@@ -47,7 +48,7 @@ object PositionTracker:
             case Some(target) =>
                 val offset = target - result.finalPoint
                 result.translate(offset)
-            case None => result
+            case None         => result
 
     def computeFlowOnly13384(
         elems        : Seq[FlowOnlyPipeDescr_13384],
@@ -60,21 +61,26 @@ object PositionTracker:
 
         val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
             case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
-            case (SetFinalPosition(x, y, z), idx)   => (FinalOverride(toVec3(x, y, z)), idx)
+            case (SetFinalPosition(x, y, z), idx  ) => (FinalOverride(toVec3(x, y, z)), idx  )
         }
 
-        var frame             : Option[PipeFrame] = externalFrame
-        var currentPosition   : Vec3              = effectiveStart
-        var currentInnerShape : Option[PipeShape] = None
+        var frame            : Option[PipeFrame] = externalFrame
+        var currentPosition  : Vec3              = effectiveStart
+        var currentInnerShape: Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
         for (elem, idx) <- elems.zipWithIndex do
             elem match
-                case SetInitialDirection(az, incl) =>
-                    frame = Some(PipeFrame.initial(
-                        Vec3.fromAzimuthElevation(AzimuthDirection.toDegrees(az), InclinationDirection.toDegrees(incl))
-                    ))
-                case SetInnerShape(shape) =>
+                case SetInitialDirection(az, incl)                                  =>
+                    frame = Some(
+                        PipeFrame.initial(
+                            Vec3.fromAzimuthElevation(
+                                AzimuthDirection.toDegrees    (az  ),
+                                InclinationDirection.toDegrees(incl)
+                            )
+                        )
+                    )
+                case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
                 case dc: AddDirectionChange =>
                     for
@@ -84,10 +90,10 @@ object PositionTracker:
                         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                case AddSectionVertical(_, elevGain) =>
-                    val eg   = elevGain.toUnit[Meter].value
-                    val dir  = if eg >= 0 then Vec3.Up else Vec3.Down
-                    val disp = Vec3(0, 0, eg)
+                case AddSectionVertical(_, elevGain)                                =>
+                    val eg    = elevGain.toUnit[Meter].value
+                    val dir   = if eg >= 0 then Vec3.Up else Vec3.Down
+                    val disp  = Vec3(0, 0, eg)
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
@@ -99,10 +105,10 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionHorizontal(_, horizLen) =>
-                    val hl   = horizLen.toUnit[Meter].value
-                    val dir  = horizontalDirection(frame)
-                    val disp = dir * hl
+                case AddSectionHorizontal(_, horizLen)                              =>
+                    val hl    = horizLen.toUnit[Meter].value
+                    val dir   = horizontalDirection(frame)
+                    val disp  = dir * hl
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
@@ -114,9 +120,9 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionSlopped(_, length) =>
-                    val l  = length.toUnit[Meter].value
-                    val eg = frame.map(f => l * f.direction.z).getOrElse(0.0)
+                case AddSectionSlopped(_, length)                                   =>
+                    val l     = length.toUnit[Meter].value
+                    val eg    = frame.map(f => l * f.direction.z).getOrElse(0.0)
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
                     val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
                     val dir   = disp.normalized
@@ -132,8 +138,8 @@ object PositionTracker:
                     )
                     currentPosition = endPt
                 case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                    val l   = length.toUnit[Meter].value
-                    val eg  = elevGain.toUnit[Meter].value
+                    val l     = length.toUnit[Meter].value
+                    val eg    = elevGain.toUnit[Meter].value
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
                     val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
                     val dir   = disp.normalized
@@ -148,7 +154,7 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _ => ()
+                case _                                                              => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
@@ -164,21 +170,26 @@ object PositionTracker:
 
         val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
             case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
-            case (SetFinalPosition(x, y, z), idx)   => (FinalOverride(toVec3(x, y, z)), idx)
+            case (SetFinalPosition(x, y, z), idx  ) => (FinalOverride(toVec3(x, y, z)), idx  )
         }
 
-        var frame             : Option[PipeFrame] = externalFrame
-        var currentPosition   : Vec3              = effectiveStart
-        var currentInnerShape : Option[PipeShape] = None
+        var frame            : Option[PipeFrame] = externalFrame
+        var currentPosition  : Vec3              = effectiveStart
+        var currentInnerShape: Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
         for (elem, idx) <- elems.zipWithIndex do
             elem match
-                case SetInitialDirection(az, incl) =>
-                    frame = Some(PipeFrame.initial(
-                        Vec3.fromAzimuthElevation(AzimuthDirection.toDegrees(az), InclinationDirection.toDegrees(incl))
-                    ))
-                case SetInnerShape(shape) =>
+                case SetInitialDirection(az, incl)                                  =>
+                    frame = Some(
+                        PipeFrame.initial(
+                            Vec3.fromAzimuthElevation(
+                                AzimuthDirection.toDegrees    (az  ),
+                                InclinationDirection.toDegrees(incl)
+                            )
+                        )
+                    )
+                case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
                 case dc: AddDirectionChange =>
                     for
@@ -188,10 +199,10 @@ object PositionTracker:
                         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                case AddSectionVertical(_, elevGain) =>
-                    val eg   = elevGain.toUnit[Meter].value
-                    val dir  = if eg >= 0 then Vec3.Up else Vec3.Down
-                    val disp = Vec3(0, 0, eg)
+                case AddSectionVertical(_, elevGain)                                =>
+                    val eg    = elevGain.toUnit[Meter].value
+                    val dir   = if eg >= 0 then Vec3.Up else Vec3.Down
+                    val disp  = Vec3(0, 0, eg)
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
@@ -203,10 +214,10 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionHorizontal(_, horizLen) =>
-                    val hl   = horizLen.toUnit[Meter].value
-                    val dir  = horizontalDirection(frame)
-                    val disp = dir * hl
+                case AddSectionHorizontal(_, horizLen)                              =>
+                    val hl    = horizLen.toUnit[Meter].value
+                    val dir   = horizontalDirection(frame)
+                    val disp  = dir * hl
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
@@ -218,9 +229,9 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionSlopped(_, length) =>
-                    val l  = length.toUnit[Meter].value
-                    val eg = frame.map(f => l * f.direction.z).getOrElse(0.0)
+                case AddSectionSlopped(_, length)                                   =>
+                    val l     = length.toUnit[Meter].value
+                    val eg    = frame.map(f => l * f.direction.z).getOrElse(0.0)
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
                     val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
                     val dir   = disp.normalized
@@ -236,8 +247,8 @@ object PositionTracker:
                     )
                     currentPosition = endPt
                 case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                    val l   = length.toUnit[Meter].value
-                    val eg  = elevGain.toUnit[Meter].value
+                    val l     = length.toUnit[Meter].value
+                    val eg    = elevGain.toUnit[Meter].value
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
                     val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
                     val dir   = disp.normalized
@@ -252,7 +263,7 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _ => ()
+                case _                                                              => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
@@ -268,27 +279,34 @@ object PositionTracker:
 
         val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
             case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
-            case (SetFinalPosition(x, y, z), idx)   => (FinalOverride(toVec3(x, y, z)), idx)
+            case (SetFinalPosition(x, y, z), idx  ) => (FinalOverride(toVec3(x, y, z)), idx  )
         }
 
-        var frame             : Option[PipeFrame] = externalFrame
-        var currentPosition   : Vec3              = effectiveStart
-        var currentInnerShape : Option[PipeShape] = None
+        var frame            : Option[PipeFrame] = externalFrame
+        var currentPosition  : Vec3              = effectiveStart
+        var currentInnerShape: Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
         for (elem, idx) <- elems.zipWithIndex do
             elem match
-                case SetInitialDirection(az, incl) =>
-                    frame = Some(PipeFrame.initial(
-                        Vec3.fromAzimuthElevation(AzimuthDirection.toDegrees(az), InclinationDirection.toDegrees(incl))
-                    ))
-                case SetInnerShape(shape) =>
+                case SetInitialDirection(az, incl)                                  =>
+                    frame = Some(
+                        PipeFrame.initial(
+                            Vec3.fromAzimuthElevation(
+                                AzimuthDirection.toDegrees    (az  ),
+                                InclinationDirection.toDegrees(incl)
+                            )
+                        )
+                    )
+                case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
-                case SetPropertiesInBatch(_, props, _) =>
-                    props.collectFirst { case SetInnerShape(shape) => shape }
+                case SetPropertiesInBatch(_, props, _)                              =>
+                    props
+                        .collectFirst { case SetInnerShape(shape) => shape }
                         .foreach(shape => currentInnerShape = Some(shape))
-                case LinedFlue(_, liner, _, _) =>
-                    liner.props.collectFirst { case SetInnerShape(shape) => shape }
+                case LinedFlue(_, liner, _, _)                                      =>
+                    liner.props
+                        .collectFirst { case SetInnerShape(shape) => shape }
                         .foreach(shape => currentInnerShape = Some(shape))
                 case dc: AddDirectionChange =>
                     for
@@ -298,10 +316,10 @@ object PositionTracker:
                         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                case AddSectionVertical(_, elevGain) =>
-                    val eg   = elevGain.toUnit[Meter].value
-                    val dir  = if eg >= 0 then Vec3.Up else Vec3.Down
-                    val disp = Vec3(0, 0, eg)
+                case AddSectionVertical(_, elevGain)                                =>
+                    val eg    = elevGain.toUnit[Meter].value
+                    val dir   = if eg >= 0 then Vec3.Up else Vec3.Down
+                    val disp  = Vec3(0, 0, eg)
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
@@ -313,10 +331,10 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionHorizontal(_, horizLen) =>
-                    val hl   = horizLen.toUnit[Meter].value
-                    val dir  = horizontalDirection(frame)
-                    val disp = dir * hl
+                case AddSectionHorizontal(_, horizLen)                              =>
+                    val hl    = horizLen.toUnit[Meter].value
+                    val dir   = horizontalDirection(frame)
+                    val disp  = dir * hl
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
@@ -328,9 +346,9 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case AddSectionSlopped(_, length) =>
-                    val l  = length.toUnit[Meter].value
-                    val eg = frame.map(f => l * f.direction.z).getOrElse(0.0)
+                case AddSectionSlopped(_, length)                                   =>
+                    val l     = length.toUnit[Meter].value
+                    val eg    = frame.map(f => l * f.direction.z).getOrElse(0.0)
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
                     val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
                     val dir   = disp.normalized
@@ -346,8 +364,8 @@ object PositionTracker:
                     )
                     currentPosition = endPt
                 case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                    val l   = length.toUnit[Meter].value
-                    val eg  = elevGain.toUnit[Meter].value
+                    val l     = length.toUnit[Meter].value
+                    val eg    = elevGain.toUnit[Meter].value
                     val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
                     val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
                     val dir   = disp.normalized
@@ -362,7 +380,7 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _ => ()
+                case _                                                              => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
@@ -374,4 +392,4 @@ object PositionTracker:
                 val horiz = Vec3(d.x, d.y, 0.0)
                 if horiz.norm < 1e-9 then Vec3.Rear
                 else horiz.normalized
-            case None => Vec3.Rear
+            case None    => Vec3.Rear

@@ -15,7 +15,7 @@ import cats.syntax.all.*
 import afpma.firecalc.engine.impl.en13384.EN13384_WithFlowOnlyAirIntake_Application
 import afpma.firecalc.engine.impl.en13384.HasTypeMembers_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.alg.en13384.*
-import afpma.firecalc.engine.models                       // scalafix:ok
+import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
@@ -322,7 +322,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
             case el: (DirectionChange | SectionGeometryChange | SingularFlowResistance) =>
                 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
                 el.dynamicFrictionCoeff match
-                    case Valid(zeta)  =>
+                    case Valid(zeta)         =>
                         val pu = MecaFluOps.whenGasType(gp.pipeEl.typ)(
                             ifCombustionAir = en13384.P_B_dynamicFriction(
                                 zeta,

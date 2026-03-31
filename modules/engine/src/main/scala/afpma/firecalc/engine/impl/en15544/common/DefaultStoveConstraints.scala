@@ -12,7 +12,8 @@ import afpma.firecalc.engine.alg.en15544.StoveConstraints
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
 
-/** Default EN 15544 stove constraint instance.
+/**
+ * Default EN 15544 stove constraint instance.
  *
  * Encodes the standard `t_n` bounds from EN 15544 Section 4.2.1:
  *   - minimum heating cycle: 8 hours
@@ -24,8 +25,8 @@ given defaultStoveConstraints: StoveConstraints with
         ctx: StoveConstraintContext
     ): Seq[Option[TermConstraint[t_n]]] =
         import StoragePeriod.given
-        Seq(
-            Some(TermConstraint.Min(8.hours)),
+        Seq (
+            Some(TermConstraint.Min(8.hours) ),
             Some(TermConstraint.Max(24.hours))
         )
 

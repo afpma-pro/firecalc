@@ -11,7 +11,7 @@ import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import cats.data.ValidatedNel
 
 trait FireboxToFireboxPipe[FB <: Firebox_15544]:
-    
+
     type FireboxPipe_FullDescr
 
     extension (firebox: FB)

@@ -14,11 +14,12 @@ import afpma.firecalc.engine.models.gtypedefs.z_geodetical_height
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, UpstreamState}
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
-/** EN 15544 factory for [[CanComputePipeResult]].
-  *
-  * Extracted from the [[CanComputePipeResult]] companion object so that the
-  * core `ops.generic` package does not depend on `ops.en15544`.
-  */
+/**
+ * EN 15544 factory for [[CanComputePipeResult]].
+ *
+ * Extracted from the [[CanComputePipeResult]] companion object so that the
+ * core `ops.generic` package does not depend on `ops.en15544`.
+ */
 extension (obj: CanComputePipeResult.type)
 
     /** EN 15544 flow-only pipe result. */
@@ -38,8 +39,11 @@ extension (obj: CanComputePipeResult.type)
             ): Either[MecaFlu_Error, PipeResult] =
                 // When upstream has a real temperature (not the firebox default t_W),
                 // use it as the reference for the exponential decay instead of t_burnout.
-                val tBurnout = en15544App.t_burnout
+                val tBurnout     = en15544App.t_burnout
                 val tempOverride =
                     if upstream.temp_start != tBurnout then Some(upstream.temp_start)
                     else None
-                FlowOnlyMecaFlu_15544.makePipeResult(fd, gas, params._2, z_geo, params._1, tempOverride)(using en15544App, ssa)
+                FlowOnlyMecaFlu_15544.makePipeResult(fd, gas, params._2, z_geo, params._1, tempOverride)(using
+                    en15544App,
+                    ssa
+                )

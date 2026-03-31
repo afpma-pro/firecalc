@@ -14,8 +14,7 @@ import afpma.firecalc.engine.impl.en15544.mce.FireboxToFireboxPipe_15544_MCE
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
 
-trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544]
-    extends FireboxToFireboxPipe_15544_MCE[FB]:
+trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544] extends FireboxToFireboxPipe_15544_MCE[FB]:
 
     /** Default direction for firebox pipe. Override to change the initial direction. */
     protected def fireboxInitialDirection: (AzimuthDirection, InclinationDirection) =
@@ -29,12 +28,12 @@ trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544]
             val (az, incl) = fireboxInitialDirection
             FireboxPipe_Module_13384.incremental
                 .define(
-                    setInitialDirection(az, incl),
-                    pipeLocation      (PipeLocation.HeatedArea   ), // added for EN13384
+                    setInitialDirection(az, incl                  ),
+                    pipeLocation       (PipeLocation.HeatedArea   ), // added for EN13384
                     innerShape(rectangle(width, depth)),
-                    roughness         (2.mm                      ), // TOFIX: 3mm or 2mm ???
-                    layer             (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
-                    addSectionVertical(
+                    roughness          (2.mm                      ), // TOFIX: 3mm or 2mm ???
+                    layer              (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
+                    addSectionVertical (
                         "ascension dans foyer",
                         // TOFIX: found in CalculPdM-v0.2.30
                         // - we consider the whole vertical length ? but different injection height...

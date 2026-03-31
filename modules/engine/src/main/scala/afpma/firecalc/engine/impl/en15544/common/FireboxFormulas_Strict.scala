@@ -18,18 +18,20 @@ import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
-/** Default EN 15544 formula implementations.
+/**
+ * Default EN 15544 formula implementations.
  *
  * The `firebox` parameter is intentionally ignored by most formulas: the
  * standard formulas depend only on the fuel mass and base dimensions.
  */
-given fireboxFormulas_Strict: FireboxFormulas[Firebox_15544] = 
+given fireboxFormulas_Strict: FireboxFormulas[Firebox_15544] =
     FireboxFormulas_Strict.make[Firebox_15544]
 
 object FireboxFormulas_Strict:
     def make[F <: Firebox_15544] = new FireboxFormulas_Strict[F] {}
 
-/** Base class for formula instances that override only specific methods.
+/**
+ * Base class for formula instances that override only specific methods.
  *
  * Delegates all methods to [[defaultFireboxFormulas]] by upcasting the
  * concrete firebox to [[Firebox_15544]].
@@ -60,7 +62,7 @@ trait FireboxFormulas_Strict[F <: Firebox_15544] extends FireboxFormulas[F]:
                         case Firebox_15544.Dimensions.Base.Squared(w, d) =>
                             firebox.dimensions.height * w
                     2 * (base_or_ceiling + left_or_right + front_or_back)
-                case AreaCalcMethod.Manual(v) => v
+                case AreaCalcMethod.Manual(v)   => v
 
         override def firebox_glass_surface_ratio_below_one_fifth: Boolean =
             (firebox.glass_area / firebox.area_O_BR) <= (1.0 / 5.0)

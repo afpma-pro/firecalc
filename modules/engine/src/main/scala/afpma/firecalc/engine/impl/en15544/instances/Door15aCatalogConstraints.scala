@@ -23,7 +23,8 @@ import cats.syntax.all.*
 
 import io.taig.babel.Locale
 
-/** EN 15544 constraints for [[Door15aFirebox_Catalog]] fireboxes.
+/**
+ * EN 15544 constraints for [[Door15aFirebox_Catalog]] fireboxes.
  *
  * Extends the default constraint set.
  */
@@ -32,11 +33,11 @@ given door15aCatalogConstraints: FireboxConstraints[Door15aFirebox_Catalog] =
 
         /** Door15aFirebox_Catalog: 5cm <= AF <= 12cm */
         override def height_of_lowest_opening_constraints(
-            firebox: Door15aFirebox_Catalog, 
-            ctx: ConstraintContext
-        ): Seq[Option[TermConstraint[height_of_lowest_opening]]] = 
+            firebox : Door15aFirebox_Catalog,
+            ctx     : ConstraintContext
+        ): Seq[Option[TermConstraint[height_of_lowest_opening]]] =
             Seq(
-                Some(TermConstraint.Min(5.cm)),
+                Some(TermConstraint.Min(5.cm) ),
                 Some(TermConstraint.Max(12.cm))
             )
 
@@ -75,15 +76,19 @@ given door15aCatalogConstraints: FireboxConstraints[Door15aFirebox_Catalog] =
             val actual   = firebox.actualAirIntakePipeShape
             val expected = firebox.expectedAirIntakePipeShapes
             if expected.contains(actual) then Nil
-            else List(AirIntakePipeShapeMismatch(
-                expected = expected.map(_.show).mkString(", "),
-                actual   = actual.show
-            ))
+            else
+                List(
+                    AirIntakePipeShapeMismatch(
+                        expected = expected.map(_.show).mkString(", "),
+                        actual   = actual.show
+                    )
+                )
 
         override def firebox_custom_constraints(
             firebox: Door15aFirebox_Catalog,
             ctx    : FireboxConstraintContext
         )(using Locale): List[FireboxError] =
-            val sbErrors       = s_B_constraints(firebox).checkAllAndCombine(firebox.sb).foldToErrDeep(InvalidFireboxConstraint.apply)
+            val sbErrors        =
+                s_B_constraints(firebox).checkAllAndCombine(firebox.sb).foldToErrDeep(InvalidFireboxConstraint.apply)
             val pipeShapeErrors = airIntakePipeShapeConstraint(firebox)
             sbErrors ::: pipeShapeErrors

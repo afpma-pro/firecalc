@@ -29,7 +29,6 @@ import io.taig.babel.Locale
 import afpma.firecalc.i18n.*
 import magnolia1.Transl
 
-
 sealed trait Ecolabeled extends CertifiedDesign:
 
     override val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double = 0.5
@@ -38,33 +37,33 @@ sealed trait Ecolabeled extends CertifiedDesign:
 
     override val emissions_values = EcoPlus_Combustion_Firebox
     override val min_load         = MinLoad.HalfOfMaxLoad.makeWithoutValue
-    
-    val pn_reduced                                      : HeatOutputReduced
-    val co2_dry_nominal                                 : σ_CO2 = 7.05.percent // TOFIX
-    val co2_dry_lowest                                  : Option[σ_CO2] = None
-    val arriveeAirGeometryOpt                           : Option[PipeShape]
-    val h11_profondeurDuFoyer                           : QtyD[Meter]
-    val h12_largeurDuFoyer                              : QtyD[Meter]
-    val h13_hauteurDuFoyer                              : QtyD[Meter]
-    val h70_largeurPorteDansMaconnerie                  : Length
-    val h71_largeurVitre                                : Length
-    val h72_hauteurVitre                                : Length
-    val h74_hauteur_de_cendrier_AF                      : Length
-    val h75_hauteurArriveeConduitAir_DessousSoleFoyer_W : Length
-    val h76_epaisseurSole                               : Length
-    val h77_epaisseurParoiInterneFoyer_D1               : Length
-    val epaisseurParoiExterneFoyer_D2                   : Length
-    val h78_largeurEspaceInterparoisDuFoyer_S           : Length
+
+    val pn_reduced: HeatOutputReduced
+    val co2_dry_nominal: σ_CO2         = 7.05.percent // TOFIX
+    val co2_dry_lowest : Option[σ_CO2] = None
+    val arriveeAirGeometryOpt                          : Option[PipeShape]
+    val h11_profondeurDuFoyer                          : QtyD[Meter]
+    val h12_largeurDuFoyer                             : QtyD[Meter]
+    val h13_hauteurDuFoyer                             : QtyD[Meter]
+    val h70_largeurPorteDansMaconnerie                 : Length
+    val h71_largeurVitre                               : Length
+    val h72_hauteurVitre                               : Length
+    val h74_hauteur_de_cendrier_AF                     : Length
+    val h75_hauteurArriveeConduitAir_DessousSoleFoyer_W: Length
+    val h76_epaisseurSole                              : Length
+    val h77_epaisseurParoiInterneFoyer_D1              : Length
+    val epaisseurParoiExterneFoyer_D2                  : Length
+    val h78_largeurEspaceInterparoisDuFoyer_S          : Length
     private val air_column_thickness_door_wall_St = h78_largeurEspaceInterparoisDuFoyer_S // TOCHECK
-    val h79_largeurRenfortMedianLateraux                : Length
-    val h80_largeurRenfortMedianArriere                 : Length
-    val r1                                              : Length
-    val r2                                              : Length
-    val r3                                              : Length
-    val h82_hauteurDesInjecteurs_Z                      : Length
+    val h79_largeurRenfortMedianLateraux: Length
+    val h80_largeurRenfortMedianArriere : Length
+    val r1                              : Length
+    val r2                              : Length
+    val r3                              : Length
+    val h82_hauteurDesInjecteurs_Z      : Length
     private val injector_height_door_wall_Zt: Length = h82_hauteurDesInjecteurs_Z // TOCHECK
-    val h83_hauteurEntreLaSoleEtLe1erInjecteur_X        : Length
-    val version: Ecolabeled.Version
+    val h83_hauteurEntreLaSoleEtLe1erInjecteur_X: Length
+    val version                                 : Ecolabeled.Version
 
     val outputs: Ecolabeled.Outputs = Ecolabeled.Outputs(
         distance_between_air_injectors_Y  = c18_hauteurEntreLesInjecteurs_Y,
@@ -72,7 +71,7 @@ sealed trait Ecolabeled extends CertifiedDesign:
         injector_width_side_wall_Ls       = c19_largeurDesInjecteursLateraux,
         injector_width_door_wall_Lt       = c21_largeurDesInjecteursSousPorte,
         injector_height_door_wall_Zt      = injector_height_door_wall_Zt,
-        air_column_thickness_door_wall_St = air_column_thickness_door_wall_St,
+        air_column_thickness_door_wall_St = air_column_thickness_door_wall_St
     )
 
     override val dimensions: Dimensions = Dimensions(
@@ -82,7 +81,7 @@ sealed trait Ecolabeled extends CertifiedDesign:
         ),
         height = h13_hauteurDuFoyer
     )
-    override val glass_area: GlassArea = h71_largeurVitre * h72_hauteurVitre
+    override val glass_area: GlassArea  = h71_largeurVitre * h72_hauteurVitre
 
     lazy val c2_largeurFoyer               = h12_largeurDuFoyer
     lazy val c3_profondeurFoyer            = h11_profondeurDuFoyer
@@ -94,7 +93,7 @@ sealed trait Ecolabeled extends CertifiedDesign:
     lazy val c12_largeurRenfortMedianLateraux    = h79_largeurRenfortMedianLateraux
     lazy val c13_largeurRenfortMedianArriere     = h80_largeurRenfortMedianArriere
 
-    lazy val c15_hauterDesInjecteurs       = h82_hauteurDesInjecteurs_Z
+    lazy val c15_hauterDesInjecteurs = h82_hauteurDesInjecteurs_Z
 
     lazy val c18_hauteurEntreLesInjecteurs_Y =
         // TODO: check Y formula
@@ -130,17 +129,17 @@ object Ecolabeled:
     @Transl(I(_.firebox.ecolabeled.computed_values))
     case class Outputs(
         @Transl(I(_.firebox.ecolabeled.distance_between_air_injectors_Y))
-        distance_between_air_injectors_Y  : Length,
+        distance_between_air_injectors_Y : Length,
         @Transl(I(_.firebox.ecolabeled.injector_width_rear_wall_Lr))
-        injector_width_rear_wall_Lr       : Length,
+        injector_width_rear_wall_Lr      : Length,
         @Transl(I(_.firebox.ecolabeled.injector_width_side_wall_Ls))
-        injector_width_side_wall_Ls       : Length,
+        injector_width_side_wall_Ls      : Length,
         @Transl(I(_.firebox.ecolabeled.injector_width_door_wall_Lt))
-        injector_width_door_wall_Lt       : Length,
+        injector_width_door_wall_Lt      : Length,
         @Transl(I(_.firebox.ecolabeled.injector_height_door_wall_Zt))
-        injector_height_door_wall_Zt      : Length,
+        injector_height_door_wall_Zt     : Length,
         @Transl(I(_.firebox.ecolabeled.air_column_thickness_door_wall_St))
-        air_column_thickness_door_wall_St : Length,
+        air_column_thickness_door_wall_St: Length
     )
 
     given showAsTable: Locale => ShowAsTable[Ecolabeled] =
@@ -159,7 +158,7 @@ object Ecolabeled:
             val list            =
                 (I18N.firebox.typ                              :: ""   :: I18N.firebox_names.ecolabeled_v1                            :: Nil) ::
                     (I.version                                 :: ""   :: version                                                     :: Nil) ::
-                    version_details                            ::  
+                    version_details                            ::
                     (I18N.firebox.firebox_width                :: "A"  :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
                     (I18N.firebox.firebox_depth                :: "B"  :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
                     (I18N.firebox.firebox_height               :: "H"  :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
@@ -186,7 +185,6 @@ object Ecolabeled:
                     (I.height_of_first_row_of_air_injectors_X  :: "X"  :: h83_hauteurEntreLaSoleEtLe1erInjecteur_X.to_cm.showP        :: Nil) ::
                     Nil
             list.filter(_.nonEmpty)
-
 
 object Ecolabeled_V1:
     def apply(
@@ -314,4 +312,3 @@ private sealed abstract class Ecolabeled_V1_or_V2_Impl(
     type Self = Ecolabeled
     def height_of_lowest_opening: Length = h74_hauteur_de_cendrier_AF
 }
-

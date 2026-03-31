@@ -61,21 +61,21 @@ sealed trait CombustionAirPipe_Module_Generic[Params0] extends IncrementalPipeDe
         onFullDescr: FullDescr => A
     ): A =
         pipe match
-            case Without       => onWithout
+            case Without => onWithout
             case fd: FullDescr => onFullDescr(fd)
 
     case object Without
     type Without = Without.type
     val without: PipeCanBe = Without
 
-sealed trait FireboxPipe_Module_Generic[Params0]       extends IncrementalPipeDefModule_Common[FireboxPipeT]      :
+sealed trait FireboxPipe_Module_Generic[Params0] extends IncrementalPipeDefModule_Common[FireboxPipeT]:
     final type G      = FlueGas
     final type Params = Params0
-sealed trait FluePipe_Module_Generic[Params0]          extends IncrementalPipeDefModule_Common[FluePipeT]         :
+sealed trait FluePipe_Module_Generic[Params0]    extends IncrementalPipeDefModule_Common[FluePipeT]   :
     final type G      = FlueGas
     final type Params = Params0
     type PipeCanBe    = FullDescr
-    val gas           = FlueGas
+    val gas = FlueGas
 
 // EN13384
 
@@ -177,9 +177,10 @@ object FluePipe_Module_15544
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
         mkPipeFromIncrDescrWithFinalFrame(incrSeq, externalInitialFrame = None)
 
-    /** Build the flue pipe with an optional external initial frame (from the previous slot's final frame).
-      * When the pipe itself has no SetInitialDirection, the external frame is used as the starting direction.
-      */
+    /**
+     * Build the flue pipe with an optional external initial frame (from the previous slot's final frame).
+     * When the pipe itself has no SetInitialDirection, the external frame is used as the starting direction.
+     */
     def mkPipeFromIncrDescrWithFinalFrame(
         incrSeq             : Seq[incremental.IncrDescr],
         externalInitialFrame: Option[PipeFrame]

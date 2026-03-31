@@ -83,7 +83,6 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         addElement: AddElement
     ): Boolean = addElement.isInstanceOf[AddDirectionChange]
 
-
     override type PT <: PipeType_EN13384
 
     override def define(iDescrs: IncrDescr*): PipeIncrDescr =
@@ -114,10 +113,10 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => false
                     .map(_.asInstanceOf[AddElement])
             nextAddSectionsOps.headOption.flatMap:
-                case _ @AddSectionSlopped(_, l) => l.some
+                case _ @AddSectionSlopped(_, l)                            => l.some
                 case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
-                case _ @AddSectionHorizontal(_, l) => l.some
-                case _ @AddSectionVertical(_, l)   => l.some
+                case _ @AddSectionHorizontal(_, l)                         => l.some
+                case _ @AddSectionVertical(_, l)                           => l.some
                 case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
 
     extension (piDescr: PipeIncrDescr) override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
@@ -145,15 +144,13 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     ): ValidatedResult[Unit] =
         val hasGeometry = incrDescrs.exists:
             case (_, _: AddElement) => true
-            case _                  => false
-        if hasGeometry && finalState.initialFrame.isEmpty then
-            GeometryWithoutInitialDirection(pt).invalidNel
+            case _ => false
+        if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
         else
             val hasFinalDir = incrDescrs.exists:
                 case (_, dc: AddDirectionChange) => dc.absDir.isDefined
-                case _                           => false
-            if hasFinalDir && finalState.initialFrame.isEmpty then
-                FinalDirWithoutInitialDirection(pt).invalidNel
+                case _ => false
+            if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
             else ().validNel
 
     override protected def mkFullElementsDescr(
@@ -167,7 +164,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         val st = summon[PropsState]
 
         val el = addElementOp match
-            case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal | _: AddSectionVertical) =>
+            case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal |
+                _: AddSectionVertical) =>
                 given ThermalStraightSectionCtx_13384 =
                     ThermalStraightSectionCtx_13384(
                         stateOps.getInnerShape(st),
@@ -225,11 +223,11 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
             case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _))                             => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _))                            => propsState.validNel
             case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
-            
-            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
+
+            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
+            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
             case Some(addDC: AddDirectionChange)     =>
                 // Update direction tracking if absDir is defined and we have a current frame
                 addDC.absDir match
@@ -240,12 +238,14 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                                 val deflDeg   = addDC.angle.toUnit[Degree].value
                                 val newFrame  = frame.applyBendForFinalDir(deflDeg, targetVec)
-                                propsState.copy(
-                                    dirBeforePreviousDC = Some(frame.direction),
-                                    currentFrame        = Some(newFrame)
-                                ).validNel
-                            case None => propsState.validNel
-                    case None => propsState.validNel
+                                propsState
+                                    .copy(
+                                        dirBeforePreviousDC = Some(frame.direction),
+                                        currentFrame        = Some(newFrame)
+                                    )
+                                    .validNel
+                            case None        => propsState.validNel
+                    case None     => propsState.validNel
             case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
             case Some(op: AddSectionChange)          =>
@@ -256,23 +256,25 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
 
-        def updateVNelState(vState: ValidatedNel[IncrementalValidation_Error, PropsState])(atom: SetProp): ValidatedNel[IncrementalValidation_Error, PropsState] =
+        def updateVNelState(vState: ValidatedNel[IncrementalValidation_Error, PropsState])(
+            atom: SetProp
+        ): ValidatedNel[IncrementalValidation_Error, PropsState] =
             atom match
-                case SetInnerShape(g)            =>
+                case SetInnerShape(g)                          =>
                     vState.map(_.modify(_.innerShape).setTo(g.some))
-                case SetOuterShape(g)            =>
+                case SetOuterShape(g)                          =>
                     vState.map(_.modify(_.outer_shape).setTo(g.some))
-                case SetThickness(t)             =>
+                case SetThickness(t)                           =>
                     vState andThen: v =>
                         v.innerShape match
                             case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
                             case Some(ig) =>
                                 v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
-                case SetRoughness(r)             =>
+                case SetRoughness(r)                           =>
                     vState.map(_.modify(_.roughness).setTo(r.some))
-                case SetMaterial(lm)             =>
+                case SetMaterial(lm)                           =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                case SetLayer(e, lambda)         =>
+                case SetLayer(e, lambda)                       =>
                     val vGeom = vState.andThen(_.getValidated(_.innerShape, LayerRequiresSectionGeometry(pt)))
                     vGeom.andThen: geom =>
                         vState.map(
@@ -281,7 +283,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape) // also update outer geometry using thickness of layer
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
-                case SetLayers(ldescrs)          =>
+                case SetLayers(ldescrs)                        =>
                     val vGeom = vState.andThen(_.getValidated(_.innerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
@@ -291,26 +293,28 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape) // also update outer geometry using thickness of layer
                                 .setTo(ldescrs.compute_outer_shape(geom).some)
                         )
-                case SetAirSpaceAfterLayers(asp) =>
+                case SetAirSpaceAfterLayers(asp)               =>
                     vState.map(_.modify(_.airSpace_afterLayers).setTo(asp.some))
-                case SetPipeLocation(loc)        =>
+                case SetPipeLocation(loc)                      =>
                     vState.map(_.modify(_.pipeLoc).setTo(loc.some))
-                case SetDuctType(duct)           =>
+                case SetDuctType(duct)                         =>
                     vState.map(_.modify(_.ductType).setTo(duct.some))
-                case SetNumberOfFlows(nf)        =>
+                case SetNumberOfFlows(nf)                      =>
                     vState.map(_.modify(_.nFlows).setTo(nf.some))
                 case SetInitialDirection(azimuth, inclination) =>
                     val dir   = Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees(azimuth),
+                        AzimuthDirection.toDegrees    (azimuth    ),
                         InclinationDirection.toDegrees(inclination)
                     )
                     val frame = PipeFrame.initial(dir)
-                    vState.map(_.copy(
-                        initialFrame = Some(frame),
-                        currentFrame = Some(frame)
-                    ))
+                    vState.map(
+                        _.copy(
+                            initialFrame = Some(frame),
+                            currentFrame = Some(frame)
+                        )
+                    )
                 case _: SetInitialPosition => vState
-                case _: SetFinalPosition   => vState
+                case _: SetFinalPosition => vState
                 case SetPropertiesInBatch(_, _, _) =>
                     throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
                 case _: LinedFlue =>
@@ -323,26 +327,30 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         props.foldLeft(vState)(updateVNelState(_)(_))
                     case lf: LinedFlue =>
                         expandLinedFlue(vState, lf, updateVNelState)
-                    case otherAtom =>
+                    case otherAtom                                  =>
                         updateVNelState(vState)(otherAtom)
             }
 
-    /** Expand a [[LinedFlue]] into equivalent atomic operations.
-      *
-      * A lined flue is a 3-part pipe: liner (tubage) + air space + casing (boisseau).
-      * This method applies the liner's non-layer props (material, inner shape, roughness),
-      * then builds a combined [[SetLayers]] from the liner layers, air space layer, and casing layers.
-      */
+    /**
+     * Expand a [[LinedFlue]] into equivalent atomic operations.
+     *
+     * A lined flue is a 3-part pipe: liner (tubage) + air space + casing (boisseau).
+     * This method applies the liner's non-layer props (material, inner shape, roughness),
+     * then builds a combined [[SetLayers]] from the liner layers, air space layer, and casing layers.
+     */
     private def expandLinedFlue(
-        vState       : ValidatedNel[IncrementalValidation_Error, PropsState],
-        lf           : LinedFlue,
-        updateVNelState: ValidatedNel[IncrementalValidation_Error, PropsState] => SetSingleProp => ValidatedNel[IncrementalValidation_Error, PropsState]
+        vState         : ValidatedNel[IncrementalValidation_Error, PropsState],
+        lf             : LinedFlue,
+        updateVNelState: ValidatedNel[IncrementalValidation_Error, PropsState] => SetSingleProp => ValidatedNel[
+            IncrementalValidation_Error,
+            PropsState
+        ]
     ): ValidatedNel[IncrementalValidation_Error, PropsState] =
         val LinedFlue(_, liner, airSpace, casing) = lf
 
         // Apply liner's non-layer props (material, inner shape, roughness, etc.)
         val nonLayerLinerProps = liner.props.filterNot(_.isInstanceOf[SetLayers]).filterNot(_.isInstanceOf[SetLayer])
-        val afterLinerProps = nonLayerLinerProps.foldLeft(vState)(updateVNelState(_)(_))
+        val afterLinerProps    = nonLayerLinerProps.foldLeft(vState)(updateVNelState(_)(_))
 
         // Extract layers from liner and casing
         val linerLayers  = liner.props.extractLayers
@@ -353,7 +361,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         val linerInnerShape  = liner.props.extractInnerShape
         (linerInnerShape, casingInnerShape) match
             case (Some(lis), Some(cis)) =>
-                val expandedLinerDh: Length = linerLayers.compute_outer_shape(lis).dh
+                val expandedLinerDh    : Length = linerLayers.compute_outer_shape(lis).dh
                 // Account for air space width (applies on both sides of liner)
                 val airSpaceWidthMeters: Length = airSpace match
                     case AirSpaceDetailed_V2.WithAirSpace_V2(width, _, _) => width * 2.0
@@ -365,20 +373,18 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
         // Build air space layer: use casing's inner shape if available, otherwise width-based
         val airSpaceLayer: List[AppendLayerDescr] = airSpace match
-            case AirSpaceDetailed_V2.WithoutAirSpace_V2 => Nil
+            case AirSpaceDetailed_V2.WithoutAirSpace_V2                    => Nil
             case AirSpaceDetailed_V2.WithAirSpace_V2(width, dir, openings) =>
                 casingInnerShape match
                     case Some(shape) =>
                         List(AppendLayerDescr.AirSpaceUsingOuterShape(shape, dir, openings))
-                    case None =>
+                    case None        =>
                         List(AppendLayerDescr.AirSpaceUsingThickness(width, dir, openings))
 
         // Combine all layers and apply
         val combinedLayers = linerLayers ++ airSpaceLayer ++ casingLayers
-        if combinedLayers.nonEmpty then
-            updateVNelState(afterLinerProps)(SetLayers(combinedLayers))
-        else
-            afterLinerProps
+        if combinedLayers.nonEmpty then updateVNelState(afterLinerProps)(SetLayers(combinedLayers))
+        else afterLinerProps
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
     object ElementFactory extends ElementFactoryModule

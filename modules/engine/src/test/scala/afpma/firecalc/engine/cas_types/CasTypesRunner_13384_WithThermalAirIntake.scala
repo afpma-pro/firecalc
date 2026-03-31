@@ -10,8 +10,7 @@ import afpma.firecalc.engine.standard.*
 
 import org.scalatest.freespec.AnyFreeSpec
 
-trait CasTypesRunner_13384_WithThermalAirIntake
-    extends CasTypesRunner_13384_Common:
+trait CasTypesRunner_13384_WithThermalAirIntake extends CasTypesRunner_13384_Common:
 
     override type ProjectDescr_Alg =
         v2024_10_Alg & v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg

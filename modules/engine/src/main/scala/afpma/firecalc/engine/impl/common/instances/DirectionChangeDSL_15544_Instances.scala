@@ -17,8 +17,8 @@ object DirectionChangeDSL_15544_Instances:
     // Instance for FlowOnlyPipeDescr_15544
     given flowOnly15544: DirectionChangeDSL_15544[FlowOnlyPipeDescr_15544] with
         def addSharpAngle_0_to_180deg(
-            name    : String,
-            angle   : QtyD[Degree],
+            name  : String,
+            angle : QtyD[Degree],
             absDir: AbsoluteDirection
         ) =
             AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(

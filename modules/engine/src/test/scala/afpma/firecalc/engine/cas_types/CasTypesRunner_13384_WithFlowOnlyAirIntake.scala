@@ -9,8 +9,7 @@ import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.standard.VNelMcalcErr
 
-trait CasTypesRunner_13384_WithFlowOnlyAirIntake
-    extends CasTypesRunner_13384_Common:
+trait CasTypesRunner_13384_WithFlowOnlyAirIntake extends CasTypesRunner_13384_Common:
 
     override type ProjectDescr_Alg =
         v2024_10_Alg & v0_2024_10.StoveProjectDescr_13384_WithFlowOnlyAirIntake_Alg

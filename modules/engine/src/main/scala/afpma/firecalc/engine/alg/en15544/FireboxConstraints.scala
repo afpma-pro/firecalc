@@ -17,26 +17,28 @@ import afpma.firecalc.engine.models.gtypedefs.λ
 
 import io.taig.babel.Locale
 
-/** Computed values made available to constraint generators.
+/**
+ * Computed values made available to constraint generators.
  *
  * Populated by the sizing algorithm before constraint evaluation.
  */
 case class ConstraintContext(
-    m_B    : m_B,
-    O_BR   : O_BR,
+    m_B                           : m_B,
+    O_BR                          : O_BR,
     FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double,
     FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double,
-    A_BR_min: Option[A_BR],
-    A_BR_max: Option[A_BR],
-    A_BR   : A_BR,
-    H_BR_min: Option[H_BR],
-    H_BR   : H_BR,
-    n_min  : n_min,
+    A_BR_min                      : Option[A_BR],
+    A_BR_max                      : Option[A_BR],
+    A_BR                          : A_BR,
+    H_BR_min                      : Option[H_BR],
+    H_BR                          : H_BR,
+    n_min                         : n_min,
     /** Last inner shape of the air intake pipe, if available. */
     airIntakePipeShape: Option[PipeShape] = None
 )
 
-/** Typeclass providing EN 15544 constraint sequences for each firebox term.
+/**
+ * Typeclass providing EN 15544 constraint sequences for each firebox term.
  *
  * Each method returns a `Seq[Option[TermConstraint[T]]]` that is evaluated
  * and dispatched by the application layer.
@@ -92,18 +94,19 @@ trait FireboxConstraints[-F <: Firebox_15544]:
     def firebox_custom_constraints(
         firebox: F,
         ctx    : FireboxConstraintContext
-    )(using Locale): List[FireboxError]
+    )                             (using Locale): List[FireboxError]
 
 end FireboxConstraints
 
 /** Runtime context passed to [[FireboxConstraints.firebox_custom_constraints]]. */
 case class FireboxConstraintContext(
-    mB              : m_B,
-    flow_rate       : Option[VolumeFlow],
+    mB                : m_B,
+    flow_rate         : Option[VolumeFlow],
     airIntakePipeShape: Option[PipeShape]
 )
 
-/** Mixin trait that removes all §4.3.1.x firebox sizing constraints.
+/**
+ * Mixin trait that removes all §4.3.1.x firebox sizing constraints.
  *
  * Mix this in **last** (rightmost position) so that its overrides take
  * precedence over any base implementation, e.g.:
@@ -118,8 +121,7 @@ case class FireboxConstraintContext(
  *   - 4.3.1.3 firebox base dimensions
  *   - 4.3.1.4 firebox height
  */
-trait RemovedFireboxSizingConstraints[-F <: Firebox_15544]
-    extends FireboxConstraints[F]:
+trait RemovedFireboxSizingConstraints[-F <: Firebox_15544] extends FireboxConstraints[F]:
 
     override def height_of_lowest_opening_constraints(
         firebox: F,
@@ -145,8 +147,8 @@ end RemovedFireboxSizingConstraints
 
 object FireboxConstraints:
 
-    def apply[F <: Firebox_15544](
-        using ev: FireboxConstraints[F]
+    def apply[F <: Firebox_15544](using
+        ev: FireboxConstraints[F]
     ): FireboxConstraints[F] = ev
 
 end FireboxConstraints

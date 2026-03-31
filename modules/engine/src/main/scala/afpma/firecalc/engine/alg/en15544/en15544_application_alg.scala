@@ -8,17 +8,13 @@ package afpma.firecalc.engine.alg.en15544
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.Country
-import afpma.firecalc.dto.common.DuctType
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.Standard
 import afpma.firecalc.engine.alg.en13384.*
-import afpma.firecalc.engine.alg.en13384.ComputeAt
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
-import afpma.firecalc.engine.models.en13384.typedefs.CombustionAirMeanTemperature
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
@@ -40,17 +36,18 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     lazy val inputs: Inputs_15544
 
-    /** The ordered post-firebox pipe descriptor slots from the DTO.
-      * Defaults to the classic 3-pipe vector (flue, connector, chimney) for backward
-      * compatibility.  Override with the actual `post_firebox_pipes` from FireCalcYAML V6
-      * to support arbitrary N-pipe topologies.
-      */
+    /**
+     * The ordered post-firebox pipe descriptor slots from the DTO.
+     * Defaults to the classic 3-pipe vector (flue, connector, chimney) for backward
+     * compatibility.  Override with the actual `post_firebox_pipes` from FireCalcYAML V6
+     * to support arbitrary N-pipe topologies.
+     */
     lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
         import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
         Seq(
-            FlueSlot(Seq.empty),
+            FlueSlot     (Seq.empty),
             ConnectorSlot(Seq.empty),
-            ChimneySlot(Seq.empty)
+            ChimneySlot  (Seq.empty)
         )
 
     export EN15544_V_2023_Application_Alg.{ErrorGen}
@@ -73,50 +70,14 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     def en13384_inputs_flueGasCondition: FlueGasCondition = FlueGasCondition.Dry_NonCondensing
 
-    abstract class EN13384_For_15544_Application(
-        override val formulas: EN13384_1_A1_2019_Formulas_Alg
-    ) extends EN13384_1_A1_2019_Common_Application(formulas) {
-        override type AirIntakePipe_Module_T = self.AirIntakePipe_Module_T
-        override val AirIntakePipe_Module = self.AirIntakePipe_Module
+    /**
+     * Abstract type for the EN13384 application used within EN15544.
+     * Bound to the EN13384 algebra so the algebra layer stays pure.
+     * Concrete implementations provide a subtype that extends the EN13384 impl.
+     */
+    type EN13384ForApp <: EN13384_1_A1_2019_Application_Alg
 
-        override type Pipes_13384 = self.Pipes_13384
-
-        override type Inputs_13384 = self.Inputs_13384
-
-        override lazy val inputs = en13384_inputs
-
-        override lazy val last_known_density_before_connector_pipe: WithParams_13384[Option[Density]] =
-            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
-            computeAt match
-                case ComputeAt.Mean   => pr.flatMap(_.last_density_mean).orElse(pr.flatMap(_.last_density_middle))
-                case ComputeAt.Middle => pr.flatMap(_.last_density_middle)
-
-        override lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] =
-            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
-            computeAt match
-                case ComputeAt.Mean   => pr.flatMap(_.last_velocity_mean).orElse(pr.flatMap(_.last_velocity_middle))
-                case ComputeAt.Middle => pr.flatMap(_.last_velocity_middle)
-
-        // 7.8.4
-        // Températures moyennes pour le calcul de pression
-
-        /** température moyenne de l'air de combustion sur la longueur du conduit d'air comburant, en K */
-        override def T_mB
-            : (DraftCondition) ?=> Validated[NonEmptyList[EN13384_Error], CombustionAirMeanTemperature.Type] =
-            // flow only pipes are necessarily considered non concentric
-            // otherwise we would have to compute thermal variations
-            val dt = DuctType.NonConcentricDuctsHighThermalResistance
-            val tl: afpma.firecalc.engine.models.en13384.typedefs.T_L = T_L
-            // val debug = s"T_L = $tl (ep = ${DraftCondition.summon})"
-            // scala.scalajs.js.Dynamic.global.console.log(debug)
-            // println(debug)
-            formulas.T_mB_calc(dt, tl).withSectionTyp(AirIntakePipeT)
-
-        /** Lookup the pre-built AtParams instance matching the given EN13384 params */
-        def atParamsFor(p: Params_13384): AtParams
-    }
-
-    lazy val en13384_application: EN13384_For_15544_Application
+    lazy val en13384_application: EN13384ForApp
 
     lazy val en13384_fluegas_σ_CO2_dry_nominal: Percentage
     lazy val en13384_fluegas_σ_CO2_dry_lowest : Option[Percentage]
@@ -266,9 +227,10 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     // ─── AtParams: params-dependent layer ───────────────────────────────
 
-    /** Inner trait grouping all declarations that depend on a fixed `Params_15544`.
-      * Implementations provide lazy vals so that results are computed once per params combo.
-      */
+    /**
+     * Inner trait grouping all declarations that depend on a fixed `Params_15544`.
+     * Implementations provide lazy vals so that results are computed once per params combo.
+     */
     trait AtParams:
         val params: Params_15544
 
@@ -279,9 +241,10 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val connector_PipeResult    : VNelMcalcErr[PipeResult]
         lazy val chimney_PipeResult      : VNelMcalcErr[PipeResult]
 
-        /** All post-firebox pipe results as a vector: [flue, connector, chimney].
-          * Convenience accessor for consumers that want to iterate over all post-firebox results.
-          */
+        /**
+         * All post-firebox pipe results as a vector: [flue, connector, chimney].
+         * Convenience accessor for consumers that want to iterate over all post-firebox results.
+         */
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]]
 
         // Derived temperatures (Section 4.8.4 – 4.8.5)
@@ -292,8 +255,8 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val t_chimney_wall_top   : VNelMcalcErr[t_chimney_wall_top]
 
         // Pressures (Section 4.9 – 4.10.1)
-        lazy val Σ_p_R_and_Σ_p_u          : VNelMcalcErr[Pressure]
-        lazy val Σ_p_h                    : VNelMcalcErr[Pressure]
+        lazy val Σ_p_R_and_Σ_p_u            : VNelMcalcErr[Pressure]
+        lazy val Σ_p_h                      : VNelMcalcErr[Pressure]
         lazy val pressureRequirement_EN15544: VNelMcalcErr[PressureRequirement]
 
         // Efficiency (Section 4.10.3)
@@ -315,16 +278,16 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val outputs: Outputs
 
         // Validations
-        def validateVelocitiesInFluePipe                  ()                    : VNelMcalcErr[Unit]
-        def validateVelocitiesInConnectorPipe             ()                    : VNelMcalcErr[Unit]
-        def validateVelocitiesInChimneyPipe               ()                    : VNelMcalcErr[Unit]
-        def validateVelocitiesInPipes                     ()                    : VNel[Unit]
-        def validatePressureRequirements_EN15544          ()                    : VNelMcalcErr[Unit]
-        def validateChimneyWallTempIsAboveCondensationTemp()                    : VNelMcalcErr[Unit]
-        def validateEfficiencyIsAboveMinEfficiency        ()                    : VNelMcalcErr[Unit]
+        def validateVelocitiesInFluePipe                  (                    ): VNelMcalcErr[Unit]
+        def validateVelocitiesInConnectorPipe             (                    ): VNelMcalcErr[Unit]
+        def validateVelocitiesInChimneyPipe               (                    ): VNelMcalcErr[Unit]
+        def validateVelocitiesInPipes                     (                    ): VNel[Unit]
+        def validatePressureRequirements_EN15544          (                    ): VNelMcalcErr[Unit]
+        def validateChimneyWallTempIsAboveCondensationTemp(                    ): VNelMcalcErr[Unit]
+        def validateEfficiencyIsAboveMinEfficiency        (                    ): VNelMcalcErr[Unit]
         def validateSeasonalEfficiency                    (countryCode: Country): VNelMcalcErr[Unit]
-        def validateCitedConstraints                      ()                    : VNelMcalcErr[Unit]
-        def validateFireboxSpecificConstraints            ()                    : ValidatedNel[FireboxError, Unit]
+        def validateCitedConstraints                      (                    ): VNelMcalcErr[Unit]
+        def validateFireboxSpecificConstraints            (                    ): ValidatedNel[FireboxError, Unit]
     end AtParams
 
     // ─── Pre-built AtParams instances ───────────────────────────────────
@@ -352,7 +315,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     val techSpecs: TechnicalSpecficiations
     def reference_temperatures: ReferenceTemperatures
 
-    def validateFluePipeShape                    (): VNel[Unit]
+    def validateFluePipeShape               (                    ): VNel[Unit]
     def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit]
 
     def efficiencies_values            : EfficienciesValues

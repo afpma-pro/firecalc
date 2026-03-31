@@ -23,10 +23,10 @@ object TSVTableString:
 
     def fromString(rawString: String, sep: String = "\t"): TSVTableString =
         val normalized = normalize(rawString)
-        val lines   = normalized.split("\n")
-        val header  = lines.head
-        val headers = header.split(sep)
-        val data    = lines.tail.toList
+        val lines      = normalized.split("\n")
+        val header     = lines.head
+        val headers    = header.split(sep)
+        val data       = lines.tail.toList
         data.map: d =>
             val values = d.trim.split(sep, -1)
             (headers zip values).filter((_, v) => v.trim.nonEmpty).toMap
@@ -35,17 +35,16 @@ extension (tt: TSVTableString)
 
     def toList: List[Map[String, String]] = tt
 
-    def extractHeaders: List[String] = 
+    def extractHeaders: List[String] =
         tt.toList.head.map(_._1).toList
 
-
     def extractColAs(
-        firstHeader : String,
+        firstHeader: String
     ): List[Double] =
         tt.extractCol(firstHeader).map(str2double)
-        
+
     def extractCol(
-        firstHeader : String,
+        firstHeader: String
     ): List[String] =
         tt.map(_.get(firstHeader)).flatten
 

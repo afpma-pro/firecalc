@@ -114,15 +114,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     ): ValidatedResult[Unit] =
         val hasGeometry = incrDescrs.exists:
             case (_, _: AddElement) => true
-            case _                  => false
-        if hasGeometry && finalState.initialFrame.isEmpty then
-            GeometryWithoutInitialDirection(pt).invalidNel
+            case _ => false
+        if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
         else
             val hasFinalDir = incrDescrs.exists:
                 case (_, dc: AddDirectionChange) => dc.absDir.isDefined
-                case _                           => false
-            if hasFinalDir && finalState.initialFrame.isEmpty then
-                FinalDirWithoutInitialDirection(pt).invalidNel
+                case _ => false
+            if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
             else ().validNel
 
     extension (convStep: ConversionStep)
@@ -130,10 +128,10 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
             convStep.nextOpIfAddElement
                 .map(_._2)
                 .flatMap:
-                    case _ @AddSectionSlopped(_, l) => l.some
+                    case _ @AddSectionSlopped(_, l)                            => l.some
                     case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
-                    case _ @AddSectionHorizontal(_, l) => l.some
-                    case _ @AddSectionVertical(_, l)   => l.some
+                    case _ @AddSectionHorizontal(_, l)                         => l.some
+                    case _ @AddSectionVertical(_, l)                           => l.some
                     case _: (AddSectionShapeChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
 
     override protected def mkFullElementsDescr(
@@ -152,7 +150,8 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
         val vels: ValidatedNel[IncrementalValidation_Error, NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] =
             addElementOp match
-                case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal | _: AddSectionVertical) =>
+                case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain |
+                    _: AddSectionHorizontal | _: AddSectionVertical) =>
                     given FlowOnlyStraightSectionCtx_15544 =
                         FlowOnlyStraightSectionCtx_15544(
                             stateOps.getInnerShape(st),
@@ -214,11 +213,11 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
             case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _))                             => propsState.validNel
+            case Some(_ @AddSectionSlopped(_, _))                            => propsState.validNel
             case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
             case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
             case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
-            case Some(addDC: AddDirectionChange) =>
+            case Some(addDC: AddDirectionChange)                             =>
                 addDC.absDir match
                     case Some(fd) =>
                         propsState.currentFrame match
@@ -227,15 +226,17 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                                 val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                                 val deflDeg   = addDC.angle.toUnit[Degree].value
                                 val newFrame  = frame.applyBendForFinalDir(deflDeg, targetVec)
-                                propsState.copy(
-                                    dirBeforePreviousDC = Some(frame.direction),
-                                    currentFrame        = Some(newFrame)
-                                ).validNel
-                            case None => propsState.validNel
-                    case None => propsState.validNel
-            case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
-            case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
-            case Some(obj: AddSectionShapeChange)    => propsState.modify(_.geometry).setTo(obj.to_shape.some).validNel
+                                propsState
+                                    .copy(
+                                        dirBeforePreviousDC = Some(frame.direction),
+                                        currentFrame        = Some(newFrame)
+                                    )
+                                    .validNel
+                            case None        => propsState.validNel
+                    case None     => propsState.validNel
+            case Some(_ @AddFlowResistance(_, _, _))                         => propsState.validNel
+            case Some(_ @AddPressureDiff(_, _))                              => propsState.validNel
+            case Some(obj: AddSectionShapeChange)                            => propsState.modify(_.geometry).setTo(obj.to_shape.some).validNel
 
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
@@ -244,26 +245,28 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         convStep.allSetPropsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (_, setPropOp)) =>
                 setPropOp match
-                    case SetInnerShape(g)     =>
+                    case SetInnerShape(g)                          =>
                         vState.map(_.modify(_.geometry).setTo(g.some))
-                    case SetRoughness(r)      =>
+                    case SetRoughness(r)                           =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
-                    case SetMaterial(lm)      =>
+                    case SetMaterial(lm)                           =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                    case SetNumberOfFlows(nf) =>
+                    case SetNumberOfFlows(nf)                      =>
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
                     case SetInitialDirection(azimuth, inclination) =>
                         val dir   = Vec3.fromAzimuthElevation(
-                            AzimuthDirection.toDegrees(azimuth),
+                            AzimuthDirection.toDegrees    (azimuth    ),
                             InclinationDirection.toDegrees(inclination)
                         )
                         val frame = PipeFrame.initial(dir)
-                        vState.map(_.copy(
-                            initialFrame = Some(frame),
-                            currentFrame = Some(frame)
-                        ))
+                        vState.map(
+                            _.copy(
+                                initialFrame = Some(frame),
+                                currentFrame = Some(frame)
+                            )
+                        )
                     case _: SetInitialPosition => vState
-                    case _: SetFinalPosition   => vState
+                    case _: SetFinalPosition => vState
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances

@@ -15,9 +15,9 @@ import org.scalatest.matchers.should.*
 
 class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with IncrementalHelper_13384 {
 
-    import afpma.firecalc.dto.all.* 
+    import afpma.firecalc.dto.all.*
     import afpma.firecalc.engine.models.*
-    
+
     // import pipedescr.*
     val builder = ChimneyPipe_Module.incremental
     import builder.*
@@ -39,53 +39,55 @@ class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with Incr
 
                 "returns proper pipe" in {
                     given NbOfFlows = 1.flow
-                    val d0 = 100.mm
-                    val e0 = 2.mm
-                    val λ0 = WattsPerMeterKelvin(1.2)
+                    val d0          = 100.mm
+                    val e0          = 2.mm
+                    val λ0          = WattsPerMeterKelvin(1.2)
 
                     val p =
                         builder.define(
-                            setInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
+                            setInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal),
                             innerShape(square(d0)),
-                            layer(e0, λ0),
-                            roughness(2.mm),
-                            pipeLocation(HeatedArea),
-                            addSectionHorizontal("first", 2.meters)
+                            layer               (e0, λ0                                                ),
+                            roughness           (2.mm                                                  ),
+                            pipeLocation        (HeatedArea                                            ),
+                            addSectionHorizontal("first", 2.meters                                     )
                         )
-                    
+
                     val vRepr = p.toFullDescr()
 
                     val expected = PipeFullDescr(
-                        elements = Vector(NamedPipeElDescr(
-                            idx = PipeIdx(0),
-                            typ = ChimneyPipeT,
-                            name = "first",
-                            el = ThermalPipeDescr_13384.StraightSection(
-                                length = 2.meters,
-                                innerShape = PipeShape.Square(d0),
-                                outer_shape = PipeShape.Square(104.mm),
-                                roughness = 2.mm,
-                                layers = List(AppendLayerDescr.FromLambdaUsingThickness(e0, λ0)),
-                                elevation_gain = 0.meters,
-                                airSpaceDetailed = AirSpaceDetailed.WithoutAirSpace_V2,
-                                pipeLoc = HeatedArea,
-                                ductType = DuctType.NonConcentricDuctsHighThermalResistance,
+                        elements = Vector(
+                            NamedPipeElDescr (
+                                idx  = PipeIdx(0),
+                                typ  = ChimneyPipeT,
+                                name = "first",
+                                el   = ThermalPipeDescr_13384.StraightSection(
+                                    length           = 2.meters,
+                                    innerShape       = PipeShape.Square(d0),
+                                    outer_shape      = PipeShape.Square(104.mm),
+                                    roughness        = 2.mm,
+                                    layers           = List(AppendLayerDescr.FromLambdaUsingThickness(e0, λ0)),
+                                    elevation_gain   = 0.meters,
+                                    airSpaceDetailed = AirSpaceDetailed.WithoutAirSpace_V2,
+                                    pipeLoc          = HeatedArea,
+                                    ductType         = DuctType.NonConcentricDuctsHighThermalResistance
+                                )
                             )
-                        )),
+                        ),
                         pipeType = ChimneyPipeT
                     )
 
                     println(vRepr)
-                    
+
                     vRepr.isValid.shouldBe(true)
-                    
+
                     behave like equivalent_StraightSections(
-                        vRepr.toOption.get._2.unwrap.elements.head.el, 
+                        vRepr.toOption.get._2.unwrap.elements.head.el,
                         expected.elementsUnwrap.head.el
                     )
                 }
             }
-            
+
         }
     }
 }

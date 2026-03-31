@@ -128,7 +128,11 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
         externalInitialFrame: Option[PipeFrame]
     ): FullDescrResult =
         if (incrSeq.isEmpty) (IdsMapping.empty, Without).validNel[IncrementalValidation_Error]
-        else incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame).map((ids, fd, _) => (ids, fd))
+        else
+            incremental
+                .define(incrSeq*)
+                .toFullDescrWithExternalInitialFrame(externalInitialFrame)
+                .map((ids, fd, _) => (ids, fd))
 
     def mkPipeFromIncrDescrWithFinalFrame(
         incrSeq             : Seq[ThermalPipeDescr_13384],
@@ -172,7 +176,10 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
     ): FullDescrResult =
-        incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame).map((ids, fd, _) => (ids, fd))
+        incremental
+            .define(incrSeq*)
+            .toFullDescrWithExternalInitialFrame(externalInitialFrame)
+            .map((ids, fd, _) => (ids, fd))
 
     type PipeCanBe = FullDescr
 

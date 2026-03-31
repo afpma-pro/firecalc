@@ -12,8 +12,8 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
  * Has many variants due to complex zeta calculations.
  */
 trait DirectionChangeDSL_13384[Descr]:
-    def addAngleVifDe0A90           (name: String, angle: Angle,  absDir: AbsoluteDirection): Descr
-    def addAngleVifDe0A90_unsafe    (name: String, angle: Angle,  absDir: AbsoluteDirection): Descr
+    def addAngleVifDe0A90           (name: String, angle: Angle, absDir : AbsoluteDirection): Descr
+    def addAngleVifDe0A90_unsafe    (name: String, angle: Angle, absDir : AbsoluteDirection): Descr
     def addCoudeCourbe90            (name: String, R    : Length, absDir: AbsoluteDirection): Descr
     def addCoudeCourbe90_unsafe     (name: String, R    : Length, absDir: AbsoluteDirection): Descr
     def addCoudeCourbe60            (name: String, R    : Length, absDir: AbsoluteDirection): Descr
@@ -22,9 +22,9 @@ trait DirectionChangeDSL_13384[Descr]:
     def addCoudeASegment90Avec3A30  (name: String, R    : Length, absDir: AbsoluteDirection): Descr
     def addCoudeASegment90Avec4A22p5(name: String, R    : Length, absDir: AbsoluteDirection): Descr
     def addAngleSpecifique          (
-        name    : String,
-        angle   : Angle,
-        zeta    : Double,
+        name  : String,
+        angle : Angle,
+        zeta  : Double,
         absDir: AbsoluteDirection
     ): Descr
 

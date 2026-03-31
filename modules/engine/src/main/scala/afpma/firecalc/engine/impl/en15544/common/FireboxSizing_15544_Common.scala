@@ -5,7 +5,6 @@
 
 package afpma.firecalc.engine.impl.en15544.common
 
-
 import cats.*
 import cats.syntax.all.catsSyntaxOptionId
 import cats.syntax.all.toFunctorOps
@@ -21,8 +20,9 @@ import en15544_typedefs.*
 
 class FireboxSizing_15544_Common(
     val firebox: Firebox_15544,
-    val m_B: m_B
-) extends FireboxSizing_15544_Alg with FireboxOps:
+    val m_B    : m_B
+) extends FireboxSizing_15544_Alg
+    with FireboxOps:
     import en15544_typedefs.*
 
     // Section "4.3.1.2", "Firebox surface"
@@ -43,9 +43,7 @@ class FireboxSizing_15544_Common(
 
     override def A_BR_max: Option[A_BR] =
         firebox.ifNotSingleTested(orElse = None)(
-            U_BR.map(ubr =>
-                firebox.A_BR_max_calc(m_B, ubr).some
-            )
+            U_BR.map(ubr => firebox.A_BR_max_calc(m_B, ubr).some)
         )
 
     override def A_BR: A_BR =
@@ -64,5 +62,3 @@ class FireboxSizing_15544_Common(
         yield firebox.H_BR_calc(m_B, abr, ubr)
 
 end FireboxSizing_15544_Common
-
-

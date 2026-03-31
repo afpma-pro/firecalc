@@ -18,7 +18,7 @@ import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.TypeOfAppliance
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
 
-import afpma.firecalc.engine.api.FireCalcYAML_Loader
+import afpma.firecalc.engine.impl.en15544.strict.FireCalcYAML_Loader
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale
@@ -37,7 +37,7 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
     // --------------------------------------------------------------------- //
 
     private val singleTestedFirebox: Firebox.SingleTested =
-        Firebox.SingleTested(
+        Firebox.SingleTested                         (
             test_standard                          = Firebox.TestStandard.EN_15250,
             reference                              = "REF-2024-INTEG-001",
             type_of_appliance                      = TypeOfAppliance.WoodLogs,
@@ -64,44 +64,44 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
                 accredited_or_notified_body = "Lab ABC",
                 test_reports                = Nil,
                 emissions_values            = EmissionValues_DTO(
-                    co   = TestEmissionValue_DTO(PolluantName.CO,   Some(1200.0.mg_per_Nm3), "", 13.0.percent),
-                    dust = TestEmissionValue_DTO(PolluantName.Dust, Some(40.0.mg_per_Nm3),   "", 13.0.percent),
-                    ogc  = TestEmissionValue_DTO(PolluantName.OGC,  Some(120.0.mg_per_Nm3),  "", 13.0.percent),
-                    nox  = TestEmissionValue_DTO(PolluantName.NOx,  Some(80.0.mg_per_Nm3),   "", 13.0.percent)
+                    co   = TestEmissionValue_DTO(PolluantName.CO, Some(1200.0.mg_per_Nm3), "", 13.0.percent),
+                    dust = TestEmissionValue_DTO(PolluantName.Dust, Some(40.0.mg_per_Nm3), "", 13.0.percent),
+                    ogc  = TestEmissionValue_DTO(PolluantName.OGC, Some(120.0.mg_per_Nm3), "", 13.0.percent),
+                    nox  = TestEmissionValue_DTO(PolluantName.NOx, Some(80.0.mg_per_Nm3), "", 13.0.percent)
                 )
             )
         )
 
     private val fluePipeDescr = Seq(
-        SetFlowOnlyPipeProp_15544.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-        SetFlowOnlyPipeProp_15544.SetRoughness(3.0.mm),
+        SetFlowOnlyPipeProp_15544.SetInitialDirection       (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+        SetFlowOnlyPipeProp_15544.SetRoughness              (3.0.mm                                                ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 12.2.cm)),
-        AddFlowOnlyPipeElement_15544.AddSectionHorizontal("sortie foyer", 28.1.cm),
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal   ("sortie foyer", 28.1.cm                               ),
         AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
             "virage 90 deg",
             90.0.degrees,
             None
         ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 11.1.cm)),
-        AddFlowOnlyPipeElement_15544.AddSectionVertical("colonne ascendante", 3.20.m)
+        AddFlowOnlyPipeElement_15544.AddSectionVertical     ("colonne ascendante", 3.20.m                          )
     )
 
     private val connectorPipeDescr = Seq(
-        SetThermalPipeProp_13384_V3.SetMaterial(Material_13384_V2.WeldedSteel()),
-        SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(130.0.mm)),
-        SetThermalPipeProp_13384_V3.SetLayer(2.0.mm, WattsPerMeterKelvin(50.0)),
-        SetThermalPipeProp_13384_V3.SetPipeLocation(PipeLocation.HeatedArea),
-        AddThermalPipeElement_13384_V3.AddSectionVertical("buse", 5.0.cm)
+        SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
+        SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(130.0.mm)     ),
+        SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+        SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
+        AddThermalPipeElement_13384_V3.AddSectionVertical("buse", 5.0.cm                   )
     )
 
     private val chimneyPipeDescr = Seq(
-        SetThermalPipeProp_13384_V3.SetMaterial(Material_13384_V2.WeldedSteel()),
-        SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(130.0.mm)),
-        SetThermalPipeProp_13384_V3.SetLayer(26.0.mm, WattsPerMeterKelvin(0.260)),
-        SetThermalPipeProp_13384_V3.SetPipeLocation(PipeLocation.HeatedArea),
-        AddThermalPipeElement_13384_V3.AddSectionVertical("etage", 90.0.cm),
-        SetThermalPipeProp_13384_V3.SetPipeLocation(PipeLocation.OutsideOrExterior),
-        AddThermalPipeElement_13384_V3.AddSectionVertical("sortie de toit", 60.0.cm)
+        SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
+        SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(130.0.mm)     ),
+        SetThermalPipeProp_13384_V3.SetLayer             (26.0.mm, WattsPerMeterKelvin(0.260)),
+        SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea            ),
+        AddThermalPipeElement_13384_V3.AddSectionVertical("etage", 90.0.cm                   ),
+        SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.OutsideOrExterior     ),
+        AddThermalPipeElement_13384_V3.AddSectionVertical("sortie de toit", 60.0.cm          )
     )
 
     private val project: FireCalcYAML = FireCalcYAML_V6(
@@ -128,9 +128,9 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         air_intake_descr               = Seq.empty,
         firebox                        = singleTestedFirebox,
         post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot(fluePipeDescr),
+            PostFireboxPipeDescrSlot.FlueSlot     (fluePipeDescr     ),
             PostFireboxPipeDescrSlot.ConnectorSlot(connectorPipeDescr),
-            PostFireboxPipeDescrSlot.ChimneySlot(chimneyPipeDescr)
+            PostFireboxPipeDescrSlot.ChimneySlot  (chimneyPipeDescr  )
         )
     )
 
@@ -140,33 +140,33 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
 
     "SingleTested EN15544 strict calculation" should
         "succeed without errors" in {
-        val loader = FireCalcYAML_Loader(project)
-        val result = loader.make_en15544_Strict_Application
-        val errors = result.fold(_.toList.map(_.toString).mkString(", "), _ => "")
-        withClue(s"EN15544 strict calculation failed with: $errors\n") {
-            result.isValid `shouldBe` true
+            val loader = FireCalcYAML_Loader(project)
+            val result = loader.make_en15544_Strict_Application
+            val errors = result.fold(_.toList.map(_.toString).mkString(", "), _ => "")
+            withClue(s"EN15544 strict calculation failed with: $errors\n") {
+                result.isValid `shouldBe` true
+            }
         }
-    }
 
     "SingleTested YAML round-trip then EN15544 strict" should
         "produce a valid application after encode → decode" in {
-        val yamlTry = FireCalcYAML_V6.encodeToYaml(project)
-        withClue(s"Encoding failed: ${yamlTry.failed.toOption}\n") {
-            yamlTry.isSuccess `shouldBe` true
-        }
-        val yaml = yamlTry.get
+            val yamlTry = FireCalcYAML_V6.encodeToYaml(project)
+            withClue(s"Encoding failed: ${yamlTry.failed.toOption}\n") {
+                yamlTry.isSuccess `shouldBe` true
+            }
+            val yaml    = yamlTry.get
 
-        val decodedTry = FireCalcYAML_V6.decodeFromYaml(yaml)
-        withClue(s"Decoding failed: ${decodedTry.failed.toOption}\nYAML:\n$yaml\n") {
-            decodedTry.isSuccess `shouldBe` true
-        }
+            val decodedTry = FireCalcYAML_V6.decodeFromYaml(yaml)
+            withClue(s"Decoding failed: ${decodedTry.failed.toOption}\nYAML:\n$yaml\n") {
+                decodedTry.isSuccess `shouldBe` true
+            }
 
-        val loader = FireCalcYAML_Loader(decodedTry.get)
-        val result = loader.make_en15544_Strict_Application
-        val errors = result.fold(_.toList.map(_.toString).mkString(", "), _ => "")
-        withClue(s"EN15544 strict calculation failed after round-trip: $errors\n") {
-            result.isValid `shouldBe` true
+            val loader = FireCalcYAML_Loader(decodedTry.get)
+            val result = loader.make_en15544_Strict_Application
+            val errors = result.fold(_.toList.map(_.toString).mkString(", "), _ => "")
+            withClue(s"EN15544 strict calculation failed after round-trip: $errors\n") {
+                result.isValid `shouldBe` true
+            }
         }
-    }
 
 end SingleTested_Integration_Suite

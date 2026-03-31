@@ -184,7 +184,7 @@ private[dynfrict] final case class FWindow(
         coeffs_level_n_plus_1_for_nm2_curr_np2(coeffs_level1_nm2_curr_np2)
 
     extension (n_sdc: Option[Named[S_or_DC]])
-        def unsafePipeName: String = n_sdc.map(_.name).getOrElse("<pipe name undefined")
+        def unsafePipeName   : String                       = n_sdc.map(_.name).getOrElse("<pipe name undefined")
         def ζ_level_0        : ValidatedNel[Err, Option[ζ]] =
             n_sdc.map(_.t).map(flowOnlyDynamicFrictionCoeff_15544.whenRegularFor) match
                 case Some(Valid(c))       => Some(c).validNel
@@ -210,27 +210,45 @@ private[dynfrict] final case class FWindow(
 
     def makeChecks: Either[FluePipeShapeSequenceError, FWindow] =
         for
-            _   <- check( !(nm3.isEmpty && nm2.isEmpty && nm1.isEmpty)      )(CanNotStartWithADirectionChange    (curr.name))
-            _   <- check( !(nm1.isDefined && np1.isEmpty)                   )(CanNotEndWithADirectionChange      (curr.name))
+            _ <- check(!(nm3.isEmpty && nm2.isEmpty && nm1.isEmpty))(CanNotStartWithADirectionChange(curr.name))
+            _ <- check(!(nm1.isDefined && np1.isEmpty))             (CanNotEndWithADirectionChange(curr.name)  )
 
-            _   <- check( !(nm3.isDirectionChange && nm2.isDirectionChange) )(TwoSuccessDirectionChangeNotAllowed(nm3.unsafePipeName, nm2.unsafePipeName))
-            _   <- check( !(nm2.isDirectionChange && nm1.isDirectionChange) )(TwoSuccessDirectionChangeNotAllowed(nm2.unsafePipeName, nm1.unsafePipeName))
-            _   <- check( !nm1.isDirectionChange                            )(TwoSuccessDirectionChangeNotAllowed(nm1.unsafePipeName, curr.name))
-            _   <- check( !np1.isDirectionChange                            )(TwoSuccessDirectionChangeNotAllowed(curr.name,          np1.unsafePipeName))
-            _   <- check( !(np1.isDirectionChange && np2.isDirectionChange) )(TwoSuccessDirectionChangeNotAllowed(np1.unsafePipeName, np2.unsafePipeName))
-            _   <- check( !(np2.isDirectionChange && np3.isDirectionChange) )(TwoSuccessDirectionChangeNotAllowed(np2.unsafePipeName, np3.unsafePipeName))
+            _ <- check(!(nm3.isDirectionChange && nm2.isDirectionChange))(
+                TwoSuccessDirectionChangeNotAllowed(nm3.unsafePipeName, nm2.unsafePipeName)
+            )
+            _ <- check(!(nm2.isDirectionChange && nm1.isDirectionChange))(
+                TwoSuccessDirectionChangeNotAllowed(nm2.unsafePipeName, nm1.unsafePipeName)
+            )
+            _ <- check(!nm1.isDirectionChange)                           (TwoSuccessDirectionChangeNotAllowed(nm1.unsafePipeName, curr.name))
+            _ <- check(!np1.isDirectionChange)                           (TwoSuccessDirectionChangeNotAllowed(curr.name, np1.unsafePipeName))
+            _ <- check(!(np1.isDirectionChange && np2.isDirectionChange))(
+                TwoSuccessDirectionChangeNotAllowed(np1.unsafePipeName, np2.unsafePipeName)
+            )
+            _ <- check(!(np2.isDirectionChange && np3.isDirectionChange))(
+                TwoSuccessDirectionChangeNotAllowed(np2.unsafePipeName, np3.unsafePipeName)
+            )
 
-            _   <- check( !(nm3.isStraightSection && nm2.isStraightSection) )(TwoSuccessStraightSectionNotAllowed(nm3.unsafePipeName, nm2.unsafePipeName))
+            _ <- check(!(nm3.isStraightSection && nm2.isStraightSection))(
+                TwoSuccessStraightSectionNotAllowed(nm3.unsafePipeName, nm2.unsafePipeName)
+            )
 
-            _   <- check( !(nm3.isStraightSection && nm2.isStraightSection) )(TwoSuccessStraightSectionNotAllowed(nm3.unsafePipeName, nm2.unsafePipeName))
-            _   <- check( !(nm2.isStraightSection && nm1.isStraightSection) )(TwoSuccessStraightSectionNotAllowed(nm2.unsafePipeName, nm1.unsafePipeName))
-            _   <- check( !(np1.isStraightSection && np2.isStraightSection) )(TwoSuccessStraightSectionNotAllowed(np1.unsafePipeName, np2.unsafePipeName))
-            _   <- check( !(np2.isStraightSection && np3.isStraightSection) )(TwoSuccessStraightSectionNotAllowed(np2.unsafePipeName, np3.unsafePipeName))
+            _ <- check(!(nm3.isStraightSection && nm2.isStraightSection))(
+                TwoSuccessStraightSectionNotAllowed(nm3.unsafePipeName, nm2.unsafePipeName)
+            )
+            _ <- check(!(nm2.isStraightSection && nm1.isStraightSection))(
+                TwoSuccessStraightSectionNotAllowed(nm2.unsafePipeName, nm1.unsafePipeName)
+            )
+            _ <- check(!(np1.isStraightSection && np2.isStraightSection))(
+                TwoSuccessStraightSectionNotAllowed(np1.unsafePipeName, np2.unsafePipeName)
+            )
+            _ <- check(!(np2.isStraightSection && np3.isStraightSection))(
+                TwoSuccessStraightSectionNotAllowed(np2.unsafePipeName, np3.unsafePipeName)
+            )
 
-            _   <- check( !(nm3.isDefined && nm2.isEmpty) ) (HolesShouldNotHappen(nm3.unsafePipeName))
-            _   <- check( !(nm3.isDefined && nm1.isEmpty) ) (HolesShouldNotHappen(nm3.unsafePipeName))
-            _   <- check( !(nm2.isDefined && nm1.isEmpty) ) (HolesShouldNotHappen(nm2.unsafePipeName))
-            
+            _ <- check(!(nm3.isDefined && nm2.isEmpty))(HolesShouldNotHappen(nm3.unsafePipeName))
+            _ <- check(!(nm3.isDefined && nm1.isEmpty))(HolesShouldNotHappen(nm3.unsafePipeName))
+            _ <- check(!(nm2.isDefined && nm1.isEmpty))(HolesShouldNotHappen(nm2.unsafePipeName))
+
             ret <- this.asRight
         yield ret
 

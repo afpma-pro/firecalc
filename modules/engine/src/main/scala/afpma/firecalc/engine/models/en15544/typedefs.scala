@@ -515,8 +515,8 @@ object typedefs:
                     cc.height_of_lowest_opening.vresultOption.flatMap   (_.showInvalidConstraintErrors),
                     cc.firebox_glass_surface_ratio.vresultOption.flatMap(_.showInvalidConstraintErrors)
                 ).flatten.map(_.toList).flatten
-                if (outputs.size > 0) 
-                    NonEmptyList.fromListUnsafe(outputs).invalid 
+                if (outputs.size > 0)
+                    NonEmptyList.fromListUnsafe(outputs).invalid
                 else ().validNel
 
             def checkAndReturnVNelInvalidConstraint: Locale ?=> ValidatedNel[InvalidConstraint, Unit] =

@@ -50,18 +50,16 @@ object ElementFactory_15544_Instances:
     )
 
     given flowOnlyStraightSection15544: ElementFactory[
-        AddFlowOnlyPipeElement_15544.AddSectionSlopped | 
-        AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
-        AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
-        AddFlowOnlyPipeElement_15544.AddSectionVertical,
+        AddFlowOnlyPipeElement_15544.AddSectionSlopped |
+            AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal | AddFlowOnlyPipeElement_15544.AddSectionVertical,
         FlowOnlyPipeDescr_15544.StraightSection,
         FlowOnlyStraightSectionCtx_15544
     ] with
         def make(
-            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped | 
-            AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
-            AddFlowOnlyPipeElement_15544.AddSectionHorizontal |
-            AddFlowOnlyPipeElement_15544.AddSectionVertical
+            op: AddFlowOnlyPipeElement_15544.AddSectionSlopped |
+                AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
+                AddFlowOnlyPipeElement_15544.AddSectionHorizontal | AddFlowOnlyPipeElement_15544.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_15544) =
             val vg = ctx.getValidated(
                 _.geometry,
@@ -99,8 +97,8 @@ object ElementFactory_15544_Instances:
                     (len, elev_gain, true)
 
             val finalElevGain = ctx.currentFrame match
-                case Some(frame) => 
-                    if auto_compute_elev_gain 
+                case Some(frame) =>
+                    if auto_compute_elev_gain
                     then (math.abs(len.value) * frame.direction.z).m
                     else elev_gain
                 case None        => elev_gain
@@ -117,10 +115,10 @@ object ElementFactory_15544_Instances:
     // ========== Direction Change Factory ==========
 
     case class DirectionChangeCtx_15544(
-        geometry            : Option[PipeShape],
-        pipeType            : PipeType,
-        dirBeforePreviousDC : Option[Vec3]      = None,
-        currentFrame        : Option[PipeFrame] = None
+        geometry           : Option[PipeShape],
+        pipeType           : PipeType,
+        dirBeforePreviousDC: Option[Vec3]      = None,
+        currentFrame       : Option[PipeFrame] = None
     )
 
     given directionChange15544: ElementFactory[
@@ -142,7 +140,7 @@ object ElementFactory_15544_Instances:
                     (ctx.dirBeforePreviousDC, ctx.currentFrame, op.absDir) match
                         case (Some(dirBefore), Some(frame), Some(fd)) =>
                             val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            val targetVec     = Vec3.fromAzimuthElevation(azDeg, elDeg)
                             val postBendFrame = frame.applyBendForFinalDir(
                                 op.angle.toUnit[Degree].value,
                                 targetVec
@@ -154,7 +152,7 @@ object ElementFactory_15544_Instances:
                     case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(_, angle, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange
                             .AngleVifDe0A180(angle, computedAngleN2)
-                    case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_, _) =>
+                    case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_, _)              =>
                         FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
             }
 
@@ -265,9 +263,9 @@ object ElementFactory_15544_Instances:
                 )
             ).andThen { geom =>
                 FlowOnlyPipeDescr_15544
-                    .PressureDiff(
-                    pa = op.pressure_difference,
-                    crossSectionO = ctx.geometry.map(_.area)
-                )
-                .validNel
+                    .PressureDiff           (
+                        pa            = op.pressure_difference,
+                        crossSectionO = ctx.geometry.map(_.area)
+                    )
+                    .validNel
             }

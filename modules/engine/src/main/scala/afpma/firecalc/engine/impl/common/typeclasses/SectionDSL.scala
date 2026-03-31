@@ -12,7 +12,7 @@ import afpma.firecalc.units.coulombutils.*
  * @tparam Descr The incremental descriptor ADT type
  */
 trait SectionDSL[Descr]:
-    
+
     def addSectionSlopped(
         name  : String,
         length: Length

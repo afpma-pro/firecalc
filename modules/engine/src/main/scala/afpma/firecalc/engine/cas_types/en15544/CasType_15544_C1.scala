@@ -83,26 +83,32 @@ object CasType_15544_C1
             0.3.unitless, // ??? in basic2plus, not specified in EN15544 (what about in some test report ?)
         h67_sectionCumuleeEntreeAirPorte = 92.cm2,
         h71_largeurVitre                 = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        h72_hauteurVitre                 = 0.cm,  // TODO: à spécifier (nouveauté EN15544:2023)
-        ash_pit_height                   = 5.cm,
+        h72_hauteurVitre                 = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                   = 5.cm
     )
 
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
             // arbitrary direction "Right"
-            setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
-            roughness           (3.mm                        ),
+            setInitialDirection    (
+                azimuth     = AzimuthDirection.Right,
+                inclination = InclinationDirection.Horizontal
+            ), // "Right"
+            roughness              (3.mm                        ),
             innerShape(rectangle(11.1.cm, 12.2.cm)),
-            addSectionHorizontal("sortie foyer", 28.1.cm     ),
-            addSharpAngle_90deg ("virage 90 deg", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)), // final direction = "Up"
+            addSectionHorizontal   ("sortie foyer", 28.1.cm     ),
+            addSharpAngle_90deg    (
+                "virage 90 deg",
+                AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+            ), // final direction = "Up"
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical  ("colonne ascendante", 3.20.m)
+            addSectionVertical     ("colonne ascendante", 3.20.m)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
+        Seq (
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
             layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),

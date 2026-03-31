@@ -31,7 +31,8 @@ import scala.collection.mutable.ListBuffer
 
 import io.taig.babel.Locale
 
-/** EN 15544 constraints for [[Ecolabeled]] fireboxes.
+/**
+ * EN 15544 constraints for [[Ecolabeled]] fireboxes.
  *
  * Extends the default constraint set, overriding m_B bounds (min=6kg,
  * max=40kg), m_B_min (min=6kg), and specific constraint validation.
@@ -41,11 +42,11 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
 
         /** Ecolabeled: min=6kg, max=40kg. */
         override def m_B_constraints(
-            firebox: Ecolabeled,
-            ctx    : ConstraintContext
+            firebox : Ecolabeled,
+            ctx     : ConstraintContext
         ): Seq[Option[TermConstraint[m_B]]] =
             Seq(
-                Some(TermConstraint.Min[m_B](6.kg)),
+                Some(TermConstraint.Min[m_B](6.kg) ),
                 Some(TermConstraint.Max[m_B](40.kg))
             )
 
@@ -79,7 +80,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (mass > 40.kg)
                 buf.append(TermValueShouldBeLessOrEqThan(I18N.en15544.terms.m_B.name, mass, 40.kg))
 
-            val (d1, d2) = (
+            val (d1, d2)         = (
                 firebox.h77_epaisseurParoiInterneFoyer_D1,
                 firebox.epaisseurParoiExterneFoyer_D2
             )
@@ -155,8 +156,8 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
                     TermValueShouldBeGreaterOrEqThan(I18N.firebox.firebox_height, H.to_cm, H_min.to_cm)
                 )
 
-            val c19  = firebox.c19_largeurDesInjecteursLateraux
-            val c20  = firebox.c20_largeurDesInjecteursArrieres
+            val c19 = firebox.c19_largeurDesInjecteursLateraux
+            val c20 = firebox.c20_largeurDesInjecteursArrieres
 
             val largeurRenfortMedianLateraux_max = c19 * 0.2
             if (firebox.h79_largeurRenfortMedianLateraux > largeurRenfortMedianLateraux_max)
@@ -179,9 +180,8 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
                 )
 
             val DEBORD_MAX = 4.5.cm
-            val I18N_ECO = I18N.firebox.ecolabeled
-            for 
-                (rxString, rx) <- Seq(
+            val I18N_ECO   = I18N.firebox.ecolabeled
+            for (rxString, rx) <- Seq(
                     (I18N_ECO.reinforcement_bars_offset_in_corners_R1, firebox.r1),
                     (I18N_ECO.reinforcement_bars_offset_in_corners_R2, firebox.r2),
                     (I18N_ECO.reinforcement_bars_offset_in_corners_R3, firebox.r3)
@@ -218,8 +218,8 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             val largeurFenteAirFoyer       = 2 * c19 + c20
             val largeurObstructionAirFoyer =
                 2 * firebox.h79_largeurRenfortMedianLateraux + firebox.h80_largeurRenfortMedianArriere
-            val ratioSurfaceFenteAir     = (largeurObstructionAirFoyer / largeurFenteAirFoyer)
-            val ratioSurfaceFenteAir_max = 0.20
+            val ratioSurfaceFenteAir       = (largeurObstructionAirFoyer / largeurFenteAirFoyer)
+            val ratioSurfaceFenteAir_max   = 0.20
             if (ratioSurfaceFenteAir > ratioSurfaceFenteAir_max)
                 buf.append(
                     TermValueCustom(

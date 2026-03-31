@@ -39,14 +39,14 @@ class ShowAsTableInstances_15544(using Locale):
 
     given ShowAsTable[Firebox_15544] =
         ShowAsTable.mkLightFor(I18N.headers.firebox_description):
-            case x: TraditionalFirebox      => x.showOnlyRows
-            case x: Ecolabeled              => x.showOnlyRows
-            case x: AFPMA_PRSE              => x.showOnlyRows
-            case x: CustomForLab            => x.showOnlyRows
-            case x: SingleTested            => x.showOnlyRows
-            case x: Traditional             => x.showOnlyRows
-            case x: CertifiedDesign         => x.showOnlyRows
-            case x: Door15aFirebox_Catalog  => x.showOnlyRows
+            case x: TraditionalFirebox     => x.showOnlyRows
+            case x: Ecolabeled             => x.showOnlyRows
+            case x: AFPMA_PRSE             => x.showOnlyRows
+            case x: CustomForLab           => x.showOnlyRows
+            case x: SingleTested           => x.showOnlyRows
+            case x: Traditional            => x.showOnlyRows
+            case x: CertifiedDesign        => x.showOnlyRows
+            case x: Door15aFirebox_Catalog => x.showOnlyRows
 
     given showAsTable_CitedConstraints: (scc: ShowAsTable[CheckableConstraint[?]]) => ShowAsTable[CitedConstraints] =
         ShowAsTable.mkLightFor    (
@@ -184,19 +184,19 @@ class ShowAsTableInstances_15544(using Locale):
                     case FacingType.WithoutAirGap => "facing type" :: "without air gap" :: Nil
 
                 val design_lines: List[List[String]] = design.firebox match
-                    case tested: SingleTested =>
+                    case tested: SingleTested  =>
                         import tested.*
-                        ("=> SINGLE TESTED COMBUSTION CHAMBER"     :: "----------"                :: Nil) ::
-                            ("pn reduced"                  :: pn_reduced.show             :: Nil) ::
-                            ("minimum fuel mass"           :: minimumFuelMass.show        :: Nil) ::
-                            ("maximum fuel mass"           :: maximumFuelMass.show        :: Nil) ::
-                            ("air fuel ratio (at nominal)" :: airFuelRatio_nominal.show   :: Nil) ::
-                            ("air fuel ratio (at lowest)"  :: airFuelRatio_lowest.show    :: Nil) ::
-                            ("mean firebox temperature"    :: meanFireboxTemperature.show :: Nil) ::
-                            ("temperature burnout"         :: tBurnout.show               :: Nil) ::
+                        ("=> SINGLE TESTED COMBUSTION CHAMBER" :: "----------"                :: Nil) ::
+                            ("pn reduced"                      :: pn_reduced.show             :: Nil) ::
+                            ("minimum fuel mass"               :: minimumFuelMass.show        :: Nil) ::
+                            ("maximum fuel mass"               :: maximumFuelMass.show        :: Nil) ::
+                            ("air fuel ratio (at nominal)"     :: airFuelRatio_nominal.show   :: Nil) ::
+                            ("air fuel ratio (at lowest)"      :: airFuelRatio_lowest.show    :: Nil) ::
+                            ("mean firebox temperature"        :: meanFireboxTemperature.show :: Nil) ::
+                            ("temperature burnout"             :: tBurnout.show               :: Nil) ::
                             Nil
-                    case fb: Firebox_15544 =>
-                        ("=> DEFAULT CONSTRUCTION PARAMS"       :: ""                                               :: Nil) ::
+                    case fb    : Firebox_15544 =>
+                        ("=> DEFAULT CONSTRUCTION PARAMS" :: ""                                           :: Nil) ::
                             {
                                 val pn_reduced_show = fb.pn_reduced match
                                     case x: HeatOutputReduced.FromTypeTest  => x.show
@@ -205,11 +205,11 @@ class ShowAsTableInstances_15544(using Locale):
                                         if (x.pn_reduced.isDefined) x.show
                                         else HeatOutputReduced.HalfOfNominal.makeFromNominalO(i.stoveParams.pn).show
                                 (I18N.en15544.terms.P_n_reduced.name :: pn_reduced_show :: Nil)
-                            }                            ::
-                            ("- CHAMBRE DE COMBUSTION -" :: "----------"                                     :: Nil) ::
-                            ("base"                      :: fb.dimensions.base.show                      :: Nil) ::
-                            ("hauteur"                   :: fb.dimensions.height.toUnit[Centimeter].show :: Nil) ::
-                            Nil                    
+                            }                             ::
+                            ("- CHAMBRE DE COMBUSTION -"  :: "----------"                                 :: Nil) ::
+                            ("base"                       :: fb.dimensions.base.show                      :: Nil) ::
+                            ("hauteur"                    :: fb.dimensions.height.toUnit[Centimeter].show :: Nil) ::
+                            Nil
 
                 ("z"                   :: localConditions.altitude.show :: Nil) ::
                     ("T_uo (override)" :: "Refer to EN 13384-1 section" :: Nil) ::

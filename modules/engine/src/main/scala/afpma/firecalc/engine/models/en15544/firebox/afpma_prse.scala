@@ -45,8 +45,8 @@ case class AFPMA_PRSE(
     h95_hauteurPassageVersColonneAir_W     : QtyD[Meter],
     h96_nbColonnesAirFoyer                 : Int,
     h97_nbColonnesAirPorte                 : Int,
-    override val co2_dry_nominal           : σ_CO2 = 7.05.percent,
-    override val co2_dry_lowest            : Option[σ_CO2] = None
+    override val co2_dry_nominal           : σ_CO2                        = 7.05.percent,
+    override val co2_dry_lowest            : Option[σ_CO2]                = None
 ) extends CertifiedDesign {
     type Self = AFPMA_PRSE
 
@@ -54,10 +54,10 @@ case class AFPMA_PRSE(
     override val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double = 2.0
 
     override val firebox_type: Locale ?=> String = I18N.firebox_names.afpma_prse
-    override def min_load = MinLoad.HalfOfMaxLoad.makeWithoutValue
+    override def min_load                 = MinLoad.HalfOfMaxLoad.makeWithoutValue
     override def height_of_lowest_opening = h91_hauteurDuCendrier_AF
-    override val reference         = LocalizedString.from(I18N.firebox_names.afpma_prse)
-    override val type_of_appliance = TypeOfAppliance.WoodLogs
+    override val reference                = LocalizedString.from(I18N.firebox_names.afpma_prse)
+    override val type_of_appliance        = TypeOfAppliance.WoodLogs
     override val dimensions: Dimensions = Dimensions(
         base   = Dimensions.Base.Squared(
             width = h12_largeurDuFoyer,
@@ -65,7 +65,7 @@ case class AFPMA_PRSE(
         ),
         height = h13_hauteurDuFoyer
     )
-    override val glass_area: GlassArea = h88_largeurVitre * h89_hauteurVitre
+    override val glass_area: GlassArea  = h88_largeurVitre * h89_hauteurVitre
 
     final def geometrieEquivalenteDesInjecteursAir: PipeShape = rectangle(
         a =
@@ -84,17 +84,16 @@ object AFPMA_PRSE:
     given showAsTable: io.taig.babel.Locale => ShowAsTable[AFPMA_PRSE] =
         ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
             import x.*
-            (I18N.firebox.typ                                                 :: "" :: I18N.firebox_names.afpma_prse                                    :: Nil) ::
-                (I18N.firebox.firebox_depth                                   :: "h11" :: h11_profondeurDuFoyer.to_cm.showP                             :: Nil) ::
-                (I18N.firebox.firebox_width                                   :: "h12" :: h12_largeurDuFoyer.to_cm.showP                                :: Nil) ::
-                (I18N.firebox.firebox_height                                  :: "h13" :: h13_hauteurDuFoyer.to_cm.showP                                :: Nil) ::
-                (I18N.firebox.afpma_prse.height_of_first_row_of_air_injectors :: "h83" :: h83_hauteurEntreSoleEt1erInjecteur_X.to_cm.showP              :: Nil) ::
-                (I18N.firebox.traditional.glass_width                         :: "h88" :: h88_largeurVitre.to_cm.showP                                  :: Nil) ::
-                (I18N.firebox.traditional.glass_height                        :: "h89" :: h89_hauteurVitre.to_cm.showP                                  :: Nil) ::
+            (I18N.firebox.typ                                                 :: ""    :: I18N.firebox_names.afpma_prse                    :: Nil) ::
+                (I18N.firebox.firebox_depth                                   :: "h11" :: h11_profondeurDuFoyer.to_cm.showP                :: Nil) ::
+                (I18N.firebox.firebox_width                                   :: "h12" :: h12_largeurDuFoyer.to_cm.showP                   :: Nil) ::
+                (I18N.firebox.firebox_height                                  :: "h13" :: h13_hauteurDuFoyer.to_cm.showP                   :: Nil) ::
+                (I18N.firebox.afpma_prse.height_of_first_row_of_air_injectors :: "h83" :: h83_hauteurEntreSoleEt1erInjecteur_X.to_cm.showP :: Nil) ::
+                (I18N.firebox.traditional.glass_width                         :: "h88" :: h88_largeurVitre.to_cm.showP                     :: Nil) ::
+                (I18N.firebox.traditional.glass_height                        :: "h89" :: h89_hauteurVitre.to_cm.showP                     :: Nil) ::
                 Nil
 
     enum OutsideAirLocationInHeater  :
         case FromBottom
     object OutsideAirLocationInHeater:
         type FromBottom = FromBottom.type
-

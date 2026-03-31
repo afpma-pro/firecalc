@@ -34,7 +34,7 @@ object single_tested:
     private def buildEmissionsValues(dto: Firebox_V4.SingleTested): EmissionsAndEfficiencyValues =
         import FireboxTransformers.toTestEmissionValue
         val ev = dto.emissions_values
-        EmissionsAndEfficiencyValues(
+        EmissionsAndEfficiencyValues                      (
             firebox_name                       = ev.firebox_name,
             accredited_or_notified_body        = ev.accredited_or_notified_body,
             test_reports                       = ev.test_reports,

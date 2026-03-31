@@ -7,9 +7,7 @@ package afpma.firecalc.engine.alg.en15544
 
 import afpma.firecalc.engine.models.en15544.typedefs.*
 
-/**
-  * Firebox sizing algebra (Section 4.3 of EN 15544:2023)
-  */
+/** Firebox sizing algebra (Section 4.3 of EN 15544:2023) */
 trait FireboxSizing_15544_Alg:
 
     // Section "4.3.1.2", "Firebox surface"
@@ -28,6 +26,4 @@ trait FireboxSizing_15544_Alg:
 
     // Section "4.3.1.4", "Firebox height"
     def H_BR_min: Option[H_BR]
-    def H_BR: H_BR
-
-
+    def H_BR    : H_BR

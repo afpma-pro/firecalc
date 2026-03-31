@@ -130,9 +130,12 @@ object CasType_13384_C2
         import AirIntakePipe_Module.*
         define(
             // arbitrary defined, not specified in reference example for engine validation
-            setInitialDirection(azimuth = AzimuthDirection.Front, inclination = InclinationDirection.Horizontal), // "Front"
-            pipeLocation(PipeLocation.HeatedArea),
-            roughness   (5.mm                   ), // TubeFlexEnPE = 5.mm
+            setInitialDirection    (
+                azimuth     = AzimuthDirection.Front,
+                inclination = InclinationDirection.Horizontal
+            ), // "Front"
+            pipeLocation           (PipeLocation.HeatedArea),
+            roughness              (5.mm                   ), // TubeFlexEnPE = 5.mm
 
             addFlowResistance              (
                 "grille (ζ = 1.7)",
@@ -150,16 +153,16 @@ object CasType_13384_C2
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // "Up"
+        Seq (
+            setInitialDirection (azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // "Up"
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)              ),
-            layer             (
+            layer               (
                 e  = 1.mm, // 1mm in QC2
                 tr = 0.0.m2_K_per_W // R = 0 car conduit métallique non isolé
             ),
-            pipeLocation      (PipeLocation.HeatedArea),
-            addSectionVertical("montée", 1.34.m       )
+            pipeLocation        (PipeLocation.HeatedArea                                               ),
+            addSectionVertical  ("montée", 1.34.m                                                      )
         )
 
     // T450 N1 W Vm L50012 G

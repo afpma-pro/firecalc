@@ -12,7 +12,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
 class coulombutils_Suite extends AnyFreeSpec with Matchers {
-    
+
     "ShowUnit" - {
 
         "for coulomb unit" - {

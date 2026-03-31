@@ -22,12 +22,13 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
-/** Factory that wires [[ShortSectionAlg]] with EN 15544 dynamic-friction coefficients.
-  *
-  * Lives in `ops.en15544` (rather than `models.en15544`) because it depends on
-  * [[FlowOnlyDynamicFrictionCoeff_15544]], keeping the `models` layer free of
-  * implementation-level imports.
-  */
+/**
+ * Factory that wires [[ShortSectionAlg]] with EN 15544 dynamic-friction coefficients.
+ *
+ * Lives in `ops.en15544` (rather than `models.en15544`) because it depends on
+ * [[FlowOnlyDynamicFrictionCoeff_15544]], keeping the `models` layer free of
+ * implementation-level imports.
+ */
 object ShortSectionAlgFactory:
 
     def make(using

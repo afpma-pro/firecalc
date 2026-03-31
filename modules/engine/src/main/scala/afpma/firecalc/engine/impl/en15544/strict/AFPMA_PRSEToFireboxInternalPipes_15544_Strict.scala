@@ -21,7 +21,7 @@ import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
 given FireboxToCombustionAirPipe_15544_Strict[AFPMA_PRSE] = AFPMA_PRSEToFireboxInternalPipes_15544_Strict
-given FireboxToFireboxPipe_15544_Strict[AFPMA_PRSE]      = AFPMA_PRSEToFireboxInternalPipes_15544_Strict
+given FireboxToFireboxPipe_15544_Strict[AFPMA_PRSE]       = AFPMA_PRSEToFireboxInternalPipes_15544_Strict
 
 object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
     extends FireboxToInternalPipes_15544_Strict[AFPMA_PRSE]
@@ -36,14 +36,20 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom =>
                     CombustionAirPipe_Module_15544.incremental
                         .define(
-                            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // Up
-                            innerShape          (arriveeAirGeometry                                            ),
-                            roughness           (3.mm                                                          ),
-                            addSectionVertical  (
+                            setInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Up
+                            ), // Up
+                            innerShape             (arriveeAirGeometry),
+                            roughness              (3.mm              ),
+                            addSectionVertical     (
                                 "remontée dans chambre de détente",
                                 (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U) / 2.0
                             ),
-                            addSharpAngle_90deg ("virage vers colonnes d'air", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+                            addSharpAngle_90deg (
+                                "virage vers colonnes d'air",
+                                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+                            ), // Left
                             innerShape(
                                 rectangle(
                                     a = arriveeAirGeometry.perimeterWetted,
@@ -52,10 +58,13 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                             ),
                             addSectionHorizontal(
                                 "longueur jusqu'au milieu des colonnes d'air",
-                                (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + 7.1.cm
+                                (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0           ) / 4.0 + 7.1.cm
                             ),
-                            addSharpAngle_90deg ("virage au pied des colonnes d'air", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)), // Up
-                            roughness           (2.mm                                                          ),
+                            addSharpAngle_90deg (
+                                "virage au pied des colonnes d'air",
+                                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
+                            ), // Up
+                            roughness           (2.mm                                        ),
                             innerShape(
                                 rectangle(
                                     a = 3.2.cm,
@@ -71,8 +80,11 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                 "remontée dans les colonnes d'air",
                                 h91_hauteurDuCendrier_AF + h92_epaisseurSole_S + h93_hauteurEmbaseDessousSoleFoyer_V - h95_hauteurPassageVersColonneAir_W / 2.0 + 13.5.cm
                             ),
-                            addSharpAngle_90deg ("virage avant canal horizontal injecteur", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
-                            roughness           (1.mm                                                          ),
+                            addSharpAngle_90deg (
+                                "virage avant canal horizontal injecteur",
+                                AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                            ), // Right
+                            roughness           (1.mm                                        ),
                             innerShape(
                                 rectangle(
                                     a =
@@ -86,7 +98,7 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                         6.6.cm * 4 * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte / 4.0)
                                 )
                             ),
-                            addSectionHorizontal("canal injecteurs horizontal 1/3", 2.cm                       ),
+                            addSectionHorizontal("canal injecteurs horizontal 1/3", 2.cm     ),
                             innerShape(
                                 rectangle(
                                     a =
@@ -99,9 +111,9 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                         7.9.cm * 4 * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte / 4.0)
                                 )
                             ),
-                            addSectionHorizontal("canal injecteurs horizontal 2/3", 2.cm                       ),
-                            innerShape          (firebox.geometrieEquivalenteDesInjecteursAir                  ),
-                            addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm                     )
+                            addSectionHorizontal("canal injecteurs horizontal 2/3", 2.cm     ),
+                            innerShape          (firebox.geometrieEquivalenteDesInjecteursAir),
+                            addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm   )
                         )
                         .toFullDescr()
                         .extractPipe

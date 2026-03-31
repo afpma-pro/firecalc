@@ -18,11 +18,11 @@ class onorm_b_8303_Suite extends AnyFreeSpec with Matchers {
     val wood = afpma.firecalc.engine.wood_combustion.Wood.from_ONORM_B_8303(humidity = 20.percent)
 
     "Wood specified in ORNOM_B_8303 with 20% humidity" - {
-        
+
         "has lower calorific value (dry) of ~4.78 kWh/kg" in {
             val wc = wood.lower_calorific_value_dry
                 .toUnit[Kilo * Watt * Hour / Kilogram]
-                .value 
+                .value
             wc `shouldEqual` (4.78 +- 0.01)
         }
 
@@ -40,7 +40,7 @@ class onorm_b_8303_Suite extends AnyFreeSpec with Matchers {
         "has lower calorific value (dry) of ~4.82 kWh/kg" in {
             val wc = wood2.lower_calorific_value_dry
                 .toUnit[Kilo * Watt * Hour / Kilogram]
-                .value 
+                .value
             wc `shouldEqual` (4.82 +- 0.01)
         }
 

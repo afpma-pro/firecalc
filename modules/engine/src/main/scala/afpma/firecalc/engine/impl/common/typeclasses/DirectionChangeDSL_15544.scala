@@ -13,8 +13,8 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
  */
 trait DirectionChangeDSL_15544[Descr]:
     def addSharpAngle_0_to_180deg(
-        name: String,
-        angle: Angle,
+        name  : String,
+        angle : Angle,
         absDir: AbsoluteDirection
     ): Descr
 
@@ -22,25 +22,25 @@ trait DirectionChangeDSL_15544[Descr]:
 
     // Convenience methods
     def addSharpAngle_30deg(
-        name: String,
+        name  : String,
         absDir: AbsoluteDirection
     ): Descr =
         addSharpAngle_0_to_180deg(name, 30.degrees, absDir)
 
     def addSharpAngle_45deg(
-        name: String,
+        name  : String,
         absDir: AbsoluteDirection
     ): Descr =
         addSharpAngle_0_to_180deg(name, 45.degrees, absDir)
 
     def addSharpAngle_60deg(
-        name: String,
+        name  : String,
         absDir: AbsoluteDirection
     ): Descr =
         addSharpAngle_0_to_180deg(name, 60.degrees, absDir)
 
     def addSharpAngle_90deg(
-        name: String,
+        name  : String,
         absDir: AbsoluteDirection
     ): Descr =
         addSharpAngle_0_to_180deg(name, 90.degrees, absDir)

@@ -14,7 +14,8 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
 
 import coulomb.*
 
-/** EN 15544 formula instance for [[Door15aFirebox_Catalog]] fireboxes.
+/**
+ * EN 15544 formula instance for [[Door15aFirebox_Catalog]] fireboxes.
  *
  * Placeholder that delegates entirely to the default standard formulas.
  * Ready for customisation when Door 15a-specific sizing formulas are needed

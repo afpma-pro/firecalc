@@ -9,7 +9,8 @@ import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Traditional.CustomForLab
 
-/** EN 15544 constraints for [[CustomForLab]] fireboxes.
+/**
+ * EN 15544 constraints for [[CustomForLab]] fireboxes.
  *
  * Extends the default constraint set.
  */

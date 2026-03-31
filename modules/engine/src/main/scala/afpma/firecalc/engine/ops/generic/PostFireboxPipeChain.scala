@@ -12,18 +12,19 @@ import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
-/** A validated, ordered chain of post-firebox pipe slots.
-  *
-  * The topology grammar:
-  * {{{
-  *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
-  *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
-  *   CONNECTOR_PIPE   := ConnectorPipeT  |  noop
-  *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
-  * }}}
-  *
-  * Construct via `PostFireboxPipeChain.validated`.
-  */
+/**
+ * A validated, ordered chain of post-firebox pipe slots.
+ *
+ * The topology grammar:
+ * {{{
+ *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
+ *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
+ *   CONNECTOR_PIPE   := ConnectorPipeT  |  noop
+ *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
+ * }}}
+ *
+ * Construct via `PostFireboxPipeChain.validated`.
+ */
 case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
     // ── region accessors ────────────────────────────────────────────────
@@ -56,16 +57,18 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
         initialUpstream: UpstreamState,
         computeAt      : ComputeAt
     ): Either[MecaFlu_Error, Vector[PipeResult]] =
-        slots.foldLeft[Either[MecaFlu_Error, (UpstreamState, Vector[PipeResult])]](
-            Right((initialUpstream, Vector.empty))
-        ) { case (acc, slot) =>
-            acc.flatMap { case (upstream, results) =>
-                slot.compute(upstream, params).map { pr =>
-                    val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
-                    (nextUpstream, results :+ pr)
+        slots
+            .foldLeft[Either[MecaFlu_Error, (UpstreamState, Vector[PipeResult])]](
+                Right((initialUpstream, Vector.empty))
+            ) { case (acc, slot) =>
+                acc.flatMap { case (upstream, results) =>
+                    slot.compute(upstream, params).map { pr =>
+                        val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
+                        (nextUpstream, results :+ pr)
+                    }
                 }
             }
-        }.map(_._2)
+            .map(_._2)
 
     // ── result region accessors ─────────────────────────────────────────
 
@@ -89,11 +92,12 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
 object PostFireboxPipeChain:
 
-    /** Validate the slot vector against the topology grammar and build a chain.
-      *
-      * Returns a `ValidatedNel[TopologyError, PostFireboxPipeChain]` so that
-      * all violations are reported at once.
-      */
+    /**
+     * Validate the slot vector against the topology grammar and build a chain.
+     *
+     * Returns a `ValidatedNel[TopologyError, PostFireboxPipeChain]` so that
+     * all violations are reported at once.
+     */
     def validated(slots: Vector[PipeSlot]): ValidatedNel[TopologyError, PostFireboxPipeChain] =
         import TopologyError.*
 
@@ -101,39 +105,32 @@ object PostFireboxPipeChain:
 
         // Rule 1: last slot must be ChimneyPipeT (or empty → MissingChimney)
         val rule1 =
-            if slots.isEmpty || slots.last.pipeType != ChimneyPipeT then
-                Validated.invalidNel(MissingChimney)
-            else
-                Validated.validNel(())
+            if slots.isEmpty || slots.last.pipeType != ChimneyPipeT then Validated.invalidNel(MissingChimney)
+            else Validated.validNel                                                          (()            )
 
         // Rule 5: no ChimneyPipeT except the last slot
         val rule5 =
-            if slots.dropRight(1).exists(_.pipeType == ChimneyPipeT) then
-                Validated.invalidNel(ChimneyNotLast)
-            else
-                Validated.validNel(())
+            if slots.dropRight(1).exists(_.pipeType == ChimneyPipeT) then Validated.invalidNel(ChimneyNotLast)
+            else Validated.validNel     (()                        )
 
         // Find the last FluePipeT index
         val lastFlueIdx = slots.lastIndexWhere(_.pipeType == FluePipeT)
 
         // The "after-flue" region: everything after the last FluePipeT, excluding chimney (last)
         val afterFlueBeforeChimney =
-            if lastFlueIdx < 0 then slots.dropRight(1)
-            else slots.slice(lastFlueIdx + 1, lastIdx)
+            if lastFlueIdx < 0 then slots.dropRight(1                       )
+            else slots.slice                       (lastFlueIdx + 1, lastIdx)
 
         // Rule 3: no FluePipeT after the connector position
         val rule3 =
-            if afterFlueBeforeChimney.exists(_.pipeType == FluePipeT) then
-                Validated.invalidNel(FluePipeAfterConnector)
-            else
-                Validated.validNel(())
+            if afterFlueBeforeChimney.exists(_.pipeType == FluePipeT) then Validated.invalidNel(FluePipeAfterConnector)
+            else Validated.validNel         (()                     )
 
         // Rule 4: at most one ConnectorPipeT after last FluePipeT
         val rule4 =
             if afterFlueBeforeChimney.count(_.pipeType == ConnectorPipeT) > 1 then
                 Validated.invalidNel(MultipleConnectorsAfterFlue)
-            else
-                Validated.validNel(())
+            else Validated.validNel (()                         )
 
         import cats.syntax.all.*
 

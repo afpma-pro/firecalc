@@ -42,7 +42,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
 
     given given_en13384: EN13384_1_A1_2019_Application_Alg = en13384
 
-    lazy val computeAt: ComputeAt = ComputeAt.Mean
+    override lazy val computeAt: ComputeAt = ComputeAt.Mean
 
     def heatingAppliance_final(using ha_input: HeatingAppliance) =
         // volume flows can only be computed using ha_input (efficiency, and other sub values)
@@ -101,15 +101,16 @@ abstract class EN13384_1_A1_2019_Common_Application(
     lazy val last_known_density_before_connector_pipe : WithParams_13384[Option[Density]]      = None
     lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] = None
 
-    /** Compute all post-firebox pipe results via the generic chain.
-      *
-      * Builds a `PostFireboxPipeChain` from the connector + chimney pipe
-      * descriptions, then left-folds upstream state through each slot.
-      * This replaces the manual density/velocity threading that was previously
-      * done between `connector_PipeResult` and `chimney_PipeResult`.
-      */
+    /**
+     * Compute all post-firebox pipe results via the generic chain.
+     *
+     * Builds a `PostFireboxPipeChain` from the connector + chimney pipe
+     * descriptions, then left-folds upstream state through each slot.
+     * This replaces the manual density/velocity threading that was previously
+     * done between `connector_PipeResult` and `chimney_PipeResult`.
+     */
     private def postFireboxChainResults: PipeResultOp[WithParams_13384[Either[MecaFlu_Error, Vector[PipeResult]]]] =
-        val tc = CanComputePipeResult.forThermal13384(
+        val tc       = CanComputePipeResult.forThermal13384(
             en13384,
             HeatingAppliance.FlueGas.summon,
             HeatingAppliance.MassFlows.summon,
@@ -126,7 +127,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
             case Validated.Valid(c)   => c
             case Validated.Invalid(e) => throw new IllegalStateException(s"Invalid post-firebox topology: $e")
 
-        val tw = LoadQty.summon match
+        val tw              = LoadQty.summon match
             case LoadQty.Nominal => T_WN
             case LoadQty.Reduced => T_Wmin
         val initialUpstream = UpstreamState(

@@ -5,7 +5,6 @@
 
 package afpma.firecalc.engine.utils
 
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 import afpma.firecalc.engine.utils.*
@@ -16,9 +15,7 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "works on ordered data" in {
             val m1 =
-                Map(1 -> 10, 3 -> 30, 2 -> 20).map((x, y) =>
-                    (x.toDouble, y.toDouble)
-                )
+                Map(1 -> 10, 3 -> 30, 2 -> 20).map((x, y) => (x.toDouble, y.toDouble))
             m1.getWithLinearInterpolation(2.5).shouldBe(Right(25.0))
         }
 
@@ -27,8 +24,8 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
                 (3.0, 30.0),
                 (2.0, 20.0)
             )
-            val xi = 2.5
-            val yi = unordered.getWithLinearInterpolation(xi)
+            val xi        = 2.5
+            val yi        = unordered.getWithLinearInterpolation(xi)
             yi.shouldBe(Right(25.0))
         }
 
@@ -38,13 +35,13 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "returns ValueOutOfRange when xi is below all data points" in {
-            val data = List((10.0, 100.0), (20.0, 200.0))
+            val data   = List((10.0, 100.0), (20.0, 200.0))
             val result = data.getWithLinearInterpolation(5.0)
             result shouldBe Left(InterpolationError.ValueOutOfRange("xi", "yi", 5.0))
         }
 
         "returns ValueOutOfRange when xi is above all data points" in {
-            val data = List((10.0, 100.0), (20.0, 200.0))
+            val data   = List((10.0, 100.0), (20.0, 200.0))
             val result = data.getWithLinearInterpolation(25.0)
             result shouldBe Left(InterpolationError.ValueOutOfRange("xi", "yi", 25.0))
         }

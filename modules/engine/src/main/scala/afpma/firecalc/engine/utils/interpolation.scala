@@ -447,16 +447,34 @@ extension (it: IterableOnce[(Double, Double, Double)])
             val ys = xyz_list.map(_._2).sorted
 
             boundary:
-                val x1 = xs.filter(_ <= xi).lastOption.getOrElse(break(Left(InterpolationError.ValueOutOfRange("xi", "yi", xi, Some(yi)))))
+                val x1 = xs
+                    .filter(_ <= xi)
+                    .lastOption
+                    .getOrElse(break(Left(InterpolationError.ValueOutOfRange("xi", "yi", xi, Some(yi)))))
                 val x2 = xs.find(_ >= xi).getOrElse(break(Left(InterpolationError.ValueOutOfRange("xi", "yi", xi, Some(yi)))))
 
-                val y1 = ys.filter(_ <= yi).lastOption.getOrElse(break(Left(InterpolationError.ValueOutOfRange("xi", "yi", xi, Some(yi)))))
+                val y1 = ys
+                    .filter(_ <= yi)
+                    .lastOption
+                    .getOrElse(break(Left(InterpolationError.ValueOutOfRange("xi", "yi", xi, Some(yi)))))
                 val y2 = ys.find(_ >= yi).getOrElse(break(Left(InterpolationError.ValueOutOfRange("xi", "yi", xi, Some(yi)))))
 
-                val z11 = xyz_list.find((x, y, _) => x == x1 && y == y1).getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))._3
-                val z12 = xyz_list.find((x, y, _) => x == x1 && y == y2).getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))._3
-                val z21 = xyz_list.find((x, y, _) => x == x2 && y == y1).getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))._3
-                val z22 = xyz_list.find((x, y, _) => x == x2 && y == y2).getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))._3
+                val z11 = xyz_list
+                    .find((x, y, _) => x == x1 && y == y1)
+                    .getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))
+                    ._3
+                val z12 = xyz_list
+                    .find((x, y, _) => x == x1 && y == y2)
+                    .getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))
+                    ._3
+                val z21 = xyz_list
+                    .find((x, y, _) => x == x2 && y == y1)
+                    .getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))
+                    ._3
+                val z22 = xyz_list
+                    .find((x, y, _) => x == x2 && y == y2)
+                    .getOrElse(break(Left(InterpolationError.MissingGridPoint(xi, yi))))
+                    ._3
 
                 // only linear interpolation on single x param
                 if      (x1 == x2) List((y1, z11), (y2, z12)).getWithLinearInterpolation(yi)

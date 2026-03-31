@@ -109,7 +109,8 @@ object std:
     )
 
     sealed trait Firebox_15544:
-        /** Self-referential type preserving the concrete firebox type.
+        /**
+         * Self-referential type preserving the concrete firebox type.
          *
          * The lower bound `>: this.type` guarantees that `this: Self` holds,
          * so typeclass extension methods can be called with `this` directly.
@@ -139,7 +140,8 @@ object std:
         def co2_dry_nominal: σ_CO2
         def co2_dry_lowest : Option[σ_CO2]
 
-        /** Resolve the [[FireboxFormulas]] typeclass instance for this firebox.
+        /**
+         * Resolve the [[FireboxFormulas]] typeclass instance for this firebox.
          *
          * The concrete `given` is supplied by the call-site (typically from
          * `impl.en15544.common` or `impl.en15544.instances`), keeping the
@@ -147,7 +149,8 @@ object std:
          */
         def formulas(using f: FireboxFormulas[Self]): FireboxFormulas[Self] = f
 
-        /** Resolve the [[FireboxConstraints]] typeclass instance for this firebox.
+        /**
+         * Resolve the [[FireboxConstraints]] typeclass instance for this firebox.
          *
          * See [[formulas]] for the rationale.
          */
@@ -159,17 +162,17 @@ object std:
             ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
                 import x.*
                 val I = I18N.firebox
-                (I18N.firebox.typ                                              :: "" :: firebox_type                                      :: Nil) ::
-                    (I18N.firebox.ref                                          :: "" :: reference.show                                    :: Nil) ::
-                    (I18N.type_of_appliance.descr                              :: "" :: type_of_appliance.show                            :: Nil) ::
-                    (I.base_geometry                                           :: "" :: dimensions.base.showP                             :: Nil) ::
-                    (I18N.en15544.terms.H_BR.name                              :: "" :: dimensions.height.showP                           :: Nil) ::
-                    (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: "" :: height_of_lowest_opening.showP                    :: Nil) ::
-                    (I.glass_area                                              :: "" :: glass_area.showP                                  :: Nil) ::
-                    (I18N.en15544.terms.m_B_min.name                           :: "" :: x.min_load.show                                   :: Nil) ::
-                    (I18N.en15544.terms.P_n_reduced.name                       :: "" :: x.pn_reduced.show                                 :: Nil) ::
-                    (I18N.firebox.tested.co2_perc_by_vol_dry_nominal           :: "" :: x.co2_dry_nominal.showP                           :: Nil) ::
-                    (I18N.firebox.tested.co2_perc_by_vol_dry_reduced           :: "" :: x.co2_dry_lowest.showP                            :: Nil) ::
+                (I18N.firebox.typ                                              :: "" :: firebox_type                   :: Nil) ::
+                    (I18N.firebox.ref                                          :: "" :: reference.show                 :: Nil) ::
+                    (I18N.type_of_appliance.descr                              :: "" :: type_of_appliance.show         :: Nil) ::
+                    (I.base_geometry                                           :: "" :: dimensions.base.showP          :: Nil) ::
+                    (I18N.en15544.terms.H_BR.name                              :: "" :: dimensions.height.showP        :: Nil) ::
+                    (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: "" :: height_of_lowest_opening.showP :: Nil) ::
+                    (I.glass_area                                              :: "" :: glass_area.showP               :: Nil) ::
+                    (I18N.en15544.terms.m_B_min.name                           :: "" :: x.min_load.show                :: Nil) ::
+                    (I18N.en15544.terms.P_n_reduced.name                       :: "" :: x.pn_reduced.show              :: Nil) ::
+                    (I18N.firebox.tested.co2_perc_by_vol_dry_nominal           :: "" :: x.co2_dry_nominal.showP        :: Nil) ::
+                    (I18N.firebox.tested.co2_perc_by_vol_dry_reduced           :: "" :: x.co2_dry_lowest.showP         :: Nil) ::
                     Nil
 
         case class Dimensions(
@@ -318,8 +321,8 @@ object std:
             // ── Input data (provided by each catalog entry / database row) ──
 
             val uniq_id: String
-            val mb: Option[Mass]
-            val sb: SB
+            val mb     : Option[Mass]
+            val sb     : SB
 
             /** Optional per-entry SB constraint bounds; defaults applied in Door15aCatalogConstraints. */
             val sb_min: Option[SB]
@@ -340,12 +343,13 @@ object std:
 
             // ── Computed from input data ────────────────────────────────
 
-            /** Pressure loss for the current (mB, SB) pair.
-              *
-              * - `Right(pressure)` — success
-              * - `Left(None)`      — no mB value set (optional, no error)
-              * - `Left(Some(reason))` — parse/interpolation failure with reason
-              */
+            /**
+             * Pressure loss for the current (mB, SB) pair.
+             *
+             * - `Right(pressure)` — success
+             * - `Left(None)`      — no mB value set (optional, no error)
+             * - `Left(Some(reason))` — parse/interpolation failure with reason
+             */
             def pressure_loss: Either[Option[InterpolationError], Pressure]
 
             lazy val factory: Factory
@@ -369,7 +373,7 @@ object std:
                     pressureLossTable.interpolate(mb, sb_value)
 
         object Door15aFirebox_Catalog:
-            
+
             /** supply air slot width (SB) (in cm) */
             type SB = SupplyAirSlotWidth.Type
             object SupplyAirSlotWidth extends OTypedQtyD[Centimeter]:
@@ -385,34 +389,33 @@ object std:
             given showAsTable: Locale => ShowAsTable[Door15aFirebox_Catalog] =
                 ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
                     import x.*
-                    val I               = I18N.firebox.door_15a_firebox
-                    val list            =
-                        (I18N.firebox.typ :: ""   :: I18N.firebox_names.door_15a_firebox :: Nil) ::
-                            (I.load_size_nominal  :: "mB" :: mb.showP                    :: Nil) ::
-                            (I.sb                 :: "SB" :: sb.to_cm.showP              :: Nil) ::
+                    val I    = I18N.firebox.door_15a_firebox
+                    val list =
+                        (I18N.firebox.typ        :: ""   :: I18N.firebox_names.door_15a_firebox :: Nil) ::
+                            (I.load_size_nominal :: "mB" :: mb.showP                            :: Nil) ::
+                            (I.sb                :: "SB" :: sb.to_cm.showP                      :: Nil) ::
                             Nil
                     list.filter(_.nonEmpty)
 
         case class Door15aFirebox_Catalog_DatabaseEntry(
-            uniq_id: String,
-            mb: Option[Mass], 
-            sb: SB,
-            dimensions: Dimensions,
-            sb_min: Option[SB],
-            sb_max: Option[SB],
-            mb_min: Option[Mass],
-            mb_max: Option[Mass],
-            pressure_loss_table_raw: String,
+            uniq_id                    : String,
+            mb                         : Option[Mass],
+            sb                         : SB,
+            dimensions                 : Dimensions,
+            sb_min                     : Option[SB],
+            sb_max                     : Option[SB],
+            mb_min                     : Option[Mass],
+            mb_max                     : Option[Mass],
+            pressure_loss_table_raw    : String,
             expectedAirIntakePipeShapes: List[PipeShape],
-            actualAirIntakePipeShape: PipeShape,
-            co2_dry_nominal: σ_CO2,
-            co2_dry_lowest: Option[σ_CO2],
-            emissions_values: EmissionsAndEfficiencyValues,
-            glass_area: GlassArea,
-            height_of_lowest_opening: Length,
-            pn_reduced: HeatOutputReduced,
-        )
-            extends Door15aFirebox_Catalog:
+            actualAirIntakePipeShape   : PipeShape,
+            co2_dry_nominal            : σ_CO2,
+            co2_dry_lowest             : Option[σ_CO2],
+            emissions_values           : EmissionsAndEfficiencyValues,
+            glass_area                 : GlassArea,
+            height_of_lowest_opening   : Length,
+            pn_reduced                 : HeatOutputReduced
+        ) extends Door15aFirebox_Catalog:
 
             type Self = Door15aFirebox_Catalog_DatabaseEntry
 
@@ -420,8 +423,8 @@ object std:
                 case None     => Left(None)
                 case Some(mb) =>
                     factory.get_pressure_loss_for_mb_sb(mb, sb) match
-                        case Right(p)      => Right(p)
-                        case Left(reason)  => Left(Some(reason))
+                        case Right(p)     => Right(p)
+                        case Left(reason) => Left(Some(reason))
 
             override def firebox_type      = I18N.firebox_names.door_15a_firebox
             override def min_load          = mb_min.fold(MinLoad.NotDefined)(m => MinLoad.FromTypeTest(m))
@@ -433,7 +436,6 @@ object std:
 
         // TODO: implement MB 17 specs
         // trait Door15aFirebox_Generic extends Firebox_15544
-
 
     end Firebox_15544
 

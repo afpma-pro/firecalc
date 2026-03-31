@@ -75,6 +75,8 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_133
         *
     }
 
+    lazy val computeAt: ComputeAt = ComputeAt.Mean
+
     lazy val inputs: Inputs_13384
 
     def heatingAppliance_final(using ha_input: HeatingAppliance): HeatingAppliance

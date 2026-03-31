@@ -11,7 +11,8 @@ import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.AreaCalcMethod
 import afpma.firecalc.engine.models.en15544.typedefs.*
 
-/** Typeclass providing formula implementations for EN 15544 firebox sizing.
+/**
+ * Typeclass providing formula implementations for EN 15544 firebox sizing.
  *
  * Each method returns a function computing the relevant quantity.
  * The `firebox` parameter is passed explicitly to allow firebox-specific
@@ -23,7 +24,8 @@ trait FireboxFormulas[-F <: Firebox_15544]:
         /** Section "4.3.1.1" – Firebox surface area O_BR */
         def O_BR_calc: m_B => O_BR
 
-        /** See EN 15544 – Section 4.3.1.2 – Firebox area calculation method.
+        /**
+         * See EN 15544 – Section 4.3.1.2 – Firebox area calculation method.
          *
          * Implementations typically return [[AreaCalcMethod.AutoIfCubic]] unless
          * a manual area override is specified.
@@ -33,7 +35,8 @@ trait FireboxFormulas[-F <: Firebox_15544]:
         /** See EN 15544 – Section 4.3.1.2 – Total enclosing firebox surface area. */
         def area_O_BR: Area
 
-        /** See EN 15544 – Section 4.3.1.2 – Derived boolean: glass area ≤ 1/5 of
+        /**
+         * See EN 15544 – Section 4.3.1.2 – Derived boolean: glass area ≤ 1/5 of
          *  total enclosing firebox surface area.
          */
         def firebox_glass_surface_ratio_below_one_fifth: Boolean

@@ -51,8 +51,8 @@ case class Preview(
     length           : Option[Length],
     elev_gain        : Option[Length],
     angle            : Option[Angle],
-    innerShape: Option[PipeShape],
-    pipeLoc   : Option[PipeLocation]
+    innerShape       : Option[PipeShape],
+    pipeLoc          : Option[PipeLocation]
 )
 
 object Preview:
@@ -168,8 +168,8 @@ object Preview:
                 case el: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.DirectionChange => el.angleN1.some
                 case el: afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange => el.angleN1.some
                 case _ => None,
-            innerShape = psr.innerShape_middle.some,
-            pipeLoc    = descr match
+            innerShape        = psr.innerShape_middle.some,
+            pipeLoc           = descr match
                 case el: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.StraightSection => el.pipeLoc.some
                 case _ : afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.PipeElDescr    =>
                     PipeLocation.BoilerRoom.some

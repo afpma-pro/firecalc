@@ -49,9 +49,11 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             def getAll: Seq[(IdIncr, IdEl)] = m.map(kv => (kv._1, kv._2)).toSeq
             def get      (i: IdIncr): Option[IdEl] = m.get(i)
             def getUnsafe(i: Int   ): Option[IdEl] = m.get(i)
-            /** Reverse map: PipeIdx (section_id) → descriptor index.
-              * Inside the opaque scope: IdIncr = Int, IdEl = PipeIdx.
-              */
+
+            /**
+             * Reverse map: PipeIdx (section_id) → descriptor index.
+             * Inside the opaque scope: IdIncr = Int, IdEl = PipeIdx.
+             */
             def reverseToIntMap: Map[Int, Int] =
                 m.map { case (descrIdx, pipeIdx) => (pipeIdx.unwrap, descrIdx) }
 
@@ -92,7 +94,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         val firstAddElement: Option[(IdIncr, AddElement)] =
             incrDescrs.collectFirst:
                 case (id, ae: AddElement) => (id, ae)
-        val lastAddElement: Option[(IdIncr, AddElement)] =
+        val lastAddElement : Option[(IdIncr, AddElement)] =
             incrDescrs.reverse.collectFirst:
                 case (id, ae: AddElement) => (id, ae)
 
@@ -100,13 +102,13 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             firstAddElement match
                 case Some((_, ae)) if isForbiddenAddElementAtStart(ae) =>
                     ForbiddenAddElementAtStart(pt, ae.name).invalidNel
-                case _ => ().validNel
+                case _                                                 => ().validNel
 
         val endCheck: ValidatedResult[Unit] =
             lastAddElement match
                 case Some((_, ae)) if isForbiddenAddElementAtEnd(ae) =>
                     ForbiddenAddElementAtEnd(pt, ae.name).invalidNel
-                case _ => ().validNel
+                case _                                               => ().validNel
 
         (startCheck, endCheck).mapN((_, _) => ())
 
@@ -116,7 +118,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             buildFrom(piDescr, externalInitialFrame = None).map((ids, fd, _) => (ids, fd))
 
         /** Like toFullDescr(), but also returns the final PipeFrame (if direction tracking was active). */
-        def toFullDescrWithFinalFrame(): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
+        def toFullDescrWithFinalFrame()
+            : ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
             buildFrom(piDescr, externalInitialFrame = None)
 
         /**
@@ -139,15 +142,15 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         val iIdsMapping    = IdsMapping.empty
         val iListIncrDescr = piDescr.listIncrDescr()
         validateBoundaryElements(iListIncrDescr) *>
-        buildIncrDescr(
-            iPipeFullDescr,
-            iIdsMapping,
-            iPropsState,
-            opsDone = Vector.empty,
-            opsLeft = iListIncrDescr
-        ).andThen: (ids, fd, finalState) =>
-            postBuildValidation(iListIncrDescr, finalState) *>
-            (ids, fd, currentFrameFromPropsState(finalState)).validNel
+            buildIncrDescr(
+                iPipeFullDescr,
+                iIdsMapping,
+                iPropsState,
+                opsDone = Vector.empty,
+                opsLeft = iListIncrDescr
+            ).andThen: (ids, fd, finalState) =>
+                postBuildValidation(iListIncrDescr, finalState) *>
+                    (ids, fd, currentFrameFromPropsState(finalState)).validNel
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
 
@@ -330,9 +333,9 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                                         nextOpsDone,
                                         nextOpsLeft
                                     )
-                                case Invalid(e)        => Invalid(e)
-                        case Invalid(e)                           => Invalid(e)
-                case Invalid(e)       => Invalid(e)
+                                case Invalid(e)            => Invalid(e)
+                        case Invalid(e)                               => Invalid(e)
+                case Invalid(e)           => Invalid(e)
 
     val ElementFactory: ElementFactoryModule
     export ElementFactory.{*, given}

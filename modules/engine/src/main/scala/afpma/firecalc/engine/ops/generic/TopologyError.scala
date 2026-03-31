@@ -5,16 +5,17 @@
 
 package afpma.firecalc.engine.ops.generic
 
-/** Validation errors for the post-firebox topology grammar.
-  *
-  * The grammar:
-  * {{{
-  *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
-  *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
-  *   CONNECTOR_PIPE   := ConnectorPipeT  |  noop
-  *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
-  * }}}
-  */
+/**
+ * Validation errors for the post-firebox topology grammar.
+ *
+ * The grammar:
+ * {{{
+ *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
+ *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
+ *   CONNECTOR_PIPE   := ConnectorPipeT  |  noop
+ *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
+ * }}}
+ */
 enum TopologyError:
     /** Rule 1: last slot must be ChimneyPipeT */
     case MissingChimney

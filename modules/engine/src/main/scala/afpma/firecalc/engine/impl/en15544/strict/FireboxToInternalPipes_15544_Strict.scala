@@ -15,4 +15,6 @@ trait FireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544] extends FireboxToFi
 trait FireboxToCombustionAirPipe_15544_Strict[FB <: Firebox_15544] extends FireboxToCombustionAirPipe[FB]:
     override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.PipeCanBe
 
-trait FireboxToInternalPipes_15544_Strict[FB <: Firebox_15544] extends FireboxToFireboxPipe_15544_Strict[FB] with FireboxToCombustionAirPipe_15544_Strict[FB]
+trait FireboxToInternalPipes_15544_Strict[FB <: Firebox_15544]
+    extends FireboxToFireboxPipe_15544_Strict[FB]
+    with FireboxToCombustionAirPipe_15544_Strict[FB]

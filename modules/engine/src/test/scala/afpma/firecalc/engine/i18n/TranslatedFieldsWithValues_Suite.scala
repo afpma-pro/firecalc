@@ -20,7 +20,7 @@ import afpma.firecalc.i18n.utils.TranslatedFieldsWithValues
 class TranslatedFieldsWithValues_Suite extends AnyFreeSpec with Matchers:
 
     given Locale = Locale(Languages.Fr)
-    
+
     "TranslatedFieldsWithValues" - {
 
         "should work on Customer" in {
@@ -31,7 +31,7 @@ class TranslatedFieldsWithValues_Suite extends AnyFreeSpec with Matchers:
             val exp = TranslatedFieldsWithValues(
                 "Customer",
                 Some("Customer"),
-                Map()
+                Map (          )
             )
             val out = getTranslatedFieldsWithValues[Customer, I18nData]
             out `shouldEqual` exp
@@ -40,9 +40,9 @@ class TranslatedFieldsWithValues_Suite extends AnyFreeSpec with Matchers:
         "should work on case class without annotations" in {
             @nowarn case class Foo(bar: String, baz: Int)
             val exp = TranslatedFieldsWithValues(
-                "Foo", 
-                Some("Foo"), 
-                Map(
+                "Foo",
+                Some("Foo"),
+                Map (
                     "bar" -> Some("bar"),
                     "baz" -> Some("baz")
                 )
