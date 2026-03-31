@@ -12,7 +12,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 
-import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
+import afpma.firecalc.engine.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
 import afpma.firecalc.engine.models.geometry.*

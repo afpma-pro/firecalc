@@ -22,7 +22,7 @@ import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_13384_Insta
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_Instance.ThermalPropsState_13384
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
-import afpma.firecalc.engine.impl.common.typeclasses.*
+import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*

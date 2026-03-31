@@ -21,7 +21,7 @@ import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_15544_Insta
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.FlowOnlyPropsState_15544
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_15544_Instances.given
-import afpma.firecalc.engine.impl.common.typeclasses.*
+import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*

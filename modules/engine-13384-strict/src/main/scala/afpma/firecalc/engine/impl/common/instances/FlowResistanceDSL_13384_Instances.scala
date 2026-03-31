@@ -9,7 +9,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.impl.common.typeclasses.FlowResistanceDSL
+import afpma.firecalc.engine.typeclasses.FlowResistanceDSL
 import afpma.firecalc.engine.models.gtypedefs.*
 
 object FlowResistanceDSL_13384_Instances:

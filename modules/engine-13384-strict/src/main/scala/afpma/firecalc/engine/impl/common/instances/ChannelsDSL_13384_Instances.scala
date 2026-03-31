@@ -7,7 +7,7 @@ package afpma.firecalc.engine.impl.common.instances
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.impl.common.typeclasses.ChannelsDSL
+import afpma.firecalc.engine.typeclasses.ChannelsDSL
 
 object ChannelsDSL_13384_Instances:
 

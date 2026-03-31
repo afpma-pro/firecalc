@@ -3,7 +3,7 @@
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
 
-package afpma.firecalc.engine.impl.common.typeclasses
+package afpma.firecalc.engine.typeclasses
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 

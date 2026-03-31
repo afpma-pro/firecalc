@@ -9,7 +9,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.impl.common.typeclasses.*
+import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.geometry.*
 
 object PropsStateOps_Thermal_13384_Instance:

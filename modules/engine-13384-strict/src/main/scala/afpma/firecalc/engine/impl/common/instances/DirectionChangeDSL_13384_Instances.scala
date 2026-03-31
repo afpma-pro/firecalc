@@ -10,7 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 
-import afpma.firecalc.engine.impl.common.typeclasses.DirectionChangeDSL_13384
+import afpma.firecalc.engine.typeclasses.DirectionChangeDSL_13384
 
 object DirectionChangeDSL_13384_Instances:
 

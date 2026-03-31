@@ -12,7 +12,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.*
 
-import afpma.firecalc.engine.impl.common.typeclasses.ElementFactory
+import afpma.firecalc.engine.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384

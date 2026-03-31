@@ -9,7 +9,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.impl.common.typeclasses.SectionDSL
+import afpma.firecalc.engine.typeclasses.SectionDSL
 
 object SectionDSL_13384_Instances:
 
