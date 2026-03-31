@@ -41,6 +41,7 @@ import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
+import afpma.firecalc.engine.ops.en13384.mkforEN13384
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.dto.all.*
@@ -82,16 +83,14 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     /** Build the constraint context from sizing results. */
     lazy val constraintContext: ConstraintContext =
         ConstraintContext(
-            m_B                             = m_B,
-            O_BR                            = firebox_sizing.O_BR,
-            FLOOR_DEPTH_TO_WIDTH_MIN_RATIO  = firebox_sizing.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO,
-            FLOOR_DEPTH_TO_WIDTH_MAX_RATIO  = firebox_sizing.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO,
-            A_BR_min                        = firebox_sizing.A_BR_min,
-            A_BR_max                        = firebox_sizing.A_BR_max,
-            A_BR                            = firebox_sizing.A_BR,
-            H_BR_min                        = firebox_sizing.H_BR_min,
-            H_BR                            = firebox_sizing.H_BR,
-            n_min                           = n_min
+            m_B      = m_B,
+            O_BR     = firebox_sizing.O_BR,
+            A_BR_min = firebox_sizing.A_BR_min,
+            A_BR_max = firebox_sizing.A_BR_max,
+            A_BR     = firebox_sizing.A_BR,
+            H_BR_min = firebox_sizing.H_BR_min,
+            H_BR     = firebox_sizing.H_BR,
+            n_min    = n_min
         )
 
     given convertResistanceCoefficientToError: Conversion[PressureLossCoeff.Err, ErrorGen] =
@@ -228,7 +227,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         PipeWithGasFlowOps.mkforEN13384(en13384_formulas)
 
     given ssalg: afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
-        afpma.firecalc.engine.models.en15544.shortsection.ShortSection()(using FluePipeT).makeImpl(using formulas)
+        afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory.make(using formulas)
 
     // ─── CommonAtParams: params-dependent layer implementation ────────────
 
@@ -425,10 +424,14 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
         def validateEfficiencyIsAboveMinEfficiency(): VNelMcalcErr[Unit] =
             η.andThen: eff =>
-                if (eff.value >= n_min.value)
-                    ().validNel
-                else
-                    EfficiencyIsTooLow(eff, n_min).invalidNel
+                emissions_and_efficiency_values.min_efficiency_full_stove_nominal.map:
+                    case Some(min_eff) =>
+                        if (eff.value >= min_eff.value)
+                            ().validNel
+                        else
+                            EfficiencyIsTooLow(eff, min_eff).invalidNel
+                    case None          =>
+                        ().validNel
 
         override def validateSeasonalEfficiency(countryCode: Country): VNelMcalcErr[Unit] =
             η_s.andThen: seas_eff =>

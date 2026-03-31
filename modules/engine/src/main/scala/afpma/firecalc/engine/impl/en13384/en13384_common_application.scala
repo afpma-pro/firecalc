@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
+import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, PostFireboxPipeChain, UpstreamState}
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.MecaFlu_Error.given

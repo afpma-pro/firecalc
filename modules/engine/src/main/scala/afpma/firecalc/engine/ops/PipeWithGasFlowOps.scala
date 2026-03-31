@@ -7,9 +7,7 @@ package afpma.firecalc.engine.ops
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.ops.en13384.PipeWithGasFlowOps_13384
 
 import cats.data.*
 
@@ -50,7 +48,3 @@ object PipeWithGasFlowOps:
      * to get context-aware EN13384_Error at the ops layer boundary.
      */
     type Error = afpma.firecalc.engine.standard.EN13384_FormulaError
-
-    def mkforEN13384(
-        en13384: EN13384_1_A1_2019_Formulas_Alg
-    ): PipeWithGasFlowOps[Error] = new PipeWithGasFlowOps_13384(using en13384) {}
