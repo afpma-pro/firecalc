@@ -407,7 +407,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_kernel, i18n, units, dto)
+  .dependsOn(engine_kernel, i18n, units, dto, engine_kernel % "test->test")
 
 // =========
 // engine-13384-strict (EN 13384 implementation — physically separated from core engine)
@@ -445,7 +445,7 @@ lazy val engine_13384_strict = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine, engine % "test->test")
+  .dependsOn(engine, engine % "test->test", engine_kernel % "test->test")
 
 lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
