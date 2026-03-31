@@ -161,11 +161,8 @@ object OrderStatusTransitionTest extends TestSuite {
                 val service = createService(state)
 
                 val result = service.updateOrderStatus(order.id, to).unsafeRunSync()
-                Predef.assert(result, s"Expected transition $from -> $to to be accepted, but it was rejected")
-                Predef.assert(
-                    state.orders(order.id).status == to,
-                    s"Expected order status to be $to after transition from $from, but got ${state.orders(order.id).status}"
-                )
+                Predef.assert(result)
+                Predef.assert(state.orders(order.id).status == to)
             }
         }
 
@@ -181,11 +178,8 @@ object OrderStatusTransitionTest extends TestSuite {
                     val service = createService(state)
 
                     val result = service.updateOrderStatus(order.id, target).unsafeRunSync()
-                    Predef.assert(!result, s"Expected transition $terminal -> $target to be rejected, but it was accepted")
-                    Predef.assert(
-                        state.orders(order.id).status == terminal,
-                        s"Expected order to remain in $terminal, but status changed to ${state.orders(order.id).status}"
-                    )
+                    Predef.assert(!result)
+                    Predef.assert(state.orders(order.id).status == terminal)
                 }
             }
         }
@@ -207,11 +201,8 @@ object OrderStatusTransitionTest extends TestSuite {
                 val service = createService(state)
 
                 val result = service.updateOrderStatus(order.id, to).unsafeRunSync()
-                Predef.assert(!result, s"Expected transition $from -> $to to be rejected, but it was accepted")
-                Predef.assert(
-                    state.orders(order.id).status == from,
-                    s"Expected order to remain in $from, but status changed to ${state.orders(order.id).status}"
-                )
+                Predef.assert(!result)
+                Predef.assert(state.orders(order.id).status == from)
             }
         }
 
@@ -224,11 +215,8 @@ object OrderStatusTransitionTest extends TestSuite {
 
                 val result = service.updateOrderStatus(order.id, status).unsafeRunSync()
                 // Should return false (no actual update performed)
-                Predef.assert(!result, s"Expected same-status update $status -> $status to return false")
-                Predef.assert(
-                    state.orders(order.id).status == status,
-                    s"Order status should remain $status"
-                )
+                Predef.assert(!result)
+                Predef.assert(state.orders(order.id).status == status)
             }
         }
 
@@ -239,7 +227,7 @@ object OrderStatusTransitionTest extends TestSuite {
 
             // When order not found, repo.updateStatus returns false
             val result = service.updateOrderStatus(missingId, OrderStatus.Confirmed).unsafeRunSync()
-            Predef.assert(!result, "Expected update on missing order to return false")
+            Predef.assert(!result)
         }
     }
 }
