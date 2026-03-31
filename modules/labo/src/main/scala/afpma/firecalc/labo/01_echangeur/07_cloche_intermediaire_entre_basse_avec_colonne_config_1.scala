@@ -12,7 +12,7 @@ import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDi
 
 import afpma.firecalc.i18n.LocalizedString
 
-import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.api.v0_2024_10_labo
 import afpma.firecalc.engine.biblio.kov.firebox_emissions
 import afpma.firecalc.engine.impl.en15544.labo.*
 import afpma.firecalc.engine.models.*
@@ -25,8 +25,8 @@ import coulomb.*
 import coulomb.policy.standard.given
 
 object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
-    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Labo_Alg
-    with v0_2024_10.WithPipeChain_15544_MCE:
+    extends v0_2024_10_labo.SimpleStoveProjectDescrFr_15544_Labo_Alg
+    with v0_2024_10_labo.WithPipeChain_15544_MCE:
     self =>
 
     import std.*

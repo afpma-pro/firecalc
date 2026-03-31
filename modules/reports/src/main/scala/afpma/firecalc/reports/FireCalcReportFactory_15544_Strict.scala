@@ -12,11 +12,11 @@ import FireCalcReportFactory_15544_Strict.Op
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import scala.util.Failure
 import scala.util.Success
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr
+import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr
 import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
 import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
 import io.taig.babel.Locale
 import io.github.fatihcatalkaya.javatypst.JavaTypst
 import java.nio.file.Files

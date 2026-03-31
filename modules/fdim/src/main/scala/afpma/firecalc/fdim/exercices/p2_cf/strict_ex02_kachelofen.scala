@@ -10,7 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
-import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
@@ -18,8 +18,8 @@ import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 import cats.syntax.all.*
 
 object strict_ex02_kachelofen 
-    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10.Firebox_15544_Strict_Alg:
+    extends v0_2024_10_strict.SimpleStoveProjectDescrFr_15544_Strict_Alg
+    with v0_2024_10_strict.Firebox_15544_Strict_Alg:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given

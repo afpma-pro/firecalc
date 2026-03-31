@@ -174,7 +174,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, viz, graph, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -416,6 +416,66 @@ lazy val engine_13384_strict = crossProject(JVMPlatform, JSPlatform)
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine, engine % "test->test")
 
+lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/engine-15544-common"))
+  .settings(
+    commonSettings,
+    name := "firecalc-engine-15544-common",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:32"),
+    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
+    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(engine, engine_13384_strict, engine % "test->test", engine_13384_strict % "test->test")
+
+lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/engine-15544-strict"))
+  .settings(
+    commonSettings,
+    name := "firecalc-engine-15544-strict",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:32"),
+    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
+    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(engine_15544_common, engine_15544_common % "test->test")
+
+lazy val engine_15544_mce = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/engine-15544-mce"))
+  .settings(
+    commonSettings,
+    name := "firecalc-engine-15544-mce",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:32"),
+    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
+    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(engine_15544_common, engine_15544_common % "test->test")
+
+lazy val engine_15544_labo = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/engine-15544-labo"))
+  .settings(
+    commonSettings,
+    name := "firecalc-engine-15544-labo",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:32"),
+    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
+    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(engine_15544_mce, engine_15544_mce % "test->test")
+
 // =========
 // viz (3D visualization library - framework-agnostic, Scala.js only)
 
@@ -469,7 +529,7 @@ lazy val fdim = (project in file("modules/fdim"))
     ),
   )
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine.jvm % "test->test", engine_13384_strict.jvm % "test->test")
+  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, engine_15544_mce.jvm, engine.jvm % "test->test", engine_13384_strict.jvm % "test->test", engine_15544_strict.jvm % "test->test", engine_15544_mce.jvm % "test->test")
 
 // =========
 // i18n
@@ -519,7 +579,7 @@ lazy val labo = (project in file("modules/labo"))
     ),
   )
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine.jvm % "test->test")
+  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_labo.jvm, engine.jvm % "test->test", engine_15544_labo.jvm % "test->test")
 
 
 
@@ -796,7 +856,7 @@ lazy val ui = (project in file("modules/ui"))
   )
   .settings(jsSourceMapSettings)
   .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
-  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, engine_13384_strict.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph)
+  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, engine_13384_strict.js, engine_15544_strict.js, engine_15544_mce.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph)
 
 // =========
 // ui-i18n
@@ -979,7 +1039,7 @@ lazy val reports = (project in file("modules/reports"))
     ),
   )
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, utils.jvm)
+  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, utils.jvm)
 
 lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
   .settings(
@@ -1104,7 +1164,7 @@ lazy val payments = (project in file("modules/payments"))
     testFrameworks += new TestFramework("utest.runner.Framework"),
   )
   .settings(watchI18nSources("payments-i18n", "invoices-i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, payments_i18n, invoices, reports, payments_shared.jvm)
+  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, payments_i18n, invoices, reports, payments_shared.jvm)
 
 lazy val invoices = (project in file("modules/invoices"))
   .settings(

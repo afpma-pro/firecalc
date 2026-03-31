@@ -12,7 +12,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
-import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
 import afpma.firecalc.engine.models.LocalRegulations
 import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
@@ -50,7 +50,7 @@ abstract class TypstReportFactory_15544(
     import showAsTable_13384_instances.given
     import showAsTable_instances.given
 
-    val stove_proj_15544_strict: v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+    val stove_proj_15544_strict: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
 
     val atParams: en15544_app.AtParams
     // Derive given for WithParams_13384 methods (pressureRequirements_EN13384, temperatureRequirements_EN13384)

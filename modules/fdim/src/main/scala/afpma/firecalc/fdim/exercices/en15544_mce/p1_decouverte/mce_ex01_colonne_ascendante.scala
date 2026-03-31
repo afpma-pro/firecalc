@@ -10,7 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
-import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.api.v0_2024_10_mce
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.Wood
@@ -25,8 +25,8 @@ import coulomb.*
 import coulomb.policy.standard.given
 
 object mce_ex01_colonne_ascendante 
-    extends v0_2024_10.SimpleStoveProjectDescrFr_15544_MCE_Alg
-    with v0_2024_10.Firebox_15544_MCE_Alg:
+    extends v0_2024_10_mce.SimpleStoveProjectDescrFr_15544_MCE_Alg
+    with v0_2024_10_mce.Firebox_15544_MCE_Alg:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.mce.given

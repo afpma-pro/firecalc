@@ -10,8 +10,8 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.NbOfFlows
 
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Labo_Alg
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_Alg
+import afpma.firecalc.engine.api.v0_2024_10_labo.StoveProjectDescr_15544_Labo_Alg
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.gtypedefs.ζ
