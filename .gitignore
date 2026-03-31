@@ -52,6 +52,7 @@ modules/*/src/main/resources/company-overlay/
 modules/*/src/main/resources/deployment/
 
 # Scalamolecule generated files
+molecule/
 modules/payments/src/main/resources/moleculeGen
 
 # Generated files with sensitive data
