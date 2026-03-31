@@ -7,7 +7,7 @@ package afpma.firecalc.engine.ops.generic
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
+import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.models.PipeResult
 
 /** State propagated from one pipe slot to the next during the post-firebox fold.

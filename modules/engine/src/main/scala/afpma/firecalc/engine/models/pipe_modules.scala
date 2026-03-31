@@ -17,6 +17,7 @@ import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.ops.{HasOutsideSurfaceInLocation, HasUnheatedHeightInsideAndOutside}
 import afpma.firecalc.engine.ops.en13384.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 

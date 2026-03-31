@@ -17,7 +17,7 @@ import coulomb.policy.standard.given
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.impl.en13384.*
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
+import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*

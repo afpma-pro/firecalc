@@ -8,7 +8,7 @@ package afpma.firecalc.engine.ops.generic
 import cats.data.{NonEmptyList, Validated, ValidatedNel}
 
 import afpma.firecalc.engine.alg.en13384.Params_13384
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
+import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 

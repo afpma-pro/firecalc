@@ -10,7 +10,7 @@ import cats.syntax.all.*
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application.ComputeAt
+import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 
 import afpma.firecalc.engine.models // scalafix:ok

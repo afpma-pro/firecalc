@@ -32,16 +32,11 @@ import coulomb.policy.standard.given
 import io.taig.babel.Locale
 import io.taig.babel.Locales // ShowUsingLocale[MecaFlu_Error]
 
-object EN13384_1_A1_2019_Common_Application:
-    enum ComputeAt:
-        case Middle, Mean
-
 abstract class EN13384_1_A1_2019_Common_Application(
     val formulas: EN13384_1_A1_2019_Formulas_Alg
 ) extends EN13384_1_A1_2019_Application_Alg:
     en13384 =>
 
-    import EN13384_1_A1_2019_Common_Application.ComputeAt
     import Params_13384.given
 
     given given_en13384: EN13384_1_A1_2019_Application_Alg = en13384
