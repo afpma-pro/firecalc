@@ -19,10 +19,17 @@ firecalc/
 
 ## Core Modules
 
+### `modules/engine-kernel/`
+**Role:** Pure foundation for the calculation engine — algebras, typeclasses, models, error types, ops, and utilities
+**Tech:** Scala 3 cross-compiled (JVM + JS), Cats, Coulomb, functional programming, algebraic data types
+**Relations:** Depended on by `engine`; consumes `dto`, `units`, `i18n`
+**Files:** ~68 source files (the stable, rarely-changing core)
+
 ### `modules/engine/`
-**Role:** Core calculation engine for masonry heater design (EN 13384, EN 15544 standards)
-**Tech:** Scala 3, Cats, functional programming, algebraic data types
-**Relations:** Used by `ui`, `fdim`, `labo`; consumes `dto`, `units`
+**Role:** Calculation engine infrastructure — builders, concrete implementations, wiring, reference data
+**Tech:** Scala 3 cross-compiled (JVM + JS), Cats, functional programming
+**Relations:** Used by `engine-13384-strict`, `ui`, `fdim`, `labo`; depends on `engine-kernel`, `dto`, `units`, `i18n`
+**Files:** ~11 source files (infrastructure that changes more frequently)
 **Documentation:** [`modules/engine/README.md`](modules/engine/README.md)
 
 ### `modules/dto/`
