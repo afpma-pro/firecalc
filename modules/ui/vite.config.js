@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
         assetsInlineLimit: 0, // Don't inline assets, keep them as separate files
         // target: ["node*"], // see https://electron-vite.org/config/
         sourcemap: mode === 'development',
-        outDir: "../../web/dist-app",
+        outDir: "../../web/dist-app/app",
         rollupOptions: {
             external: [],
             output: {

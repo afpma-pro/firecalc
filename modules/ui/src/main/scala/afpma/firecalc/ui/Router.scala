@@ -25,22 +25,24 @@ object Page:
     given rwProjectId   : ReadWriter[ProjectId]    =
         readwriter[String].bimap[ProjectId](_.value, ProjectId.apply)
 
-lazy val defaultRoute = Route.static(DefaultPage, root / endOfSegments)
+lazy val defaultRoute = Route.static(DefaultPage, root / endOfSegments, basePath = Route.fragmentBasePath)
 
 case object DefaultPage extends Page
 case class ProjectSelectorPage(lang: Language)                                                              extends Page
 case class ProjectPage(lang: Language, projectId: ProjectId, displayUnitsOpt: Option[DisplayUnits] = None) extends Page
 
 lazy val projectSelectorRoute = Route[ProjectSelectorPage, String](
-    encode  = page => page.lang.value,
-    decode  = args => ProjectSelectorPage(lang = Language(args)),
-    pattern = root / segment[String] / endOfSegments
+    encode   = page => page.lang.value,
+    decode   = args => ProjectSelectorPage(lang = Language(args)),
+    pattern  = root / segment[String] / endOfSegments,
+    basePath = Route.fragmentBasePath
 )
 
 lazy val projectRoute = Route[ProjectPage, (String, String)](
-    encode  = page => (page.lang.value, page.projectId.value),
-    decode  = args => ProjectPage(lang = Language(args._1), projectId = ProjectId(args._2)),
-    pattern = root / segment[String] / "project" / segment[String] / endOfSegments
+    encode   = page => (page.lang.value, page.projectId.value),
+    decode   = args => ProjectPage(lang = Language(args._1), projectId = ProjectId(args._2)),
+    pattern  = root / segment[String] / "project" / segment[String] / endOfSegments,
+    basePath = Route.fragmentBasePath
 )
 
 object router

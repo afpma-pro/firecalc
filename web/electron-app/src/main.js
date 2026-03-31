@@ -306,8 +306,8 @@ if (shouldRelaunchForDebianGnomeWayland()) {
       mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
     } else {
       const appPath = isDev
-        ? path.join(__dirname, '../../dist-app/index.html')
-        : path.join(process.resourcesPath, 'app/dist-app/index.html');
+        ? path.join(__dirname, '../../dist-app/app/index.html')
+        : path.join(process.resourcesPath, 'app/dist-app/app/index.html');
       mainWindow.loadFile(appPath);
     }
 
@@ -668,10 +668,10 @@ if (shouldRelaunchForDebianGnomeWayland()) {
       const url = new URL(request.url);
       // Security: Validate and sanitize pathname to prevent path traversal
       const sanitizedPath = path.normalize(url.pathname).replace(/^(\.\.[\/\\])+/, '');
-      const filePath = path.join(app.getAppPath(), 'dist-app', sanitizedPath);
-      
-      // Ensure the resolved path is still within dist-app directory
-      const appPath = path.join(app.getAppPath(), 'dist-app');
+      const filePath = path.join(app.getAppPath(), 'dist-app', 'app', sanitizedPath);
+
+      // Ensure the resolved path is still within dist-app/app directory
+      const appPath = path.join(app.getAppPath(), 'dist-app', 'app');
       if (!filePath.startsWith(appPath)) {
         return new Response('Access denied', { status: 403 });
       }

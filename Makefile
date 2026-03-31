@@ -161,6 +161,10 @@ define generate_ui_version
 	fi
 endef
 
+define copy_landing_page
+	@cp web/landing/index.html web/dist-app/index.html
+endef
+
 kill-vite:
 	@echo "Killing processes on port 5173..."
 	@lsof -ti:5173 | xargs kill -9 2>/dev/null || echo "No processes found on port 5173"
@@ -186,6 +190,7 @@ dev-web-ui-build:
 	@echo "Building UI for development..."
 	$(call generate_ui_version,dev)
 	@cd modules/ui && npm run build
+	$(call copy_landing_page)
 
 dev-web-ui-open:
 	@echo "Opening browser and starting UI dev server..."
@@ -241,6 +246,7 @@ staging-web-ui-build: build-viz build-graph
 	@echo "Building UI for staging environment..."
 	$(call generate_ui_version,staging)
 	@cd modules/ui && npm run build:staging
+	$(call copy_landing_page)
 
 staging-web-ui-run:
 	@echo "Starting UI dev server in staging mode..."
@@ -300,6 +306,7 @@ prod-web-ui-build: build-viz build-graph
 	@echo "Building UI for production..."
 	$(call generate_ui_version,)
 	@cd modules/ui && npm run build:production
+	$(call copy_landing_page)
 
 prod-web-ui-run:
 	@echo "Starting UI dev server in production mode (for testing)..."
@@ -360,18 +367,21 @@ dev-electron-ui-build:
 	$(call generate_ui_version,dev)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fastLinkJS"
 	@cd modules/ui && npm run build
+	$(call copy_landing_page)
 
 # Shared target for optimized staging builds
 staging-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,staging)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:staging
+	$(call copy_landing_page)
 
 # Shared target for optimized production builds
 prod-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:production
+	$(call copy_landing_page)
 
 ## ================================
 ## DEVELOPMENT - ELECTRON PACKAGING
