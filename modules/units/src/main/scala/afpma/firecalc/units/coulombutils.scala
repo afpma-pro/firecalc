@@ -26,6 +26,10 @@ import coulomb.units.temperature.*
 import coulomb.units.time.*
 import coulomb.units.us.*
 
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
+
 import magnolia1.Transl
 
 object coulombutils:
@@ -466,6 +470,26 @@ object coulombutils:
                 val prettyVU = prettyFmt.format(qpu.value)
                 s"${prettyVU} ${ShowUnit[PrettyU].showUnit}"
 
+        def mkShowPrettyForQtyD_RoundedUpNearZero[U, PrettyU: ShowUnit](
+            prettyFmt: String = "%.2f"
+        )(using conv: UnitConversion[Double, U, PrettyU]): Show[QtyD[U]] =
+            Show.show: qu =>
+                require(prettyFmt.startsWith("%.") && prettyFmt.endsWith("f"), s"[ERR]: unexpected prettyFmt ${prettyFmt}")
+                val precision = prettyFmt
+                    .drop(2) // drop "%."
+                    .dropRight(1) // drop "f"
+                Try(precision.toInt) match
+                    case Failure(e) => throw new Exception(s"Unexpected int precision '${precision}' : $e")
+                    case Success(precisionInt) => 
+                        val roundTo = math.pow(10, -math.abs(precisionInt))
+                    
+                        val qpu = qu.toUnit[PrettyU]
+                        val qpuv = qpu.value
+                        val final_v = if (qpuv < roundTo) roundTo else qpuv
+                        
+                        val prettyVU = prettyFmt.format(final_v)
+                        s"${prettyVU} ${ShowUnit[PrettyU].showUnit}"
+
         def mkShowForTempD[U: ShowUnit](
             prettyFmt: String = "%.1f"
         ): Show[TempD[U]] =
@@ -557,6 +581,8 @@ object coulombutils:
                 mkShowPrettyForQtyD[Pascal, Pascal]("%.2f")
             val show_Pascals_1: Show[QtyD[Pascal]] = 
                 mkShowPrettyForQtyD[Pascal, Pascal]("%.1f")
+            val show_Pascals_1_RoundedUpNearZero: Show[QtyD[Pascal]] = 
+                mkShowPrettyForQtyD_RoundedUpNearZero[Pascal, Pascal]("%.1f")
             val show_Pascals_1_noUnit: Show[QtyD[Pascal]] = 
                 mkShowPrettyNoUnitForQtyD[Pascal, Pascal]("%.1f")
             val show_Pascals_0: Show[QtyD[Pascal]] = 

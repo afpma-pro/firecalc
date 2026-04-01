@@ -28,7 +28,7 @@ import io.taig.babel.Locale
  */
 final case class EquilibriumIndicator()(using Locale, DisplayUnits) extends Component:
 
-    given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
+    given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1_RoundedUpNearZero
 
     private lazy val pc_sig = results_en15544_pressure_requirements
 
