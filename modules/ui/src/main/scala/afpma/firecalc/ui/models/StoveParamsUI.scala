@@ -65,10 +65,10 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
     type DF[A] = DaisyUIVerticalForm[A]
 
     given conditionalFor_mB: ConditionalFor[StoveParams, QtyD[Kilogram]] =
-        ConditionalFor(_.sizing_method == SizingMethod.MaxLoad)
+        ConditionalFor(_.sizing_method == SizingMethod.MaxLoad, _.maximum_load)
 
     given conditionalFor_pn: ConditionalFor[StoveParams, QtyD[Kilo * Watt]] =
-        ConditionalFor(_.sizing_method == SizingMethod.NominalHeatOutput)
+        ConditionalFor(_.sizing_method == SizingMethod.NominalHeatOutput, _.nominal_heat_output)
 
     // Engine-computed values used as activation defaults when switching sizing method.
     // Since results_en15544_strict_sig is debounced, at switch time it still holds the

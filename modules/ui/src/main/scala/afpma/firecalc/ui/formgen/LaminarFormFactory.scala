@@ -618,8 +618,13 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
                 condVar.signal
                     .withCurrentValueOf(voa)
                     .map((c, oa) =>
-                        if (cond.check(c)) oa.orElse(activationDefaultVar.now()).orElse(Some(d.default))
-                        else None
+                        if (cond.check(c)) 
+                            cond.deref(c)
+                            .orElse(oa)
+                            .orElse(activationDefaultVar.now())
+                            .orElse(Some(d.default))
+                        else 
+                            None
                     )
                     .distinct --> voa.writer
 
