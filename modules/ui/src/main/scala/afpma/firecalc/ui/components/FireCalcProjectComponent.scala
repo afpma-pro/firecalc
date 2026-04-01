@@ -146,17 +146,21 @@ object FireCalcProjet:
 
             isLoadingVar.set(true)
 
-            FileSystemService.openFile().foreach {
-                case Left(error) =>
+            FileSystemService.openFile().onComplete {
+                case Success(Left(error)) =>
                     GlobalErrorDialog.showGenericError(error)
                     isLoadingVar.set(false)
 
-                case Right(None) =>
+                case Success(Right(None)) =>
                     // User cancelled
                     isLoadingVar.set(false)
 
-                case Right(Some((content, fileName))) =>
+                case Success(Right(Some((content, fileName)))) =>
                     loadFromContent(content, fileName)
+
+                case Failure(ex) =>
+                    GlobalErrorDialog.showGenericError(ex.getMessage)
+                    isLoadingVar.set(false)
             }
 
         /** Read file from browser file input */
@@ -165,13 +169,17 @@ object FireCalcProjet:
 
             isLoadingVar.set(true)
 
-            FileSystemService.readFileFromInput(file).foreach {
-                case Left(error) =>
+            FileSystemService.readFileFromInput(file).onComplete {
+                case Success(Left(error)) =>
                     GlobalErrorDialog.showGenericError(error)
                     isLoadingVar.set(false)
 
-                case Right((content, fileName)) =>
+                case Success(Right((content, fileName))) =>
                     loadFromContent(content, fileName)
+
+                case Failure(ex) =>
+                    GlobalErrorDialog.showGenericError(ex.getMessage)
+                    isLoadingVar.set(false)
             }
 
         lazy val node =
@@ -184,6 +192,7 @@ object FireCalcProjet:
                     onChange --> { _ =>
                         val files = thisNode.ref.files
                         if files.length > 0 then readFileFromBrowser(files(0))
+                        thisNode.ref.value = "" // Reset so same file can be re-selected
                     }
                 }
             )
