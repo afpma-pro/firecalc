@@ -372,16 +372,6 @@ lazy val eff_and_min_eff: Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[
             .map(_.andThen(_.min_efficiency_full_stove_nominal))
     )
 
-lazy val effInRange_sig: Signal[Boolean] =
-    results_en15544_strict_sig.flatMapAndFoldVNelE(
-        strict =>
-            strict.primary
-                .validateEfficiencyIsAboveMinEfficiency()
-                .map(_ => true)
-        ,
-        false
-    )
-
 lazy val results_en15544_emissions_and_efficiency_values: Signal[VNelMcalcErr[EmissionsAndEfficiencyValues]] =
     results_en15544_strict_sig.mapVNelE(_.emissions_and_efficiency_values)
 

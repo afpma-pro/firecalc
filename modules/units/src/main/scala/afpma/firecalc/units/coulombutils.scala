@@ -589,8 +589,10 @@ object coulombutils:
                 mkShowPrettyForQtyD[Pascal, Pascal]("%.0f")
             val show_Percent_0: Show[QtyD[Percent]] = 
                 mkShowForQtyD("%.0f")
-            given show_Percent: Show[QtyD[Percent]] = 
+            given show_Percent_1: Show[QtyD[Percent]] = 
                 mkShowForQtyD("%.1f")
+            val show_Percent_2: Show[QtyD[Percent]] = 
+                mkShowForQtyD("%.2f")
             given show_Rougness: Show[Roughness] = Show.show: r =>
                 if (r.toUnit[Millimeter].value * 100 % 10 == 0) show_Millimeters_0.show(r)
                 else show_Millimeters.show(r)
