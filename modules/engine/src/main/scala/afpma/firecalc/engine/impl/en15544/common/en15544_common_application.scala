@@ -417,14 +417,10 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
         def validateEfficiencyIsAboveMinEfficiency(): VNelMcalcErr[Unit] =
             η.andThen: eff =>
-                emissions_and_efficiency_values.min_efficiency_full_stove_nominal.map:
-                    case Some(min_eff) =>
-                        if (eff.value >= min_eff.value)
-                            ().validNel
-                        else
-                            EfficiencyIsTooLow(eff, min_eff).invalidNel
-                    case None          =>
-                        ().validNel
+                if (eff.value >= n_min.value)
+                    ().validNel
+                else
+                    EfficiencyIsTooLow(eff, n_min).invalidNel
 
         override def validateSeasonalEfficiency(countryCode: Country): VNelMcalcErr[Unit] =
             η_s.andThen: seas_eff =>

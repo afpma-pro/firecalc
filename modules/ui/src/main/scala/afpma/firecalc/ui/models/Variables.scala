@@ -41,7 +41,6 @@ import afpma.firecalc.ui.utils.*
 
 import cats.data.Validated
 import cats.data.Validated.Valid
-import cats.data.ValidatedNel
 import cats.implicits.catsSyntaxTuple2Semigroupal
 
 import com.raquo.airstream.core.Signal
@@ -263,7 +262,7 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
 
 // Results for EN15544 Strict
 
-lazy val results_en15544_strict_sig: Signal[ValidatedNel[MCalc_Error, EN15544_Strict_Application]] =
+lazy val results_en15544_strict_sig: Signal[VNelMcalcErr[EN15544_Strict_Application]] =
     engineStateHelperVar.signal
         // emits at most once during interval (prevent too much computing)
         // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
@@ -366,10 +365,9 @@ lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
         strict.primary.η
     )
 
-lazy val eff_and_min_eff: Signal[(VNelMcalcErr[Percentage], VNelMcalcErr[Option[Percentage]])] =
-    results_en15544_efficiency.combineWith(
-        results_en15544_emissions_and_efficiency_values
-            .map(_.andThen(_.min_efficiency_full_stove_nominal))
+lazy val eff_and_min_eff: Signal[VNelMcalcErr[(Percentage, n_min)]] =
+    results_en15544_strict_sig.flatMapVNelE(strict =>
+        strict.primary.η.map(eff => (eff, strict.n_min))
     )
 
 lazy val results_en15544_emissions_and_efficiency_values: Signal[VNelMcalcErr[EmissionsAndEfficiencyValues]] =
@@ -509,6 +507,7 @@ import afpma.firecalc.ui.models.UIState.given
 import io.circe.Encoder
 import io.circe.parser
 import org.scalajs.dom
+import afpma.firecalc.engine.models.en15544.typedefs.n_min
 
 lazy val catalogDecodeFailed: Var[Boolean] = Var(false)
 

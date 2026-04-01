@@ -266,13 +266,13 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
             Some(TermConstraint.Max(3.95.unitless))
         )
 
-    // ── Section "4.10.3" – combustion efficiency η ───────────────────────
+    // ── Section "4.10.3" – full stove efficiency η ───────────────────────
 
     override def eta_constraints(
         firebox: F,
         ctx    : ConstraintContext
     ): Seq[Option[TermConstraint[η]]] =
-        Seq(Some(TermConstraint.Min[η](ctx.n_min)))
+        Seq.empty
 
     // ── Section "4.3.1.2" – Glass surface ratio ───────────────────────────
 

@@ -62,11 +62,10 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Compo
         effInRange_sig.map(!_)
 
     private val minEfficiency_sig: Signal[String] =
-        results_en15544_emissions_and_efficiency_values
-            .mapAndFoldVNelE(
-                _.min_efficiency_full_stove_nominal.map(_.showP).getOrElse("-"),
-                "-"
-            )
+        eff_and_min_eff.mapAndFoldVNelE(
+            x => (x._2: Percentage).showP,
+            "-"
+        )
 
     private val flueGasTemp_sig: Signal[String] =
         results_en15544_estimated_output_temperatures
@@ -95,7 +94,7 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Compo
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-24",
                     text <-- eff_and_min_eff.combineWith(effIsTooLow)
                         .map { t =>
-                            val eff_is_too_low_opt = t._3
+                            val eff_is_too_low_opt = t._2
                             eff_is_too_low_opt match
                                 case Some(EfficiencyIsTooLow(eff, min_eff)) => 
                                     if (math.abs(eff.value - min_eff.value) < 0.1)
@@ -103,7 +102,7 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Compo
                                     else 
                                         eff.showP
                                 case None =>
-                                    t._1.map(_.showP).getOrElse("-")
+                                    t._1.map(_._1.showP).getOrElse("-")
                         }
                 )
             ),
