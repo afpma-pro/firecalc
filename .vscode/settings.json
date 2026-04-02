@@ -10,7 +10,7 @@
         "-Dmetals.enable-best-effort=true",
         "-Xss10m",
         "-Xms16g",
-        "-Xmx16g",
+        "-Xmx32g",
         "-XX:MaxInlineLevel=32"
     ],
     "metals.enableIndentOnPaste": false,
