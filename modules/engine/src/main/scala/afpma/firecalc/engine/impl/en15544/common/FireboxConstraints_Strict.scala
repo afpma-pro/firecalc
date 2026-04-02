@@ -138,10 +138,10 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
                                     val (l, w)           = (sq.depth, sq.width)
                                     val ratio: Dimensionless = l / w
                                     ratio.value match
-                                        case r if r < 1 || r > 2 =>
+                                        case r if r < ctx.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO || r > ctx.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO =>
                                             Left(
                                                 FireboxBaseRatioInvalid(
-                                                    r.showP,
+                                                    "%.1f".format(r),
                                                     l.showP,
                                                     w.showP
                                                 )

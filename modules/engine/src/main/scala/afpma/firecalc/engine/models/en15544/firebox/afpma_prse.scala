@@ -51,6 +51,10 @@ case class AFPMA_PRSE(
     override val co2_dry_lowest            : Option[σ_CO2] = None
 ) extends CertifiedDesign {
     type Self = AFPMA_PRSE
+
+    override val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double = 0.5
+    override val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double = 2.0
+
     override val firebox_type: Locale ?=> String = I18N.firebox_names.afpma_prse
     override def min_load = MinLoad.HalfOfMaxLoad.makeWithoutValue
     override def height_of_lowest_opening = h91_hauteurDuCendrier_AF

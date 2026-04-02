@@ -32,6 +32,10 @@ class FireboxSizing_15544_Common(
         firebox.dimensions.base.perimeter
 
     // Section "4.3.1.3", "Firebox base"
+
+    val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double = firebox.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO
+    val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double = firebox.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO
+
     override def A_BR_min: Option[A_BR] =
         firebox.ifNotSingleTested(orElse = None)(
             firebox.A_BR_min_calc(m_B).some

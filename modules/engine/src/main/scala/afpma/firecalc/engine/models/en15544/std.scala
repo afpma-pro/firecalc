@@ -119,6 +119,9 @@ object std:
          */
         type Self >: this.type <: Firebox_15544
 
+        val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double = 1.0
+        val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double = 2.0
+
         def firebox_type     : Locale ?=> String // Ecolabeled, 15a, etc...
         def reference        : LocalizedString
         def type_of_appliance: TypeOfAppliance

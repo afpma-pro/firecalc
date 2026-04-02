@@ -24,6 +24,8 @@ import io.taig.babel.Locale
 case class ConstraintContext(
     m_B    : m_B,
     O_BR   : O_BR,
+    FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double,
+    FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double,
     A_BR_min: Option[A_BR],
     A_BR_max: Option[A_BR],
     A_BR   : A_BR,

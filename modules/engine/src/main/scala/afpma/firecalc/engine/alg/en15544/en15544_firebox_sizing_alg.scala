@@ -18,6 +18,10 @@ trait FireboxSizing_15544_Alg:
     def O_BR: O_BR
 
     // Section "4.3.1.3", "Firebox base"
+
+    val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double
+    val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double
+
     def A_BR_min: Option[A_BR]
     def A_BR_max: Option[A_BR]
     def A_BR    : A_BR
