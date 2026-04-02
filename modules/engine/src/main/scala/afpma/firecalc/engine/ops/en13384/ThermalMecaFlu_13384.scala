@@ -127,6 +127,9 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
 ) extends PipeSectionResult[PipeElDescr]
     with ThermalMecaFlu_Helpers:
 
+    val dynamicFrictionCoeff_13384 = DynamicFrictionCoeff_13384()(using gp.pipeEl.typ)
+    import dynamicFrictionCoeff_13384.given
+
     given en13384: EN13384_1_A1_2019_Application_Alg            = scala.compiletime.deferred
     given pgfOps : PipeWithGasFlowOps[PipeWithGasFlowOps.Error] =
         PipeWithGasFlowOps.mkforEN13384(en13384.formulas)
@@ -573,7 +576,6 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
         )
 
     val v_zetaO_dynamicFriction: ValidatedNel[MecaFlu_Error, (Option[ζ], Pressure)] =
-        import DynamicFrictionCoeff_13384.given
         gp.pipeEl.el match
             case _ : StraightSection                                                    =>
                 (None, 0.0.pascals).validNel
@@ -611,7 +613,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                             .filter(_.isInstanceOf[UnexpectedRatio_Ld_Dh[?]])
                             .headOption
                         urOpt match
-                            case Some(u @ UnexpectedRatio_Ld_Dh(_, _)) =>
+                            case Some(u @ UnexpectedRatio_Ld_Dh(_, _, _)) =>
                                 MecaFlu_Error
                                     .UseUnsafeToSkipRatioValidationError(
                                         s"${curr.fullRef}:\n\t ${u.msg}\n\t => try to use '_unsafe' suffix: it should skip ratio validation",

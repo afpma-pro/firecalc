@@ -65,7 +65,9 @@ private[dynfrict] final case class FWindow(
     np1 : Option[Named[S_or_DC]], // n+1
     np2 : Option[Named[S_or_DC]], // n+2
     np3 : Option[Named[S_or_DC]]  // n+3
-)                                         (sectionTyp: PipeType) {
+)(sectionTyp: PipeType) {
+
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using sectionTyp)
 
     def coeffs_curr(using alg: ShortSectionAlg): ValidatedNel[Err, ζ] =
         // if (nm3 && nm1) or (nm1 && np1) or (np1 && np3) are "short" sections
@@ -92,7 +94,7 @@ private[dynfrict] final case class FWindow(
 
     def coeffs_level0_nm2_curr_np2: ValidatedNel[Err, (Option[ζ], ζ, Option[ζ])] =
         val ζ_nm2_vo = nm2.ζ_level_0
-        val ζ_curr_v = FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor(curr.t)
+        val ζ_curr_v = flowOnlyDynamicFrictionCoeff_15544.whenRegularFor(curr.t)
         val ζ_np2_vo = np2.ζ_level_0
 
         (ζ_nm2_vo, ζ_curr_v, ζ_np2_vo).mapN: (ζ_nm2, ζ_curr, ζ_np2) =>
@@ -184,7 +186,7 @@ private[dynfrict] final case class FWindow(
     extension (n_sdc: Option[Named[S_or_DC]])
         def unsafePipeName: String = n_sdc.map(_.name).getOrElse("<pipe name undefined")
         def ζ_level_0        : ValidatedNel[Err, Option[ζ]] =
-            n_sdc.map(_.t).map(FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor) match
+            n_sdc.map(_.t).map(flowOnlyDynamicFrictionCoeff_15544.whenRegularFor) match
                 case Some(Valid(c))       => Some(c).validNel
                 case Some(i @ Invalid(_)) => i
                 case None                 => None.validNel

@@ -495,12 +495,13 @@ object standard {
 
     // PressureLossCoeff_Error
 
-    sealed trait SingularFlowResistanceCoeffErrorI extends MecaFlu_Error:
-        val sectionTyp: PipeType = FluePipeT
+    sealed trait SingularFlowResistanceCoeffErrorI extends MecaFlu_Error
 
-    sealed class SingularFlowResistanceCoeffError(val msg: String) extends SingularFlowResistanceCoeffErrorI
+    sealed class SingularFlowResistanceCoeffError(val msg: String, val sectionTyp: PipeType) extends SingularFlowResistanceCoeffErrorI
 
-    sealed trait FluePipeShapeSequenceError extends SingularFlowResistanceCoeffErrorI
+    sealed trait FluePipeShapeSequenceError extends SingularFlowResistanceCoeffErrorI:
+        override val sectionTyp: PipeType = FluePipeT
+
     object FluePipeShapeSequenceError:
 
         // s"missing section geometry change : current section '${nel.fullRef}' (dh = ${currStraight.geometry.dh}) AND last section '${lastNel.fullRef}' (dh = ${ls.geometry.dh})"
@@ -531,7 +532,7 @@ object standard {
 
 
     case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)
-        extends SingularFlowResistanceCoeffError(msg) derives Show
+        extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT) derives Show
 
     given show_SingularFlowResistanceCoeffError: Show[SingularFlowResistanceCoeffError] = Show.show: s =>
         s"SingularFlowResistanceCoeffError(msg = ${s.msg})"
@@ -551,47 +552,54 @@ object standard {
 
         sealed abstract class CouldNotSelectCoeffValuesForInterpolation[S: Show](
             shape: S,
-            m    : String
+            m    : String,
+            sectionTyp: PipeType,
         ) extends SingularFlowResistanceCoeffError(
-                s"shape ${shape.show} > could not select coeff values for interpolation > $m"
+                s"shape ${shape.show} > could not select coeff values for interpolation > $m",
+                sectionTyp,
             )
 
-        case class UnexpectedRatio_Ld_Dh[S](shape: S, ratio: Double)(using val show_shape: Show[S])
+        case class UnexpectedRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType, ratio: Double)(using val show_shape: Show[S])
             extends CouldNotSelectCoeffValuesForInterpolation[S](
                 shape,
-                s"unexpected ratio Ld/Dh = ${"%.3f".format(ratio)}"
+                s"unexpected ratio Ld/Dh = ${"%.3f".format(ratio)}",
+                sectionTyp
             )
 
         given show_UnexpectedRatio: [S] => (show_Shape: Show[S]) => Show[UnexpectedRatio_Ld_Dh[S]] =
             Show.show[UnexpectedRatio_Ld_Dh[S]]: u =>
                 s"UnexpectedRatio_Ld_Dh(shape = ${u.shape.show}, ratio = ${u.ratio})"
 
-        case class NoGivenRatio_Ld_Dh[S](shape: S)(using val show_shape: Show[S])
-            extends CouldNotSelectCoeffValuesForInterpolation[S](shape, "expecing ratio Ld/Dh but none given")
+        case class NoGivenRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType)(using val show_shape: Show[S])
+            extends CouldNotSelectCoeffValuesForInterpolation[S](shape, "expecing ratio Ld/Dh but none given", sectionTyp)
 
         given show_NoGivenRatio: [S] => (show_Shape: Show[S]) => Show[NoGivenRatio_Ld_Dh[S]] =
             Show.show[NoGivenRatio_Ld_Dh[S]]: u =>
                 s"NoGivenRatio_Ld_Dh(shape = ${u.shape.show})"
 
-        def InvalidShapeParameter[S: Show](shape: S, m: String) =
-            new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m")
+        def InvalidShapeParameter[S: Show](shape: S, m: String, sectionTyp: PipeType) =
+            new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m", sectionTyp)
 
         case class ValueOutOfBound[S: Show](
             shape    : S,
+            override val sectionTyp: PipeType,
             vTermName: String,
             v        : Double,
             vMin     : Double,
             vMax     : Double
         ) extends SingularFlowResistanceCoeffError(
-                s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)"
+                s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)",
+                sectionTyp: PipeType,
             )
 
         def CouldNotComputeIndividualCoefficientForShape[S: Show](
             shape: S,
+            sectionTyp: PipeType,
             m    : String
         ) =
             new SingularFlowResistanceCoeffError(
-                s"shape ${shape.show} > could not compute individual coefficient > $m"
+                s"shape ${shape.show} > could not compute individual coefficient > $m",
+                sectionTyp
             )
     }
 

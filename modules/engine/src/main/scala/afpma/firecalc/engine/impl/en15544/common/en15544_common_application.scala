@@ -228,7 +228,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         PipeWithGasFlowOps.mkforEN13384(en13384_formulas)
 
     given ssalg: afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
-        afpma.firecalc.engine.models.en15544.shortsection.ShortSection.makeImpl(using formulas)
+        afpma.firecalc.engine.models.en15544.shortsection.ShortSection()(using FluePipeT).makeImpl(using formulas)
 
     // ─── CommonAtParams: params-dependent layer implementation ────────────
 

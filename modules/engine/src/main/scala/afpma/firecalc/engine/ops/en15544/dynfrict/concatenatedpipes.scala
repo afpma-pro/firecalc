@@ -26,7 +26,7 @@ import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.MissingSectionG
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]]
-)                                                         (using SSAlg: ShortSectionAlg)
+)(using SSAlg: ShortSectionAlg)
     extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] {
     // merge successive straight sections into a single one
     // and keep only direction change + straight section elements

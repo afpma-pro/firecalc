@@ -39,5 +39,8 @@ object PanelStatusHelper:
                     case x: HasSectionTypError =>
                         if (keepSectionTyp(x.sectionTyp)) true else false
                     case _ => true
-                if (errs.nonEmpty) NonEmptyList.fromListUnsafe(errs).invalid
-                else ErrorsInOtherSectionType.invalidNel
+                if (errs.nonEmpty)
+                    NonEmptyList.fromListUnsafe(errs).invalid
+                else
+                    // errs is empty : we have errors related to other sections
+                    ErrorsInOtherSectionType.invalidNel

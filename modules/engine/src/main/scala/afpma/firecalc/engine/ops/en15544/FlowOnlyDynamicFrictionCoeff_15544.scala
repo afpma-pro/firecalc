@@ -8,12 +8,13 @@ package afpma.firecalc.engine.ops.en15544
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.models
+import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SectionGeometryChange as SectionGeometryChange_13384
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544 as en15544_pipedescr
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.models.gtypedefs.*
-import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384 as dynamicfrictioncoeff_13384
+import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.ops.resistance.*
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
 
@@ -23,7 +24,9 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
-object FlowOnlyDynamicFrictionCoeff_15544:
+class FlowOnlyDynamicFrictionCoeff_15544()(using sectionTyp: PipeType):
+
+    private val dynamicFrictionCoeff_13384 = DynamicFrictionCoeff_13384()
 
     def whenRegularFor(pd: en15544_pipedescr.NotPressureDiff): DynamicFrictionCoeffOp.Result =
         import regular.given
@@ -31,7 +34,7 @@ object FlowOnlyDynamicFrictionCoeff_15544:
             case x: en15544_pipedescr.SingularFlowResistance => x.dynamicFrictionCoeff
             case en15544_pipedescr.SectionGeometryChange(from, to) =>
                 // See RQ_002
-                dynamicfrictioncoeff_13384.thermalSectionGeometryChange.dynamicFrictionCoeff(
+                dynamicFrictionCoeff_13384.thermalSectionGeometryChange.dynamicFrictionCoeff(
                     SectionGeometryChange_13384.make(from.area, to.area)
                 )
             case x: en15544_pipedescr.DirectionChange => x.dynamicFrictionCoeff
@@ -112,6 +115,7 @@ object FlowOnlyDynamicFrictionCoeff_15544:
     ): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelper[S](
             shape,
+            sectionTyp,
             resName,
             tsvTableRawString,
             xHeader,

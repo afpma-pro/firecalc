@@ -9,6 +9,7 @@ import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.ops.resistance.*
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
@@ -24,7 +25,7 @@ import coulomb.policy.standard.given
  * Unified dynamic friction coefficient calculations for EN13384.
  * Provides given instances for both FlowOnly and Thermal pipe descriptor types.
  */
-object DynamicFrictionCoeff_13384:
+class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
 
     // Import both PipeDescr modules
     import afpma.firecalc.engine.models.en13384.{FlowOnlyPipeDescr_13384 => FlowOnly, ThermalPipeDescr_13384 => Thermal}
@@ -349,13 +350,14 @@ object DynamicFrictionCoeff_13384:
         )
 
     private def interpolateDecrease[S: Show](
-        shape    : S,
-        a2a1Ratio: Double,
-        toD      : Length,
-        fromD    : Length
+        shape      : S,
+        a2a1Ratio  : Double,
+        toD        : Length,
+        fromD      : Length
     ): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelperE[S]            (
             shape             = shape,
+            sectionTyp        = sectionTyp,
             resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape6.csv",
             tsvTableRawString = """|A2/A1	Valeurs zeta
                    |0,40	0,33
@@ -376,13 +378,14 @@ object DynamicFrictionCoeff_13384:
             case Right(z)                                                     => z.asRight.toValidatedNel
 
     private def interpolateIncrease[S: Show](
-        shape    : S,
-        a1a2Ratio: Double,
-        fromD    : Length,
-        toD      : Length
+        shape      : S,
+        a1a2Ratio  : Double,
+        fromD      : Length,
+        toD        : Length
     ): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelperE[S]            (
             shape             = shape,
+            sectionTyp        = sectionTyp,
             resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape7.csv",
             tsvTableRawString = """|A1/A2	Valeurs zeta
                    |0,00	1,00
@@ -416,6 +419,7 @@ object DynamicFrictionCoeff_13384:
     ): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelper[S](
             shape,
+            sectionTyp,
             resName,
             tsvTableRawString,
             xHeader,
@@ -434,8 +438,8 @@ object DynamicFrictionCoeff_13384:
             case Some(ratio) if 30 > ratio && ratio >= 2 => Right("30 > Ld/Dh >= 2")
             case Some(_) if isUnsafe                     =>
                 Right("30 > Ld/Dh >= 2")
-            case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, ratio))
-            case None                                    => Left(NoGivenRatio_Ld_Dh(shape)          )
+            case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, sectionTyp, ratio))
+            case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp))
         }
 
 end DynamicFrictionCoeff_13384

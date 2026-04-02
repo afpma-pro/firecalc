@@ -17,16 +17,19 @@ import afpma.firecalc.engine.matchers.CustomCatsMatchers.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSection
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
+import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
 class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
     
-    // import pipedescr.*
+    given sectionTyp: PipeType = FluePipeT
     
     given en15544Impl: EN15544_V_2023_Formulas_Alg = EN15544_Strict_Formulas.make
-    given ssalg: ShortSectionAlg = ShortSection.makeImpl
+    given ssalg: ShortSectionAlg = ShortSection().makeImpl
+
+    val flowOnlyDynamicFrictionCoeff_15544 = new FlowOnlyDynamicFrictionCoeff_15544()
 
     // TODO: make tests more DRY
 
@@ -65,7 +68,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 .get
                 ._2
 
-            val inst = afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
+            val inst = flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
 
             val v1 = accu.getByNameWithType[DirectionChange]("virage 90° 4-5")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 90° 5-6")
@@ -111,7 +114,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 .get
                 ._2
 
-            val inst = afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
+            val inst = flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
 
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
@@ -154,7 +157,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 .get
                 ._2
 
-            val inst = afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
+            val inst = flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
 
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
@@ -197,7 +200,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 .get
                 ._2
 
-            val inst = afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
+            val inst = flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
 
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
@@ -245,7 +248,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 .get
                 ._2
 
-            val inst = afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
+            val inst = flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(accu.elems)
 
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")

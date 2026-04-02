@@ -10,6 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortOrRegular.*
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -46,7 +47,7 @@ trait ShortSectionAlg:
     def resultFromWindow            (w      : PipeDescrWindow   ): VNel[Result]
 
 object ShortSection:
-
+    
     type VNel[A] = ValidatedNel[SingularFlowResistanceCoeffErrorI, A]
 
     case class Result private[shortsection] (ζ1: ζ, ζ2: ζ)
@@ -86,14 +87,20 @@ object ShortSection:
 
     end PipeDescrWindow
 
+end ShortSection
+
+class ShortSection()(using sectionTyp: PipeType):
+    
+    import ShortSection.*
+
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()
+
     def makeImpl(using
         en15544: afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
     ): ShortSectionAlg = new ShortSectionAlg:
 
         def intermediateValuesFromWindow(window: PipeDescrWindow): VNel[IntermediateValues] =
             import window.*
-
-            import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 
             val ζα2 =
                 o_dc12 match
@@ -109,7 +116,7 @@ object ShortSection:
                     case Some(dc12) => dc12.angleN2.getOrElse(throw new Exception("bad validation (TOFIX by @dev)")),
                 angleN2 = None
             )
-            val ζα3_v = FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor(dc02)
+            val ζα3_v = flowOnlyDynamicFrictionCoeff_15544.whenRegularFor(dc02)
             val α1    = dc01.angleN1
             val α2    =
                 o_dc12 match

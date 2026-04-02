@@ -58,6 +58,7 @@ object DynamicFrictionCoeffOp:
 
     def interpolateHelperE[S: Show](
         shape            : S,
+        sectionTyp       : PipeType,
         resName          : String,
         tsvTableRawString: String,
         xHeader          : String,
@@ -68,8 +69,8 @@ object DynamicFrictionCoeffOp:
     ): Either[Err, ζ] = {
         val (xmin, xmax) = xMinMax
 
-        if      (xi < xmin) Left(ValueOutOfBound[S](shape, "x", xi, xmin, xmax))
-        else if (xi > xmax) Left(ValueOutOfBound[S](shape, "x", xi, xmin, xmax))
+        if      (xi < xmin) Left(ValueOutOfBound[S](shape, sectionTyp, "x", xi, xmin, xmax))
+        else if (xi > xmax) Left(ValueOutOfBound[S](shape, sectionTyp, "x", xi, xmin, xmax))
         else
             val data = TSVTableString.fromString(tsvTableRawString)
             for
@@ -79,6 +80,7 @@ object DynamicFrictionCoeffOp:
                 ).left.map: _ =>
                     CouldNotComputeIndividualCoefficientForShape[S](
                         shape,
+                        sectionTyp,
                         s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, xi=$xi"
                     )
             yield out.ea: ζ
@@ -86,6 +88,7 @@ object DynamicFrictionCoeffOp:
 
     def interpolateHelper[S: Show](
         shape            : S,
+        sectionTyp       : PipeType,
         resName          : String,
         tsvTableRawString: String,
         xHeader          : String,
@@ -96,6 +99,7 @@ object DynamicFrictionCoeffOp:
     ): Result =
         interpolateHelperE(
             shape,
+            sectionTyp,
             resName,
             tsvTableRawString,
             xHeader,

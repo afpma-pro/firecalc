@@ -157,6 +157,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
     given en15544           : FlowOnlyMecaFlu_15544.ApplicationAlg                       = scala.compiletime.deferred
     given dynFrictionCoeffOp: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] = scala.compiletime.deferred
 
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using gip.pipeEl.typ)
+    
     val gas    = gip.gas
     val curr   = gip.pipeEl
     val params = gip.params
@@ -308,7 +310,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
                         val np = gip.pipeEl.copy(el = el)
                         np.dynamicFrictionCoeff
                     case el: (SectionGeometryChange | SingularFlowResistance) =>
-                        FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor(gip.pipeEl.copy(el = el).el)
+                        flowOnlyDynamicFrictionCoeff_15544.whenRegularFor(gip.pipeEl.copy(el = el).el)
                 zeta_vnel
                     .map: zeta =>
                         // See RQ_001
@@ -376,8 +378,10 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
     given en15544     : FlowOnlyMecaFlu_15544.ApplicationAlg = scala.compiletime.deferred
     given shortSection: ShortSectionAlg                      = scala.compiletime.deferred
 
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using fd.pipeType)
+
     given dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
-        FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(fd.elements)
+        flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(fd.elements)
 
     private def totalLengthUntil(elem: NamedPipeElDescrG[PipeElDescr]): PositionOp[Length] =
         QtyDAtPosition
