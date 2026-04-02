@@ -9,10 +9,27 @@ import scala.collection.immutable.SortedMap
 import scala.util.boundary
 import scala.util.boundary.break
 
+import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.*
+import afpma.firecalc.i18n.implicits.given
+
+import cats.implicits.toShow
+
+
 enum InterpolationError:
     case EmptyDataSet
     case ValueOutOfRange(xi: Double, yi: Option[Double] = None)
     case MissingGridPoint(xi: Double, yi: Double)
+
+object InterpolationError:
+
+    given ShowUsingLocale[InterpolationError] = showUsingLocale:
+        case EmptyDataSet     =>
+            I18N.errors.empty_data_set
+        case ValueOutOfRange(xi, yi)  =>
+            I18N.errors.value_out_of_range(xi.show, yi.map(_.show).getOrElse("-"))
+        case MissingGridPoint(xi, yi) =>
+            I18N.errors.missing_grid_point(xi.show, yi.show)
 
 def bilinearInterpolation(
     x1 : Double,

@@ -522,7 +522,12 @@ object I18nData:
         injector_velocity_above_maximum      : StringFormat2,
         flue_gas_velocity_error              : StringFormat5,
         missing_flow_rate                    : String,
-        air_intake_pipe_shape_mismatch       : StringFormat2
+        air_intake_pipe_shape_mismatch       : StringFormat2,
+        value_out_of_bound                   : StringFormat5,
+        could_not_interpolate                : StringFormat7,
+        empty_data_set                       : String,
+        value_out_of_range                   : StringFormat2,
+        missing_grid_point                   : StringFormat2,
     )
 
     case class Headers(

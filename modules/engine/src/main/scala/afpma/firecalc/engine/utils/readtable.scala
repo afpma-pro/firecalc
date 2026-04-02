@@ -7,21 +7,39 @@ package afpma.firecalc.engine.utils
 
 import afpma.firecalc.engine.models.TSVTableString
 import afpma.firecalc.engine.models.getUsingBilinearInterpolation
+import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.*
+import afpma.firecalc.i18n.implicits.given
+
+import cats.implicits.toShow
 
 object readtable:
 
-    sealed abstract class ReadTableError(val msg: String)
+    sealed trait ReadTableError
+
+    object ReadTableError:
+        given ShowUsingLocale[ReadTableError] = showUsingLocale:
+            case x: ValueOutOfBound     =>
+                I18N.errors.value_out_of_bound(x.vTermName, x.v.show, x.vMin.show, x.vTermName, x.vMax.show)
+            case x: CouldNotInterpolate =>
+                I18N.errors.could_not_interpolate(x.resourceName, x.xHeader, x.yHeader, x.zHeader, x.xi.show, x.yi.show, x.err.show)
 
     case class ValueOutOfBound(
         vTermName: String,
         v        : Double,
         vMin     : Double,
         vMax     : Double
-    ) extends ReadTableError(
-            s"value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)"
-        )
+    ) extends ReadTableError
 
-    case class CouldNotInterpolate(override val msg: String) extends ReadTableError(msg)
+    case class CouldNotInterpolate(
+        resourceName: String,
+        xHeader: String,
+        yHeader: String,
+        zHeader: String,
+        xi: Double,
+        yi: Double,
+        err: InterpolationError,
+    ) extends ReadTableError
 
     def fromTSVTableRaw_withBiInterpolatation(
         resName          : String,
@@ -45,7 +63,5 @@ object readtable:
             val data = TSVTableString.fromString(tsvTableRawString)
             data.getUsingBilinearInterpolation(xHeader, yHeader, zHeader)(xi, yi)
                 .left.map: err =>
-                    CouldNotInterpolate(
-                        s"interpolation error for resource $resName, xHeader=$xHeader, yHeader=$yHeader, zHeader=$zHeader, xi=$xi, yi=$yi ($err)"
-                    )
+                    CouldNotInterpolate(resName, xHeader, yHeader, zHeader, xi, yi, err)
     }

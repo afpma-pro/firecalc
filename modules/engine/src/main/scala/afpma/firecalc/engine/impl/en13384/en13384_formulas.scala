@@ -2088,7 +2088,7 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
                 if (t_interpol.to_degC.value > 200 || dn_in_meters.value > 0.05) 
                 then Right(SquareMeterKelvinPerWatt(0))
                 else EN13384_FormulaError
-                    .ThermalResistanceComputationFailed(err.msg)
+                    .ThermalResistanceComputationFailed(err)
                     .asLeft
             case Right(rth)                =>
 

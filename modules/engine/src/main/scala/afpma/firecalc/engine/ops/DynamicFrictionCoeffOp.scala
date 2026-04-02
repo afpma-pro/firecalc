@@ -69,8 +69,8 @@ object DynamicFrictionCoeffOp:
     ): Either[Err, ζ] = {
         val (xmin, xmax) = xMinMax
 
-        if      (xi < xmin) Left(ValueOutOfBound[S](shape, sectionTyp, "x", xi, xmin, xmax))
-        else if (xi > xmax) Left(ValueOutOfBound[S](shape, sectionTyp, "x", xi, xmin, xmax))
+        if      (xi < xmin) Left(ValueOutOfBound[S](shape, sectionTyp, xHeader, xi, xmin, xmax))
+        else if (xi > xmax) Left(ValueOutOfBound[S](shape, sectionTyp, xHeader, xi, xmin, xmax))
         else
             val data = TSVTableString.fromString(tsvTableRawString)
             for

@@ -20,6 +20,7 @@ import afpma.firecalc.engine.models.gtypedefs.v
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CouldNotComputeThermalResistance
 import afpma.firecalc.engine.standard.ThermalResistance_Error.SideRatioTooHighForRectangularForm
+import afpma.firecalc.engine.utils.readtable.ReadTableError
 
 import cats.Show
 import cats.data.NonEmptyList
@@ -357,7 +358,7 @@ object standard {
             case _: CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing =>
                 I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
             case e: CouldNotComputeThermalResistance                           =>
-                I18N.en13384.errors.could_not_compute_thermal_resistance(e.reason)
+                I18N.en13384.errors.could_not_compute_thermal_resistance(e.err.show)
             case e: EN13384_ErrorMessage                                       =>
                 // EN13384_ErrorMessage.msg is intentional user-provided data, keep it
                 I18N.en13384.errors.en13384_error_message(e.msg)
@@ -388,7 +389,7 @@ object standard {
         case class CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(override val sectionTyp: PipeType)
             extends ThermalResistance_Error(sectionTyp)
         // Note: 'reason' is data (e.g. from ReadTableError), not a pre-formatted message
-        case class CouldNotComputeThermalResistance(reason: String, override val sectionTyp: PipeType)
+        case class CouldNotComputeThermalResistance(err: ReadTableError, override val sectionTyp: PipeType)
             extends ThermalResistance_Error(sectionTyp)
 
     // EN13384_ErrorMessage keeps 'msg' as it's intentional user-provided data
@@ -443,9 +444,9 @@ object standard {
             override def withSectionTyp(st: PipeType): EN13384_Error =
                 ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing(st)
 
-        case class ThermalResistanceComputationFailed(msg: String) extends EN13384_FormulaError:
+        case class ThermalResistanceComputationFailed(err: ReadTableError) extends EN13384_FormulaError:
             override def withSectionTyp(st: PipeType): EN13384_Error =
-                ThermalResistance_Error.CouldNotComputeThermalResistance(msg, st)
+                ThermalResistance_Error.CouldNotComputeThermalResistance(err, st)
 
         // Nusselt Number Errors (formula layer)
         case class ReynoldsTooHigh(R_e: Double) extends EN13384_FormulaError:
@@ -474,7 +475,7 @@ object standard {
             case _: MissingOuterLayer                  =>
                 I18N.en13384.errors.cannot_end_layers_description_on_dead_air_space
             case e: ThermalResistanceComputationFailed =>
-                I18N.en13384.errors.could_not_compute_thermal_resistance(e.msg)
+                I18N.en13384.errors.could_not_compute_thermal_resistance(e.err.show)
             case e: ReynoldsTooHigh                    =>
                 I18N.en13384.errors.re_is_above_10million(e.R_e.show)
             case e: PsiRatioTooHigh                    =>
@@ -534,8 +535,19 @@ object standard {
     case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)
         extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT) derives Show
 
-    given show_SingularFlowResistanceCoeffError: Show[SingularFlowResistanceCoeffError] = Show.show: s =>
-        s"SingularFlowResistanceCoeffError(msg = ${s.msg})"
+    given show_SingularFlowResistanceCoeffError: ShowUsingLocale[SingularFlowResistanceCoeffError] = showUsingLocale:
+        case x: MissingAlpha3AngleForShortFluePipeSection =>
+            I18N.en15544_errors.missing_alpha3_angle_for_short_flue_pipe_section(x.msg)
+        case x: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?] =>
+            I18N.en15544_errors.unexpected_ratio_ld_dh("%.1f".format(x.ratio))
+        case x: SingularFlowResistanceCoeffError.NoGivenRatio_Ld_Dh[?] =>
+            I18N.en15544_errors.no_given_ratio_ld_dh
+        case x: SingularFlowResistanceCoeffError.ValueOutOfBound[?] =>
+            I18N.errors.value_out_of_bound(
+                x.vTermName, "%.1f".format(x.v), x.vMin.toString, x.vTermName, x.vMax.toString
+            )
+        case x =>
+            I18N.en15544_errors.singular_flow_resistance_coeff_error(x.msg)
 
     given show_PressureLossCoeff_Error: Show[PressureLossCoeff_Error] = Show.show:
         // case l: FluePipeDescrError                                            =>
@@ -590,7 +602,10 @@ object standard {
         ) extends SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)",
                 sectionTyp: PipeType,
-            )
+            ) {
+            def prettyShape: String = shape.show
+        }
+
 
         def CouldNotComputeIndividualCoefficientForShape[S: Show](
             shape: S,
