@@ -10,7 +10,6 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
-import afpma.firecalc.engine.alg.en15544.RemovedFireboxSizingConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Door15aFirebox_Catalog
@@ -29,7 +28,7 @@ import io.taig.babel.Locale
  * Extends the default constraint set.
  */
 given door15aCatalogConstraints: FireboxConstraints[Door15aFirebox_Catalog] =
-    new FireboxConstraints_Strict[Door15aFirebox_Catalog] with RemovedFireboxSizingConstraints[Door15aFirebox_Catalog]:
+    new FireboxConstraints_Strict[Door15aFirebox_Catalog]:
 
         /** Door15aFirebox_Catalog: 5cm <= AF <= 12cm */
         override def height_of_lowest_opening_constraints(
