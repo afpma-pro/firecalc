@@ -9,7 +9,7 @@ import cats.syntax.all.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.units.coulombutils.{show_Meters, show_SquareMeters, *}
+import afpma.firecalc.units.coulombutils.{show_Meters, show_SquareCentimeters, *}
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
@@ -106,17 +106,17 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
                                 if (area < aMin)
                                     Left(
                                         FireboxBaseSurfaceNotInRange(
-                                            area.showP,
-                                            aMin.showP,
-                                            aMax.showP
+                                            area.to_cm2.showP,
+                                            aMin.to_cm2.showP,
+                                            aMax.to_cm2.showP
                                         )
                                     )
                                 else if (area > aMax)
                                     Left(
                                         FireboxBaseSurfaceNotInRange(
-                                            area.showP,
-                                            aMin.showP,
-                                            aMax.showP
+                                            area.to_cm2.showP,
+                                            aMin.to_cm2.showP,
+                                            aMax.to_cm2.showP
                                         )
                                     )
                                 else Right(base)
