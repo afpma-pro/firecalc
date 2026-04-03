@@ -17,6 +17,7 @@ import molecule.db.common.spi.Conn
 import org.typelevel.log4cats.Logger
 
 trait PurchaseIntentRepository[F[_]]:
+
     def create(
         productId        : ProductId,
         amount           : BigDecimal,
@@ -41,5 +42,9 @@ trait PurchaseIntentRepository[F[_]]:
     def deleteExpired     (                                  ): F[Int]
 
 object PurchaseIntentRepository:
+
+    final val DEFAULT_AUTH_CODE_EXPIRATION_DURATION_MINUTES = 30
+    final val DEFAULT_AUTH_CODE_EXPIRATION_DURATION_SECONDS = DEFAULT_AUTH_CODE_EXPIRATION_DURATION_MINUTES * 60
+
     def create[F[_]: Async: Logger](using conn: Conn, ec: ExecutionContext): F[PurchaseIntentRepository[F]] =
         Async[F].pure(new MoleculePurchaseIntentRepository[F])

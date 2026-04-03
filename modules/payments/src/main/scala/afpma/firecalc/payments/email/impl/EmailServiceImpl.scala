@@ -9,6 +9,7 @@ import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.i18n.implicits.given
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.i18n.implicits.lookupTranslation
+import afpma.firecalc.payments.repository.PurchaseIntentRepository
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -306,6 +307,9 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
             s"<p>${translations.emails.authentication.product_info(translatedProductName)}</p>"
         )
 
+        val expire_in = translations.emails.authentication.auth_code_expiration_in_min(PurchaseIntentRepository.DEFAULT_AUTH_CODE_EXPIRATION_DURATION_MINUTES.toString)
+        val final_footer = translations.emails.authentication.footer(expire_in)
+
         s"""
     |<html>
     |<body>
@@ -313,7 +317,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
     |  <p>$introText</p>
     |  <p>${translations.emails.authentication.code_label}: <strong>${authCode.code}</strong></p>
     |  $productText
-    |  <p>${translations.emails.authentication.footer}</p>
+    |  <p>${final_footer}</p>
     |  <p><em>${translations.emails.authentication.signature}</em></p>
     |</body>
     |</html>

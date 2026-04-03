@@ -68,7 +68,7 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
         for
             _   <- logger.info(s"Creating purchase intent for customer internal ID: $customerInternalId")
             now <- Async[F].delay(Instant.now())
-            expiresAt = now.plusSeconds(600) // 10 minutes
+            expiresAt = now.plusSeconds(PurchaseIntentRepository.DEFAULT_AUTH_CODE_EXPIRATION_DURATION_SECONDS)
             token     = UUID.randomUUID()
             _               <- future2AsyncF {
                 PurchaseIntent.token.productId.amount.currency.authCode.customer.processed.expiresAt.createdAt.productMetadata_?
