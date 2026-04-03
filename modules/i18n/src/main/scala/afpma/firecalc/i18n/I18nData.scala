@@ -526,7 +526,9 @@ object I18nData:
         value_out_of_bound                   : StringFormat5,
         could_not_interpolate                : StringFormat7,
         empty_data_set                       : String,
+        parse_error                          : StringFormat1,
         value_out_of_range                   : StringFormat2,
+        value_out_of_range_with_range        : StringFormat6,
         missing_grid_point                   : StringFormat2,
     )
 

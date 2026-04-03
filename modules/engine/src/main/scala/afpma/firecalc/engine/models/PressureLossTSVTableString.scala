@@ -37,12 +37,12 @@ final case class PressureLossTSVTableString(
 ):
 
     private lazy val tsv: TSVTableString =
-        TSVTableString.fromString(rawString, sep = "\\s+")
+        TSVTableString.fromString(rawString, sep = "\t")
 
     /** SB column headers extracted from the raw string (preserving order). */
     private lazy val sbHeaders: List[String] =
         val firstLine = TSVTableString.normalize(rawString).split("\n").head.trim
-        firstLine.split("\\s+").toList.tail // drop "mb_in_kg/sb_in_cm" header
+        firstLine.split("\t").toList.tail // drop "mb_in_kg/sb_in_cm" header
 
     /** SB measurement points parsed from the column headers. */
     lazy val availableSbValues: List[QtyD[Centimeter]] =
@@ -90,23 +90,24 @@ final case class PressureLossTSVTableString(
       *   `Right(pressure)` on success, `Left(reason)` on parse or
       *   interpolation failure.
       */
-    def interpolate(mb: Mass, sbValue: QtyD[Centimeter]): Either[String, Pressure] =
+    def interpolate(mb: Mass, sbValue: QtyD[Centimeter]): Either[InterpolationError, Pressure] =
         Try {
             val triples: List[(Double, Double, Double)] =
                 readAll.map: (m, sb, p) =>
                     (m.toUnit[Kilogram].value, sb.value, p.value)
-            triples
-                .getWithBilinearInterpolation(mb.toUnit[Kilogram].value, sbValue.value)
+            new CustomInterpolator(
+                xTerm = "mB", 
+                yTerm = "sB", 
+                it    = triples
+            )
+                .interpolateAt(
+                    xi = mb.toUnit[Kilogram].value, 
+                    yi = sbValue.value
+                )
         }.toEither
-            .left.map(e => s"Parse error: ${e.getMessage}")
+            .left.map(e => InterpolationError.ParseError(e.getMessage))
             .flatMap:
                 case Right(v) => Right(v.withUnit[Pascal])
-                case Left(InterpolationError.EmptyDataSet) =>
-                    Left("Empty pressure loss table (no data to interpolate)")
-                case Left(InterpolationError.ValueOutOfRange(xi, yiOpt)) =>
-                    val detail = yiOpt.map(yi => s"mB=$xi, SB=$yi").getOrElse(s"mB=$xi")
-                    Left(s"Value out of range for interpolation ($detail)")
-                case Left(InterpolationError.MissingGridPoint(xi, yi)) =>
-                    Left(s"Missing grid point for interpolation (mB=$xi, SB=$yi)")
+                case Left(e)  => Left(e)
 
 end PressureLossTSVTableString

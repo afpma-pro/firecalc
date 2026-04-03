@@ -17,10 +17,9 @@ import coulomb.syntax.withUnit
 class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
 
     private val rawTable: String =
-        """|mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
-           |10 4       3       2       1
-           |25 22      20      18      16
-           |""".stripMargin
+        "mb_in_kg/sb_in_cm\t1.6\t2.4\t3.2\t4.0\n" +
+        "10\t4\t3\t2\t1\n" +
+        "25\t22\t20\t18\t16\n"
 
     private val table = PressureLossTSVTableString(rawTable)
 
@@ -162,6 +161,130 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         val result = emptyTable.interpolate(mb, sb)
 
         result shouldBe a[Left[?, ?]]
+    }
+
+    // ── Sparse table ─────────────────────────────────────────────
+
+    // Only 4 populated cells across a 16×4 grid, forming a diagonal:
+    //   (10, 1.7)=6.81  (15, 2.6)=8.18  (20, 3.5)=12.94  (22, 3.9)=15.79
+    private val sparseRawTable: String =
+        "mb_in_kg/sb_in_cm\t1.7\t2.6\t3.5\t3.9\n" +
+        "10\t6.81\t\t\t\n" +
+        "11\t\t\t\t\n" +
+        "12\t\t\t\t\n" +
+        "13\t\t\t\t\n" +
+        "14\t\t\t\t\n" +
+        "15\t\t8.18\t\t\n" +
+        "16\t\t\t\t\n" +
+        "17\t\t\t\t\n" +
+        "18\t\t\t\t\n" +
+        "19\t\t\t\t\n" +
+        "20\t\t\t12.94\t\n" +
+        "21\t\t\t\t\n" +
+        "22\t\t\t\t15.79\n" +
+        "23\t\t\t\t\n" +
+        "24\t\t\t\t\n" +
+        "25"
+
+    private val sparseTable = PressureLossTSVTableString(sparseRawTable)
+
+    // ── readSingle (sparse) ────────────────────────────────────
+
+    "readSingle (sparse)" should "return exact pressure for (10, 1.7)" in {
+        val mb = 10.0.withUnit[Kilogram]
+        val sb = 1.7.withUnit[Centimeter]
+
+        sparseTable.readSingle(mb, sb) shouldBe Some(6.81.withUnit[Pascal])
+    }
+
+    it should "return exact pressure for (15, 2.6)" in {
+        val mb = 15.0.withUnit[Kilogram]
+        val sb = 2.6.withUnit[Centimeter]
+
+        sparseTable.readSingle(mb, sb) shouldBe Some(8.18.withUnit[Pascal])
+    }
+
+    it should "return exact pressure for (20, 3.5)" in {
+        val mb = 20.0.withUnit[Kilogram]
+        val sb = 3.5.withUnit[Centimeter]
+
+        sparseTable.readSingle(mb, sb) shouldBe Some(12.94.withUnit[Pascal])
+    }
+
+    it should "return exact pressure for (22, 3.9)" in {
+        val mb = 22.0.withUnit[Kilogram]
+        val sb = 3.9.withUnit[Centimeter]
+
+        sparseTable.readSingle(mb, sb) shouldBe Some(15.79.withUnit[Pascal])
+    }
+
+    it should "return None for an empty cell (10, 2.6)" in {
+        val mb = 10.0.withUnit[Kilogram]
+        val sb = 2.6.withUnit[Centimeter]
+
+        sparseTable.readSingle(mb, sb) shouldBe None
+    }
+
+    it should "return None for a row with no data (11, 1.7)" in {
+        val mb = 11.0.withUnit[Kilogram]
+        val sb = 1.7.withUnit[Centimeter]
+
+        sparseTable.readSingle(mb, sb) shouldBe None
+    }
+
+    // ── readAll (sparse) ───────────────────────────────────────
+
+    "readAll (sparse)" should "return exactly 4 data points" in {
+        sparseTable.readAll should have size 4
+    }
+
+    it should "contain correct values for all populated cells" in {
+        val all = sparseTable.readAll
+
+        val expected = List(
+            (10.0, 1.7, 6.81),
+            (15.0, 2.6, 8.18),
+            (20.0, 3.5, 12.94),
+            (22.0, 3.9, 15.79)
+        )
+
+        expected.foreach: (mbKg, sbCm, pa) =>
+            val entry = all.find: (m, sb, _) =>
+                m.toUnit[Kilogram].value == mbKg && sb.value == sbCm
+            entry.map(_._3.value) shouldBe Some(pa)
+    }
+
+    // ── interpolate (sparse) ───────────────────────────────────
+
+    "interpolate (sparse)" should "return exact value at grid point (10, 1.7)" in {
+        val mb = 10.0.withUnit[Kilogram]
+        val sb = 1.7.withUnit[Centimeter]
+
+        sparseTable.interpolate(mb, sb).map(_.value) shouldBe Right(6.81)
+    }
+
+    it should "interpolate between adjacent diagonal points" in {
+        // Between (10, 1.7)=6.81 and (15, 2.6)=8.18
+        val mb = 12.0.withUnit[Kilogram]
+        val sb = 2.06.withUnit[Centimeter]
+
+        val result = sparseTable.interpolate(mb, sb)
+
+        result shouldBe a[Right[?, ?]]
+    }
+
+    it should "return Left for mb out of range" in {
+        val mb = 30.0.withUnit[Kilogram]
+        val sb = 2.6.withUnit[Centimeter]
+
+        sparseTable.interpolate(mb, sb) shouldBe a[Left[?, ?]]
+    }
+
+    it should "return Left for sb out of range" in {
+        val mb = 15.0.withUnit[Kilogram]
+        val sb = 5.0.withUnit[Centimeter]
+
+        sparseTable.interpolate(mb, sb) shouldBe a[Left[?, ?]]
     }
 
 end PressureLossTSVTableStringSuite

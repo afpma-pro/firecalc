@@ -20,6 +20,7 @@ import afpma.firecalc.engine.models.gtypedefs.v
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CouldNotComputeThermalResistance
 import afpma.firecalc.engine.standard.ThermalResistance_Error.SideRatioTooHighForRectangularForm
+import afpma.firecalc.engine.utils.InterpolationError
 import afpma.firecalc.engine.utils.readtable.ReadTableError
 
 import cats.Show
@@ -805,7 +806,7 @@ object standard {
     case class SectionGeometryMustBeDefined(sectionTyp: PipeType)                extends PropertyMustBeDefined
     case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)              extends PropertyMustBeDefined
     case class PressureLossMustBeDefined(sectionTyp: PipeType)                   extends PropertyMustBeDefined
-    case class PressureLossTableError(reason: String, sectionTyp: PipeType)      extends PropertyMustBeDefined
+    case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType)      extends PropertyMustBeDefined
 
     object PropertyMustBeDefined:
         given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
@@ -816,7 +817,7 @@ object standard {
             case _: PressureLossMustBeDefined      =>
                 I18N.incremental_validation.property_must_be_defined.pressure_loss
             case e: PressureLossTableError         =>
-                I18N.incremental_validation.property_must_be_defined.pressure_loss_table_error(e.reason)
+                I18N.incremental_validation.property_must_be_defined.pressure_loss_table_error(e.err.show)
 
     // Prerequisite errors
     sealed trait PrerequisiteNotMet extends IncrementalValidation_Error

@@ -15,17 +15,18 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.i18n.*
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.engine.OTypedQtyD
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.FireboxFormulas
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog.SB
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.utils.InterpolationError
 import afpma.firecalc.engine.utils.ShowAsTable
-import afpma.firecalc.engine.OTypedQtyD
-
 
 import cats.*
 import cats.derived.*
@@ -35,7 +36,6 @@ import coulomb.*
 import coulomb.policy.standard.given
 
 import io.taig.babel.Locale
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog.SB
 
 object std:
 
@@ -351,7 +351,7 @@ object std:
               * - `Left(None)`      — no mB value set (optional, no error)
               * - `Left(Some(reason))` — parse/interpolation failure with reason
               */
-            def pressure_loss: Either[Option[String], Pressure]
+            def pressure_loss: Either[Option[InterpolationError], Pressure]
 
             lazy val factory: Factory
 
@@ -370,7 +370,7 @@ object std:
                     pressureLossTable.availableSbValues
 
                 /** Interpolated pressure loss for any (mb, sb) within table bounds. */
-                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Either[String, Pressure] =
+                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Either[InterpolationError, Pressure] =
                     pressureLossTable.interpolate(mb, sb_value)
 
         object Door15aFirebox_Catalog:

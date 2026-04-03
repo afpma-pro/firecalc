@@ -28,8 +28,8 @@ object TSVTableString:
         val headers = header.split(sep)
         val data    = lines.tail.toList
         data.map: d =>
-            val values = d.trim.split(sep)
-            (headers zip values).toMap
+            val values = d.trim.split(sep, -1)
+            (headers zip values).filter((_, v) => v.trim.nonEmpty).toMap
 
 extension (tt: TSVTableString)
 
