@@ -17,6 +17,9 @@ Global / excludeLintKeys ++= Set(mainClass)
 
 val scala_version = "3.8.2"
 
+// only available locally, waiting for PR to be merged at https://github.com/taig/babel/pull/481
+val babel_version_custom = "0.5.4"
+
 // =========
 // Shared i18n Configuration
 // =========
@@ -201,7 +204,7 @@ lazy val i18n_utils = crossProject(JVMPlatform, JSPlatform)
         "pro.afpma" %%% "magnolia" % "1.3.16",
 
         "org.typelevel" %%% "cats-core" % "2.13.0",
-        "io.taig" %%% "babel-loader"  % "0.5.3",
+        "io.taig" %%% "babel-loader"  % babel_version_custom,
     ),
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
 
@@ -308,7 +311,7 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
     ),
     libraryDependencies ++= Seq(
         "io.scalaland"      %%% "chimney"           % "1.8.2",
-        "io.taig"           %%% "babel-generic"     % "0.5.3",
+        "io.taig"           %%% "babel-generic"     % babel_version_custom,
         "org.typelevel"     %%% "kittens"           % "3.5.0",
         // Test
         "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
@@ -368,9 +371,9 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
 
     // i18n
-    libraryDependencies += "io.taig" %%% "babel-circe"   % "0.5.3",
-    libraryDependencies += "io.taig" %%% "babel-generic" % "0.5.3",
-    libraryDependencies += "io.taig" %%% "babel-loader"  % "0.5.3",
+    libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
+    libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
+    libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(i18n, units, dto)
@@ -448,9 +451,9 @@ lazy val i18n = crossProject(JVMPlatform, JSPlatform)
     ),
 
     // i18n
-    libraryDependencies += "io.taig" %%% "babel-circe"   % "0.5.3",
-    libraryDependencies += "io.taig" %%% "babel-generic" % "0.5.3",
-    libraryDependencies += "io.taig" %%% "babel-loader"  % "0.5.3",
+    libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
+    libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
+    libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
 
     // Make Bloop/Metals watch the i18n conf files for changes
     Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -695,9 +698,9 @@ lazy val ui = (project in file("modules/ui"))
       // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
       "pro.afpma" %%% "magnolia" % "1.3.16", 
 
-      "io.taig"             %%% "babel-circe"   % "0.5.3",
-      "io.taig"             %%% "babel-generic" % "0.5.3",
-      "io.taig"             %%% "babel-loader"  % "0.5.3",
+      "io.taig"             %%% "babel-circe"   % babel_version_custom,
+      "io.taig"             %%% "babel-generic" % babel_version_custom,
+      "io.taig"             %%% "babel-loader"  % babel_version_custom,
 
       // encoding / decoding
       
@@ -772,7 +775,7 @@ lazy val ui_i18n = crossProject(JSPlatform/*, JVMPlatform*/)
 
     libraryDependencies += "org.typelevel"  %%% "cats-core"     % "2.13.0",
     
-    libraryDependencies += "io.taig"        %%% "babel-generic" % "0.5.3",
+    libraryDependencies += "io.taig"        %%% "babel-generic" % babel_version_custom,
 
     // Make Bloop/Metals watch the i18n conf files for changes
     Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -804,7 +807,7 @@ lazy val payments_shared_i18n = crossProject(JSPlatform, JVMPlatform)
 
     libraryDependencies += "org.typelevel"  %%% "cats-core"     % "2.13.0",
 
-    libraryDependencies += "io.taig"        %%% "babel-generic" % "0.5.3",
+    libraryDependencies += "io.taig"        %%% "babel-generic" % babel_version_custom,
 
     // Make Bloop/Metals watch the i18n conf files for changes
     Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -845,9 +848,9 @@ lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
         "io.scalaland"   %% "chimney"             % "1.8.2",
 
         // i18n
-        "io.taig" %% "babel-circe"   % "0.5.3",
-        "io.taig" %% "babel-generic" % "0.5.3",
-        "io.taig" %% "babel-loader"  % "0.5.3",
+        "io.taig" %% "babel-circe"   % babel_version_custom,
+        "io.taig" %% "babel-generic" % babel_version_custom,
+        "io.taig" %% "babel-loader"  % babel_version_custom,
 
         // encoding / decoding
         "io.circe" %% "circe-core"    % "0.14.13",
@@ -872,7 +875,7 @@ lazy val payments_i18n = (project in file("modules/payments-i18n"))
 
     libraryDependencies += "org.typelevel"  %% "cats-core"     % "2.13.0",
     
-    libraryDependencies += "io.taig"        %% "babel-generic" % "0.5.3",
+    libraryDependencies += "io.taig"        %% "babel-generic" % babel_version_custom,
 
     // Make Bloop/Metals watch the i18n conf files for changes
     Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -898,7 +901,7 @@ lazy val invoices_i18n = (project in file("modules/invoices-i18n"))
 
     libraryDependencies += "org.typelevel"  %% "cats-core"     % "2.13.0",
     
-    libraryDependencies += "io.taig"        %% "babel-generic" % "0.5.3",
+    libraryDependencies += "io.taig"        %% "babel-generic" % babel_version_custom,
 
     // Make Bloop/Metals watch the i18n conf files for changes
     Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -928,9 +931,9 @@ lazy val reports = (project in file("modules/reports"))
 
     libraryDependencies ++= Seq(
         // i18n
-        "io.taig" %% "babel-circe"   % "0.5.3",
-        "io.taig" %% "babel-generic" % "0.5.3",
-        "io.taig" %% "babel-loader"  % "0.5.3",
+        "io.taig" %% "babel-circe"   % babel_version_custom,
+        "io.taig" %% "babel-generic" % babel_version_custom,
+        "io.taig" %% "babel-loader"  % babel_version_custom,
 
         // os
         "com.lihaoyi" %% "os-lib" % "0.11.4",
@@ -1081,9 +1084,9 @@ lazy val invoices = (project in file("modules/invoices"))
 
     libraryDependencies ++= Seq(
         // i18n
-        "io.taig" %% "babel-circe"   % "0.5.3",
-        "io.taig" %% "babel-generic" % "0.5.3",
-        "io.taig" %% "babel-loader"  % "0.5.3",
+        "io.taig" %% "babel-circe"   % babel_version_custom,
+        "io.taig" %% "babel-generic" % babel_version_custom,
+        "io.taig" %% "babel-loader"  % babel_version_custom,
 
         // os
         "com.lihaoyi" %% "os-lib" % "0.11.4",
