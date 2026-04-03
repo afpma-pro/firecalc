@@ -38,8 +38,10 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
         ex: StoveProjectDescr_15544_Strict_Alg
     )(tableOfDirectionChanges: TableFor2[String, Double]) = {
 
+        given PipeType = FluePipeT
         given en15544Impl: EN15544_V_2023_Formulas_Alg = EN15544_Strict_Formulas.make
-        given ssalg: ShortSectionAlg = ShortSection.makeImpl
+        given ssalg: ShortSectionAlg = ShortSection().makeImpl
+        val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()
 
         val pipeConcat = 
             ex.fluePipe match
@@ -49,7 +51,7 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
 
         val els = pipeConcat.elems
         
-        val inst = FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(els)
+        val inst = flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(els)
         
         forAll(tableOfDirectionChanges) { (dcName, dcCoeff) => 
 

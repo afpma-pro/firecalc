@@ -32,6 +32,8 @@ import io.taig.babel.Locale
 import io.taig.babel.Locales
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.PipeType
 
 class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 
@@ -44,8 +46,11 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
     val inputs = strict_ex01_colonne_ascendante.en15544_inputsVNel.toOption.get
     val en15544 = EN15544_Strict_Application.make(f)(inputs)
 
+    given PipeType = FluePipeT
+
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()
     given DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
-        FlowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(channel_pipe_full_descr.elementsUnwrap)(using en15544.ssalg)
+        flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(channel_pipe_full_descr.elementsUnwrap)(using en15544.ssalg)
 
     import LoadQty.givens.nominal
     
