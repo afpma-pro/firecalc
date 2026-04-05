@@ -618,13 +618,19 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
                 condVar.signal
                     .withCurrentValueOf(voa)
                     .map((c, oa) =>
-                        if (cond.check(c)) 
+                        if (cond.check(c))
                             cond.deref(c)
                             .orElse(oa)
                             .orElse(activationDefaultVar.now())
                             .orElse(Some(d.default))
-                        else 
-                            None
+                        else
+                            // Preserve the current value instead of clearing to None.
+                            // The field is already hidden via CSS; keeping its value prevents
+                            // a transient invalid state in the parent Var when multiple
+                            // conditional fields (e.g. mb/pn) share the same parent — clearing
+                            // one field before the other is activated would leave the parent
+                            // with no valid value, causing downstream engine computation errors.
+                            oa
                     )
                     .distinct --> voa.writer
 

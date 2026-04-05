@@ -110,14 +110,17 @@ final case class DaisyUIVerticalAccordionAndJoin(
                         given Show[QtyD[Kilogram]] = shows.defaults.show_Kilograms_1
                         given showPound0: Show[QtyD[Pound]] = shows.defaults.show_Pound_0
                         val opt_appl = vnel_appl.toOption
+                        // For each value: prefer user input when active, fall back to engine result.
+                        // The engine fallback handles the transient state during sizing method switch
+                        // where the newly-activated field's value hasn't been set yet.
                         val mb_value = pdm.sizing_method match
-                            case SizingMethod.NominalHeatOutput => opt_appl.map(_.m_B)  // use calculated value from en15544
-                            case SizingMethod.MaxLoad           => pdm.maximum_load     // use input from user
+                            case SizingMethod.NominalHeatOutput => opt_appl.map(_.m_B)
+                            case SizingMethod.MaxLoad           => pdm.maximum_load.orElse(opt_appl.map(_.m_B))
                         val mb_value_show = mb_value.map(_.showP_orImpUnits[Pound]).getOrElse("-")
                         val mb_show = s"${I18N.technical_specifications.maximum_load_short} = ${mb_value_show}"
                         val pn_value = pdm.sizing_method match
-                            case SizingMethod.NominalHeatOutput => pdm.nominal_heat_output  // use input from user
-                            case SizingMethod.MaxLoad           => opt_appl.map(_.P_n)      // use calculated value from en15544
+                            case SizingMethod.NominalHeatOutput => pdm.nominal_heat_output.orElse(opt_appl.map(_.P_n))
+                            case SizingMethod.MaxLoad           => opt_appl.map(_.P_n)
                         val pn_value_show = pn_value.map(_.showP_orImpUnits[BTU / Hour]).getOrElse("-")
                         val pn_show = s"${I18N.technical_specifications.nominal_heat_output_short} = ${pn_value_show}"
                         div(

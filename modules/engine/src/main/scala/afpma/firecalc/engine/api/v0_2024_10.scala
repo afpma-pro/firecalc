@@ -46,6 +46,7 @@ import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType
 import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType
 import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.StoveParamsSizingInputMissing
 import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.engine.wood_combustion.*
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Impl
@@ -281,6 +282,11 @@ object v0_2024_10:
 
         def stoveParams: StoveParams
 
+        protected def checkStoveParamsSizingInput: VNelMcalcErr[Unit] =
+            stoveParams.mB_or_pn_opt match
+                case Some(_) => ().validNel
+                case None    => StoveParamsSizingInputMissing.invalidNel
+
         def en15544_pipesVNel: VNelMcalcErr[Pipes_15544]
 
         def en15544_inputsVNel: VNelMcalcErr[Inputs_15544]
@@ -330,7 +336,7 @@ object v0_2024_10:
                     override val chimney   = _chimney
 
         override def en15544_inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_15544_Strict] =
-            en15544_pipesVNel.map: pipes =>
+            (checkStoveParamsSizingInput, en15544_pipesVNel).mapN: (_, pipes) =>
                 std.Inputs_15544_Strict(
                     localConditions,
                     en13384NationalAcceptedData,
@@ -440,7 +446,7 @@ object v0_2024_10:
             }
 
         override def en15544_inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_15544_MCE] =
-            en15544_pipesVNel.map: pipes =>
+            (checkStoveParamsSizingInput, en15544_pipesVNel).mapN: (_, pipes) =>
                 std.Inputs_15544_MCE(
                     localConditions,
                     en13384NationalAcceptedData,

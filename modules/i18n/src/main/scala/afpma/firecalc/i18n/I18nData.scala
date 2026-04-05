@@ -610,7 +610,8 @@ object I18nData:
         )
 
     case class Inputs_Error(
-        invald_type_of_appliance: Inputs_Error.InvalidTypeOfAppliance
+        invald_type_of_appliance          : Inputs_Error.InvalidTypeOfAppliance,
+        stove_params_sizing_input_missing : String
     )
 
     object Inputs_Error:
