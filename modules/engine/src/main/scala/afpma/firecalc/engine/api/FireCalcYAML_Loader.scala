@@ -31,40 +31,49 @@ import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Cat
 case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     self =>
 
+    import FireCalcYAML_Loader.traced
+
     // DO BETTER
     require(
         fcProj.standard_or_computation_method == StandardOrComputationMethod.EN_15544_2023,
         s"Only '${StandardOrComputationMethod.EN_15544_2023.reference}' is allowed for now."
     )
 
-    val airIntakePipeResult: FlowOnlyAirIntakePipe_Module_13384.FullDescrResult                 =
-        FlowOnlyAirIntakePipe_Module_13384.mkPipeFromIncrDescr(fcProj.air_intake_descr)
+    val airIntakePipeResult: FlowOnlyAirIntakePipe_Module_13384.FullDescrResult =
+        traced("airIntakePipeResult") {
+            FlowOnlyAirIntakePipe_Module_13384.mkPipeFromIncrDescr(fcProj.air_intake_descr)
+        }
 
-    private val pipeChain = PipeChain_15544_Strict.build(
-        PipeChain_15544_Strict.Descriptors(
-            flue      = fcProj.flue_pipe_descr,
-            connector = fcProj.connector_pipe_descr,
-            chimney   = fcProj.chimney_pipe_descr
+    private val pipeChain = traced("pipeChain") {
+        PipeChain_15544_Strict.build(
+            PipeChain_15544_Strict.Descriptors(
+                flue      = fcProj.flue_pipe_descr,
+                connector = fcProj.connector_pipe_descr,
+                chimney   = fcProj.chimney_pipe_descr
+            )
         )
-    )
+    }
 
-    val fluePipeResult     = pipeChain.fluePipeResult
+    val fluePipeResult      = pipeChain.fluePipeResult
     val connectorPipeResult = pipeChain.connectorPipeResult
-    val chimneyPipeResult  = pipeChain.chimneyPipeResult
+    val chimneyPipeResult   = pipeChain.chimneyPipeResult
 
     val airIntakePipe: ValidatedNel[IncrementalValidation_Error, FlowOnlyAirIntakePipe_13384] =
-        FlowOnlyAirIntakePipe_Module_13384.extractPipe(airIntakePipeResult)
-    val fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_15544]              = pipeChain.fluePipe
-    val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]               = pipeChain.connectorPipe
-    val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]                 = pipeChain.chimneyPipe
+        traced("airIntakePipe") { FlowOnlyAirIntakePipe_Module_13384.extractPipe(airIntakePipeResult) }
+    val fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_15544]              =
+        traced("fluePipe") { pipeChain.fluePipe }
+    val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]               =
+        traced("connectorPipe") { pipeChain.connectorPipe }
+    val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]                 =
+        traced("chimneyPipe") { pipeChain.chimneyPipe }
 
     val airIntakePipeMappings: Validated[NonEmptyList[
         IncrementalValidation_Error
     ], FlowOnlyAirIntakePipe_Module_13384.incremental.IdsMapping] =
-        FlowOnlyAirIntakePipe_Module_13384.extractIdsMapping(airIntakePipeResult)
-    val fluePipeMappings      = pipeChain.fluePipeMappings
-    val connectorPipeMappings = pipeChain.connectorPipeMappings
-    val chimneyPipeMappings   = pipeChain.chimneyPipeMappings
+        traced("airIntakePipeMappings") { FlowOnlyAirIntakePipe_Module_13384.extractIdsMapping(airIntakePipeResult) }
+    val fluePipeMappings      = traced("fluePipeMappings") { pipeChain.fluePipeMappings }
+    val connectorPipeMappings = traced("connectorPipeMappings") { pipeChain.connectorPipeMappings }
+    val chimneyPipeMappings   = traced("chimneyPipeMappings") { pipeChain.chimneyPipeMappings }
 
     // EN15544 Strict
 
@@ -72,21 +81,26 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     import afpma.firecalc.engine.impl.en15544.strict.given
     import cats.implicits.catsSyntaxValidatedId
 
-    private val fb: Firebox_15544 =
+    private val fb: Firebox_15544 = traced("fb (firebox transform)") {
         import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
         summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
+    }
 
     private val validatedFluePipe: ValidatedNel[IncrementalValidation_Error, FluePipe_15544] =
-        import FluePipe_Module_15544.elems
-        self.fluePipe match
-            case v @ Valid(fp)  => if (fp.elems.size == 0) FluePipeNotDefinedYet.invalidNel else v
-            case i @ Invalid(e) => i
+        traced("validatedFluePipe") {
+            import FluePipe_Module_15544.elems
+            self.fluePipe match
+                case v @ Valid(fp)  => if (fp.elems.size == 0) FluePipeNotDefinedYet.invalidNel else v
+                case i @ Invalid(e) => i
+        }
 
     private val validatedChimneyPipe: ValidatedNel[IncrementalValidation_Error, ChimneyPipe] =
-        import ChimneyPipe_Module.elems
-        self.chimneyPipe match
-            case v @ Valid(p)   => if (p.elems.size == 0) ChimneyPipeNotDefinedYet.invalidNel else v
-            case i @ Invalid(e) => i
+        traced("validatedChimneyPipe") {
+            import ChimneyPipe_Module.elems
+            self.chimneyPipe match
+                case v @ Valid(p)   => if (p.elems.size == 0) ChimneyPipeNotDefinedYet.invalidNel else v
+                case i @ Invalid(e) => i
+        }
 
     private def mkStrictAlg[F <: Firebox_15544](
         fb: F
@@ -109,16 +123,26 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             val chimneyPipe                     = validatedChimneyPipe
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
-        fb match
-            case f: TraditionalFirebox     => mkStrictAlg(f)
-            case f: AFPMA_PRSE             => mkStrictAlg(f)
-            case f: Ecolabeled             => mkStrictAlg(f)
-            case f: SingleTested           => mkStrictAlg(f)
-            case f: Door15aFirebox_Catalog => mkStrictAlg(f)
-            case f                      => 
-                throw new IllegalStateException(s"Unknow firebox type")
+        traced("stoveProjectDescr_EN15544_Strict") {
+            fb match
+                case f: TraditionalFirebox     => mkStrictAlg(f)
+                case f: AFPMA_PRSE             => mkStrictAlg(f)
+                case f: Ecolabeled             => mkStrictAlg(f)
+                case f: SingleTested           => mkStrictAlg(f)
+                case f: Door15aFirebox_Catalog => mkStrictAlg(f)
+                case f                      =>
+                    throw new IllegalStateException(s"Unknow firebox type")
+        }
 
     def make_en15544_Strict_Application: ValidatedNel[MCalc_Error, EN15544_Strict_Application] =
         stoveProjectDescr_EN15544_Strict.en15544_Alg
 
 end FireCalcYAML_Loader
+
+object FireCalcYAML_Loader:
+    private inline def traced[A](step: String)(f: => A): A =
+        try f
+        catch
+            case e: Exception =>
+                System.err.println(s"[FireCalcYAML_Loader] FAILED at step '$step': ${e.getClass.getSimpleName}: ${e.getMessage}")
+                throw e
