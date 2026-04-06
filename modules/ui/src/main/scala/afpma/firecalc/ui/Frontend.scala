@@ -11,6 +11,7 @@ import afpma.firecalc.ui.components.GlobalErrorDialog
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.services.{CatalogImageStore, VersionService}
 import afpma.firecalc.ui.views.*
+import afpma.firecalc.ui.views.ProjectSelectorView
 
 import com.raquo.laminar.api.L.*
 
@@ -25,7 +26,18 @@ object Frontend {
     import models.*
 
     lazy val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
-        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> appStateSchemaWebStorageVar.writer
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS)
+        --> Observer[schema.AppStateSchema] { schemaVal =>
+            import models.project.{ProjectManager, ProjectStorage, ProjectIndex}
+            ProjectManager.activeProjectIdVar.now().foreach { id =>
+                ProjectStorage.save(id, schemaVal)
+                val name = schemaVal.engine_state.project_description.reference
+                ProjectIndex.updateEntry(id, _.copy(
+                    name         = if name.nonEmpty then name else "Sans titre",
+                    lastModified = scala.scalajs.js.Date.now()
+                ))
+            }
+        }
 
     lazy val writeCatalogSubscription = catalogStateVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> catalogWebStorageVar.writer
@@ -82,23 +94,41 @@ object Frontend {
 
     def renderPage(page: Page): Div = page match
 
-        case HomePage(lang, displayUnitsOpt) =>
+        case ProjectSelectorPage(lang) =>
+            given loc: Locale = Locale(language = lang)
+            models.project.ProjectManager.saveCurrentProject()
+            models.project.ProjectManager.activeProjectIdVar.set(None)
+            ProjectSelectorView().node
+
+        case ProjectPage(lang, projectId, displayUnitsOpt) =>
             given loc: Locale       = Locale(language = lang)
             given du : DisplayUnits = displayUnitsOpt.getOrElse(DisplayUnits.SI)
 
-            HomeView().node
-                .amend(onMountCallback(_ =>
-                    localeVar.set      (loc)
-                    displayUnitsVar.set(du )
-                ))
+            if !models.project.ProjectManager.switchToProject(projectId) then
+                // Project not found — redirect to selector
+                dom.window.setTimeout(() =>
+                    router.pushState(ProjectSelectorPage(lang))
+                , 0)
+                div(p("Projet introuvable..."))
+            else
+                HomeView().node
+                    .amend(onMountCallback(_ =>
+                        localeVar.set      (loc)
+                        displayUnitsVar.set(du )
+                    ))
 
         case DefaultPage =>
-            renderPage(
-                HomePage           (
-                    lang            = localeVar.now().language,
-                    displayUnitsOpt = Some(displayUnitsVar.now())
-                )
-            )
+            models.project.ProjectMigration.migrateIfNeeded() match
+                case Some(id) =>
+                    dom.window.setTimeout(() =>
+                        router.pushState(ProjectPage(localeVar.now().language, id))
+                    , 0)
+                    div(p("Migration en cours..."))
+                case None =>
+                    dom.window.setTimeout(() =>
+                        router.pushState(ProjectSelectorPage(localeVar.now().language))
+                    , 0)
+                    div(p("Chargement..."))
 
     def main(args: Array[String]): Unit =
 

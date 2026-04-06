@@ -31,6 +31,7 @@ final case class I18nData_UI(
     local_conditions     : LocalConditions,
     pdf_ordering         : PDFOrdering,
     placeholders         : Placeholders,
+    project_selector     : ProjectSelector,
     tooltips             : Tooltips,
     ui_messages          : UiMessages,
     viz                  : Viz,
@@ -228,6 +229,19 @@ object I18nData_UI:
             }
         }
     }
+
+    case class ProjectSelector(
+        title           : String,
+        new_project     : String,
+        open_file       : String,
+        open            : String,
+        delete          : String,
+        confirm_delete  : StringFormat1,
+        no_name         : String,
+        modified        : String,
+        no_projects     : String,
+        back_to_projects: String
+    )
 
     case class DirectionBadge(
         label                        : String,

@@ -10,11 +10,13 @@ import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
+import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.components.GlobalErrorDialog
 import afpma.firecalc.ui.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.models.project.ProjectManager
 import afpma.firecalc.ui.services.FileSystemService
 
 import com.raquo.laminar.api.L.*
@@ -60,8 +62,8 @@ object FireCalcProjet:
                         cls := "w-4 h-4 cursor-pointer",
                         lucide.`file`(stroke_width = 1),
                         onClick --> { _ =>
-                            engineStateVar.set(EngineState.init)
-                            undoManager.reset()
+                            val id = ProjectManager.createNewProject()
+                            router.pushState(ProjectPage(localeVar.now().language, id))
                         }
                     ),
                     ttPosition = "tooltip-bottom"
@@ -136,9 +138,10 @@ object FireCalcProjet:
 
                 case Success(nextEngineState) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
-                    engineStateVar.set                         (nextEngineState              )
-                    undoManager.reset()
-                    isLoadingVar.set                           (false                        )
+                    val schema = appStateSchemaVar.now().copy(engine_state = nextEngineState)
+                    val id = ProjectManager.openFromFile(schema)
+                    router.pushState(ProjectPage(localeVar.now().language, id))
+                    isLoadingVar.set(false)
 
         /** Open file using Electron native dialog */
         def openFileElectron(): Unit =

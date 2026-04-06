@@ -85,7 +85,7 @@ lazy val appStateSchemaWebStorageVar: WebStorageVar[AppStateSchema] =
         )
 
 lazy val appStateSchemaVar =
-    Var[AppStateSchema](appStateSchemaWebStorageVar.now())
+    Var[AppStateSchema](AppStateSchemaHelper.createInitialSchema())
 
 // ============================================================================
 // ZOOMED VARS FROM UNIFIED SCHEMA

@@ -17,6 +17,7 @@ import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.{viz3DPanelVar, viz3DPanelOn, viz3DPanelOff}
 import afpma.firecalc.ui.models.{graphPanelVar, graphPanelOn, graphPanelOff}
+import afpma.firecalc.ui.models.project.ProjectManager
 
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
@@ -24,6 +25,14 @@ import com.raquo.laminar.codecs.*
 import io.taig.babel.Language
 
 object DaisyUINavBar:
+
+    /** Navigate to the active project with the given lang/units, or fall back to selector. */
+    private def navigateToActiveProject(lang: Language, du: DisplayUnits): Binder[HtmlElement] =
+        onClick --> { _ =>
+            ProjectManager.activeProjectIdVar.now() match
+                case Some(pid) => router.pushState(ProjectPage(lang, pid, Some(du)))
+                case None      => router.pushState(ProjectSelectorPage(lang))
+        }
 
     val details = htmlTag("details")
     val summary = htmlTag("summary")
@@ -250,7 +259,7 @@ object DaisyUINavBar:
                                     cls := "w-full place-content-center",
                                     a(
                                         dataAttr("id") := "France",
-                                        router.navigateTo(HomePage(Language("fr"), Some(DisplayUnits.SI))),
+                                        navigateToActiveProject(Language("fr"), DisplayUnits.SI),
                                         "FR"
                                     )
                                 ),
@@ -258,7 +267,7 @@ object DaisyUINavBar:
                                     cls := "w-full place-content-center",
                                     a(
                                         dataAttr("id") := "English",
-                                        router.navigateTo(HomePage(Language("en"), Some(DisplayUnits.SI))),
+                                        navigateToActiveProject(Language("en"), DisplayUnits.SI),
                                         "EN"
                                     )
                                 )
@@ -268,7 +277,7 @@ object DaisyUINavBar:
                                     cls := "w-full place-content-center",
                                     a(
                                         dataAttr("id") := "France",
-                                        router.navigateTo(HomePage(Language("fr"), Some(DisplayUnits.Imperial))),
+                                        navigateToActiveProject(Language("fr"), DisplayUnits.Imperial),
                                         "FR"
                                     )
                                 ),
@@ -276,7 +285,7 @@ object DaisyUINavBar:
                                     cls := "w-full place-content-center",
                                     a(
                                         dataAttr("id") := "English",
-                                        router.navigateTo(HomePage(Language("en"), Some(DisplayUnits.Imperial))),
+                                        navigateToActiveProject(Language("en"), DisplayUnits.Imperial),
                                         "EN"
                                     )
                                 )
@@ -304,23 +313,13 @@ object DaisyUINavBar:
                                     li(
                                         a(
                                             "SI",
-                                            router.navigateTo(
-                                                HomePage           (
-                                                    lang            = loc.language,
-                                                    displayUnitsOpt = Some(DisplayUnits.SI)
-                                                )
-                                            )
+                                            navigateToActiveProject(loc.language, DisplayUnits.SI)
                                         )
                                     ),
                                     li(
                                         a(
                                             "Imperial",
-                                            router.navigateTo(
-                                                HomePage           (
-                                                    lang            = loc.language,
-                                                    displayUnitsOpt = Some(DisplayUnits.Imperial)
-                                                )
-                                            )
+                                            navigateToActiveProject(loc.language, DisplayUnits.Imperial)
                                         )
                                     )
                                 )

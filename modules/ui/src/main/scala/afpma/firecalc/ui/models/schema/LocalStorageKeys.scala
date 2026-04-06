@@ -28,4 +28,8 @@ object LocalStorageKeys {
 
     val UI_STATE: String = "ui_state"
 
+    val PROJECTS_INDEX: String = "projects_index"
+
+    def projectAppState(projectId: String): String = s"project_${projectId}_app_state"
+
 }
