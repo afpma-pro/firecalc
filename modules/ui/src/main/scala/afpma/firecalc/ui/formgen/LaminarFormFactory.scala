@@ -619,17 +619,13 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
                     .withCurrentValueOf(voa)
                     .map((c, oa) =>
                         if (cond.check(c))
-                            cond.deref(c)
-                            .orElse(oa)
+                            // With zoomed Vars, oa already reads the field value from the
+                            // parent via the zoom getter — no need for cond.deref(c).
+                            oa
                             .orElse(activationDefaultVar.now())
                             .orElse(Some(d.default))
                         else
-                            // Preserve the current value instead of clearing to None.
-                            // The field is already hidden via CSS; keeping its value prevents
-                            // a transient invalid state in the parent Var when multiple
-                            // conditional fields (e.g. mb/pn) share the same parent — clearing
-                            // one field before the other is activated would leave the parent
-                            // with no valid value, causing downstream engine computation errors.
+                            // Preserve current value; field is hidden via CSS.
                             oa
                     )
                     .distinct --> voa.writer
@@ -747,73 +743,20 @@ trait LaminarFormFactory[DF[x] <: LaminarForm[x, DF[x]]] extends LaminarFormFact
             param   : CaseClass.Param[DF, A]
         ): (Seq[Binder[HtmlElement]], Var[param.PType]) =
 
-            // remove bidirection link
-
-            // variable.zoomLazy { a =>
-            //     Try(param.deref(a))
-            //         .getOrElse(param.default)
-            //         .asInstanceOf[param.PType]
-            // }((_, value) =>
-            //     caseClass.construct { p =>
-            //         if (p.label == param.label) value
-            //         else p.deref(variable.now())
-            //     }
-            // )
             def value_to_param(a: A): param.PType =
                 Try(param.deref(a)).getOrElse(param.default).asInstanceOf[param.PType]
 
-            // create new var and link them using distinct ???
-            val param_v = Var[param.PType](value_to_param(variable.now()))
+            // Use zoomLazy to create a derived Var that is intrinsically a lens
+            // on the parent. Writes go directly to the parent — no separate Var,
+            // no bidirectional binders, no timing hazards.
+            val zoomed = variable.zoomLazy(value_to_param) { (currentParent, newValue) =>
+                caseClass.construct { p =>
+                    if (p.label == param.label) newValue
+                    else p.deref(currentParent)
+                }
+            }
 
-            // binder: variable -> param_v
-            val v_to_p = variable.signal.distinct
-                .map(value_to_param) --> param_v.writer
-
-            // val p_to_v = param_v.signal.distinct
-            //     .map(value =>
-            //         caseClass.construct { p =>
-            //             if (p.label == param.label) value
-            //             else p.deref(variable.now())
-            //         }
-            //     ) --> variable.writer
-
-            val p_to_v = param_v.signal.distinct
-                .withCurrentValueOf(variable)
-                .map((value, n) =>
-                    caseClass.construct { p =>
-                        if (p.label == param.label) value
-                        else p.deref(n)
-                    }
-                ) --> variable.writer
-
-            // val p_to_v =
-            //     param_v.signal.distinct//.withCurrentValueOf(variable.signal)
-            //     // .map((param_v, var_curr) =>
-            //     .map(param_v =>
-            //         val vn1 = variable.now()
-            //         scala.scalajs.js.Dynamic.global.console.log(s"--------------")
-            //         scala.scalajs.js.Dynamic.global.console.log(s"variable.now() = ${vn1}")
-            //         scala.scalajs.js.Dynamic.global.console.log(s"param_v = ${param_v}")
-            //         caseClass.construct { p =>
-            //             scala.scalajs.js.Dynamic.global.console.log(s"construct p.label = ${p.label}")
-            //             if (p.label == param.label)
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"p.label == param.label == ${param.label}")
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"writing param_v")
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"vn1 = ${vn1}")
-            //                 value
-            //             else
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"trying p.deref")
-            //                 val vn2 = variable.now()
-            //                 val pderef = p.deref(vn2)
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"vn1 = $vn1")
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"vn2 = $vn2")
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"trying p.deref")
-            //                 scala.scalajs.js.Dynamic.global.console.log(s"deref = $pderef")
-            //                 pderef
-            //         }
-            //     ) --> variable.writer
-
-            (Seq(v_to_p, p_to_v), param_v)
+            (Seq.empty, zoomed)
 
         def formConfigFrom(
             overwrite: Option[FormConfig]
