@@ -78,13 +78,13 @@ final case class ProjectSelectorView()(using Locale) extends Component:
             div(
                 cls := "flex flex-row gap-3 mb-8",
                 button(
-                    cls := "btn btn-primary",
+                    cls := "btn btn-secondary",
                     lucide.plus,
                     I18N_UI.project_selector.new_project,
                     onClick --> { _ => createAndNavigate() }
                 ),
                 button(
-                    cls := "btn btn-outline",
+                    cls := "btn btn-secondary btn-outline",
                     lucide.`folder-open`(stroke_width = 1.5),
                     I18N_UI.project_selector.open_file,
                     onClick --> { _ =>
@@ -134,7 +134,7 @@ final case class ProjectSelectorView()(using Locale) extends Component:
             div(
                 cls := "flex flex-row gap-2",
                 button(
-                    cls := "btn btn-sm btn-primary",
+                    cls := "btn btn-sm btn-secondary",
                     I18N_UI.project_selector.open,
                     onClick --> { _ =>
                         router.pushState(ProjectPage(localeVar.now().language, entry.id))

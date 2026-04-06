@@ -109,6 +109,17 @@ object DaisyUINavBar:
                     cls := "flex flex-row items-center gap-x-6",
                     FireCalcProjet.NewBlankComponent            (),
                     FireCalcProjet.UploadComponent              (),
+                    DaisyUITooltip(
+                        ttContent  = p(I18N_UI.project_selector.back_to_projects),
+                        element    = div(
+                            cls := "w-4 h-4 cursor-pointer",
+                            lucide.`file-stack`(stroke_width = 1),
+                            onClick --> { _ =>
+                                router.pushState(ProjectSelectorPage(localeVar.now().language))
+                            }
+                        ),
+                        ttPosition = "tooltip-bottom"
+                    ),
                     FireCalcProjet.BackupComponent              (),
                     FireCalcProjet.HardCodedEngineStateComponent(
                         nextEngineState = EngineState.example_projet_15544,

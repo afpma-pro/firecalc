@@ -109,9 +109,9 @@ object Frontend {
             given du : DisplayUnits = displayUnitsOpt.getOrElse(DisplayUnits.SI)
 
             if !models.project.ProjectManager.switchToProject(projectId) then
-                // Project not found — redirect to selector
+                // Project not found — redirect to selector (replaceState to fix URL)
                 dom.window.setTimeout(() =>
-                    router.pushState(ProjectSelectorPage(lang))
+                    router.replaceState(ProjectSelectorPage(lang))
                 , 0)
                 div(p("Projet introuvable..."))
             else
@@ -122,17 +122,29 @@ object Frontend {
                     ))
 
         case DefaultPage =>
+            val lang = localeVar.now().language
             models.project.ProjectMigration.migrateIfNeeded() match
                 case Some(id) =>
                     dom.window.setTimeout(() =>
-                        router.pushState(ProjectPage(localeVar.now().language, id))
+                        router.replaceState(ProjectPage(lang, id))
                     , 0)
                     div(p("Migration en cours..."))
                 case None =>
-                    dom.window.setTimeout(() =>
-                        router.pushState(ProjectSelectorPage(localeVar.now().language))
-                    , 0)
-                    div(p("Chargement..."))
+                    // Load last opened project if any, otherwise show selector
+                    val lastProject = models.project.ProjectIndex.load()
+                        .sortBy(-_.lastModified)
+                        .headOption
+                    lastProject match
+                        case Some(entry) =>
+                            dom.window.setTimeout(() =>
+                                router.replaceState(ProjectPage(lang, entry.id))
+                            , 0)
+                            div(p("Chargement..."))
+                        case None =>
+                            dom.window.setTimeout(() =>
+                                router.replaceState(ProjectSelectorPage(lang))
+                            , 0)
+                            div(p("Chargement..."))
 
     def main(args: Array[String]): Unit =
 
