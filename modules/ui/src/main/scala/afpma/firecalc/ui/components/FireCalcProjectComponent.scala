@@ -46,6 +46,7 @@ object FireCalcProjet:
                         onClick --> { _ =>
                             engineStateVar.set(nextEngineState)
                             undoManager.reset()
+                            fireboxCacheStateVar.set(FireboxCacheState.empty)
                         }
                     ),
                     ttPosition = "tooltip-bottom"

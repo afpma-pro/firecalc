@@ -617,6 +617,22 @@ lazy val uiStateWebStorageVar: WebStorageVar[UIState] =
 
 lazy val uiStateVar: Var[UIState] = Var(uiStateWebStorageVar.now())
 
+lazy val fireboxCacheWebStorageVar: WebStorageVar[FireboxCacheState] =
+    WebStorageVar
+        .localStorage(key = LocalStorageKeys.FIREBOX_CACHE, syncOwner = None)
+        .withCodec(
+            encode           = (state: FireboxCacheState) =>
+                Encoder[FireboxCacheState].apply(state).noSpaces,
+            decode           = (raw: String) =>
+                io.circe.parser.decode[FireboxCacheState](raw) match
+                    case Right(state) => scala.util.Success(state)
+                    case Left(_)      => scala.util.Success(FireboxCacheState.empty),
+            default          = scala.util.Success(FireboxCacheState.empty),
+            syncDistinctByFn = _ == _
+        )
+
+lazy val fireboxCacheStateVar: Var[FireboxCacheState] = Var(fireboxCacheWebStorageVar.now())
+
 def panelOpenedVar(key: String): Var[Boolean] =
     uiStateVar.zoomLazy(
         _.panelStates.getOrElse(key, false)

@@ -50,7 +50,12 @@ case class FireboxComponent(
             val prev = _prevFirebox
             _prevFirebox = curr
             if curr.getClass != prev.getClass then
-                val updated = curr.withDimensions(
+                import FireboxCacheState.cacheKey
+                // Save previous firebox to cache
+                fireboxCacheStateVar.update(s => s.copy(cache = s.cache.updated(cacheKey(prev), prev)))
+                // Restore from cache (if any), always overwrite dimensions from prev
+                val base = fireboxCacheStateVar.now().cache.get(cacheKey(curr)).getOrElse(curr)
+                val updated = base.withDimensions(
                     prev.firebox_depth,
                     prev.firebox_width,
                     prev.firebox_height

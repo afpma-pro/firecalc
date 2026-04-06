@@ -45,6 +45,9 @@ object Frontend {
     lazy val writeUIStateSubscription = uiStateVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> uiStateWebStorageVar.writer
 
+    lazy val writeFireboxCacheSubscription = fireboxCacheStateVar.signal.changes.distinct
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> fireboxCacheWebStorageVar.writer
+
     private val undoSnapshotObserver = Observer[schema.AppStateSchema](undoManager.pushSnapshot(_))
 
     lazy val undoSnapshotSubscription =
@@ -78,6 +81,7 @@ object Frontend {
         writeUnifiedSchemaSubscription,
         writeCatalogSubscription,
         writeUIStateSubscription,
+        writeFireboxCacheSubscription,
         undoSnapshotSubscription,
         undoRedoKeyboardSubscription
         // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))

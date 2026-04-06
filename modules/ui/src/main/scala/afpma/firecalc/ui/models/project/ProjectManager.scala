@@ -40,6 +40,8 @@ object ProjectManager:
                     appStateSchemaVar.set(schema)
                 }
                 undoManager.reset()
+                import afpma.firecalc.ui.models.{fireboxCacheStateVar, FireboxCacheState}
+                fireboxCacheStateVar.set(FireboxCacheState.empty)
                 activeProjectIdVar.set(Some(id))
                 true
             case None =>
