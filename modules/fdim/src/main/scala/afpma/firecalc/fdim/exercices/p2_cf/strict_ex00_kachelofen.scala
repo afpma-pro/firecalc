@@ -100,10 +100,11 @@ object strict_ex00_kachelofen
         )
         .toFullDescr().extractPipe
 
-    val connectorPipe = 
+    val connectorPipe =
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental
         .define(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(
@@ -115,9 +116,10 @@ object strict_ex00_kachelofen
         )
         .toFullDescr().extractPipe
 
-    val chimneyPipe = 
+    val chimneyPipe =
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental.define(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(

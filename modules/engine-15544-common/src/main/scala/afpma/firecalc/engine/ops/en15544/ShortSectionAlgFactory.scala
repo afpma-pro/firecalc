@@ -12,11 +12,6 @@ import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSection.*
 import afpma.firecalc.engine.models.gtypedefs.*
-import afpma.firecalc.engine.standard.*
-
-import cats.syntax.all.*
-
-import coulomb.*
 
 /**
  * Factory that wires [[ShortSectionAlg]] with EN 15544 dynamic-friction coefficients.

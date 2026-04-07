@@ -128,7 +128,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 val first         = chimney_elems.elems.head
                 val p             = Params_13384.DraftMin_LoadNominal
                 val gip           = GasInPipeEl[NamedPipeElDescrG[ChimneyPipe_Module.El], Gas, Params_13384](FlueGas, first, p)
-                val r             = ThermalMecaFlu_13384.makePipeSectionResult(
+                ThermalMecaFlu_13384.makePipeSectionResult(
                     gip,
                     ha.fluegas,
                     ha.massFlows,

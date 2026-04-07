@@ -17,7 +17,6 @@ import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType
 import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType
-import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import cats.data.ValidatedNel

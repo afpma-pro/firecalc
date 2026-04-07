@@ -5,21 +5,16 @@
 
 package afpma.firecalc.engine.models
 
-import algebra.instances.all.given
-
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.ops.en13384.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.ValidatedNel
-import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given

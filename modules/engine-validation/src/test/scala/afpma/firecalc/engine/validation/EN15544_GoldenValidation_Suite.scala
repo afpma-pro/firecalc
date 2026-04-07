@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.validation
 
-import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.CasTypesRunner_15544_Strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C1
@@ -19,7 +19,7 @@ class EN15544_GoldenValidation_Suite
     with GoldenFileSupport:
 
     private def validateCasType(
-        casType: v0_2024_10.StoveProjectDescr_15544_Strict_Alg & v2024_10_Alg,
+        casType: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & v2024_10_Alg,
         currentFile: String,
         goldenPath: String,
         label: String,

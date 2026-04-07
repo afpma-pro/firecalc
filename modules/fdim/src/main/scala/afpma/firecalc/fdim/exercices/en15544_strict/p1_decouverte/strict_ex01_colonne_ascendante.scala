@@ -76,9 +76,10 @@ object strict_ex01_colonne_ascendante
         )
         .toFullDescr().extractPipe
 
-    val connectorPipe = 
+    val connectorPipe =
         import ConnectorPipe_Module.*
         ConnectorPipe_Module.incremental.define(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)),
             layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
@@ -87,9 +88,10 @@ object strict_ex01_colonne_ascendante
         )
         .toFullDescr().extractPipe
 
-    val chimneyPipe = 
+    val chimneyPipe =
         import ChimneyPipe_Module.*
         ChimneyPipe_Module.incremental.define(
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)),
             layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),

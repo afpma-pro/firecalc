@@ -6,8 +6,6 @@
 package afpma.firecalc.engine.models
 
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_WithFlowOnlyAirIntake
-import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_WithThermalAirIntake
 import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_Alg
 import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_MCE
 import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_Strict

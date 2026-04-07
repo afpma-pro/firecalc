@@ -4,14 +4,10 @@
  */
 
 package afpma.firecalc.engine.models.en15544
-import algebra.instances.all.given
-
 import afpma.firecalc.units.coulombutils
 import afpma.firecalc.units.coulombutils.{*, given}
 
-import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.engine.OTypedQtyD
 import afpma.firecalc.engine.OTypedQtyDPretty
@@ -26,7 +22,6 @@ import afpma.firecalc.engine.standard.*
 
 import cats.data.NonEmptyList
 import cats.data.ValidatedNel
-import cats.syntax.show.*
 
 import coulomb.*
 import coulomb.policy.standard.given

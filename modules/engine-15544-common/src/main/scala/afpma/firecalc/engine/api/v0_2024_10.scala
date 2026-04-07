@@ -5,7 +5,6 @@
 
 package afpma.firecalc.engine.api
 
-import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.LocalizedAlg

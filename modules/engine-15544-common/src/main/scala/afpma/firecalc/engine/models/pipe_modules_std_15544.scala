@@ -5,8 +5,6 @@
 
 package afpma.firecalc.engine.models
 
-import algebra.instances.all.given
-
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*

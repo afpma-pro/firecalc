@@ -13,7 +13,6 @@ import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 

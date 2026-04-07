@@ -13,8 +13,6 @@ import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
 
-import cats.syntax.show.*
-
 import coulomb.*
 import coulomb.policy.standard.given
 

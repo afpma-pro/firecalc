@@ -317,7 +317,10 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
         "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
         "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
     ),
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  ).jvmConfigure(_.settings(
+    Test / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "scala",
+    Test / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "resources",
+  )).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(utils, i18n, units)
 
@@ -423,7 +426,7 @@ lazy val engineValidation = (project in file("modules/engine-validation"))
     scalacOptions ++= Seq("-Xmax-inlines:32"),
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
   )
-  .dependsOn(engine.jvm, engine.jvm % "test->test")
+  .dependsOn(engine.jvm, engine.jvm % "test->test", engine_15544_common.jvm, engine_15544_common.jvm % "test->test", engine_15544_strict.jvm, engine_15544_strict.jvm % "test->test")
 
 // =========
 // engine-13384-strict (EN 13384 implementation — physically separated from core engine)

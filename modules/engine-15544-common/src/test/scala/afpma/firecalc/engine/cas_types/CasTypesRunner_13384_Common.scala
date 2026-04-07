@@ -7,7 +7,7 @@ package afpma.firecalc.engine.cas_types
 
 import algebra.instances.all.given
 
-import afpma.firecalc.units.coulombutils.{*, given}
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.api.v0_2024_10
@@ -29,108 +29,31 @@ import io.taig.babel.Locales
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
-case class CasType13384_Results(
-    results: List[CasType13384_Result]
-)
+/** Factory for creating CasType13384_Result.Values from EN13384 application results. */
+object CasType13384_ResultFactory:
 
-object CasType13384_Results:
-    given showAsTable_Results: ShowAsTable[CasType13384_Results] =
-        ShowAsTable.mkLightFor(
-            "Comparaisons (nominal - réduit)",
-            List(
-                "descr",
-                "pz",
-                "pze",
-                "pb",
-                "pz-pze",
-                "pz-pb",
-                "tg",
-                "tob",
-                "tiob",
-                "tiob-tg"
-            ) ::: "-" :: List(
-                "pz",
-                "pze",
-                "pb",
-                "pz-pze",
-                "pz-pb",
-                "tg",
-                "tob",
-                "tiob",
-                "tiob-tg"
-            ),
-            xs =>
-                given Show[QtyD[Pascal]] =
-                    afpma.firecalc.units.coulombutils.shows.defaults.show_Pascals_1
-                xs.results.map: x =>
-                    import x.nominal
-                    import x.lowest
-                    List(
-                        x.descr,
-                        nominal.pz.map(_.show).getOrElse("-"),
-                        nominal.pze.map(_.show).getOrElse("-"),
-                        nominal.pb.map(_.show).getOrElse("-"),
-                        nominal.`pz-pze`.map(_.show).getOrElse("-"),
-                        nominal.`pz-pb`.map(_.show).getOrElse("-"),
-                        nominal.tg.map(_.show).getOrElse("-"),
-                        nominal.tob.map(_.show).getOrElse("-"),
-                        nominal.tiob.map(_.show).getOrElse("-"),
-                        nominal.`tiob-tg`.map(_.show).getOrElse("-"),
-                        "-",
-                        lowest.pz.map(_.show).getOrElse("-"),
-                        lowest.pze.map(_.show).getOrElse("-"),
-                        lowest.pb.map(_.show).getOrElse("-"),
-                        lowest.`pz-pze`.map(_.show).getOrElse("-"),
-                        lowest.`pz-pb`.map(_.show).getOrElse("-"),
-                        lowest.tg.map(_.show).getOrElse("-"),
-                        lowest.tob.map(_.show).getOrElse("-"),
-                        lowest.tiob.map(_.show).getOrElse("-"),
-                        lowest.`tiob-tg`.map(_.show).getOrElse("-")
-                    )
+    def makeValuesFor(en13384_appl: EN13384_1_A1_2019_Common_Application)(using
+        HeatingAppliance
+    )(using LoadQty): CasType13384_Result.Values =
+        val pcond =
+            en13384_appl.pressureRequirements.toOption
+                .flatMap:
+                    case neg: PressureRequirements_13384.UnderNegPress =>
+                        Some(neg)
+                    case _ => None
+
+        val tcond = en13384_appl.temperatureRequirements
+        CasType13384_Result.Values(
+            pz = pcond.map(_.P_Z),
+            pze = pcond.map(_.P_Ze),
+            pb = pcond.map(_.P_B_min_draught),
+            `pz-pze` = pcond.map(x => x.P_Z - x.P_Ze),
+            `pz-pb` = pcond.map(x => x.P_Z - x.P_B_min_draught),
+            tg = tcond.tig.some,
+            tob = tcond.tob.some,
+            tiob = tcond.tiob.some,
+            `tiob-tg` = (tcond.tiob.value - tcond.tig.value).degreesCelsius.some
         )
-case class CasType13384_Result(
-    val descr: String,
-    val nominal: CasType13384_Result.Values,
-    val lowest: CasType13384_Result.Values
-)
-
-object CasType13384_Result:
-    case class Values(
-        pz: Option[Pressure],
-        pze: Option[Pressure],
-        pb: Option[Pressure],
-        `pz-pze`: Option[Pressure],
-        `pz-pb`: Option[Pressure],
-        tg: Option[TCelsius],
-        tob: Option[TCelsius],
-        tiob: Option[TCelsius],
-        `tiob-tg`: Option[TCelsius]
-    )
-
-    object Values:
-
-        def makeFor(en13384_appl: EN13384_1_A1_2019_Common_Application)(using
-            HeatingAppliance
-        )(using LoadQty): Values =
-            val pcond =
-                en13384_appl.pressureRequirements.toOption
-                    .flatMap:
-                        case neg: PressureRequirements_13384.UnderNegPress =>
-                            Some(neg)
-                        case _ => None
-
-            val tcond = en13384_appl.temperatureRequirements
-            CasType13384_Result.Values(
-                pz = pcond.map(_.P_Z),
-                pze = pcond.map(_.P_Ze),
-                pb = pcond.map(_.P_B_min_draught),
-                `pz-pze` = pcond.map(x => x.P_Z - x.P_Ze),
-                `pz-pb` = pcond.map(x => x.P_Z - x.P_B_min_draught),
-                tg = tcond.tig.some,
-                tob = tcond.tob.some,
-                tiob = tcond.tiob.some,
-                `tiob-tg` = (tcond.tiob.value - tcond.tig.value).degreesCelsius.some
-            )
 
 /**
  * Common trait for running EN 13384 cas types tests.
@@ -171,11 +94,11 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
 
             val result_nominal =
                 import LoadQty.givens.nominal
-                CasType13384_Result.Values.makeFor(en13384_appl)
+                CasType13384_ResultFactory.makeValuesFor(en13384_appl)
 
             val result_lowest =
                 import LoadQty.givens.reduced
-                CasType13384_Result.Values.makeFor(en13384_appl)
+                CasType13384_ResultFactory.makeValuesFor(en13384_appl)
 
             val result = CasType13384_Result(
                 ex.project.reference,

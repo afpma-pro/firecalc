@@ -358,7 +358,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
    *
    * Strategy: take a valid V5 schema (with Traditional firebox — identical between V4 and V5),
    * downgrade the version markers to 4 in the YAML, then feed to migrateToLatest.
-   * The migration should produce a schema with version=5 and engine_state.version=5.
+   * The migration should produce a schema with the latest version markers.
    */
   it should "bump AppStateSchema version from 4 to 5" in {
     // Given - create a valid V5 schema, encode to YAML, downgrade version markers to 4
@@ -374,7 +374,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
   }
 
-  it should "bump engine_state version from 4 to 5" in {
+  it should "bump engine_state version from 4 to latest" in {
     // Given
     val v5Schema = AppStateSchemaHelper.createInitialSchema()
     val v5Yaml   = AppStateSchemaHelper.encodeToYaml(v5Schema).get
@@ -383,8 +383,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     // When
     val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
 
-    // Then - engine_state version should also be bumped to 5
+    // Then - engine_state version should also be bumped to latest
     result shouldBe defined
-    result.get.engine_state.version.unwrap shouldBe 5
+    result.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
   }
 }

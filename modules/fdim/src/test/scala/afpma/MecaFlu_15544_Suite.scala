@@ -11,18 +11,19 @@ import afpma.firecalc.units.coulombutils.conversions.*
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.models.FlueGas
+import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.models.FluePipe_Module_15544
 import afpma.firecalc.engine.models.FluePipe_Module_15544.*
 import afpma.firecalc.engine.models.Gas
 import afpma.firecalc.engine.models.GasInPipeEl
 import afpma.firecalc.engine.models.LoadQty
 import afpma.firecalc.engine.models.NamedPipeElDescrG
+import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange
 import afpma.firecalc.engine.ops.PositionOp
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
-import afpma.firecalc.engine.utils.*
 
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
 
@@ -32,8 +33,6 @@ import io.taig.babel.Locale
 import io.taig.babel.Locales
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
-import afpma.firecalc.engine.models.FluePipeT
-import afpma.firecalc.engine.models.PipeType
 
 class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 
@@ -69,7 +68,7 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
                     end     = 450.degreesCelsius,
                 ).atPos
                 // val next = channel_pipe_elems.elems.tail.head
-                val r = FlowOnlyMecaFlu_15544.makePipeSectionResult(
+                FlowOnlyMecaFlu_15544.makePipeSectionResult(
                     gip, nominal, None, None, 2.m_per_s.some, 1.kg_per_m3.some, gas_temp)(using en15544)
                 succeed
             }
