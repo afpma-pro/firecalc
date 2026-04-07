@@ -15,6 +15,7 @@ import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.TermConstraintError
+import afpma.firecalc.engine.models.en15544.PressureRequirement
 import afpma.firecalc.engine.models.gtypedefs.v
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CouldNotComputeThermalResistance
@@ -624,10 +625,10 @@ object standard {
 
     // InvalidPressureRequirement
 
-    case class InvalidPressureRequirement(preqDescription: String) extends EN15544_Error
+    case class InvalidPressureRequirement(preq: PressureRequirement) extends EN15544_Error
     object InvalidPressureRequirement:
         given ShowUsingLocale[InvalidPressureRequirement] = showUsingLocale: e =>
-            I18N.en15544_errors.invalid_pressure_requirement(e.preqDescription)
+            I18N.en15544_errors.invalid_pressure_requirement(e.preq.show)
 
     // EfficiencyIsTooLow
 

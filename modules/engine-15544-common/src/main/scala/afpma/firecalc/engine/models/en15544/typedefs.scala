@@ -387,32 +387,10 @@ object typedefs:
     // "Calculation of the resistance due to direction change (p_u)"
 
     // Section "4.10.1", "Pressure Condition"
-
-    case class PressureRequirement(
-        sum_pr_pu          : Pressure,
-        sum_ph             : Pressure,
-        sum_ph_min_expected: Pressure,
-        sum_ph_max_expected: Pressure
-    ) {
-        val min     = sum_ph_min_expected
-        val current = sum_ph
-        val max     = sum_ph_max_expected
-
-        val `min-current` = min - current
-
-        val `current-min` = current - min
-        val `current-max` = current - max
-
-        val isInValidRange: Boolean =
-            if (min <= current && current <= max) true else false
-
-        val isTooMuchDraft      = if (current > max) true else false
-        val isTooMuchResistance = if (min > current) true else false
-    }
-
-    object PressureRequirement:
-        given ShowUsingLocale[PressureRequirement] = showUsingLocale: p =>
-            I18N.en15544_errors.pressure_requirement_display(p.current.show, p.min.show, p.max.show)
+    // NOTE: PressureRequirement has been moved to engine-kernel (same package: afpma.firecalc.engine.models.en15544)
+    // Re-exported here so that `import typedefs.*` still provides PressureRequirement to downstream code.
+    type PressureRequirement = afpma.firecalc.engine.models.en15544.PressureRequirement
+    val  PressureRequirement = afpma.firecalc.engine.models.en15544.PressureRequirement
 
     // Section "4.10.3", "Efficiency of the combustion (η)"
 
