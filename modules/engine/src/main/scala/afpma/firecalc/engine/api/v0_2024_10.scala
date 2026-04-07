@@ -431,5 +431,5 @@ trait v0_2024_10_core:
     object StoveProjectDescr:
 
         def makeFor_EN15544_Strict(fc: FireCalcYAML): StoveProjectDescr_15544_Strict_Alg =
-            val loader = new afpma.firecalc.engine.impl.en15544.strict.FireCalcYAML_Loader(fc)
+            val loader = new FireCalcYAML_Loader(fc)
             loader.stoveProjectDescr_EN15544_Strict

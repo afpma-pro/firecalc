@@ -18,7 +18,7 @@ import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.TypeOfAppliance
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
 
-import afpma.firecalc.engine.impl.en15544.strict.FireCalcYAML_Loader
+import afpma.firecalc.engine.api.FireCalcYAML_Loader
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale

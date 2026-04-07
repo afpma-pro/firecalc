@@ -3,13 +3,14 @@
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
 
-package afpma.firecalc.engine.impl.en15544.strict
+package afpma.firecalc.engine.api
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.api.v0_2024_10
 import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
+import afpma.firecalc.engine.impl.en15544.strict.{*, given}
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
