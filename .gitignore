@@ -24,6 +24,11 @@ web/node_modules
 web/.env.electron
 web/generated-constants.js
 
+# Landing page (Next.js)
+web/landing/node_modules/
+web/landing/.next/
+web/landing/out/
+
 # Company-specific deployment configs (sensitive information)
 deployment/
 modules/*/configs/*.yaml

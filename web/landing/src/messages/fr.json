@@ -1,0 +1,63 @@
+{
+  "hero": {
+    "title": "FireCalc AFPMA",
+    "subtitle": "Logiciel de dimensionnement pour poêles maçonnés",
+    "description": "Logiciel certifié et conforme aux normes EN 15544 et EN 13384",
+    "cta_online": "Version Web",
+    "cta_download": "Télécharger l'application",
+    "beta_badge": "Bêta - Essayer maintenant",
+    "version_1_release": "Version 1 disponible début 2026"
+  },
+  "features": {
+    "title": "Fonctionnalités clés",
+    "feature1_title": "Respect des normes",
+    "feature1_desc": "Conforme aux normes européennes\nEN 15544 et EN 13384",
+    "feature2_title": "Logiciel Reconnu",
+    "feature2_desc": "Reconnu par l'ADEME et les pouvoirs publics => [page officielle](https://bla.gouv.fr) <=",
+    "feature3_title": "Un outil pro",
+    "feature3_desc": "Accéder aux biliothèques de composants\n(foyers certifiés, éléménts de fumisterie, etc...)",
+    "feature4_title": "International",
+    "feature4_desc": "Français & Anglais\nSystème métrique ou impérial",
+    "feature5_title": "Conception hors-ligne",
+    "feature5_desc": "Seule la génération d'une note de calcul nécessite une connexion internet",
+    "feature6_title": "Note de calcul PDF",
+    "feature6_desc": "Sécurisez vos dossiers d'aide, votre assureur. **89 EUR** par note de calcul",
+    "feature7_title": "sans abonnement",
+    "feature7_desc": "Démarrer à votre rythme.\nFacturation au projet"
+  },
+  "downloads": {
+    "title": "Version en ligne ou Téléchargement",
+    "subtitle": "Choisissez votre plateforme",
+    "online": "Application Web",
+    "windows": "Windows",
+    "macos": "macOS",
+    "linux": "Linux",
+    "beta_available": "Disponible en version Bêta",
+    "coming_soon": "Disponible début 2026",
+    "view_on_github": "Voir sur GitHub"
+  },
+  "newsletter": {
+    "title": "Restez informé",
+    "description": "Abonnez-vous à notre newsletter pour recevoir les mises à jour et annonces de version",
+    "email_placeholder": "Entrez votre email",
+    "button": "S'abonner",
+    "privacy": "Politique de confidentialité",
+    "success": "Merci pour votre inscription !",
+    "error": "Une erreur s'est produite. Veuillez réessayer."
+  },
+  "sponsors": {
+    "title": "Nos sponsors",
+    "description": "Merci à nos sponsors pour leur soutien à ce projet open-source"
+  },
+  "footer": {
+    "github": "GitHub",
+    "docs": "Documentation",
+    "contact": "Contact",
+    "cgv": "CGV",
+    "copyright": "© 2026 AFPMA"
+  },
+  "language": {
+    "en": "English",
+    "fr": "Français"
+  }
+}

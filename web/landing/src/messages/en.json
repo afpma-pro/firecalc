@@ -1,0 +1,63 @@
+{
+  "hero": {
+    "title": "FireCalc AFPMA",
+    "subtitle": "Dimensioning software for one-off masonry heaters",
+    "description": "Open-source software compliant with EN 15544 and EN 13384 standards",
+    "cta_online": "Try Beta App",
+    "cta_download": "Download App",
+    "beta_badge": "Beta - Try Now",
+    "version_1_release": "Version 1.0 - Early 2026"
+  },
+  "features": {
+    "title": "Key Features",
+    "feature1_title": "Standards Compliance",
+    "feature1_desc": "Compliant with European standards\nEN 15544 and EN 13384",
+    "feature2_title": "Recognized Software",
+    "feature2_desc": "Recognized by ADEME and public authorities => [official page](https://bla.gouv.fr) <=",
+    "feature3_title": "A Pro Tool",
+    "feature3_desc": "Access to component libraries\n(certified fireboxes, flue elements, etc...)",
+    "feature4_title": "International",
+    "feature4_desc": "French & English\nMetric or imperial system",
+    "feature5_title": "Offline Design",
+    "feature5_desc": "Only calculation report generation requires internet connection",
+    "feature6_title": "PDF Calculation Report",
+    "feature6_desc": "Secure your subsidy files, your insurer. **89 EUR** per calculation report",
+    "feature7_title": "no subscription",
+    "feature7_desc": "Start at your own pace.\nProject-based billing"
+  },
+  "downloads": {
+    "title": "Online version or Download",
+    "subtitle": "Choose your platform",
+    "online": "Web App (Beta)",
+    "windows": "Windows",
+    "macos": "macOS",
+    "linux": "Linux",
+    "beta_available": "Available Now (Beta)",
+    "coming_soon": "Available Early 2026",
+    "view_on_github": "View on GitHub"
+  },
+  "newsletter": {
+    "title": "Stay Updated",
+    "description": "Subscribe to our newsletter for updates and release announcements",
+    "email_placeholder": "Enter your email",
+    "button": "Subscribe",
+    "privacy": "Privacy Policy",
+    "success": "Thanks for subscribing!",
+    "error": "An error occurred. Please try again."
+  },
+  "sponsors": {
+    "title": "Our Sponsors",
+    "description": "Thank you to our sponsors for supporting this open-source project"
+  },
+  "footer": {
+    "github": "GitHub",
+    "docs": "Documentation",
+    "contact": "Contact",
+    "cgv": "Terms & Conditions",
+    "copyright": "© 2026 AFPMA"
+  },
+  "language": {
+    "en": "English",
+    "fr": "Français"
+  }
+}

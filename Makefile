@@ -14,7 +14,7 @@ GITHUB_REPO_OWNER ?= $(shell grep 'lazy val githubOwner' build.sbt | sed 's/.*= 
 GITHUB_REPO_NAME ?= $(shell grep 'lazy val githubRepo' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 
 ## MAIN ##############################
-.PHONY: check clean fmt ui-setup electron-setup ui-status run-validation update-validation
+.PHONY: check clean fmt ui-setup electron-setup landing-setup landing-build ui-status run-validation update-validation
 
 ## ================================
 ## UTILITY TARGETS
@@ -107,7 +107,7 @@ sync-build-config:
 ## SETUP TARGETS (run these first)
 ## ================================
 
-setup-all: ui-setup electron-setup sync-build-config build-viz build-graph
+setup-all: ui-setup electron-setup landing-setup sync-build-config build-viz build-graph
 	@echo "All dependencies installed successfully!"
 	@echo "Run 'make dev-env-setup' to verify configuration files"
 
@@ -126,6 +126,14 @@ build-graph:
 electron-setup:
 	@echo "Installing Electron dependencies..."
 	@cd web && npm install
+
+landing-setup:
+	@echo "Installing landing page dependencies..."
+	@cd web/landing && npm install
+
+landing-build:
+	@echo "Building landing page (Next.js static export)..."
+	@cd web/landing && npm run build
 
 ## ================================
 ## STATUS TARGETS
@@ -162,7 +170,11 @@ define generate_ui_version
 endef
 
 define copy_landing_page
-	@cp web/landing/index.html web/dist-app/index.html
+	@echo "Building and copying landing page to dist-app..."
+	@cd web/landing && npm run build
+	@cp -r web/landing/out/en web/landing/out/fr web/landing/out/_next web/dist-app/ 2>/dev/null || true
+	@cp -r web/landing/out/assets web/dist-app/ 2>/dev/null || true
+	@cp web/landing/out/404.html web/dist-app/ 2>/dev/null || true
 endef
 
 kill-vite:
