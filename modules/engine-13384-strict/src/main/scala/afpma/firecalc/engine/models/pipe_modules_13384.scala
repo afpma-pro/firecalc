@@ -11,7 +11,6 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.*
 import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
@@ -21,7 +20,6 @@ import afpma.firecalc.engine.ops.{HasOutsideSurfaceInLocation, HasUnheatedHeight
 import afpma.firecalc.engine.ops.en13384.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
-import cats.Show
 import cats.data.ValidatedNel
 import cats.syntax.all.*
 

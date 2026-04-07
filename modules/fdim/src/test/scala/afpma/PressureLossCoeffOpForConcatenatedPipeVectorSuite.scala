@@ -12,8 +12,8 @@ import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.shortsection.ShortSection
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
+import afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
@@ -40,7 +40,7 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
 
         given PipeType = FluePipeT
         given en15544Impl: EN15544_V_2023_Formulas_Alg = EN15544_Strict_Formulas.make
-        given ssalg: ShortSectionAlg = ShortSection().makeImpl
+        given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make
         val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()
 
         val pipeConcat = 

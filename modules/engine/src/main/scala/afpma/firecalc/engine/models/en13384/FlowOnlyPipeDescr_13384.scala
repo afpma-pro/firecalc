@@ -20,7 +20,6 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
-import afpma.firecalc.engine.ops.en13384.*
 
 import cats.Show
 import cats.derived.*

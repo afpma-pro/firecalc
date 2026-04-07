@@ -468,7 +468,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             pressureRequirement_EN15544.andThen: preq =>
                 preq.isInValidRange match
                     case true  => ().validNel
-                    case false => InvalidPressureRequirement(preq).invalidNel
+                    case false => InvalidPressureRequirement(preq.toString).invalidNel
 
         def validateChimneyWallTempIsAboveCondensationTemp(): VNelMcalcErr[Unit] =
             estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>

@@ -5,8 +5,6 @@
 
 package afpma.firecalc.engine.api
 
-import afpma.firecalc.dto.all.*
-
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 import afpma.firecalc.engine.impl.en13384.EN13384_WithFlowOnlyAirIntake_Application
 import afpma.firecalc.engine.impl.en13384.EN13384_WithThermalAirIntake_Application
