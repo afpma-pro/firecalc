@@ -6,7 +6,6 @@
 package afpma.firecalc.ui.models.schema
 
 import afpma.firecalc.ui.models.AppStateSchemaHelper
-import afpma.firecalc.ui.models.schema.AppStateSchemaLoader
 import afpma.firecalc.ui.models.schema.common.AppStateSchema_Version
 import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
 import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2
@@ -208,8 +207,8 @@ object AppStateSchemaMigrations:
                             None
 
             case Some(6) =>
-                // Current version - decode directly (bypass decodeFromYaml's silent fallback)
-                AppStateSchemaLoader.loadFromYaml(rawData).toOption
+                // Current version - decode directly
+                decodeV6(rawData).toOption
 
             case Some(version) =>
                 dom.console.log(s"Unknown schema version: $version")
