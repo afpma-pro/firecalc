@@ -41,6 +41,7 @@ import afpma.firecalc.ui.utils.*
 
 import cats.data.Validated
 import cats.data.Validated.Valid
+import cats.data.ValidatedNel
 import cats.implicits.catsSyntaxTuple2Semigroupal
 
 import com.raquo.airstream.core.Signal

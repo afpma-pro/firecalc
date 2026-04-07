@@ -133,14 +133,16 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     /** Build the constraint context from sizing results. */
     lazy val constraintContext: ConstraintContext =
         ConstraintContext     (
-            m_B      = m_B,
-            O_BR     = firebox_sizing.O_BR,
-            A_BR_min = firebox_sizing.A_BR_min,
-            A_BR_max = firebox_sizing.A_BR_max,
-            A_BR     = firebox_sizing.A_BR,
-            H_BR_min = firebox_sizing.H_BR_min,
-            H_BR     = firebox_sizing.H_BR,
-            n_min    = n_min
+            m_B                            = m_B,
+            O_BR                           = firebox_sizing.O_BR,
+            FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = firebox_sizing.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO,
+            FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = firebox_sizing.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO,
+            A_BR_min                       = firebox_sizing.A_BR_min,
+            A_BR_max                       = firebox_sizing.A_BR_max,
+            A_BR                           = firebox_sizing.A_BR,
+            H_BR_min                       = firebox_sizing.H_BR_min,
+            H_BR                           = firebox_sizing.H_BR,
+            n_min                          = n_min
         )
 
     given convertResistanceCoefficientToError: Conversion[PressureLossCoeff.Err, ErrorGen] =

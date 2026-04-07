@@ -7,6 +7,7 @@ package afpma.firecalc.engine.ops.en15544
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSection.*
@@ -47,7 +48,8 @@ object ShortSectionAlgFactory:
                     case Some(dc12) => dc12.angleN2.getOrElse(throw new Exception("bad validation (TOFIX by @dev)")),
                 angleN2 = None
             )
-            val ζα3_v = FlowOnlyDynamicFrictionCoeff_15544.whenRegularFor(dc02)
+            val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
+            val ζα3_v = flowOnlyDFC.whenRegularFor(dc02)
             val α1    = dc01.angleN1
             val α2    =
                 o_dc12 match
