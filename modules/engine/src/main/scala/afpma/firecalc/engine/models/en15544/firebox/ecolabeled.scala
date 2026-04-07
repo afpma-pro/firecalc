@@ -15,8 +15,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.implicits.I18N
 
-import afpma.firecalc.engine.alg.en15544.FireboxConstraints
-import afpma.firecalc.engine.alg.en15544.FireboxFormulas
 import afpma.firecalc.engine.biblio.kov.firebox_emissions.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
@@ -315,13 +313,5 @@ private sealed abstract class Ecolabeled_V1_or_V2_Impl(
 ) extends Ecolabeled {
     type Self = Ecolabeled
     def height_of_lowest_opening: Length = h74_hauteur_de_cendrier_AF
-
-    override def formulas: FireboxFormulas[Self] =
-        import afpma.firecalc.engine.impl.en15544.common.fireboxFormulas_Strict
-        fireboxFormulas_Strict
-
-    override def constraints: FireboxConstraints[Self] =
-        import afpma.firecalc.engine.impl.en15544.instances.ecoLabeledConstraints
-        ecoLabeledConstraints
 }
 

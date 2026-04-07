@@ -15,8 +15,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.implicits.I18N
 
-import afpma.firecalc.engine.alg.en15544.FireboxConstraints
-import afpma.firecalc.engine.alg.en15544.FireboxFormulas
 import afpma.firecalc.engine.biblio
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
@@ -80,13 +78,6 @@ case class AFPMA_PRSE(
             9.3.cm * 4 * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte / 4.0)
     )
 
-    override def formulas: FireboxFormulas[Self] =
-        import afpma.firecalc.engine.impl.en15544.common.fireboxFormulas_Strict
-        fireboxFormulas_Strict
-
-    override def constraints: FireboxConstraints[Self] =
-        import afpma.firecalc.engine.impl.en15544.instances.afpmaPrseConstraints
-        afpmaPrseConstraints
 }
 
 object AFPMA_PRSE:

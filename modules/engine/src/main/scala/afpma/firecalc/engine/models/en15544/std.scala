@@ -112,7 +112,7 @@ object std:
         /** Self-referential type preserving the concrete firebox type.
          *
          * The lower bound `>: this.type` guarantees that `this: Self` holds,
-         * so `formulas` and `constraints` can be called with `this` directly.
+         * so typeclass extension methods can be called with `this` directly.
          * Contravariance on [[FireboxFormulas]] / [[FireboxConstraints]]
          * ensures that a `FireboxFormulas[Firebox_15544]` satisfies
          * `FireboxFormulas[Self]` for any concrete subtype.
@@ -139,8 +139,19 @@ object std:
         def co2_dry_nominal: σ_CO2
         def co2_dry_lowest : Option[σ_CO2]
 
-        def formulas   : FireboxFormulas[Self]
-        def constraints: FireboxConstraints[Self]
+        /** Resolve the [[FireboxFormulas]] typeclass instance for this firebox.
+         *
+         * The concrete `given` is supplied by the call-site (typically from
+         * `impl.en15544.common` or `impl.en15544.instances`), keeping the
+         * core model free of implementation imports.
+         */
+        def formulas(using f: FireboxFormulas[Self]): FireboxFormulas[Self] = f
+
+        /** Resolve the [[FireboxConstraints]] typeclass instance for this firebox.
+         *
+         * See [[formulas]] for the rationale.
+         */
+        def constraints(using c: FireboxConstraints[Self]): FireboxConstraints[Self] = c
 
     object Firebox_15544:
 
@@ -154,7 +165,6 @@ object std:
                     (I.base_geometry                                           :: "" :: dimensions.base.showP                             :: Nil) ::
                     (I18N.en15544.terms.H_BR.name                              :: "" :: dimensions.height.showP                           :: Nil) ::
                     (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: "" :: height_of_lowest_opening.showP                    :: Nil) ::
-                    (I.firebox_glass_surface_ratio_below_one_fifth             :: "" :: x.formulas.firebox_glass_surface_ratio_below_one_fifth(x).showP :: Nil) ::
                     (I.glass_area                                              :: "" :: glass_area.showP                                  :: Nil) ::
                     (I18N.en15544.terms.m_B_min.name                           :: "" :: x.min_load.show                                   :: Nil) ::
                     (I18N.en15544.terms.P_n_reduced.name                       :: "" :: x.pn_reduced.show                                 :: Nil) ::
@@ -244,14 +254,6 @@ object std:
                 case Some(min) => MinLoad.FromTypeTest(min)
                 case None      => MinLoad.NotDefined
 
-            override def formulas: FireboxFormulas[Self] =
-                import afpma.firecalc.engine.impl.en15544.common.fireboxFormulas_Strict
-                fireboxFormulas_Strict
-
-            override def constraints: FireboxConstraints[Self] =
-                import afpma.firecalc.engine.impl.en15544.instances.singleTestedConstraints
-                singleTestedConstraints
-
         object SingleTested:
             given showAsTable: Locale => ShowAsTable[SingleTested] =
                 ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
@@ -293,13 +295,6 @@ object std:
                 override def co2_dry_nominal: σ_CO2         = 7.05.percent
                 override def co2_dry_lowest : Option[σ_CO2] = None
 
-                override def formulas: FireboxFormulas[Self] =
-                    import afpma.firecalc.engine.impl.en15544.common.fireboxFormulas_Strict
-                    fireboxFormulas_Strict
-
-                override def constraints: FireboxConstraints[Self] =
-                    import afpma.firecalc.engine.impl.en15544.instances.customForLabConstraints
-                    customForLabConstraints
             }
 
             object CustomForLab:
@@ -432,14 +427,6 @@ object std:
             override def min_load          = mb_min.fold(MinLoad.NotDefined)(m => MinLoad.FromTypeTest(m))
             override def reference         = LocalizedString(_ => uniq_id)
             override def type_of_appliance = TypeOfAppliance.WoodLogs
-
-            override def formulas: FireboxFormulas[Self] =
-                import afpma.firecalc.engine.impl.en15544.instances.door15aCatalogFormulas
-                door15aCatalogFormulas
-
-            override def constraints: FireboxConstraints[Self] =
-                import afpma.firecalc.engine.impl.en15544.instances.door15aCatalogConstraints
-                door15aCatalogConstraints
 
             lazy val factory = new Factory:
                 override val rawString = pressure_loss_table_raw
