@@ -18,10 +18,11 @@ import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
 
-object strict_ex01_colonne_ascendante 
+object strict_ex01_colonne_ascendante
     extends SimpleStoveProjectDescrFr_15544_Alg
     with v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
-    with v0_2024_10_strict.Firebox_15544_Strict_Alg:
+    with v0_2024_10_strict.Firebox_15544_Strict_Alg
+    with v0_2024_10_strict.WithPipeChain_15544_Strict:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given
@@ -59,26 +60,23 @@ object strict_ex01_colonne_ascendante
         ash_pit_height                                      = 5.cm,
     )
 
-    val fluePipe = 
+    val fluePipeDescr =
         import FluePipe_Module_15544.*
-        FluePipe_Module_15544
-        .incremental
-        .define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
             roughness(3.mm),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
             addSectionHorizontal("sortie foyer", 28.1.cm),
 
             addSharpAngle_90deg ("virage 90 deg", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)), // "Up"
-            
+
             innerShape(rectangle(11.1.cm, 11.1.cm)),
             addSectionVertical("colonne ascendante", 3.737.m)
         )
-        .toFullDescr().extractPipe
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental.define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)),
@@ -86,11 +84,10 @@ object strict_ex01_colonne_ascendante
             pipeLocation(PipeLocation.HeatedArea),
             addSectionVertical("buse", 6.cm)
         )
-        .toFullDescr().extractPipe
 
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental.define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)),
@@ -100,9 +97,8 @@ object strict_ex01_colonne_ascendante
 
             pipeLocation(PipeLocation.OutsideOrExterior),
             addSectionVertical("sortie de toit", 93.cm),
-            
+
             addFlowResistance("element terminal", 1.423.unitless: ζ)
         )
-        .toFullDescr().extractPipe
 
 end strict_ex01_colonne_ascendante

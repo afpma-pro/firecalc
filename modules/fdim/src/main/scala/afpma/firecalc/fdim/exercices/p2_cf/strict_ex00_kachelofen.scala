@@ -17,9 +17,10 @@ import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
 
-object strict_ex00_kachelofen 
+object strict_ex00_kachelofen
     extends v0_2024_10_strict.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10_strict.Firebox_15544_Strict_Alg:
+    with v0_2024_10_strict.Firebox_15544_Strict_Alg
+    with v0_2024_10_strict.WithPipeChain_15544_Strict:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given
@@ -57,11 +58,9 @@ object strict_ex00_kachelofen
         ash_pit_height                                      = 5.cm,
     )
 
-    val fluePipe = 
+    val fluePipeDescr =
         import FluePipe_Module_15544.*
-        FluePipe_Module_15544
-        .incremental
-        .define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
             roughness(3.mm),
 
@@ -98,27 +97,24 @@ object strict_ex00_kachelofen
             innerShape(rectangle(21.cm, 22.cm)),
             addSectionVertical("remontée", 98.cm),
         )
-        .toFullDescr().extractPipe
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental
-        .define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
             layer(
                 e = 0.1.mm, // ???
                 tr = SquareMeterKelvinPerWatt(0.001) // TOFIX:
-            ), 
+            ),
             pipeLocation(PipeLocation.HeatedArea),
             addSectionVertical("buse", 5.cm)
         )
-        .toFullDescr().extractPipe
 
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental.define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(200.mm)),
@@ -128,12 +124,11 @@ object strict_ex00_kachelofen
             ),
             pipeLocation(PipeLocation.HeatedArea),
             addSectionVertical("intérieur", 2.4.meters),
-            
+
             pipeLocation(PipeLocation.OutsideOrExterior),
             addSectionVertical("extérieur", 80.cm),
-            
+
             addFlowResistance("element terminal", 0.6.unitless: ζ)
         )
-        .toFullDescr().extractPipe
 
 end strict_ex00_kachelofen

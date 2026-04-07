@@ -24,9 +24,10 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
-object mce_ex01_colonne_ascendante 
+object mce_ex01_colonne_ascendante
     extends v0_2024_10_mce.SimpleStoveProjectDescrFr_15544_MCE_Alg
-    with v0_2024_10_mce.Firebox_15544_MCE_Alg:
+    with v0_2024_10_mce.Firebox_15544_MCE_Alg
+    with v0_2024_10_mce.WithPipeChain_15544_MCE:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.mce.given
@@ -84,11 +85,9 @@ object mce_ex01_colonne_ascendante
         ash_pit_height                                      = 5.cm,
     )
 
-    val fluePipe = 
+    val fluePipeDescr =
         import FluePipe_Module_13384.*
-        FluePipe_Module_13384
-        .incremental
-        .define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
             pipeLocation(PipeLocation.HeatedArea), // added for EN13384
             roughness(3.mm),
@@ -99,11 +98,10 @@ object mce_ex01_colonne_ascendante
             innerShape(rectangle(11.1.cm, 11.1.cm)),
             addSectionVertical("colonne ascendante", 3.737.m)
         )
-        .toFullDescr().extractPipe
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental.define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)),
@@ -111,11 +109,10 @@ object mce_ex01_colonne_ascendante
             pipeLocation(PipeLocation.HeatedArea),
             addSectionVertical("buse", 6.cm)
         )
-        .toFullDescr().extractPipe
 
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental.define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)),
@@ -128,6 +125,5 @@ object mce_ex01_colonne_ascendante
 
             addFlowResistance("element terminal", 1.423.unitless: ζ)
         )
-        .toFullDescr().extractPipe
 
 end mce_ex01_colonne_ascendante

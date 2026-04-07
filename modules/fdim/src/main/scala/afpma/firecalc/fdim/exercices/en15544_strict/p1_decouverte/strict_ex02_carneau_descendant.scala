@@ -16,9 +16,10 @@ import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
 
-object strict_ex02_carneau_descendant 
+object strict_ex02_carneau_descendant
     extends v0_2024_10_strict.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10_strict.Firebox_15544_Strict_Alg:
+    with v0_2024_10_strict.Firebox_15544_Strict_Alg
+    with v0_2024_10_strict.WithPipeChain_15544_Strict:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given
@@ -55,11 +56,9 @@ object strict_ex02_carneau_descendant
         ash_pit_height                                      = 5.cm,
     )
 
-    val fluePipe = 
+    val fluePipeDescr =
         import FluePipe_Module_15544.*
-        FluePipe_Module_15544
-        .incremental
-        .define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
 
             roughness(3.mm),
@@ -77,13 +76,12 @@ object strict_ex02_carneau_descendant
             addSectionHorizontal("vers colonne", 22.6.cm),
 
             addSharpAngle_90deg("virage 90°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
-            
+
             addSectionVertical("colonne", 4.134.m)
         )
-        .toFullDescr().extractPipe
 
-    val connectorPipe = ConnectorPipe_Module.without.validNel
+    val connectorPipeDescr = Seq()
 
-    val chimneyPipe = strict_ex01_colonne_ascendante.chimneyPipe
+    val chimneyPipeDescr = strict_ex01_colonne_ascendante.chimneyPipeDescr
     
 end strict_ex02_carneau_descendant

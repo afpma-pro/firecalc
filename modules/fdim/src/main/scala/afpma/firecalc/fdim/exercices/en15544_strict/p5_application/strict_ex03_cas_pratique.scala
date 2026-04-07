@@ -18,9 +18,10 @@ import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
 import cats.syntax.all.*
 
-object strict_ex03_cas_pratique 
+object strict_ex03_cas_pratique
     extends v0_2024_10_strict.SimpleStoveProjectDescrFr_15544_Strict_Alg
-    with v0_2024_10_strict.Firebox_15544_Strict_Alg:
+    with v0_2024_10_strict.Firebox_15544_Strict_Alg
+    with v0_2024_10_strict.WithPipeChain_15544_Strict:
     self =>
 
     import afpma.firecalc.engine.impl.en15544.strict.given
@@ -70,11 +71,9 @@ object strict_ex03_cas_pratique
         h83_hauteurEntreLaSoleEtLe1erInjecteur_X            = 10.cm,
     )
 
-    val fluePipe =
+    val fluePipeDescr =
         import FluePipe_Module_15544.*
-        FluePipe_Module_15544
-        .incremental
-        .define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // "Right"
 
             roughness(3.mm),
@@ -104,17 +103,16 @@ object strict_ex03_cas_pratique
             addSectionHorizontal("retour banc", 1.m),
 
             addSharpAngle_90deg("virage 90 deg (5)", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Haut
-            
+
             innerShape(rectangle(21.cm, 32.cm)),
             addSectionVertical("colonne montant RdC", 2.44.m),
 
             addSectionVertical("colonne montant étage", 1.28.m),
         )
-        .toFullDescr().extractPipe
 
-    val connectorPipe =
+    val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        ConnectorPipe_Module.incremental.define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(250.mm)),
@@ -122,27 +120,25 @@ object strict_ex03_cas_pratique
             pipeLocation(PipeLocation.HeatedArea),
             addSectionVertical("buse", 5.cm)
         )
-        .toFullDescr().extractPipe
 
-    val chimneyPipe =
+    val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        ChimneyPipe_Module.incremental.define(
+        Seq(
             setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
             roughness(Material_13384.WeldedSteel()),
             innerShape(circle(250.mm)),
             layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
-            
+
             pipeLocation(PipeLocation.HeatedArea),
             addSectionVertical("intérieur", 6.m),
-            
+
             pipeLocation(PipeLocation.OutsideOrExterior), // plutot NON CHAUFFEE car combles ???
             addSectionVertical("combles", 26.cm),
 
             pipeLocation(PipeLocation.OutsideOrExterior), // plutot NON CHAUFFEE car combles ???
             addSectionVertical("extérieur", 90.cm),
-            
+
             addFlowResistance("element terminal", 1.38.unitless: ζ)
         )
-        .toFullDescr().extractPipe
 
 end strict_ex03_cas_pratique
