@@ -891,7 +891,7 @@ lazy val ui = (project in file("modules/ui"))
   .settings(
     commonSettings,
     scalacOptions ++= Seq(
-      "-Xmax-inlines:40", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
+      "-Xmax-inlines:40", // required for deep inline expansion (Laminar/Airstream, not circe — profiling 2026-04 showed circe is only 3.5% of UI compile time; see plans/phase-c-implementation-plan.md)
     //   "--explain-cyclic",
     ),
   )
