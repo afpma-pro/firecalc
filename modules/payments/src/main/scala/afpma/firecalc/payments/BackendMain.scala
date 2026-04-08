@@ -323,12 +323,8 @@ object Main extends IOApp:
                     for
                         _ <- logger.info("Initializing repositories...")
 
-                        // Initialize repositories
-                        productRepo         <- ProductRepository.create[IO]
-                        customerRepo        <- CustomerRepository.create[IO]
-                        orderRepo           <- OrderRepository.create[IO]
-                        purchaseIntentRepo  <- PurchaseIntentRepository.create[IO]
-                        productMetadataRepo <- ProductMetadataRepository.create[IO]
+                        // Initialize all repositories in one call
+                        repos <- Repositories.create[IO]
 
                         // Get product catalog based on configuration
                         productCatalog = ProductCatalogSelector.getCatalog(paymentsConfig.productCatalog)
@@ -337,16 +333,16 @@ object Main extends IOApp:
                         // Sync product catalog to database
                         _ <- logger.info("Syncing product catalog to database...")
                         _ <- productCatalog.allProducts.traverse { productInfo =>
-                            productRepo.upsert(productInfo)
+                            repos.product.upsert(productInfo)
                         }
                         _ <- logger.info(s"Synced ${productCatalog.allProducts.size} product(s) from catalog")
 
                         _ <- logger.info("Initializing services...")
 
                         // Initialize services
-                        authService  <- AuthenticationService.create[IO](purchaseIntentRepo, paymentsConfig.jwtConfig)
+                        authService  <- AuthenticationService.create[IO](repos.purchaseIntent, paymentsConfig.jwtConfig)
                         orderService <- OrderService
-                            .create[IO](orderRepo, productRepo, customerRepo, productMetadataRepo)
+                            .create[IO](repos.order, repos.product, repos.customer, repos.productMetadata)
 
                         // Load email configuration
                         emailConfig <- ConfigLoader.loadEmailConfig[IO]()
@@ -359,13 +355,12 @@ object Main extends IOApp:
                         _ <- logger.info("Initializing invoice number generation system...")
 
                         // Initialize invoice number services
-                        invoiceCounterRepo <- InvoiceCounterRepository.create[IO]
-                        _                  <- invoiceCounterRepo.initializeCounter(paymentsConfig.invoiceCounterStartingNumber)
+                        _ <- repos.invoiceCounter.initializeCounter(paymentsConfig.invoiceCounterStartingNumber)
 
                         invoiceNumberService <- InvoiceNumberService.create[IO](
                             paymentsConfig,
-                            invoiceCounterRepo,
-                            orderRepo
+                            repos.invoiceCounter,
+                            repos.order
                         )
 
                         // Initialize invoice pdf generation service
@@ -559,13 +554,13 @@ object Main extends IOApp:
                         goCardlessConfig <- ConfigLoader.loadGoCardlessConfig[IO]()
 
                         paymentService <- PaymentService
-                            .create[IO](httpClient, goCardlessConfig, emailService, orderService, customerRepo)
+                            .create[IO](httpClient, goCardlessConfig, emailService, orderService, repos.customer)
 
                         purchaseService <- PurchaseService.create[IO](
-                            productRepo,
-                            customerRepo,
-                            purchaseIntentRepo,
-                            productMetadataRepo,
+                            repos.product,
+                            repos.customer,
+                            repos.purchaseIntent,
+                            repos.productMetadata,
                             authService,
                             orderService,
                             paymentService,
