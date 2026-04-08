@@ -236,7 +236,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                     case None     => propsState.validNel
             case Some(_ @AddFlowResistance(_, _, _))                         => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))                              => propsState.validNel
-            case Some(obj: AddSectionShapeChange)                            => propsState.modify(_.geometry).setTo(obj.to_shape.some).validNel
+            case Some(obj: AddSectionShapeChange)                            => propsState.modify(_.innerShape).setTo(obj.to_shape.some).validNel
 
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
@@ -246,7 +246,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
             .foldLeft(propsState.validNel) { case (vState, (_, setPropOp)) =>
                 setPropOp match
                     case SetInnerShape(g)                          =>
-                        vState.map(_.modify(_.geometry).setTo(g.some))
+                        vState.map(_.modify(_.innerShape).setTo(g.some))
                     case SetRoughness(r)                           =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
                     case SetMaterial(lm)                           =>
