@@ -40,8 +40,9 @@ object ProjectManager:
                     appStateSchemaVar.set(schema)
                 }
                 undoManager.reset()
-                import afpma.firecalc.ui.models.{fireboxCacheStateVar, FireboxCacheState}
-                fireboxCacheStateVar.set(FireboxCacheState.empty)
+                import afpma.firecalc.ui.models.fireboxCacheStateVar
+                val cachedFirebox = loadFireboxCache(id)
+                fireboxCacheStateVar.set(cachedFirebox)
                 activeProjectIdVar.set(Some(id))
                 true
             case None =>
@@ -50,11 +51,12 @@ object ProjectManager:
 
     /** Save the current project's state to localStorage. */
     def saveCurrentProject(): Unit =
-        import afpma.firecalc.ui.models.appStateSchemaVar
+        import afpma.firecalc.ui.models.{appStateSchemaVar, fireboxCacheStateVar}
 
         activeProjectIdVar.now().foreach { id =>
             val schema = appStateSchemaVar.now()
             ProjectStorage.save(id, schema)
+            saveFireboxCache(id, fireboxCacheStateVar.now())
             // Update index metadata
             val name = schema.engine_state.project_description.reference
             ProjectIndex.updateEntry(id, _.copy(
@@ -81,6 +83,9 @@ object ProjectManager:
             activeProjectIdVar.set(None)
             undoManager.reset()
         ProjectStorage.delete(id)
+        org.scalajs.dom.window.localStorage.removeItem(
+            afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value)
+        )
         ProjectIndex.removeEntry(id)
 
     /** Create a new project from imported AppStateSchema (e.g., from file open). */
@@ -93,3 +98,29 @@ object ProjectManager:
         ProjectIndex.addEntry(ProjectEntry(id, if name.nonEmpty then name else "Importé", lastModified = now, createdAt = now))
         switchToProject(id)
         id
+
+    def saveFireboxCache(id: ProjectId, cache: afpma.firecalc.ui.models.FireboxCacheState): Unit =
+        import io.circe.Encoder
+        val json = Encoder[afpma.firecalc.ui.models.FireboxCacheState].apply(cache).noSpaces
+        org.scalajs.dom.window.localStorage.setItem(
+            afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value),
+            json
+        )
+
+    private def loadFireboxCache(id: ProjectId): afpma.firecalc.ui.models.FireboxCacheState =
+        val key = afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value)
+        val raw = org.scalajs.dom.window.localStorage.getItem(key)
+        if raw == null || raw.trim.isEmpty then
+            // Migration: fall back to legacy global key on first load
+            val globalRaw = org.scalajs.dom.window.localStorage.getItem(
+                afpma.firecalc.ui.models.schema.LocalStorageKeys.FIREBOX_CACHE
+            )
+            if globalRaw == null || globalRaw.trim.isEmpty then afpma.firecalc.ui.models.FireboxCacheState.empty
+            else
+                io.circe.parser.decode[afpma.firecalc.ui.models.FireboxCacheState](globalRaw) match
+                    case Right(state) => state
+                    case Left(_)      => afpma.firecalc.ui.models.FireboxCacheState.empty
+        else
+            io.circe.parser.decode[afpma.firecalc.ui.models.FireboxCacheState](raw) match
+                case Right(state) => state
+                case Left(_)      => afpma.firecalc.ui.models.FireboxCacheState.empty

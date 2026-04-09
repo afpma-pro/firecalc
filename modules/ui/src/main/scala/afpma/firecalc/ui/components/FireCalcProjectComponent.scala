@@ -81,7 +81,7 @@ object FireCalcProjet:
 
             isProcessingVar.set(true)
 
-            // Convert state to YAML using dto module
+            // Export as legacy engine-state-only YAML for interop with report/payment consumers
             FireCalcYAMLMigrations.encodeToYamlTry(engineState) match
                 case Failure(ex) =>
                     GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage))
@@ -123,23 +123,20 @@ object FireCalcProjet:
 
         /** Load project from file content */
         def loadFromContent(yamlContent: String, fileName: String): Unit =
-            import afpma.firecalc.dto.FireCalcYAMLMigrations
-
             scala.scalajs.js.Dynamic.global.console.log(s"Loading file: $fileName")
             fileNameVar.set (Some(fileName))
             isLoadingVar.set(true          )
 
-            // Use migration-aware decoder that handles V1→V2 upgrades automatically
-            FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
+            // Auto-detect full schema vs legacy engine-state-only format
+            AppStateSchemaHelper.decodeFromFile(yamlContent) match
                 case Failure(e) =>
                     scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project")
                     scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                 )
                     GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage))
                     isLoadingVar.set(false)
 
-                case Success(nextEngineState) =>
+                case Success(schema) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
-                    val schema = appStateSchemaVar.now().copy(engine_state = nextEngineState)
                     val id = ProjectManager.openFromFile(schema)
                     router.pushState(ProjectPage(localeVar.now().language, id))
                     isLoadingVar.set(false)

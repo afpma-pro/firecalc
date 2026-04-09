@@ -46,7 +46,12 @@ object Frontend {
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> uiStateWebStorageVar.writer
 
     lazy val writeFireboxCacheSubscription = fireboxCacheStateVar.signal.changes.distinct
-        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> fireboxCacheWebStorageVar.writer
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> Observer[FireboxCacheState] { cache =>
+            fireboxCacheWebStorageVar.set(cache)
+            models.project.ProjectManager.activeProjectIdVar.now().foreach { id =>
+                models.project.ProjectManager.saveFireboxCache(id, cache)
+            }
+        }
 
     private val undoSnapshotObserver = Observer[schema.AppStateSchema](undoManager.pushSnapshot(_))
 

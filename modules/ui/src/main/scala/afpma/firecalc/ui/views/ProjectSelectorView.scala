@@ -5,7 +5,6 @@
 
 package afpma.firecalc.ui.views
 
-import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.payments.shared.Constants.{FIRECALC_FILE_EXTENSION, LEGACY_FIRECALC_FILE_EXTENSION}
 
 import afpma.firecalc.ui.*
@@ -38,11 +37,9 @@ final case class ProjectSelectorView()(using Locale) extends Component:
         router.pushState(ProjectPage(localeVar.now().language, id))
 
     private def loadFromFileContent(yamlContent: String, fileName: String): Unit =
-        FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
-            case Success(fireCalcYAML) =>
-                // Create a fresh schema — don't reuse appStateSchemaVar which may hold stale/default data
-                val schema = AppStateSchemaHelper.createInitialSchema().copy(engine_state = fireCalcYAML)
-                val id     = ProjectManager.openFromFile(schema)
+        AppStateSchemaHelper.decodeFromFile(yamlContent) match
+            case Success(schema) =>
+                val id = ProjectManager.openFromFile(schema)
                 router.pushState(ProjectPage(localeVar.now().language, id))
             case Failure(e) =>
                 dom.window.alert(s"Failed to load: ${e.getMessage}")

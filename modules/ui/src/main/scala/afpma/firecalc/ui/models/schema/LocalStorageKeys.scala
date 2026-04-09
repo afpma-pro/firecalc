@@ -34,4 +34,6 @@ object LocalStorageKeys {
 
     def projectAppState(projectId: String): String = s"project_${projectId}_app_state"
 
+    def projectFireboxCache(projectId: String): String = s"project_${projectId}_firebox_cache"
+
 }

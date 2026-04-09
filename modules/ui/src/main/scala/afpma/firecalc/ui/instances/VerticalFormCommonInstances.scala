@@ -576,6 +576,11 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
         FormDerivation
             .derived[Firebox]
+            .withOnSubtypeSwitch { (prev, next) =>
+                next match
+                    case _: Firebox.SingleTested => next
+                    case _ => next.withDimensions(prev.firebox_depth, prev.firebox_width, prev.firebox_height)
+            }
             .autoOverwriteFieldNames
             .wrappedInto(c =>
                 FieldsetLegendWithContent  (

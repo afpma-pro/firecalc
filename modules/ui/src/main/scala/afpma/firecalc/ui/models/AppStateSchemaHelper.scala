@@ -45,3 +45,19 @@ object AppStateSchemaHelper:
                 scala.scalajs.js.Dynamic.global.console.log(s"Failed to decode schema: ${e.getMessage()}")
                 scala.scalajs.js.Dynamic.global.console.log("Returning default schema"                   )
                 Success                                    (createInitialSchema()                        )
+
+    /** Strict schema decode — fails if YAML is not a valid AppStateSchema. */
+    def decodeFromYamlStrict(yaml: String): Try[AppStateSchema] =
+        import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
+        AppStateSchemaMigrations.migrateToLatest(yaml) match
+            case Some(schema) => Success(schema)
+            case None         => Failure(new Exception("Not a valid AppStateSchema"))
+
+    /** Decode a .fcalc file: try full schema first, fall back to legacy engine-state-only. */
+    def decodeFromFile(yamlContent: String): Try[AppStateSchema] =
+        import afpma.firecalc.dto.FireCalcYAMLMigrations
+        decodeFromYamlStrict(yamlContent).orElse {
+            FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent).map { engineState =>
+                createInitialSchema().copy(engine_state = engineState)
+            }
+        }
