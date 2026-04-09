@@ -124,7 +124,15 @@ object DaisyUIHorizontal extends FormRenderer:
             case None => selectNode
 
     def sumTypeContentOnly(label: String, content: HtmlElement): HtmlElement =
-        div(cls := "flex-auto", content)
+        // In the old code, splitViaMatchingOnly (the only caller of sumTypeContentOnly)
+        // always used FieldsetLegendWithContent regardless of horizontal/vertical form.
+        // The inner content is wrapped in div.flex-auto for horizontal layout.
+        DaisyUIInputs.FieldsetLegendWithContent(
+            legendOpt   = Some(label),
+            content     = div(cls := "flex-auto", content),
+            bgClass     = "bg-base-100",
+            borderClass = "border-base-300 border-dashed"
+        ).node
 
     def listLayout(items: Seq[HtmlElement]): HtmlElement =
         div(cls := "flex flex-row flex-nowrap", items)

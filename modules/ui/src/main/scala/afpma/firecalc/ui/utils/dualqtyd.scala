@@ -162,14 +162,7 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
             end render
     end form
 
-    // given encoderId: Encoder[QtyD[UF]] = encoder_QtyD[UF]
-    // given decoderId: Decoder[QtyD[UF]] = decoder_QtyD[UF]
-
-    // given Encoder[QFinal] = scala.compiletime.deferred
-    // given Decoder[QFinal] = scala.compiletime.deferred
-
 object DualQtyDF:
-    // type Aux[F0[_], UF0, UI0] =
 
     def makeForId[UF: SUnit, UI: SUnit](using
         ucfi: UnitConversion[Double, UF, UI],
@@ -210,11 +203,6 @@ object DualQtyDF:
             val cv   = casu.makeCurrentValue_FromFinalQty(cfq)
             Some(cv)
 
-        // def renderValueAsString(fv: Double) = fv.toString
-
-        // override given Encoder[QFinal] = encoderId
-        // override given Decoder[QFinal] = decoderId
-
     def makeForOption[UF: SUnit, UI: SUnit](using
         ucfi: UnitConversion[Double, UF, UI],
         ucif: UnitConversion[Double, UI, UF]
@@ -241,37 +229,5 @@ object DualQtyDF:
             val casu = getAllowedSUnit(cu)
             cfq.map(casu.makeCurrentValue_FromFinalQty)
 
-        // def renderValueAsString(fv: Option[Double]) = fv.fold("")(_.toString)
-
-        // override given Encoder[QFinal] = io.circe.Encoder.encodeOption(encoderId)
-        // override given Decoder[QFinal] = io.circe.Decoder.decodeOption(decoderId)
-
-    // given optionAutoDecoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Decoder[Option[QtyD[UF]]] =
-    //     val instance = makeForOption[UF, UI]
-    //     instance.given_Decoder_QFinal
-
-    // given optionAutoEncoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Encoder[Option[QtyD[UF]]] =
-    //     val instance = makeForOption[UF, UI]
-    //     instance.given_Encoder_QFinal
-
-    // given idAutoDecoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Decoder[QtyD[UF]] =
-    //     val instance = makeForId[UF, UI]
-    //     instance.given_Decoder_QFinal
-
-    // given idAutoEncoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Encoder[QtyD[UF]] =
-    //     val instance = makeForId[UF, UI]
-    //     instance.given_Encoder_QFinal
-
 type DualQtyD[UF, UI]       = DualQtyDF[cats.Id, UF, UI]
 type DualOptionQtyD[UF, UI] = DualQtyDF[Option, UF, UI]
-
-// class DualQtyD[UF: SUnit, UI: SUnit](using
-//     ucfi: UnitConversion[Double, UF, UI],
-//     ucif: UnitConversion[Double, UI, UF]
-// ) extends DualQtyDF[cats.Id, UF, UI]:
-
-//     given functorF: Functor[cats.Id] = Functor[cats.Id]
-//     def optionDoubleToFValue(od: Option[Double]): Double = od.get
-
-//     given encoderF: Encoder[QFinal] = encoderId
-//     given decoderF: Decoder[QFinal] = decoderId

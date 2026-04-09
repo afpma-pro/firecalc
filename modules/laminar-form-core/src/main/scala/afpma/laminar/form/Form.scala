@@ -23,6 +23,12 @@ trait Form[A]:
     /** Validation function for this type. */
     def validateVar: ValidateVar[A]
 
+    /** Optional externally-visible field name, set by withFieldName / autoOverwriteFieldNames.
+      * Used by splitViaMatchingOnly to read subtype labels without rendering.
+      * Analogous to the old _formConfigOverwrite.fieldName.
+      */
+    def configuredFieldName: Option[String] = None
+
 object Form:
 
     def apply[A](using ev: Form[A]): Form[A] = ev
@@ -62,6 +68,7 @@ object Form:
             fa.render(mappedVar, config)
         def defaultable: Defaultable[T] = fa.defaultable.map(in(_))
         def validateVar: ValidateVar[T] = fa.validateVar.contramap(out(_))
+        override def configuredFieldName: Option[String] = fa.configuredFieldName
 
     /** Conditional form — shows field A only when condition on C is met. */
     def conditionalOn[C, A](condVar: Var[C])(using
@@ -97,6 +104,7 @@ object Form:
                 form.render(mappedVar, config)
             def defaultable: Defaultable[B] = form.defaultable.map(to)
             def validateVar: ValidateVar[B] = form.validateVar.contramap(from)
+            override def configuredFieldName: Option[String] = form.configuredFieldName
 
         /** Transform with access to current B value (for partial updates). */
         def xmap[B: Defaultable](to: (B, A) => B)(from: B => A): Form[B] = new Form[B]:
@@ -105,6 +113,7 @@ object Form:
                 form.render(mappedVar, config)
             def defaultable: Defaultable[B] = summon[Defaultable[B]]
             def validateVar: ValidateVar[B] = form.validateVar.contramap(from)
+            override def configuredFieldName: Option[String] = form.configuredFieldName
 
         /** Return a new Form with the given field name (immutable). */
         def withFieldName(name: String): Form[A] = new Form[A]:
@@ -112,6 +121,7 @@ object Form:
                 form.render(v, config.withFieldName(name))
             def defaultable: Defaultable[A] = form.defaultable
             def validateVar: ValidateVar[A] = form.validateVar
+            override def configuredFieldName: Option[String] = Some(name)
 
         /** Return a new Form that shows the field name. */
         def showFieldName: Form[A] = new Form[A]:
@@ -119,6 +129,7 @@ object Form:
                 form.render(v, config.doShowFieldName)
             def defaultable: Defaultable[A] = form.defaultable
             def validateVar: ValidateVar[A] = form.validateVar
+            override def configuredFieldName: Option[String] = form.configuredFieldName
 
         /** Return a new Form that hides the field name. */
         def hideFieldName: Form[A] = new Form[A]:
@@ -126,6 +137,7 @@ object Form:
                 form.render(v, config.doHideFieldName)
             def defaultable: Defaultable[A] = form.defaultable
             def validateVar: ValidateVar[A] = form.validateVar
+            override def configuredFieldName: Option[String] = form.configuredFieldName
 
         /** Return a new Form that wraps render output in a wrapper element. */
         def wrappedInto(wrapper: HtmlElement => HtmlElement): Form[A] = new Form[A]:
@@ -133,3 +145,4 @@ object Form:
                 wrapper(form.render(v, config))
             def defaultable: Defaultable[A] = form.defaultable
             def validateVar: ValidateVar[A] = form.validateVar
+            override def configuredFieldName: Option[String] = form.configuredFieldName

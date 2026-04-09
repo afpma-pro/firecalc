@@ -184,7 +184,8 @@ trait FieldsetInputs:
         /** Alternate entry point used by FormRenderer implementations. */
         def amend(content: Seq[HtmlElement]): HtmlElement =
             fieldSet(
-                legendOpt.map(legend(_)),
+                cls := "fieldset w-sm bg-base-200 border border-base-300 py-2 px-4 rounded-box",
+                legendOpt.map(t => legend(cls := "fieldset-legend", t)),
                 content
             )
 

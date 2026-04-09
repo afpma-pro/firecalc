@@ -33,6 +33,16 @@ import scala.deriving.Mirror
   * Unlike the old LaminarFormFactory which coupled derivation with rendering,
   * this derivation produces Form[A] instances that defer to FormRenderer
   * at render time via context parameter.
+  *
+  * i18n: `@Transl`-based translations are applied via `.autoOverwriteFieldNames`
+  * (from `FormI18nExtensions`). Use `autoDeriveAndOverwriteFieldNames[A]` or
+  * `FormDerivation.derived[A].autoOverwriteFieldNames` to get translated field names.
+  * This is mandatory for types with `@Transl` annotations.
+  *
+  * Note: automatic i18n via a given-level override is not possible because
+  * the universal `HasTranslatedFieldsWithValues` derivation would conflict with
+  * explicit Form instances for enums/sum types (e.g. BillableCustomerType),
+  * causing magnolia to re-derive them instead of using the hand-written instance.
   */
 object FormDerivation extends AutoDerivation[Form]:
 
@@ -212,7 +222,8 @@ object FormDerivation extends AutoDerivation[Form]:
     // =========================================================================
 
     private def fieldNameForSubtype[A](sub: SealedTrait.Subtype[Form, A, ?]): String =
-        resolveFieldName(sub.annotations.toList, sub.typeInfo)
+        sub.typeclass.configuredFieldName
+            .getOrElse(resolveFieldName(sub.annotations.toList, sub.typeInfo))
 
     private def fieldNameForSubtypeFromValue[A](sealedTrait: SealedTrait[Form, A])(a: A): String =
         sealedTrait.choose(a)(sub => fieldNameForSubtype(sub.subtype))
@@ -416,6 +427,7 @@ object FormDerivation extends AutoDerivation[Form]:
         new Form[Option[A]]:
             def defaultable = Defaultable.makeOptionWithNoneFor[A]
             def validateVar = fa.validateVar.toOption_WithNoneAsValid
+            override def configuredFieldName: Option[String] = fa.configuredFieldName
 
             def render(voa: Var[Option[A]], config: FormConfig)(using FormRenderer) =
                 val hideSignal = condVar.signal.map(v => !cond.check(v))
@@ -448,7 +460,10 @@ object FormDerivation extends AutoDerivation[Form]:
                         extraBinders
                     )
 
-    /** Either[L, R] from conditional on C. */
+    /** Either[L, R] from conditional on C.
+      *
+      * API status: permanent. Replaces the deprecated eitherAsSelectWithOptions.
+      */
     def eitherFromOption[C, L, R](
         condVar: Var[C],
         convert: C => Either[L, R],
@@ -496,7 +511,10 @@ object FormDerivation extends AutoDerivation[Form]:
     def mkFromComponent_AlwaysValid[A](factory: (Var[A], FormConfig) => FormRenderer ?=> HtmlElement)(using d: Defaultable[A]): Form[A] =
         mk_AlwaysValid[A]((va, fc) => (fr: FormRenderer) ?=> factory(va, fc)(using fr))
 
-    /** Select from enum values using Show as id. Renderer-agnostic — uses FormRenderer.selectRequired. */
+    /** Select from enum values using Show as id. Renderer-agnostic — uses FormRenderer.selectRequired.
+      *
+      * API status: permanent. Primary pattern for enum/sum-type selects throughout the app.
+      */
     def forEnumOrSumTypeLike_UsingShowAsId[A: {Show, Defaultable, ValidateVar}](
         options        : List[A],
         updateFieldName: Option[String] => Option[String] = identity
@@ -545,6 +563,9 @@ object FormDerivation extends AutoDerivation[Form]:
     /** Sealed trait rendering without select — renders only the matching subtype.
       * Used when the type discriminator is determined elsewhere.
       * Requires Form instances for all subtypes to be in scope.
+      *
+      * API status: permanent. Core pattern for types whose discriminator is
+      * controlled externally (e.g. SetSingleProp subtypes selected by pipe panel menus).
       */
     inline def splitViaMatchingOnly[A](using inline m: Mirror.SumOf[A]): Form[A] =
         _SplitViaMatchingHelper.derivedMirrorSum[A](m)
@@ -573,7 +594,11 @@ object FormDerivation extends AutoDerivation[Form]:
             def render(v: Var[A], config: FormConfig)(using renderer: FormRenderer): HtmlElement =
                 val a = v.now()
                 val subt_typeclass_curr = sealedTrait.choose(a)(_.typeclass.asInstanceOf[Form[A]])
-                val subt_label = fieldNameForSubtypeFromValue(sealedTrait)(a)
+                // Prefer the subtype Form's own configuredFieldName (set by autoOverwriteFieldNames
+                // or withFieldName) over the annotation/titleCase fallback.
+                val subt_label = sealedTrait.choose(a): sub =>
+                    sub.typeclass.configuredFieldName
+                        .getOrElse(fieldNameForSubtype(sub.subtype))
 
                 val content = subt_typeclass_curr.render(v, config)
                 renderer.sumTypeContentOnly(subt_label, content)
@@ -617,6 +642,12 @@ object FormDerivation extends AutoDerivation[Form]:
     /** Select + sub-value form — select from options, edit sub-value T.
       * Renderer-agnostic: the select uses FormRenderer.selectWithCustomId,
       * the T form uses the active FormRenderer.
+      *
+      * @param getId maps each option to a stable string identifier used as the HTML option value.
+      *              This is distinct from `Show[A]` which controls the display label.
+      *              Both `getId` and `Show[A]` are required: Show for display, getId for value matching.
+      *
+      * API status: permanent. Used for material selectors with editable sub-values (e.g. roughness).
       */
     def forSelectionWithDefaultValue_usingSelectInput[A, T](
         selectOptions   : List[A],

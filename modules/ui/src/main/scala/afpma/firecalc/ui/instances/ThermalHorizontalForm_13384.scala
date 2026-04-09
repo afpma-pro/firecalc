@@ -44,10 +44,31 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         import defaultable_13384.incr_descr_en13384.defaultable_Seq_SetSingleProp
         // given Form[String] = string_emptyAsDefault_alwaysValid
 
-        // List[SetSingleProp] should be a global vertical form
-        // containing horizontal form instances for each "SetSingleProp" element
+        // List[SetSingleProp] should use vertical list layout (stacked vertically)
+        // while each item renders with horizontal inner layout.
+        // The old code used DaisyUIVerticalForm.forList with .toVerticalForm.
+        // In the new code, we create a custom Form that uses vertical list layout
+        // (simple div wrapper) while keeping the ambient renderer (DaisyUIHorizontal)
+        // for each item's content rendering.
         given df_list: Form[List[SetSingleProp]] =
-            FormDerivation.forList[SetSingleProp, Int](using horizontal_form_SetSingleProp, _.hashCode)
+            import com.raquo.laminar.api.L.*
+            import FormDerivation.WrappedWithEphemeralId
+            new Form[List[SetSingleProp]]:
+                def defaultable = Defaultable.forList(using horizontal_form_SetSingleProp.defaultable)
+                def validateVar = ValidateVar.forList(using horizontal_form_SetSingleProp.validateVar)
+                def render(v: Var[List[SetSingleProp]], config: FormConfig)(using renderer: FormRenderer) =
+                    val wrappedVar = v.zoomLazy(_.zipWithIndex.map((a, idx) => WrappedWithEphemeralId(idx, a))) {
+                        (_, wrapped) => wrapped.map(_.a)
+                    }
+                    div(
+                        children <-- wrappedVar.split(_.id)((id, _, wrappedItemVar) =>
+                            val itemVar = wrappedItemVar.zoomLazy(_.a)((wrapped, a) => wrapped.copy(a = a))
+                            div(
+                                idAttr := s"list-item-$id",
+                                horizontal_form_SetSingleProp.render(itemVar, config)
+                            )
+                        )
+                    )
 
         // Convert from List -> Seq
         given seqForm: Form[Seq[SetSingleProp]] =

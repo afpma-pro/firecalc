@@ -229,6 +229,33 @@ Feature branch (`feat/extract-form-lib`) test results:
 
 These are integration tests requiring external services (email, database) and fail identically on both branches.
 
+## Follow-up Resolution (2026-04-08, second pass)
+
+### Finding #2 (getId unused) — DISMISSED
+The reviewer incorrectly flagged `getId` as unused in `forSelectionWithDefaultValue_usingSelectInput`.
+It IS used: passed to `renderer.selectWithCustomId(... getId = getId, getById = id => selectOptions.find(getId(_) == id).get)`.
+`getId` provides stable HTML option values (e.g. `_.name`), distinct from `Show[A]` which provides display labels.
+Added `@param getId` doc comment to clarify the distinction.
+
+### Finding #3 (TypeOfAppliance) — ALREADY CORRECT
+`TypeOfAppliance` has a proper i18n-aware `Show` via `ShowUsingLocale[TypeOfAppliance]` defined in its companion object (dto module).
+Since `VerticalFormCommonInstances` takes `using Locale`, the `ShowUsingLocale` automatically resolves to `Show`.
+The instance is in the right place — no move needed.
+
+### Follow-up #1 (dualqtyd cleanup) — DONE
+Removed ~45 lines of dead commented-out code (old encoder/decoder stubs, type aliases, class skeleton).
+File went from 278 → 233 lines. Renderer leak was already fixed in C2.
+
+### Follow-up #5 (API classification) — DONE
+Added `API status: permanent` or `@deprecated` doc comments to all factory methods in FormDerivation:
+- `splitViaMatchingOnly` — permanent (externally-discriminated sealed traits)
+- `eitherFromOption` — permanent (replaces deprecated eitherAsSelectWithOptions)
+- `forEnumOrSumTypeLike_UsingShowAsId` — permanent (primary enum/select pattern)
+- `forSelectionWithDefaultValue_usingSelectInput` — permanent (material selectors with editable sub-values)
+- `eitherAsSelectWithOptions` — already @deprecated("Use eitherFromOption instead")
+- `optionOfEither` — already @deprecated("Use FormDerivation.derived[OptionOfEither[L, R]] directly")
+- `forList_fromComponent` — already @deprecated("Use Form.makeFor instead")
+
 ## Overall verdict
 
 The migration is substantially successful and in mergeable shape from an architecture/migration perspective, assuming the known payments test failures are unrelated.
