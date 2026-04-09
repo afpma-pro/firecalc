@@ -19,9 +19,9 @@
         "defaults"
     ],
     "scripts": {
-        "dev": "vite --mode development",
-        "dev:staging": "vite --mode staging",
-        "dev:production": "vite --mode production",
+        "dev": "vite --mode development --port ${FIRECALC_VITE_DEV_SERVER_PORT:-5173}",
+        "dev:staging": "vite --mode staging --port ${FIRECALC_VITE_DEV_SERVER_PORT:-5173}",
+        "dev:production": "vite --mode production --port ${FIRECALC_VITE_DEV_SERVER_PORT:-5173}",
         "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode development --emptyOutDir",
         "build:staging": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode staging --emptyOutDir",
         "build:production": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode production --emptyOutDir",

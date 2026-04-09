@@ -6,6 +6,8 @@
 export SHELL := /bin/bash
 
 ## VARS AND ENVS
+FIRECALC_VITE_DEV_SERVER_PORT ?= 5173
+export FIRECALC_VITE_DEV_SERVER_PORT
 REPO_DIR ?= $(shell pwd | xargs echo -n)
 GIT_COMMIT_HASH ?= $(shell git rev-parse --short=8 HEAD)
 UI_BASE_VERSION ?= $(shell grep 'lazy val ui_base_version' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
@@ -178,12 +180,12 @@ define copy_landing_page
 endef
 
 kill-vite:
-	@echo "Killing processes on port 5173..."
-	@lsof -ti:5173 | xargs kill -9 2>/dev/null || echo "No processes found on port 5173"
+	@echo "Killing processes on port $(FIRECALC_VITE_DEV_SERVER_PORT)..."
+	@lsof -ti:$(FIRECALC_VITE_DEV_SERVER_PORT) | xargs kill -9 2>/dev/null || echo "No processes found on port $(FIRECALC_VITE_DEV_SERVER_PORT)"
 
 dev-open-browser:
 	@echo "Opening browser to Vite dev server..."
-	@xdg-open http://localhost:5173 2>/dev/null || open http://localhost:5173 2>/dev/null || echo "Please open http://localhost:5173 in your browser"
+	@xdg-open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT) 2>/dev/null || open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT) 2>/dev/null || echo "Please open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT) in your browser"
 
 ## ================================
 ## DEVELOPMENT - UI
@@ -205,8 +207,8 @@ dev-web-ui-build:
 	$(call copy_landing_page)
 
 dev-web-ui-open:
-	@echo "Opening browser and starting UI dev server..."
-	@open http://localhost:5173
+	@echo "Opening browser and starting UI dev server on port $(FIRECALC_VITE_DEV_SERVER_PORT)..."
+	@open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT)
 	@cd modules/ui && npm run dev
 
 ## ================================
@@ -214,7 +216,7 @@ dev-web-ui-open:
 ## ================================
 
 dev-electron-app-run-vite:
-	@echo "Starting Electron desktop app with Vite dev server (live reload)..."
+	@echo "Starting Electron desktop app with Vite dev server (live reload) on port $(FIRECALC_VITE_DEV_SERVER_PORT)..."
 	@echo "Make sure Vite dev server is running: make dev-web-ui-run"
 	@echo "And Scala.js is compiling: make dev-web-ui-compile"
 	@cd web && npm run dev:vite

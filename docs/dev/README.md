@@ -83,6 +83,30 @@ make dev-ui
 make dev-electron-vite
 ```
 
+### Worktree / Parallel Development
+
+When working with multiple git worktrees (or multiple checkouts), each instance needs its own Vite port to avoid conflicts. Use the `FIRECALC_VITE_DEV_SERVER_PORT` environment variable:
+
+```bash
+# Default (main worktree) — port 5173
+make dev-web-ui-run
+
+# Second worktree — port 5174
+export FIRECALC_VITE_DEV_SERVER_PORT=5174
+make dev-web-ui-compile   # sbt source maps will point to :5174
+make dev-web-ui-run       # Vite serves on :5174
+make dev-electron-app-run-vite  # Electron connects to :5174
+
+# Inline usage (single command)
+FIRECALC_VITE_DEV_SERVER_PORT=5174 make dev-web-ui-run
+```
+
+The env var is read by:
+- **Vite** (`modules/ui/vite.config.js`) — binds the dev server
+- **Makefile** — `kill-vite`, `dev-open-browser`, `dev-web-ui-open` targets
+- **Electron** (`web/package.json` `dev:vite` script) — connects to the Vite server
+- **sbt** (`build.sbt` source map URIs) — maps Scala sources to the right Vite port for debugging
+
 ### Git Hooks (License Compliance)
 
 **⚠️ IMPORTANT**: All developers must install git hooks for license header enforcement:

@@ -143,7 +143,7 @@ export default defineConfig(({ mode }) => {
         },
     ],
     server: {
-        port: 5173,
+        port: parseInt(process.env.FIRECALC_VITE_DEV_SERVER_PORT || '5173', 10),
         strictPort: true,
         fs: {
             allow: [

@@ -700,12 +700,14 @@ val maybeHackScalablyTypedRemoveSourceFuture: Seq[Setting[_]] =
 lazy val jsSourceMapSettings = Def.settings(
     scalacOptions ++= {
         // Ensure ALL file:// URIs in sourcemaps resolve via Vite:
-        // - Browser cannot fetch file:///... via HTTP; map them to http://localhost:5173/@fs/...
+        // - Browser cannot fetch file:///... via HTTP; map them to http://localhost:<port>/@fs/...
         // - Include both file:/ and file:/// prefixes (both occur in practice).
         // - Keep trailing slash on the target so absolute paths preserve their leading slash.
+        // - Port is configurable via FIRECALC_VITE_DEV_SERVER_PORT env var (default: 5173)
+        val vitePort = sys.env.getOrElse("FIRECALC_VITE_DEV_SERVER_PORT", "5173")
         Seq(
-          "-scalajs-mapSourceURI:file:/->https://localhost:5173/@fs/",
-          "-scalajs-mapSourceURI:file:///->https://localhost:5173/@fs/"
+          s"-scalajs-mapSourceURI:file:/->https://localhost:$vitePort/@fs/",
+          s"-scalajs-mapSourceURI:file:///->https://localhost:$vitePort/@fs/"
         )
     }
 )
