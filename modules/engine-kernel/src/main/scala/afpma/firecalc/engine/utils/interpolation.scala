@@ -342,7 +342,19 @@ class CustomInterpolator(
         boundary:
             // --- Step 1: find the two bounding x-columns ---
             val x1 = xs.filter(_ <= xi).lastOption.getOrElse(break(Left(valueOutOfRange(xi, None))))
-            val x2 = xs.find(_ > xi).getOrElse(break(Left(valueOutOfRange(xi, None))))
+            val x2Opt = xs.find(_ > xi)
+
+            // When xi is exactly on the max x-boundary, interpolate along that single column.
+            // When xi > x_max (x1 < xi), reject as out of range (preserves existing behavior).
+            x2Opt match
+                case None if x1 == xi =>
+                    val y1s = xyz_list.filter(_._1 == x1).map(_._2).sorted
+                    break(interpolateZ_atColumn(x1, y1s, yi))
+                case None =>
+                    break(Left(valueOutOfRange(xi, None)))
+                case _ => ()
+
+            val x2 = x2Opt.get
 
             // Collect sorted y-values and their range for each column
             val y1s = xyz_list.filter(_._1 == x1).map(_._2).sorted

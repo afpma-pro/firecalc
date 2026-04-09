@@ -377,5 +377,55 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
             interp.interpolateAt(5.0, 1.0) shouldBe a[Left[?, ?]]
             interp.interpolateAt(25.0, 1.0) shouldBe a[Left[?, ?]]
         }
+
+        // ── Boundary: xi == x_max / x_min with interpolated yi ──
+
+        "interpolates at xi == x_max with interpolated yi" in {
+            val data = List(
+                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0), (10.0, 3.2, 2.0), (10.0, 4.0, 1.0),
+                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0), (25.0, 3.2, 18.0), (25.0, 4.0, 16.0)
+            )
+            val interp = new CustomInterpolator("x", "y", data)
+            // At x=25 (x_max), y=2.0: between (1.6,22) and (2.4,20) → z = 22 + (20-22)*(2.0-1.6)/(2.4-1.6) = 21
+            interp.interpolateAt(25.0, 2.0) shouldBe Right(21.0)
+        }
+
+        "interpolates at xi == x_min with interpolated yi" in {
+            val data = List(
+                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0), (10.0, 3.2, 2.0), (10.0, 4.0, 1.0),
+                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0), (25.0, 3.2, 18.0), (25.0, 4.0, 16.0)
+            )
+            val interp = new CustomInterpolator("x", "y", data)
+            // At x=10 (x_min), y=2.0: between (1.6,4) and (2.4,3) → z = 4 + (3-4)*(2.0-1.6)/(2.4-1.6) = 3.5
+            interp.interpolateAt(10.0, 2.0) shouldBe Right(3.5)
+        }
+
+        "interpolates at xi == x_max on non-rectangular grid" in {
+            val data = List(
+                (0.0, 2.0, 20.0), (0.0, 4.0, 40.0),
+                (10.0, 1.0, 10.0), (10.0, 3.0, 30.0), (10.0, 5.0, 50.0)
+            )
+            val interp = new CustomInterpolator("x", "y", data)
+            // At x=10 (x_max), y=2.0: between (1,10) and (3,30) → z = 10 + (30-10)*(2-1)/(3-1) = 20
+            interp.interpolateAt(10.0, 2.0) shouldBe Right(20.0)
+        }
+
+        "rejects yi out of range at xi == x_max" in {
+            val data = List(
+                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0),
+                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0)
+            )
+            val interp = new CustomInterpolator("x", "y", data)
+            interp.interpolateAt(25.0, 5.0) shouldBe a[Left[?, ?]]
+        }
+
+        "still rejects xi > x_max" in {
+            val data = List(
+                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0),
+                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0)
+            )
+            val interp = new CustomInterpolator("x", "y", data)
+            interp.interpolateAt(30.0, 2.0) shouldBe a[Left[?, ?]]
+        }
     }
 }
