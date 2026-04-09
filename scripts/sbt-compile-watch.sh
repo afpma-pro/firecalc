@@ -61,16 +61,28 @@ SERVER_PID_FILE="$LOGS_DIR/sbt-server.pid"
 SERVER_LOG="$LOGS_DIR/sbt-server.log"
 SERVER_FIFO="$LOGS_DIR/sbt-server.fifo"
 FIFO_PID_FILE="$LOGS_DIR/sbt-fifo.pid"
+EXIT_CODE_FILE="$LOGS_DIR/sbt-compile.exitcode"
 
 mkdir -p "$LOGS_DIR"
+
+# Kill a process and all its descendants (depth-first).
+# Kills leaves first so nothing reparents to init before we reach it.
+kill_tree() {
+    local pid=$1
+    local children
+    children=$(pgrep -P "$pid" 2>/dev/null || true)
+    for child in $children; do
+        kill_tree "$child"
+    done
+    kill "$pid" 2>/dev/null || true
+}
 
 # Kill existing compile process if running
 if [ -f "$PID_FILE" ]; then
     OLD_PID=$(cat "$PID_FILE")
     if kill -0 "$OLD_PID" 2>/dev/null; then
         echo "Stopping existing compile process (PID: $OLD_PID)..."
-        kill "$OLD_PID" 2>/dev/null || true
-        sleep 1
+        kill_tree "$OLD_PID"
     fi
     rm -f "$PID_FILE"
 fi
@@ -100,7 +112,14 @@ fi
 case "$MODE" in
     standalone)
         echo "Starting one-off compilation for ${SCOPE:-full project}..."
-        nohup sbt "$SBT_CMD" > "$LOG_FILE" 2>&1 &
+        rm -f "$EXIT_CODE_FILE"
+        nohup bash -c '
+            sbt "$1" > "$2" 2>&1 &
+            CHILD=$!
+            trap "kill $CHILD 2>/dev/null; wait $CHILD 2>/dev/null; echo \$? > \"$3\"; exit" TERM
+            wait $CHILD
+            echo $? > "$3"
+        ' _ "$SBT_CMD" "$LOG_FILE" "$EXIT_CODE_FILE" &
         NEW_PID=$!
         echo "$NEW_PID" > "$PID_FILE"
         echo "  Mode: standalone (one-off)"

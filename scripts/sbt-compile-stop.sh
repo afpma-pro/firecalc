@@ -16,6 +16,8 @@
 # process is stopped — the external sbt server is left untouched.
 
 LOGS_DIR=".logs"
+LOG_FILE="$LOGS_DIR/sbt-compile.log"
+EXIT_CODE_FILE="$LOGS_DIR/sbt-compile.exitcode"
 PID_FILE="$LOGS_DIR/sbt-compile.pid"
 SCOPE_FILE="$LOGS_DIR/sbt-compile.scope"
 MODE_FILE="$LOGS_DIR/sbt-compile.mode"
@@ -23,6 +25,18 @@ SERVER_PID_FILE="$LOGS_DIR/sbt-server.pid"
 SERVER_LOG="$LOGS_DIR/sbt-server.log"
 SERVER_FIFO="$LOGS_DIR/sbt-server.fifo"
 FIFO_PID_FILE="$LOGS_DIR/sbt-fifo.pid"
+
+# Kill a process and all its descendants (depth-first).
+# Kills leaves first so nothing reparents to init before we reach it.
+kill_tree() {
+    local pid=$1
+    local children
+    children=$(pgrep -P "$pid" 2>/dev/null || true)
+    for child in $children; do
+        kill_tree "$child"
+    done
+    kill "$pid" 2>/dev/null || true
+}
 
 STOP_SERVER=false
 CLEAN=false
@@ -50,12 +64,8 @@ fi
 if [ -f "$PID_FILE" ]; then
     PID=$(cat "$PID_FILE")
     if kill -0 "$PID" 2>/dev/null; then
-        if kill "$PID" 2>/dev/null; then
-            echo "Stopped compile process (PID: $PID)"
-        else
-            echo "Failed to stop compile process (PID: $PID)"
-            echo "Try: kill $PID"
-        fi
+        kill_tree "$PID"
+        echo "Stopped compile process (PID: $PID)"
     else
         echo "Compile process already stopped (PID: $PID)"
     fi
@@ -77,12 +87,8 @@ if [ "$STOP_SERVER" = true ]; then
     if [ -f "$SERVER_PID_FILE" ]; then
         SERVER_PID=$(cat "$SERVER_PID_FILE")
         if kill -0 "$SERVER_PID" 2>/dev/null; then
-            if kill "$SERVER_PID" 2>/dev/null; then
-                echo "Stopped managed sbt server (PID: $SERVER_PID)"
-            else
-                echo "Failed to stop sbt server (PID: $SERVER_PID)"
-                echo "Try: kill $SERVER_PID"
-            fi
+            kill_tree "$SERVER_PID"
+            echo "Stopped managed sbt server (PID: $SERVER_PID)"
         else
             echo "Managed sbt server already stopped (PID: $SERVER_PID)"
         fi
@@ -97,6 +103,6 @@ rm -f "$SCOPE_FILE" "$MODE_FILE"
 
 # Remove log files if --clean
 if [ "$CLEAN" = true ]; then
-    rm -f "$LOG_FILE" "$SERVER_LOG"
+    rm -f "$LOG_FILE" "$EXIT_CODE_FILE" "$SERVER_LOG"
     echo "Cleaned log files"
 fi

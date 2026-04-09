@@ -63,7 +63,7 @@ Install all project dependencies (UI + Electron).
 make setup-all
 ```
 
-**What it does:** Runs `ui-setup` and `electron-setup` in sequence
+**What it does:** Runs `ui-setup`, `electron-setup`, `landing-setup`, `sync-build-config`, `build-viz`, and `build-graph`
 **Use case:** First-time setup or after pulling dependencies updates
 
 ---
@@ -87,6 +87,28 @@ make electron-setup
 ```
 
 **Equivalent to:** `cd web && npm install`
+
+---
+
+### `make landing-setup`
+Install landing page dependencies.
+
+```bash
+make landing-setup
+```
+
+**Equivalent to:** `cd web/landing && npm install`
+
+---
+
+### `make landing-build`
+Build landing page (Next.js static export).
+
+```bash
+make landing-build
+```
+
+**Equivalent to:** `cd web/landing && npm run build`
 
 ---
 
@@ -171,13 +193,13 @@ make ui-status
 ## Utility Targets
 
 ### `make kill-vite`
-Kill processes running on port 5173.
+Kill processes running on the Vite dev server port (default 5173, configurable via `FIRECALC_VITE_DEV_SERVER_PORT`).
 
 ```bash
 make kill-vite
 ```
 
-**Use case:** Solve "Port 5173 already in use" errors
+**Use case:** Solve "Port already in use" errors
 
 ---
 
@@ -188,7 +210,7 @@ Open browser to Vite dev server.
 make dev-open-browser
 ```
 
-**URL:** http://localhost:5173
+**URL:** http://localhost:5173 (configurable via `FIRECALC_VITE_DEV_SERVER_PORT`)
 **Platform support:** Linux (xdg-open), macOS (open), fallback message for others
 
 ---
@@ -214,7 +236,7 @@ Start Vite dev server for web UI.
 make dev-web-ui-run
 ```
 
-**URL:** http://localhost:5173  
+**URL:** http://localhost:5173 (configurable via `FIRECALC_VITE_DEV_SERVER_PORT`)  
 **Use case:** Terminal 2 of live reload setup  
 **Keep running:** Yes, serves the application
 
@@ -239,7 +261,7 @@ Start Vite dev server and open browser.
 make dev-web-ui-open
 ```
 
-**Note:** Opens browser to http://localhost:5173 (macOS only with `open` command)
+**Note:** Opens browser to http://localhost:5173 (configurable via `FIRECALC_VITE_DEV_SERVER_PORT`; macOS only with `open` command)
 
 ---
 
@@ -777,6 +799,33 @@ make docker-deploy-logs
 
 ---
 
+## Validation
+
+### `make run-validation`
+Run engine golden-file validation tests.
+
+```bash
+make run-validation
+```
+
+**Equivalent to:** `sbt --client "engineValidation/test"`
+**Use case:** Verify engine output matches golden reference files
+
+---
+
+### `make update-validation`
+Update golden reference files from current engine output.
+
+```bash
+make update-validation
+```
+
+**What it does:** Copies current engine output files to test resources as new golden references
+**Use case:** After intentional engine changes, update expected outputs
+**Review:** Always run `git diff` after updating to verify changes are intentional
+
+---
+
 ## Common Workflows
 
 ### Web Development (Browser)
@@ -1046,6 +1095,7 @@ Check what's running:
 ```bash
 make ui-status
 lsof -ti:5173  # Check port 5173
+# If using a custom port, replace 5173 with your FIRECALC_VITE_DEV_SERVER_PORT value
 ```
 
 ---

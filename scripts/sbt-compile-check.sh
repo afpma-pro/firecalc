@@ -37,6 +37,7 @@ LOG_FILE="$LOGS_DIR/sbt-compile.log"
 PID_FILE="$LOGS_DIR/sbt-compile.pid"
 SCOPE_FILE="$LOGS_DIR/sbt-compile.scope"
 MODE_FILE="$LOGS_DIR/sbt-compile.mode"
+EXIT_CODE_FILE="$LOGS_DIR/sbt-compile.exitcode"
 
 WAIT_MODE=false
 ERRORS_ONLY=false
@@ -87,7 +88,44 @@ check_status() {
     # For standalone mode, check if process exited (= compilation done)
     if [ "$COMPILE_MODE" = "standalone" ]; then
         if ! kill -0 "$PID" 2>/dev/null; then
-            # Process finished — check exit status from log
+            # Process finished — check explicit exit code
+            if [ ! -f "$EXIT_CODE_FILE" ]; then
+                # No exit code file: process died before wrapper could write it
+                echo "STATUS: ERROR"
+                echo "Process exited without writing exit status."
+                if [ -f "$LOG_FILE" ]; then
+                    echo "---LOG_TAIL---"
+                    tail -5 "$LOG_FILE"
+                fi
+                rm -f "$PID_FILE" "$SCOPE_FILE" "$MODE_FILE" "$EXIT_CODE_FILE"
+                return 1
+            fi
+
+            local sbt_exit
+            sbt_exit=$(cat "$EXIT_CODE_FILE")
+
+            if [ "$sbt_exit" -ne 0 ]; then
+                # sbt exited with error (compilation failure or launcher crash)
+                echo "STATUS: ERROR"
+                if [ -f "$LOG_FILE" ]; then
+                    local has_errors
+                    has_errors=$(grep -c "^\[error\]" "$LOG_FILE" 2>/dev/null || true)
+                    if [ "$has_errors" -gt 0 ]; then
+                        if [ "$ERRORS_ONLY" = false ]; then
+                            echo "---ERRORS---"
+                        fi
+                        grep "^\[error\]" "$LOG_FILE"
+                    else
+                        # No structured errors — show log tail for context
+                        echo "---LOG_TAIL---"
+                        tail -10 "$LOG_FILE"
+                    fi
+                fi
+                rm -f "$PID_FILE" "$SCOPE_FILE" "$MODE_FILE" "$EXIT_CODE_FILE"
+                return 1
+            fi
+
+            # sbt exited 0 — verify no [error] lines (belt-and-suspenders)
             if [ -f "$LOG_FILE" ]; then
                 local has_errors
                 has_errors=$(grep -c "^\[error\]" "$LOG_FILE" 2>/dev/null || true)
@@ -97,20 +135,17 @@ check_status() {
                         echo "---ERRORS---"
                     fi
                     grep "^\[error\]" "$LOG_FILE"
-                    rm -f "$PID_FILE" "$SCOPE_FILE" "$MODE_FILE"
+                    rm -f "$PID_FILE" "$SCOPE_FILE" "$MODE_FILE" "$EXIT_CODE_FILE"
                     return 1
-                else
-                    echo "STATUS: SUCCESS"
-                    if [ "$ERRORS_ONLY" = false ]; then
-                        grep "^\[success\] Total time:" "$LOG_FILE" | tail -1 2>/dev/null || true
-                    fi
-                    rm -f "$PID_FILE" "$SCOPE_FILE" "$MODE_FILE"
-                    return 0
                 fi
             fi
-            echo "STATUS: NOT_RUNNING"
-            rm -f "$PID_FILE" "$SCOPE_FILE" "$MODE_FILE"
-            return 3
+
+            echo "STATUS: SUCCESS"
+            if [ "$ERRORS_ONLY" = false ] && [ -f "$LOG_FILE" ]; then
+                grep "^\[success\] Total time:" "$LOG_FILE" | tail -1 2>/dev/null || true
+            fi
+            rm -f "$PID_FILE" "$SCOPE_FILE" "$MODE_FILE" "$EXIT_CODE_FILE"
+            return 0
         fi
 
         # Still running

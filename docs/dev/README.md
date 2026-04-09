@@ -76,13 +76,13 @@ make setup-all
 
 # 3. Start development with live reload
 # Terminal 1: Scala.js compilation
-make dev-ui-compile
+make dev-web-ui-compile
 
 # Terminal 2: Vite dev server
-make dev-ui
+make dev-web-ui-run
 
 # Terminal 3: Electron app
-make dev-electron-vite
+make dev-electron-app-run-vite
 ```
 
 ### Worktree / Parallel Development
