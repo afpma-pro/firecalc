@@ -174,7 +174,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -734,6 +734,23 @@ lazy val laminar_form_core = (project in file("modules/laminar-form-core"))
   .settings(jsSourceMapSettings)
 
 // =========
+// laminar-form-i18n (autoOverwriteFieldNames i18n extension for Form[A])
+
+lazy val laminar_form_i18n = (project in file("modules/laminar-form-i18n"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "laminar-form-i18n",
+    version := ui_version,
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
+  .dependsOn(laminar_form_core, i18n_utils.js)
+
+// =========
 // laminar-form-derivation (magnolia join/split, primitives, factory methods)
 
 lazy val laminar_form_derivation = (project in file("modules/laminar-form-derivation"))
@@ -754,7 +771,7 @@ lazy val laminar_form_derivation = (project in file("modules/laminar-form-deriva
     scalaJSUseMainModuleInitializer := false,
   )
   .settings(jsSourceMapSettings)
-  .dependsOn(laminar_form_core, i18n_utils.js)
+  .dependsOn(laminar_form_core, laminar_form_i18n, i18n_utils.js)
 
 // =========
 // laminar-form-coulomb (NumericFormValue instances for QtyD/TempD)
@@ -977,7 +994,7 @@ lazy val ui = (project in file("modules/ui"))
   )
   .settings(jsSourceMapSettings)
   .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
-  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, engine_13384_strict.js, engine_15544_strict.js, engine_15544_mce.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph, laminar_form_daisyui, laminar_form_coulomb)
+  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, engine_13384_strict.js, engine_15544_strict.js, engine_15544_mce.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph, laminar_form_daisyui, laminar_form_coulomb, laminar_form_i18n)
 
 // =========
 // ui-i18n

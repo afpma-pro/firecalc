@@ -45,17 +45,27 @@ object DaisyUIVertical extends FormRenderer:
     def selectRequired[A: Show](v: Var[A], label: Option[String], options: Seq[A]): HtmlElement =
         DaisyUIInputs.SelectFieldsetLabelAndInput.makeUsingShowAsId_required(label, v, options)
 
+    def selectWithCustomId[A](v: Var[A], label: Option[String], options: Seq[A], show: A => String, getId: A => String, getById: String => A): HtmlElement =
+        DaisyUIInputs.SelectFieldsetLabelAndInput(
+            labelOpt    = label,
+            selectedVar = v,
+            options     = options,
+            show        = show,
+            makeId      = getId,
+            getById     = getById
+        ).node
+
     def selectOptional[A: Show](
         v: Var[Option[A]], label: Option[String], options: List[A], optionalField: OptionalField
     )(using ValidateVar[Option[A]]): HtmlElement =
         // Wrap Option[A] into select with empty option for None
         val allOptions: Seq[Option[A]] = None +: options.map(Some(_))
-        DaisyUIInputs.SelectFieldsetLabelAndInput(
+        DaisyUIInputs.SelectFieldsetLabelAndInput[Option[A]](
             labelOpt    = label,
             selectedVar = v,
             options     = allOptions,
-            show        = _.map(_.show).getOrElse("--"),
-            makeId      = _.map(_.show).getOrElse(""),
+            show        = (oa: Option[A]) => oa.map(_.show).getOrElse("--"),
+            makeId      = (oa: Option[A]) => oa.map(_.show).getOrElse(""),
             getById     = id => allOptions.find(_.map(_.show).getOrElse("") == id).flatten
         ).node
 

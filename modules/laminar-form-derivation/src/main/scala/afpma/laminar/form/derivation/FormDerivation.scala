@@ -506,6 +506,7 @@ object FormDerivation extends AutoDerivation[Form]:
                 renderer.selectRequired(variable, updateFieldName(formConfig.shownFieldName), options)
 
     /** List form from a custom component function (always valid). */
+    @deprecated("Use Form.makeFor instead", "0.9.0")
     def forList_fromComponent[A](mkComp: Var[List[A]] => HtmlElement)(using
         ValidateVar[List[A]]
     ): Form[List[A]] =
@@ -514,6 +515,7 @@ object FormDerivation extends AutoDerivation[Form]:
             (_: FormRenderer) ?=> mkComp(variable)
 
     /** Form for Option[Either[L, R]] as 3-way select (None/Left/Right) via sealed trait derivation. */
+    @deprecated("Use FormDerivation.derived[OptionOfEither[L, R]] directly", "0.9.0")
     inline def optionOfEither[L, R](
         noneLabel : String,
         leftLabel : String,
@@ -579,6 +581,7 @@ object FormDerivation extends AutoDerivation[Form]:
     /** Either[L, R] as select with options — renders a select with Left/Right subtypes.
       * Migration alias for the old eitherAsSelectWithOptions.
       */
+    @deprecated("Use eitherFromOption instead", "0.9.0")
     inline def eitherAsSelectWithOptions[L, R](
         selectFieldName: String
     )(using
@@ -612,7 +615,7 @@ object FormDerivation extends AutoDerivation[Form]:
         FormDerivation.derived[Either[L, R]]
 
     /** Select + sub-value form — select from options, edit sub-value T.
-      * Renderer-agnostic: the select uses FormRenderer.selectRequired,
+      * Renderer-agnostic: the select uses FormRenderer.selectWithCustomId,
       * the T form uses the active FormRenderer.
       */
     def forSelectionWithDefaultValue_usingSelectInput[A, T](
@@ -630,7 +633,12 @@ object FormDerivation extends AutoDerivation[Form]:
         Form.makeFor[A](defaultableA): (variable, formConfig) =>
             (renderer: FormRenderer) ?=>
                 val defaultValueVar = variable.zoomLazy(getDefaultValue)(withDefaultValue)
-                val selectNode = renderer.selectRequired(variable, formConfig.shownFieldName, selectOptions)
+                val selectNode = renderer.selectWithCustomId(
+                    variable, formConfig.shownFieldName, selectOptions,
+                    show  = showA.show,
+                    getId = getId,
+                    getById = id => selectOptions.find(getId(_) == id).get
+                )
                 val defaultValueInput = formForT.render(defaultValueVar, FormConfig.default)
                 div(
                     cls := "flex flex-row gap-2 items-end",
@@ -639,22 +647,7 @@ object FormDerivation extends AutoDerivation[Form]:
                 )
 
     // =========================================================================
-    // autoOverwriteFieldNames extension
+    // autoOverwriteFieldNames extension (moved to laminar-form-i18n module)
     // =========================================================================
-
-    import afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues
-
-    extension [A](form: Form[A])
-        def autoOverwriteFieldNames(using tc: HasTranslatedFieldsWithValues[A]): Form[A] =
-            val translFV = tc.getTranslatedFieldsWithValues
-            val lbl      = translFV.classNameTransl.getOrElse(translFV.classNameOrig)
-            // Apply per-field name overwrites via FormConfig
-            val fieldOverrides = translFV.paramsTransl.toMap
-            new Form[A]:
-                def defaultable = form.defaultable
-                def validateVar = form.validateVar
-                def render(v: Var[A], config: FormConfig)(using FormRenderer) =
-                    val updatedConfig = fieldOverrides.foldLeft(config.withFieldName(lbl)):
-                        case (cfg, (pOrig, pTransl)) =>
-                            cfg.withFieldNameForParam(pOrig, pTransl.getOrElse(s"{{$pOrig}}"))
-                    form.render(v, updatedConfig)
+    // Re-export from afpma.laminar.form.i18n.FormI18nExtensions for backwards compatibility
+    export afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames

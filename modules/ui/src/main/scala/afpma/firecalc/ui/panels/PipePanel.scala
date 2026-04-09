@@ -28,7 +28,7 @@ import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
-import afpma.firecalc.ui.daisyui.DaisyUITooltip
+import afpma.laminar.form.daisyui.DaisyUITooltip
 import afpma.laminar.form.*
 import afpma.laminar.form.Form.*
 import afpma.laminar.form.derivation.FormDerivation

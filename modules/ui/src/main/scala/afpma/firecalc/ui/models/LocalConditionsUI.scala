@@ -17,7 +17,7 @@ import afpma.firecalc.i18n.utils.macros.*
 import afpma.firecalc.ui.Component
 import afpma.laminar.form.Form
 import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.derivation.FormDerivation.autoOverwriteFieldNames
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import afpma.laminar.form.daisyui.DaisyUIVertical
 import afpma.laminar.form.*
 import afpma.laminar.form.Form.*
@@ -203,7 +203,7 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     given form_z_geodetical_height: DisplayUnits => Form[QtyD[Meter]] =
         import defaultable.given_z_geodetical_height
         import vv.meter.valid_whenPositive
-        dual.given_dual_z_geodetical_height.form_vertical()
+        dual.given_dual_z_geodetical_height.form()
             .withFieldName(I18N.local_conditions.altitude)
 
     // LocalConditions Clone

@@ -20,6 +20,8 @@ import com.raquo.laminar.api.L.*
 /** Horizontal DaisyUI form renderer — floating labels, inline layout. */
 object DaisyUIHorizontal extends FormRenderer:
 
+    override def usesFloatingLabels: Boolean = true
+
     // Primitive widgets
 
     def checkbox(v: Var[Boolean], label: Option[String]): HtmlElement =
@@ -43,12 +45,22 @@ object DaisyUIHorizontal extends FormRenderer:
     // Enum/select widgets
 
     def selectRequired[A: Show](v: Var[A], label: Option[String], options: Seq[A]): HtmlElement =
+        DaisyUIInputs.LabelledSelectInput[A](
+            selectedVar = v,
+            options     = options,
+            show        = (a: A) => a.show,
+            makeId      = (a: A) => a.show,
+            getById     = id => options.find(_.show == id).get,
+            labelStart  = label
+        ).node
+
+    def selectWithCustomId[A](v: Var[A], label: Option[String], options: Seq[A], show: A => String, getId: A => String, getById: String => A): HtmlElement =
         DaisyUIInputs.LabelledSelectInput(
             selectedVar = v,
             options     = options,
-            show        = _.show,
-            makeId      = _.show,
-            getById     = id => options.find(_.show == id).get,
+            show        = show,
+            makeId      = getId,
+            getById     = getById,
             labelStart  = label
         ).node
 
@@ -56,11 +68,11 @@ object DaisyUIHorizontal extends FormRenderer:
         v: Var[Option[A]], label: Option[String], options: List[A], optionalField: OptionalField
     )(using ValidateVar[Option[A]]): HtmlElement =
         val allOptions: Seq[Option[A]] = None +: options.map(Some(_))
-        DaisyUIInputs.LabelledSelectInput(
+        DaisyUIInputs.LabelledSelectInput[Option[A]](
             selectedVar = v,
             options     = allOptions,
-            show        = _.map(_.show).getOrElse(""),
-            makeId      = _.map(_.show).getOrElse(""),
+            show        = (oa: Option[A]) => oa.map(_.show).getOrElse(""),
+            makeId      = (oa: Option[A]) => oa.map(_.show).getOrElse(""),
             getById     = id => allOptions.find(_.map(_.show).getOrElse("") == id).flatten,
             labelStart  = label
         ).node

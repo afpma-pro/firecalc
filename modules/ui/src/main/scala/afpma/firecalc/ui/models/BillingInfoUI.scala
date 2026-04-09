@@ -27,7 +27,8 @@ case class BillingInfoUI()(using DisplayUnits, Locale):
     private val vertical_form = new VerticalFormCommonInstances()
     given FormRenderer = DaisyUIVertical
 
-    import FormDerivation.{autoOverwriteFieldNames, given}
+    import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
+    import FormDerivation.given
     import hastranslations.forModule_PaymentsShared.given
 
     type DF[A] = Form[A]

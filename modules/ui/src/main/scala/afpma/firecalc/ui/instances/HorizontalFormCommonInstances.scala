@@ -18,8 +18,8 @@ import afpma.firecalc.engine.models.gtypedefs.*
 
 import afpma.laminar.form.Form
 import afpma.laminar.form.derivation.FormDerivation
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.FieldsetLabelAndContent
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.SelectAndOptionsOnly
+import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLabelAndContent
+import afpma.laminar.form.daisyui.DaisyUIInputs.SelectAndOptionsOnly
 import afpma.laminar.form.*
 import afpma.laminar.form.coulomb.CoulombFormInstances
 import afpma.laminar.form.Form.*
@@ -45,7 +45,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     // factory helper
     inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A]): Form[A] =
         import hastranslations.given
-        import afpma.laminar.form.derivation.FormDerivation.autoOverwriteFieldNames
+        import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
         FormDerivation
             .derived[A](using m)
             .autoOverwriteFieldNames
@@ -82,12 +82,12 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_AreaInCm2: DisplayUnits => Form[AreaInCm2] =
         import defaultable.qty_d.area_in_cm2.zero
         import vv.area_in_cm2.valid_whenStrictlyPositive
-        given_dual_Area_cm2_or_in2.form_horizontal()
+        given_dual_Area_cm2_or_in2.form()
 
     given horizontal_form_Option_AreaInCm2: DisplayUnits => Form[Option[AreaInCm2]] =
         import defaultable.qty_d.option.area_in_cm2.zero
         import vv.area_in_cm2.validOption_whenStrictlyPositive
-        given_dual_Option_Area.form_horizontal()
+        given_dual_Option_Area.form()
 
     // given horizontal_form_AddFlowResistance: Locale => DaisyUI5HorizontalForm[AddFlowResistance] =
     //     DaisyUI5HorizontalForm.derived[AddFlowResistance]
@@ -113,19 +113,19 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_PipeShape_Circle: DisplayUnits => Locale => Form[PipeShape.Circle] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form_horizontal()
+        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form()
         autoDeriveAndOverwriteFieldNames[PipeShape.Circle]
 
     given horizontal_form_PipeShape_Square: DisplayUnits => Locale => Form[PipeShape.Square] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form_horizontal()
+        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form()
         autoDeriveAndOverwriteFieldNames[PipeShape.Square]
 
     given horizontal_form_PipeShape_Rectangle: DisplayUnits => Locale => Form[PipeShape.Rectangle] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form_horizontal()
+        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form()
         autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
 
     given horizontal_form_PipeShape: DisplayUnits => Locale => Form[PipeShape] =
@@ -181,12 +181,12 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     val horizontal_form_Length_cm_m: Form[QtyD[Meter]] =
         import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.meter.zero
-        given_dual_Length_cm_m.form_horizontal()
+        given_dual_Length_cm_m.form()
 
     val horizontal_form_Length_mm_cm: Form[QtyD[Meter]] =
         import ValidateVarCommonInstances.valid_always.given
         import defaultable.qty_d.meter.zero
-        given_dual_Length_mm_cm.form_horizontal()
+        given_dual_Length_mm_cm.form()
 
     val horizontal_form_QtyD_Pascal: Form[QtyD[Pascal]] =
         import ValidateVarCommonInstances.valid_always.given
@@ -213,7 +213,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     val horizontal_form_Roughness: Form[QtyD[Meter]] =
         import defaultable.given_Roughness
         import vv.meter.valid_whenStrictlyPositive
-        given_dual_Roughness.form_horizontal()
+        given_dual_Roughness.form()
             .withFieldName(I18N.terms.roughness)
 
     given horizontal_form_TCelsius: Locale => Form[TCelsius] =
@@ -231,7 +231,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
         import vv.area_in_cm2.valid_whenStrictlyPositive
         given Form[PipeShape]  = horizontal_form_PipeShape
-        given Form[AreaInCm2]  = given_dual_Area_cm2_or_in2.form_horizontal()
+        given Form[AreaInCm2]  = given_dual_Area_cm2_or_in2.form()
             .withFieldName(I18N.terms.area)
 
         import afpma.laminar.form.derivation.{OptionOfEither as DerivOOE, NoneOfEither as DerivNone, SomeLeft as DerivSL, SomeRight as DerivSR}
@@ -262,7 +262,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         // import validatevar.meter.validOption_whenStrictlyPositive
         import vv.meter.valid_whenStrictlyPositive
         // CoulombFormInstances.forValidatedQtyD_NoneAsDefault[Meter]()
-        given_dual_Thickness.form_horizontal()
+        given_dual_Thickness.form()
 
     // Zeta ζ
 

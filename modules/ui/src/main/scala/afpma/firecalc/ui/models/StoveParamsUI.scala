@@ -13,7 +13,7 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.laminar.form.Form
 import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.derivation.FormDerivation.autoOverwriteFieldNames
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import afpma.laminar.form.daisyui.DaisyUIVertical
 import afpma.laminar.form.*
 import afpma.laminar.form.Form.*
@@ -85,7 +85,7 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
 
     given form_option_mB: Form[Option[QtyD[Kilogram]]] =
         import vv.kilogram.valid_whenStrictlyPositive
-        given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form_vertical()
+        given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form()
         FormDerivation
             .conditionalOn[StoveParams, QtyD[Kilogram]](
                 stove_params_var,
@@ -95,7 +95,7 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
 
     given form_option_pn: Form[Option[QtyD[Kilo * Watt]]] =
         import vv.kilowatt.valid_whenStrictlyPositive
-        given DF[Power] = dual.given_dual_Power.form_vertical()
+        given DF[Power] = dual.given_dual_Power.form()
         FormDerivation
             .conditionalOn[StoveParams, QtyD[Kilo * Watt]](
                 stove_params_var,

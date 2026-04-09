@@ -18,12 +18,13 @@ import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
 
 import afpma.laminar.form.daisyui.DaisyUIInputs.DoubleFieldsetLabelAndInput
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.FieldsetLabelAndContent
+import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLabelAndContent
 import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLegendWithContent
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.SelectAndOptionsOnly
+import afpma.laminar.form.daisyui.DaisyUIInputs.SelectAndOptionsOnly
 import afpma.laminar.form.Form
 import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.derivation.FormDerivation.{autoOverwriteFieldNames, given}
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
+import afpma.laminar.form.derivation.FormDerivation.given
 import afpma.laminar.form.coulomb.CoulombFormInstances
 import afpma.laminar.form.Form.*
 import afpma.laminar.form.VarSync
@@ -190,12 +191,12 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     val vertical_form_Length_cm: DF[Length] =
         import vv.meter.valid_whenStrictlyPositive
         import defaultable.qty_d.meter.zero
-        given_dual_Length_cm.form_vertical()
+        given_dual_Length_cm.form()
 
     val vertical_form_Length_mm_cm: DF[Length] =
         import vv.meter.valid_whenStrictlyPositive
         import defaultable.qty_d.meter.zero
-        given_dual_Length_mm_cm.form_vertical()
+        given_dual_Length_mm_cm.form()
 
     // Business logic types
 
@@ -210,13 +211,13 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     given vertical_form_AreaInCm2: DF[AreaInCm2] =
         import defaultable.qty_d.area_in_cm2.zero
         import vv.area_in_cm2.valid_whenStrictlyPositive
-        given_dual_Area_cm2_or_in2.form_vertical()
+        given_dual_Area_cm2_or_in2.form()
 
     // Area : cm2 + m2
     given vertical_form_Area_cm2_m2: DF[Area] =
         import defaultable.qty_d.area.zero
         import vv.area.valid_whenStrictlyPositive
-        given_dual_Area_cm2_m2_or_in2.form_vertical()
+        given_dual_Area_cm2_m2_or_in2.form()
             .withFieldName(I18N.terms.area)
 
     // Firebox
@@ -370,6 +371,11 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             updateFieldName = _ => Some(I18N.firebox.single_tested.test_standard)  // TODO: handle National standard (e.g. ÖNORM B 8303)
         )
 
+    given given_TypeOfAppliance: DF[TypeOfAppliance] =
+        given Defaultable[TypeOfAppliance] = Defaultable(TypeOfAppliance.WoodLogs)
+        given ValidateVar[TypeOfAppliance] = ValidateVar.valid
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId(TypeOfAppliance.values.toList)
+
     given given_Firebox_SingleTested: DF[Firebox.SingleTested] =
         import defaultable.qty_d.zeroWithUnit
         given defaultable_TCelsius: Defaultable[TCelsius] = defaultable.given_TCelsius
@@ -411,12 +417,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 FormDerivation.derived[EmissionValues_DTO].autoOverwriteFieldNames
             FormDerivation.derived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
 
-        given DF[TypeOfAppliance] =
-            import cats.Show
-            given Show[TypeOfAppliance] = Show.fromToString
-            given Defaultable[TypeOfAppliance] = Defaultable(TypeOfAppliance.WoodLogs)
-            given ValidateVar[TypeOfAppliance] = ValidateVar.valid
-            FormDerivation.forEnumOrSumTypeLike_UsingShowAsId(TypeOfAppliance.values.toList)
         val autoDerivedForm = FormDerivation.derived[Firebox.SingleTested].autoOverwriteFieldNames
         val d               = autoDerivedForm.defaultable
         given ValidateVar[Firebox.SingleTested] = autoDerivedForm.validateVar

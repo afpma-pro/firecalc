@@ -11,10 +11,10 @@ package afpma.laminar.form
   *   - FormDerivation: magnolia AutoDerivation[Form] with join/split
   *   - Primitive given instances (String, Double, Int, Boolean, LocalDate, etc.)
   *   - Factory methods: mkFromOptionFor, mk_AlwaysValid, conditionalOn, eitherFromOption
-  *   - autoOverwriteFieldNames extension for i18n
+  *   - autoOverwriteFieldNames extension for i18n (delegated to laminar-form-i18n module)
   *   - OptionOfEither types for 3-way selects
   */
 package object derivation:
 
-    // Re-export key derivation extension
+    // Re-export key derivation extension (canonical source: laminar-form-i18n module)
     export FormDerivation.autoOverwriteFieldNames

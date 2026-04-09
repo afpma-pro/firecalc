@@ -31,7 +31,7 @@ import _root_.coulomb.policy.standard.given
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
-import afpma.laminar.form.derivation.FormDerivation.autoOverwriteFieldNames
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 
 import io.scalaland.chimney.dsl.*
 
@@ -46,29 +46,6 @@ case class FireboxComponent(
     given FormRenderer = DaisyUIVertical
 
     import FireboxComponent.*
-
-    // Preserve firebox dimensions when switching between firebox types
-    private var _prevFirebox: Firebox = v.now()
-
-    private val dimensionPreservationBinder: Binder[HtmlElement] =
-        v.signal.changes --> Observer[Firebox] { curr =>
-            val prev = _prevFirebox
-            _prevFirebox = curr
-            if curr.getClass != prev.getClass then
-                import FireboxCacheState.cacheKey
-                // Save previous firebox to cache
-                fireboxCacheStateVar.update(s => s.copy(cache = s.cache.updated(cacheKey(prev), prev)))
-                // Restore from cache (if any), always overwrite dimensions from prev
-                val base = fireboxCacheStateVar.now().cache.get(cacheKey(curr)).getOrElse(curr)
-                val updated = base.withDimensions(
-                    prev.firebox_depth,
-                    prev.firebox_width,
-                    prev.firebox_height
-                )
-                if updated != curr then
-                    _prevFirebox = updated
-                    v.set(updated)
-        }
 
     val showEcolabeledV1Img = firebox_var.signal.map:
         case eco: Firebox.Ecolabeled if eco.version == Left("Version 1") => true
@@ -109,8 +86,7 @@ case class FireboxComponent(
             ),
             children(nodeSeq_Ecolabeled_V1) <-- showEcolabeledV1Img,
             children(nodeSeq_Ecolabeled_V2) <-- showEcolabeledV2Img,
-            children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg,
-            dimensionPreservationBinder
+            children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg
         )
 
     val DISABLED_TRUE_SIG = Var(true).signal
@@ -119,7 +95,7 @@ case class FireboxComponent(
         val dual: DualCommonInstances = new DualCommonInstances()
         import defaultable.qty_d.meter.zero
         import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
-        dual.given_dual_Length_cm.form_vertical(disabled = DISABLED_TRUE_SIG)
+        dual.given_dual_Length_cm.form(disabled = DISABLED_TRUE_SIG)
 
     given Form[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs] = 
         import hastranslations.given
@@ -144,15 +120,6 @@ object FireboxComponent:
             cc.firebox_depth.to_cm.showP_orImpUnits[Inch],
             cc.firebox_height.to_cm.showP_orImpUnits[Inch]
         )
-
-    extension (fb: Firebox)
-        def withDimensions(depth: Length, width: Length, height: Length): Firebox =
-            fb match
-                case t: Firebox.Traditional            => t.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case e: Firebox.Ecolabeled             => e.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case a: Firebox.AFPMA_PRSE             => a.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case s: Firebox.SingleTested           => s.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case d: Firebox.Door15aFirebox_Catalog => d.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
 
     @js.native @JSImport("/assets/img/afpma_prse_side.png", JSImport.Default)
     object JS_afpma_prse_side_URL    extends js.Object

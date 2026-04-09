@@ -26,6 +26,9 @@ import com.raquo.laminar.api.L.*
   */
 trait FormRenderer:
 
+    /** Whether this renderer uses floating labels for input fields. */
+    def usesFloatingLabels: Boolean = false
+
     // =========
     // Primitive widgets
 
@@ -56,6 +59,15 @@ trait FormRenderer:
         v      : Var[A],
         label  : Option[String],
         options: Seq[A]
+    ): HtmlElement
+
+    def selectWithCustomId[A](
+        v      : Var[A],
+        label  : Option[String],
+        options: Seq[A],
+        show   : A => String,
+        getId  : A => String,
+        getById: String => A
     ): HtmlElement
 
     def selectOptional[A: Show](

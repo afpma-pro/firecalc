@@ -17,6 +17,7 @@ import afpma.firecalc.ui.config.BuildMode
 import afpma.firecalc.ui.config.UIConfig
 import afpma.firecalc.ui.config.ViteEnv
 import afpma.firecalc.ui.daisyui.*
+import afpma.laminar.form.daisyui.DaisyUIInputs
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.instances.transformers.given
 import afpma.firecalc.ui.models.*

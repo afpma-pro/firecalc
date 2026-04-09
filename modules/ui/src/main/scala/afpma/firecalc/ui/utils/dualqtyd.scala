@@ -8,12 +8,13 @@ package afpma.firecalc.ui.utils
 import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.ui.daisyui.UnitAwareInputs
+
 import afpma.laminar.form.*
 import afpma.laminar.form.FormRenderer
 import afpma.laminar.form.Form.*
 import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.{DaisyUIInputs as _, *}
-import afpma.firecalc.ui.daisyui.DaisyUIInputs
+import afpma.laminar.form.daisyui.*
 
 import cats.Functor
 import cats.Id
@@ -128,7 +129,7 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
 
         (curr_ovalue_var, curr_sunit_var, sunits, binders)
 
-    def form_vertical(
+    def form(
         disabled: Signal[Boolean] = DISABLED_SIG
     )(using
         d   : Defaultable[QFinal],
@@ -140,13 +141,15 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
             @nowarn def render(
                 finalVar  : Var[QFinal],
                 formConfig: FormConfig
-            )(using FormRenderer): L.HtmlElement =
+            )(using renderer: FormRenderer): L.HtmlElement =
+                // Floating labels are a renderer concern — ask the renderer directly.
+                val withFloatingLabel = renderer.usesFloatingLabels && formConfig.showFieldName
                 val (curr_ovalue_var, curr_sunit_var, sunits, binders) = splitAndMakeVarsFor(finalVar)
-                DaisyUIInputs
+                UnitAwareInputs
                     .NumberInputWithUnitsAndFloatingLabelAndTooltipValidation     (
                         curr_ovalue_var,
                         fieldNameOpt      = formConfig.shownFieldName,
-                        withFloatingLabel = false,
+                        withFloatingLabel = withFloatingLabel,
                         sunitsVar         = Var(sunits), // should be dynamic if config changes (SI or imperial)
                         sunitCurrentVar   = curr_sunit_var,
                         validate          = (cov, csu) =>
@@ -157,38 +160,7 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
                     )
                     .amend(binders)
             end render
-    end form_vertical
-
-    def form_horizontal(
-        disabled: Signal[Boolean] = DISABLED_SIG
-    )(using
-        d   : Defaultable[QFinal],
-        vvqf: ValidateVar[QFinal]
-    ): Form[QFinal] =
-        new Form[QFinal]:
-            val defaultable = d
-            lazy val validateVar    = vvqf
-            @nowarn def render(
-                finalVar  : Var[QFinal],
-                formConfig: FormConfig
-            )(using FormRenderer): L.HtmlElement =
-                val (curr_ovalue_var, curr_sunit_var, sunits, binders) = splitAndMakeVarsFor(finalVar)
-                DaisyUIInputs
-                    .NumberInputWithUnitsAndFloatingLabelAndTooltipValidation     (
-                        curr_ovalue_var,
-                        fieldNameOpt      = formConfig.shownFieldName, // None ???
-                        withFloatingLabel = formConfig.showFieldName,
-                        sunitsVar         = Var(sunits), // should be dynamic if config changes (SI or imperial)
-                        sunitCurrentVar   = curr_sunit_var,
-                        validate          = (cov, csu) =>
-                            val curr_fv = currentOValueToCurrentFValue(cov, d.default, csu)
-                            val qf      = getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(curr_fv)
-                            vvqf.validate(qf),
-                        disabled          = disabled
-                    )
-                    .amend(binders)
-            end render
-    end form_horizontal
+    end form
 
     // given encoderId: Encoder[QtyD[UF]] = encoder_QtyD[UF]
     // given decoderId: Decoder[QtyD[UF]] = decoder_QtyD[UF]
