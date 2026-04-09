@@ -44,7 +44,13 @@
            hover:scale-105 hover:shadow-xl cursor-not-allowed
            opacity-90 hover:opacity-100;
   }
-  
+
+  .download-card-active {
+    @apply cursor-pointer opacity-100;
+    text-decoration: none;
+    color: inherit;
+  }
+
   .sponsor-logo {
     @apply transition-all duration-300 grayscale hover:grayscale-0
            border-2 border-firecalc-orange-light hover:border-firecalc-orange-red;

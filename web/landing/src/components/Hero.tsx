@@ -2,12 +2,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
-import {useTranslations} from 'next-intl';
+import {useLocale, useTranslations} from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import Image from 'next/image';
 
 export default function Hero() {
   const t = useTranslations('hero');
+  const locale = useLocale();
 
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-firecalc-brown-dark to-firecalc-brown-deep text-white flex items-center">
@@ -47,7 +48,7 @@ export default function Hero() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
           <a
-            href="#"
+            href={`/app/#/${locale}`}
             className="btn-primary-custom w-full sm:w-auto relative"
             aria-label={t('cta_online')}
           >
