@@ -14,20 +14,24 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.formgen.as_HtmlElement
+import afpma.laminar.form.Form.as_HtmlElement
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
-import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
+import afpma.laminar.form.Form
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.coulomb.CoulombFormInstances
 
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
-import coulomb.policy.standard.given
+import _root_.coulomb.policy.standard.given
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
-import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm.autoOverwriteFieldNames
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 
 import io.scalaland.chimney.dsl.*
 
@@ -39,31 +43,9 @@ case class FireboxComponent(
     extends Component:
 
     val vertical_form = new VerticalFormCommonInstances()
+    given FormRenderer = DaisyUIVertical
 
     import FireboxComponent.*
-
-    // Preserve firebox dimensions when switching between firebox types
-    private var _prevFirebox: Firebox = v.now()
-
-    private val dimensionPreservationBinder: Binder[HtmlElement] =
-        v.signal.changes --> Observer[Firebox] { curr =>
-            val prev = _prevFirebox
-            _prevFirebox = curr
-            if curr.getClass != prev.getClass then
-                import FireboxCacheState.cacheKey
-                // Save previous firebox to cache
-                fireboxCacheStateVar.update(s => s.copy(cache = s.cache.updated(cacheKey(prev), prev)))
-                // Restore from cache (if any), always overwrite dimensions from prev
-                val base = fireboxCacheStateVar.now().cache.get(cacheKey(curr)).getOrElse(curr)
-                val updated = base.withDimensions(
-                    prev.firebox_depth,
-                    prev.firebox_width,
-                    prev.firebox_height
-                )
-                if updated != curr then
-                    _prevFirebox = updated
-                    v.set(updated)
-        }
 
     val showEcolabeledV1Img = firebox_var.signal.map:
         case eco: Firebox.Ecolabeled if eco.version == Left("Version 1") => true
@@ -104,30 +86,21 @@ case class FireboxComponent(
             ),
             children(nodeSeq_Ecolabeled_V1) <-- showEcolabeledV1Img,
             children(nodeSeq_Ecolabeled_V2) <-- showEcolabeledV2Img,
-            children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg,
-            dimensionPreservationBinder
+            children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg
         )
 
     val DISABLED_TRUE_SIG = Var(true).signal
 
-    given DaisyUIVerticalForm[QtyD[Meter]] = 
+    given Form[QtyD[Meter]] = 
         val dual: DualCommonInstances = new DualCommonInstances()
-        import defaultable.qty_d.centimeter.zero
         import defaultable.qty_d.meter.zero
         import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
-        import afpma.firecalc.units.all.sunit_Centimeter
-        DaisyUIVerticalForm
-            .mkFromOptionFor_UseDefaultableIfEmptyInput(
-                DaisyUIVerticalForm.forOptionQtyD_default[Centimeter](
-                    disabled = DISABLED_TRUE_SIG
-                )
-            )
-        dual.given_dual_Length_cm.form_DaisyUIVerticalForm(disabled = DISABLED_TRUE_SIG)
+        dual.given_dual_Length_cm.form(disabled = DISABLED_TRUE_SIG)
 
-    given DaisyUIVerticalForm[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs] = 
+    given Form[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs] = 
         import hastranslations.given
-        DaisyUIVerticalForm
-        .autoDerived[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs]
+        FormDerivation
+        .derived[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs]
         .autoOverwriteFieldNames
 
     val outputResults = div(
@@ -147,15 +120,6 @@ object FireboxComponent:
             cc.firebox_depth.to_cm.showP_orImpUnits[Inch],
             cc.firebox_height.to_cm.showP_orImpUnits[Inch]
         )
-
-    extension (fb: Firebox)
-        def withDimensions(depth: Length, width: Length, height: Length): Firebox =
-            fb match
-                case t: Firebox.Traditional            => t.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case e: Firebox.Ecolabeled             => e.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case a: Firebox.AFPMA_PRSE             => a.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case s: Firebox.SingleTested           => s.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
-                case d: Firebox.Door15aFirebox_Catalog => d.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
 
     @js.native @JSImport("/assets/img/afpma_prse_side.png", JSImport.Default)
     object JS_afpma_prse_side_URL    extends js.Object

@@ -10,7 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
-import afpma.firecalc.engine.impl.common.FlowOnlyIncrementalBuilderCommon
+import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.Vec3
@@ -19,14 +19,16 @@ import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Inst
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.*
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_13384_Instances.given
-
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_13384_Instance.FlowOnlyPropsState_13384
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_13384_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
 import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
-
+import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
+import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
 
 import cats.data.*
 import cats.syntax.all.*
@@ -38,7 +40,7 @@ import com.softwaremill.quicklens.*
 
 import coulomb.policy.standard.given
 
-trait FlowOnlyIncrementalBuilder_13384 extends FlowOnlyIncrementalBuilderCommon:
+trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.*
 
@@ -63,18 +65,30 @@ trait FlowOnlyIncrementalBuilder_13384 extends FlowOnlyIncrementalBuilderCommon:
 
     extension (addElement: AddElement) override def name: String = addElement.name
 
+    override protected def isForbiddenAddElementAtStart(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
+    override protected def isForbiddenAddElementAtEnd(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
     override type PT <: PipeType_EN13384
 
-    // ── Abstract hooks from common trait ───────────────────────────────
-    protected def isDirectionChange(ae: AddElement): Boolean =
-        ae.isInstanceOf[AddDirectionChange]
+    override def define(iDescrs: IncrDescr*): PipeIncrDescr =
+        val iiVec = iDescrs.toVector.mapWithIndex((x, i) => (IdIncr(i), x))
+        PipeIncrDescrG[Id_IncrDescr](pt, iiVec)
 
-    protected def addElementHasAbsDir(ae: AddElement): Boolean =
-        ae match
-            case dc: AddDirectionChange => dc.absDir.isDefined
-            case _                      => false
+    // ========== PropsState via Typeclass ==========
 
-    // ── 13384-specific: nextSectionLengthOpt ──────────────────────────
+    override protected type PropsState = FlowOnlyPropsState_13384
+    private val stateOps = summon[PropsStateOps[PropsState]]
+
+    given nbOfFlowsFromPropsState: Function1[PropsState, NbOfFlows] = stateOps.getNFlows
+
+    extension (propsState: PropsState)
+        override def isValid: Boolean   = stateOps.isValid(propsState)
+        def nf              : NbOfFlows = stateOps.getNFlows(propsState)
 
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[QtyD[Meter]] =
@@ -94,6 +108,37 @@ trait FlowOnlyIncrementalBuilder_13384 extends FlowOnlyIncrementalBuilderCommon:
                 case _ @AddSectionHorizontal(_, l)                         => l.some
                 case _ @AddSectionVertical(_, l)                           => l.some
                 case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
+
+    extension (piDescr: PipeIncrDescr) override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
+
+    override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
+        FlowOnlyPropsState_13384()
+
+    override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
+        PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
+
+    override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
+        s.currentFrame
+
+    override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
+        // Only apply if the pipe itself did not already define an initial direction
+        if s.initialFrame.isDefined then s
+        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
+    override protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] =
+        val hasGeometry = incrDescrs.exists:
+            case (_, _: AddElement) => true
+            case _ => false
+        if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
+        else
+            val hasFinalDir = incrDescrs.exists:
+                case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+                case _ => false
+            if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
+            else ().validNel
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
@@ -214,6 +259,9 @@ trait FlowOnlyIncrementalBuilder_13384 extends FlowOnlyIncrementalBuilderCommon:
                     case _: SetInitialPosition => vState
                     case _: SetFinalPosition => vState
             }
+
+    // Minimal ElementFactory object required by trait - delegates to typeclass instances
+    object ElementFactory extends ElementFactoryModule
 
     // builder methods for Atomic modifiers
 

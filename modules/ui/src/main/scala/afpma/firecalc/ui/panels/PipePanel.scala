@@ -26,7 +26,13 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
-import afpma.firecalc.ui.daisyui.*
+import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
+import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
+import afpma.laminar.form.daisyui.DaisyUITooltip
+import afpma.laminar.form.*
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.daisyui.*
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.expertModeOn
@@ -46,13 +52,14 @@ import cats.syntax.show.*
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
-import coulomb.*
-import coulomb.ops.algebra.all.*
-import coulomb.policy.standard.given
+import _root_.coulomb.*
+import _root_.coulomb.ops.algebra.all.*
+import _root_.coulomb.policy.standard.given
 
 trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     import DaisyUIVerticalAccordionAndJoin.*
+    given FormRenderer = DaisyUIHorizontal
 
     type In
     type Out
@@ -115,7 +122,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                                     None
                         case None       => None
 
-    import afpma.firecalc.ui.formgen.as_HtmlElement
+    import afpma.laminar.form.Form.as_HtmlElement
     import afpma.firecalc.units.coulombutils.showP
 
     extension (preview_sig: Signal[Option[PipeSectionResult[?]]])
@@ -382,7 +389,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                         ).node
                     case _                                            => span(cls := "", lucide.`circle-check`)
 
-    type DF[x] = DaisyUIHorizontalForm[x]
+    type DF[x] = Form[x]
 
     // protected def renderElemTyped[AA <: Elem](i: Int, title: String, aa: AA, sig: Signal[(Int, AA, XtraOutputs)])(using DF[AA]): HtmlElement
 

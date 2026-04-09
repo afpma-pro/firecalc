@@ -12,7 +12,8 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.ui.formgen.ValidateVar
+import afpma.laminar.form.ValidateVar
+import afpma.laminar.form.FormMessages
 import afpma.firecalc.ui.models.BillableCountry
 import afpma.firecalc.ui.models.BillableCustomerType
 import afpma.firecalc.ui.models.BillingLanguage
@@ -31,6 +32,10 @@ import afpma.firecalc.dto.common.DisplayUnits
 
 class ValidateVarCommonInstances(using DisplayUnits, Locale):
     import SUnits.given
+
+    private given FormMessages with
+        def valueIsUndefined = I18N.errors.value_is_undefined
+        def notImplementedYet = I18N.ui_messages.not_implemented_yet
 
     inline def validOption_WhenDefinedAndPositive[A: Show](isPositive: A => Boolean): ValidateVar[Option[A]] =
         ValidateVar.validOption_WhenDefinedAnd[A](isPositive)(a => I18N.errors.value_ge_0(a.showP))

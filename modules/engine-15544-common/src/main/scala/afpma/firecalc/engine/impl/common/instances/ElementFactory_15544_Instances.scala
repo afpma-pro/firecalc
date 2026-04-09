@@ -43,7 +43,7 @@ object ElementFactory_15544_Instances:
     // ========== Flow-Only Straight Section Factory ==========
 
     case class FlowOnlyStraightSectionCtx_15544(
-        innerShape  : Option[PipeShape],
+        geometry    : Option[PipeShape],
         roughness   : Option[Roughness],
         pipeType    : PipeType,
         currentFrame: Option[PipeFrame] = None
@@ -62,7 +62,7 @@ object ElementFactory_15544_Instances:
                 AddFlowOnlyPipeElement_15544.AddSectionHorizontal | AddFlowOnlyPipeElement_15544.AddSectionVertical
         )(using ctx: FlowOnlyStraightSectionCtx_15544) =
             val vg = ctx.getValidated(
-                _.innerShape,
+                _.geometry,
                 InnerGeometryMustBeSet(op.name, ctx.pipeType)
             )
             val vr = ctx.getValidated(
@@ -115,7 +115,7 @@ object ElementFactory_15544_Instances:
     // ========== Direction Change Factory ==========
 
     case class DirectionChangeCtx_15544(
-        innerShape         : Option[PipeShape],
+        geometry           : Option[PipeShape],
         pipeType           : PipeType,
         dirBeforePreviousDC: Option[Vec3]      = None,
         currentFrame       : Option[PipeFrame] = None
@@ -130,7 +130,7 @@ object ElementFactory_15544_Instances:
             ctx: DirectionChangeCtx_15544
         ) =
             ctx.getValidated(
-                _.innerShape.map(_.dh),
+                _.geometry.map(_.dh),
                 DirectionChangeRequiresSectionGeometry(ctx.pipeType)
             ).map { _ =>
                 // angleN2 = angle between direction BEFORE the previous bend and direction AFTER the current bend.
@@ -159,8 +159,8 @@ object ElementFactory_15544_Instances:
     // ========== Flow Resistance Factory ==========
 
     case class FlowResistanceCtx_15544(
-        innerShape: Option[PipeShape],
-        pipeType  : PipeType
+        geometry: Option[PipeShape],
+        pipeType: PipeType
     )
 
     given flowResistance15544: ElementFactory[
@@ -178,7 +178,7 @@ object ElementFactory_15544_Instances:
                         NoneOfEither
                     ) =>
                     ctx.getValidated(
-                        _.innerShape,
+                        _.geometry,
                         FlowResistanceRequiresGeometry(
                             op.name,
                             "EN15544",
@@ -218,7 +218,7 @@ object ElementFactory_15544_Instances:
     // ========== Section Geometry Change Factory ==========
 
     case class SectionGeometryChangeCtx_15544(
-        innerShape               : Option[PipeShape],
+        geometry                 : Option[PipeShape],
         setPropsHasGeometryChange: Boolean,
         pipeType                 : PipeType
     )
@@ -235,7 +235,7 @@ object ElementFactory_15544_Instances:
                 CannotSetGeometryBeforeChange(ctx.pipeType).invalidNel
             else
                 ctx.getValidated(
-                    _.innerShape,
+                    _.geometry,
                     SectionGeometryMustBeDefined(ctx.pipeType)
                 ).map { fromGeom =>
                     FlowOnlyPipeDescr_15544.SectionGeometryChange(
@@ -255,7 +255,7 @@ object ElementFactory_15544_Instances:
             ctx: FlowResistanceCtx_15544
         ) =
             ctx.getValidated(
-                _.innerShape,
+                _.geometry,
                 PressureDiffRequiresGeometry(
                     op.name,
                     "EN15544",
@@ -265,7 +265,7 @@ object ElementFactory_15544_Instances:
                 FlowOnlyPipeDescr_15544
                     .PressureDiff           (
                         pa            = op.pressure_difference,
-                        crossSectionO = ctx.innerShape.map(_.area)
+                        crossSectionO = ctx.geometry.map(_.area)
                     )
                     .validNel
             }

@@ -31,7 +31,7 @@ import io.taig.babel.Locale
   */
 final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) extends Component:
 
-    import afpma.firecalc.ui.formgen.{Defaultable as D}
+    import afpma.laminar.form.{Defaultable as D}
     import afpma.firecalc.ui.instances.defaultable_15544.incr_descr_en15544.given
     import afpma.firecalc.ui.instances.defaultable_13384.incr_descr_en13384.given
 

@@ -15,7 +15,7 @@ import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
-import afpma.firecalc.ui.daisyui.DaisyUITooltip
+import afpma.laminar.form.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title
 import afpma.firecalc.ui.icons.lucide

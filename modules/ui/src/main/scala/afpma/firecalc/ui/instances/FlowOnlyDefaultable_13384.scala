@@ -15,7 +15,7 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import afpma.firecalc.ui.formgen.Defaultable
+import afpma.laminar.form.Defaultable
 
 import io.taig.babel.Locale
 
@@ -89,7 +89,7 @@ object FlowOnlyDefaultable_13384:
     // val appendLayerDescr =
     //     import defaultable.pipeShapeOuter // scalafix:ok
     //     import defaultable.qty_d.meter.zero
-    //     Defaultable.autoDerived[AppendLayerDescr]
+    //     Defaultable.derived[AppendLayerDescr]
 
     // given given_AppendLayerDescr: Defaultable[AppendLayerDescr] = appendLayerDescr
 

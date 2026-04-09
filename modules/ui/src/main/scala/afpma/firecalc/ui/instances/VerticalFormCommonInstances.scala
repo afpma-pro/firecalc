@@ -17,14 +17,21 @@ import afpma.firecalc.engine.models.gtypedefs.ζ
 
 import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
 
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.DoubleFieldsetLabelAndInput
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.FieldsetLabelAndContent
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.FieldsetLegendWithContent
-import afpma.firecalc.ui.daisyui.DaisyUIInputs.SelectAndOptionsOnly
-import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
-import afpma.firecalc.ui.formgen.ConditionalFor
-import afpma.firecalc.ui.formgen.Defaultable
-import afpma.firecalc.ui.formgen.ValidateVar
+import afpma.laminar.form.daisyui.DaisyUIInputs.DoubleFieldsetLabelAndInput
+import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLabelAndContent
+import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLegendWithContent
+import afpma.laminar.form.daisyui.DaisyUIInputs.SelectAndOptionsOnly
+import afpma.laminar.form.Form
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
+import afpma.laminar.form.derivation.FormDerivation.given
+import afpma.laminar.form.coulomb.CoulombFormInstances
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.VarSync
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.ConditionalFor
+import afpma.laminar.form.Defaultable
+import afpma.laminar.form.ValidateVar
 import afpma.firecalc.ui.components.FireboxCatalogSelectComponent
 import afpma.firecalc.ui.components.SingleTestedCatalogSelectComponent
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
@@ -58,117 +65,117 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
 
-    type DF[A]    = DaisyUIVerticalForm[A]
+    type DF[A]    = Form[A]
 
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
 
     // factory helper
 
-    inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A]): DaisyUIVerticalForm[A] =
-        DaisyUIVerticalForm
-            .autoDerived[A](using m)
+    inline def autoDeriveAndOverwriteFieldNames[A](using inline m: Mirror.Of[A]): Form[A] =
+        FormDerivation
+            .derived[A](using m)
             .autoOverwriteFieldNames
 
     // BasicTypes
 
-    val boolean_trueAsDefault_alwaysValid: DaisyUIVerticalForm[Boolean] =
+    val boolean_trueAsDefault_alwaysValid: Form[Boolean] =
         import defaultable.boolean.asTrue
         import ValidateVarCommonInstances.boolean.valid_Always
-        DaisyUIVerticalForm.forBoolean
+        FormDerivation.forBoolean
 
-    val boolean_falseAsDefault_alwaysValid: DaisyUIVerticalForm[Boolean] =
+    val boolean_falseAsDefault_alwaysValid: Form[Boolean] =
         import defaultable.boolean.asFalse
         import ValidateVarCommonInstances.boolean.valid_Always
-        DaisyUIVerticalForm.forBoolean
+        FormDerivation.forBoolean
 
-    val string_emptyAsDefault_alwaysValid: DaisyUIVerticalForm[String] =
+    val string_emptyAsDefault_alwaysValid: Form[String] =
         import defaultable.string.empty
         import ValidateVarCommonInstances.string.validOption_Always
-        DaisyUIVerticalForm.forString
+        FormDerivation.forString
 
-    val int_emptyAsDefault_alwaysValid: DaisyUIVerticalForm[Int] =
+    val int_emptyAsDefault_alwaysValid: Form[Int] =
         import defaultable.int.empty
         import ValidateVarCommonInstances.int.validOption_Always
-        DaisyUIVerticalForm.forInt
+        FormDerivation.forInt
 
-    val double_emptyAsDefault_alwaysValid: DaisyUIVerticalForm[Double] =
+    val double_emptyAsDefault_alwaysValid: Form[Double] =
         import defaultable.double.empty
         import ValidateVarCommonInstances.double.validOption_Always
-        DaisyUIVerticalForm.forDouble
+        FormDerivation.forDouble
 
     // QtyD
 
-    given given_QtyD_Centimer: Defaultable[QtyD[Centimeter]] => DaisyUIVerticalForm[QtyD[Centimeter]] =
+    given given_QtyD_Centimer: Defaultable[QtyD[Centimeter]] => Form[QtyD[Centimeter]] =
         import vv.centimeter.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forQtyD[Centimeter](using SUnits.sunit_Centimeter)
+        CoulombFormInstances.forQtyD[Centimeter](using SUnits.sunit_Centimeter)
 
-    given given_QtyD_Hour: Defaultable[QtyD[Hour]] => DaisyUIVerticalForm[QtyD[Hour]] =
+    given given_QtyD_Hour: Defaultable[QtyD[Hour]] => Form[QtyD[Hour]] =
         import vv.hour.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forQtyD[Hour]
+        CoulombFormInstances.forQtyD[Hour]
 
-    val vertical_form_Option_QtyD_Minute: DaisyUIVerticalForm[Option[QtyD[Minute]]] =
+    val vertical_form_Option_QtyD_Minute: Form[Option[QtyD[Minute]]] =
         import vv.minute.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Minute]()
+        CoulombFormInstances.forOptionQtyD_default[Minute]()
 
-    given given_QtyD_Minute: Defaultable[QtyD[Minute]] => DaisyUIVerticalForm[QtyD[Minute]] =
+    given given_QtyD_Minute: Defaultable[QtyD[Minute]] => Form[QtyD[Minute]] =
         import vv.minute.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forQtyD[Minute]
+        CoulombFormInstances.forQtyD[Minute]
 
-    given given_QtyD_Kilogram: Defaultable[QtyD[Kilogram]] => DaisyUIVerticalForm[QtyD[Kilogram]] =
+    given given_QtyD_Kilogram: Defaultable[QtyD[Kilogram]] => Form[QtyD[Kilogram]] =
         import vv.kilogram.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forQtyD[Kilogram]
+        CoulombFormInstances.forQtyD[Kilogram]
 
-    given given_QtyD_Kilowatt: Defaultable[QtyD[Kilo * Watt]] => DaisyUIVerticalForm[QtyD[Kilo * Watt]] =
+    given given_QtyD_Kilowatt: Defaultable[QtyD[Kilo * Watt]] => Form[QtyD[Kilo * Watt]] =
         import vv.kilowatt.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forQtyD[Kilo * Watt]
+        CoulombFormInstances.forQtyD[Kilo * Watt]
 
-    given given_Option_QtyD_Kilowatt: DaisyUIVerticalForm[Option[QtyD[Kilo * Watt]]] =
+    given given_Option_QtyD_Kilowatt: Form[Option[QtyD[Kilo * Watt]]] =
         import vv.kilowatt.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Kilo * Watt]()
+        CoulombFormInstances.forOptionQtyD_default[Kilo * Watt]()
 
-    given given_QtyD_Percent: Defaultable[QtyD[Percent]] => DaisyUIVerticalForm[QtyD[Percent]] =
+    given given_QtyD_Percent: Defaultable[QtyD[Percent]] => Form[QtyD[Percent]] =
         import vv.percent.validOption_whenPositive
-        DaisyUIVerticalForm.forQtyD[Percent]
+        CoulombFormInstances.forQtyD[Percent]
 
-    val vertical_form_Option_QtyD_Percent: DaisyUIVerticalForm[Option[QtyD[Percent]]] =
+    val vertical_form_Option_QtyD_Percent: Form[Option[QtyD[Percent]]] =
         import vv.percent.validOption_whenPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Percent]()
+        CoulombFormInstances.forOptionQtyD_default[Percent]()
 
-    val vertical_form_Option_QtyD_Kilogram: DaisyUIVerticalForm[Option[QtyD[Kilogram]]] =
+    val vertical_form_Option_QtyD_Kilogram: Form[Option[QtyD[Kilogram]]] =
         import vv.kilogram.validOption_whenStrictlyPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[Kilogram]()
+        CoulombFormInstances.forOptionQtyD_default[Kilogram]()
 
-    given given_QtyD_Dimensionless: Defaultable[QtyD[1]] => DaisyUIVerticalForm[QtyD[1]] =
+    given given_QtyD_Dimensionless: Defaultable[QtyD[1]] => Form[QtyD[1]] =
         import vv.unitless.validOption_whenPositive
-        DaisyUIVerticalForm.forQtyD[1]
+        CoulombFormInstances.forQtyD[1]
 
-    val vertical_form_Option_QtyD_Dimensionless: DaisyUIVerticalForm[Option[QtyD[1]]] =
+    val vertical_form_Option_QtyD_Dimensionless: Form[Option[QtyD[1]]] =
         import vv.unitless.validOption_whenPositive
-        DaisyUIVerticalForm.forOptionQtyD_default[1]()
+        CoulombFormInstances.forOptionQtyD_default[1]()
 
-    given given_TCelsius: Defaultable[TCelsius] => DaisyUIVerticalForm[TCelsius] =
+    given given_TCelsius: Defaultable[TCelsius] => Form[TCelsius] =
         import vv.temp.celsius.validOption_whenPositive
-        DaisyUIVerticalForm.forTempD[Celsius]
+        CoulombFormInstances.forTempD[Celsius]
 
-    val vertical_form_Option_TCelsius: DaisyUIVerticalForm[Option[TCelsius]] =
+    val vertical_form_Option_TCelsius: Form[Option[TCelsius]] =
         import vv.temp.celsius.validOption_whenPositive
-        DaisyUIVerticalForm.forOptionTempD_default[Celsius]
+        CoulombFormInstances.forOptionTempD_default[Celsius]()
 
-    val vertical_form_EmissionValueU: DaisyUIVerticalForm[EmissionValueU] =
+    val vertical_form_EmissionValueU: Form[EmissionValueU] =
         given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
         given Defaultable[QtyD[Milli * Gram / (Meter ^ 3)]] = Defaultable(0.0.mg_per_Nm3)
-        given DaisyUIVerticalForm[QtyD[Milli * Gram / (Meter ^ 3)]] =
-            DaisyUIVerticalForm.forQtyD[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
-        DaisyUIVerticalForm.formConversionOpaque[EmissionValueU, QtyD[Milli * Gram / (Meter ^ 3)]]
+        given Form[QtyD[Milli * Gram / (Meter ^ 3)]] =
+            CoulombFormInstances.forQtyD[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
+        Form.formConversionOpaque[EmissionValueU, QtyD[Milli * Gram / (Meter ^ 3)]]
 
     val given_HeatOutputReduced_NotDefined_Or_Tested
-        : DaisyUIVerticalForm[HeatOutputReduced.NotDefined_Or_Tested] =
+        : Form[HeatOutputReduced.NotDefined_Or_Tested] =
         val fromTypeTestDefault
             : HeatOutputReduced.NotDefined_Or_Tested = HeatOutputReduced.FromTypeTest(0.0.kW)
         given Defaultable[HeatOutputReduced.NotDefined_Or_Tested] = Defaultable(
             HeatOutputReduced.NotDefined
         )
-        DaisyUIVerticalForm.mk_AlwaysValid[HeatOutputReduced.NotDefined_Or_Tested]: (va, _) =>
+        FormDerivation.mk_AlwaysValid[HeatOutputReduced.NotDefined_Or_Tested]: (va, _) =>
             FieldsetLabelAndContent(
                 label = I18N.en15544.terms.P_n_reduced.name,
                 SelectAndOptionsOnly.fromShow[HeatOutputReduced.NotDefined_Or_Tested](
@@ -184,12 +191,12 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     val vertical_form_Length_cm: DF[Length] =
         import vv.meter.valid_whenStrictlyPositive
         import defaultable.qty_d.meter.zero
-        given_dual_Length_cm.form_DaisyUIVerticalForm()
+        given_dual_Length_cm.form()
 
     val vertical_form_Length_mm_cm: DF[Length] =
         import vv.meter.valid_whenStrictlyPositive
         import defaultable.qty_d.meter.zero
-        given_dual_Length_mm_cm.form_DaisyUIVerticalForm()
+        given_dual_Length_mm_cm.form()
 
     // Business logic types
 
@@ -197,37 +204,37 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     def I18N_COS(using Locale) = I18N.local_conditions.chimney_termination
 
     given given_Address: DF[Address] =
-        given DaisyUIVerticalForm[String] = string_emptyAsDefault_alwaysValid
-        DaisyUIVerticalForm.autoDerived[Address].autoOverwriteFieldNames
+        given Form[String] = string_emptyAsDefault_alwaysValid
+        FormDerivation.derived[Address].autoOverwriteFieldNames
 
     // Area : cm2
     given vertical_form_AreaInCm2: DF[AreaInCm2] =
         import defaultable.qty_d.area_in_cm2.zero
         import vv.area_in_cm2.valid_whenStrictlyPositive
-        given_dual_Area_cm2_or_in2.form_DaisyUIVerticalForm()
+        given_dual_Area_cm2_or_in2.form()
 
     // Area : cm2 + m2
     given vertical_form_Area_cm2_m2: DF[Area] =
         import defaultable.qty_d.area.zero
         import vv.area.valid_whenStrictlyPositive
-        given_dual_Area_cm2_m2_or_in2.form_DaisyUIVerticalForm()
+        given_dual_Area_cm2_m2_or_in2.form()
             .withFieldName(I18N.terms.area)
 
     // Firebox
 
     given given_Firebox_Traditional: DF[Firebox.Traditional] =
-        given DaisyUIVerticalForm[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
-            horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
-        given DaisyUIVerticalForm[Length]                                                         = vertical_form_Length_cm
-        given DaisyUIVerticalForm[Area]                                                           = vertical_form_Area_cm2_m2
+        given Form[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
+            horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal
+        given Form[Length]                                                         = vertical_form_Length_cm
+        given Form[Area]                                                           = vertical_form_Area_cm2_m2
 
         // zeta = 0.3 by default
-        given DaisyUIVerticalForm[QtyD[1]] =
+        given Form[QtyD[1]] =
             vertical_form_zeta_as_QtyD(Defaultable(0.3.unitless))
                 .withFieldName(I18N.firebox.traditional.pressure_loss_coefficient_from_door)
                 .showFieldName
 
-        DaisyUIVerticalForm.autoDerived[Firebox.Traditional].autoOverwriteFieldNames
+        FormDerivation.derived[Firebox.Traditional].autoOverwriteFieldNames
 
     private enum Version  :
         case Version_1, Version_2
@@ -267,23 +274,23 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         }
 
         given ValidateVar[Version]         = ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Version]
-        given DaisyUIVerticalForm[Version] = DaisyUIVerticalForm
+        given Form[Version] = FormDerivation
             .forEnumOrSumTypeLike_UsingShowAsId[Version](Version.values.toList)
         given Show[Version]                = Show.show:
             case Version.Version_1 => "Version 1"
             case Version.Version_2 => "Version 2"
 
-    private given given_Ecolabeled_Version: DaisyUIVerticalForm[Version] =
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId[Version](
+    private given given_Ecolabeled_Version: Form[Version] =
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId[Version](
             options = List(
                 Version.Version_1,
                 Version.Version_2
             )
         )
-        // DaisyUIVerticalForm.eitherAsSelectWithOptions[Version.Version_1, Version.Version_2]("Version")
+        // FormDerivation.eitherAsSelectWithOptions[Version.Version_1, Version.Version_2]("Version")
 
-    given DaisyUIVerticalForm[Either["Version 1", "Version 2"]] =
-        DaisyUIVerticalForm.formConversionOpaque[
+    given Form[Either["Version 1", "Version 2"]] =
+        Form.formConversionOpaque[
             Either["Version 1", "Version 2"],
             Version
         ]
@@ -307,29 +314,29 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
         given ctx_Length: DF[Length] = vertical_form_Length_cm
 
-        given DaisyUIVerticalForm[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
-            horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
+        given Form[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
+            horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal
 
         given ConditionalFor[Version, PipeShape] = ConditionalFor:
             case Version.Version_1 => false
             case Version.Version_2 => true
 
-        import defaultable.qty_d.meter.zero
 
         given DF[PipeShape] =
-            horizontal_form.horizontal_form_PipeShape.toVerticalForm.showFieldName
+            horizontal_form.horizontal_form_PipeShape.showFieldName
 
+        import defaultable.qty_d.meter.zero // for Defaultable[QtyD[Meter]] needed by PipeShape
         given DF[Option[PipeShape]] =
-            DaisyUIVerticalForm.conditionalOn[Version, PipeShape](version_var, extraBinders = Seq(binder))
+            FormDerivation.conditionalOn[Version, PipeShape](version_var, extraBinders = Seq(binder))
 
-        DaisyUIVerticalForm.autoDerived[Firebox.Ecolabeled].autoOverwriteFieldNames
+        FormDerivation.derived[Firebox.Ecolabeled].autoOverwriteFieldNames
 
     given given_AFPMA_PRSE: DF[Firebox.AFPMA_PRSE] =
         given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
-            horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
+            horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal
         given DF[Int]                                                            = int_emptyAsDefault_alwaysValid
         // given DF[Boolean]                                                        = boolean_trueAsDefault_alwaysValid
-        given DF[PipeShape]                                                      = horizontal_form.horizontal_form_PipeShape.toVerticalForm.hideFieldName
+        given DF[PipeShape]                                                      = horizontal_form.horizontal_form_PipeShape.hideFieldName
             .wrappedInto(c =>
                 FieldsetLabelAndContent  (
                     label   = I18N.firebox.afpma_prse.outside_air_conduit_shape,
@@ -338,7 +345,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             )
 
         given DF[Length]                     = vertical_form_Length_cm
-        given DF[OutsideAirLocationInHeater] = DaisyUIVerticalForm.mk_AlwaysValid: (va, _) =>
+        given DF[OutsideAirLocationInHeater] = FormDerivation.mk_AlwaysValid: (va, _) =>
             FieldsetLabelAndContent(
                 label = I18N.firebox.afpma_prse.outside_air_location_in_heater,
                 SelectAndOptionsOnly.single(
@@ -347,11 +354,11 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 )
             )
 
-        DaisyUIVerticalForm.autoDerived[Firebox.AFPMA_PRSE].autoOverwriteFieldNames
+        FormDerivation.derived[Firebox.AFPMA_PRSE].autoOverwriteFieldNames
 
-    given Locale => DaisyUIVerticalForm[BillingLanguage] =
+    given Locale => Form[BillingLanguage] =
         import ValidateVarCommonInstances.billingLanguage.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = BillingLanguage.values.toList,
             updateFieldName = _ => Some("-BILLING LANGUAGE-")
         )
@@ -359,10 +366,15 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     // TODO: handle specific national standard like ONORM 8303 ?
     given given_TestStandard: DF[TestStandard] =
         import ValidateVarCommonInstances.testStandard.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId(
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId(
             options         = List(TestStandard.EN_15250, TestStandard.EN_13229),
             updateFieldName = _ => Some(I18N.firebox.single_tested.test_standard)  // TODO: handle National standard (e.g. ÖNORM B 8303)
         )
+
+    given given_TypeOfAppliance: DF[TypeOfAppliance] =
+        given Defaultable[TypeOfAppliance] = Defaultable(TypeOfAppliance.WoodLogs)
+        given ValidateVar[TypeOfAppliance] = ValidateVar.valid
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId(TypeOfAppliance.values.toList)
 
     given given_Firebox_SingleTested: DF[Firebox.SingleTested] =
         import defaultable.qty_d.zeroWithUnit
@@ -386,30 +398,31 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             given DF[PolluantName] =
                 import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
                 given Defaultable[PolluantName] = Defaultable(PolluantName.CO)
-                DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
+                FormDerivation.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
                     options = PolluantName.values.toList
                 )
             given DF[Option[EmissionValueU]] =
                 given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
                 val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
-                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
+                    CoulombFormInstances.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
                 underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
             given DF[TestEmissionValue_DTO] =
-                DaisyUIVerticalForm.autoDerived[TestEmissionValue_DTO].autoOverwriteFieldNames
+                FormDerivation.derived[TestEmissionValue_DTO].autoOverwriteFieldNames
             given DF[TestReport] =
-                DaisyUIVerticalForm.autoDerived[TestReport].autoOverwriteFieldNames
+                FormDerivation.derived[TestReport].autoOverwriteFieldNames
             given DF[List[TestReport]] =
-                DaisyUIVerticalForm.forList_WithEphemeralIds[TestReport]
+                given (TestReport => Int) = System.identityHashCode(_)
+                FormDerivation.forList[TestReport, Int]
             given DF[EmissionValues_DTO] =
-                DaisyUIVerticalForm.autoDerived[EmissionValues_DTO].autoOverwriteFieldNames
-            DaisyUIVerticalForm.autoDerived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
+                FormDerivation.derived[EmissionValues_DTO].autoOverwriteFieldNames
+            FormDerivation.derived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
 
-        val autoDerivedForm = DaisyUIVerticalForm.autoDerived[Firebox.SingleTested].autoOverwriteFieldNames
-        val d               = autoDerivedForm.defaultable_instance
-        given ValidateVar[Firebox.SingleTested] = autoDerivedForm.validate_var
+        val autoDerivedForm = FormDerivation.derived[Firebox.SingleTested].autoOverwriteFieldNames
+        val d               = autoDerivedForm.defaultable
+        given ValidateVar[Firebox.SingleTested] = autoDerivedForm.validateVar
 
-        DaisyUIVerticalForm
-            .makeFor[Firebox.SingleTested](d): (v, fc) =>
+        Form.makeFor[Firebox.SingleTested](d): (v, fc) =>
+            (renderer: FormRenderer) ?=>
                 import com.raquo.laminar.api.L.*
                 val modal = SingleTestedCatalogSelectComponent(
                     entriesSignal = singleTestedFireboxesSignal,
@@ -422,9 +435,9 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                         onClick --> { _ => modal.open() }
                     ),
                     autoDerivedForm.render(v, fc),
-                    modal.node
-                )
-            .withFieldName(I18N.firebox_names.single_tested)
+                   modal.node
+               )
+        .withFieldName(I18N.firebox_names.single_tested)
 
     given given_Firebox_Door15aFirebox_Catalog: DF[Firebox.Door15aFirebox_Catalog] =
         import defaultable.qty_d.centimeter.zero
@@ -442,7 +455,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         // Optional centimeter (sb_min, sb_max)
         val vertical_form_Option_QtyD_Centimeter: DF[Option[QtyD[Centimeter]]] =
             import vv.centimeter.validOption_whenStrictlyPositive
-            DaisyUIVerticalForm.forOptionQtyD_default[Centimeter]()
+            CoulombFormInstances.forOptionQtyD_default[Centimeter]()
         given optCm: DF[Option[QtyD[Centimeter]]] = vertical_form_Option_QtyD_Centimeter
 
         // Plain Option[Mass] — mb_min and mb_max are independent supplier constraints, no stove_params link.
@@ -450,14 +463,16 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given optMassDF: DF[Option[Mass]] = vertical_form_Option_QtyD_Kilogram
 
         // PipeShape (actualAirIntakePipeShape)
-        given DF[PipeShape] = horizontal_form.horizontal_form_PipeShape.toVerticalForm
+        given DF[PipeShape] = horizontal_form.horizontal_form_PipeShape
         // List[PipeShape] (expectedAirIntakePipeShapes)
-        given DF[List[PipeShape]] = DaisyUIVerticalForm.forList_WithEphemeralIds[PipeShape]
+        given DF[List[PipeShape]] =
+            given (PipeShape => Int) = System.identityHashCode(_)
+            FormDerivation.forList[PipeShape, Int]
 
         // HeatOutputReduced full enum (pn_reduced)
         given DF[HeatOutputReduced] =
             given Defaultable[HeatOutputReduced] = Defaultable(HeatOutputReduced.NotDefined)
-            DaisyUIVerticalForm.mk_AlwaysValid[HeatOutputReduced]: (va, _) =>
+            FormDerivation.mk_AlwaysValid[HeatOutputReduced]: (va, _) =>
                 FieldsetLabelAndContent(
                     label = I18N.en15544.terms.P_n_reduced.name,
                     SelectAndOptionsOnly.fromShow[HeatOutputReduced](
@@ -478,40 +493,40 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given DF[EmissionsAndEfficiencyValues_DTO] =
             // PolluantName select
             given DF[PolluantName] =
-                import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
                 given Defaultable[PolluantName] = Defaultable(PolluantName.CO)
-                DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
+                given ValidateVar[PolluantName] = ValidateVar.valid
+                FormDerivation.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
                     options = PolluantName.values.toList
                 )
             // Option[EmissionValueU]: map through Option[QtyD] with unit display
             given DF[Option[EmissionValueU]] =
                 given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
                 val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
-                    DaisyUIVerticalForm.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
+                    CoulombFormInstances.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
                 underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
             // TestEmissionValue_DTO
             given DF[TestEmissionValue_DTO] =
-                DaisyUIVerticalForm.autoDerived[TestEmissionValue_DTO].autoOverwriteFieldNames
+                FormDerivation.derived[TestEmissionValue_DTO].autoOverwriteFieldNames
             // TestReport
             given DF[TestReport] =
-                DaisyUIVerticalForm.autoDerived[TestReport].autoOverwriteFieldNames
+                FormDerivation.derived[TestReport].autoOverwriteFieldNames
             // List[TestReport]
             given DF[List[TestReport]] =
-                DaisyUIVerticalForm.forList_WithEphemeralIds[TestReport]
+                given (TestReport => Int) = System.identityHashCode(_)
+                FormDerivation.forList[TestReport, Int]
             // EmissionValues_DTO
             given DF[EmissionValues_DTO] =
-                DaisyUIVerticalForm.autoDerived[EmissionValues_DTO].autoOverwriteFieldNames
-            DaisyUIVerticalForm.autoDerived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
+                FormDerivation.derived[EmissionValues_DTO].autoOverwriteFieldNames
+            FormDerivation.derived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
 
-        val autoDerivedForm = DaisyUIVerticalForm.autoDerived[Firebox.Door15aFirebox_Catalog].autoOverwriteFieldNames
-        val d               = autoDerivedForm.defaultable_instance
-        given ValidateVar[Firebox.Door15aFirebox_Catalog] = autoDerivedForm.validate_var
+        val autoDerivedForm = FormDerivation.derived[Firebox.Door15aFirebox_Catalog].autoOverwriteFieldNames
+        val d               = autoDerivedForm.defaultable
+        given ValidateVar[Firebox.Door15aFirebox_Catalog] = autoDerivedForm.validateVar
 
-        DaisyUIVerticalForm
-            .makeFor[Firebox.Door15aFirebox_Catalog](d): (v, fc) =>
+        Form.makeFor[Firebox.Door15aFirebox_Catalog](d): (v, fc) =>
+            (renderer: FormRenderer) ?=>
                 import com.raquo.laminar.api.L.*
-
-                // Bidirectional sync between load_size_nominal and stove_params.maximum_load only.
+                // Bidirectional sync
                 // mb_min and mb_max are independent — they must NOT participate in this sync.
                 val loadSizeNominalVar: Var[Option[Mass]] =
                     v.zoomLazy(_.load_size_nominal)((fb, m) => fb.copy(load_size_nominal = m))
@@ -545,13 +560,13 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                         onClick --> { _ => modal.open() }
                     ),
                     autoDerivedForm.render(v, fc),
-                    modal.node
-                )
-            .withFieldName(I18N.firebox_names.door_15a_firebox)
+                   modal.node
+               )
+        .withFieldName(I18N.firebox_names.door_15a_firebox)
 
     given given_Firebox: DF[Firebox] =
         // given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
-        //     horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal.toVerticalForm
+        //     horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal
 
         given DF[Firebox.Traditional]             = given_Firebox_Traditional
         given DF[Firebox.AFPMA_PRSE]              = given_AFPMA_PRSE
@@ -559,8 +574,8 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given DF[Firebox.SingleTested]            = given_Firebox_SingleTested
         given DF[Firebox.Door15aFirebox_Catalog]  = given_Firebox_Door15aFirebox_Catalog
 
-        DaisyUIVerticalForm
-            .autoDerived[Firebox]
+        FormDerivation
+            .derived[Firebox]
             .autoOverwriteFieldNames
             .wrappedInto(c =>
                 FieldsetLegendWithContent  (
@@ -571,119 +586,119 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 )
             )
 
-    given given_FacingType: Locale => DaisyUIVerticalForm[FacingType] =
+    given given_FacingType: Locale => Form[FacingType] =
         import ValidateVarCommonInstances.FacingType.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = FacingType.values.toList,
             updateFieldName = _ => Some(I18N.technical_specifications.facing_type)
         )
 
-    given given_Country: Locale => DaisyUIVerticalForm[Country] =
+    given given_Country: Locale => Form[Country] =
         import ValidateVarCommonInstances.country.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = Country.values.toList,
             updateFieldName = _ => Some(I18N.address.country)
         )
 
-    given given_BillableCountry: Locale => DaisyUIVerticalForm[BillableCountry] =
+    given given_BillableCountry: Locale => Form[BillableCountry] =
         import ValidateVarCommonInstances.billableCountry.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = BillableCountry.values.toList,
             updateFieldName = _ => Some(I18N.address.country)
         )
 
-    given given_Customer: Locale => DaisyUIVerticalForm[Customer] =
-        given DaisyUIVerticalForm[String] = string_emptyAsDefault_alwaysValid
-        DaisyUIVerticalForm.autoDerived[Customer].autoOverwriteFieldNames
+    given given_Customer: Locale => Form[Customer] =
+        given Form[String] = string_emptyAsDefault_alwaysValid
+        FormDerivation.derived[Customer].autoOverwriteFieldNames
 
-    given given_BillableCustomerType: Locale => DaisyUIVerticalForm[BillableCustomerType] =
+    given given_BillableCustomerType: Locale => Form[BillableCustomerType] =
         import ValidateVarCommonInstances.billableCustomerType.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = BillableCustomerType.values.toList,
             updateFieldName = _ => Some(I18N_PaymentsShared.billing_info.customer_type)
         )
 
-    given given_ChimneyHeightAboveRidgeline: Locale => DaisyUIVerticalForm[ChimneyHeightAboveRidgeline] =
+    given given_ChimneyHeightAboveRidgeline: Locale => Form[ChimneyHeightAboveRidgeline] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = ChimneyHeightAboveRidgeline.values.toList,
             updateFieldName = _ => Some(I18N_COS.chimney_location_on_roof.chimney_height_above_ridgeline.explain)
         )
 
     given given_HorizontalDistanceBetweenChimneyAndAdjacentBuildings
-        : Locale => DaisyUIVerticalForm[HorizontalDistanceBetweenChimneyAndAdjacentBuildings] =
+       : Locale => Form[HorizontalDistanceBetweenChimneyAndAdjacentBuildings] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalDistanceBetweenChimneyAndAdjacentBuildings.values.toList,
             updateFieldName = _ =>
                 Some(I18N_COS.adjacent_buildings.horizontal_distance_between_chimney_and_adjacent_buildings.explain)
         )
 
     given given_HorizontalDistanceBetweenChimneyAndRidgelineBis
-        : Locale => DaisyUIVerticalForm[HorizontalDistanceBetweenChimneyAndRidgelineBis] =
+       : Locale => Form[HorizontalDistanceBetweenChimneyAndRidgelineBis] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalDistanceBetweenChimneyAndRidgelineBis.values.toList,
             updateFieldName = _ =>
                 Some(I18N_COS.chimney_location_on_roof.horizontal_distance_between_chimney_and_ridgeline_bis.explain)
         )
 
     given given_HorizontalDistanceBetweenChimneyAndRidgeline
-        : Locale => DaisyUIVerticalForm[HorizontalDistanceBetweenChimneyAndRidgeline] =
+       : Locale => Form[HorizontalDistanceBetweenChimneyAndRidgeline] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalDistanceBetweenChimneyAndRidgeline.values.toList,
             updateFieldName =
                 _ => Some(I18N_COS.chimney_location_on_roof.horizontal_distance_between_chimney_and_ridgeline.explain)
         )
 
-    given given_InnerConstructionMaterial: Locale => DaisyUIVerticalForm[InnerConstructionMaterial] =
+    given given_InnerConstructionMaterial: Locale => Form[InnerConstructionMaterial] =
         import ValidateVarCommonInstances.innerConstructionMaterial.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = InnerConstructionMaterial.values.toList,
             updateFieldName = _ => Some(I18N.technical_specifications.inner_construction_material)
         )
 
     given given_HorizontalAngleBetweenChimneyAndAdjacentBuildings
-        : Locale => DaisyUIVerticalForm[HorizontalAngleBetweenChimneyAndAdjacentBuildings] =
+       : Locale => Form[HorizontalAngleBetweenChimneyAndAdjacentBuildings] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalAngleBetweenChimneyAndAdjacentBuildings.values.toList,
             updateFieldName =
                 _ => Some(I18N_COS.adjacent_buildings.horizontal_angle_between_chimney_and_adjacent_buildings.explain)
         )
 
     given given_OutsideAirIntakeAndChimneyLocations
-        : Locale => DaisyUIVerticalForm[OutsideAirIntakeAndChimneyLocations] =
+       : Locale => Form[OutsideAirIntakeAndChimneyLocations] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = OutsideAirIntakeAndChimneyLocations.values.toList,
             updateFieldName =
                 _ => Some(I18N_COS.chimney_location_on_roof.outside_air_intake_and_chimney_locations.explain)
         )
 
-    given given_ProjectDescr: Locale => DaisyUIVerticalForm[ProjectDescr] =
-        given DaisyUIVerticalForm[String] = string_emptyAsDefault_alwaysValid
-        DaisyUIVerticalForm.autoDerived[ProjectDescr].autoOverwriteFieldNames
+    given given_ProjectDescr: Locale => Form[ProjectDescr] =
+        given Form[String] = string_emptyAsDefault_alwaysValid
+        FormDerivation.derived[ProjectDescr].autoOverwriteFieldNames
 
-    given given_Slope: Locale => DaisyUIVerticalForm[Slope] =
+    given given_Slope: Locale => Form[Slope] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = Slope.values.toList,
             updateFieldName = _ => Some(I18N_COS.chimney_location_on_roof.slope.explain)
         )
 
-    given given_SizingMethod: Locale => DaisyUIVerticalForm[SizingMethod] =
+    given given_SizingMethod: Locale => Form[SizingMethod] =
         import ValidateVarCommonInstances.sizingMethod.valid_Always
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = SizingMethod.values.toList,
             updateFieldName = _ => Some(I18N.technical_specifications.sizing_method)
         )
 
     given given_VerticalAngleBetweenChimneyAndAdjacentBuildings
-        : Locale => DaisyUIVerticalForm[VerticalAngleBetweenChimneyAndAdjacentBuildings] =
+       : Locale => Form[VerticalAngleBetweenChimneyAndAdjacentBuildings] =
         import ValidateVarCommonInstances.valid_always.given
-        DaisyUIVerticalForm.forEnumOrSumTypeLike_UsingShowAsId        (
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = VerticalAngleBetweenChimneyAndAdjacentBuildings.values.toList,
             updateFieldName =
                 _ => Some(I18N_COS.adjacent_buildings.vertical_angle_between_chimney_and_adjacent_buildings.explain)
@@ -691,47 +706,31 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     // Zeta ζ
 
-    def vertical_form_zeta(d: Defaultable[QtyD[1]]): DaisyUIVerticalForm[ζ] =
-        // import defaultable.zeta
-        // import validatevar.unitless.validOption_whenPositive
-        // given DaisyUIVerticalForm[QtyD[1]] = DaisyUIVerticalForm.forQtyD[1]
-        // DaisyUIVerticalForm.formConversionOpaque[ζ, QtyD[1]]
-        // import defaultable.zeta
-        DaisyUIVerticalForm
-            .mkFromComponentOption_AlwaysValid[ζ] { case (voz, _) =>
-                val vod = voz.bimap[Option[Double]](_.map(_.value))(_.map(_.unitless: ζ))
+    def vertical_form_zeta(d: Defaultable[QtyD[1]]): Form[ζ] =
+        given Defaultable[ζ] = Defaultable[ζ](d.default)
+        FormDerivation.mk_AlwaysValid[ζ]: (variable, formConfig) =>
+            (_: FormRenderer) ?=>
+                val (optionVar, binders) = VarSync.makeOptionVarFromVar_BiDirAsync[ζ](variable)
+                val vod = optionVar.bimap[Option[Double]](_.map(_.value))(_.map(_.unitless: ζ))
                 DoubleFieldsetLabelAndInput(
                     Some(I18N.firebox.traditional.pressure_loss_coefficient_from_door),
                     vod
-                )
-            // LabelledNumberInputWithUnitAndTooltip(
-            //     vod,
-            //     labelEnd = Some("ζ")
-            // )
-            }(using Defaultable[ζ](d.default))
+                ).amend(binders*)
 
-    given vertical_form_ζ: Locale => DaisyUIVerticalForm[ζ] =
+    given vertical_form_ζ: Locale => Form[ζ] =
         vertical_form_zeta(defaultable.zeta)
 
     // Zeta ζ as QtyD[1]
 
-    def vertical_form_zeta_as_QtyD(d: Defaultable[QtyD[1]]): DaisyUIVerticalForm[QtyD[1]] =
-        // import defaultable.zeta
-        // import validatevar.unitless.validOption_whenPositive
-        // given DaisyUIVerticalForm[QtyD[1]] = DaisyUIVerticalForm.forQtyD[1]
-        // DaisyUIVerticalForm.formConversionOpaque[ζ, QtyD[1]]
-        // import defaultable.zeta
-        DaisyUIVerticalForm
-            .mkFromComponentOption_AlwaysValid[QtyD[1]] { case (voq, _) =>
-                val vod = voq.bimap[Option[Double]](_.map(_.value))(_.map(_.unitless))
+    def vertical_form_zeta_as_QtyD(d: Defaultable[QtyD[1]]): Form[QtyD[1]] =
+        given Defaultable[QtyD[1]] = Defaultable[QtyD[1]](d.default)
+        FormDerivation.mk_AlwaysValid[QtyD[1]]: (variable, formConfig) =>
+            (_: FormRenderer) ?=>
+                val (optionVar, binders) = VarSync.makeOptionVarFromVar_BiDirAsync[QtyD[1]](variable)
+                val vod = optionVar.bimap[Option[Double]](_.map(_.value))(_.map(_.unitless))
                 DoubleFieldsetLabelAndInput(
                     Some(I18N.firebox.traditional.pressure_loss_coefficient_from_door),
                     vod
-                )
-            // LabelledNumberInputWithUnitAndTooltip(
-            //     vod,
-            //     labelEnd = Some("ζ")
-            // )
-            }(using Defaultable[ζ](d.default))
+                ).amend(binders*)
 
 end VerticalFormCommonInstances

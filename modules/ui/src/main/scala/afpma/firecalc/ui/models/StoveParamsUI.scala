@@ -11,13 +11,18 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.implicits.given
 
-import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
-import afpma.firecalc.ui.formgen.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.*
+import afpma.laminar.form.Form.*
 import afpma.firecalc.ui.instances.*
 
 import com.raquo.laminar.api.L.Signal
 
-import coulomb.*
+import _root_.coulomb.*
+import _root_.coulomb.policy.standard.given
 
 import io.taig.babel.Locale
 
@@ -62,7 +67,7 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
 
     private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
 
-    type DF[A] = DaisyUIVerticalForm[A]
+    type DF[A] = Form[A]
 
     given conditionalFor_mB: ConditionalFor[StoveParams, QtyD[Kilogram]] =
         ConditionalFor(_.sizing_method == SizingMethod.MaxLoad, _.maximum_load)
@@ -78,30 +83,31 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
     private val computedPnSignal: Signal[Option[QtyD[Kilo * Watt]]] =
         results_en15544_strict_sig.map(_.toOption.map(_.P_n))
 
-    given form_option_mB: DaisyUIVerticalForm[Option[QtyD[Kilogram]]] =
+    given form_option_mB: Form[Option[QtyD[Kilogram]]] =
         import vv.kilogram.valid_whenStrictlyPositive
-        given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form_DaisyUIVerticalForm()
-        DaisyUIVerticalForm
+        given DF[QtyD[Kilogram]] = dual.given_dual_Kilogram.form()
+        FormDerivation
             .conditionalOn[StoveParams, QtyD[Kilogram]](
                 stove_params_var,
                 activationDefault = computedMbSignal
             )
             .withFieldName(I18N.en15544.terms.m_B.name)
 
-    given form_option_pn: DaisyUIVerticalForm[Option[QtyD[Kilo * Watt]]] =
+    given form_option_pn: Form[Option[QtyD[Kilo * Watt]]] =
         import vv.kilowatt.valid_whenStrictlyPositive
-        given DF[Power] = dual.given_dual_Power.form_DaisyUIVerticalForm()
-        DaisyUIVerticalForm
+        given DF[Power] = dual.given_dual_Power.form()
+        FormDerivation
             .conditionalOn[StoveParams, QtyD[Kilo * Watt]](
                 stove_params_var,
                 activationDefault = computedPnSignal
             )
             .withFieldName(I18N.en15544.terms.P_n.name)
 
-    given DaisyUIVerticalForm[StoveParams] =
-        given DaisyUIVerticalForm[Option[Power]] = form_option_pn
-        DaisyUIVerticalForm.autoDerived[StoveParams].autoOverwriteFieldNames
+    given Form[StoveParams] =
+        given Form[Option[Power]] = form_option_pn
+        FormDerivation.derived[StoveParams].autoOverwriteFieldNames
 
+    given FormRenderer = DaisyUIVertical
     lazy val _form = stove_params_var.as_HtmlElement
 
 end StoveParamsUI

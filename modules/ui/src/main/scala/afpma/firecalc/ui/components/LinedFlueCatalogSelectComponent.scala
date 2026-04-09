@@ -10,8 +10,10 @@ import afpma.firecalc.dto.all.SetThermalPipeProp_13384.{LinedFlue, SetProperties
 import afpma.firecalc.dto.common.DisplayUnits
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
-import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
-import afpma.firecalc.ui.formgen.{FormConfig, ValidateVar}
+import afpma.laminar.form.Form
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.daisyui.{DaisyUIVertical, DaisyUIHorizontal}
+import afpma.laminar.form.{FormConfig, FormRenderer, ValidateVar}
 import afpma.firecalc.ui.instances.ThermalHorizontalForm_13384
 import afpma.firecalc.ui.instances.ValidateVarCommonInstances
 import afpma.firecalc.ui.instances.defaultable_13384.airSpaceDetailed_WithAirSpace
@@ -41,6 +43,8 @@ case class LinedFlueCatalogSelectComponent(
     casingPreviewContent: Option[Signal[Option[SetPropertiesInBatch]] => HtmlElement] = None
 )(using Locale, DisplayUnits) extends Component:
 
+    private given FormRenderer = DaisyUIHorizontal
+
     // ── State ──────────────────────────────────────────────────────────
 
     private val batchNameVar: Var[String] = Var("")
@@ -61,8 +65,8 @@ case class LinedFlueCatalogSelectComponent(
 
     private lazy val thermalForm: ThermalHorizontalForm_13384 = ThermalHorizontalForm_13384()
 
-    private lazy val airSpaceForm: DaisyUIVerticalForm[AirSpaceDetailed_V2] =
-        thermalForm.horizontal_form_AirSpaceDetailed.toVerticalForm
+    private lazy val airSpaceForm: Form[AirSpaceDetailed_V2] =
+        thermalForm.horizontal_form_AirSpaceDetailed
 
     private given ValidateVar[AirSpaceDetailed_V2] =
         ValidateVarCommonInstances.valid_always

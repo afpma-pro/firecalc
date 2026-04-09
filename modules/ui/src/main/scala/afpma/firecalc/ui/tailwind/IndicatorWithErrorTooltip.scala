@@ -6,7 +6,7 @@
 package afpma.firecalc.ui.tailwind
 
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.daisyui.DaisyUITooltip
+import afpma.laminar.form.daisyui.DaisyUITooltip
 
 import com.raquo.laminar.api.L.*
 

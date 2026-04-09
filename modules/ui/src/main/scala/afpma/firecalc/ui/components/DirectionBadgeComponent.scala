@@ -9,7 +9,7 @@ import afpma.firecalc.dto.all.{AzimuthDirection, AbsoluteDirection, InclinationD
 import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.daisyui.DaisyUITooltip
+import afpma.laminar.form.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import com.raquo.airstream.core.Signal

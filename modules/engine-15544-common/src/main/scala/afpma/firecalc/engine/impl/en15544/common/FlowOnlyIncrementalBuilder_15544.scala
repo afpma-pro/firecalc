@@ -11,14 +11,15 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 
-import afpma.firecalc.engine.impl.common.FlowOnlyIncrementalBuilderCommon
+import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.*
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_15544_Instances.given
-
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.FlowOnlyPropsState_15544
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_15544_Instances.given
 import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.*
@@ -41,7 +42,7 @@ import scala.reflect.*
 
 import com.softwaremill.quicklens.*
 
-trait FlowOnlyIncrementalBuilder_15544 extends FlowOnlyIncrementalBuilderCommon:
+trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
     import AddFlowOnlyPipeElement_15544.*
     import SetFlowOnlyPipeProp_15544.*
@@ -66,16 +67,61 @@ trait FlowOnlyIncrementalBuilder_15544 extends FlowOnlyIncrementalBuilderCommon:
 
     extension (addElement: AddElement) override def name: String = addElement.name
 
+    override protected def isForbiddenAddElementAtStart(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
+    override protected def isForbiddenAddElementAtEnd(
+        addElement: AddElement
+    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+
     override type PT <: PipeType_EN15544
 
-    // ── Abstract hooks from common trait ───────────────────────────────
-    protected def isDirectionChange(ae: AddElement): Boolean =
-        ae.isInstanceOf[AddDirectionChange]
+    override def define(iDescrs: IncrDescr*): PipeIncrDescr =
+        val iiVec = iDescrs.toVector.mapWithIndex((x, i) => (IdIncr(i), x))
+        PipeIncrDescrG[Id_IncrDescr](pt, iiVec)
 
-    protected def addElementHasAbsDir(ae: AddElement): Boolean =
-        ae match
-            case dc: AddDirectionChange => dc.absDir.isDefined
-            case _                      => false
+    // ========== PropsState via Typeclass ==========
+
+    override protected type PropsState = FlowOnlyPropsState_15544
+    private val stateOps = summon[PropsStateOps[PropsState]]
+
+    given nbOfFlowsFromPropsState: Function1[PropsState, NbOfFlows] = stateOps.getNFlows
+
+    extension (propsState: PropsState)
+        override def isValid: Boolean   = stateOps.isValid(propsState)
+        def nf              : NbOfFlows = stateOps.getNFlows(propsState)
+
+    extension (piDescr: PipeIncrDescr) def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
+
+    override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
+        FlowOnlyPropsState_15544()
+
+    override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
+        PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
+
+    override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
+        s.currentFrame
+
+    override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
+        // Only apply if the pipe itself did not already define an initial direction
+        if s.initialFrame.isDefined then s
+        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
+    override protected def postBuildValidation(
+        incrDescrs: Vector[Id_IncrDescr],
+        finalState: PropsState
+    ): ValidatedResult[Unit] =
+        val hasGeometry = incrDescrs.exists:
+            case (_, _: AddElement) => true
+            case _ => false
+        if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
+        else
+            val hasFinalDir = incrDescrs.exists:
+                case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+                case _ => false
+            if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
+            else ().validNel
 
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[Length] =
@@ -190,7 +236,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends FlowOnlyIncrementalBuilderCommon:
                     case None     => propsState.validNel
             case Some(_ @AddFlowResistance(_, _, _))                         => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))                              => propsState.validNel
-            case Some(obj: AddSectionShapeChange)                            => propsState.modify(_.innerShape).setTo(obj.to_shape.some).validNel
+            case Some(obj: AddSectionShapeChange)                            => propsState.modify(_.geometry).setTo(obj.to_shape.some).validNel
 
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
@@ -200,7 +246,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends FlowOnlyIncrementalBuilderCommon:
             .foldLeft(propsState.validNel) { case (vState, (_, setPropOp)) =>
                 setPropOp match
                     case SetInnerShape(g)                          =>
-                        vState.map(_.modify(_.innerShape).setTo(g.some))
+                        vState.map(_.modify(_.geometry).setTo(g.some))
                     case SetRoughness(r)                           =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
                     case SetMaterial(lm)                           =>
@@ -222,6 +268,9 @@ trait FlowOnlyIncrementalBuilder_15544 extends FlowOnlyIncrementalBuilderCommon:
                     case _: SetInitialPosition => vState
                     case _: SetFinalPosition => vState
             }
+
+    // Minimal ElementFactory object required by trait - delegates to typeclass instances
+    object ElementFactory extends ElementFactoryModule
 
     // builder methods for Atomic modifiers
 
