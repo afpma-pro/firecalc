@@ -184,10 +184,10 @@ object standard {
         given ShowUsingLocale[FireboxBaseSurfaceNotInRange] = showUsingLocale: e =>
             I18N.errors.firebox_base_surface_not_in_range(e.actual, e.min, e.max)
 
-    case class FireboxBaseRatioInvalid(ratio: String, depth: String, width: String) extends FireboxError
+    case class FireboxBaseRatioInvalid(ratio: String, depth: String, width: String, minRatio: String, maxRatio: String) extends FireboxError
     object FireboxBaseRatioInvalid:
         given ShowUsingLocale[FireboxBaseRatioInvalid] = showUsingLocale: e =>
-            I18N.errors.firebox_base_ratio_invalid(e.ratio, e.depth, e.width)
+            I18N.errors.firebox_base_ratio_invalid(e.ratio, e.depth, e.width, e.minRatio, e.maxRatio)
 
     case class FireboxBaseMinWidthInvalid(enteredWidth: String, baseDimensions: String) extends FireboxError
     object FireboxBaseMinWidthInvalid:

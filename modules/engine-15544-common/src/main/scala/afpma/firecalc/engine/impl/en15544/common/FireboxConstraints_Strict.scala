@@ -146,7 +146,9 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
                                                 FireboxBaseRatioInvalid(
                                                     "%.1f".format(r),
                                                     l.showP,
-                                                    w.showP
+                                                    w.showP,
+                                                    "%.1f".format(ctx.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO),
+                                                    "%.1f".format(ctx.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO)
                                                 )
                                             )
                                         case _                   => Right(sq)
