@@ -75,3 +75,5 @@ astformatter
 # Generated viz/graph bundles (source of truth is the .ts files, rebuilt by esbuild)
 **/filaire-viz.js
 **/graph-viz.js
+
+.worktrees/
