@@ -280,16 +280,6 @@ sealed abstract class EN15544_Strict_Application(
                 )(using en15544)
                 .toValidatedNel
 
-        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString =
-            PipesResult_15544_VNelString    (
-                airIntake     = airIntake_PipeResult(using p),
-                combustionAir = combustionAir_PipeResult,
-                firebox       = firebox_PipeResult,
-                flue          = flue_PipeResult,
-                connector     = connector_PipeResult,
-                chimney       = chimney_PipeResult
-            )
-
         /**
          * Override to compute results for ALL N post-firebox slots, not just the fixed 3.
          *
@@ -300,11 +290,13 @@ sealed abstract class EN15544_Strict_Application(
          * Then validates the topology and folds through PostFireboxPipeChain.computeAll
          * to produce N results with proper upstream state threading.
          */
-        override lazy val postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]] =
+        override lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
             import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
             val pfbSlots = en15544.postFireboxPipeSlots
             // Fall back to the classic 3-pipe vector when no DTO slots are configured
-            if pfbSlots.isEmpty then (flue_PipeResult, connector_PipeResult, chimney_PipeResult).mapN(Vector(_, _, _))
+            if pfbSlots.isEmpty then (flue_PipeResult, connector_PipeResult, chimney_PipeResult).mapN((f, c, ch) =>
+                Vector((FluePipeT, f), (ConnectorPipeT, c), (ChimneyPipeT, ch))
+            )
             else
                 (
                     en15544.en13384_heatingAppliance_powers,
@@ -422,7 +414,10 @@ sealed abstract class EN15544_Strict_Application(
                                     initialUpstream,
                                     en15544.en13384_application.computeAt
                                 ) match
-                                    case Right(results) => Validated.validNel(results)
+                                    case Right(results) =>
+                                        Validated.validNel(
+                                            chain.slots.zip(results).map((slot, pr) => (slot.pipeType, pr)).toVector
+                                        )
                                     case Left(err)      => Validated.invalidNel(err)
 
         lazy val outputs: Outputs =

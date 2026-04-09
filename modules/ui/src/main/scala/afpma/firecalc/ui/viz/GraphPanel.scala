@@ -5,10 +5,8 @@
 
 package afpma.firecalc.ui.viz
 
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.PipeResult
-import afpma.firecalc.engine.models.SlotBuildResult
+import afpma.firecalc.engine.models.{ChimneyPipeT, ConnectorPipeT, FluePipeT, PipeResult, SlotBuildResult}
 import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.graph.*
 import afpma.firecalc.ui.Component
@@ -61,14 +59,13 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                     val postFireboxPipes: Vector[(String, VNelMcalcErr[PipeResult])] =
                         postFireboxResults match
                             case Validated.Valid(results) =>
-                                results.zipWithIndex.map { (pr, i) =>
-                                    val label = slots.lift(i).map {
-                                        case _: PostFireboxPipeDescrSlot.FlueSlot        => s"Slot$i:Flue"
-                                        case _: PostFireboxPipeDescrSlot.ThermalFlueSlot => s"Slot$i:Flue"
-                                        case _: PostFireboxPipeDescrSlot.ConnectorSlot   => s"Slot$i:Connector"
-                                        case _: PostFireboxPipeDescrSlot.ChimneySlot     => s"Slot$i:Chimney"
-                                    }.getOrElse(s"Slot$i:Pipe")
-                                    (label, Validated.validNel(pr))
+                                results.zipWithIndex.map { case ((pt, pr), i) =>
+                                    val ptName = pt match
+                                        case FluePipeT      => "Flue"
+                                        case ConnectorPipeT => "Connector"
+                                        case ChimneyPipeT   => "Chimney"
+                                        case _              => "Pipe"
+                                    (s"Slot$i:$ptName", Validated.validNel(pr))
                                 }
                             case Validated.Invalid(errs) =>
                                 Vector(("Flue", Validated.invalidNel(errs.head)))

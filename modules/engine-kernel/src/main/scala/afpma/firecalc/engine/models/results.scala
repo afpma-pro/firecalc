@@ -430,45 +430,13 @@ case class PipesResult_15544_VNelString(
     airIntake    : VNelMcalcErr[PipeResult],
     combustionAir: VNelMcalcErr[PipeResult],
     firebox      : VNelMcalcErr[PipeResult],
-    flue         : VNelMcalcErr[PipeResult],
-    connector    : VNelMcalcErr[PipeResult],
-    chimney      : VNelMcalcErr[PipeResult]
+    postFirebox  : VNelMcalcErr[Vector[(PipeType, PipeResult)]]
 ) {
     def isValid: Boolean =
-        List(
-            airIntake,
-            combustionAir,
-            firebox,
-            flue,
-            connector,
-            chimney
-        ).forall(_.isValid)
+        List(airIntake, combustionAir, firebox).forall(_.isValid) && postFirebox.isValid
 
     def accumulateErrors: VNelMcalcErr[PipesResult_15544] =
-        (
-            airIntake,
-            combustionAir,
-            firebox,
-            flue,
-            connector,
-            chimney
-        ).mapN:
-            (
-                airIntake,
-                combustionAir,
-                firebox,
-                flue,
-                connector,
-                chimney
-            ) =>
-                PipesResult_15544(
-                    airIntake,
-                    combustionAir,
-                    firebox,
-                    flue,
-                    connector,
-                    chimney
-                )
+        (airIntake, combustionAir, firebox, postFirebox).mapN(PipesResult_15544(_, _, _, _))
 }
 
 case class PipesResult_13384(
@@ -481,19 +449,52 @@ case class PipesResult_15544(
     airIntake    : PipeResult,
     combustionAir: PipeResult,
     firebox      : PipeResult,
-    flue         : PipeResult,
-    connector    : PipeResult,
-    chimney      : PipeResult
+    postFirebox  : Vector[(PipeType, PipeResult)]
 ) {
+
+    // ── domain accessors ──
+
+    /** All results in the flue-pipe region (first flue to last flue, inclusive). */
+    def conceptualFlue: Vector[PipeResult] =
+        if lastFluePipeIdx < 0 then Vector.empty
+        else postFirebox.take(lastFluePipeIdx + 1).map(_._2)
+
+    /** The connector pipe: last ConnectorPipeT before the terminal chimney. */
+    def connector: Option[PipeResult] =
+        val candidateIdx = lastFluePipeIdx + 1
+        if candidateIdx >= 0 && candidateIdx < postFirebox.size - 1 then
+            val (pt, pr) = postFirebox(candidateIdx)
+            if pt == ConnectorPipeT then Some(pr) else None
+        else None
+
+    /** The terminal chimney pipe (always last). */
+    def chimney: PipeResult =
+        require(postFirebox.nonEmpty, "postFirebox vector must not be empty — chimney slot is mandatory")
+        postFirebox.last._2
+
+    // ── region boundary ──
+    private val lastFluePipeIdx: Int = postFirebox.lastIndexWhere(_._1 == FluePipeT)
+
+    /** Last flue pipe result (for t_F / efficiency). */
+    def lastFluePipeResult: Option[PipeResult] =
+        if lastFluePipeIdx < 0 then None
+        else Some(postFirebox(lastFluePipeIdx)._2)
+
+    // ── aggregate lists ──
+    private val postFireboxResults: List[PipeResult] = postFirebox.map(_._2).toList
+
+    val orderedPipesUntilFluePipe = /* airIntake :: */ combustionAir :: firebox ::
+        (if lastFluePipeIdx < 0 then Nil
+         else postFirebox.take(lastFluePipeIdx + 1).map(_._2).toList)
+
+    val orderedPipesAll = airIntake :: combustionAir :: firebox :: postFireboxResults
+
+    // ── Σ computations (unchanged logic, dynamic lists) ──
 
     val vNelStringMonoidSumPascals: Monoid[VNelString[QtyD[Pascal]]] = mkMonoidSumForVNelQtyD[String, Pascal](0.pascals)
     type VNelMecaFluError[X] = ValidatedNel[MecaFlu_Error, X]
     val vNelMecaFluErrorMonoidSumPascals: Monoid[VNelMecaFluError[QtyD[Pascal]]] =
         mkMonoidSumForVNelQtyD[MecaFlu_Error, Pascal](0.pascals)
-
-    val orderedPipesUntilFluePipe = /* airIntake :: */ combustionAir :: firebox :: flue :: Nil
-
-    val orderedPipesAll = airIntake :: combustionAir :: firebox :: flue :: connector :: chimney :: Nil
 
     private def mapAndSumPressures(xs: List[PipeResult])(f: PipeResult => Pressure): Pressure =
         xs.map(f).sum

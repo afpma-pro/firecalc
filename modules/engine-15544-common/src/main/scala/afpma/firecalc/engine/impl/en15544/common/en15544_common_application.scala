@@ -334,11 +334,13 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     en13384_application.chimney_PipeResult.toValidatedNel
 
         /**
-         * All post-firebox pipe results as a vector: [flue, connector, chimney].
-         * Convenience accessor for consumers that want to iterate over all post-firebox results.
+         * All post-firebox pipe results as a tagged vector: [(PipeType, PipeResult)].
+         * Default: assembles from the fixed 3 named results. Strict overrides with N-pipe chain.
          */
-        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[PipeResult]] =
-            (flue_PipeResult, connector_PipeResult, chimney_PipeResult).mapN(Vector(_, _, _))
+        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
+            (flue_PipeResult, connector_PipeResult, chimney_PipeResult).mapN((f, c, ch) =>
+                Vector((FluePipeT, f), (ConnectorPipeT, c), (ChimneyPipeT, ch))
+            )
 
         // Section "4.8.4", "Flue gas temperature in the connector pipe"
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean] =
@@ -389,7 +391,12 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
          * between the outlet from the fireplace and the chimney pipe.
          */
         lazy val t_F: VNelMcalcErr[t_F] =
-            flue_PipeResult.map(_.gas_temp_end: t_F)
+            postFireboxPipeResults.andThen { pfb =>
+                val lastFluePipeIdx = pfb.lastIndexWhere(_._1 == FluePipeT)
+                if lastFluePipeIdx < 0 then
+                    Validated.invalidNel(UnexpectedDevError("No flue pipe found in post-firebox vector"))
+                else Validated.validNel(pfb(lastFluePipeIdx)._2.gas_temp_end: t_F)
+            }
 
         lazy val η_s: VNelMcalcErr[Percentage] =
             η.map(η =>
@@ -445,8 +452,14 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 t_chimney_wall_top_out = t_chimney_wall_top
             )
 
-        // Aggregated pipe results — abstract (defined in strict/MCE subclasses)
-        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString
+        // Aggregated pipe results — concrete, uses the tagged postFirebox vector
+        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString =
+            PipesResult_15544_VNelString(
+                airIntake_PipeResult(using params),
+                combustionAir_PipeResult,
+                firebox_PipeResult,
+                postFireboxPipeResults
+            )
         lazy val outputs                : Outputs
 
         // Validations

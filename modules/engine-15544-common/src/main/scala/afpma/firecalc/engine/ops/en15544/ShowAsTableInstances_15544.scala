@@ -9,6 +9,8 @@ import cats.syntax.all.*
 
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.CheckableConstraint
+import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.models.PipeType.given
 import afpma.firecalc.engine.models.PipesResult_15544
 import afpma.firecalc.engine.models.Preview
 import afpma.firecalc.engine.models.en15544.*
@@ -126,12 +128,16 @@ class ShowAsTableInstances_15544(using Locale):
     given showAsTable_PipesResult_15544: ShowAsTable[PipesResult_15544] =
         ShowAsTable.mkLightFor(I18N.headers.pipes_details) { presults =>
             import Preview.*
-            val airIntakeSS     = presults.airIntake.toPreviewAndShowValuesAsSeq
-            val combustionAirSS = presults.combustionAir.toPreviewAndShowValuesAsSeq
-            val fireboxSS       = presults.firebox.toPreviewAndShowValuesAsSeq
-            val flueSS          = presults.flue.toPreviewAndShowValuesAsSeq
-            val connectorSS     = presults.connector.toPreviewAndShowValuesAsSeq
-            val chimneySS       = presults.chimney.toPreviewAndShowValuesAsSeq
+            val preFirebox = List(
+                presults.airIntake.toPreviewAndShowValuesAsSeq,
+                presults.combustionAir.toPreviewAndShowValuesAsSeq,
+                presults.firebox.toPreviewAndShowValuesAsSeq
+            )
+            val postFirebox = presults.postFirebox.zipWithIndex.map { case ((pt, pr), i) =>
+                val label = s"[${pt.show} #${i + 1}]"
+                val headerRow: Seq[String] = label +: Seq.fill(Preview.showHeadersAsSeq.size - 1)("")
+                headerRow +: pr.toPreviewAndShowValuesAsSeq
+            }
 
             val summary_headers = List("length", "h", "ζ", "pu", "pRs", "pRg", "pH")
             val summary_values  = List(
@@ -151,12 +157,8 @@ class ShowAsTableInstances_15544(using Locale):
             )
 
             Preview.showHeadersAsSeq
-                :: airIntakeSS.toList
-                ::: combustionAirSS.toList
-                ::: fireboxSS.toList
-                ::: flueSS.toList
-                ::: connectorSS.toList
-                ::: chimneySS.toList
+                :: preFirebox.flatMap(_.toList)
+                ::: postFirebox.flatMap(_.toList).toList
                 ::: List(summary_line)
         }
 

@@ -113,8 +113,8 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
         postFireboxPipeResults_sig.map: vnel =>
             vnel.andThen: results =>
                 results.lift(slotIndex) match
-                    case Some(pr) => Validated.validNel(pr)
-                    case None     => Validated.invalidNel(FluePipeNotDefinedYet)
+                    case Some((_, pr)) => Validated.validNel(pr)
+                    case None          => Validated.invalidNel(FluePipeNotDefinedYet)
 
     def fromIdIncr_to_pipeSectionResultId(idMappings: PipeIdsMapping, idIncr: Int): Option[Int] =
         idMappings(idIncr)
@@ -469,8 +469,8 @@ final case class DynamicThermalPipeSlotPanel(
         postFireboxPipeResults_sig.map: vnel =>
             vnel.andThen: results =>
                 results.lift(slotIndex) match
-                    case Some(pr) => Validated.validNel(pr)
-                    case None     => Validated.invalidNel(ChimneyPipeNotDefinedYet)
+                    case Some((_, pr)) => Validated.validNel(pr)
+                    case None          => Validated.invalidNel(ChimneyPipeNotDefinedYet)
 
     def fromIdIncr_to_pipeSectionResultId(idMappings: PipeIdsMapping, idIncr: Int): Option[Int] =
         idMappings(idIncr)

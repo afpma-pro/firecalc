@@ -243,13 +243,12 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         val pipesResult_15544 = ap.outputs.pipesResult_15544.getOrThrow
         // println(pipesResult_15544.showAsCliTable)
 
-        val vecsec: Vector[PipeSectionResult[?]] = Vector(
-            pipesResult_15544.airIntake             ,
-            pipesResult_15544.combustionAir,
-            pipesResult_15544.firebox           ,
-            pipesResult_15544.flue                  ,
-            pipesResult_15544.connector            ,
-            pipesResult_15544.chimney               ,
+        val vecsec: Vector[PipeSectionResult[?]] = (
+            Vector(
+                pipesResult_15544.airIntake,
+                pipesResult_15544.combustionAir,
+                pipesResult_15544.firebox
+            ) ++ pipesResult_15544.postFirebox.map(_._2)
         ).asSectionResultsMerged
 
         println("""|

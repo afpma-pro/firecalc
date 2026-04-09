@@ -18,6 +18,7 @@ import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
 import afpma.firecalc.engine.models.PipeResult
+import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.PipesResult_15544
 import afpma.firecalc.engine.models.en13384.typedefs.P_L
 import afpma.firecalc.engine.models.en15544.std.Outputs
@@ -277,8 +278,8 @@ def slotMappingFnSig(idx: Int): Signal[ValidatedNel[IncrementalValidation_Error,
             Validated.invalidNel(FluePipeNotDefinedYet) // fallback — slot doesn't exist
         )
 
-/** All post-firebox pipe results as a vector. */
-lazy val postFireboxPipeResults_sig: Signal[VNelMcalcErr[Vector[PipeResult]]] =
+/** All post-firebox pipe results as a tagged vector. */
+lazy val postFireboxPipeResults_sig: Signal[VNelMcalcErr[Vector[(PipeType, PipeResult)]]] =
     results_en15544_strict_sig.map: vnelAppl =>
         vnelAppl.andThen(_.primary.postFireboxPipeResults)
 

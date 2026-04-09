@@ -34,7 +34,6 @@ import coulomb.syntax.*
 
 import afpma.firecalc.graph.*
 import io.taig.babel.Locale
-import afpma.firecalc.engine.models.PipesResult_15544_VNelString
 import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
 
 
@@ -145,156 +144,11 @@ object GraphDataConverter:
                 _v_end = v_end
             )
 
-    /** @param pipeIdxToDescrIdx  Per-pipe reverse IdsMapping: section_id (PipeIdx) → descriptor index.
-      *                            Only needed for highlightable pipes (Flue, Connector, Chimney, Air Intake).
-      */
-    def convert(
-        airIntake       : VNelMcalcErr[PipeResult],
-        combustionAir   : VNelMcalcErr[PipeResult],
-        firebox         : VNelMcalcErr[PipeResult],
-        flue            : VNelMcalcErr[PipeResult],
-        connector       : VNelMcalcErr[PipeResult],
-        chimney         : VNelMcalcErr[PipeResult],
-        pipeIdxToDescrIdx: Map[String, Map[Int, Int]] = Map.empty
-    )(using Locale, DisplayUnits): ChartData =
-
-        val accumulated = PipesResult_15544_VNelString(
-            airIntake,
-            combustionAir,
-            firebox,
-            flue,
-            connector,
-            chimney,
-        ).accumulateErrors
-
-        val delta_pressure = accumulated match
-            case Validated.Valid(x)   => 
-                x.`Σ_ph-Σ_pR-Σ_pu`
-            case Validated.Invalid(nel) => 
-                UnexpectedThrowable(new Exception(s"accumulation error in graph : ${nel.show}"), sectionTyp = CombustionAirPipeT ).invalidNel
-
-        val registreAirSectionVNel = airIntake.map: air_intake_res =>
-            make_PipeSectionResult_Manual("registre d'air", 
-                pu = delta_pressure,
-                v_end = air_intake_res.v_end.getOrElse(0.m_per_s)
-            )
-
-        val registreAir: VNelMcalcErr[PipeResult] = registreAirSectionVNel.map: registreAirSection =>
-            new PipeResultFromSections(Vector(registreAirSection)) {
-                val density_mean: Option[Density] = None
-                val gas_temp_mean: TCelsius = 0.degreesCelsius
-            }
-
-        val pipes = Vector(
-            ("Air Intake",     airIntake),
-            ("Registre d'air", registreAir),
-            ("Combustion Air", combustionAir),
-            ("Firebox",        firebox),
-            ("Flue",           flue),
-            ("Connector",      connector),
-            ("Chimney",        chimney)
-        )
-
-        // Flatten all sections with cumulative x positions
-        var runningLength = 0.0
-        
-        val allSections: Vector[PlottableSection] = pipes.flatMap { (pipeName, result) =>
-            val reverseMap = pipeIdxToDescrIdx.getOrElse(pipeName, Map.empty)
-            result match
-                case Validated.Valid(pr: PipeResult.WithSections) =>
-                    pr.elements.zipWithIndex.map { case (section, seqIdx) =>
-                        val sectionId = section.section_id.unwrap
-                        // Use IdsMapping reverse map to get the descriptor index (matching pipe panel / 3D viz).
-                        // If sectionId is NOT in a non-empty reverseMap, this is an auto-inserted element
-                        // (e.g. SectionGeometryChange) — mark with -1 so vizName returns None.
-                        val descrIdx =
-                            if reverseMap.nonEmpty then reverseMap.getOrElse(sectionId, -1)
-                            else seqIdx // no mapping available — fall back to sequential index
-                        val xStart = runningLength
-                        runningLength += section.section_length.value
-                        PlottableSection(pipeName, section, xStart, xEnd = runningLength, elementIndex = descrIdx)
-                    }
-                case Validated.Valid(pr: PipeResult) if pipeName == "Registre d'air" || pipeName == "Air Intake" =>
-                    val xStart = runningLength
-                    val section = make_PipeSectionResult_Manual(
-                        section_name = pr.typ.show,
-                        pu = pr.pu,
-                        v_end = pr.v_end.getOrElse(0.m_per_s)
-                    )
-                    runningLength += section.section_length.value
-                    Vector(PlottableSection(pipeName, section, xStart, xEnd = runningLength, elementIndex = 0))
-                case _ =>
-                    Vector.empty
-        }
-
-        // val allSections_noRegistre = allSections.filterNot(_.pipeName == "Registre d'air")
-
-        if allSections.isEmpty then
-            ChartData(series = Vector.empty, yAxes = Vector.empty, xAxisLabel = "")
-        else
-            // Build points at section boundaries (xEnd of each section)
-            val tempPoints     = buildSeriesPoints(allSections, "temperature")
-            val velocityPoints = buildSeriesPoints(allSections, "velocity")
-            val elevPoints     = buildSeriesPoints(allSections, "elevation")
-            val pressPoints    = buildSeriesPoints(allSections, "pressure")
-
-            val tempLabel  = displayUnits(s"${I18N_UI.graph.temperature} (°C)", s"${I18N_UI.graph.temperature} (°F)")
-            val rightLabel = displayUnits(
-                s"${I18N_UI.graph.pressure} (Pa) – ${I18N_UI.graph.velocity} (m/s) – ${I18N_UI.graph.elevation} (m)",
-                s"${I18N_UI.graph.pressure} (Pa) – ${I18N_UI.graph.velocity} (ft/s) – ${I18N_UI.graph.elevation} (ft)"
-            )
-            val xLabel     = displayUnits(s"${I18N_UI.graph.length} (m)", s"${I18N_UI.graph.length} (ft)")
-
-            val series = Vector(
-                ChartSeries(
-                    id    = "pressure", name = I18N_UI.graph.pressure,
-                    color = PressureColor, points = pressPoints, yAxisId = "right"
-                ),
-                ChartSeries(
-                    id    = "velocity", name = I18N_UI.graph.velocity,
-                    color = VelocityColor, points = velocityPoints, yAxisId = "right"
-                ),
-                ChartSeries(
-                    id    = "temperature", name = I18N_UI.graph.temperature,
-                    color = TemperatureColor, points = tempPoints, yAxisId = "temp"
-                ),
-                ChartSeries(
-                    id    = "elevation", name = I18N_UI.graph.elevation,
-                    color = ElevationColor, points = elevPoints, yAxisId = "right", dashed = true
-                )
-            )
-
-            val yAxes = Vector(
-                YAxisConfig(id = "temp",  label = tempLabel, position = YAxisPosition.Left),
-                YAxisConfig(id = "right", label = rightLabel, position = YAxisPosition.Right, stepSize = Some(5.0))
-            )
-
-            // Build background bands from pipe group boundaries
-            val bands = Vector.newBuilder[BackgroundBand]
-            var bandStart = 0.0
-            pipes.foreach { (pipeName, _) =>
-                val pipeEnd = allSections.filter(_.pipeName == pipeName).lastOption.map(_.xEnd).getOrElse(bandStart)
-                if pipeEnd > bandStart then
-                    bands += BackgroundBand(bandStart, pipeEnd, bandColorFor(pipeName), displayLabel(pipeName))
-                bandStart = pipeEnd
-            }
-
-            ChartData(
-                series = series, 
-                yAxes = yAxes, 
-                xAxisLabel = xLabel, 
-                backgroundBands = bands.result(), 
-                xMin = Some(-0.5), 
-                xMax = Some(runningLength + 0.5)
-            )
-
     /** Convert pipe results to chart data, accepting post-firebox pipes as a generic vector.
       *
       * Pre-firebox pipes (airIntake, combustionAir, firebox) are still named because they're
       * fixed in the topology. Post-firebox pipes come from PostFireboxPipeChain results
-      * and are matched by position: (0) flue, (1) connector, (2) chimney.
-      *
-      * Delegates to [[convert]] after extracting the named post-firebox pipes.
+      * and carry labels for display.
       */
     def convertGeneric(
         airIntake        : VNelMcalcErr[PipeResult],

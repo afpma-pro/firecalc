@@ -57,6 +57,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         PipeChainGeneric.build(fcProj.post_firebox_pipes)
 
     /** Find the first SlotBuildResult matching the given PipeType and downcast its pipe. */
+    @deprecated("Use postFireboxPipeResults tagged vector instead", "v6")
     private def firstPipeOfType[P](pt: PipeType): ValidatedNel[IncrementalValidation_Error, P] =
         slotBuildResults.find(_.pipeType == pt) match
             case Some(sbr) => sbr.pipe.map(_.asInstanceOf[P])
