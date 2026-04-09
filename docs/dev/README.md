@@ -43,6 +43,8 @@ Core architectural patterns and design decisions:
 - **[SCHEMA_VERSIONING_ARCHITECTURE.md](SCHEMA_VERSIONING_ARCHITECTURE.md)** - ⭐ Data schema versioning architecture (AppState, BillingInfo, etc.)
 - **[TRANSLATION_AUTOMATION_SPEC.md](TRANSLATION_AUTOMATION_SPEC.md)** - Automated translation discovery system
 - **[guides/DIRECTION_PROPAGATION.md](guides/DIRECTION_PROPAGATION.md)** - Direction propagation in pipe panels (PipeFrame, RelativeDirectionInput, cascade sync)
+- **[BABEL_CUSTOM_VERSION_DEPENDENCY.md](BABEL_CUSTOM_VERSION_DEPENDENCY.md)** - Custom Babel 0.5.4 local dependency (temporary)
+- **[WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md](WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md)** - Windows CI workarounds for SBT/Coursier
 
 ## 🏗️ Architecture Documentation
 
