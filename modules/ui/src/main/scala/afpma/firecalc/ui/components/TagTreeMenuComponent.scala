@@ -10,7 +10,7 @@ import afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.formgen.Defaultable
+import afpma.laminar.form.Defaultable
 import afpma.firecalc.ui.icons.lucide
 
 import com.raquo.laminar.api.L.*

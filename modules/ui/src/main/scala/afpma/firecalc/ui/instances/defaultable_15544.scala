@@ -15,7 +15,7 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import afpma.firecalc.ui.formgen.Defaultable
+import afpma.laminar.form.Defaultable
 
 import io.taig.babel.Locale
 

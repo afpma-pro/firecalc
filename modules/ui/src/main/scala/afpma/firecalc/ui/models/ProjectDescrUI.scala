@@ -8,7 +8,10 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import afpma.firecalc.ui.formgen.*
+import afpma.laminar.form.*
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.derivation.FormDerivation
 import afpma.firecalc.ui.instances.*
 
 import com.raquo.laminar.api.L.*
@@ -41,14 +44,15 @@ case class ProjectDescrUI()(using Locale, DisplayUnits):
 
     private val vertical_form = new VerticalFormCommonInstances()
     import vertical_form.given
+    given FormRenderer = DaisyUIVertical
 
     lazy val form_customer        = customer_var.as_HtmlElement
     lazy val form_project_descr   = project_descr_var.as_HtmlElement
-    lazy val form_billing_address = billing_address_var.as_HtmlElement(using
-        given_Address.withFieldName(I18N_UI.client_project_data.billing_address)
-    )
-    lazy val form_project_address = project_address_var.as_HtmlElement(using
-        given_Address.withFieldName(I18N_UI.client_project_data.project_address)
-    )
+    lazy val form_billing_address =
+        given Form[Address] = vertical_form.given_Address.withFieldName(I18N_UI.client_project_data.billing_address)
+        billing_address_var.as_HtmlElement
+    lazy val form_project_address =
+        given Form[Address] = vertical_form.given_Address.withFieldName(I18N_UI.client_project_data.project_address)
+        project_address_var.as_HtmlElement
 
 extension (x: ProjectDescr) def nonEmpty: Boolean = !(x == ProjectDescr.empty)

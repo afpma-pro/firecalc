@@ -14,7 +14,7 @@ import afpma.firecalc.engine.utils.*
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
-import afpma.firecalc.ui.formgen.*
+import afpma.laminar.form.*
 import afpma.firecalc.ui.utils.OptionalField
 import afpma.firecalc.ui.utils.formatPrecise
 
@@ -27,7 +27,7 @@ import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
-import LaminarFormFactory.DISABLED_SIG
+import afpma.laminar.form.derivation.FormDerivation.DISABLED_SIG
 import scala.annotation.nowarn
 
 object DaisyUIInputs:

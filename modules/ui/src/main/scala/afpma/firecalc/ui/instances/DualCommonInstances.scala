@@ -14,9 +14,9 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.utils.*
 
-import coulomb.*
-import coulomb.policy.standard.given
-import coulomb.units.us.*
+import _root_.coulomb.*
+import _root_.coulomb.policy.standard.given
+import _root_.coulomb.units.us.*
 
 class DualCommonInstances(using DisplayUnits):
 
@@ -80,26 +80,17 @@ class DualCommonInstances(using DisplayUnits):
 
     given given_dual_Roughness: DualQtyD[Meter, Millimeter] =
         DualQtyDF
-            .makeForId[Meter, Millimeter](using
-                SUnits.sunit_Meter,
-                SUnits.sunit_Millimeter
-            )
+            .makeForId[Meter, Millimeter]
             .appendAllowed[Centimeter]
 
     // Thickness : mm + cm
 
     given given_dual_Thickness: DualQtyD[Meter, ?] = displayUnits(
         DualQtyDF
-            .makeForId[Meter, Millimeter](using
-                SUnits.sunit_Meter,
-                SUnits.sunit_Millimeter
-            )
+            .makeForId[Meter, Millimeter]
             .appendAllowed[Centimeter],
         DualQtyDF
-            .makeForId[Meter, Millimeter](using
-                SUnits.sunit_Meter,
-                SUnits.sunit_Millimeter
-            )
+            .makeForId[Meter, Millimeter]
             .appendAllowed[Inch]
     )
 

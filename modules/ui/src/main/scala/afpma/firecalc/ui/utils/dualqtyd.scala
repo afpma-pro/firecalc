@@ -8,8 +8,12 @@ package afpma.firecalc.ui.utils
 import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.ui.daisyui.*
-import afpma.firecalc.ui.formgen.*
+import afpma.laminar.form.*
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.daisyui.{DaisyUIInputs as _, *}
+import afpma.firecalc.ui.daisyui.DaisyUIInputs
 
 import cats.Functor
 import cats.Id
@@ -18,8 +22,8 @@ import cats.syntax.all.*
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
-import LaminarFormFactory.DISABLED_SIG
-import coulomb.conversion.UnitConversion
+import FormDerivation.DISABLED_SIG
+import _root_.coulomb.conversion.UnitConversion
 
 import scala.annotation.nowarn
 
@@ -93,7 +97,7 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
 
         // create an async var with bidirectional link to hold current value "ofv" (double with 'current' unit)
         val (curr_ofvalue_var, bidir_async_binders) =
-            LaminarForm.makeOptionVarFromVar_BiDirAsync_Tuple1[QFinal, F[Double]]    (
+            VarSync.makeOptionVarFromVar_BiDirAsync_Tuple1[QFinal, F[Double]]    (
                 finalVar,
                 f     = (fq: QFinal) =>
                     val csu = curr_sunit_var.now()
@@ -109,7 +113,8 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
         val curr_sunit_to_qfinal_binder =
             curr_sunit_var.signal.distinct
                 .withCurrentValueOf(curr_ovalue_var)
-                .map: (csu, cov) =>
+                .map: t =>
+                    val (csu, cov) = t
                     val cfv = currentOValueToCurrentFValue(cov, d.default, csu)
                     getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(cfv)
                 .changes --> finalVar.writer
@@ -123,19 +128,19 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
 
         (curr_ovalue_var, curr_sunit_var, sunits, binders)
 
-    def form_DaisyUIVerticalForm(
+    def form_vertical(
         disabled: Signal[Boolean] = DISABLED_SIG
     )(using
         d   : Defaultable[QFinal],
         vvqf: ValidateVar[QFinal]
-    ): DaisyUIVerticalForm[QFinal] =
-        new DaisyUIVerticalForm[QFinal]:
-            val defaultable_instance = d
-            lazy val validate_var    = vvqf
+    ): Form[QFinal] =
+        new Form[QFinal]:
+            val defaultable = d
+            lazy val validateVar    = vvqf
             @nowarn def render(
                 finalVar  : Var[QFinal],
                 formConfig: FormConfig
-            )(using ValidateVar[QFinal]): L.HtmlElement =
+            )(using FormRenderer): L.HtmlElement =
                 val (curr_ovalue_var, curr_sunit_var, sunits, binders) = splitAndMakeVarsFor(finalVar)
                 DaisyUIInputs
                     .NumberInputWithUnitsAndFloatingLabelAndTooltipValidation     (
@@ -152,21 +157,21 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
                     )
                     .amend(binders)
             end render
-    end form_DaisyUIVerticalForm
+    end form_vertical
 
-    def form_DaisyUIHorizontalForm(
+    def form_horizontal(
         disabled: Signal[Boolean] = DISABLED_SIG
     )(using
         d   : Defaultable[QFinal],
         vvqf: ValidateVar[QFinal]
-    ): DaisyUIHorizontalForm[QFinal] =
-        new DaisyUIHorizontalForm[QFinal]:
-            val defaultable_instance = d
-            lazy val validate_var    = vvqf
+    ): Form[QFinal] =
+        new Form[QFinal]:
+            val defaultable = d
+            lazy val validateVar    = vvqf
             @nowarn def render(
                 finalVar  : Var[QFinal],
                 formConfig: FormConfig
-            )(using ValidateVar[QFinal]): L.HtmlElement =
+            )(using FormRenderer): L.HtmlElement =
                 val (curr_ovalue_var, curr_sunit_var, sunits, binders) = splitAndMakeVarsFor(finalVar)
                 DaisyUIInputs
                     .NumberInputWithUnitsAndFloatingLabelAndTooltipValidation     (
@@ -183,7 +188,7 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
                     )
                     .amend(binders)
             end render
-    end form_DaisyUIHorizontalForm
+    end form_horizontal
 
     // given encoderId: Encoder[QtyD[UF]] = encoder_QtyD[UF]
     // given decoderId: Decoder[QtyD[UF]] = decoder_QtyD[UF]

@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.models.gtypedefs.*
 
-import afpma.firecalc.ui.formgen.Defaultable
+import afpma.laminar.form.Defaultable
 import afpma.firecalc.ui.models.*
 
 import coulomb.*

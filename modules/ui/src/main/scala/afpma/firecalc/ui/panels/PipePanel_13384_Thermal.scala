@@ -498,7 +498,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     )
 
     lazy val shortcut_start_new_pipe =
-        import afpma.firecalc.ui.formgen.{Defaultable as D}
+        import afpma.laminar.form.{Defaultable as D}
         TagTreeMenu.Shortcut  (
             txt   = I18N.set_prop.shortcuts.start_a_new_pipe,
             elems = (

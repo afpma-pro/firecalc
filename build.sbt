@@ -42,19 +42,6 @@ def watchI18nSources(i18nModules: String*): Seq[Setting[_]] = Seq(
   }
 )
 
-/** Combined i18n module settings: watchSources + sourceGenerators in one call.
-  *
-  * @param moduleName The i18n module name (e.g., "i18n", "ui-i18n", "payments-i18n")
-  * @param packagePath The package path for the generated file (e.g., Seq("afpma", "firecalc", "i18n"))
-  * @return Seq of settings for watchSources and sourceGenerators
-  */
-def i18nModuleSettings(moduleName: String, packagePath: Seq[String]): Seq[Setting[_]] = Seq(
-  Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-    file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
-  },
-  Compile / sourceGenerators += i18nSourceGenerator(moduleName, packagePath),
-)
-
 /** Helper function to generate i18n source files from HOCON conf files.
   *
   * @param moduleName The i18n module name (e.g., "i18n", "ui-i18n")
@@ -187,7 +174,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
+  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -598,7 +585,13 @@ lazy val i18n = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
     libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
 
-    i18nModuleSettings("i18n", Seq("afpma", "firecalc", "i18n")),
+    // Make Bloop/Metals watch the i18n conf files for changes
+    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+      file(s"modules/i18n/src/main/resources/i18n/$lang.conf")
+    },
+
+    // Generate Scala source files from HOCON conf files
+    Compile / sourceGenerators += i18nSourceGenerator("i18n", Seq("afpma", "firecalc", "i18n")),
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .dependsOn(i18n_utils)
 
@@ -716,6 +709,93 @@ lazy val jsSourceMapSettings = Def.settings(
         )
     }
 )
+
+// =========
+// laminar-form-core (Form[A], FormRenderer, Defaultable, ValidateVar, FormConfig, etc.)
+
+lazy val laminar_form_core = (project in file("modules/laminar-form-core"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "laminar-form-core",
+    version := ui_version,
+    libraryDependencies ++= Seq(
+      "com.raquo"       %%% "laminar"  % "17.2.1",
+      "com.raquo"       %%% "airstream" % "17.2.1",
+      "org.typelevel"   %%% "cats-core" % "2.13.0",
+      // magnolia for Defaultable + FormAnnotations derivation
+      "pro.afpma"       %%% "magnolia"  % "1.3.16",
+    ),
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
+
+// =========
+// laminar-form-derivation (magnolia join/split, primitives, factory methods)
+
+lazy val laminar_form_derivation = (project in file("modules/laminar-form-derivation"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "laminar-form-derivation",
+    version := ui_version,
+    libraryDependencies ++= Seq(
+      // magnolia for AutoDerivation[Form]
+      "pro.afpma"       %%% "magnolia"  % "1.3.16",
+      // java.time for LocalDate
+      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+    ),
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
+  .dependsOn(laminar_form_core, i18n_utils.js)
+
+// =========
+// laminar-form-coulomb (NumericFormValue instances for QtyD/TempD)
+
+lazy val laminar_form_coulomb = (project in file("modules/laminar-form-coulomb"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "laminar-form-coulomb",
+    version := ui_version,
+    libraryDependencies ++= Seq(
+      "com.manyangled"  %%% "coulomb-core"  % "0.8.0",
+      "com.manyangled"  %%% "coulomb-units" % "0.8.0",
+    ),
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
+  .dependsOn(laminar_form_derivation, units.js)
+
+// =========
+// laminar-form-daisyui (DaisyUIVertical/Horizontal FormRenderer implementations)
+
+lazy val laminar_form_daisyui = (project in file("modules/laminar-form-daisyui"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    commonSettings,
+    name := "laminar-form-daisyui",
+    version := ui_version,
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+    },
+    scalaJSUseMainModuleInitializer := false,
+  )
+  .settings(jsSourceMapSettings)
+  .dependsOn(laminar_form_derivation)
+
+// =========
+// ui (firecalc frontend — Laminar SPA)
 
 lazy val ui = (project in file("modules/ui"))
   .enablePlugins(ScalaJSPlugin)
@@ -891,13 +971,13 @@ lazy val ui = (project in file("modules/ui"))
   .settings(
     commonSettings,
     scalacOptions ++= Seq(
-      "-Xmax-inlines:40", // required for deep inline expansion (Laminar/Airstream, not circe — profiling 2026-04 showed circe is only 3.5% of UI compile time; see plans/phase-c-implementation-plan.md)
+      "-Xmax-inlines:40", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
     //   "--explain-cyclic",
     ),
   )
   .settings(jsSourceMapSettings)
   .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
-  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, engine_13384_strict.js, engine_15544_strict.js, engine_15544_mce.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph)
+  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, engine_13384_strict.js, engine_15544_strict.js, engine_15544_mce.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph, laminar_form_daisyui, laminar_form_coulomb)
 
 // =========
 // ui-i18n
@@ -914,7 +994,13 @@ lazy val ui_i18n = crossProject(JSPlatform/*, JVMPlatform*/)
     
     libraryDependencies += "io.taig"        %%% "babel-generic" % babel_version_custom,
 
-    i18nModuleSettings("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n")),
+    // Make Bloop/Metals watch the i18n conf files for changes
+    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+      file(s"modules/ui-i18n/src/main/resources/i18n/$lang.conf")
+    },
+
+    // Generate Scala source files from HOCON conf files
+    Compile / sourceGenerators += i18nSourceGenerator("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n")),
 
     // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
     // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
@@ -940,7 +1026,13 @@ lazy val payments_shared_i18n = crossProject(JSPlatform, JVMPlatform)
 
     libraryDependencies += "io.taig"        %%% "babel-generic" % babel_version_custom,
 
-    i18nModuleSettings("payments-shared-i18n", Seq("afpma", "firecalc", "payments", "shared", "i18n")),
+    // Make Bloop/Metals watch the i18n conf files for changes
+    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+      file(s"modules/payments-shared-i18n/src/main/resources/i18n/$lang.conf")
+    },
+
+    // Generate Scala source files from HOCON conf files
+    Compile / sourceGenerators += i18nSourceGenerator("payments-shared-i18n", Seq("afpma", "firecalc", "payments", "shared", "i18n")),
 
     // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
     // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
@@ -1002,7 +1094,13 @@ lazy val payments_i18n = (project in file("modules/payments-i18n"))
     
     libraryDependencies += "io.taig"        %% "babel-generic" % babel_version_custom,
 
-    i18nModuleSettings("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n")),
+    // Make Bloop/Metals watch the i18n conf files for changes
+    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+      file(s"modules/payments-i18n/src/main/resources/i18n/$lang.conf")
+    },
+
+    // Generate Scala source files from HOCON conf files
+    Compile / sourceGenerators += i18nSourceGenerator("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n")),
   )
   .dependsOn(i18n_utils.jvm)
 //   .jsConfigure(
@@ -1022,7 +1120,13 @@ lazy val invoices_i18n = (project in file("modules/invoices-i18n"))
     
     libraryDependencies += "io.taig"        %% "babel-generic" % babel_version_custom,
 
-    i18nModuleSettings("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n")),
+    // Make Bloop/Metals watch the i18n conf files for changes
+    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+      file(s"modules/invoices-i18n/src/main/resources/i18n/$lang.conf")
+    },
+
+    // Generate Scala source files from HOCON conf files
+    Compile / sourceGenerators += i18nSourceGenerator("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n")),
   )
   .dependsOn(i18n_utils.jvm)
 

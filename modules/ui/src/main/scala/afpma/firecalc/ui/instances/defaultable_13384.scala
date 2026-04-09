@@ -15,7 +15,7 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import afpma.firecalc.ui.formgen.Defaultable
+import afpma.laminar.form.Defaultable
 
 import io.taig.babel.Locale
 
@@ -31,7 +31,7 @@ object defaultable_13384:
 
     object incr_descr_en13384:
 
-        // given Defaultable[SetThermalPipeProp_13384] = Defaultable.autoDerived[SetThermalPipeProp_13384]
+        // given Defaultable[SetThermalPipeProp_13384] = Defaultable.derived[SetThermalPipeProp_13384]
 
         given defaultable_Seq_SetSingleProp: Defaultable[Seq[SetSingleProp]]              :
             def default = Seq.empty
@@ -132,7 +132,7 @@ object defaultable_13384:
     val appendLayerDescr =
         import defaultable.pipeShapeOuter // scalafix:ok
         import defaultable.qty_d.meter.zero
-        Defaultable.autoDerived[AppendLayerDescr]
+        Defaultable.derived[AppendLayerDescr]
 
     given given_AppendLayerDescr: Defaultable[AppendLayerDescr] = appendLayerDescr
 

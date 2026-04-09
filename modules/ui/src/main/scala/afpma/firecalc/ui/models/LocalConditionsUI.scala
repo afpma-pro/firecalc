@@ -15,8 +15,12 @@ import afpma.firecalc.i18n.utils.*
 import afpma.firecalc.i18n.utils.macros.*
 
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.daisyui.DaisyUIVerticalForm
-import afpma.firecalc.ui.formgen.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.derivation.FormDerivation.autoOverwriteFieldNames
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.*
+import afpma.laminar.form.Form.*
 import afpma.firecalc.ui.instances.*
 
 import cats.syntax.all.*
@@ -83,6 +87,7 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
 
     given dual: DualCommonInstances = new DualCommonInstances()
+    given FormRenderer = DaisyUIVertical
 
     private val FC_I18N_COS = I18N.local_conditions.chimney_termination
 
@@ -109,8 +114,8 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
         )
 
     given form_HorizontalDistanceBetweenChimneyAndRidgeline
-        : DaisyUIVerticalForm[Option[HorizontalDistanceBetweenChimneyAndRidgeline]] =
-        DaisyUIVerticalForm
+        : Form[Option[HorizontalDistanceBetweenChimneyAndRidgeline]] =
+        FormDerivation
             .conditionalOn[ChimneyLocationOnRoof, HorizontalDistanceBetweenChimneyAndRidgeline](
                 chimney_location_on_roof_var
             )
@@ -118,19 +123,20 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
                 FC_I18N_COS.chimney_location_on_roof.horizontal_distance_between_chimney_and_ridgeline.explain
             )
 
-    given form_Slope: DaisyUIVerticalForm[Option[Slope]] =
-        DaisyUIVerticalForm
+    given form_Slope: Form[Option[Slope]] =
+        given Form[Slope] = vertical_form.given_Slope
+        FormDerivation
             .conditionalOn[ChimneyLocationOnRoof, Slope](chimney_location_on_roof_var)
             .withFieldName(FC_I18N_COS.chimney_location_on_roof.slope.explain)
 
-    given form_OutsideAirIntakeAndChimneyLocations: DaisyUIVerticalForm[Option[OutsideAirIntakeAndChimneyLocations]] =
-        DaisyUIVerticalForm
+    given form_OutsideAirIntakeAndChimneyLocations: Form[Option[OutsideAirIntakeAndChimneyLocations]] =
+        FormDerivation
             .conditionalOn[ChimneyLocationOnRoof, OutsideAirIntakeAndChimneyLocations](chimney_location_on_roof_var)
             .withFieldName(FC_I18N_COS.chimney_location_on_roof.outside_air_intake_and_chimney_locations.explain)
 
     given form_HorizontalDistanceBetweenChimneyAndRidgelineBis
-        : DaisyUIVerticalForm[Option[HorizontalDistanceBetweenChimneyAndRidgelineBis]] =
-        DaisyUIVerticalForm
+        : Form[Option[HorizontalDistanceBetweenChimneyAndRidgelineBis]] =
+        FormDerivation
             .conditionalOn[ChimneyLocationOnRoof, HorizontalDistanceBetweenChimneyAndRidgelineBis](
                 chimney_location_on_roof_var
             )
@@ -138,9 +144,9 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
                 FC_I18N_COS.chimney_location_on_roof.horizontal_distance_between_chimney_and_ridgeline_bis.explain
             )
 
-    given form_ChimneyLocationOnRoof: DaisyUIVerticalForm[ChimneyLocationOnRoof] =
-        DaisyUIVerticalForm
-            .autoDerived[ChimneyLocationOnRoof]
+    given form_ChimneyLocationOnRoof: Form[ChimneyLocationOnRoof] =
+        FormDerivation
+            .derived[ChimneyLocationOnRoof]
             .withFieldName(
                 I18N.local_conditions.chimney_termination.chimney_location_on_roof.explain
             )
@@ -163,22 +169,23 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     )
 
     given form_HorizontalAngleBetweenChimneyAndAdjacentBuildings
-        : DaisyUIVerticalForm[Option[HorizontalAngleBetweenChimneyAndAdjacentBuildings]] =
-        DaisyUIVerticalForm
+        : Form[Option[HorizontalAngleBetweenChimneyAndAdjacentBuildings]] =
+        FormDerivation
             .conditionalOn[AdjacentBuildings, HorizontalAngleBetweenChimneyAndAdjacentBuildings](adjacent_buildings_var)
             .withFieldName(
                 FC_I18N_COS.adjacent_buildings.horizontal_angle_between_chimney_and_adjacent_buildings.explain
             )
 
     given form_VerticalAngleBetweenChimneyAndAdjacentBuildings
-        : DaisyUIVerticalForm[Option[VerticalAngleBetweenChimneyAndAdjacentBuildings]] =
-        DaisyUIVerticalForm
+        : Form[Option[VerticalAngleBetweenChimneyAndAdjacentBuildings]] =
+        given Form[VerticalAngleBetweenChimneyAndAdjacentBuildings] = vertical_form.given_VerticalAngleBetweenChimneyAndAdjacentBuildings
+        FormDerivation
             .conditionalOn[AdjacentBuildings, VerticalAngleBetweenChimneyAndAdjacentBuildings](adjacent_buildings_var)
             .withFieldName(FC_I18N_COS.adjacent_buildings.vertical_angle_between_chimney_and_adjacent_buildings.explain)
 
-    given form_AdjacentBuildings: DaisyUIVerticalForm[AdjacentBuildings] =
-        DaisyUIVerticalForm
-            .autoDerived[AdjacentBuildings]
+    given form_AdjacentBuildings: Form[AdjacentBuildings] =
+        FormDerivation
+            .derived[AdjacentBuildings]
             .withFieldName(
                 I18N.local_conditions.chimney_termination.adjacent_buildings.explain
             )
@@ -188,15 +195,15 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     given hasTransl_ChimneyTermination: HasTranslatedFieldsWithValues[ChimneyTermination] =
         HasTranslatedFieldsWithValues.makeFor[ChimneyTermination, I18nData](using I18N)
 
-    given form_ChimneyTermination: DaisyUIVerticalForm[ChimneyTermination] =
-        DaisyUIVerticalForm.autoDerived[ChimneyTermination].autoOverwriteFieldNames.withoutFieldName
+    given form_ChimneyTermination: Form[ChimneyTermination] =
+        FormDerivation.derived[ChimneyTermination].autoOverwriteFieldNames.hideFieldName
 
     // z_geodetical_height
 
-    given form_z_geodetical_height: DisplayUnits => DaisyUIVerticalForm[QtyD[Meter]] =
+    given form_z_geodetical_height: DisplayUnits => Form[QtyD[Meter]] =
         import defaultable.given_z_geodetical_height
         import vv.meter.valid_whenPositive
-        dual.given_dual_z_geodetical_height.form_DaisyUIVerticalForm()
+        dual.given_dual_z_geodetical_height.form_vertical()
             .withFieldName(I18N.local_conditions.altitude)
 
     // LocalConditions Clone
@@ -204,9 +211,9 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     given hasTransl_LocalConditions_UIClone: HasTranslatedFieldsWithValues[LocalConditions_UIClone] =
         HasTranslatedFieldsWithValues.makeFor[LocalConditions_UIClone, I18nData](using I18N)
 
-    given DaisyUIVerticalForm[LocalConditions_UIClone] =
-        given DaisyUIVerticalForm[Boolean] = vertical_form.boolean_trueAsDefault_alwaysValid
-        DaisyUIVerticalForm.autoDerived[LocalConditions_UIClone].autoOverwriteFieldNames
+    given Form[LocalConditions_UIClone] =
+        given Form[Boolean] = vertical_form.boolean_trueAsDefault_alwaysValid
+        FormDerivation.derived[LocalConditions_UIClone].autoOverwriteFieldNames
 
     lazy val local_conditions_clone_var =
         local_conditions_var.zoomLazy(LocalConditions_UIClone.fromOriginal)(LocalConditions_UIClone.updateOriginal)
