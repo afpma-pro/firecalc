@@ -126,7 +126,8 @@ object FormDerivation extends AutoDerivation[Form]:
                 select_field_label  = config.shownFieldName,
                 subt_defaultables   = subt_defaultables,
                 subt_labels         = subt_labels,
-                subt_typeclasses    = subt_typeclasses
+                subt_typeclasses    = subt_typeclasses,
+                onSubtypeSwitch     = _onSubtypeSwitch
             )
 
     // =========================================================================
@@ -140,7 +141,8 @@ object FormDerivation extends AutoDerivation[Form]:
         select_field_label : Option[String],
         subt_defaultables  : IArray[Defaultable[A]],
         subt_labels        : IArray[String],
-        subt_typeclasses   : IArray[Form[A]]
+        subt_typeclasses   : IArray[Form[A]],
+        onSubtypeSwitch    : Option[(A, A) => A] = None
     )(using renderer: FormRenderer): HtmlElement =
         val a_init = variable.now()
 
@@ -171,7 +173,11 @@ object FormDerivation extends AutoDerivation[Form]:
                     else subt_d.default
                 )
 
+        // Flag: true while manual_vars_binders is propagating an external write
+        var _isExternalUpdate = false
+
         val manual_vars_binders = variable.signal.distinct --> Observer[A] { a =>
+            _isExternalUpdate = true
             val subt_label = value_to_subt_label(a)
             val idx        = subt_labels.indexOf(subt_label)
             val var_subt   = vars_subt(idx)
@@ -179,6 +185,21 @@ object FormDerivation extends AutoDerivation[Form]:
                 var_subt            -> a,
                 var_subt_label_curr -> subt_label
             )
+            _isExternalUpdate = false
+        }
+
+        // Apply onSubtypeSwitch only for dropdown-initiated subtype changes
+        val subtypeSwitchBinder: Seq[Binder[HtmlElement]] = onSubtypeSwitch.toSeq.map { transform =>
+            var_subt_label_curr.signal.changes --> Observer[String] { newLabel =>
+                if !_isExternalUpdate then
+                    val prevValue = variable.now()
+                    val newIdx    = subt_labels.indexOf(newLabel)
+                    if newIdx >= 0 then
+                        val newDefault   = vars_subt(newIdx).now()
+                        val transformed  = transform(prevValue, newDefault)
+                        if transformed != newDefault then
+                            vars_subt(newIdx).set(transformed)
+            }
         }
 
         def isSubtypeLabelCurrentlySelected(subt_label: String): Signal[Boolean] =
@@ -214,7 +235,8 @@ object FormDerivation extends AutoDerivation[Form]:
         renderer.sumTypeWrapper(selectNode, nodes)
             .amend(
                 vars_subt_to_variable_binders,
-                manual_vars_binders
+                manual_vars_binders,
+                subtypeSwitchBinder
             )
 
     // =========================================================================

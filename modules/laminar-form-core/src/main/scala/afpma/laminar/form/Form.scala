@@ -29,6 +29,18 @@ trait Form[A]:
       */
     def configuredFieldName: Option[String] = None
 
+    /** Hook called when the user switches sealed-trait subtypes via the UI dropdown.
+      * `transform(previousValue, newSubtypeDefault) => adjustedValue`.
+      * NOT called on external writes (project load, catalog selection).
+      * Only meaningful for sealed-trait forms produced by `split`.
+      */
+    protected[form] var _onSubtypeSwitch: Option[(A, A) => A] = None
+
+    /** Set the subtype-switch hook. Returns this for chaining. */
+    def withOnSubtypeSwitch(f: (A, A) => A): Form[A] =
+        _onSubtypeSwitch = Some(f)
+        this
+
 object Form:
 
     def apply[A](using ev: Form[A]): Form[A] = ev

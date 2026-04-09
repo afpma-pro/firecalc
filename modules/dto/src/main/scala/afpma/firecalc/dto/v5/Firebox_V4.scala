@@ -20,6 +20,14 @@ sealed trait Firebox_V4 extends FireboxI
 
 object Firebox_V4:
 
+    extension (fb: Firebox_V4)
+        def withDimensions(depth: Length, width: Length, height: Length): Firebox_V4 = fb match
+            case t: Traditional           => t.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case e: Ecolabeled            => e.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case a: AFPMA_PRSE            => a.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case s: SingleTested          => s.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case d: Door15aFirebox_Catalog => d.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+
     export Firebox_V3.TestStandard
     
     @Transl(I(_.firebox_names.traditional))
