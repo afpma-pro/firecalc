@@ -725,7 +725,10 @@ lazy val laminar_form_core = (project in file("modules/laminar-form-core"))
       "org.typelevel"   %%% "cats-core" % "2.13.0",
       // magnolia for Defaultable + FormAnnotations derivation
       "pro.afpma"       %%% "magnolia"  % "1.3.16",
+      // testing
+      "com.lihaoyi"     %%% "utest"    % "0.8.4" % Test,
     ),
+    testFrameworks += new TestFramework("utest.runner.Framework"),
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
     },
@@ -764,7 +767,10 @@ lazy val laminar_form_derivation = (project in file("modules/laminar-form-deriva
       "pro.afpma"       %%% "magnolia"  % "1.3.16",
       // java.time for LocalDate
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+      // testing
+      "com.lihaoyi"     %%% "utest"    % "0.8.4" % Test,
     ),
+    testFrameworks += new TestFramework("utest.runner.Framework"),
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
     },
@@ -785,7 +791,10 @@ lazy val laminar_form_coulomb = (project in file("modules/laminar-form-coulomb")
     libraryDependencies ++= Seq(
       "com.manyangled"  %%% "coulomb-core"  % "0.8.0",
       "com.manyangled"  %%% "coulomb-units" % "0.8.0",
+      // testing
+      "com.lihaoyi"     %%% "utest"    % "0.8.4" % Test,
     ),
+    testFrameworks += new TestFramework("utest.runner.Framework"),
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
     },
@@ -951,7 +960,9 @@ lazy val ui = (project in file("modules/ui"))
 
       // Testing
       "org.scalatest"       %%% "scalatest"     % "3.2.19" % "test",
+      "com.lihaoyi"         %%% "utest"         % "0.8.4"  % Test,
     ),
+    testFrameworks += new TestFramework("utest.runner.Framework"),
 
     // common Scala.js config for dev / prod
     scalaJSLinkerConfig ~= { _
