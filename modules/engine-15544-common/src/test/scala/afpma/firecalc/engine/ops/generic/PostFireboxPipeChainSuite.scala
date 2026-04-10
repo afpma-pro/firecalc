@@ -95,6 +95,36 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
                 Vector(flue("F1"), conn("C"), flue("F-last"), chim())
             ) shouldBe a[Valid[?]]
         }
+
+        "rejects multiple connectors in 4-slot topology (multi-flue context)" in {
+            // F1 + F2 + C1 + C2 + chimney: lastFlueIdx = 1 (F2),
+            // afterFlueBeforeChimney = [C1, C2] → 2 connectors → rejected
+            val Invalid(errs) = PostFireboxPipeChain.validated(
+                Vector(flue("F1"), flue("F2"), conn("C1"), conn("C2"), chim())
+            ): @unchecked
+            errs.toList should contain(TopologyError.MultipleConnectorsAfterFlue)
+        }
+
+        "accumulates multiple errors in single invalid topology" in {
+            // chimney in wrong position + missing chimney at end
+            val Invalid(errs) = PostFireboxPipeChain.validated(
+                Vector(chim("CH-wrong"), flue(), conn())
+            ): @unchecked
+            errs.toList should contain(TopologyError.ChimneyNotLast)
+            errs.toList should contain(TopologyError.MissingChimney)
+        }
+
+        "accepts 5-slot chain: F1 + F2 + F3 + connector + chimney" in {
+            PostFireboxPipeChain.validated(
+                Vector(flue("F1"), flue("F2"), flue("F3"), conn(), chim())
+            ) shouldBe a[Valid[?]]
+        }
+
+        "accepts connector-only + chimney (no flue region)" in {
+            PostFireboxPipeChain.validated(
+                Vector(conn(), chim())
+            ) shouldBe a[Valid[?]]
+        }
     }
 
     "region accessors" - {
@@ -167,5 +197,32 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
             chain.chimneySlot.label shouldBe "CH"
             chain.fluePipeRegion.size shouldBe 1
             chain.connectorSlot shouldBe None
+        }
+
+        "fluePipeRegion includes all 3 flues in 5-slot topology" in {
+            val Valid(chain) = PostFireboxPipeChain.validated(
+                Vector(flue("F1"), flue("F2"), flue("F3"), conn("C"), chim("CH"))
+            ): @unchecked
+            chain.fluePipeRegion.map(_.label) shouldBe Vector("F1", "F2", "F3")
+            chain.connectorSlot.map(_.label) shouldBe Some("C")
+            chain.chimneySlot.label shouldBe "CH"
+        }
+
+        "all accessors for connector-only + chimney (no flue region)" in {
+            val Valid(chain) = PostFireboxPipeChain.validated(
+                Vector(conn("C"), chim("CH"))
+            ): @unchecked
+            chain.fluePipeRegion shouldBe empty
+            chain.connectorSlot.map(_.label) shouldBe Some("C")
+            chain.chimneySlot.label shouldBe "CH"
+        }
+
+        "all accessors for chimney-only (minimal topology)" in {
+            val Valid(chain) = PostFireboxPipeChain.validated(
+                Vector(chim("CH"))
+            ): @unchecked
+            chain.fluePipeRegion shouldBe empty
+            chain.connectorSlot shouldBe None
+            chain.chimneySlot.label shouldBe "CH"
         }
     }
