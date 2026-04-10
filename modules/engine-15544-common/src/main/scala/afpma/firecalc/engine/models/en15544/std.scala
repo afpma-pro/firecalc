@@ -56,7 +56,7 @@ object std:
 
     end PressureLossCoeff
 
-    sealed trait Inputs_15544_Alg extends HasPipeModules_15544Only_Alg:
+    trait Inputs_15544_Alg extends HasPipeModules_15544Only_Alg:
         self =>
 
         type Pipes_15544 <: Pipes_15544_Alg {
@@ -72,37 +72,6 @@ object std:
         val pipes                      : Pipes_15544
         final val flueGasCondition: FlueGasCondition.Dry_NonCondensing.type =
             FlueGasCondition.Dry_NonCondensing // force dry conditions for 15544
-
-    case class Inputs_15544_Strict(
-        localConditions            : LocalConditions,
-        en13384NationalAcceptedData: NationalAcceptedData,
-        stoveParams                : StoveParams,
-        design                     : Design,
-        pipes                      : Pipes_15544_Strict
-        // wood: Wood,
-    ) extends Inputs_15544_Alg
-        with HasPipeModules_15544Only_Strict:
-        override type Pipes_15544 = Pipes_15544_Strict
-
-    case class Inputs_15544_MCE(
-        localConditions                          : LocalConditions,
-        en13384NationalAcceptedData              : NationalAcceptedData,
-        stoveParams                              : StoveParams,
-        design                                   : Design,
-        pipes                                    : Pipes_15544_MCE,
-        wood                                     : Wood,
-        kindOfWood                               : KindOfWood,
-        computeWoodCalorificValueUsingComposition: "Yes" | "No",
-        combustionDuration                       : Duration,
-        fluegas_co2_dry_nominal                  : Percentage,
-        fluegas_co2_dry_lowest                   : Option[Percentage],
-        fluegas_h2o_perc_vol_nominal             : Option[Percentage],
-        fluegas_h2o_perc_vol_lowest              : Option[Percentage],
-        massFlows_override                       : HeatingAppliance.MassFlows,
-        ext_air_rel_hum_default                  : Percentage
-    ) extends Inputs_15544_Alg
-        with HasPipeModules_15544Only_MCE:
-        override type Pipes_15544 = Pipes_15544_MCE
 
     case class Design(
         firebox: Firebox_15544
