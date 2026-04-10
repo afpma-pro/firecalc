@@ -334,11 +334,11 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
         "org.typelevel"     %%% "kittens"           % "3.5.0",
         // Test
         "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-        "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
     ),
   ).jvmConfigure(_.settings(
     Test / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "scala",
     Test / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "resources",
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
   )).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(utils, i18n, units, domain)
@@ -359,6 +359,9 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
         "org.scalameta" %%% "munit" % "1.0.0" % "test",
     ),
   )
+  .jvmConfigure(_.settings(
+    Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala",
+  ))
   .jsConfigure(_.settings(jsSourceMapSettings: _*))
   .dependsOn(dto)
 
@@ -382,12 +385,17 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
 
     // Test
     libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-    libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
 
     // i18n
     libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
     libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
     libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
+  ).jvmSettings(
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jsSettings(
+    // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
+    // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(i18n, units, dto, domain)
@@ -420,13 +428,16 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
 
     // scalatest
     libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-    libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
 
     // i18n
     libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
     libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
     libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  ).jvmConfigure(_.settings(
+    Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala",
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ))
+  .jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine_kernel, i18n, units, dto, engine_kernel % "test->test")
 
@@ -459,7 +470,8 @@ lazy val engine_13384_common = crossProject(JVMPlatform, JSPlatform)
     version := engine_version,
     scalacOptions ++= Seq("-Xmax-inlines:32"),
     libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jvmSettings(
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine, engine % "test->test")
@@ -481,7 +493,8 @@ lazy val engine_13384_strict = crossProject(JVMPlatform, JSPlatform)
 
     // Test
     libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-    libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
+  ).jvmSettings(
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine_13384_common, engine_13384_common % "test->test", engine_kernel % "test->test")
@@ -496,7 +509,8 @@ lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
     version := engine_version,
     scalacOptions ++= Seq("-Xmax-inlines:32"),
     libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jvmSettings(
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine, engine_13384_common, engine % "test->test", engine_13384_common % "test->test")
@@ -511,7 +525,8 @@ lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
     version := engine_version,
     scalacOptions ++= Seq("-Xmax-inlines:32"),
     libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jvmSettings(
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test", engine_13384_strict % "test->test", engine % "test->test")
@@ -526,7 +541,8 @@ lazy val engine_15544_mce = crossProject(JVMPlatform, JSPlatform)
     version := engine_version,
     scalacOptions ++= Seq("-Xmax-inlines:32"),
     libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jvmSettings(
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test")
@@ -541,7 +557,8 @@ lazy val engine_15544_labo = crossProject(JVMPlatform, JSPlatform)
     version := engine_version,
     scalacOptions ++= Seq("-Xmax-inlines:32"),
     libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jvmSettings(
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(engine_15544_mce, engine_15544_mce % "test->test")
