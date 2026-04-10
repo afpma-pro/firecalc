@@ -84,9 +84,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         _en15544.airIntake_PipeResult.toValidatedNel.getOrThrow
         ap.combustionAir_PipeResult.getOrThrow
         ap.firebox_PipeResult.getOrThrow
-        ap.flue_PipeResult.getOrThrow
-        ap.connector_PipeResult.getOrThrow
-        ap.chimney_PipeResult.getOrThrow
+        ap.postFireboxPipeResults.getOrThrow
 
         val pipesResult_15544 = ap.outputs.pipesResult_15544.getOrThrow
         emit(pipesResult_15544.showAsCliTable)
