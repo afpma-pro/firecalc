@@ -143,4 +143,177 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         results(2).pipe.isValid shouldBe true
     }
 
+    // ── V6 multi-slot topology tests ────────────────────────────────────
+
+    it should "produce 4 SlotBuildResults for multi-flue topology (FlueSlot + FlueSlot + ConnectorSlot + ChimneySlot)" in {
+        val results = PipeChainGeneric.build(Seq(emptyFlue, FlueSlot(Seq.empty), emptyConnector, emptyChimney))
+        results.size shouldBe 4
+        results(0).pipeType shouldBe FluePipeT
+        results(0).label shouldBe "Flue"
+        results(1).pipeType shouldBe FluePipeT
+        results(1).label shouldBe "Flue"
+        results(2).pipeType shouldBe ConnectorPipeT
+        results(2).label shouldBe "Connector"
+        results(3).pipeType shouldBe ChimneyPipeT
+        results(3).label shouldBe "Chimney"
+    }
+
+    it should "produce valid pipe/mappingFn for all slots in multi-flue topology" in {
+        val results = PipeChainGeneric.build(Seq(emptyFlue, FlueSlot(Seq.empty), emptyConnector, emptyChimney))
+        for r <- results do
+            r.pipe.isValid shouldBe true
+            r.idsMappingFn.isValid shouldBe true
+    }
+
+    it should "produce 2 SlotBuildResults for flue-only + chimney (no connector)" in {
+        val results = PipeChainGeneric.build(Seq(emptyFlue, emptyChimney))
+        results.size shouldBe 2
+        results(0).pipeType shouldBe FluePipeT
+        results(0).label shouldBe "Flue"
+        results(1).pipeType shouldBe ChimneyPipeT
+        results(1).label shouldBe "Chimney"
+    }
+
+    it should "produce valid pipe/mappingFn for flue-only + chimney topology" in {
+        val results = PipeChainGeneric.build(Seq(emptyFlue, emptyChimney))
+        for r <- results do
+            r.pipe.isValid shouldBe true
+            r.idsMappingFn.isValid shouldBe true
+    }
+
+    it should "produce 4 SlotBuildResults for mixed topology (FlueSlot + ThermalFlueSlot + ConnectorSlot + ChimneySlot)" in {
+        val thermalFlue = ThermalFlueSlot(Seq.empty)
+        val results     = PipeChainGeneric.build(Seq(emptyFlue, thermalFlue, emptyConnector, emptyChimney))
+        results.size shouldBe 4
+        // Both flue slots map to FluePipeT
+        results(0).pipeType shouldBe FluePipeT
+        results(0).label shouldBe "Flue"
+        results(1).pipeType shouldBe FluePipeT
+        results(1).label shouldBe "Flue"
+        results(2).pipeType shouldBe ConnectorPipeT
+        results(3).pipeType shouldBe ChimneyPipeT
+    }
+
+    it should "produce valid pipe/mappingFn for mixed FlueSlot + ThermalFlueSlot topology" in {
+        val thermalFlue = ThermalFlueSlot(Seq.empty)
+        val results     = PipeChainGeneric.build(Seq(emptyFlue, thermalFlue, emptyConnector, emptyChimney))
+        for r <- results do
+            r.pipe.isValid shouldBe true
+            r.idsMappingFn.isValid shouldBe true
+    }
+
+    it should "chain frames through 3+ flue slots with actual descriptors" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+
+        // First flue: sets direction and adds a vertical section
+        val flueDescr1 = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("sec1", 100.cm                                )
+        )
+        // Second flue: no initial direction, relies on frame from first flue
+        val flueDescr2 = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness      (1.mm              ),
+            AddSectionVertical("sec2", 80.cm     )
+        )
+        // Third flue: also relies on inherited frame
+        val flueDescr3 = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness      (1.mm              ),
+            AddSectionVertical("sec3", 60.cm     )
+        )
+        val results = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr1), FlueSlot(flueDescr2), FlueSlot(flueDescr3), emptyChimney)
+        )
+
+        results.size shouldBe 4
+
+        // First flue produces a final frame (it set direction)
+        results(0).finalFrame.isDefined shouldBe true
+        // Second flue inherits the frame and produces its own final frame
+        results(1).pipe.isValid shouldBe true
+        results(1).finalFrame.isDefined shouldBe true
+        // Third flue also inherits and produces a final frame
+        results(2).pipe.isValid shouldBe true
+        results(2).finalFrame.isDefined shouldBe true
+        // Chimney at the end builds validly
+        results(3).pipe.isValid shouldBe true
+    }
+
+    it should "chain frame from FlueSlot through ThermalFlueSlot to ConnectorSlot" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.v3.Material_13384_V2
+
+        // EN15544 flue with direction → produces a final frame
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("sec1", 100.cm                                )
+        )
+        // EN13384 thermal flue — no initial direction, inherits frame from EN15544 flue
+        val thermalFlueDescr = Seq[ThermalPipeDescr_13384_V3](
+            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
+            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
+            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384_V3.AddSectionVertical("sec2", 80.cm                    )
+        )
+        // Connector — inherits frame from thermal flue
+        val connDescr = Seq[ThermalPipeDescr_13384_V3](
+            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
+            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
+            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384_V3.AddSectionVertical("sec3", 50.cm                    )
+        )
+        val results = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), ThermalFlueSlot(thermalFlueDescr), ConnectorSlot(connDescr), emptyChimney)
+        )
+
+        results.size shouldBe 4
+        // EN15544 flue produces a frame
+        results(0).finalFrame.isDefined shouldBe true
+        // Thermal flue inherits and builds successfully
+        results(1).pipe.isValid shouldBe true
+        results(1).idsMappingFn.isValid shouldBe true
+        // Connector inherits and builds successfully
+        results(2).pipe.isValid shouldBe true
+        results(2).idsMappingFn.isValid shouldBe true
+        // Chimney terminal slot builds validly
+        results(3).pipe.isValid shouldBe true
+    }
+
+    it should "propagate frame across empty flue slot in multi-flue chain" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+
+        // First flue with direction → produces a final frame
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("sec1", 100.cm                                )
+        )
+        // Second flue is empty (e.g., placeholder in V6 multi-slot topology)
+        // Third slot is chimney
+        val results = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), FlueSlot(Seq.empty), emptyChimney)
+        )
+
+        results.size shouldBe 3
+        // First flue produces a frame
+        results(0).finalFrame.isDefined shouldBe true
+        // Empty second flue has no frame of its own
+        results(1).finalFrame shouldBe None
+        // Chimney still builds validly — the fold accumulator carries the first flue's frame
+        results(2).pipe.isValid shouldBe true
+    }
+
 end PipeChainGenericSuite
