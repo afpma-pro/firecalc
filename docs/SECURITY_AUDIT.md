@@ -594,26 +594,26 @@ All **Critical** and **High** findings have been fully remediated. All **Medium*
 
 ### Per-Finding Status
 
-| ID | Status | Commit | Notes |
-|----|--------|--------|-------|
-| SEC-001 | **FIXED** | `1dcd848` | HMAC-SHA256 signed tokens replace forgeable JWT |
-| SEC-002 | **FIXED** | `b4d2c6d` | .gitignore patterns, pre-commit secret scan, gitleaks CI |
-| SEC-003 | **FIXED** | `f0cd301` | SecureRandom, failed_attempts tracking, brute-force lockout |
-| SEC-004 | **FIXED** | `09755c8` | Atomic rawTransact check-and-mark, SQLite integration tests |
-| SEC-005 | **FIXED** | `3dd8e20` | Mandatory HMAC in all environments, timing-safe comparison |
-| SEC-006 | **FIXED** | `0c5aebf` | logBody=false, LogSanitizer utility, email masking, log level config |
-| SEC-007 | **FIXED** | `42ac770` | Official nginx:1.27-alpine + certbot/certbot:v2.11.0 |
-| SEC-008 | **FIXED** | `7bd9692` | Removed unsafe-inline from production CSP, added frame-ancestors/base-uri/form-action |
-| SEC-009 | **FIXED** | `42ac770` | HSTS + Permissions-Policy added in SEC-007 implementation |
-| SEC-010 | **FIXED** | `c93f64b` | client_max_body_size 50m in nginx, EntityLimiter 50MB in http4s |
-| SEC-011 | **PARTIAL** | `323b2bd` | Database directory chmod 700; SQLCipher not adopted (see Divergences) |
-| SEC-012 | **FIXED** | `e8abda8` | electron-builder updated (0 vulns), npm audit added to CI |
-| SEC-013 | **FIXED** | `4c170aa` | Source maps dev-only in Vite, nginx returns 404 for .map files |
-| SEC-014 | **FIXED** | `771e0d9` | Order status state machine with valid transition map + test suite |
-| SEC-015 | **FIXED** | `9d93e7d` | Atomic UPDATE ... RETURNING for invoice counter |
-| SEC-016 | **FIXED** | `36505bb` | Configurable CORS origin whitelist via payments-config.conf |
-| SEC-017 | **FIXED** | `d5d54d7` | Deprecated actions replaced with softprops/action-gh-release@v2, sbt unified to 1.11.6 |
-| SEC-018 | **FIXED** | *(pre-existing)* | No default FIRECALC_ENV — already remediated before this audit |
+| ID | Status | Audit Commit | Dev Commit | Notes |
+|----|--------|--------------|------------|-------|
+| SEC-001 | **FIXED** | `1dcd848` | `3283fdb` | HMAC-SHA256 signed tokens replace forgeable JWT |
+| SEC-002 | **FIXED** | `b4d2c6d` | `cb5fb51` | .gitignore patterns, pre-commit secret scan, gitleaks CI |
+| SEC-003 | **FIXED** | `f0cd301` | `428742f` | SecureRandom, failed_attempts tracking, brute-force lockout |
+| SEC-004 | **FIXED** | `09755c8` | `972e049`, `c7d3f55` | Atomic rawTransact check-and-mark, SQLite integration tests; strict file-backed atomicity test |
+| SEC-005 | **FIXED** | `3dd8e20` | `b594fb1` | Mandatory HMAC in all environments, timing-safe comparison |
+| SEC-006 | **FIXED** | `0c5aebf` | `7ded02d`, `c88ee27` | logBody=false, LogSanitizer utility, email masking, log level config; PII masking in exception contexts |
+| SEC-007 | **FIXED** | `42ac770` | `8f460aa` | Official nginx:1.27-alpine + certbot/certbot:v2.11.0 |
+| SEC-008 | **FIXED** | `7bd9692` | `b7dafe8` | Removed unsafe-inline from production CSP, added frame-ancestors/base-uri/form-action |
+| SEC-009 | **FIXED** | `42ac770` | `8f460aa` | HSTS + Permissions-Policy added in SEC-007 implementation |
+| SEC-010 | **FIXED** | `c93f64b` | `c9a472a` | client_max_body_size 50m in nginx, EntityLimiter 50MB in http4s |
+| SEC-011 | **PARTIAL** | `323b2bd` | `45903a7` | Database directory chmod 700; SQLCipher not adopted (see Divergences) |
+| SEC-012 | **FIXED** | `e8abda8` | `c5f3a1d` | electron-builder updated (0 vulns), npm audit added to CI |
+| SEC-013 | **FIXED** | `4c170aa` | `79707c5` | Source maps dev-only in Vite, nginx returns 404 for .map files |
+| SEC-014 | **FIXED** | `771e0d9` | `2573bd3` | Order status state machine with valid transition map + test suite |
+| SEC-015 | **FIXED** | `9d93e7d` | `e15530a` | Atomic UPDATE ... RETURNING for invoice counter |
+| SEC-016 | **FIXED** | `36505bb` | `0f1739c`, `9b1480c` | Configurable CORS origin whitelist; fail-closed validation for non-dev |
+| SEC-017 | **FIXED** | `d5d54d7` | `9465804` | Deprecated actions replaced with softprops/action-gh-release@v2, sbt unified to 1.11.6 |
+| SEC-018 | **FIXED** | *(pre-existing)* | *(pre-existing)* | No default FIRECALC_ENV — already remediated before this audit |
 
 ### Divergences from Original Remediation Plans
 
@@ -627,7 +627,7 @@ All **Critical** and **High** findings have been fully remediated. All **Medium*
 
 5. **SEC-014 — Processing state added**: The state machine includes a `Processing` intermediate state (`Pending → Processing → Confirmed → PaidOut`) that was not explicitly mentioned in the original finding. This matches the actual `OrderStatus` enum values discovered in the codebase.
 
-6. **SEC-016 — Backward-compatible default**: The CORS whitelist defaults to `List("*")` (allow all) when no `cors-allowed-origins` config is present. This preserves backward compatibility for existing deployments. Production environments MUST explicitly configure allowed origins.
+6. **SEC-016 — Fail-closed CORS validation**: The CORS whitelist defaults to `List("*")` in `PaymentsConfig` for development convenience, but `ConfigLoader.validatePaymentsConfig` now crashes at startup if the environment is not `"development"` and origins contain `"*"` or are empty. Staging and production environments MUST explicitly configure allowed origins; omitting them is a hard startup error, not a silent fallback.
 
 7. **SEC-018 — Already fixed**: The Dockerfile no longer contained `ENV FIRECALC_ENV=staging` and docker-compose.yml already used `${FIRECALC_ENV:?...}`. This was remediated in a prior commit, predating this audit session.
 
@@ -808,7 +808,7 @@ Existing `letsencrypt-certs` volumes are preserved. If upgrading from the old `d
 
 **5. Configure CORS allowed origins (SEC-016)**
 
-The default is `["*"]` (allow all) for backward compatibility. Production and staging MUST set explicit origins:
+The default is `["*"]` (allow all) which is only accepted in `development` mode. In staging and production, the server **crashes at startup** if `cors-allowed-origins` is wildcard or empty. You MUST set explicit origins:
 ```hocon
 cors-allowed-origins = ["https://firecalc.afpma.pro"]
 ```
