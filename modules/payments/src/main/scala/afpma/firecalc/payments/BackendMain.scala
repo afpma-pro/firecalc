@@ -581,6 +581,10 @@ object Main extends IOApp:
                         healthRoutes   = HealthCheckRoutes.create[IO]
                         sourceRoutes   = SourceRoutes.create[IO]
 
+                        // JWT auth middleware — ready for future protected routes
+                        // Usage: val protectedRoutes = jwtMiddleware(authedRoutes)
+                        jwtMiddleware = AuthMiddleware[IO](authService)
+
                         // SEC-010: Enforce 50 MB request body size limit on routes that accept bodies
                         maxBodySize        = 50L * 1024 * 1024
                         purchaseRoutes_V1  = EntityLimiter.httpRoutes(purchaseRoutes.routes_V1, maxBodySize)
