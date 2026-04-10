@@ -29,7 +29,7 @@ object PipeChainGeneric:
             .foldLeft((Vector.empty[SlotBuildResult], Option.empty[PipeFrame])):
                 case ((results, prevFrame), slot) =>
                     val result = buildSlot(slot, prevFrame)
-                    (results :+ result, result.finalFrame)
+                    (results :+ result, result.finalFrame.orElse(prevFrame))
             ._1
 
     private def buildSlot(

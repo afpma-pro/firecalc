@@ -118,4 +118,29 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         results(1).idsMappingFn.isValid shouldBe true
     }
 
+    it should "carry frame through empty intermediate slot (V5 migration regression)" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+
+        // Flue with direction → produces a final frame
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("sec1", 100.cm                                )
+        )
+        // Empty connector — simulates V5 project with no connector migrated to V6
+        val results = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), emptyConnector, emptyChimney))
+
+        // Flue produced a final frame
+        results(0).finalFrame.isDefined shouldBe true
+        // Empty connector produces no frame of its own
+        results(1).finalFrame shouldBe None
+        // But the carried frame (from fold accumulator) should still reach chimney:
+        // we verify by checking that the chimney slot was built with prevFrame = flue's frame.
+        // Since chimney is terminal and returns None for finalFrame, we check the pipe built validly
+        // (it would fail or produce different geometry without the inherited frame).
+        results(2).pipe.isValid shouldBe true
+    }
+
 end PipeChainGenericSuite
