@@ -4,9 +4,9 @@
  */
 
 package afpma.firecalc.engine.models.en13384
-import afpma.firecalc.engine.models.AirIntakePipe_Module_Generic
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
+
+import afpma.firecalc.engine.models.AirIntakePipe_Common_Module
 
 trait HasPipeModules_13384_Alg:
-    type AirIntakePipe_Module_T <: AirIntakePipe_Module_Generic[DraftCondition]
+    type AirIntakePipe_Module_T <: AirIntakePipe_Common_Module
     val AirIntakePipe_Module: AirIntakePipe_Module_T

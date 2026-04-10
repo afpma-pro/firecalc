@@ -35,11 +35,11 @@ import io.taig.babel.Languages
  * Core abstract algebra traits — no imports from impl.en15544.strict, impl.en15544.mce,
  * impl.en15544.labo, or impl.en13384.
  *
- * Concrete wiring is provided by the mixin traits:
+ * Concrete wiring is provided by the mixin traits (in leaf modules):
  *   - [[v0_2024_10_strict_members]]  (EN 15544 strict)
  *   - [[v0_2024_10_mce_members]]     (EN 15544 MCE)
  *   - [[v0_2024_10_labo_members]]    (EN 15544 labo)
- *   - [[v0_2024_10_13384_members]]   (EN 13384)
+ *   - [[v0_2024_10_13384_members]]   (EN 13384, in engine-15544-strict)
  */
 trait v0_2024_10_core:
 

@@ -117,11 +117,15 @@ abstract class EN13384_1_A1_2019_Common_Application(
             HeatingAppliance.Powers.summon,
             HeatingAppliance.Efficiency.summon
         )
-        val connSlot = ConnectorPipe_Module.foldPipeCanBe(inputs.pipes.connector)(
+        // Pipes_13384_Alg has abstract ConnectorPipe/ChimneyPipe types; all concrete subtypes
+        // fix these to ConnectorPipe_Module.PipeCanBe / ChimneyPipe_Module.PipeCanBe respectively.
+        val connector = inputs.pipes.connector.asInstanceOf[ConnectorPipe]
+        val chimney   = inputs.pipes.chimney.asInstanceOf[ChimneyPipe]
+        val connSlot = ConnectorPipe_Module.foldPipeCanBe(connector)(
             onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
             onFullDescr = fd => tc.mkSlot(ConnectorPipeT, "Connector", FlueGas, ConnectorPipe_Module.unwrap(fd))
         )
-        val chimSlot = tc.mkSlot(ChimneyPipeT, "Chimney", FlueGas, ChimneyPipe_Module.unwrap(inputs.pipes.chimney))
+        val chimSlot = tc.mkSlot(ChimneyPipeT, "Chimney", FlueGas, ChimneyPipe_Module.unwrap(chimney))
 
         val chain = PostFireboxPipeChain.validated(Vector(connSlot, chimSlot)) match
             case Validated.Valid(c)   => c

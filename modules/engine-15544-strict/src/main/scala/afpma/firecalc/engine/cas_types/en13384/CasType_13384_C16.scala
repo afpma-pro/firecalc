@@ -14,7 +14,7 @@ import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDi
 
 import afpma.firecalc.i18n.LocalizedString
 
-import afpma.firecalc.engine.api.v0_2024_10
+import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.en13384.*
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
@@ -30,8 +30,8 @@ import io.taig.babel.Languages
 
 object CasType_13384_C16
     extends v2024_10_Alg
-    with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg
-    with v0_2024_10.WithPipeChain_13384:
+    with v0_2024_10_strict.StoveProjectDescr_13384_WithThermalAirIntake_Alg
+    with v0_2024_10_strict.WithPipeChain_13384:
 
     val language = Languages.Fr
 

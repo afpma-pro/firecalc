@@ -7,7 +7,7 @@ package afpma.firecalc.engine.alg.en13384
 
 import afpma.firecalc.engine.models.Pipes_13384_Alg
 import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_Alg
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_Alg
+import afpma.firecalc.engine.models.en13384.Inputs_13384_Alg
 
 trait HasTypeMembers_13384_Alg extends HasPipeModules_13384_Alg:
     self =>

@@ -11,7 +11,6 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.impl.common.*
 import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
@@ -24,68 +23,6 @@ import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given
-
-import scala.reflect.*
-
-sealed trait AirIntakePipe_Common_Module extends IncrementalPipeDefModule_Common[AirIntakePipeT]:
-
-    // export incremental.{name as _, *}
-    // export FullDescrResult.*
-    import incremental.{IdsMapping, IncrDescr}
-
-    type G = CombustionAir
-    val gas = CombustionAir
-
-    def mkPipeFromIncrDescr(incrSeq: Seq[IncrDescr]): FullDescrResult =
-        if (incrSeq.isEmpty) (IdsMapping.empty, NoVentilationOpenings).validNel[IncrementalValidation_Error]
-        else incremental.define(incrSeq*).toFullDescr()
-
-    type PipeCanBe = FullDescr | NoVentilationOpenings
-
-    extension (asp: PipeCanBe)
-        def ductType: DuctType =
-            // FIXME: make return type Either[Error, DucType] and handle all cases. This goes towards a pretty long path for handling this error that pops up pretty far. Skipped for now. Only set to NonConcentricHighThermalResistance
-            DuctType.NonConcentricDuctsHighThermalResistance
-            //
-            // asp match
-            // case AirIntakePipe_Module.NoVentilationOpenings =>
-            //     // "duct type not applicable when no ventilation openings or air intake pipe defined".invalidNel
-            //     DuctType.NonConcentricDuctsHighThermalResistance.asRight
-            // case fd: AirIntakePipe_Module.FullDescr if fd.elems.size == 0 =>
-            //     Left("duct type should be defined [dev-error]")
-            // case fd: AirIntakePipe_Module.FullDescr =>
-            //     val ducts =
-            //         fd.elems
-            //             .map(_.el)
-            //             .map:
-            //                 case sec: en13384.pipedescr.StraightSection => Some(sec.ductType)
-            //                 case _                                      => None
-            //             .flatten
-            //     val uniqDucts = ducts.distinct
-            //     uniqDucts.length match
-            //         case 0 => Left(s"[dev-error-bis]: duct type should be defined // ${fd.toString}")
-            //         case 1 => uniqDucts.head.asRight
-            //         case n => s"unexpected error : multiple duct types are defined ($n) : ${uniqDucts.map(_.show).mkString(", ")}".asLeft
-
-    /** Safely fold over PipeCanBe without exposing abstract type matching */
-    def foldPipeCanBe[A](pipe: PipeCanBe)(
-        onNoVentilation: => A,
-        onFullDescr    : FullDescr => A
-    ): A =
-        pipe match
-            case NoVentilationOpenings => onNoVentilation
-            case fd: FullDescr => onFullDescr(fd)
-
-    case object NoVentilationOpenings
-    type NoVentilationOpenings = NoVentilationOpenings.type
-    val noVentilationOpenings: PipeCanBe = NoVentilationOpenings
-
-    given tt_apNoVentilationOpenings: TypeTest[PipeCanBe, NoVentilationOpenings] = new:
-        def unapply(x: PipeCanBe): Option[x.type & NoVentilationOpenings] =
-            if (x == NoVentilationOpenings)
-                val xx: x.type & NoVentilationOpenings = x.asInstanceOf[x.type & NoVentilationOpenings]
-                Some(xx)
-            else None
 
 // type ThermalAirIntakePipe = ThermalAirIntakePipe_Module.PipeCanBe
 trait ThermalAirIntakePipe_Module extends AirIntakePipe_Common_Module:

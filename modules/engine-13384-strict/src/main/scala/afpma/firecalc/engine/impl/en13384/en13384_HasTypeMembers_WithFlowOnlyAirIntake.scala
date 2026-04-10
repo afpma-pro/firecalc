@@ -7,7 +7,7 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.models.Pipes_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_WithFlowOnlyAirIntake
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
+import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake
 
 trait HasTypeMembers_13384_WithFlowOnlyAirIntake
     extends HasTypeMembers_13384_Alg

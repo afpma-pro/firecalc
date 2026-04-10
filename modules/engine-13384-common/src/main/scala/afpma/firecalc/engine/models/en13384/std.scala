@@ -24,39 +24,6 @@ import scala.annotation.targetName
 
 object std:
 
-    trait Inputs_13384_Alg extends HasPipeModules_13384_Alg:
-        self =>
-
-        type Pipes_13384 <: Pipes_13384_Alg {
-            type AirIntakePipe_Module_T = self.AirIntakePipe_Module_T
-        }
-
-        val pipes               : Pipes_13384
-        val nationalAcceptedData: NationalAcceptedData
-        val fuelType            : FuelType
-        val localConditions     : LocalConditions
-        val flueGasCondition    : FlueGasCondition
-
-    case class Inputs_13384_WithFlowOnlyAirIntake(
-        pipes               : Pipes_13384_WithFlowOnlyAirIntake,
-        nationalAcceptedData: NationalAcceptedData,
-        fuelType            : FuelType,
-        localConditions     : LocalConditions,
-        flueGasCondition    : FlueGasCondition
-    ) extends Inputs_13384_Alg
-        with HasPipeModules_13384_WithFlowOnlyAirIntake:
-        override type Pipes_13384 = Pipes_13384_WithFlowOnlyAirIntake
-
-    case class Inputs_13384_WithThermalAirIntake(
-        pipes               : Pipes_13384_WithThermalAirIntake,
-        nationalAcceptedData: NationalAcceptedData,
-        fuelType            : FuelType,
-        localConditions     : LocalConditions,
-        flueGasCondition    : FlueGasCondition
-    ) extends Inputs_13384_Alg
-        with HasPipeModules_13384_WithThermalAirIntake:
-        override type Pipes_13384 = Pipes_13384_WithThermalAirIntake
-
     /**
      * Caractérisation de l'appareil de combustion utilisé
      *

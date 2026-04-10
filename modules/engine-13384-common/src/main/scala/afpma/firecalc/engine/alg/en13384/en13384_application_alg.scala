@@ -9,10 +9,6 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.i18n.ShowUsingLocale
-import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.i18n.showUsingLocale
-
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.*
 import afpma.firecalc.engine.models.*
@@ -25,43 +21,8 @@ import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.utils.*
 
 import cats.data.*
-import cats.implicits.toShow
 
 import coulomb.*
-
-import io.taig.babel.Locale
-
-type Params_13384        = (DraftCondition, LoadQty)
-type WithParams_13384[X] = Params_13384 ?=> X
-type WithLoadQty[X]      = LoadQty ?=> X
-
-object Params_13384:
-
-    val DraftMin_LoadNominal: (DraftCondition, LoadQty) =
-        (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.Nominal)
-    val DraftMin_LoadMin    : (DraftCondition, LoadQty) = (DraftCondition.DraftMinOrPositivePressureMax, LoadQty.Reduced)
-    val DraftMax_LoadNominal: (DraftCondition, LoadQty) =
-        (DraftCondition.DraftMaxOrPositivePressureMin, LoadQty.Nominal)
-    val DraftMax_LoadMin: (DraftCondition, LoadQty) = (DraftCondition.DraftMaxOrPositivePressureMin, LoadQty.Reduced)
-
-    object givens:
-        given DraftMin_LoadNominal: Params_13384 = Params_13384.DraftMin_LoadNominal
-        given DraftMin_LoadMin    : Params_13384 = Params_13384.DraftMin_LoadMin
-        given DraftMax_LoadNominal: Params_13384 = Params_13384.DraftMax_LoadNominal
-        given DraftMax_LoadMin    : Params_13384 = Params_13384.DraftMax_LoadMin
-
-    given summonmerge: (pReq: DraftCondition, lq: LoadQty) => Params_13384 = (pReq, lq)
-    def summon(using p: Params_13384): Params_13384 = p
-    given pressReq_from_Params_13384: (p: Params_13384) => DraftCondition =
-        p._1
-    given loadQty_from_Params_13384 : (p: Params_13384) => LoadQty        =
-        p._2
-
-    given show_Params13384: ShowUsingLocale[Params_13384] = showUsingLocale: p =>
-        s"""[ ${I18N.pressure_requirements} = ${p._1.show} ; ${I18N.type_of_load.descr} = ${p._2.show} ]"""
-
-    def show(using l: Locale, p: Params_13384): String =
-        show_Params13384(using l).show(p)
 
 trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_13384_Alg:
     self =>

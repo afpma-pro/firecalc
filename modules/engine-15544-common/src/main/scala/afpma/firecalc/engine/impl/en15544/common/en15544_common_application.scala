@@ -19,7 +19,7 @@ import cats.syntax.all.catsSyntaxTuple5Semigroupal
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
-import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
+// EN13384_1_A1_2019_Common_Application no longer imported — decoupled from engine-13384-strict
 import afpma.firecalc.engine.alg.en15544
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
@@ -42,7 +42,7 @@ import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
-import afpma.firecalc.engine.ops.en13384.mkforEN13384
+// mkforEN13384 no longer imported — decoupled from engine-13384-strict
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.dto.all.*
@@ -67,18 +67,23 @@ object EN15544_V_2023_Common_Application:
 abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_Application_Alg with FireboxOps {
     en15544 =>
 
-    // ─── EN13384ForApp: concrete type + bridge class ──────────────────────
+    // ─── EN13384ForApp: abstract type + mixin trait ──────────────────────
 
-    type EN13384ForApp = EN13384_For_15544_Application
+    // EN13384ForApp is left abstract (from the algebra trait).
+    // Leaf modules (strict/MCE) provide a concrete type that extends
+    // EN13384_1_A1_2019_Common_Application with this mixin.
 
     /**
-     * Bridge from EN15544 to EN13384: extends the concrete EN13384 implementation
-     * but overrides specific behaviors for EN 15544 usage.
-     * Moved here from the algebra trait to keep alg/ free of impl/ dependencies.
+     * Mixin trait providing EN15544-specific overrides for the EN13384 bridge.
+     * Leaf modules create their concrete bridge class as:
+     * {{{
+     *   new EN13384_1_A1_2019_Common_Application(formulas)
+     *       with EN13384_For_15544_Overrides { ... }
+     * }}}
      */
-    abstract class EN13384_For_15544_Application(
-        override val formulas: EN13384_1_A1_2019_Formulas_Alg
-    ) extends EN13384_1_A1_2019_Common_Application(formulas) {
+    trait EN13384_For_15544_Overrides:
+        self: EN13384_1_A1_2019_Application_Alg =>
+
         override type AirIntakePipe_Module_T = en15544.AirIntakePipe_Module_T
         override val AirIntakePipe_Module = en15544.AirIntakePipe_Module
 
@@ -110,11 +115,10 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             // otherwise we would have to compute thermal variations
             val dt = DuctType.NonConcentricDuctsHighThermalResistance
             val tl: afpma.firecalc.engine.models.en13384.typedefs.T_L = T_L
-            formulas.T_mB_calc(dt, tl).withSectionTyp(AirIntakePipeT)
+            self.formulas.T_mB_calc(dt, tl).withSectionTyp(AirIntakePipeT)
 
         /** Lookup the pre-built AtParams instance matching the given EN13384 params */
         def atParamsFor(p: Params_13384): AtParams
-    }
 
     val formulas: EN15544_V_2023_Formulas_Alg
 
@@ -275,11 +279,13 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
     // TOFIX : multiple imports & instances of en13384 definitions
 
-    given pipeWithGasFlowOps: PipeWithGasFlowOps[PipeWithGasFlowOps.Error] =
-        PipeWithGasFlowOps.mkforEN13384(en13384_formulas)
+    given pipeWithGasFlowOps: PipeWithGasFlowOps[PipeWithGasFlowOps.Error]
+
+    /** EN 13384 section-geometry-change friction coefficient factory — provided by leaf modules. */
+    given dynFrict13384Factory: afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
 
     given ssalg: afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
-        afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory.make(using formulas)
+        afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory.make(using formulas, dynFrict13384Factory)
 
     // ─── CommonAtParams: params-dependent layer implementation ────────────
 

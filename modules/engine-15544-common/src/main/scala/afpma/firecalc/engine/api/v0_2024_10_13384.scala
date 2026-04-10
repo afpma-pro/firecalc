@@ -11,8 +11,8 @@ import afpma.firecalc.engine.impl.en13384.EN13384_WithThermalAirIntake_Applicati
 import afpma.firecalc.engine.impl.en13384.HasTypeMembers_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.impl.en13384.HasTypeMembers_13384_WithThermalAirIntake
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithThermalAirIntake
+import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake
+import afpma.firecalc.engine.models.en13384.Inputs_13384_WithThermalAirIntake
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType

@@ -31,8 +31,8 @@ import io.taig.babel.Languages
 
 object CasType_13384_C2
     extends v2024_10_Alg
-    with v0_2024_10.StoveProjectDescr_13384_WithThermalAirIntake_Alg
-    with v0_2024_10.WithPipeChain_13384:
+    with v0_2024_10_strict.StoveProjectDescr_13384_WithThermalAirIntake_Alg
+    with v0_2024_10_strict.WithPipeChain_13384:
 
     val language = Languages.Fr
 

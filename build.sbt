@@ -174,7 +174,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, domain.js, domain.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
+  .aggregate(i18n.js, i18n.jvm, domain.js, domain.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_common.js, engine_13384_common.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -447,6 +447,24 @@ lazy val engineValidation = (project in file("modules/engine-validation"))
   .dependsOn(engine.jvm, engine.jvm % "test->test", engine_15544_common.jvm, engine_15544_common.jvm % "test->test", engine_15544_strict.jvm, engine_15544_strict.jvm % "test->test")
 
 // =========
+// engine-13384-common (EN 13384 pure algebras, models, ops, typeclasses — shared foundation)
+
+lazy val engine_13384_common = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/engine-13384-common"))
+  .settings(
+    commonSettings,
+    name := "firecalc-engine-13384-common",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:32"),
+    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
+    libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
+  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(engine, engine % "test->test")
+
+// =========
 // engine-13384-strict (EN 13384 implementation — physically separated from core engine)
 
 lazy val engine_13384_strict = crossProject(JVMPlatform, JSPlatform)
@@ -466,7 +484,7 @@ lazy val engine_13384_strict = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine, engine % "test->test", engine_kernel % "test->test")
+  .dependsOn(engine_13384_common, engine_13384_common % "test->test", engine_kernel % "test->test")
 
 lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -481,7 +499,7 @@ lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine, engine_13384_strict, engine % "test->test", engine_13384_strict % "test->test")
+  .dependsOn(engine, engine_13384_common, engine_13384_strict, engine % "test->test", engine_13384_common % "test->test", engine_13384_strict % "test->test")
 
 lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -496,7 +514,7 @@ lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_15544_common, engine_15544_common % "test->test")
+  .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test", engine_13384_strict % "test->test", engine % "test->test")
 
 lazy val engine_15544_mce = crossProject(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -511,7 +529,7 @@ lazy val engine_15544_mce = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_15544_common, engine_15544_common % "test->test")
+  .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test")
 
 lazy val engine_15544_labo = crossProject(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
