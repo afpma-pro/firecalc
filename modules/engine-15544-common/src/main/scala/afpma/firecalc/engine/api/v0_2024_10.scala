@@ -62,14 +62,14 @@ trait v0_2024_10_core:
     // Flue Pipe
 
     sealed trait HasFluePipe_Alg:
-        type FluePipeType <: FluePipe_15544 | FluePipe_13384
+        type FluePipeType
         def fluePipe: ValidatedNel[IncrementalValidation_Error, FluePipeType]
 
     trait HasFluePipe_15544_Alg extends HasFluePipe_Alg:
         type FluePipeType = FluePipe_15544
 
-    trait HasFluePipe_13384_Alg extends HasFluePipe_Alg:
-        type FluePipeType = FluePipe_13384
+    /** Marker trait for EN 13384 flue pipe. FluePipeType fixed in leaf modules. */
+    trait HasFluePipe_13384_Alg extends HasFluePipe_Alg
 
     // Firebox
 
@@ -84,9 +84,8 @@ trait v0_2024_10_core:
         type CombustionAirPipe = CombustionAirPipe_15544
         type FireboxPipe       = FireboxPipe_15544
 
-    trait HasFireboxInternalPipes_15544_MCE_Alg extends HasFireboxInternalPipes_Alg:
-        type CombustionAirPipe = CombustionAirPipe_13384
-        type FireboxPipe       = FireboxPipe_13384
+    /** Marker trait for MCE firebox pipes. Types fixed in engine-15544-mce. */
+    trait HasFireboxInternalPipes_15544_MCE_Alg extends HasFireboxInternalPipes_Alg
 
     trait HasFirebox_15544_Alg:
         self: HasFireboxInternalPipes_Alg =>
@@ -100,6 +99,12 @@ trait v0_2024_10_core:
 
     trait StoveProjectDescr_13384_Alg extends StoveProjectDescr_Alg with HasTypeMembers_13384_Alg:
         self =>
+
+        /** Abstract connector pipe type — fixed to concrete type in leaf modules. */
+        type ConnectorPipe
+
+        /** Abstract chimney pipe type — fixed to concrete type in leaf modules. */
+        type ChimneyPipe
 
         def fuelType: FuelType
 

@@ -30,6 +30,9 @@ import cats.syntax.all.*
 trait v0_2024_10_mce_members extends v0_2024_10_core:
 
     trait Firebox_15544_MCE_Alg extends HasFirebox_15544_Alg with HasFireboxInternalPipes_15544_MCE_Alg:
+        type CombustionAirPipe = CombustionAirPipe_Module_13384.PipeCanBe
+        type FireboxPipe       = FireboxPipe_Module_13384.PipeCanBe
+
         protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_MCE[FB]
         protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_MCE[FB]
 
@@ -47,6 +50,12 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         with HasFireboxInternalPipes_15544_MCE_Alg
         with HasFluePipe_13384_Alg:
         self =>
+
+        type ConnectorPipe     = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe       = ChimneyPipe_Module.PipeCanBe
+        type CombustionAirPipe = CombustionAirPipe_Module_13384.PipeCanBe
+        type FireboxPipe       = FireboxPipe_Module_13384.PipeCanBe
+        type FluePipeType      = FluePipe_Module_13384.PipeCanBe
 
         val wComb: WoodCombustionAlg
         import wComb.*
@@ -170,6 +179,9 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
 
     trait WithPipeChain_15544_MCE:
         self: StoveProjectDescr_15544_MCE_Alg =>
+
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
 
         def fluePipeDescr     : Seq[FluePipe_Module_13384.incremental.IncrDescr]
         def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]

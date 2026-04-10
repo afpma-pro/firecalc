@@ -499,7 +499,7 @@ lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.19.0" % "test",
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(engine, engine_13384_common, engine_13384_strict, engine % "test->test", engine_13384_common % "test->test", engine_13384_strict % "test->test")
+  .dependsOn(engine, engine_13384_common, engine % "test->test", engine_13384_common % "test->test")
 
 lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)

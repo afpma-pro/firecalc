@@ -110,6 +110,8 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         fbp: FireboxToFireboxPipe_15544_Strict[F]
     ): StoveProjectDescr_15544_Strict_Alg =
         new v0_2024_10_strict.Firebox_15544_Strict_Alg with v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg:
+            type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+            type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
             type FB = F
             val firebox                         = fb
             protected val toCombustionAirPipeTC = cap

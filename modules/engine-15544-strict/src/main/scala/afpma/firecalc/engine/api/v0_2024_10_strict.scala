@@ -42,6 +42,9 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
         with HasFluePipe_15544_Alg:
         self =>
 
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
+
         val kindOfWood = afpma.firecalc.engine.models.gtypedefs.KindOfWood.HardWood
 
         override def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
@@ -95,6 +98,9 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
 
     trait WithPipeChain_15544_Strict:
         self: StoveProjectDescr_15544_Strict_Alg =>
+
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
 
         def fluePipeDescr     : Seq[FluePipe_Module_15544.incremental.IncrDescr]
         def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]

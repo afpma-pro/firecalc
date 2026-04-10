@@ -30,6 +30,9 @@ trait v0_2024_10_13384_strict_members extends v0_2024_10_core:
         with HasTypeMembers_13384_WithFlowOnlyAirIntake:
         self =>
 
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
+
         def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
             (
                 airIntakePipe,
@@ -74,6 +77,9 @@ trait v0_2024_10_13384_strict_members extends v0_2024_10_core:
         with HasTypeMembers_13384_WithThermalAirIntake:
         self =>
 
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
+
         def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
             (
                 airIntakePipe,
@@ -115,6 +121,9 @@ trait v0_2024_10_13384_strict_members extends v0_2024_10_core:
 
     trait WithPipeChain_13384:
         self: StoveProjectDescr_13384_Alg =>
+
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
 
         def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
         def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
