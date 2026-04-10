@@ -39,8 +39,12 @@ import io.taig.babel.Languages
  *   - [[v0_2024_10_strict_members]]  (EN 15544 strict)
  *   - [[v0_2024_10_mce_members]]     (EN 15544 MCE)
  *   - [[v0_2024_10_labo_members]]    (EN 15544 labo)
- *   - [[v0_2024_10_13384_strict_members]] (EN 13384 flow-only + thermal air-intake, in engine-15544-strict)
- *   - [[v0_2024_10_13384_mce_members]]    (EN 13384 thermal air-intake, in engine-15544-mce)
+ *   - [[v0_2024_10_13384_strict_members]] (EN 13384 composition adapters, in engine-15544-strict)
+ *   - [[v0_2024_10_13384_mce_members]]    (EN 13384 composition adapter, in engine-15544-mce)
+ *
+ * EN 13384 computation logic is owned by engine-13384-strict:
+ *   - [[afpma.firecalc.engine.impl.en13384.EN13384_FlowOnlyAirIntake_Assembly]]
+ *   - [[afpma.firecalc.engine.impl.en13384.EN13384_ThermalAirIntake_Assembly]]
  */
 trait v0_2024_10_core:
 
