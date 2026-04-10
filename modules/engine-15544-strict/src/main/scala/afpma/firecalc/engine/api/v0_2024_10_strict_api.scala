@@ -13,7 +13,7 @@ import afpma.firecalc.dto.FireCalcYAML
  */
 object v0_2024_10_strict
     extends v0_2024_10_core
-    with v0_2024_10_13384_members
+    with v0_2024_10_13384_strict_members
     with v0_2024_10_strict_members:
 
     object StoveProjectDescr:

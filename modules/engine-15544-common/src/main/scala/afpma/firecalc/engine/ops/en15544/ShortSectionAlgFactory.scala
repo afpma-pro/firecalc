@@ -23,7 +23,8 @@ import afpma.firecalc.engine.models.gtypedefs.*
 object ShortSectionAlgFactory:
 
     def make(using
-        en15544: afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+        en15544: afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg,
+        dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
     ): ShortSectionAlg = new ShortSectionAlg:
 
         def intermediateValuesFromWindow(window: PipeDescrWindow): VNel[IntermediateValues] =

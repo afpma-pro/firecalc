@@ -35,7 +35,7 @@ trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544] extends Fire
             val (width, depth) = firebox.dimensions.base match
                 case Dimensions.Base.Squared(w, d) => (w, d)
             val (az, incl) = fireboxInitialDirection
-            FireboxPipe_Module_15544.incremental
+            val fullDescr = FireboxPipe_Module_15544.incremental
                 .define(
                     setInitialDirection(az, incl),
                     innerShape(rectangle(width, depth)),
@@ -48,7 +48,7 @@ trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544] extends Fire
                     )
                 )
                 .toFullDescr()
-                .extractPipe
+            FireboxPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)
 }
 
 object GenericFireboxToFireboxPipe_15544_Strict:

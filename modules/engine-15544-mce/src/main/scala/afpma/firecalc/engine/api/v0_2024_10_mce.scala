@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.api
 
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.impl.en15544.mce.*
@@ -14,6 +15,7 @@ import afpma.firecalc.engine.impl.en15544.mce.HasTypeMembers_15544_MCE
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.Wood
+import afpma.firecalc.engine.models.en15544.Inputs_15544_MCE
 import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -29,6 +31,9 @@ import cats.syntax.all.*
 trait v0_2024_10_mce_members extends v0_2024_10_core:
 
     trait Firebox_15544_MCE_Alg extends HasFirebox_15544_Alg with HasFireboxInternalPipes_15544_MCE_Alg:
+        type CombustionAirPipe = CombustionAirPipe_Module_13384.PipeCanBe
+        type FireboxPipe       = FireboxPipe_Module_13384.PipeCanBe
+
         protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_MCE[FB]
         protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_MCE[FB]
 
@@ -46,6 +51,12 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         with HasFireboxInternalPipes_15544_MCE_Alg
         with HasFluePipe_13384_Alg:
         self =>
+
+        type ConnectorPipe     = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe       = ChimneyPipe_Module.PipeCanBe
+        type CombustionAirPipe = CombustionAirPipe_Module_13384.PipeCanBe
+        type FireboxPipe       = FireboxPipe_Module_13384.PipeCanBe
+        type FluePipeType      = FluePipe_Module_13384.PipeCanBe
 
         val wComb: WoodCombustionAlg
         import wComb.*
@@ -116,9 +127,9 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
                 )
             }
 
-        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_15544_MCE] =
+        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, Inputs_15544_MCE] =
             en15544_pipesVNel.map: pipes =>
-                std.Inputs_15544_MCE(
+                Inputs_15544_MCE(
                     localConditions,
                     en13384NationalAcceptedData,
                     stoveParams,
@@ -170,9 +181,12 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
     trait WithPipeChain_15544_MCE:
         self: StoveProjectDescr_15544_MCE_Alg =>
 
-        def fluePipeDescr     : Seq[FluePipe_Module_13384.incremental.IncrDescr]
-        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
-        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
+
+        def fluePipeDescr     : Seq[ThermalPipeDescr_13384]
+        def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
+        def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
         private lazy val pipeChain = PipeChain_15544_MCE.build(
             PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)

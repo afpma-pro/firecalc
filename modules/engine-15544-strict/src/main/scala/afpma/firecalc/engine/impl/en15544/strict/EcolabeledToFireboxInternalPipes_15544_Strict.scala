@@ -153,7 +153,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 case Version.V1 => (start_00_common ++ start_01_version_1 ++ end_common)
                 case Version.V2 => (start_00_common ++ start_01_version_2 ++ end_common)
 
-            CombustionAirPipe_Module_15544.incremental
+            val fullDescr = CombustionAirPipe_Module_15544.incremental
                 .define(recombined_incr_descr*)
                 .toFullDescr()
-                .extractPipe
+            CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)

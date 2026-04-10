@@ -165,6 +165,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
     given en15544           : FlowOnlyMecaFlu_15544.ApplicationAlg                       = scala.compiletime.deferred
     given dynFrictionCoeffOp: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] = scala.compiletime.deferred
 
+    private given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = en15544.dynFrict13384Factory
+
     val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using gip.pipeEl.typ)
     
     val gas    = gip.gas
@@ -386,6 +388,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
 
     given en15544     : FlowOnlyMecaFlu_15544.ApplicationAlg = scala.compiletime.deferred
     given shortSection: ShortSectionAlg                      = scala.compiletime.deferred
+
+    private given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = en15544.dynFrict13384Factory
 
     val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using fd.pipeType)
 

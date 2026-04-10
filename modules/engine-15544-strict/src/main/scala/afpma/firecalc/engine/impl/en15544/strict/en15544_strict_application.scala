@@ -11,16 +11,20 @@ import cats.syntax.all.*
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.alg.en13384.ComputeAt
+import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
+import afpma.firecalc.engine.ops.en13384.mkforEN13384
 
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
-import afpma.firecalc.engine.models.en13384.std.Inputs_13384_WithFlowOnlyAirIntake
+import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake
+import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.ops.PipeWithGasFlowOps
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
 import afpma.firecalc.units.coulombutils.*
 
@@ -54,6 +58,20 @@ sealed abstract class EN15544_Strict_Application(
 ) extends impl.en15544.common.EN15544_V_2023_Common_Application
     with HasTypeMembers_15544_Strict {
     en15544 =>
+
+    // ─── EN13384ForApp: concrete type provided by strict ─────────────────
+    override type EN13384ForApp = EN13384_1_A1_2019_Common_Application
+
+    override given pipeWithGasFlowOps: PipeWithGasFlowOps[PipeWithGasFlowOps.Error] =
+        PipeWithGasFlowOps.mkforEN13384(en13384_formulas)
+
+    override given dynFrict13384Factory: afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
+        import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.*
+        new DynFrict13384Factory:
+            def make(pt: PipeType): DynFrict13384Like =
+                val delegate = afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384()(using pt)
+                new DynFrict13384Like:
+                    def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
 
     override val doc: Document = Document(
         name     = "15544:2023-02",
@@ -130,9 +148,9 @@ sealed abstract class EN15544_Strict_Application(
 
     val wood_σ_H2O: σ_H2O = formulas.wood_σ_H2O_calc
 
-    lazy val en13384_application = new EN13384_For_15544_Application(
-        formulas = en13384_formulas
-    ):
+    lazy val en13384_application = new EN13384_1_A1_2019_Common_Application(
+        en13384_formulas
+    ) with EN13384_For_15544_Overrides:
         self =>
         override lazy val inputs = en13384_inputs
 
@@ -328,9 +346,14 @@ sealed abstract class EN15544_Strict_Application(
                         val pipeSlots: Vector[PipeSlot]  = pfbSlots
                             .map:
                                 case FlueSlot(descr)        =>
-                                    val (fdResult, ffV) =
-                                        FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                    prevFrame = ffV.toOption.flatten.orElse(prevFrame)
+                                    import FluePipe_Module_15544.FullDescrResult.given
+                                    import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
+                                    val flueResult = FluePipe_Module_15544.incremental
+                                        .define(descr*)
+                                        .toFullDescrWithExternalInitialFrame(prevFrame)
+                                    val fdResult: FluePipe_Module_15544.FullDescrResult =
+                                        flueResult.map((ids, fd, _) => (ids, fd))
+                                    prevFrame = flueResult.map(_._3).toOption.flatten.orElse(prevFrame)
                                     val pipeV           = FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult)
                                     pipeV match
                                         case Validated.Valid(pipe) =>

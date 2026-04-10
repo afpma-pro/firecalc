@@ -22,6 +22,7 @@ import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange
 import afpma.firecalc.engine.ops.PositionOp
+import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
 
@@ -46,6 +47,13 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
     val en15544 = EN15544_Strict_Application.make(f)(inputs)
 
     given PipeType = FluePipeT
+
+    given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
+        new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
+            def make(pt: PipeType): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                val delegate = DynamicFrictionCoeff_13384()(using pt)
+                new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
+                    def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
 
     val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()
     given DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =

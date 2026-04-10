@@ -25,8 +25,10 @@ import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.std.{Wood => _, *}
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.ops.PipeWithGasFlowOps
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.ops.en13384.forThermal13384
+import afpma.firecalc.engine.ops.en13384.mkforEN13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, PostFireboxPipeChain, UpstreamState}
 import afpma.firecalc.engine.standard.*
 
@@ -41,7 +43,7 @@ object EN15544_MCE_Application:
         bs845: BS845_Alg,
         wComb: WoodCombustionAlg
     )(
-        i: models.en15544.std.Inputs_15544_MCE
+        i: models.en15544.Inputs_15544_MCE
     ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb) {
         override lazy val inputs = i
     }
@@ -53,6 +55,20 @@ abstract class EN15544_MCE_Application(
 ) extends impl.en15544.common.EN15544_V_2023_Common_Application
     with HasTypeMembers_15544_MCE {
     en15544_mce =>
+
+    // ─── EN13384ForApp: concrete type provided by MCE ────────────────────
+    override type EN13384ForApp = EN13384_1_A1_2019_Common_Application
+
+    override given pipeWithGasFlowOps: PipeWithGasFlowOps[PipeWithGasFlowOps.Error] =
+        PipeWithGasFlowOps.mkforEN13384(en13384_formulas)
+
+    override given dynFrict13384Factory: afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
+        import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.*
+        new DynFrict13384Factory:
+            def make(pt: PipeType): DynFrict13384Like =
+                val delegate = afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384()(using pt)
+                new DynFrict13384Like:
+                    def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
 
     import wComb.*
 
@@ -137,9 +153,9 @@ abstract class EN15544_MCE_Application(
         inputs.en13384NationalAcceptedData.T_L_override
             .opaqueGetOrElse(en13384_T_L_override_default)
 
-    lazy val en13384_application = new EN13384_For_15544_Application(
-        formulas = en13384_formulas
-    ) {
+    lazy val en13384_application = new EN13384_1_A1_2019_Common_Application(
+        en13384_formulas
+    ) with EN13384_For_15544_Overrides {
         self =>
         override lazy val inputs = en13384_inputs
 

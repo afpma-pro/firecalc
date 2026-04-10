@@ -12,6 +12,7 @@ import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.Result
+import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.ops.en15544.dynfrict.*
 import afpma.firecalc.engine.standard.*
 
@@ -26,7 +27,7 @@ import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.MissingSectionG
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]]
-)(using SSAlg: ShortSectionAlg)
+)(using SSAlg: ShortSectionAlg, dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory)
     extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] {
     // merge successive straight sections into a single one
     // and keep only direction change + straight section elements

@@ -12,7 +12,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.impl.en15544.labo.EN15544_Labo_Application.LabConditions
 import afpma.firecalc.engine.impl.en15544.mce.*
 import afpma.firecalc.engine.models.en13384.typedefs.T_L_override
-import afpma.firecalc.engine.models.en15544.std.Inputs_15544_MCE
+import afpma.firecalc.engine.models.en15544.Inputs_15544_MCE
 import afpma.firecalc.engine.wood_combustion.WoodCombustionAlg
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Alg
 

@@ -29,7 +29,7 @@ object TraditionalFireboxToFireboxInternalPipes_15544_Strict
         override def toCombustionAirPipe_FullDescr =
             import CombustionAirPipe_Module_15544.*
             import firebox.*
-            CombustionAirPipe_Module_15544.incremental
+            val fullDescr = CombustionAirPipe_Module_15544.incremental
                 .define(
                     setInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
                     innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
@@ -41,4 +41,4 @@ object TraditionalFireboxToFireboxInternalPipes_15544_Strict
                     )
                 )
                 .toFullDescr()
-                .extractPipe
+            CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)

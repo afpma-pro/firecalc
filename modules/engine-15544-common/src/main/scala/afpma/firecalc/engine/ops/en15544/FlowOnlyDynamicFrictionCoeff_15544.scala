@@ -14,7 +14,6 @@ import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544 as en15544_p
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.models.gtypedefs.*
-import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.ops.resistance.*
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
 
@@ -24,9 +23,12 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
-class FlowOnlyDynamicFrictionCoeff_15544()(using sectionTyp: PipeType):
+class FlowOnlyDynamicFrictionCoeff_15544()(using
+    sectionTyp: PipeType,
+    dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
+):
 
-    private val dynamicFrictionCoeff_13384 = DynamicFrictionCoeff_13384()
+    private val dynamicFrictionCoeff_13384 = dynFrictFactory.make(sectionTyp)
 
     def whenRegularFor(pd: en15544_pipedescr.NotPressureDiff): DynamicFrictionCoeffOp.Result =
         import regular.given
@@ -125,3 +127,17 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using sectionTyp: PipeType):
             yCriteria
         )
 end FlowOnlyDynamicFrictionCoeff_15544
+
+object FlowOnlyDynamicFrictionCoeff_15544:
+
+    /** Abstraction over the EN 13384 section-geometry-change friction coefficient.
+     *  Provides the specific operation needed by the 15544 flow-only calculator.
+     */
+    trait DynFrict13384Like:
+        def thermalSectionGeometryChange: DynamicFrictionCoeffOp[SectionGeometryChange_13384]
+
+    /** Factory that creates a [[DynFrict13384Like]] for a given [[PipeType]].
+     *  Leaf modules provide a concrete implementation backed by `DynamicFrictionCoeff_13384`.
+     */
+    trait DynFrict13384Factory:
+        def make(pt: PipeType): DynFrict13384Like

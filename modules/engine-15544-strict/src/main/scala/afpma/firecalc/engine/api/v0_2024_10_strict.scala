@@ -5,13 +5,15 @@
 
 package afpma.firecalc.engine.api
 
+import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.std
+import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.engine.standard.VNelMcalcErr
@@ -41,6 +43,9 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
         with HasFluePipe_15544_Alg:
         self =>
 
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
+
         val kindOfWood = afpma.firecalc.engine.models.gtypedefs.KindOfWood.HardWood
 
         override def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
@@ -54,9 +59,9 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
                     override val connector: ConnectorPipe               = _connector
                     override val chimney  : ChimneyPipe                 = _chimney
 
-        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_15544_Strict] =
+        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, Inputs_15544_Strict] =
             en15544_pipesVNel.map: pipes =>
-                std.Inputs_15544_Strict(
+                Inputs_15544_Strict(
                     localConditions,
                     en13384NationalAcceptedData,
                     stoveParams,
@@ -95,9 +100,12 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
     trait WithPipeChain_15544_Strict:
         self: StoveProjectDescr_15544_Strict_Alg =>
 
-        def fluePipeDescr     : Seq[FluePipe_Module_15544.incremental.IncrDescr]
-        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
-        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
+
+        def fluePipeDescr     : Seq[FlowOnlyPipeDescr_15544]
+        def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
+        def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
         private lazy val pipeChain = PipeChain_15544_Strict.build(
             PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
