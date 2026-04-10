@@ -5,10 +5,10 @@
 
 package afpma.firecalc.dto.common
 
+import afpma.firecalc.domain.Country
 import afpma.firecalc.i18n.*
 
 import cats.Show
-import cats.derived.*
 import cats.implicits.toShow
 
 import magnolia1.Transl
@@ -85,6 +85,3 @@ object Address:
             List(a.region_state, a.country.show).filter(_.nonEmpty).mkString(" ")
         ).filter(_.nonEmpty).mkString(", ")
 
-// TODO: AvailableCountries ?
-enum Country derives Show:
-    case France, Belgique, Autriche

@@ -174,7 +174,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
+  .aggregate(i18n.js, i18n.jvm, domain.js, domain.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
@@ -295,6 +295,25 @@ lazy val units = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(i18n)
 
 // =========
+// domain
+
+lazy val domain = crossProject(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/domain"))
+  .settings(
+    commonSettings,
+    name := "firecalc-domain",
+    version := engine_version,
+    scalacOptions ++= Seq("-Xmax-inlines:48"),
+    libraryDependencies ++= Seq(
+        "org.typelevel" %%% "kittens" % "3.5.0",
+    ),
+  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+  .settings(watchI18nSources("i18n"))
+  .dependsOn(units, i18n)
+
+// =========
 // dto
 
 lazy val dto = crossProject(JVMPlatform, JSPlatform)
@@ -322,7 +341,7 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
     Test / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "resources",
   )).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(utils, i18n, units)
+  .dependsOn(utils, i18n, units, domain)
 
 // =========
 // catalog
@@ -371,7 +390,7 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
-  .dependsOn(i18n, units, dto)
+  .dependsOn(i18n, units, dto, domain)
 
 // =========
 // engine
