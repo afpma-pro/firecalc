@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.models
 
+import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
@@ -18,9 +20,9 @@ import cats.data.ValidatedNel
 object PipeChain_15544_Strict:
 
     case class Descriptors(
-        flue     : Seq[FluePipe_Module_15544.incremental.IncrDescr],
-        connector: Seq[ConnectorPipe_Module.incremental.IncrDescr],
-        chimney  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+        flue     : Seq[FlowOnlyPipeDescr_15544],
+        connector: Seq[ThermalPipeDescr_13384],
+        chimney  : Seq[ThermalPipeDescr_13384]
     )
 
     case class Built(

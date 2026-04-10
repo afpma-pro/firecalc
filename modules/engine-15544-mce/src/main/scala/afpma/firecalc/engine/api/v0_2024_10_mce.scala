@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.api
 
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.impl.en15544.mce.*
@@ -183,9 +184,9 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
         type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
 
-        def fluePipeDescr     : Seq[FluePipe_Module_13384.incremental.IncrDescr]
-        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
-        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+        def fluePipeDescr     : Seq[ThermalPipeDescr_13384]
+        def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
+        def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
         private lazy val pipeChain = PipeChain_15544_MCE.build(
             PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)

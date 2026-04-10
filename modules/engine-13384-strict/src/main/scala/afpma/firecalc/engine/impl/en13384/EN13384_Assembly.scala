@@ -20,12 +20,20 @@ import afpma.firecalc.engine.standard.VNelMcalcErr
 import cats.data.ValidatedNel
 import cats.syntax.all.*
 
-/**
- * EN 13384 flow-only air-intake computation — logic owned by engine-13384-strict.
- *
- * Standalone trait: no dependency on v0_2024_10_core.
- * Leaf modules in engine-15544-* compose this with StoveProjectDescr_13384_Alg.
- */
+// ─── Architectural invariant ─────────────────────────────────────────────────
+// EN 13384 computation logic (pipe assembly, input validation, application
+// creation) is owned here in engine-13384-strict, NOT in engine-15544-*.
+//
+// These assembly traits are standalone: they do not depend on v0_2024_10_core
+// and have no visibility into the EN 15544 module graph.
+//
+// Leaf modules in engine-15544-{strict,mce} provide thin composition adapters
+// (v0_2024_10_13384_{strict,mce}_members) that bridge StoveProjectDescr_13384_Alg
+// to these traits and fix the abstract type members.  Those adapters must stay
+// thin — if you need to add EN 13384 computation, add it here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** EN 13384 flow-only air-intake computation. */
 trait EN13384_FlowOnlyAirIntake_Assembly extends HasTypeMembers_13384_WithFlowOnlyAirIntake:
 
     def typeOfAppliance            : TypeOfAppliance
@@ -76,12 +84,7 @@ trait EN13384_FlowOnlyAirIntake_Assembly extends HasTypeMembers_13384_WithFlowOn
         val f = new EN13384_1_A1_2019_Formulas
         EN13384_WithFlowOnlyAirIntake_Application.make(f, i)
 
-/**
- * EN 13384 thermal air-intake computation — logic owned by engine-13384-strict.
- *
- * Standalone trait: no dependency on v0_2024_10_core.
- * Leaf modules in engine-15544-* compose this with StoveProjectDescr_13384_Alg.
- */
+/** EN 13384 thermal air-intake computation. */
 trait EN13384_ThermalAirIntake_Assembly extends HasTypeMembers_13384_WithThermalAirIntake:
 
     def typeOfAppliance            : TypeOfAppliance

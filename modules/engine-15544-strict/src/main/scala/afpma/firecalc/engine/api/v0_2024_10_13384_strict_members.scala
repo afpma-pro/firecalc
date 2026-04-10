@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.api
 
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.engine.impl.en13384.EN13384_FlowOnlyAirIntake_Assembly
 import afpma.firecalc.engine.impl.en13384.EN13384_ThermalAirIntake_Assembly
 import afpma.firecalc.engine.models.*
@@ -13,12 +14,12 @@ import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import cats.data.ValidatedNel
 
 /**
- * EN 13384 composition traits for strict mode.
+ * EN 13384 composition adapters for strict mode — thin wiring only.
  *
- * Computation logic is owned by [[EN13384_FlowOnlyAirIntake_Assembly]] and
- * [[EN13384_ThermalAirIntake_Assembly]] in engine-13384-strict.
- * These adapters only bridge v0_2024_10_core.StoveProjectDescr_13384_Alg
- * to those computation traits and fix the abstract type members.
+ * Architectural invariant: EN 13384 computation logic lives in engine-13384-strict
+ * ([[EN13384_FlowOnlyAirIntake_Assembly]], [[EN13384_ThermalAirIntake_Assembly]]).
+ * These adapters only bridge v0_2024_10_core.StoveProjectDescr_13384_Alg to those
+ * assembly traits and fix the abstract type members.  Do not add computation here.
  */
 trait v0_2024_10_13384_strict_members extends v0_2024_10_core:
 
@@ -42,8 +43,8 @@ trait v0_2024_10_13384_strict_members extends v0_2024_10_core:
         type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
         type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
 
-        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
-        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+        def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
+        def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
         private lazy val pipeChain = PipeChain_13384.build(
             PipeChain_13384.Descriptors(connectorPipeDescr, chimneyPipeDescr)

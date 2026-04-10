@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.api
 
+import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
@@ -102,9 +104,9 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
         type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
         type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
 
-        def fluePipeDescr     : Seq[FluePipe_Module_15544.incremental.IncrDescr]
-        def connectorPipeDescr: Seq[ConnectorPipe_Module.incremental.IncrDescr]
-        def chimneyPipeDescr  : Seq[ChimneyPipe_Module.incremental.IncrDescr]
+        def fluePipeDescr     : Seq[FlowOnlyPipeDescr_15544]
+        def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
+        def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
         private lazy val pipeChain = PipeChain_15544_Strict.build(
             PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
