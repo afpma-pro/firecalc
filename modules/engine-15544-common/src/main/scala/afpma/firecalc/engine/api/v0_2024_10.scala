@@ -39,7 +39,8 @@ import io.taig.babel.Languages
  *   - [[v0_2024_10_strict_members]]  (EN 15544 strict)
  *   - [[v0_2024_10_mce_members]]     (EN 15544 MCE)
  *   - [[v0_2024_10_labo_members]]    (EN 15544 labo)
- *   - [[v0_2024_10_13384_members]]   (EN 13384, in engine-15544-strict)
+ *   - [[v0_2024_10_13384_strict_members]] (EN 13384 flow-only + thermal air-intake, in engine-15544-strict)
+ *   - [[v0_2024_10_13384_mce_members]]    (EN 13384 thermal air-intake, in engine-15544-mce)
  */
 trait v0_2024_10_core:
 
@@ -191,12 +192,10 @@ trait v0_2024_10_core:
                         )
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Base API object — core algebra + EN 13384 wiring only.
+// Base API object — core algebra only.
 // Standard-specific access is provided by per-module objects:
 //   - [[v0_2024_10_strict]] (in engine-15544-strict)
 //   - [[v0_2024_10_mce]]    (in engine-15544-mce)
 //   - [[v0_2024_10_labo]]   (in engine-15544-labo)
 // ──────────────────────────────────────────────────────────────────────────────
-object v0_2024_10
-    extends v0_2024_10_core
-    with v0_2024_10_13384_members
+object v0_2024_10 extends v0_2024_10_core

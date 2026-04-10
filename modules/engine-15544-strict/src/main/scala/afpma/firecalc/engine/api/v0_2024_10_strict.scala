@@ -11,6 +11,7 @@ import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_1554
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.MCalc_Error
@@ -54,9 +55,9 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
                     override val connector: ConnectorPipe               = _connector
                     override val chimney  : ChimneyPipe                 = _chimney
 
-        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_15544_Strict] =
+        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, Inputs_15544_Strict] =
             en15544_pipesVNel.map: pipes =>
-                std.Inputs_15544_Strict(
+                Inputs_15544_Strict(
                     localConditions,
                     en13384NationalAcceptedData,
                     stoveParams,

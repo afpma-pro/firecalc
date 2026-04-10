@@ -11,5 +11,5 @@ package afpma.firecalc.engine.api
  */
 object v0_2024_10_mce
     extends v0_2024_10_core
-    with v0_2024_10_13384_members
+    with v0_2024_10_13384_mce_members
     with v0_2024_10_mce_members

@@ -43,7 +43,7 @@ object EN15544_MCE_Application:
         bs845: BS845_Alg,
         wComb: WoodCombustionAlg
     )(
-        i: models.en15544.std.Inputs_15544_MCE
+        i: models.en15544.Inputs_15544_MCE
     ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb) {
         override lazy val inputs = i
     }

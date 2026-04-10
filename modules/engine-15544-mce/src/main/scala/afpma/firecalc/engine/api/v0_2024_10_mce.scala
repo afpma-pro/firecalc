@@ -14,6 +14,7 @@ import afpma.firecalc.engine.impl.en15544.mce.HasTypeMembers_15544_MCE
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.Wood
+import afpma.firecalc.engine.models.en15544.Inputs_15544_MCE
 import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -116,9 +117,9 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
                 )
             }
 
-        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, std.Inputs_15544_MCE] =
+        override def en15544_inputsVNel: ValidatedNel[MCalc_Error, Inputs_15544_MCE] =
             en15544_pipesVNel.map: pipes =>
-                std.Inputs_15544_MCE(
+                Inputs_15544_MCE(
                     localConditions,
                     en13384NationalAcceptedData,
                     stoveParams,

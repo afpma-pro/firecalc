@@ -22,8 +22,8 @@ import afpma.firecalc.engine.standard.VNelMcalcErr
 import cats.data.ValidatedNel
 import cats.syntax.all.*
 
-/** EN 13384 concrete wiring traits (split from v0_2024_10). */
-trait v0_2024_10_13384_members extends v0_2024_10_core:
+/** EN 13384 wiring traits for strict mode (split from v0_2024_10_13384_members). */
+trait v0_2024_10_13384_strict_members extends v0_2024_10_core:
 
     trait StoveProjectDescr_13384_WithFlowOnlyAirIntake_Alg
         extends StoveProjectDescr_13384_Alg
