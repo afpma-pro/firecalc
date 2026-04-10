@@ -346,9 +346,14 @@ sealed abstract class EN15544_Strict_Application(
                         val pipeSlots: Vector[PipeSlot]  = pfbSlots
                             .map:
                                 case FlueSlot(descr)        =>
-                                    val (fdResult, ffV) =
-                                        FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                    prevFrame = ffV.toOption.flatten.orElse(prevFrame)
+                                    import FluePipe_Module_15544.FullDescrResult.given
+                                    import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
+                                    val flueResult = FluePipe_Module_15544.incremental
+                                        .define(descr*)
+                                        .toFullDescrWithExternalInitialFrame(prevFrame)
+                                    val fdResult: FluePipe_Module_15544.FullDescrResult =
+                                        flueResult.map((ids, fd, _) => (ids, fd))
+                                    prevFrame = flueResult.map(_._3).toOption.flatten.orElse(prevFrame)
                                     val pipeV           = FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult)
                                     pipeV match
                                         case Validated.Valid(pipe) =>

@@ -34,7 +34,7 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
 
             firebox.origineArriveeAir match
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom =>
-                    CombustionAirPipe_Module_15544.incremental
+                    val fullDescr = CombustionAirPipe_Module_15544.incremental
                         .define(
                             setInitialDirection    (
                                 azimuth     = AzimuthDirection.Rear,
@@ -116,4 +116,4 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                             addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm   )
                         )
                         .toFullDescr()
-                        .extractPipe
+                    CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)

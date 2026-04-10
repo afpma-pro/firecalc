@@ -48,12 +48,16 @@ object PipeChainGeneric:
         descr    : Seq[FluePipe_Module_15544.incremental.IncrDescr],
         prevFrame: Option[PipeFrame]
     ): SlotBuildResult =
-        val (fullDescrResult, finalFrameV) =
-            FluePipe_Module_15544.mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-        val pipe                           = FluePipe_Module_15544.FullDescrResult.extractPipe(fullDescrResult)
-        val mappingsV                      = FluePipe_Module_15544.FullDescrResult.extractIdsMapping(fullDescrResult)
-        val mappingFn                      = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
-        val finalFrame                     = finalFrameV.toOption.flatten
+        import FluePipe_Module_15544.FullDescrResult.given
+        import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
+        val flueResult = FluePipe_Module_15544.incremental
+            .define(descr*)
+            .toFullDescrWithExternalInitialFrame(prevFrame)
+        val fullDescrResult: FluePipe_Module_15544.FullDescrResult = flueResult.map((ids, fd, _) => (ids, fd))
+        val pipe       = FluePipe_Module_15544.FullDescrResult.extractPipe(fullDescrResult)
+        val mappingsV  = FluePipe_Module_15544.FullDescrResult.extractIdsMapping(fullDescrResult)
+        val mappingFn  = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
+        val finalFrame = flueResult.map(_._3).toOption.flatten
         SlotBuildResult(FluePipeT, "Flue", pipe, mappingFn, finalFrame)
 
     // ── Thermal 13384 flue (MCE variant, accepts external frame) ────────

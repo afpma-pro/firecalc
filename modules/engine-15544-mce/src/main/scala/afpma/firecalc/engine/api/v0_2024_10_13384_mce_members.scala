@@ -13,10 +13,13 @@ import afpma.firecalc.engine.models.*
  *
  * Architectural invariant: EN 13384 computation logic lives in engine-13384-strict
  * ([[EN13384_ThermalAirIntake_Assembly]]).  This adapter only bridges
- * v0_2024_10_core.StoveProjectDescr_13384_Alg to that assembly trait
+ * StoveProjectDescr_13384_Alg (from v0_2024_10_13384_core) to that assembly trait
  * and fixes the abstract type members.  Do not add computation here.
+ *
+ * Extends v0_2024_10_13384_core (not v0_2024_10_core) — this adapter depends only
+ * on EN 13384 concepts, not the EN 15544 API surface.
  */
-trait v0_2024_10_13384_mce_members extends v0_2024_10_core:
+trait v0_2024_10_13384_mce_members extends v0_2024_10_13384_core:
 
     trait StoveProjectDescr_13384_WithThermalAirIntake_Alg
         extends StoveProjectDescr_13384_Alg

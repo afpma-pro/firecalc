@@ -39,14 +39,14 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
 
             firebox.pressure_loss match
                 case Right(pl)          =>
-                    CombustionAirPipe_Module_15544.incremental
+                    val fullDescr = CombustionAirPipe_Module_15544.incremental
                         .define(
                             setInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal),
                             innerShape         (firebox.actualAirIntakePipeShape                       ),
                             addPressureDiff    ("door_15a_pressure_loss", pl                           )
                         )
                         .toFullDescr()
-                        .extractPipe
+                    CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)
                 case Left(None)         =>
                     PressureLossMustBeDefined(CombustionAirPipeT).invalidNel
                 case Left(Some(reason)) =>

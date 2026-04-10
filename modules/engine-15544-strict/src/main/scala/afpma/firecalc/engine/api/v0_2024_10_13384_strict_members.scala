@@ -18,10 +18,13 @@ import cats.data.ValidatedNel
  *
  * Architectural invariant: EN 13384 computation logic lives in engine-13384-strict
  * ([[EN13384_FlowOnlyAirIntake_Assembly]], [[EN13384_ThermalAirIntake_Assembly]]).
- * These adapters only bridge v0_2024_10_core.StoveProjectDescr_13384_Alg to those
- * assembly traits and fix the abstract type members.  Do not add computation here.
+ * These adapters only bridge StoveProjectDescr_13384_Alg (from v0_2024_10_13384_core)
+ * to those assembly traits and fix the abstract type members.  Do not add computation here.
+ *
+ * Extends v0_2024_10_13384_core (not v0_2024_10_core) — these adapters depend only
+ * on EN 13384 concepts, not the EN 15544 API surface.
  */
-trait v0_2024_10_13384_strict_members extends v0_2024_10_core:
+trait v0_2024_10_13384_strict_members extends v0_2024_10_13384_core:
 
     trait StoveProjectDescr_13384_WithFlowOnlyAirIntake_Alg
         extends StoveProjectDescr_13384_Alg

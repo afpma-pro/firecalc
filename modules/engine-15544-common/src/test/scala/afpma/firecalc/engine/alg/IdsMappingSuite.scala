@@ -14,6 +14,8 @@ import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.models.FluePipe_Module_15544
 import FluePipe_Module_15544.*
+import FluePipe_Module_15544.FullDescrResult.given
+import FluePipe_Module_15544.toFullDescr
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -48,7 +50,8 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
         AddFlowOnlyPipeElement_15544.AddSectionVertical     ("section2", 100.cm                                    )
     )
 
-    private lazy val simpleResult = FluePipe_Module_15544.mkPipeFromIncrDescr(simpleDescr)
+    private lazy val simpleResult: FluePipe_Module_15544.FullDescrResult =
+        FluePipe_Module_15544.incremental.define(simpleDescr*).toFullDescr()
 
     "simple descriptor reverseToIntMap" should "map PipeIdx back to descriptor index" in {
         val idsMapping = simpleResult.extractIdsMapping.toOption.get
@@ -98,7 +101,8 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
         AddFlowOnlyPipeElement_15544.AddSectionVertical     ("section2", 100.cm                                    )
     )
 
-    private lazy val geomChangeResult = FluePipe_Module_15544.mkPipeFromIncrDescr(geomChangeDescr)
+    private lazy val geomChangeResult: FluePipe_Module_15544.FullDescrResult =
+        FluePipe_Module_15544.incremental.define(geomChangeDescr*).toFullDescr()
 
     "geom-change descriptor" should "produce 4 full elements (3 user + 1 auto-inserted)" in {
         val fullDescr = geomChangeResult.extractPipe.toOption.get
