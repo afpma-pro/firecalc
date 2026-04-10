@@ -21,7 +21,7 @@ case class PaymentsConfig(
     reportAsDraft               : Boolean,
     jwtConfig                   : JwtConfig,
     loggingConfig               : LoggingConfig      = LoggingConfig(),
-    corsAllowedOrigins          : List[String]        = List("*")
+    corsAllowedOrigins          : List[String]        = List("*") // SEC-016: validated fail-closed in ConfigLoader for non-dev
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
     require(
