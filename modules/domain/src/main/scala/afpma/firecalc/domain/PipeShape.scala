@@ -42,7 +42,7 @@ sealed trait PipeShape:
 object PipeShape:
 
     val show_PipeShape_valueIn_noUnit: Show[PipeShape] =
-        extension (d: Double) def fmt1: String = "%.1f".format(d)
+        extension (d: Double) def fmt1: String = BigDecimal(d).setScale(1, BigDecimal.RoundingMode.HALF_UP).toString()
         Show.show:
             case Circle(d)                 =>
                 val x = d.toUnit[Inch].value
@@ -60,7 +60,7 @@ object PipeShape:
                 else s"▯ ${x.fmt1} x ${y.fmt1} in"
 
     val show_PipeShape_valueCm_noUnit: Show[PipeShape] =
-        extension (d: Double) def fmt1: String = "%.1f".format(d)
+        extension (d: Double) def fmt1: String = BigDecimal(d).setScale(1, BigDecimal.RoundingMode.HALF_UP).toString()
         Show.show:
             case Circle(d)                 =>
                 val x = d.toUnit[Centimeter].value

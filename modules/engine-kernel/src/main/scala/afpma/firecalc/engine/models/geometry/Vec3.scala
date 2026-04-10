@@ -79,7 +79,7 @@ case class Vec3(x: Double, y: Double, z: Double):
                     case Some(horName) =>
                         val elev    = math.toDegrees(math.atan2(n.z, horNorm))
                         val sign    = if elev >= 0 then "\u2191" else "\u2193"
-                        val elevStr = String.format(java.util.Locale.ROOT, "%.1f", math.abs(elev))
+                        val elevStr = fmtD1(math.abs(elev))
                         s"$horName $sign${elevStr}\u00b0"
                     case None          => azElString(n)
 
@@ -101,9 +101,11 @@ case class Vec3(x: Double, y: Double, z: Double):
 
     private def azElString(n: Vec3): String =
         val (az, el) = n.toAzimuthElevation
-        val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
-        val elStr = String.format(java.util.Locale.ROOT, "%.1f", el)
-        s"az:${azStr}° el:${elStr}°"
+        s"az:${fmtD1(az)}° el:${fmtD1(el)}°"
+
+    /** Format a Double with 1 decimal place, locale-independent (no java.text dependency). */
+    private def fmtD1(d: Double): String =
+        BigDecimal(d).setScale(1, BigDecimal.RoundingMode.HALF_UP).toString()
 
 object Vec3:
     // Use lazy val for Scala.js initialization order safety
