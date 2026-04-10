@@ -1102,7 +1102,7 @@ lsof -ti:5173  # Check port 5173
 
 ## Related Documentation
 
-- [ELECTRON_LIVE_RELOAD.md](ELECTRON_LIVE_RELOAD.md) - Detailed live reload setup
+- [LIVE_RELOAD.md](electron/LIVE_RELOAD.md) - Detailed live reload setup
 - [README.md](../README.md) - Project overview and quick start
 
 ---
