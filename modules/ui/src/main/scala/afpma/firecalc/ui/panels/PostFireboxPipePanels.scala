@@ -110,7 +110,10 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Per-slot controls (remove, move up/down) ─────────────────
 
-    private def slotControls(idx: Int, totalSlots: Int): HtmlElement =
+    private def slotControls(idx: Int, totalSlots: Int, slot: PostFireboxPipeDescrSlot): HtmlElement =
+        val isChimney = slot match
+            case _: PostFireboxPipeDescrSlot.ChimneySlot => true
+            case _                                       => false
         div(
             cls := "flex-none flex items-center",
             // move up
@@ -131,11 +134,14 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                     onClick --> { _ => moveSlot(idx, idx + 1) }
                 )
             ),
-            // delete
+            // delete — chimney is mandatory, cannot be removed
             div(
-                cls := "flex-none flex items-center text-base-content hover:bg-secondary hover:text-secondary-content justify-center cursor-pointer w-6 h-6",
-                lucide.`trash-2`(stroke_width = 0.5),
-                onClick --> { _ => removeSlot(idx) }
+                cls := "flex-none flex items-center text-base-content justify-center w-6 h-6",
+                when(!isChimney)(
+                    cls := "hover:bg-secondary hover:text-secondary-content cursor-pointer",
+                    lucide.`trash-2`(stroke_width = 0.5),
+                    onClick --> { _ => removeSlot(idx) }
+                )
             )
         )
 
@@ -147,7 +153,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     private def buildPanels(slots: Seq[PostFireboxPipeDescrSlot]): HtmlElement =
         div(
             slots.zipWithIndex.flatMap: (slot, idx) =>
-                val controls = slotControls(idx, slots.size)
+                val controls = slotControls(idx, slots.size, slot)
                 val panel = DynamicPipeSlotPanel.forSlot(idx, slot, Some(controls))
                 // Insert toolbar just before the last slot (chimney)
                 if idx == slots.size - 1 && slots.size > 1 then
