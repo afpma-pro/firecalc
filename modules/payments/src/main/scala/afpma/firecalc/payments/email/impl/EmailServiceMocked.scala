@@ -7,6 +7,7 @@ package afpma.firecalc.payments.email.impl
 
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -30,7 +31,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
 
         for {
             _ <- logger.info("[MOCK] Sending user authentication code email")
-            _ <- logger.info(s"  To: ${authCode.email.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(authCode.email.value)}")
             _ <- logger.info(s"  Subject: $subject")
             _ <- logger.info(s"  Code: ${authCode.code}")
             _ <- logger.info(s"  Is new user: ${authCode.isNewUser}")
@@ -41,7 +42,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     override def sendUserInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending user invoice email")
-            _ <- logger.info(s"  To: ${invoice.email.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(invoice.email.value)}")
             _ <- logger.info(s"  Subject: Your invoice ${invoice.invoiceNumber}")
             _ <- logger.info(s"  Order ID: ${invoice.orderId}")
             _ <- logger.info(s"  Invoice Number: ${invoice.invoiceNumber}")
@@ -57,7 +58,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     ): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending user invoice with report email")
-            _ <- logger.info(s"  To: ${invoice.email.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(invoice.email.value)}")
             _ <- logger.info(s"  Subject: Your invoice ${invoice.invoiceNumber}")
             _ <- logger.info(s"  Order ID: ${invoice.orderId}")
             _ <- logger.info(s"  Invoice Number: ${invoice.invoiceNumber}")
@@ -73,7 +74,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     override def sendAdminInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending admin invoice email (no PDF attachment)")
-            _ <- logger.info(s"  To: ${invoice.email.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(invoice.email.value)}")
             _ <- logger.info(s"  Subject: [ADMIN] Invoice ${invoice.invoiceNumber}")
             _ <- logger.info(s"  Order ID: ${invoice.orderId}")
             _ <- logger.info(s"  Invoice Number: ${invoice.invoiceNumber}")
@@ -88,7 +89,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     )(using language: BackendCompatibleLanguage): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending user payment link email")
-            _ <- logger.info(s"  To: ${paymentLink.email.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(paymentLink.email.value)}")
             _ <- logger.info(s"  Subject: Complete your payment - ${paymentLink.productName}")
             _ <- logger.info(s"  Product: ${paymentLink.productName}")
             _ <- logger.info(s"  Amount: ${paymentLink.amount}")
@@ -101,7 +102,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     )(using language: BackendCompatibleLanguage): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending user PDF report email")
-            _ <- logger.info(s"  To: ${pdfReport.email.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(pdfReport.email.value)}")
             _ <- logger.info(s"  Subject: Your PDF Report: ${pdfReport.reportName}")
             _ <- logger.info(s"  Report Name: ${pdfReport.reportName}")
             _ <- logger.info(s"  Customer: ${pdfReport.customerName}")
@@ -113,7 +114,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     override def sendAdminNotification(notification: AdminNotification): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending admin notification email")
-            _ <- logger.info(s"  To: ${notification.adminEmail.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(notification.adminEmail.value)}")
             _ <- logger.info(s"  Subject: [ADMIN] ${notification.subject}")
             _ <- logger.info(s"  Message: ${notification.message}")
             _ <- notification.orderId.traverse_(orderId => logger.info(s"  Order ID: $orderId"))
@@ -123,7 +124,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     override def sendUserNotification(notification: UserNotification): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending user notification email")
-            _ <- logger.info(s"  To: ${notification.email.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(notification.email.value)}")
             _ <- logger.info(s"  Error Type: ${notification.error.getClass.getSimpleName}")
             _ <- logger.info(s"  Error Message: ${notification.error.getMessage}")
             _ <- logger.info(s"  Language: ${notification.language.code}")
@@ -134,7 +135,7 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
     override def sendEmail(message: EmailMessage): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending generic email")
-            _ <- logger.info(s"  To: ${message.to.value}")
+            _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(message.to.value)}")
             _ <- logger.info(s"  Subject: ${message.subject.value}")
             _ <- logger.info(s"  Content length: ${message.content.value.length} characters")
             _ <- logger.info(s"  Attachments: ${message.attachments.length}")

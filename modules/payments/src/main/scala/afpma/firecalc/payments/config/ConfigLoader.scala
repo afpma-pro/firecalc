@@ -194,10 +194,20 @@ object ConfigLoader:
             )
         }
 
-    private def validatePaymentsConfig[F[_]: Async](config: PaymentsConfig): F[PaymentsConfig] =
+    private[config] def validatePaymentsConfig[F[_]: Async](config: PaymentsConfig): F[PaymentsConfig] =
         InvoiceNumberValidator.validatePrefix(config.invoiceNumberPrefix) match {
-            case Right(_)    => Async[F].pure(config)
             case Left(error) => Async[F].raiseError(new IllegalArgumentException(error))
+            case Right(_) =>
+                if (
+                    config.environment != "development" &&
+                    (config.corsAllowedOrigins.contains("*") || config.corsAllowedOrigins.isEmpty)
+                ) then
+                    Async[F].raiseError(
+                        new IllegalStateException(
+                            s"SEC-016: CORS wildcard or empty origin list is not allowed in '${config.environment}' environment. Configure explicit origins in cors-allowed-origins."
+                        )
+                    )
+                else Async[F].pure(config)
         }
 
     def loadEmailConfig[F[_]: Async](

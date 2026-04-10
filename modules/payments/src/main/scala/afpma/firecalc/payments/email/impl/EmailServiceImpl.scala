@@ -10,6 +10,7 @@ import afpma.firecalc.payments.i18n.implicits.given
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.i18n.implicits.lookupTranslation
 import afpma.firecalc.payments.repository.PurchaseIntentRepository
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -68,7 +69,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         )
 
         for {
-            _      <- logger.info(s"Sending authentication code to ${authCode.email.value}")
+            _      <- logger.info(s"Sending authentication code to ${LogSanitizer.maskEmail(authCode.email.value)}")
             result <- sendEmilMail(mail)
             _      <- logger.info(s"Authentication code email result: $result")
         } yield result
@@ -130,7 +131,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         )
 
         for {
-            _      <- logger.info(s"Sending payment link to ${paymentLink.email.value}")
+            _      <- logger.info(s"Sending payment link to ${LogSanitizer.maskEmail(paymentLink.email.value)}")
             result <- sendEmilMail(mail)
             _      <- logger.info(s"Payment link email result: $result")
         } yield result
@@ -148,7 +149,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         )
 
         for {
-            _      <- logger.info(s"Sending admin invoice ${invoice.invoiceNumber} to ${invoice.email.value}")
+            _      <- logger.info(s"Sending admin invoice ${invoice.invoiceNumber} to ${LogSanitizer.maskEmail(invoice.email.value)}")
             result <- sendEmilMail(mail)
             _      <- logger.info(s"Admin invoice email result: $result")
         } yield result
@@ -206,7 +207,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         )
 
         for {
-            _      <- logger.info(s"Sending user notification: $subject to ${notification.email.value}")
+            _      <- logger.info(s"Sending user notification: $subject to ${LogSanitizer.maskEmail(notification.email.value)}")
             result <- sendEmilMail(mail)
             _      <- logger.info(s"User notification result: $result")
         } yield result
@@ -284,7 +285,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         recipient           : String
     ): F[EmailResult] = {
         for {
-            _      <- logger.info(s"Sending $operationDescription to $recipient")
+            _      <- logger.info(s"Sending $operationDescription to ${LogSanitizer.maskEmail(recipient)}")
             result <- sendEmilMail(mail)
             _      <- logger.info(s"Email result for $operationDescription: $result")
         } yield result
