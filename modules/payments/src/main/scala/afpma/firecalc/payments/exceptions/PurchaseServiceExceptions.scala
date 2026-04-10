@@ -6,6 +6,7 @@
 package afpma.firecalc.payments.exceptions
 
 import java.util.UUID
+import afpma.firecalc.payments.util.LogSanitizer
 
 /**
  * Base sealed trait for all purchase service errors.
@@ -42,7 +43,7 @@ final case class TooManyIntentsForEmailException(
         "Too many purchase intents created for this email in the last hour"
     ) {
     override def context: Map[String, String] = Map(
-        "email" -> email
+        "email" -> LogSanitizer.maskEmail(email)
     )
 }
 
@@ -327,7 +328,7 @@ final case class InvoiceEmailFailedException(
     ) {
     override def context: Map[String, String] = Map(
         "orderId"       -> orderId.toString,
-        "customerEmail" -> customerEmail,
+        "customerEmail" -> LogSanitizer.maskEmail(customerEmail),
         "reason"        -> reason
     )
 }
@@ -343,7 +344,7 @@ final case class EmailSendingFailedException(
     ) {
     override def context: Map[String, String] = Map(
         "orderId"   -> orderId.toString,
-        "recipient" -> recipient,
+        "recipient" -> LogSanitizer.maskEmail(recipient),
         "reason"    -> reason
     )
 }
