@@ -358,7 +358,6 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "com.manyangled"             %%% "coulomb-core"                       % "0.8.0",
     libraryDependencies += "com.manyangled"             %%% "coulomb-units"                      % "0.8.0",
     libraryDependencies += "org.typelevel"              %%% "cats-core"                          % "2.13.0",
-    libraryDependencies += "org.typelevel"              %%% "cats-effect"                        % "3.6.1",
     libraryDependencies += "org.typelevel"              %%% "kittens"                            % "3.5.0",
     libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"                          % "1.9.12",
 
@@ -367,9 +366,9 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.scalatestplus"  %%% "scalacheck-1-19"   % "3.2.19.0"    % "test",
 
     // i18n
-    libraryDependencies += "io.taig" %%% "babel-circe"   % "0.5.3",
-    libraryDependencies += "io.taig" %%% "babel-generic" % "0.5.3",
-    libraryDependencies += "io.taig" %%% "babel-loader"  % "0.5.3",
+    libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
+    libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
+    libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
   ).jsConfigure(_.settings(jsSourceMapSettings: _*))
   .settings(watchI18nSources("i18n"))
   .dependsOn(i18n, units, dto)
