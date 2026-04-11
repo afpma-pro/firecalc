@@ -501,7 +501,7 @@ abstract class EN15544_MCE_Application(
                                 )
                             case Validated.Valid(chain)        =>
                                 val initialUpstream = UpstreamState(
-                                    temp_start         = en15544_mce.en13384_application.T_WN,
+                                    temp_start         = en15544_mce.t_burnout,
                                     last_pipe_density  =
                                         en15544_mce.en13384_application.last_known_density_before_connector_pipe,
                                     last_pipe_velocity =
