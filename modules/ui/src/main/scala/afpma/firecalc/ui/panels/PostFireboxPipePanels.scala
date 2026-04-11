@@ -114,12 +114,15 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         val isChimney = slot match
             case _: PostFireboxPipeDescrSlot.ChimneySlot => true
             case _                                       => false
+        val chimneyIdx  = totalSlots - 1
+        val canMoveUp   = !isChimney && idx > 0
+        val canMoveDown = !isChimney && idx < chimneyIdx - 1
         div(
             cls := "flex-none flex items-center",
             // move up
             div(
                 cls := "flex-none flex items-center text-base-content hover:bg-secondary hover:text-secondary-content justify-center w-6 h-6",
-                when(idx > 0)(
+                when(canMoveUp)(
                     cls := "hover:text-base-content cursor-pointer",
                     lucide.`square-chevron-up`(stroke_width = 0.5),
                     onClick --> { _ => moveSlot(idx, idx - 1) }
@@ -128,7 +131,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             // move down
             div(
                 cls := "flex-none flex items-center text-base-content hover:bg-secondary hover:text-secondary-content justify-center w-6 h-6",
-                when(idx < totalSlots - 1)(
+                when(canMoveDown)(
                     cls := "hover:text-base-content cursor-pointer",
                     lucide.`square-chevron-down`(stroke_width = 0.5),
                     onClick --> { _ => moveSlot(idx, idx + 1) }
