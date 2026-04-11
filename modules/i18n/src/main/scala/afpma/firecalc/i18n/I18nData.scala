@@ -43,6 +43,7 @@ final case class I18nData(
     en13384                        : EN13384,
     en15544                        : EN15544,
     en15544_errors                 : EN15544_Errors,
+    topology_errors                : TopologyErrors,
     en16510                        : EN16510,
     errors                         : Errors,
     facing_type                    : FacingType,
@@ -1057,4 +1058,11 @@ object I18nData:
 
     case class BuilderErrors(
         errors_in_other_section_type: String
+    )
+
+    case class TopologyErrors(
+        missing_chimney               : String,
+        chimney_not_last              : String,
+        flue_pipe_after_connector     : String,
+        multiple_connectors_after_flue: String
     )

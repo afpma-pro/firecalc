@@ -8,6 +8,8 @@ package afpma.firecalc.ui.panels
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 
+import afpma.firecalc.engine.ops.generic.TopologyError
+
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.ui.*
@@ -98,6 +100,12 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Topology validation warning ──────────────────────────────
 
+    private def topologyErrorLabel(e: TopologyError): String = e match
+        case TopologyError.MissingChimney              => I18N.topology_errors.missing_chimney
+        case TopologyError.ChimneyNotLast              => I18N.topology_errors.chimney_not_last
+        case TopologyError.FluePipeAfterConnector      => I18N.topology_errors.flue_pipe_after_connector
+        case TopologyError.MultipleConnectorsAfterFlue => I18N.topology_errors.multiple_connectors_after_flue
+
     private lazy val topologyWarning: Signal[Option[HtmlElement]] =
         topologyValidation_sig.map:
             case Validated.Valid(_) => None
@@ -105,7 +113,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 Some(div(
                     cls := "alert alert-warning text-xs mx-4 my-1",
                     lucide.`triangle-alert`(),
-                    span(errors.toList.map(_.toString).mkString("; "))
+                    span(errors.toList.map(topologyErrorLabel).mkString("; "))
                 ))
 
     // ── Per-slot controls (remove, move up/down) ─────────────────
