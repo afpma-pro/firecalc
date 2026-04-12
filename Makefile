@@ -34,35 +34,35 @@ clean:
 	@echo "Cleaning all build artifacts..."
 	@sbt clean
 	@rm -rf .bloop .bsp .metals \
-		modules/catalog/.js \
-		modules/catalog/.jvm \
-		modules/domain/.js \
-		modules/domain/.jvm \
-		modules/dto/.js \
-		modules/dto/.jvm \
-		modules/engine/.js \
-		modules/engine/.jvm \
-		modules/engine-13384-common/.js \
-		modules/engine-13384-common/.jvm \
-		modules/engine-13384-strict/.js \
-		modules/engine-13384-strict/.jvm \
-		modules/engine-15544-common/.js \
-		modules/engine-15544-common/.jvm \
-		modules/engine-15544-labo/.js \
-		modules/engine-15544-labo/.jvm \
-		modules/engine-15544-mce/.js \
-		modules/engine-15544-mce/.jvm \
-		modules/engine-15544-strict/.js \
-		modules/engine-15544-strict/.jvm \
-		modules/engine-kernel/.js \
-		modules/engine-kernel/.jvm \
+		modules/catalog/.js/target \
+		modules/catalog/.jvm/target \
+		modules/domain/.js/target \
+		modules/domain/.jvm/target \
+		modules/dto/.js/target \
+		modules/dto/.jvm/target \
+		modules/engine/.js/target \
+		modules/engine/.jvm/target \
+		modules/engine-13384-common/.js/target \
+		modules/engine-13384-common/.jvm/target \
+		modules/engine-13384-strict/.js/target \
+		modules/engine-13384-strict/.jvm/target \
+		modules/engine-15544-common/.js/target \
+		modules/engine-15544-common/.jvm/target \
+		modules/engine-15544-labo/.js/target \
+		modules/engine-15544-labo/.jvm/target \
+		modules/engine-15544-mce/.js/target \
+		modules/engine-15544-mce/.jvm/target \
+		modules/engine-15544-strict/.js/target \
+		modules/engine-15544-strict/.jvm/target \
+		modules/engine-kernel/.js/target \
+		modules/engine-kernel/.jvm/target \
 		modules/engine-validation/target \
 		modules/fdim/target \
 		modules/graph/target \
-		modules/i18n/.js \
-		modules/i18n/.jvm \
-		modules/i18n-utils/.js \
-		modules/i18n-utils/.jvm \
+		modules/i18n/.js/target \
+		modules/i18n/.jvm/target \
+		modules/i18n-utils/.js/target \
+		modules/i18n-utils/.jvm/target \
 		modules/invoices/target \
 		modules/invoices/.bsp \
 		modules/invoices/.scala-build \
@@ -76,21 +76,21 @@ clean:
 		modules/payments/target \
 		modules/payments/src/main/resources/moleculeGen \
 		modules/payments-i18n/target \
-		modules/payments-shared/.js \
-		modules/payments-shared/.jvm \
-		modules/payments-shared-i18n/.js \
-		modules/payments-shared-i18n/.jvm \
+		modules/payments-shared/.js/target \
+		modules/payments-shared/.jvm/target \
+		modules/payments-shared-i18n/.js/target \
+		modules/payments-shared-i18n/.jvm/target \
 		modules/reports/target \
 		modules/ui/target \
 		modules/ui/dist \
 		modules/ui/.vite \
 		modules/ui/node_modules \
 		modules/ui/firecalc-ui.js \
-		modules/ui-i18n/.js \
-		modules/units/.js \
-		modules/units/.jvm \
-		modules/utils/.js \
-		modules/utils/.jvm \
+		modules/ui-i18n/.js/target \
+		modules/units/.js/target \
+		modules/units/.jvm/target \
+		modules/utils/.js/target \
+		modules/utils/.jvm/target \
 		modules/viz/target \
 		modules/xlsx_catalog/target \
 		web/dist \
