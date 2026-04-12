@@ -6,7 +6,10 @@
 package afpma.firecalc.xlsx_catalog.templates
 
 import org.apache.poi.ss.usermodel.*
-import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFFont, XSSFWorkbook}
+import org.apache.poi.xssf.usermodel.XSSFCellStyle
+import org.apache.poi.xssf.usermodel.XSSFColor
+import org.apache.poi.xssf.usermodel.XSSFFont
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 /** Shared POI styles matching the template design (bilingual headers, colors, borders). */
 object Styles:

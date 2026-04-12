@@ -5,8 +5,9 @@
 
 package afpma.firecalc.engine.api
 
-import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 
 import afpma.firecalc.engine.impl.en15544.mce.*
 import afpma.firecalc.engine.impl.en15544.mce.EN15544_MCE_Application
@@ -16,7 +17,6 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.Wood
 import afpma.firecalc.engine.models.en15544.Inputs_15544_MCE
-import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.MCalc_Error

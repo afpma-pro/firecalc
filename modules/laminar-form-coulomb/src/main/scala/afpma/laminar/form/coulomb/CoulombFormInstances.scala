@@ -5,16 +5,15 @@
 
 package afpma.laminar.form.coulomb
 
-import afpma.laminar.form.*
-
 import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.*
 
-import _root_.coulomb.*
-import _root_.coulomb.syntax.*
-
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
+
+import _root_.coulomb.*
+import _root_.coulomb.syntax.*
+import afpma.laminar.form.*
 
 /** NumericFormValue instances for coulomb quantity types. */
 object CoulombFormInstances:

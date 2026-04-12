@@ -7,11 +7,13 @@ package afpma.firecalc.xlsx_catalog.importers
 
 import java.nio.file.Path
 
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.all.*
+
 import coulomb.*
 import coulomb.syntax.*
 
-import afpma.firecalc.dto.all.*
-import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.xlsx_catalog.PoiHelpers.*
 import afpma.firecalc.xlsx_catalog.templates.CatalogConstants.AnglePresetCols
 

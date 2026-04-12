@@ -22,7 +22,6 @@ import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
 import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake_PreFireboxOnly
 import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
-import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.PipeWithGasFlowOps
 import afpma.firecalc.engine.ops.en15544 as ops_en15544

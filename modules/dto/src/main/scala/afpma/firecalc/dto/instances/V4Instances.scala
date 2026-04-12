@@ -9,16 +9,16 @@ import afpma.firecalc.units.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v3.Material_13384_V2
+import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.Firebox_V3
 import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3
 import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
 import afpma.firecalc.dto.v4.FlowResistanceCatalogEntry
+import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.Firebox_V3
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.TypeOfAppliance
 
 import io.circe.Decoder

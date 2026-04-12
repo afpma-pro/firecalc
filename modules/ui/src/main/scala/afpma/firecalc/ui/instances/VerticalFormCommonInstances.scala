@@ -17,32 +17,18 @@ import afpma.firecalc.engine.models.gtypedefs.ζ
 
 import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
 
-import afpma.laminar.form.daisyui.DaisyUIInputs.DoubleFieldsetLabelAndInput
-import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLabelAndContent
-import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLegendWithContent
-import afpma.laminar.form.daisyui.DaisyUIInputs.SelectAndOptionsOnly
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
-import afpma.laminar.form.derivation.FormDerivation.given
-import afpma.laminar.form.coulomb.CoulombFormInstances
-import afpma.laminar.form.Form.*
-import afpma.laminar.form.VarSync
-import afpma.laminar.form.FormRenderer
-import afpma.laminar.form.ConditionalFor
-import afpma.laminar.form.Defaultable
-import afpma.laminar.form.ValidateVar
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
+import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
 import afpma.firecalc.ui.components.FireboxCatalogSelectComponent
 import afpma.firecalc.ui.components.SingleTestedCatalogSelectComponent
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.BillableCountry
 import afpma.firecalc.ui.models.BillableCustomerType
 import afpma.firecalc.ui.models.BillingLanguage
 import afpma.firecalc.ui.models.door15aFireboxesSignal
+import afpma.firecalc.ui.models.firebox_var
 import afpma.firecalc.ui.models.singleTestedFireboxesSignal
 import afpma.firecalc.ui.models.stove_params_var
-import afpma.firecalc.ui.models.firebox_var
-import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
 
 import cats.Show
 
@@ -52,6 +38,21 @@ import coulomb.*
 
 import scala.deriving.Mirror
 
+import afpma.laminar.form.ConditionalFor
+import afpma.laminar.form.Defaultable
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.ValidateVar
+import afpma.laminar.form.VarSync
+import afpma.laminar.form.coulomb.CoulombFormInstances
+import afpma.laminar.form.daisyui.DaisyUIInputs.DoubleFieldsetLabelAndInput
+import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLabelAndContent
+import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLegendWithContent
+import afpma.laminar.form.daisyui.DaisyUIInputs.SelectAndOptionsOnly
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.derivation.FormDerivation.given
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import io.taig.babel.Locale
 
 class VerticalFormCommonInstances(using DisplayUnits, Locale):

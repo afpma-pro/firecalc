@@ -5,19 +5,24 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.dto.all.{AzimuthDirection, AbsoluteDirection, InclinationDirection}
-import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
-import afpma.firecalc.ui.icons.lucide
-import afpma.firecalc.ui.Component
-import afpma.laminar.form.daisyui.DaisyUITooltip
+import afpma.firecalc.dto.all.AbsoluteDirection
+import afpma.firecalc.dto.all.AzimuthDirection
+import afpma.firecalc.dto.all.InclinationDirection
+
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
+import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.icons.lucide
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.daisyui.DaisyUITooltip
 import io.taig.babel.Locale
-
 import org.scalajs.dom
 
 /**

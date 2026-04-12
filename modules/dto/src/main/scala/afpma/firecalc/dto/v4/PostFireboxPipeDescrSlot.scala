@@ -5,7 +5,9 @@
 
 package afpma.firecalc.dto.v4
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.Json
 
 /** A tagged pipe descriptor slot for the post-firebox topology.
   *

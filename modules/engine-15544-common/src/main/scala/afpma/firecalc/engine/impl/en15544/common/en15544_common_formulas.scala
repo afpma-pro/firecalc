@@ -8,11 +8,12 @@ import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.utils.Log
+
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.utils.Log
 import afpma.firecalc.engine.models.en15544.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*

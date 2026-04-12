@@ -5,12 +5,12 @@
 
 package afpma.firecalc.engine.alg.en13384
 
-import afpma.firecalc.engine.models.LoadQty
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-
 import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
+
+import afpma.firecalc.engine.models.LoadQty
+import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 
 import cats.implicits.toShow
 

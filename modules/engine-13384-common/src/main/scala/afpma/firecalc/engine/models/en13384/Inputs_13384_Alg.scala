@@ -7,7 +7,6 @@ package afpma.firecalc.engine.models.en13384
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 

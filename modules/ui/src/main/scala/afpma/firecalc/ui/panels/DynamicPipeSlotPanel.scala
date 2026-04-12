@@ -12,11 +12,11 @@ import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 
+import afpma.firecalc.i18n.implicits.I18N
+
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.*
-
-import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
@@ -25,7 +25,8 @@ import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
 import cats.Show
-import cats.data.{Validated, ValidatedNel}
+import cats.data.Validated
+import cats.data.ValidatedNel
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var

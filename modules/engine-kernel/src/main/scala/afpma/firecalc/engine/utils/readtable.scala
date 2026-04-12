@@ -5,11 +5,12 @@
 
 package afpma.firecalc.engine.utils
 
+import afpma.firecalc.i18n.*
+import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.implicits.given
+
 import afpma.firecalc.engine.models.TSVTableString
 import afpma.firecalc.engine.models.getUsingBilinearInterpolation
-import afpma.firecalc.i18n.ShowUsingLocale
-import afpma.firecalc.i18n.*
-import afpma.firecalc.i18n.implicits.given
 
 import cats.implicits.toShow
 

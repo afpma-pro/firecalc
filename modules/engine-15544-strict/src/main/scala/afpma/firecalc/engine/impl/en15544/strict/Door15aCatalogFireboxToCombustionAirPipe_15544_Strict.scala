@@ -5,6 +5,9 @@
 
 package afpma.firecalc.engine.impl.en15544.strict
 
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
+
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
@@ -14,8 +17,6 @@ import afpma.firecalc.engine.standard.PressureLossMustBeDefined
 import afpma.firecalc.engine.standard.PressureLossTableError
 
 import cats.syntax.validated.*
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
 
 /**
  * Combustion air pipe for [[Door15aFirebox_Catalog]] fireboxes.

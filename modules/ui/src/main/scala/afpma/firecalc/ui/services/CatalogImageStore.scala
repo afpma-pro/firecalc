@@ -6,19 +6,19 @@
 package afpma.firecalc.ui.services
 
 import com.raquo.airstream.state.Var
-import org.scalajs.dom
-import org.scalajs.dom.{
-    IDBCursorWithValue,
-    IDBDatabase,
-    IDBObjectStore,
-    IDBTransactionMode,
-    IDBVersionChangeEvent
-}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.scalajs.js
+
+import org.scalajs.dom
+import org.scalajs.dom.IDBCursorWithValue
+import org.scalajs.dom.IDBDatabase
+import org.scalajs.dom.IDBObjectStore
+import org.scalajs.dom.IDBTransactionMode
+import org.scalajs.dom.IDBVersionChangeEvent
 
 /** IndexedDB-backed key-value store for catalog image data URIs.
   *
@@ -149,7 +149,7 @@ object CatalogImageStore:
                     }
 
                     tx.onerror = { event =>
-                        dom.console.warn(s"CatalogImageStore: transaction error during clear")
+                        dom.console.warn("CatalogImageStore: transaction error during clear")
                         db.close()
                         promise.trySuccess(())
                     }

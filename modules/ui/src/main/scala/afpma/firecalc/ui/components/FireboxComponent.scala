@@ -14,27 +14,23 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
-import afpma.laminar.form.Form.as_HtmlElement
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
-
-import afpma.laminar.form.Form
-import afpma.laminar.form.FormRenderer
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.DaisyUIVertical
-import afpma.laminar.form.coulomb.CoulombFormInstances
 
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
-import _root_.coulomb.policy.standard.given
-
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
+
+import _root_.coulomb.policy.standard.given
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.as_HtmlElement
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.derivation.FormDerivation
 import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
-
 import io.scalaland.chimney.dsl.*
-
 import io.taig.babel.Locale
 
 case class FireboxComponent(

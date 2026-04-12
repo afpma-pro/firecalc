@@ -15,18 +15,18 @@ import afpma.firecalc.i18n.utils.*
 import afpma.firecalc.i18n.utils.macros.*
 
 import afpma.firecalc.ui.Component
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
-import afpma.laminar.form.daisyui.DaisyUIVertical
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
 import afpma.firecalc.ui.instances.*
 
 import cats.syntax.all.*
 
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.taig.babel.Locale

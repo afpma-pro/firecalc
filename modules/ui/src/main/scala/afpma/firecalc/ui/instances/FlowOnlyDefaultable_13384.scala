@@ -16,7 +16,6 @@ import afpma.firecalc.i18n.implicits.given
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.laminar.form.Defaultable
-
 import io.taig.babel.Locale
 
 object FlowOnlyDefaultable_13384:

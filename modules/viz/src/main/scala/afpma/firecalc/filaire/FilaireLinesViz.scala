@@ -5,9 +5,10 @@
 
 package afpma.firecalc.filaire
 
-import org.scalajs.dom
 import scala.scalajs.js
-import FilaireTypes.*
+
+import afpma.firecalc.filaire.FilaireTypes.*
+import org.scalajs.dom
 
 /** Framework-agnostic Filaire visualization API.
   * Returns plain DOM elements that can be wrapped by any UI framework.

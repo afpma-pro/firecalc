@@ -23,7 +23,6 @@ import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog.SB
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
-import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.InterpolationError
 import afpma.firecalc.engine.utils.ShowAsTable

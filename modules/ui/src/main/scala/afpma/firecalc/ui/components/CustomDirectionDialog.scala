@@ -5,10 +5,14 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.dto.all.{AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.all.AzimuthDirection
+import afpma.firecalc.dto.all.InclinationDirection
+
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.ui.*
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
+import afpma.firecalc.ui.*
 
 import com.raquo.airstream.core.Observer
 import com.raquo.airstream.state.Var

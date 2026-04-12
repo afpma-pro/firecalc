@@ -9,8 +9,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.geometry.*
+import afpma.firecalc.engine.typeclasses.*
 
 object PropsStateOps_FlowOnly_15544_Instance:
 

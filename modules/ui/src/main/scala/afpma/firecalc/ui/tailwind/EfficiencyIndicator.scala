@@ -5,12 +5,14 @@
 
 package afpma.firecalc.ui.tailwind
 
+import algebra.instances.all.given
+
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.engine.standard.EfficiencyIsTooLow
+import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import afpma.firecalc.ui.i18n.implicits.given
 
@@ -19,12 +21,11 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.utils.*
 
-import cats.data.Validated
 import cats.Show
+import cats.data.Validated
 
 import com.raquo.laminar.api.L.*
 
-import algebra.instances.all.given
 import coulomb.policy.standard.given
 
 import io.taig.babel.Locale

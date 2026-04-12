@@ -13,9 +13,11 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.Footer
 import afpma.firecalc.ui.daisyui.DaisyUINavBar
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
-import afpma.firecalc.ui.models.{viz3DPanelOn, graphPanelOn}
+import afpma.firecalc.ui.models.graphPanelOn
+import afpma.firecalc.ui.models.viz3DPanelOn
 import afpma.firecalc.ui.tailwind.Indicators
-import afpma.firecalc.ui.viz.{Viz3DPanel, GraphPanel}
+import afpma.firecalc.ui.viz.GraphPanel
+import afpma.firecalc.ui.viz.Viz3DPanel
 
 import com.raquo.laminar.api.L.*
 

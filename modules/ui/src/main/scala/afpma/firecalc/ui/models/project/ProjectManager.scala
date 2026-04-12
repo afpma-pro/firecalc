@@ -5,10 +5,10 @@
 
 package afpma.firecalc.ui.models.project
 
-import com.raquo.airstream.state.Var
-
 import afpma.firecalc.ui.models.AppStateSchemaHelper
 import afpma.firecalc.ui.models.schema.AppStateSchema
+
+import com.raquo.airstream.state.Var
 
 object ProjectManager:
 

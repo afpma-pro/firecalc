@@ -11,10 +11,10 @@ import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortOrRegularOps.given
 import afpma.firecalc.engine.models.gtypedefs.*
-import afpma.firecalc.engine.standard.FluePipeShapeSequenceError
-import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.*
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.*
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
+import afpma.firecalc.engine.standard.FluePipeShapeSequenceError
+import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.*
 
 import cats.data.*
 import cats.data.Validated.*

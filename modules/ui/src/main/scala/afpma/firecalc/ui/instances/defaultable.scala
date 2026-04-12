@@ -11,12 +11,13 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.models.gtypedefs.*
 
-import afpma.laminar.form.Defaultable
 import afpma.firecalc.ui.models.*
 
 import coulomb.*
 import coulomb.policy.standard.given
 import coulomb.syntax.*
+
+import afpma.laminar.form.Defaultable
 
 object defaultable:
 

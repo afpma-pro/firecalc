@@ -8,12 +8,12 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.*
@@ -22,23 +22,25 @@ import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_13384_Insta
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_13384_Instance.FlowOnlyPropsState_13384
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_13384_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
-import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
 import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
+import afpma.firecalc.engine.typeclasses.*
 
 import cats.data.*
 import cats.syntax.all.*
+
+import coulomb.policy.standard.given
 
 import scala.annotation.targetName
 import scala.reflect.*
 
 import com.softwaremill.quicklens.*
-
-import coulomb.policy.standard.given
 
 trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 

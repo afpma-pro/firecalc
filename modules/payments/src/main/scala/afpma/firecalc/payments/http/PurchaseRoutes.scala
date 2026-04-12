@@ -8,8 +8,8 @@ package afpma.firecalc.payments.http
 import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.shared.api
-import afpma.firecalc.payments.util.LogSanitizer
 import afpma.firecalc.payments.shared.api.ErrorResponseEnvelope
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
 import cats.syntax.all.*

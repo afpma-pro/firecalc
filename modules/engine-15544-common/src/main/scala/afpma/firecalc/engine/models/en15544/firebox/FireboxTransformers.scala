@@ -13,7 +13,8 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog.SB
-import afpma.firecalc.engine.models.en15544.typedefs.{σ_CO2, GlassArea}
+import afpma.firecalc.engine.models.en15544.typedefs.GlassArea
+import afpma.firecalc.engine.models.en15544.typedefs.σ_CO2
 
 import io.scalaland.chimney.*
 import io.scalaland.chimney.dsl.*

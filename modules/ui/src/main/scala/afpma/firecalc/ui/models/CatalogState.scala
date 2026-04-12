@@ -5,13 +5,16 @@
 
 package afpma.firecalc.ui.models
 
-import afpma.firecalc.catalog.{CasingPreset, CatalogCategory, CatalogCategoryInstances, CatalogFile}
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.instances.CommonInstances.given
 import afpma.firecalc.dto.instances.V4Instances.given
 
 import scala.collection.immutable.ListMap
 
+import afpma.firecalc.catalog.CasingPreset
+import afpma.firecalc.catalog.CatalogCategory
+import afpma.firecalc.catalog.CatalogCategoryInstances
+import afpma.firecalc.catalog.CatalogFile
 import io.circe.*
 import io.circe.generic.semiauto
 import io.circe.syntax.*

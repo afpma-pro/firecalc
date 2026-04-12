@@ -13,7 +13,10 @@ import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Stric
 import afpma.firecalc.engine.impl.en15544.strict.{*, given}
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
 import afpma.firecalc.engine.standard.*
 
 import cats.data.NonEmptyList
@@ -21,9 +24,6 @@ import cats.data.Validated
 import cats.data.ValidatedNel
 
 import scala.util.*
-import afpma.firecalc.engine.models.en15544.firebox.*
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
 
 case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     self =>
@@ -126,7 +126,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             case f: SingleTested           => mkStrictAlg(f)
             case f: Door15aFirebox_Catalog => mkStrictAlg(f)
             case f =>
-                throw new IllegalStateException(s"Unknow firebox type")
+                throw new IllegalStateException("Unknow firebox type")
 
     def make_en15544_Strict_Application: ValidatedNel[MCalc_Error, EN15544_Strict_Application] =
         stoveProjectDescr_EN15544_Strict.en15544_Alg

@@ -10,14 +10,13 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.*
 
-import afpma.firecalc.engine.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.typeclasses.ElementFactory
 
 import cats.data.NonEmptyList
 import cats.data.Validated
@@ -26,8 +25,8 @@ import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
+import coulomb.syntax.*
 
 object ElementFactory_13384_Instances:
 

@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.models.en15544
 
-import afpma.firecalc.units.coulombutils.{*, given}
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 

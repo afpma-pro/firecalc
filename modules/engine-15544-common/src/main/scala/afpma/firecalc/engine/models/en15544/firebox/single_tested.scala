@@ -12,13 +12,13 @@ import afpma.firecalc.i18n.LocalizedString
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
+import afpma.firecalc.engine.models.en15544.typedefs.GlassArea
+import afpma.firecalc.engine.models.en15544.typedefs.t_BU
 
 import cats.syntax.validated.*
 
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
-import afpma.firecalc.engine.models.en15544.typedefs.GlassArea
-import afpma.firecalc.engine.models.en15544.typedefs.t_BU
 
 object single_tested:
 

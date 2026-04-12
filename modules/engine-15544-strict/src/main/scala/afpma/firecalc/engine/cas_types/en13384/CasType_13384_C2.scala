@@ -10,7 +10,8 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.i18n.LocalizedString
 

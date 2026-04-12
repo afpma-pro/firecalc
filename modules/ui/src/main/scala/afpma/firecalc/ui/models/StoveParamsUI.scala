@@ -11,19 +11,17 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.implicits.given
 
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
-import afpma.laminar.form.daisyui.DaisyUIVertical
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
 import afpma.firecalc.ui.instances.*
 
 import com.raquo.laminar.api.L.Signal
 
 import _root_.coulomb.*
-import _root_.coulomb.policy.standard.given
-
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.derivation.FormDerivation
+import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import io.taig.babel.Locale
 
 object StoveParamsUI:

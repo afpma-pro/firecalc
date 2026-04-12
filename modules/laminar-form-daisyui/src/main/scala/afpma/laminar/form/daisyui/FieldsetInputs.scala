@@ -7,8 +7,6 @@ package afpma.laminar.form.daisyui
 
 import java.time.LocalDate
 
-import afpma.laminar.form.*
-
 import cats.Show
 import cats.data.*
 import cats.syntax.all.*
@@ -18,6 +16,8 @@ import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 
 import scala.annotation.nowarn
+
+import afpma.laminar.form.*
 
 /** Fieldset-style vertical input components mixed into [[DaisyUIInputs]]. */
 trait FieldsetInputs:

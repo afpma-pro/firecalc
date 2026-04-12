@@ -5,23 +5,28 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.catalog.CatalogParseError
-import afpma.firecalc.catalog.CatalogParser
-import afpma.firecalc.payments.shared.Constants.FIRECALC_CATALOG_FILE_EXTENSION
-import afpma.firecalc.ui.*
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
-import afpma.firecalc.ui.models.{CatalogState, catalogStateVar}
-import afpma.firecalc.ui.services.{CatalogImageStore, FileSystemService}
 import afpma.firecalc.utils.BuildInfo
+
+import afpma.firecalc.payments.shared.Constants.FIRECALC_CATALOG_FILE_EXTENSION
+
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
+import afpma.firecalc.ui.*
+import afpma.firecalc.ui.models.CatalogState
+import afpma.firecalc.ui.models.catalogStateVar
+import afpma.firecalc.ui.services.CatalogImageStore
+import afpma.firecalc.ui.services.FileSystemService
 
 import com.raquo.laminar.api.L.*
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
+import afpma.firecalc.catalog.CatalogParseError
+import afpma.firecalc.catalog.CatalogParser
 import io.taig.babel.Locale
 import org.scalajs.dom
 import org.scalajs.dom.HTMLDialogElement
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 case class CatalogManagerDialog()(using Locale) extends Component:
 

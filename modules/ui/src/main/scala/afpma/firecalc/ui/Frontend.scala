@@ -7,9 +7,11 @@ package afpma.firecalc.ui
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.ui.components.GlobalErrorDialog
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
-import afpma.firecalc.ui.services.{CatalogImageStore, VersionService}
+
+import afpma.firecalc.ui.components.GlobalErrorDialog
+import afpma.firecalc.ui.services.CatalogImageStore
+import afpma.firecalc.ui.services.VersionService
 import afpma.firecalc.ui.views.*
 import afpma.firecalc.ui.views.ProjectSelectorView
 

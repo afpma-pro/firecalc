@@ -5,12 +5,12 @@
 
 package afpma.firecalc.dto.common
 
-import afpma.firecalc.domain.Country
 import afpma.firecalc.i18n.*
 
 import cats.Show
 import cats.implicits.toShow
 
+import afpma.firecalc.domain.Country
 import magnolia1.Transl
 
 @Transl(I(_.headers.project_description))

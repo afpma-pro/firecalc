@@ -5,22 +5,23 @@
 
 package afpma.firecalc.ui.models
 
+import afpma.firecalc.dto.common.DisplayUnits
+
 import afpma.firecalc.engine.utils.VNelString
 
 import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
 
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.DaisyUIVertical
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.BillingInfo
 
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.daisyui.DaisyUIVertical
+import afpma.laminar.form.derivation.FormDerivation
 import io.taig.babel.Locale
-import afpma.firecalc.dto.common.DisplayUnits
 
 case class BillingInfoUI()(using DisplayUnits, Locale):
 

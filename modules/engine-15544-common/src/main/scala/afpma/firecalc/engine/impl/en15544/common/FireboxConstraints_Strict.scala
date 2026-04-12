@@ -5,11 +5,13 @@
 
 package afpma.firecalc.engine.impl.en15544.common
 
-import cats.syntax.all.*
+import algebra.instances.all.given
+
+import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.units.coulombutils.show_Meters
+import afpma.firecalc.units.coulombutils.show_SquareCentimeters
 
 import afpma.firecalc.dto.all.*
-
-import afpma.firecalc.units.coulombutils.{show_Meters, show_SquareCentimeters, *}
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
@@ -22,7 +24,7 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.λ
 import afpma.firecalc.engine.standard.*
 
-import algebra.instances.all.given
+import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given

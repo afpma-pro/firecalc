@@ -5,10 +5,12 @@
 
 package afpma.firecalc.ui.views
 
-import afpma.firecalc.payments.shared.Constants.{FIRECALC_FILE_EXTENSION, LEGACY_FIRECALC_FILE_EXTENSION}
+import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
+import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
+
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.AppStateSchemaHelper
@@ -17,10 +19,11 @@ import afpma.firecalc.ui.services.FileSystemService
 
 import com.raquo.laminar.api.L.*
 
+import scala.util.Failure
+import scala.util.Success
+
 import io.taig.babel.Locale
 import org.scalajs.dom
-
-import scala.util.{Failure, Success}
 
 final case class ProjectSelectorView()(using Locale) extends Component:
 

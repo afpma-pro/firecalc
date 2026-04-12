@@ -5,8 +5,9 @@
 
 package afpma.firecalc.graph
 
-import org.scalajs.dom
 import scala.scalajs.js
+
+import org.scalajs.dom
 
 /** Framework-agnostic Graph visualization API.
   * Returns plain DOM elements that can be wrapped by any UI framework.

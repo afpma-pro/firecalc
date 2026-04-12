@@ -12,19 +12,18 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.DaisyUIHorizontal
-import afpma.laminar.form.FormRenderer
-import afpma.laminar.form.daisyui.DaisyUIInputs
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.daisyui.DaisyUIHorizontal
+import afpma.laminar.form.daisyui.DaisyUIInputs
 import io.taig.babel.Locale
 
 final case class AppendLayersComponent(

@@ -6,18 +6,25 @@
 package afpma.firecalc.ui.viz
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.engine.models.{ChimneyPipeT, ConnectorPipeT, FluePipeT, PipeResult, SlotBuildResult}
+
+import afpma.firecalc.engine.models.ChimneyPipeT
+import afpma.firecalc.engine.models.ConnectorPipeT
+import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.PipeResult
+import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.standard.VNelMcalcErr
-import afpma.firecalc.graph.*
+
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.LAMINAR_VIZ_DEBOUNCE_MS
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.*
 
 import cats.data.Validated
 
 import com.raquo.laminar.api.L.*
 
+import afpma.firecalc.graph.*
 import io.taig.babel.Locale
 
 final case class GraphPanel()(using Locale, DisplayUnits) extends Component:

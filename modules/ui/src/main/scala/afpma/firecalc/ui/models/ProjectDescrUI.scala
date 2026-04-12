@@ -8,14 +8,13 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
-import afpma.laminar.form.daisyui.DaisyUIVertical
-import afpma.laminar.form.derivation.FormDerivation
 import afpma.firecalc.ui.instances.*
 
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.*
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.daisyui.DaisyUIVertical
 import io.taig.babel.Locale
 
 object ProjectDescrUI:

@@ -8,20 +8,20 @@ package afpma.firecalc.dto
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.*
+import afpma.firecalc.dto.common.AirSpaceDetailed_V1.WithAirSpace
+import afpma.firecalc.dto.common.AirSpaceDetailed_V1.WithoutAirSpace
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 
 import cats.syntax.all.*
 
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
-import afpma.firecalc.dto.common.AirSpaceDetailed_V1.WithoutAirSpace
-import afpma.firecalc.dto.common.AirSpaceDetailed_V1.WithAirSpace
 
 object transformers:
 

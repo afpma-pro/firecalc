@@ -26,11 +26,11 @@ import afpma.firecalc.payments.i18n.implicits.I18N_Payments
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.service.InvoiceNumberService
-import afpma.firecalc.payments.util.LogSanitizer
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.api.ProductCatalogSelector
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.*
 import cats.effect.ExitCode

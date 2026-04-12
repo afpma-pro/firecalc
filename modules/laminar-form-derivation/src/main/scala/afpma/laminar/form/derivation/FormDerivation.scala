@@ -7,8 +7,6 @@ package afpma.laminar.form.derivation
 
 import java.time.LocalDate
 
-import afpma.laminar.form.*
-
 import cats.Show
 import cats.syntax.either.*
 import cats.syntax.functor.*
@@ -18,12 +16,12 @@ import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 
-import scala.util.Try
-
-import magnolia1.*
-
 import scala.annotation.nowarn
 import scala.deriving.Mirror
+import scala.util.Try
+
+import afpma.laminar.form.*
+import magnolia1.*
 
 /** Magnolia-based derivation for Form[A].
   *
@@ -142,7 +140,7 @@ object FormDerivation extends AutoDerivation[Form]:
         subt_defaultables  : IArray[Defaultable[A]],
         subt_labels        : IArray[String],
         subt_typeclasses   : IArray[Form[A]],
-        onSubtypeSwitch    : Option[(A, A) => A] = None
+        onSubtypeSwitch    : Option[(A, A) => A]
     )(using renderer: FormRenderer): HtmlElement =
         val a_init = variable.now()
 
@@ -565,8 +563,8 @@ object FormDerivation extends AutoDerivation[Form]:
         dfr: Form[R]
     ): Form[OptionOfEither[L, R]] =
 
-        given ValidateVar[L] = dfl.validateVar
-        given ValidateVar[R] = dfr.validateVar
+        // given ValidateVar[L] = dfl.validateVar
+        // given ValidateVar[R] = dfr.validateVar
 
         @nowarn given df_ne: Form[NoneOfEither] = // scalafix:ok
             empty[NoneOfEither](using Defaultable(NoneOfEither))
@@ -637,16 +635,16 @@ object FormDerivation extends AutoDerivation[Form]:
         dfl: Form[L],
         dfr: Form[R]
     ): Form[Either[L, R]] =
-        given ValidateVar[L] = dfl.validateVar
-        given ValidateVar[R] = dfr.validateVar
+        // given ValidateVar[L] = dfl.validateVar
+        // given ValidateVar[R] = dfr.validateVar
 
         val subt_defaultables =
             IArray(dl.map(Left.apply), dr.map(Right.apply))
 
-        val d = Defaultable
+        Defaultable
             .selectFirstSubtypeAsDefaultableOrThrow[Either[L, R]](selectFieldName)(subt_defaultables)
 
-        given ValidateVar[Either[L, R]] = ValidateVar.forEither(using dfl.validateVar, dfr.validateVar)
+        // given ValidateVar[Either[L, R]] = ValidateVar.forEither(using dfl.validateVar, dfr.validateVar)
 
         val leftForm: Form[Either[L, R]] = dfl
             .bimap[Either[L, R]](Left(_))(_.swap.getOrElse(dl.default))
@@ -659,7 +657,8 @@ object FormDerivation extends AutoDerivation[Form]:
         @nowarn given Form[Left[L, R]]  = leftForm.bimap[Left[L, R]](_.asInstanceOf[Left[L, R]])(identity)
         @nowarn given Form[Right[L, R]] = rightForm.bimap[Right[L, R]](_.asInstanceOf[Right[L, R]])(identity)
 
-        FormDerivation.derived[Either[L, R]]
+        @nowarn val derivedForm = FormDerivation.derived[Either[L, R]]
+        derivedForm
 
     /** Select + sub-value form — select from options, edit sub-value T.
       * Renderer-agnostic: the select uses FormRenderer.selectWithCustomId,

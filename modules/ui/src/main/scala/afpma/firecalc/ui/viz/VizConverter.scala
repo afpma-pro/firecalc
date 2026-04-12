@@ -5,12 +5,20 @@
 
 package afpma.firecalc.ui.viz
 
-import afpma.firecalc.engine.models.geometry.{PipeSegmentPosition, PipePositionResult, Vec3}
-import afpma.firecalc.engine.models.{FluePipeT, ConnectorPipeT, ChimneyPipeT, PipeType}
 import afpma.firecalc.dto.common.PipeShape
+
+import afpma.firecalc.engine.models.ChimneyPipeT
+import afpma.firecalc.engine.models.ConnectorPipeT
+import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.models.geometry.PipePositionResult
+import afpma.firecalc.engine.models.geometry.PipeSegmentPosition
+import afpma.firecalc.engine.models.geometry.Vec3
+
+import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
+
 import afpma.firecalc.filaire.FilaireTypes.*
 import afpma.firecalc.filaire.FilaireTypes.CrossSection
-import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 
 object VizConverter:
 

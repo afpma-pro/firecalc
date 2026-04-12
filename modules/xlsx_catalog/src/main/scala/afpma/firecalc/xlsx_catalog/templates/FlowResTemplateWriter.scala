@@ -7,11 +7,10 @@ package afpma.firecalc.xlsx_catalog.templates
 
 import java.nio.file.Path
 
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
-
 import afpma.firecalc.xlsx_catalog.PoiHelpers
 import afpma.firecalc.xlsx_catalog.templates.CatalogConstants.*
 import afpma.firecalc.xlsx_catalog.templates.TemplateHelpers.*
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 object FlowResTemplateWriter:
 

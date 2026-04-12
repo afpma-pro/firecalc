@@ -5,9 +5,10 @@
 
 package afpma.firecalc.engine.models
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.engine.utils.InterpolationError
-import afpma.firecalc.units.coulombutils.*
 
 import coulomb.*
 import coulomb.policy.standard.given

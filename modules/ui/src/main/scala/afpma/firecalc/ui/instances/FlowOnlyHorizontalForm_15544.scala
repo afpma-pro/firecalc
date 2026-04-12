@@ -11,17 +11,15 @@ import afpma.firecalc.dto.common.NbOfFlows
 
 import afpma.firecalc.i18n.implicits.I18N
 
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
-
-import _root_.coulomb.*
-import _root_.coulomb.policy.standard.given
-
 import scala.annotation.nowarn
 import scala.deriving.Mirror
 
+import _root_.coulomb.*
+import _root_.coulomb.policy.standard.given
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.derivation.FormDerivation
 import io.taig.babel.Locale
 
 class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):

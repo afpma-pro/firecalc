@@ -11,15 +11,14 @@ import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.common.DisplayUnits
 
-import afpma.laminar.form.ValidateVar
-import afpma.laminar.form.FormMessages
+import afpma.firecalc.ui.i18n.implicits.I18N_UI as I18N
+
 import afpma.firecalc.ui.models.BillableCountry
 import afpma.firecalc.ui.models.BillableCustomerType
 import afpma.firecalc.ui.models.BillingLanguage
 import afpma.firecalc.ui.models.ClientProjectData
-import afpma.firecalc.ui.i18n.implicits.I18N_UI as I18N
-import io.taig.babel.Locale
 
 import cats.Show
 import cats.syntax.all.*
@@ -28,7 +27,9 @@ import coulomb.*
 import coulomb.policy.standard.given
 import coulomb.syntax.*
 
-import afpma.firecalc.dto.common.DisplayUnits
+import afpma.laminar.form.FormMessages
+import afpma.laminar.form.ValidateVar
+import io.taig.babel.Locale
 
 class ValidateVarCommonInstances(using DisplayUnits, Locale):
     import SUnits.given

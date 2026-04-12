@@ -16,9 +16,11 @@ import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.anglePresetsSignal
+import afpma.firecalc.ui.models.firebox_var
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
 
 import cats.Show
@@ -26,9 +28,6 @@ import cats.Show
 import com.raquo.laminar.api.L.*
 
 import coulomb.policy.standard.given
-
-import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
-import afpma.firecalc.ui.models.firebox_var
 
 import io.taig.babel.Locale
 

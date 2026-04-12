@@ -12,11 +12,11 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 
-import afpma.firecalc.engine.typeclasses.ElementFactory
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
 import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.typeclasses.ElementFactory
 
 import cats.data.Validated
 import cats.data.Validated.*
@@ -24,8 +24,8 @@ import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.policy.standard.given
+import coulomb.syntax.*
 
 object ElementFactory_15544_Instances:
 

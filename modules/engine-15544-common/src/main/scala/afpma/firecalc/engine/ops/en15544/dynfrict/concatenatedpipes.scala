@@ -15,6 +15,8 @@ import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.Result
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.ops.en15544.dynfrict.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.MissingSectionGeometryChange
+import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.TwoSuccessDirectionChangeNotAllowed
 
 import cats.data.*
 import cats.data.Validated.Invalid
@@ -22,8 +24,6 @@ import cats.data.Validated.Valid
 import cats.syntax.all.*
 
 import coulomb.ops.standard.all.given
-import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.TwoSuccessDirectionChangeNotAllowed
-import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.MissingSectionGeometryChange
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]]

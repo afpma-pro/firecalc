@@ -5,34 +5,30 @@
 
 package afpma.firecalc.engine.impl.en15544.common
 
-import cats.data.*
-import cats.data.Validated.*
-import cats.syntax.all.catsSyntaxOptionId
-import cats.syntax.all.catsSyntaxValidatedId
-import cats.syntax.all.catsSyntaxEither
-import cats.syntax.all.catsSyntaxTuple2Semigroupal
-import cats.syntax.all.catsSyntaxTuple3Semigroupal
-import cats.syntax.all.catsSyntaxTuple4Semigroupal
-import cats.syntax.all.catsSyntaxTuple5Semigroupal
+import algebra.instances.all.given
+
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.*
-import afpma.firecalc.engine.models.en15544.std.*
-import afpma.firecalc.engine.models.en15544.typedefs.*
-import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
 import afpma.firecalc.engine.standard.*
-import afpma.firecalc.units.coulombutils.*
 
-import algebra.instances.all.given
+import cats.data.*
+import cats.data.Validated.*
+import cats.syntax.all.catsSyntaxEither
+import cats.syntax.all.catsSyntaxOptionId
+import cats.syntax.all.catsSyntaxTuple2Semigroupal
+import cats.syntax.all.catsSyntaxTuple4Semigroupal
+import cats.syntax.all.catsSyntaxTuple5Semigroupal
+import cats.syntax.all.catsSyntaxValidatedId
 
 import coulomb.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{given}
 import coulomb.ops.algebra.all.*
+import coulomb.ops.standard.all.given
 
 /**
  * Heating appliance + pipe result methods extracted from `EN15544_V_2023_Common_Application`.

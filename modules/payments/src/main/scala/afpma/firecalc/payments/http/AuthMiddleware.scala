@@ -9,17 +9,20 @@ import afpma.firecalc.payments.domain.CustomerId
 import afpma.firecalc.payments.service.AuthenticationService
 import afpma.firecalc.payments.shared.api.ErrorResponseEnvelope
 
-import cats.data.{Kleisli, OptionT}
+import cats.data.Kleisli
+import cats.data.OptionT
 import cats.effect.Async
 import cats.syntax.all.*
 
 import io.circe.syntax.*
 import org.http4s.*
+import org.http4s.AuthScheme
+import org.http4s.Credentials
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
-import org.http4s.headers.{Authorization, `WWW-Authenticate`}
-import org.http4s.server.{AuthMiddleware => Http4sAuthMiddleware}
-import org.http4s.{AuthScheme, Credentials}
+import org.http4s.headers.Authorization
+import org.http4s.headers.`WWW-Authenticate`
+import org.http4s.server.AuthMiddleware as Http4sAuthMiddleware
 import org.typelevel.log4cats.Logger
 
 /** Authenticated user context extracted from a valid JWT Bearer token. */

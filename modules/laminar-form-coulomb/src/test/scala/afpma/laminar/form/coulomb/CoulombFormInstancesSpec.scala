@@ -11,7 +11,7 @@ import afpma.laminar.form.*
 import afpma.laminar.form.coulomb.CoulombFormInstances
 import afpma.laminar.form.coulomb.CoulombFormInstances.given
 
-import afpma.firecalc.units.all.{*, given}
+import afpma.firecalc.units.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import _root_.coulomb.*

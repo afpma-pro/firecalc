@@ -11,7 +11,8 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.models.gtypedefs.z_geodetical_height
-import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, UpstreamState}
+import afpma.firecalc.engine.ops.generic.CanComputePipeResult
+import afpma.firecalc.engine.ops.generic.UpstreamState
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
 /**

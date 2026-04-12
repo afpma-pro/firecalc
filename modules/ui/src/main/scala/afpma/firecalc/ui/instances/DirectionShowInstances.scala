@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.instances
 
 import afpma.firecalc.dto.all.*
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import cats.Show

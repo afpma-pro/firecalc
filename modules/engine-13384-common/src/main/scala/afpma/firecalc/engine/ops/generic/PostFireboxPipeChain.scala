@@ -5,12 +5,14 @@
 
 package afpma.firecalc.engine.ops.generic
 
-import cats.data.{NonEmptyList, Validated, ValidatedNel}
-
-import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.alg.en13384.ComputeAt
+import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
+
+import cats.data.NonEmptyList
+import cats.data.Validated
+import cats.data.ValidatedNel
 
 /**
  * A validated, ordered chain of post-firebox pipe slots.

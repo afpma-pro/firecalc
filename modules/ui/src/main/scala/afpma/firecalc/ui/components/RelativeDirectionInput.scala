@@ -5,15 +5,21 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.dto.all.{AzimuthDirection, AbsoluteDirection, InclinationDirection}
+import afpma.firecalc.dto.all.AbsoluteDirection
+import afpma.firecalc.dto.all.AzimuthDirection
+import afpma.firecalc.dto.all.InclinationDirection
+
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipeFrame.RelativeSide
 import afpma.firecalc.engine.models.geometry.Vec3
-import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import com.raquo.airstream.core.{Observer, Signal}
+import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
+
+import com.raquo.airstream.core.Observer
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 

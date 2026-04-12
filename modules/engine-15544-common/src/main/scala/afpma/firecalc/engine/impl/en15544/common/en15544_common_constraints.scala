@@ -8,19 +8,16 @@ package afpma.firecalc.engine.impl.en15544.common
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.catsSyntaxOptionId
-import cats.syntax.all.catsSyntaxValidatedId
 import cats.syntax.all.toTraverseOps
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en15544.StoveConstraints
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
-import afpma.firecalc.engine.standard.*
 import afpma.firecalc.dto.all.Country
 
 /**

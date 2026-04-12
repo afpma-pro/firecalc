@@ -5,15 +5,17 @@
 
 package afpma.firecalc.engine.impl.en13384
 
+import algebra.instances.all.given
+
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
-import afpma.firecalc.engine.models.geometry.*
+import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
-import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_13384_Instances.*
@@ -22,25 +24,25 @@ import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_13384_Insta
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_Instance.ThermalPropsState_13384
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
-import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
+import afpma.firecalc.engine.models.geometry.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.typeclasses.*
 
 import cats.data.*
 import cats.syntax.all.*
+
+import coulomb.*
+import coulomb.policy.standard.given
 
 import scala.annotation.targetName
 import scala.reflect.*
 
 import com.softwaremill.quicklens.*
-
-import algebra.instances.all.given
-import coulomb.*
-import coulomb.policy.standard.given
-import coulomb.ops.standard.all.{given}
 
 object models:
 

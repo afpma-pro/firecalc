@@ -5,11 +5,10 @@
 
 package afpma.laminar.form.derivation
 
-import utest.*
-
 import afpma.laminar.form.*
 import afpma.laminar.form.derivation.FormDerivation
 import afpma.laminar.form.derivation.FormDerivation.given
+import utest.*
 
 /** Tests for FormDerivation — magnolia-based Form[A] derivation.
   *
@@ -541,11 +540,11 @@ object FormDerivationSpec extends TestSuite:
 
             test("validateVar with custom validation on subtypes") {
                 // Override ValidateVar for Double to reject negatives
-                given ValidateVar[Option[Double]] =
-                    ValidateVar.make:
-                        case Some(d) if d >= 0 => VNelString.validUnit
-                        case Some(d) => VNelString.invalidOne(s"negative: $d")
-                        case None => VNelString.invalidOne("missing")
+                // given ValidateVar[Option[Double]] =
+                //     ValidateVar.make:
+                //         case Some(d) if d >= 0 => VNelString.validUnit
+                //         case Some(d) => VNelString.invalidOne(s"negative: $d")
+                //         case None => VNelString.invalidOne("missing")
                 val form = FormDerivation.splitViaMatchingOnly[Shape]
                 assert(form.validateVar.validate(Circle(-1.0)).isInvalid)
             }

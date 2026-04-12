@@ -6,6 +6,7 @@
 package afpma.firecalc.dto.v4
 
 import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.*
 
 /** A catalog entry for a flow resistance element (wire mesh screen, damper, grate, etc.).

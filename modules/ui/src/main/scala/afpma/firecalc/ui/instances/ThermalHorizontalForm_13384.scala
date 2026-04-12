@@ -13,17 +13,16 @@ import afpma.firecalc.dto.common.NbOfFlows
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.ui.components.AppendLayersComponent
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
-
-import _root_.coulomb.*
-import _root_.coulomb.policy.standard.given
 
 import scala.annotation.nowarn
 import scala.deriving.Mirror
 
+import _root_.coulomb.*
+import _root_.coulomb.policy.standard.given
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.derivation.FormDerivation
 import io.taig.babel.Locale
 
 
@@ -84,7 +83,6 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         val stringForm: Form[String] = string_emptyAsDefault_alwaysValid
 
         Form.makeFor[SetPropertiesInBatch](d): (v, fc) =>
-            import afpma.firecalc.ui.instances.ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
             import afpma.firecalc.ui.components.SetPropertiesInBatchFormComponent
             import afpma.firecalc.ui.models.pipePresetsSignal
 
@@ -109,10 +107,10 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         Form.makeFor[LinedFlue](d): (v, fc) =>
             import com.raquo.laminar.api.L.*
 
-            given vv_spb: ValidateVar[SetPropertiesInBatch] =
-                ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetPropertiesInBatch]
-            given vv_asd: ValidateVar[AirSpaceDetailed] =
-                ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AirSpaceDetailed]
+            // given vv_spb: ValidateVar[SetPropertiesInBatch] =
+            //     ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetPropertiesInBatch]
+            // given vv_asd: ValidateVar[AirSpaceDetailed] =
+            //     ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AirSpaceDetailed]
 
             val linerForm  = horizontal_form_SetPropertiesInBatch
             val casingForm = horizontal_form_SetPropertiesInBatch

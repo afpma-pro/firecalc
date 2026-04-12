@@ -16,24 +16,21 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.gtypedefs.*
 
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLabelAndContent
-import afpma.laminar.form.daisyui.DaisyUIInputs.SelectAndOptionsOnly
-import afpma.laminar.form.*
-import afpma.laminar.form.coulomb.CoulombFormInstances
-import afpma.laminar.form.Form.*
+import scala.deriving.Mirror
 
 import _root_.coulomb.*
 import _root_.coulomb.policy.standard.given
-
-import scala.deriving.Mirror
-
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.coulomb.CoulombFormInstances
+import afpma.laminar.form.daisyui.DaisyUIInputs.FieldsetLabelAndContent
+import afpma.laminar.form.daisyui.DaisyUIInputs.SelectAndOptionsOnly
+import afpma.laminar.form.derivation.FormDerivation
 import io.taig.babel.Locale
 
 class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
-    import FormDerivation.given
     import SUnits.given
     // import defaultable.given
     
@@ -234,7 +231,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         given Form[AreaInCm2]  = given_dual_Area_cm2_or_in2.form()
             .withFieldName(I18N.terms.area)
 
-        import afpma.laminar.form.derivation.{OptionOfEither as DerivOOE, NoneOfEither as DerivNone, SomeLeft as DerivSL, SomeRight as DerivSR}
+        import afpma.laminar.form.derivation.{NoneOfEither as DerivNone, SomeLeft as DerivSL, SomeRight as DerivSR}
         FormDerivation.optionOfEither[AreaInCm2, PipeShape](
             noneLabel  = "-",
             leftLabel  = I18N.terms.area,
@@ -333,10 +330,10 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         import afpma.firecalc.ui.components.CustomDirectionDialog
         import com.raquo.airstream.core.Observer
 
-        given ValidateVar[AzimuthDirection] =
-            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AzimuthDirection]
-        given ValidateVar[InclinationDirection] =
-            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[InclinationDirection]
+        // given ValidateVar[AzimuthDirection] =
+        //     ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[AzimuthDirection]
+        // given ValidateVar[InclinationDirection] =
+        //     ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[InclinationDirection]
 
         val azForm   = horizontal_form_AzimuthDirection.render(azVar, FormConfig(fieldName = Some(I18N.terms.azimuth)))
         val inclForm = horizontal_form_InclinationDirection.render(inclVar, FormConfig(fieldName = Some(I18N.terms.inclination)))

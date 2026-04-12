@@ -5,7 +5,6 @@
 
 package afpma.firecalc.engine.impl.en15544.common
 
-import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.catsSyntaxOptionId
 import cats.syntax.all.toShow
@@ -27,7 +26,6 @@ import algebra.instances.all.given
 import coulomb.*
 import coulomb.policy.standard.given
 import coulomb.ops.standard.all.{given}
-import coulomb.ops.algebra.all.*
 
 import io.taig.babel.Locales
 import io.taig.babel.Locale

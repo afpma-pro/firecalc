@@ -11,21 +11,24 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.i18n.implicits.I18N
+
 import afpma.firecalc.engine.models.CombustionAirPipeT
 import afpma.firecalc.engine.models.PipeIdx
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeResult.PipeResultFromSections
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
 
-import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.displayUnits
 import afpma.firecalc.ui.showP_orImpUnits
 import afpma.firecalc.ui.showP_orImpUnitsTemp
 
-import cats.data.{Validated, ValidatedNel}
+import cats.data.Validated
+import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import coulomb.*
@@ -34,7 +37,6 @@ import coulomb.syntax.*
 
 import afpma.firecalc.graph.*
 import io.taig.babel.Locale
-import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
 
 
 /** Transforms 6 pipe VNelMcalcErr[PipeResult] into a ChartData for the graph module.

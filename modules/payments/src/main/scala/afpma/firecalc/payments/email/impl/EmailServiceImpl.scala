@@ -7,9 +7,9 @@ package afpma.firecalc.payments.email.impl
 
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.i18n.implicits.given
+import afpma.firecalc.payments.repository.PurchaseIntentRepository
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.i18n.implicits.lookupTranslation
-import afpma.firecalc.payments.repository.PurchaseIntentRepository
 import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async

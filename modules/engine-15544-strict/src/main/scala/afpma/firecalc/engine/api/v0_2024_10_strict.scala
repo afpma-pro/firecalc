@@ -7,6 +7,7 @@ package afpma.firecalc.engine.api
 
 import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
+
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict

@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.ui.i18n.GlobalError
+
 import org.scalajs.dom
 
 object GlobalErrorDialog:

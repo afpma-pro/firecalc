@@ -5,14 +5,14 @@
 
 package afpma.firecalc.ui.models
 
+import afpma.firecalc.ui.models.schema.AppStateSchema
+import afpma.firecalc.ui.models.schema.AppStateSchema.given
+
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
 import io.circe.Json
 import io.circe.syntax.*
-
-import afpma.firecalc.ui.models.schema.AppStateSchema
-import afpma.firecalc.ui.models.schema.AppStateSchema.given
 
 final class UndoManager(maxDepth: Int = 1000):
 

@@ -9,6 +9,7 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.NbOfFlows
+
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.gtypedefs.ζ

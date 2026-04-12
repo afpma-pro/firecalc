@@ -9,13 +9,9 @@ import cats.*
 import cats.data.*
 import cats.data.Validated.*
 import cats.syntax.all.catsSyntaxOptionId
-import cats.syntax.all.toShow
 import cats.syntax.all.catsSyntaxValidatedId
 import cats.syntax.all.toTraverseOps
-import cats.syntax.all.catsSyntaxTuple2Semigroupal
 import cats.syntax.all.catsSyntaxTuple3Semigroupal
-import cats.syntax.all.catsSyntaxTuple4Semigroupal
-import cats.syntax.all.catsSyntaxTuple5Semigroupal
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
@@ -27,16 +23,12 @@ import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.StoveConstraintContext
-import afpma.firecalc.engine.alg.en15544.StoveConstraints
 import afpma.firecalc.engine.impl.en16510.EN16510_1_2022_Formulas
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.LoadQty.withLoad
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
-import afpma.firecalc.engine.models.en13384.typedefs
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.en15544.std.*
-import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
 import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -46,7 +38,6 @@ import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.standard.*
-import afpma.firecalc.engine.utils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
 
@@ -59,7 +50,6 @@ import coulomb.ops.algebra.all.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import scala.annotation.nowarn
 import io.taig.babel.Locales
-import io.taig.babel.Locale
 
 // import standard.dsl.CalculationF.compute
 
@@ -790,12 +780,12 @@ abstract class EN15544_V_2023_Common_Application
         case Params_13384.DraftMin_LoadNominal => atDraftMin_LoadNominal
         case Params_13384.DraftMin_LoadMin     =>
             atDraftMin_LoadMin.getOrElse(
-                throw IllegalStateException(s"No AtParams for DraftMin_LoadMin: m_B_min is not defined")
+                throw IllegalStateException("No AtParams for DraftMin_LoadMin: m_B_min is not defined")
             )
         case Params_13384.DraftMax_LoadNominal => atDraftMax_LoadNominal
         case Params_13384.DraftMax_LoadMin     =>
             atDraftMax_LoadMin.getOrElse(
-                throw IllegalStateException(s"No AtParams for DraftMax_LoadMin: m_B_min is not defined")
+                throw IllegalStateException("No AtParams for DraftMax_LoadMin: m_B_min is not defined")
             )
         case other                             =>
             throw IllegalStateException(s"Unexpected Params_13384 value: $other")

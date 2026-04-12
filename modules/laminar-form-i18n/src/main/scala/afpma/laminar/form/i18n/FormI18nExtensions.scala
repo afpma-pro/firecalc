@@ -5,11 +5,11 @@
 
 package afpma.laminar.form.i18n
 
-import afpma.laminar.form.*
 import afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues
 
 import com.raquo.airstream.state.Var
-import com.raquo.laminar.api.L.*
+
+import afpma.laminar.form.*
 
 /** i18n extensions for Form[A] — automatic field name overwriting from translations. */
 object FormI18nExtensions:

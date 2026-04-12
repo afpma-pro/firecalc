@@ -5,15 +5,15 @@
 
 package afpma.firecalc.engine.utils
 
-import scala.collection.immutable.SortedMap
-import scala.util.boundary
-import scala.util.boundary.break
-
-import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.*
+import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.given
 
 import cats.implicits.toShow
+
+import scala.collection.immutable.SortedMap
+import scala.util.boundary
+import scala.util.boundary.break
 
 
 enum InterpolationError:

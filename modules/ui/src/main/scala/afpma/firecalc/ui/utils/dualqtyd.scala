@@ -10,12 +10,6 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.ui.daisyui.UnitAwareInputs
 
-import afpma.laminar.form.*
-import afpma.laminar.form.FormRenderer
-import afpma.laminar.form.Form.*
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.*
-
 import cats.Functor
 import cats.Id
 import cats.syntax.all.*
@@ -23,10 +17,13 @@ import cats.syntax.all.*
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
-import FormDerivation.DISABLED_SIG
-import _root_.coulomb.conversion.UnitConversion
 
 import scala.annotation.nowarn
+
+import _root_.coulomb.conversion.UnitConversion
+import afpma.laminar.form.*
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.derivation.FormDerivation.DISABLED_SIG
 
 /**
  * Dual[A] helps build Form, Encoder and Decoder instances for a type A

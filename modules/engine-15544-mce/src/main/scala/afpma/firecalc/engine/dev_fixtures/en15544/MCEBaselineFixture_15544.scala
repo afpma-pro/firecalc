@@ -8,7 +8,9 @@ package afpma.firecalc.engine.dev_fixtures.en15544
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.api.v0_2024_10_mce
 import afpma.firecalc.engine.models

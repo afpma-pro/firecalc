@@ -5,9 +5,10 @@
 
 package afpma.firecalc.ui.daisyui
 
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.icons.lucide
 
 import com.raquo.laminar.api.L.*

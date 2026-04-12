@@ -5,8 +5,8 @@
 
 package afpma.firecalc.ui.models.project
 
-import afpma.firecalc.ui.models.schema.LocalStorageKeys
 import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
+import afpma.firecalc.ui.models.schema.LocalStorageKeys
 
 object ProjectMigration:
 

@@ -97,7 +97,7 @@ trait FireCalcYAML_V6_Generators
 
             case _ =>
                 // N≥3: flue region occupies slots 0..(n-3 or n-2), optional connector before chimney
-                val flueCount = n - 1  // worst case all flue slots (no connector)
+                // val flueCount = n - 1  // worst case all flue slots (no connector)
                 Gen.oneOf(
                     // With connector: [flue × (n-2), connector, chimney]
                     for

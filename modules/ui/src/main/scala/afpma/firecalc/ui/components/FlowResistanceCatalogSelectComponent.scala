@@ -5,17 +5,19 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.catalog.{CatalogCategory, CatalogCategoryInstances}
-import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import afpma.firecalc.dto.all.FlowResistanceCatalogEntry
+import afpma.firecalc.dto.common.DisplayUnits
+
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.services.CatalogImageStore
 
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
 
+import afpma.firecalc.catalog.CatalogCategory
+import afpma.firecalc.catalog.CatalogCategoryInstances
+import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import io.taig.babel.Locale
-import afpma.firecalc.dto.common.DisplayUnits
 
 /** Modal component for selecting a flow resistance entry from the catalog. */
 case class FlowResistanceCatalogSelectComponent(

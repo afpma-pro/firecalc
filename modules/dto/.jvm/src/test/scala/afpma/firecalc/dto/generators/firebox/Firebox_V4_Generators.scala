@@ -5,17 +5,12 @@
 
 package afpma.firecalc.dto.generators.firebox
 
-import org.scalacheck.Gen
-import afpma.firecalc.dto.v4.TypeOfAppliance
-import afpma.firecalc.dto.v4.EmissionsAndEfficiencyValues_DTO
-import afpma.firecalc.dto.v4.EmissionValues_DTO
-import afpma.firecalc.dto.v4.TestEmissionValue_DTO
-import afpma.firecalc.dto.v4.TestReport
-import afpma.firecalc.dto.v4.PolluantName
-import afpma.firecalc.dto.v4.Firebox_V3
-import afpma.firecalc.dto.v5.Firebox_V4
-import afpma.firecalc.dto.common.HeatOutputReduced
 import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.v4.TypeOfAppliance
+import afpma.firecalc.dto.v5.Firebox_V4
+
+import org.scalacheck.Gen
 
 /**
  * Firebox_V4_Generators

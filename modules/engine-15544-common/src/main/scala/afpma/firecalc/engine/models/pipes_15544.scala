@@ -5,7 +5,6 @@
 
 package afpma.firecalc.engine.models
 
-import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.HasPipeModules_13384_Alg
 import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_Alg
 

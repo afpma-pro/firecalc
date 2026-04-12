@@ -5,7 +5,10 @@
 
 package afpma.firecalc.ui.components
 
+import afpma.firecalc.dto.common.DisplayUnits
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
 import afpma.firecalc.ui.*
 
 import com.raquo.airstream.core.Signal
@@ -13,7 +16,6 @@ import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
 import org.scalajs.dom.HTMLDialogElement
-import afpma.firecalc.dto.common.DisplayUnits
 
 /** Generic modal dialog for selecting an entry from a catalog via datalist search.
   *

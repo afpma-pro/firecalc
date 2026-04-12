@@ -7,6 +7,7 @@ package afpma.firecalc.filaire
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
+
 import org.scalajs.dom
 
 /** Facade for the pre-bundled TypeScript visualization module.

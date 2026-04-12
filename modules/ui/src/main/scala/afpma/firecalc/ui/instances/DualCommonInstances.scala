@@ -5,7 +5,6 @@
 
 package afpma.firecalc.ui.instances
 
-import afpma.firecalc.units.all.*
 import afpma.firecalc.units.all.given
 import afpma.firecalc.units.coulombutils.*
 

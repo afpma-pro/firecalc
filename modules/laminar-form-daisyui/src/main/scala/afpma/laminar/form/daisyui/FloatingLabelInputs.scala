@@ -8,8 +8,6 @@ package afpma.laminar.form.daisyui
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import afpma.laminar.form.*
-
 import cats.data.*
 import cats.data.Validated.Valid
 
@@ -18,6 +16,8 @@ import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 
 import scala.annotation.nowarn
+
+import afpma.laminar.form.*
 
 /** Floating-label horizontal input components mixed into [[DaisyUIInputs]]. */
 trait FloatingLabelInputs:

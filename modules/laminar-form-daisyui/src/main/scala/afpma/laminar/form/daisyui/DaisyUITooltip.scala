@@ -5,10 +5,9 @@
 
 package afpma.laminar.form.daisyui
 
-import afpma.laminar.form.Component
-
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.Component
 import org.scalajs.dom
 
 /**

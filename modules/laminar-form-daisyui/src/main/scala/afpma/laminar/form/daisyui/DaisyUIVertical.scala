@@ -7,8 +7,6 @@ package afpma.laminar.form.daisyui
 
 import java.time.LocalDate
 
-import afpma.laminar.form.*
-
 import cats.Show
 import cats.syntax.show.*
 
@@ -16,6 +14,8 @@ import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
+
+import afpma.laminar.form.*
 
 /** Vertical DaisyUI form renderer — fieldset/legend layout. */
 object DaisyUIVertical extends FormRenderer:

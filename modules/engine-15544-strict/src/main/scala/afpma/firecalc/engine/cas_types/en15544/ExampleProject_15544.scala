@@ -7,7 +7,9 @@ package afpma.firecalc.engine.cas_types.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
 
 import afpma.firecalc.engine.api.v0_2024_10_strict

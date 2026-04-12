@@ -7,11 +7,10 @@ package afpma.firecalc.xlsx_catalog.templates
 
 import afpma.firecalc.dto.all.*
 
-import org.apache.poi.ss.usermodel.Sheet
-import org.apache.poi.ss.util.CellRangeAddress
-
 import afpma.firecalc.xlsx_catalog.templates.CatalogConstants.*
 import afpma.firecalc.xlsx_catalog.templates.TemplateHelpers.*
+import org.apache.poi.ss.usermodel.Sheet
+import org.apache.poi.ss.util.CellRangeAddress
 
 /** Shared emissions sheet builder used by both FireboxTemplateWriter and SingleTestedTemplateWriter. */
 object EmissionsSheetHelper:

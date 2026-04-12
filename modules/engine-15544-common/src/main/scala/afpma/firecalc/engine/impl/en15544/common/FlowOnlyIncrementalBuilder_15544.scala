@@ -9,7 +9,9 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
@@ -21,7 +23,6 @@ import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_15544_Insta
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.FlowOnlyPropsState_15544
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_15544_Instances.given
-import afpma.firecalc.engine.typeclasses.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
@@ -30,6 +31,7 @@ import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.typeclasses.*
 
 import cats.Show
 import cats.data.*

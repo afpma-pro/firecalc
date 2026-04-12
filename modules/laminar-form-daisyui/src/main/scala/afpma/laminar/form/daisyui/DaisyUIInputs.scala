@@ -5,12 +5,12 @@
 
 package afpma.laminar.form.daisyui
 
-import afpma.laminar.form.*
-
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
+
+import afpma.laminar.form.*
 
 /** Low-level DaisyUI form input components.
   *
@@ -90,13 +90,6 @@ object DaisyUIInputs
     // Helpers
     // =========================================================================
 
-    private def fieldsetWithLabel(labelOpt: Option[String], inputNode: HtmlElement): HtmlElement =
-        labelOpt match
-            case Some(lbl) =>
-                fieldSet(
-                    legend(lbl),
-                    inputNode
-                )
-            case None => inputNode
+    
 
 end DaisyUIInputs

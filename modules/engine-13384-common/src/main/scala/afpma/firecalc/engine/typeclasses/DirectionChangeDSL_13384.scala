@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.typeclasses
 import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.v4.AbsoluteDirection
 
 /**

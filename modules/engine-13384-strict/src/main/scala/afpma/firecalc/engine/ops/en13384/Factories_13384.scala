@@ -5,18 +5,20 @@
 
 package afpma.firecalc.engine.ops.en13384
 
-import afpma.firecalc.engine.alg.en13384.{
-    EN13384_1_A1_2019_Application_Alg,
-    EN13384_1_A1_2019_Formulas_Alg,
-    Params_13384
-}
+import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
+import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
+import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.ops.{ExteriorAirOps, GasOps, PipeWithGasFlowOps}
-import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, UpstreamState}
-import afpma.firecalc.engine.standard.{EN13384_FormulaError, MecaFlu_Error}
+import afpma.firecalc.engine.ops.ExteriorAirOps
+import afpma.firecalc.engine.ops.GasOps
+import afpma.firecalc.engine.ops.PipeWithGasFlowOps
+import afpma.firecalc.engine.ops.generic.CanComputePipeResult
+import afpma.firecalc.engine.ops.generic.UpstreamState
+import afpma.firecalc.engine.standard.EN13384_FormulaError
+import afpma.firecalc.engine.standard.MecaFlu_Error
 
 /**
  * EN 13384 factory extension methods for core ops companion objects.

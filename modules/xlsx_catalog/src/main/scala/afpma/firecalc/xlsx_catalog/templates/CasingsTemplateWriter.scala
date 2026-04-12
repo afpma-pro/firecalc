@@ -7,9 +7,8 @@ package afpma.firecalc.xlsx_catalog.templates
 
 import java.nio.file.Path
 
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
-
 import afpma.firecalc.xlsx_catalog.PoiHelpers
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 object CasingsTemplateWriter:
 

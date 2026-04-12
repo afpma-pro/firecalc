@@ -15,15 +15,11 @@ import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
-import afpma.laminar.form.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.utils.flatMapVNelE
-
-import org.scalajs.dom
-import scala.scalajs.js
 
 import cats.data.*
 import cats.implicits.toShow
@@ -32,7 +28,11 @@ import cats.syntax.option.catsSyntaxOptionId
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
 
+import scala.scalajs.js
+
+import afpma.laminar.form.daisyui.DaisyUITooltip
 import io.taig.babel.Locale
+import org.scalajs.dom
 
 final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
 

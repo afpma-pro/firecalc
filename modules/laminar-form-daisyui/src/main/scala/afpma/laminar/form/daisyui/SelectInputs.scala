@@ -5,14 +5,14 @@
 
 package afpma.laminar.form.daisyui
 
-import afpma.laminar.form.*
-
 import cats.Show
 import cats.syntax.all.*
 
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
+
+import afpma.laminar.form.*
 
 /** Select-related components mixed into [[DaisyUIInputs]]. */
 trait SelectInputs:

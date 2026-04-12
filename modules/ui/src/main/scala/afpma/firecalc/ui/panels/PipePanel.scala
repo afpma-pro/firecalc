@@ -17,7 +17,8 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
-import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
@@ -28,22 +29,13 @@ import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
-import afpma.laminar.form.daisyui.DaisyUITooltip
-import afpma.laminar.form.*
-import afpma.laminar.form.Form.*
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.*
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.icons.lucide
+import afpma.firecalc.ui.models.VizElementId
 import afpma.firecalc.ui.models.expertModeOn
+import afpma.firecalc.ui.models.panelOpenedVar
 import afpma.firecalc.ui.models.vizHoveredElement
 import afpma.firecalc.ui.models.vizSelectedElement
-import afpma.firecalc.ui.models.panelOpenedVar
-import afpma.firecalc.ui.models.VizElementId
-
-import org.scalajs.dom
-import org.scalajs.dom.HTMLDialogElement
-import scala.scalajs.js
 
 import cats.Show
 import cats.data.*
@@ -52,9 +44,16 @@ import cats.syntax.show.*
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
+import scala.scalajs.js
+
 import _root_.coulomb.*
 import _root_.coulomb.ops.algebra.all.*
 import _root_.coulomb.policy.standard.given
+import afpma.laminar.form.*
+import afpma.laminar.form.daisyui.*
+import afpma.laminar.form.daisyui.DaisyUITooltip
+import org.scalajs.dom
+import org.scalajs.dom.HTMLDialogElement
 
 trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 

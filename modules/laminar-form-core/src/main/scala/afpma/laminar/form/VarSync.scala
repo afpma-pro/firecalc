@@ -5,8 +5,8 @@
 
 package afpma.laminar.form
 
-import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
+import cats.data.Validated.Valid
 
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*

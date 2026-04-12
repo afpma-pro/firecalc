@@ -5,8 +5,9 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.ui.*
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
+import afpma.firecalc.ui.*
 
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*

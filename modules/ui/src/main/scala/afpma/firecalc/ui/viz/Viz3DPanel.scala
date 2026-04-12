@@ -5,22 +5,31 @@
 
 package afpma.firecalc.ui.viz
 
-import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.models.*
 import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
-import afpma.firecalc.engine.models.{FluePipeT, ConnectorPipeT, ChimneyPipeT, PipeType}
-import afpma.firecalc.engine.models.geometry.{PipePositionResult, Vec3}
+
 import afpma.firecalc.i18n.implicits.I18N
+
+import afpma.firecalc.engine.models.ChimneyPipeT
+import afpma.firecalc.engine.models.ConnectorPipeT
+import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.models.geometry.PipePositionResult
+import afpma.firecalc.engine.models.geometry.Vec3
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
+import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.LAMINAR_VIZ_DEBOUNCE_MS
+import afpma.firecalc.ui.models.*
+
+import com.raquo.laminar.api.L.*
+
+import scala.scalajs.js
+
 import afpma.firecalc.filaire.*
 import afpma.firecalc.filaire.FilaireTypes.*
-
-import afpma.firecalc.ui.LAMINAR_VIZ_DEBOUNCE_MS
-import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
-
 import org.scalajs.dom
-import scala.scalajs.js
 
 final case class Viz3DPanel()(using Locale) extends Component:
 

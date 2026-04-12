@@ -10,7 +10,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.impl.common.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
-import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import scala.reflect.*

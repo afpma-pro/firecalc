@@ -5,10 +5,12 @@
 
 package afpma.firecalc.dto.v4
 
-import afpma.firecalc.domain.{PolluantName, TestReport}
 import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.i18n.*
 
+import afpma.firecalc.domain.PolluantName
+import afpma.firecalc.domain.TestReport
 import magnolia1.Transl
 
 @Transl(I(_.test_emission_value._self))

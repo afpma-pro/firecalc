@@ -12,9 +12,9 @@ import afpma.firecalc.dto.common.FireboxI
 
 import afpma.firecalc.i18n.*
 
-import coulomb.*
-
 import cats.Show
+
+import coulomb.*
 
 import io.circe.Decoder
 import io.circe.Encoder

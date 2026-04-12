@@ -12,6 +12,7 @@ import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.i18n.*
 import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -26,7 +27,6 @@ import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
 import io.taig.babel.Locale
-import afpma.firecalc.i18n.*
 import magnolia1.Transl
 
 sealed trait Ecolabeled extends CertifiedDesign:

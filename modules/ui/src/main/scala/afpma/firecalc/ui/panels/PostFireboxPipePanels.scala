@@ -8,9 +8,9 @@ package afpma.firecalc.ui.panels
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
 
-import afpma.firecalc.engine.ops.generic.TopologyError
-
 import afpma.firecalc.i18n.implicits.I18N
+
+import afpma.firecalc.engine.ops.generic.TopologyError
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.icons.lucide
@@ -37,7 +37,6 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     import afpma.laminar.form.{Defaultable as D}
     import afpma.firecalc.ui.instances.defaultable_15544.incr_descr_en15544.given
-    import afpma.firecalc.ui.instances.defaultable_13384.incr_descr_en13384.given
 
     // ── Default content for new slots ────────────────────────────
 

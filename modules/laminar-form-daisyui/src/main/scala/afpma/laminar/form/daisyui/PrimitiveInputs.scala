@@ -8,11 +8,11 @@ package afpma.laminar.form.daisyui
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import afpma.laminar.form.*
-
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
+
+import afpma.laminar.form.*
 
 /** Basic input-only components (no label wrapper) mixed into [[DaisyUIInputs]]. */
 trait PrimitiveInputs:
@@ -104,7 +104,7 @@ trait PrimitiveInputs:
     ) extends Component:
 
         val inputNoLabel = input(
-            cls           := s"field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
+            cls           := "field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
             tpe           := "text",
             L.placeholder := placeholder,
             value <-- valueOptVar.signal.map(_.getOrElse("")),
@@ -142,7 +142,7 @@ trait PrimitiveInputs:
         val listAttr: HtmlAttr[String] = htmlAttr("list", StringAsIsCodec)
 
         val inputNoLabel = input(
-            cls           := s"field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
+            cls           := "field-sizing-content w-fit min-w-[14ch] max-w-[28ch]",
             tpe           := "text",
             L.placeholder := placeholder,
             listAttr      := datalistId,

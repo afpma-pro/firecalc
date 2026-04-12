@@ -7,19 +7,15 @@ package afpma.firecalc.ui.daisyui
 
 import afpma.firecalc.units.all.*
 
-import afpma.laminar.form.*
-import afpma.laminar.form.daisyui.DaisyUIInputs
-import afpma.laminar.form.daisyui.DaisyUIInputs.*
-import afpma.laminar.form.daisyui.DaisyUITooltip
-
-import cats.data.*
-import cats.data.Validated.Valid
-
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 
 import scala.annotation.nowarn
+
+import afpma.laminar.form.*
+import afpma.laminar.form.daisyui.DaisyUIInputs.*
+import afpma.laminar.form.daisyui.DaisyUITooltip
 
 /** Unit-aware input components that depend on the `units` module.
   *

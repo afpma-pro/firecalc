@@ -6,23 +6,26 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.AirSpaceDetailed_V2
-import afpma.firecalc.dto.all.SetThermalPipeProp_13384.{LinedFlue, SetPropertiesInBatch}
+import afpma.firecalc.dto.all.SetThermalPipeProp_13384.LinedFlue
+import afpma.firecalc.dto.all.SetThermalPipeProp_13384.SetPropertiesInBatch
 import afpma.firecalc.dto.common.DisplayUnits
+
 import afpma.firecalc.i18n.implicits.I18N
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
-import afpma.laminar.form.Form
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.daisyui.{DaisyUIVertical, DaisyUIHorizontal}
-import afpma.laminar.form.{FormConfig, FormRenderer, ValidateVar}
-import afpma.firecalc.ui.instances.ThermalHorizontalForm_13384
-import afpma.firecalc.ui.instances.ValidateVarCommonInstances
-import afpma.firecalc.ui.instances.defaultable_13384.airSpaceDetailed_WithAirSpace
+
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.instances.ThermalHorizontalForm_13384
+import afpma.firecalc.ui.instances.defaultable_13384.airSpaceDetailed_WithAirSpace
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.Form
+import afpma.laminar.form.FormConfig
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.daisyui.DaisyUIHorizontal
 import io.taig.babel.Locale
 import org.scalajs.dom.HTMLDialogElement
 
@@ -68,9 +71,9 @@ case class LinedFlueCatalogSelectComponent(
     private lazy val airSpaceForm: Form[AirSpaceDetailed_V2] =
         thermalForm.horizontal_form_AirSpaceDetailed
 
-    private given ValidateVar[AirSpaceDetailed_V2] =
-        ValidateVarCommonInstances.valid_always
-            .given_ValidateVar_AlwaysValid[AirSpaceDetailed_V2]
+    // private given ValidateVar[AirSpaceDetailed_V2] =
+    //     ValidateVarCommonInstances.valid_always
+    //         .given_ValidateVar_AlwaysValid[AirSpaceDetailed_V2]
 
     // ── Dialog ─────────────────────────────────────────────────────────
 

@@ -10,7 +10,6 @@ import afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.Component
-import afpma.laminar.form.Defaultable
 import afpma.firecalc.ui.icons.lucide
 
 import com.raquo.laminar.api.L.*
@@ -18,6 +17,7 @@ import com.raquo.laminar.api.features.unitArrows
 
 import scala.annotation.nowarn
 
+import afpma.laminar.form.Defaultable
 import io.taig.babel.Locale
 
 case class TagTreeMenuComponent[A](

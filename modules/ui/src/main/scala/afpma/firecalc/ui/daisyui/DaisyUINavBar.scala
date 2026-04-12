@@ -15,9 +15,13 @@ import afpma.firecalc.ui.components.FireCalcProjet
 import afpma.firecalc.ui.components.OrderPDFReportModalComponent
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.models.{viz3DPanelVar, viz3DPanelOn, viz3DPanelOff}
-import afpma.firecalc.ui.models.{graphPanelVar, graphPanelOn, graphPanelOff}
+import afpma.firecalc.ui.models.graphPanelOff
+import afpma.firecalc.ui.models.graphPanelOn
+import afpma.firecalc.ui.models.graphPanelVar
 import afpma.firecalc.ui.models.project.ProjectManager
+import afpma.firecalc.ui.models.viz3DPanelOff
+import afpma.firecalc.ui.models.viz3DPanelOn
+import afpma.firecalc.ui.models.viz3DPanelVar
 
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
