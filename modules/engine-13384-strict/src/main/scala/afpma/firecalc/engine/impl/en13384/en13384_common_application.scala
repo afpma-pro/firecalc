@@ -115,10 +115,17 @@ abstract class EN13384_1_A1_2019_Common_Application(
             HeatingAppliance.FlueGas.summon,
             HeatingAppliance.MassFlows.summon
         )
-        // Pipes_13384_Alg has abstract ConnectorPipe/ChimneyPipe types; all concrete subtypes
-        // fix these to ConnectorPipe_Module.PipeCanBe / ChimneyPipe_Module.PipeCanBe respectively.
-        val connector = inputs.pipes.connector.asInstanceOf[ConnectorPipe]
-        val chimney   = inputs.pipes.chimney.asInstanceOf[ChimneyPipe]
+        // Post Phase C remediation, `HasTypeMembers_13384_Alg.Pipes_13384`'s upper bound was
+        // widened to `HasPipeModules_13384_Alg` so the EN 15544 composition can plug in pipes
+        // classes that don't own connector/chimney. The standalone EN 13384 path still fixes
+        // `Pipes_13384 = Pipes_13384_WithFlowOnlyAirIntake` / `_WithThermalAirIntake`, both of
+        // which extend `Pipes_13384_Alg` and carry `connector`/`chimney`. This private method
+        // is only reached via the base class `connector_PipeResult` / `chimney_PipeResult`
+        // which are overridden on the 15544-composed path, so the cast below never runs on
+        // 15544. Cast to the legitimate legacy algebra to recover `connector`/`chimney`.
+        val legacyPipes = inputs.pipes.asInstanceOf[Pipes_13384_Alg]
+        val connector   = legacyPipes.connector.asInstanceOf[ConnectorPipe]
+        val chimney     = legacyPipes.chimney.asInstanceOf[ChimneyPipe]
         val connSlot = ConnectorPipe_Module.foldPipeCanBe(connector)(
             onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
             onFullDescr = fd => tc.mkSlot(ConnectorPipeT, "Connector", FlueGas, ConnectorPipe_Module.unwrap(fd))

@@ -20,7 +20,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
-import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake
+import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake_PreFireboxOnly
 import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -83,7 +83,7 @@ sealed abstract class EN15544_Strict_Application(
         author   = "AFNOR"
     )
 
-    override lazy val en13384_inputs = Inputs_13384_WithFlowOnlyAirIntake(
+    override lazy val en13384_inputs = Inputs_13384_WithFlowOnlyAirIntake_PreFireboxOnly(
         en13384_inputs_pipes,
         en13384_inputs_nationalAcceptedData,
         en13384_inputs_fuelType,
@@ -92,7 +92,7 @@ sealed abstract class EN15544_Strict_Application(
     )
 
     override def en13384_inputs_pipes: Pipes_13384 =
-        (inputs.pipes: Pipes_13384_WithFlowOnlyAirIntake)
+        (inputs.pipes: Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly)
 
     // algebra as given
     lazy val en13384_formulas: EN13384_1_A1_2019_Formulas = new EN13384_1_A1_2019_Formulas:
@@ -460,16 +460,37 @@ sealed abstract class EN15544_Strict_Application(
                     // `last_known_density_before_connector_pipe` any more because that hook
                     // now reads `conceptualFluePipeResult` (the N-pipe chain terminal), which
                     // would create a lazy-val cycle through `flueRegionPipeResults`.
-                    val legacyFluePipeResult: VNelMcalcErr[PipeResult] =
-                        ops_en15544.FlowOnlyMecaFlu_15544
-                            .makePipeResult                 (
-                                fd                  = FluePipe_Module_15544.unwrap(inputs.pipes.flue),
-                                gas                 = FlueGas,
-                                loadQty             = p._2,
-                                z_geodetical_height = z_geodetical_height,
-                                params              = p._1
-                            )(using en15544)
-                            .toValidatedNel
+                    //
+                    // Post Phase C: `inputs.pipes.flue` is gone. Rebuild the single-pipe
+                    // descriptor from the FIRST `FlueSlot(descr)` in `postFireboxPipeSlots`
+                    // — this preserves the byte-identical seed for 3-slot fixtures, where
+                    // slot 0 IS the whole flue pipe.
+                    import FluePipe_Module_15544.FullDescrResult.given
+                    import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
+                    val firstFlueSlotDescrOpt = pfbSlots.collectFirst { case FlueSlot(descr) => descr }
+                    val legacyFluePipeResult: VNelMcalcErr[PipeResult] = firstFlueSlotDescrOpt match
+                        case None        =>
+                            Validated.invalidNel(
+                                UnexpectedDevError("No FlueSlot descriptor available to seed stage 1")
+                            )
+                        case Some(descr) =>
+                            val flueResult = FluePipe_Module_15544.incremental
+                                .define(descr*)
+                                .toFullDescrWithExternalInitialFrame(None)
+                            val fdResult: FluePipe_Module_15544.FullDescrResult =
+                                flueResult.map((ids, fd, _) => (ids, fd))
+                            FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult) match
+                                case Validated.Valid(pipe) =>
+                                    ops_en15544.FlowOnlyMecaFlu_15544
+                                        .makePipeResult                 (
+                                            fd                  = FluePipe_Module_15544.unwrap(pipe),
+                                            gas                 = FlueGas,
+                                            loadQty             = p._2,
+                                            z_geodetical_height = z_geodetical_height,
+                                            params              = p._1
+                                        )(using en15544)
+                                        .toValidatedNel
+                                case Validated.Invalid(nel) => Validated.Invalid(nel)
                     val computeAt = en15544.en13384_application.computeAt
                     val seedDensity: Option[Density] = legacyFluePipeResult.toOption.flatMap { pr =>
                         computeAt match

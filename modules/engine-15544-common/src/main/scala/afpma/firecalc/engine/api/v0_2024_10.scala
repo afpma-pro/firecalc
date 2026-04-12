@@ -18,11 +18,9 @@ import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.models.en15544.std
 import afpma.firecalc.engine.models.en15544.std.Design
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
-import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.StoveParamsSizingInputMissing
 import afpma.firecalc.engine.standard.VNelMcalcErr
 
-import cats.data.ValidatedNel
 import cats.syntax.all.*
 
 import io.taig.babel.Language
@@ -62,18 +60,6 @@ trait v0_2024_10_core extends v0_2024_10_13384_core:
 
     trait SimpleStoveProjectDescrFr_15544_Alg extends StoveProjectDescr_15544_Alg with SimpleStoveProjectDescrFr_Alg
 
-    // Flue Pipe
-
-    sealed trait HasFluePipe_Alg:
-        type FluePipeType
-        def fluePipe: ValidatedNel[IncrementalValidation_Error, FluePipeType]
-
-    trait HasFluePipe_15544_Alg extends HasFluePipe_Alg:
-        type FluePipeType = FluePipe_15544
-
-    /** Marker trait for EN 13384 flue pipe. FluePipeType fixed in leaf modules. */
-    trait HasFluePipe_13384_Alg extends HasFluePipe_Alg
-
     // Firebox
 
     trait HasFireboxInternalPipes_Alg:
@@ -103,10 +89,9 @@ trait v0_2024_10_core extends v0_2024_10_13384_core:
 
     trait StoveProjectDescr_15544_Alg
         extends StoveProjectDescr_Alg
-        with StoveProjectDescr_13384_Alg
+        with StoveProjectDescr_13384_Core_Alg
         with HasTypeMembers_15544_Alg
-        with HasFireboxInternalPipes_Alg
-        with HasFluePipe_Alg:
+        with HasFireboxInternalPipes_Alg:
         self =>
 
         /**

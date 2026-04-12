@@ -30,3 +30,28 @@ case class Inputs_13384_WithThermalAirIntake(
 ) extends Inputs_13384_Alg
     with HasPipeModules_13384_WithThermalAirIntake:
     override type Pipes_13384 = Pipes_13384_WithThermalAirIntake
+
+/** Pre-firebox-only flavour used by EN 15544's `en13384_inputs` — the `pipes`
+  * member is narrower (`Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly`) so
+  * it carries only `airIntake`, not legacy `connector`/`chimney`.
+  */
+case class Inputs_13384_WithFlowOnlyAirIntake_PreFireboxOnly(
+    pipes               : Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly,
+    nationalAcceptedData: NationalAcceptedData,
+    fuelType            : FuelType,
+    localConditions     : LocalConditions,
+    flueGasCondition    : FlueGasCondition
+) extends Inputs_13384_Alg
+    with HasPipeModules_13384_WithFlowOnlyAirIntake:
+    override type Pipes_13384 = Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly
+
+/** Pre-firebox-only flavour used by EN 15544 MCE's `en13384_inputs`. */
+case class Inputs_13384_WithThermalAirIntake_PreFireboxOnly(
+    pipes               : Pipes_13384_WithThermalAirIntake_PreFireboxOnly,
+    nationalAcceptedData: NationalAcceptedData,
+    fuelType            : FuelType,
+    localConditions     : LocalConditions,
+    flueGasCondition    : FlueGasCondition
+) extends Inputs_13384_Alg
+    with HasPipeModules_13384_WithThermalAirIntake:
+    override type Pipes_13384 = Pipes_13384_WithThermalAirIntake_PreFireboxOnly

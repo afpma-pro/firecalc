@@ -19,6 +19,7 @@ import afpma.firecalc.engine.models.FlueGas
 import afpma.firecalc.engine.models.Gas
 import afpma.firecalc.engine.models.GasInPipeEl
 import afpma.firecalc.engine.models.NamedPipeElDescrG
+import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.engine.ops.en13384.ThermalMecaFlu_13384
 
 import cats.syntax.all.*
@@ -92,7 +93,16 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 val f             = EN15544_Strict_Formulas.make
                 val inputs        = CasType_15544_C2.en15544_inputsVNel.toOption.get
                 val en15544       = EN15544_Strict_Application.make(f)(inputs)
-                val chimney_elems = CasType_15544_C2.chimneyPipe.toOption.get
+                val chimney_elems = {
+                    // Build the typed chimney pipe via PipeChain_15544_Strict, which
+                    // chains frames from flue → connector → chimney descriptors.
+                    val chain = PipeChain_15544_Strict.build(PipeChain_15544_Strict.Descriptors(
+                        CasType_15544_C2.fluePipeDescr,
+                        CasType_15544_C2.connectorPipeDescr,
+                        CasType_15544_C2.chimneyPipeDescr
+                    ))
+                    chain.chimneyPipe.toOption.get
+                }
                 val p             = Params_13384.DraftMin_LoadNominal
                 val r             =
                     ThermalMecaFlu_13384

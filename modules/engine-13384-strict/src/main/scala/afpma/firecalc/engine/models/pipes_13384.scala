@@ -18,10 +18,14 @@ trait Pipes_13384_WithThermalAirIntake extends Pipes_13384_Alg with HasPipeModul
 
 /** Narrower variant used by EN 15544 composition to avoid inheriting `connector`/`chimney` from `Pipes_13384_Alg`.
   * Post-firebox results come from the 15544 N-pipe tagged vector instead.
+  * Still owns the pre-firebox `airIntake` field — the EN 15544 side still needs it.
   */
-trait Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly extends HasPipeModules_13384_WithFlowOnlyAirIntake
+trait Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly extends HasPipeModules_13384_WithFlowOnlyAirIntake:
+    val airIntake: AirIntakePipe_Module.PipeCanBe
 
 /** Narrower variant used by EN 15544 composition to avoid inheriting `connector`/`chimney` from `Pipes_13384_Alg`.
   * Post-firebox results come from the 15544 N-pipe tagged vector instead.
+  * Still owns the pre-firebox `airIntake` field — the EN 15544 side still needs it.
   */
-trait Pipes_13384_WithThermalAirIntake_PreFireboxOnly extends HasPipeModules_13384_WithThermalAirIntake
+trait Pipes_13384_WithThermalAirIntake_PreFireboxOnly extends HasPipeModules_13384_WithThermalAirIntake:
+    val airIntake: AirIntakePipe_Module.PipeCanBe

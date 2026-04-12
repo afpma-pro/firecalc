@@ -105,6 +105,39 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 case ComputeAt.Mean   => pr.flatMap(_.last_velocity_mean).orElse(pr.flatMap(_.last_velocity_middle))
                 case ComputeAt.Middle => pr.flatMap(_.last_velocity_middle)
 
+        /**
+         * Phase C4 — forward 13384 connector/chimney reads through the 15544 N-pipe chain.
+         *
+         * The base class reads legacy `inputs.pipes.connector` / `.chimney` via a hardcoded
+         * 2-slot `postFireboxChainResults`, which is blind to extra flue slots and seeds the
+         * chain at T_WN / T_Wmin (site #8). The 15544 `AtParams.connector_PipeResult` /
+         * `chimney_PipeResult` (made chain-aware in C3) already read the tagged N-pipe
+         * `postFireboxPipeResults` with proper upstream-state threading from Stage 1.
+         *
+         * `def` (not `lazy val`) to defer evaluation and avoid the C3-observed lazy-val cycle
+         * risk between Stage 2 HA resolution and Stage 1 flue-region results.
+         *
+         * Error conversion: collapse the accumulated NEL into a single MecaFlu_Error via
+         * `UnexpectedThrowable` carrying the first error's string form. Downstream
+         * `.toValidatedNel.andThen(...)` in `en13384_common_application.scala:192-205` handles
+         * the resulting `Either` structurally.
+         */
+        override def connector_PipeResult: PipeResultOp[WithParams_13384[PipeResultE]] =
+            atParamsFor(summon[Params_13384]).connector_PipeResult.toEither.left.map { nel =>
+                MecaFlu_Error.UnexpectedThrowable(
+                    new RuntimeException(nel.head.toString),
+                    sectionTyp = ConnectorPipeT
+                )
+            }
+
+        override def chimney_PipeResult: PipeResultOp[WithParams_13384[PipeResultE]] =
+            atParamsFor(summon[Params_13384]).chimney_PipeResult.toEither.left.map { nel =>
+                MecaFlu_Error.UnexpectedThrowable(
+                    new RuntimeException(nel.head.toString),
+                    sectionTyp = ChimneyPipeT
+                )
+            }
+
         // 7.8.4
         // Températures moyennes pour le calcul de pression
 

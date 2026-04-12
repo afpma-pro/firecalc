@@ -83,7 +83,7 @@ abstract class EN15544_MCE_Application(
         author   = "AFPMA"
     )
 
-    override lazy val en13384_inputs = Inputs_13384_WithThermalAirIntake(
+    override lazy val en13384_inputs = Inputs_13384_WithThermalAirIntake_PreFireboxOnly(
         en13384_inputs_pipes,
         en13384_inputs_nationalAcceptedData,
         en13384_inputs_fuelType,
@@ -92,7 +92,7 @@ abstract class EN15544_MCE_Application(
     )
 
     override def en13384_inputs_pipes: Pipes_13384 =
-        inputs.pipes
+        (inputs.pipes: Pipes_13384_WithThermalAirIntake_PreFireboxOnly)
 
     // algebra as given
     lazy val en13384_formulas: EN13384_1_A1_2019_Formulas = new EN13384_1_A1_2019_Formulas:
@@ -581,30 +581,53 @@ abstract class EN15544_MCE_Application(
                             // through `last_known_density_before_connector_pipe` any more
                             // because that hook now reads `conceptualFluePipeResult`, which
                             // would create a lazy-val cycle through `flueRegionPipeResults`.
+                            //
+                            // Post Phase C: `inputs.pipes.flue` is gone. Rebuild the flue
+                            // pipe from the FIRST `ThermalFlueSlot(descr)` in
+                            // `postFireboxPipeSlots` — this preserves byte-identical goldens
+                            // for 3-slot MCE fixtures, where slot 0 IS the whole flue pipe.
+                            val firstThermalFlueDescrOpt =
+                                pfbSlots.collectFirst { case ThermalFlueSlot(descr) => descr }
                             val legacyFluePipeResult: VNelMcalcErr[PipeResult] =
-                                firebox_PipeResult.andThen: cc =>
-                                    ops_en13384.ThermalMecaFlu_13384
-                                        .makePipeResult                 (
-                                            fd                 =
-                                                FluePipe_Module_13384.unwrap(inputs.pipes.flue),
-                                            hafg               =
-                                                en15544_mce.en13384_heatingAppliance_fluegas,
-                                            hamf               =
-                                                en15544_mce.en13384_heatingAppliance_massFlows,
-                                            temp_start         = en15544_mce.t_burnout,
-                                            last_pipe_density  =
-                                                en15544_mce.en13384_application.computeAt match
-                                                    case ComputeAt.Mean   => cc.last_density_mean
-                                                    case ComputeAt.Middle => cc.last_density_middle
-                                            ,
-                                            last_pipe_velocity =
-                                                en15544_mce.en13384_application.computeAt match
-                                                    case ComputeAt.Mean   => cc.last_velocity_mean
-                                                    case ComputeAt.Middle => cc.last_velocity_middle
-                                            ,
-                                            gas                = FlueGas
+                                firstThermalFlueDescrOpt match
+                                    case None        =>
+                                        Validated.invalidNel(
+                                            UnexpectedDevError(
+                                                "No ThermalFlueSlot descriptor available to seed MCE stage 1"
+                                            )
                                         )
-                                        .toValidatedNel
+                                    case Some(descr) =>
+                                        val (fdResult, _) =
+                                            FluePipe_Module_13384
+                                                .mkPipeFromIncrDescrWithFinalFrame(descr, None)
+                                        FluePipe_Module_13384.FullDescrResult.extractPipe(
+                                            fdResult
+                                        ) match
+                                            case Validated.Valid(pipe) =>
+                                                firebox_PipeResult.andThen: cc =>
+                                                    ops_en13384.ThermalMecaFlu_13384
+                                                        .makePipeResult                 (
+                                                            fd                 =
+                                                                FluePipe_Module_13384.unwrap(pipe),
+                                                            hafg               =
+                                                                en15544_mce.en13384_heatingAppliance_fluegas,
+                                                            hamf               =
+                                                                en15544_mce.en13384_heatingAppliance_massFlows,
+                                                            temp_start         = en15544_mce.t_burnout,
+                                                            last_pipe_density  =
+                                                                en15544_mce.en13384_application.computeAt match
+                                                                    case ComputeAt.Mean   => cc.last_density_mean
+                                                                    case ComputeAt.Middle => cc.last_density_middle
+                                                            ,
+                                                            last_pipe_velocity =
+                                                                en15544_mce.en13384_application.computeAt match
+                                                                    case ComputeAt.Mean   => cc.last_velocity_mean
+                                                                    case ComputeAt.Middle => cc.last_velocity_middle
+                                                            ,
+                                                            gas                = FlueGas
+                                                        )
+                                                        .toValidatedNel
+                                            case Validated.Invalid(nel) => Validated.Invalid(nel)
                             val computeAt = en15544_mce.en13384_application.computeAt
                             val seedDensity: Option[Density] =
                                 legacyFluePipeResult.toOption.flatMap { pr =>
