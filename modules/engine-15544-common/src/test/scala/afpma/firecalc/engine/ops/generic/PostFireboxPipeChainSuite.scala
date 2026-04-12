@@ -63,8 +63,9 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
 
         // ── V6 multi-slot topology validation ───────────────────────────
 
-        "accepts flue + chimney (no connector, 2-slot minimal)" in {
-            PostFireboxPipeChain.validated(Vector(flue(), chim())) shouldBe a[Valid[?]]
+        "rejects flue + chimney when connector-position slot is missing" in {
+            val Invalid(errs) = PostFireboxPipeChain.validated(Vector(flue(), chim())): @unchecked
+            errs.toList should contain(TopologyError.MissingConnectorAfterFlue)
         }
 
         "accepts 4-slot multi-flue: F1 + F2 + connector + chimney" in {
@@ -88,12 +89,13 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
             errs.toList should contain(TopologyError.ChimneyNotLast)
         }
 
-        "accepts flue after connector when flue is last in region" in {
-            // Vector(F1, C, F-last, chimney): F-last becomes the last flue,
-            // C is absorbed into the flue region, afterFlueBeforeChimney is empty → valid
-            PostFireboxPipeChain.validated(
+        "rejects flue after connector when trailing connector is missing" in {
+            // Vector(F1, C, F-last, chimney): F-last is the last flue,
+            // C is absorbed into the flue region, afterFlueBeforeChimney is empty → Rule 6 rejects
+            val Invalid(errs) = PostFireboxPipeChain.validated(
                 Vector(flue("F1"), conn("C"), flue("F-last"), chim())
-            ) shouldBe a[Valid[?]]
+            ): @unchecked
+            errs.toList should contain(TopologyError.MissingConnectorAfterFlue)
         }
 
         "rejects multiple connectors in 4-slot topology (multi-flue context)" in {
@@ -150,9 +152,9 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
             chain.connectorSlot.map(_.label) shouldBe Some("C")
         }
 
-        "connectorSlot is None when no connector" in {
+        "connectorSlot is None for chimney-only (no flue region)" in {
             val Valid(chain) = PostFireboxPipeChain.validated(
-                Vector(flue(), chim())
+                Vector(chim())
             ): @unchecked
             chain.connectorSlot shouldBe None
         }
@@ -166,18 +168,18 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
 
         // ── V6 multi-slot region accessor tests ─────────────────────────
 
-        "fluePipeRegion includes all flues in 4-slot multi-flue topology" in {
+        "fluePipeRegion includes all flues in 5-slot multi-flue topology" in {
             val Valid(chain) = PostFireboxPipeChain.validated(
-                Vector(flue("F1"), flue("F2"), flue("F3"), chim())
+                Vector(flue("F1"), flue("F2"), flue("F3"), conn(), chim())
             ): @unchecked
             chain.fluePipeRegion.map(_.label) shouldBe Vector("F1", "F2", "F3")
         }
 
-        "connectorSlot is None for flue + chimney (no connector)" in {
-            val Valid(chain) = PostFireboxPipeChain.validated(
-                Vector(flue("F"), chim())
+        "rejects multi-flue + chimney when connector is missing" in {
+            val Invalid(errs) = PostFireboxPipeChain.validated(
+                Vector(flue("F1"), flue("F2"), flue("F3"), chim())
             ): @unchecked
-            chain.connectorSlot shouldBe None
+            errs.toList should contain(TopologyError.MissingConnectorAfterFlue)
         }
 
         "fluePipeRegion absorbs connector interleaved before last flue" in {
@@ -190,13 +192,13 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
             chain.connectorSlot.map(_.label) shouldBe Some("C-after")
         }
 
-        "chimneySlot for minimal 2-slot topology (flue + chimney)" in {
+        "chimneySlot for minimal 3-slot topology (flue + connector + chimney)" in {
             val Valid(chain) = PostFireboxPipeChain.validated(
-                Vector(flue(), chim("CH"))
+                Vector(flue(), conn("C"), chim("CH"))
             ): @unchecked
             chain.chimneySlot.label shouldBe "CH"
             chain.fluePipeRegion.size shouldBe 1
-            chain.connectorSlot shouldBe None
+            chain.connectorSlot.map(_.label) shouldBe Some("C")
         }
 
         "fluePipeRegion includes all 3 flues in 5-slot topology" in {

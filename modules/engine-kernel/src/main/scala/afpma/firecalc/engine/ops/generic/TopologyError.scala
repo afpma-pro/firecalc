@@ -12,7 +12,7 @@ package afpma.firecalc.engine.ops.generic
  * {{{
  *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
  *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
- *   CONNECTOR_PIPE   := ConnectorPipeT  |  noop
+ *   CONNECTOR_PIPE   := ConnectorPipeT
  *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
  * }}}
  */
@@ -28,3 +28,6 @@ enum TopologyError:
 
     /** Rule 5: no ChimneyPipeT except the last slot */
     case ChimneyNotLast
+
+    /** Rule 6: a flue-bearing topology must have a ConnectorPipeT after the last FluePipeT */
+    case MissingConnectorAfterFlue

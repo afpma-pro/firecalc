@@ -405,7 +405,17 @@ abstract class EN13384_1_A1_2019_Common_Application(
 
     // Section "5.5.2"
 
-    /** Débit massique des fumées */
+    /** Standalone EN 13384 nominal flue-gas mass flow.
+      *
+      * INVARIANT — intentional hard crash (`sys.error`):
+      * - Standalone EN 13384 REQUIRES nominal mass flow to be populated.
+      * - The EN 15544 strict/mce composed path overrides this method with a
+      *   computed value from wood combustion, so this fallback is never reached.
+      * - In standalone EN 13384 (golden cas-types), `flue_gas_mass_flow_nominal`
+      *   is always explicitly provided.
+      * - Using `HeatingAppliance.MassFlows.undefined` in a standalone EN 13384
+      *   context is a developer error and will crash. This is by design.
+      */
     override def m_dot =
         HeatingAppliance.MassFlows.summon.flue_gas_mass_flow_nominal.getOrElse:
             sys.error(
@@ -418,7 +428,10 @@ abstract class EN13384_1_A1_2019_Common_Application(
             .getOrElse:
                 m_dot / 3.0
 
-    /** Débit massique de l'air de combustion */
+    /** Standalone EN 13384 nominal combustion-air mass flow.
+      *
+      * Same invariant as `m_dot` — see above.
+      */
     override def mB_dot =
         HeatingAppliance.MassFlows.summon.combustion_air_mass_flow_nominal.getOrElse:
             sys.error(

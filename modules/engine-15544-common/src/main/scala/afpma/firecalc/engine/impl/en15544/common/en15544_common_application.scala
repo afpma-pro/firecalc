@@ -489,8 +489,14 @@ abstract class EN15544_V_2023_Common_Application
                                 }
                             folded match
                                 case Right((_, stage2Results)) =>
+                                    val flueRegionSlots = pfbSlots.take(lastFluePipeSlotIdx + 1).toVector
                                     val stage1Tagged =
-                                        stage1Results.map(pr => (FluePipeT: PipeType, pr))
+                                        flueRegionSlots.zip(stage1Results).map { (slot, pr) =>
+                                            val pipeType: PipeType = slot match
+                                                case ConnectorSlot(_) => ConnectorPipeT
+                                                case _                => FluePipeT
+                                            (pipeType, pr)
+                                        }
                                     val stage2Tagged =
                                         stage2PipeSlots.zip(stage2Results).map {
                                             (slot, pr) => (slot.pipeType, pr)

@@ -54,11 +54,38 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
 
+    /** Normalize: if the chain has a flue region followed directly by chimney
+      * (no connector slot), insert an explicit ConnectorSlot(Seq.empty) so
+      * downstream code always sees the mandatory three-region shape.
+      */
+    private def normalizePostFireboxSlots(
+        slots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot]
+    ): Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+        if slots.isEmpty then slots
+        else
+            val lastFlueIdx = slots.lastIndexWhere:
+                case FlueSlot(_) | ThermalFlueSlot(_) => true
+                case _                                => false
+            if lastFlueIdx < 0 then slots // no flue region → nothing to normalize
+            else
+                val lastIdx = slots.size - 1
+                val afterFlueBeforeChimney = slots.slice(lastFlueIdx + 1, lastIdx)
+                val hasConnector = afterFlueBeforeChimney.exists:
+                    case ConnectorSlot(_) => true
+                    case _                => false
+                if hasConnector then slots
+                else
+                    // Insert ConnectorSlot(Seq.empty) after last flue, before chimney
+                    val (before, after) = slots.splitAt(lastFlueIdx + 1)
+                    before ++ Seq(ConnectorSlot(Seq.empty)) ++ after
+
+    private lazy val normalizedPostFireboxSlots = normalizePostFireboxSlots(fcProj.post_firebox_pipes)
+
     // Topology grammar validation (permissive — errors are exposed, not thrown)
     val topologyValidation
         : Validated[NonEmptyList[afpma.firecalc.engine.ops.generic.TopologyError], PostFireboxPipeChain] =
         PostFireboxPipeChain.validated(
-            fcProj.post_firebox_pipes.map { slot =>
+            normalizedPostFireboxSlots.map { slot =>
                 slot match
                     case FlueSlot(_)        => PipeSlot.noop(FluePipeT, "Flue")
                     case ThermalFlueSlot(_) => PipeSlot.noop(FluePipeT, "Flue")
@@ -89,7 +116,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             val localConditions                 = fcProj.local_conditions
             val stoveParams                     = fcProj.stove_params
             val airIntakePipe                   = self.airIntakePipe
-            override def postFireboxPipeSlots   = fcProj.post_firebox_pipes
+            override def postFireboxPipeSlots   = normalizedPostFireboxSlots
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
         fb match

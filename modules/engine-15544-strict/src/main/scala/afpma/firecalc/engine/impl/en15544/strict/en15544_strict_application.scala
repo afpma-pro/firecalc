@@ -281,7 +281,7 @@ sealed abstract class EN15544_Strict_Application(
          * `ThermalFlueSlot` is supported in the flue region because `ThermalMecaFlu_13384`
          * is HA-power-free; `tcThermal13384` is built from `en13384_heatingAppliance_fluegas`
          * and `en13384_heatingAppliance_massFlows`, neither of which reads the HA-power givens.
-         * Interleaved `ConnectorSlot` in the flue region remains rejected.
+         * Interleaved `ConnectorSlot` in the flue region is computed using Thermal 13384.
          */
         override protected lazy val flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], Option[PipeFrame])] =
             import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
@@ -362,12 +362,31 @@ sealed abstract class EN15544_Strict_Application(
                                             )
                                         case _                     =>
                                             Validated.validNel((acc :+ PipeSlot.noop(FluePipeT, "Flue"), newFrame))
-                                case ConnectorSlot(_)       =>
-                                    Validated.invalidNel(
-                                        NotYetSupportedInFlueRegion(
-                                            "interleaved ConnectorSlot in flue region"
-                                        )
-                                    )
+                                case ConnectorSlot(descr)   =>
+                                    if descr.isEmpty then
+                                        Validated.validNel((acc :+ PipeSlot.noop(ConnectorPipeT, "Connector"), prevFrame))
+                                    else
+                                        val (fdResult, ffV) =
+                                            ConnectorPipe_Module
+                                                .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
+                                        val newFrame = ffV.toOption.flatten.orElse(prevFrame)
+                                        val pipeV    =
+                                            ConnectorPipe_Module.FullDescrResult.extractPipe(fdResult)
+                                        pipeV match
+                                            case Validated.Valid(pipe) =>
+                                                val connSlot = ConnectorPipe_Module.foldPipeCanBe(pipe)(
+                                                    onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
+                                                    onFullDescr = fd =>
+                                                        tcThermal13384.mkSlot(
+                                                            ConnectorPipeT,
+                                                            "Connector",
+                                                            FlueGas,
+                                                            ConnectorPipe_Module.unwrap(fd)
+                                                        )
+                                                )
+                                                Validated.validNel((acc :+ connSlot, newFrame))
+                                            case _                     =>
+                                                Validated.validNel((acc :+ PipeSlot.noop(ConnectorPipeT, "Connector"), newFrame))
                                 case ChimneySlot(_)         =>
                                     // Unreachable: the chimney is always terminal (after the last
                                     // FluePipeT), so it cannot appear inside the flue region.

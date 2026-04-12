@@ -19,7 +19,7 @@ import afpma.firecalc.engine.standard.MecaFlu_Error
  * {{{
  *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
  *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
- *   CONNECTOR_PIPE   := ConnectorPipeT  |  noop
+ *   CONNECTOR_PIPE   := ConnectorPipeT
  *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
  * }}}
  *
@@ -132,8 +132,14 @@ object PostFireboxPipeChain:
                 Validated.invalidNel(MultipleConnectorsAfterFlue)
             else Validated.validNel (()                         )
 
+        // Rule 6: if there's a flue region, there must be a connector-position slot after it
+        val rule6 =
+            if lastFlueIdx >= 0 && afterFlueBeforeChimney.count(_.pipeType == ConnectorPipeT) == 0 then
+                Validated.invalidNel(MissingConnectorAfterFlue)
+            else Validated.validNel(())
+
         import cats.syntax.all.*
 
-        (rule1, rule3, rule4, rule5).mapN { (_, _, _, _) =>
+        (rule1, rule3, rule4, rule5, rule6).mapN { (_, _, _, _, _) =>
             PostFireboxPipeChain(slots)
         }
