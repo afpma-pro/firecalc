@@ -26,6 +26,7 @@ import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
 
+import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
 
 import cats.syntax.all.*
@@ -39,7 +40,14 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 
     given Locale = Locales.en
 
-    val channel_pipe_full_descr = strict_ex01_colonne_ascendante.fluePipe.toOption.get
+    private val pipeChain = PipeChain_15544_Strict.build(
+        PipeChain_15544_Strict.Descriptors(
+            strict_ex01_colonne_ascendante.fluePipeDescr,
+            strict_ex01_colonne_ascendante.connectorPipeDescr,
+            strict_ex01_colonne_ascendante.chimneyPipeDescr
+        )
+    )
+    val channel_pipe_full_descr = pipeChain.fluePipe.toOption.get
     val channel_pipe_elems = channel_pipe_full_descr
 
     val f = EN15544_Strict_Formulas.make

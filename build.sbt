@@ -174,7 +174,7 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
 
 
 lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, domain.js, domain.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_common.js, engine_13384_common.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog)
+  .aggregate(i18n.js, i18n.jvm, domain.js, domain.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_common.js, engine_13384_common.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog, fdim, labo, engineValidation)
   .settings(
     name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
