@@ -1064,5 +1064,6 @@ object I18nData:
         missing_chimney               : String,
         chimney_not_last              : String,
         flue_pipe_after_connector     : String,
-        multiple_connectors_after_flue: String
+        multiple_connectors_after_flue: String,
+        missing_connector_after_flue  : String
     )

@@ -116,16 +116,15 @@ sealed abstract class EN15544_Strict_Application(
     lazy val en13384_heatingAppliance_massFlows: MassFlows = MassFlows.undefined
 
     lazy val en13384_heatingAppliance_temperatures: VNelMcalcErr[Temperatures] =
-        val isEqualAndValidVNel: (VNelMcalcErr[TCelsius], VNelMcalcErr[TCelsius]) => Boolean =
-            case (Validated.Valid(t1), Validated.Valid(t2)  ) => t1 == t2
-            case (Validated.Invalid(_), Validated.Invalid(_)) => true // errors in both cases, ok for this case.
-            case _ => false
-
-        val a = atDraftMin_LoadNominal.t_fluepipe_end
-        val b = atDraftMax_LoadNominal.t_fluepipe_end
-        require(isEqualAndValidVNel(a, b), s"dev error: '$a' if min draft != '$b' if max draft !! Why ?")
-
-        a.map: fg_temp_nominal =>
+        // Conservative choice: use min-draft temperature (lower temp → less buoyancy).
+        //
+        // When the flue region contains only EN 15544 flow-only pipes, t_fluepipe_end
+        // is identical at min and max draft (temperature is draft-independent).
+        // However, interleaved ConnectorSlots in the flue region are computed using
+        // Thermal 13384 (heat-transfer formulas where temperature loss depends on gas
+        // velocity, which varies with draft). This makes t_fluepipe_end legitimately
+        // draft-dependent for topologies like [Flue, Connector, Flue, Connector, Chimney].
+        atDraftMin_LoadNominal.t_fluepipe_end.map: fg_temp_nominal =>
             HeatingAppliance.Temperatures(
                 flue_gas_temp_nominal = fg_temp_nominal,
                 flue_gas_temp_reduced = None

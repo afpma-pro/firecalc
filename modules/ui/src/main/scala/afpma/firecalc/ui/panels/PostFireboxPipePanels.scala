@@ -108,6 +108,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         case TopologyError.ChimneyNotLast              => I18N.topology_errors.chimney_not_last
         case TopologyError.FluePipeAfterConnector      => I18N.topology_errors.flue_pipe_after_connector
         case TopologyError.MultipleConnectorsAfterFlue => I18N.topology_errors.multiple_connectors_after_flue
+        case TopologyError.MissingConnectorAfterFlue   => I18N.topology_errors.missing_connector_after_flue
 
     private lazy val topologyWarning: Signal[Option[HtmlElement]] =
         topologyValidation_sig.map:
