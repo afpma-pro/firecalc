@@ -87,8 +87,28 @@ if [ -f "$PID_FILE" ]; then
     rm -f "$PID_FILE"
 fi
 
-# Clear log and store metadata
-> "$LOG_FILE"
+# Drop stale server/FIFO leftovers before any mode-specific startup.
+# Without this, a server killed outside sbt-compile-stop.sh leaves PID files
+# on disk that mislead future supervised runs and clutter .logs/.
+if [ -f "$SERVER_PID_FILE" ]; then
+    STALE_SERVER_PID=$(cat "$SERVER_PID_FILE")
+    if ! kill -0 "$STALE_SERVER_PID" 2>/dev/null; then
+        echo "Cleaning up stale sbt server PID file (was: $STALE_SERVER_PID)"
+        rm -f "$SERVER_PID_FILE"
+        if [ -f "$FIFO_PID_FILE" ]; then
+            STALE_FIFO_PID=$(cat "$FIFO_PID_FILE")
+            kill "$STALE_FIFO_PID" 2>/dev/null || true
+            rm -f "$FIFO_PID_FILE"
+        fi
+        rm -f "$SERVER_FIFO"
+    fi
+fi
+
+# Store metadata. The log file itself is truncated implicitly by the
+# per-mode `nohup ... > "$LOG_FILE"` redirection below (O_TRUNC on open),
+# so we deliberately do NOT clear it here — if a later preflight step
+# fails (e.g. supervised server startup timeout), the previous cycle's
+# log is preserved for debugging.
 echo "$SCOPE" > "$SCOPE_FILE"
 echo "$MODE" > "$MODE_FILE"
 
@@ -197,7 +217,14 @@ case "$MODE" in
         nohup sbt --client "$SBT_CMD" > "$LOG_FILE" 2>&1 &
         NEW_PID=$!
         echo "$NEW_PID" > "$PID_FILE"
-        echo "  Mode: supervised (managed sbt server + client)"
+        # MODE_FILE may have been downgraded to "client" above if an
+        # external sbt server was found — reflect the effective mode.
+        EFFECTIVE_MODE=$(cat "$MODE_FILE" | tr -d '[:space:]')
+        if [ "$EFFECTIVE_MODE" = "client" ]; then
+            echo "  Mode: client (downgraded from supervised — reusing external sbt server)"
+        else
+            echo "  Mode: supervised (managed sbt server + client)"
+        fi
         echo "  Command: sbt --client '$SBT_CMD'"
         echo "  PID: $NEW_PID"
         if [ -f "$SERVER_PID_FILE" ]; then

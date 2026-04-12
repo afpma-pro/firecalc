@@ -237,7 +237,6 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         // Pipe results
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
         lazy val firebox_PipeResult      : VNelMcalcErr[PipeResult]
-        lazy val flue_PipeResult         : VNelMcalcErr[PipeResult]
         lazy val connector_PipeResult    : VNelMcalcErr[PipeResult]
         lazy val chimney_PipeResult      : VNelMcalcErr[PipeResult]
 
@@ -246,6 +245,16 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
          * Generic N-pipe representation — the V6 slot vector is the canonical source.
          */
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]]
+
+        /**
+         * Chain-aware "conceptual" accessors for the flue region.
+         *
+         * Strict/MCE override to bottom out at `flueRegionPipeResults.last`
+         * (the HA-power-free Stage 1 result), decoupling flue-region temperature/pressure
+         * reads from Stage 2 HA resolution and breaking the lazy-val initialization cycle.
+         */
+        lazy val conceptualFluePipeResult        : VNelMcalcErr[PipeResult]
+        lazy val conceptualFlueRegionPipeResults : VNelMcalcErr[Vector[PipeResult]]
 
         // Derived temperatures (Section 4.8.4 – 4.8.5)
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean]

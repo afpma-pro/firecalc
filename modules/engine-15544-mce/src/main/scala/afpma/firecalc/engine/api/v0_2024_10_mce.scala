@@ -48,15 +48,11 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
     trait StoveProjectDescr_15544_MCE_Alg
         extends StoveProjectDescr_15544_Alg
         with HasTypeMembers_15544_MCE
-        with HasFireboxInternalPipes_15544_MCE_Alg
-        with HasFluePipe_13384_Alg:
+        with HasFireboxInternalPipes_15544_MCE_Alg:
         self =>
 
-        type ConnectorPipe     = ConnectorPipe_Module.PipeCanBe
-        type ChimneyPipe       = ChimneyPipe_Module.PipeCanBe
         type CombustionAirPipe = CombustionAirPipe_Module_13384.PipeCanBe
         type FireboxPipe       = FireboxPipe_Module_13384.PipeCanBe
-        type FluePipeType      = FluePipe_Module_13384.PipeCanBe
 
         val wComb: WoodCombustionAlg
         import wComb.*
@@ -98,32 +94,20 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         def massFlows_override: HeatingAppliance.MassFlows = HeatingAppliance.MassFlows.undefined
 
         override def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
-            (
-                airIntakePipe,
-                connectorPipe,
-                chimneyPipe
-            ).mapN: (_airIntake, _connector, _chimney) =>
-                new Pipes_13384_WithThermalAirIntake:
+            airIntakePipe.map: _airIntake =>
+                new Pipes_13384_WithThermalAirIntake_PreFireboxOnly:
                     override val airIntake: ThermalAirIntakePipe_13384 = _airIntake
-                    override val connector: ConnectorPipe              = _connector
-                    override val chimney  : ChimneyPipe                = _chimney
 
         override lazy val en15544_pipesVNel: VNelMcalcErr[Pipes_15544] =
             (
                 airIntakePipe,
                 combustionAirPipe,
-                fireboxPipe,
-                fluePipe,
-                connectorPipe,
-                chimneyPipe
-            ).mapN { (airIntake, combAir, fbox, flue, connector, chimney) =>
+                fireboxPipe
+            ).mapN { (airIntake, combAir, fbox) =>
                 Pipes_15544_MCE(
                     airIntake,
                     combAir,
-                    fbox,
-                    flue,
-                    connector,
-                    chimney
+                    fbox
                 )
             }
 
@@ -172,7 +156,7 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
                 net_calorific_value_of_dry_wood = net_calorific_value_of_dry_wood
             )
             val wComb                = new WoodCombustionImpl
-            EN15544_MCE_Application.make(en15544_mce_formulas, bs845, wComb)(i)
+            EN15544_MCE_Application.make(en15544_mce_formulas, bs845, wComb)(i, postFireboxPipeSlots)
 
     trait SimpleStoveProjectDescrFr_15544_MCE_Alg
         extends StoveProjectDescr_15544_MCE_Alg
@@ -181,18 +165,11 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
     trait WithPipeChain_15544_MCE:
         self: StoveProjectDescr_15544_MCE_Alg =>
 
-        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
-        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
-
         def fluePipeDescr     : Seq[ThermalPipeDescr_13384]
         def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
         def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
-        private lazy val pipeChain = PipeChain_15544_MCE.build(
-            PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
-        )
-
-        override lazy val fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_13384] = pipeChain.fluePipe
-        override lazy val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  =
-            pipeChain.connectorPipe
-        override lazy val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = pipeChain.chimneyPipe
+        override def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+            PipeChain_15544_MCE.toSlots(
+                PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+            )

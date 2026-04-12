@@ -34,19 +34,26 @@ import cats.data.ValidatedNel
 // ─────────────────────────────────────────────────────────────────────────────
 trait v0_2024_10_13384_core:
 
-    trait StoveProjectDescr_13384_Alg extends HasTypeMembers_13384_Alg:
+    /**
+     * Core (pre-firebox-only) subset of the EN 13384 project description algebra.
+     *
+     * Holds members that the EN 15544 composition path also needs:
+     * project metadata, appliance/fuel types, local conditions, air-intake pipe,
+     * the EN 13384 pipes-vnel factory, and the heating appliance computation.
+     *
+     * The legacy post-firebox members (`ConnectorPipe` / `ChimneyPipe` type
+     * aliases and their accompanying `connectorPipe` / `chimneyPipe` abstract
+     * builders) live on the child [[StoveProjectDescr_13384_Alg]] trait and are
+     * used by the standalone EN 13384 path only. The EN 15544 side extends
+     * this Core trait directly so it never inherits those legacy members.
+     */
+    trait StoveProjectDescr_13384_Core_Alg extends HasTypeMembers_13384_Alg:
         self =>
 
         /** Project metadata — needed for identification and country-level defaults. */
         def project: ProjectDescr
 
         def typeOfAppliance: TypeOfAppliance
-
-        /** Abstract connector pipe type — fixed to concrete type in leaf modules. */
-        type ConnectorPipe
-
-        /** Abstract chimney pipe type — fixed to concrete type in leaf modules. */
-        type ChimneyPipe
 
         def fuelType: FuelType
 
@@ -59,10 +66,27 @@ trait v0_2024_10_13384_core:
 
         def airIntakePipe: ValidatedNel[IncrementalValidation_Error, AirIntakePipe_Module.PipeCanBe]
 
-        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]
-
-        def chimneyPipe: ValidatedNel[IncrementalValidation_Error, ChimneyPipe]
-
         def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384]
 
         def heatingAppliance: ValidatedNel[MCalc_Error, HeatingAppliance]
+
+    /**
+     * Full EN 13384 project description algebra, including the legacy
+     * post-firebox `connectorPipe` / `chimneyPipe` builders used by the
+     * standalone EN 13384 path.
+     *
+     * EN 15544 composition extends only [[StoveProjectDescr_13384_Core_Alg]];
+     * it never mixes in this trait.
+     */
+    trait StoveProjectDescr_13384_Alg extends StoveProjectDescr_13384_Core_Alg:
+        self =>
+
+        /** Abstract connector pipe type — fixed to concrete type in leaf modules. */
+        type ConnectorPipe
+
+        /** Abstract chimney pipe type — fixed to concrete type in leaf modules. */
+        type ChimneyPipe
+
+        def connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]
+
+        def chimneyPipe: ValidatedNel[IncrementalValidation_Error, ChimneyPipe]

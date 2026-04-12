@@ -136,7 +136,7 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_133
 
     // Section "5.5.2"
 
-    type MassFlowOp = HeatingAppliance.CtxOp4_EFPoM[MassFlow]
+    type MassFlowOp = HeatingAppliance.CtxOp2_FM[MassFlow]
 
     /** Débit massique des fumées */
     def m_dot: MassFlowOp

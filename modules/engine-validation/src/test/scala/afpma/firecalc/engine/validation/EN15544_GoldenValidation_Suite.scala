@@ -60,3 +60,4 @@ class EN15544_GoldenValidation_Suite
             "EN15544 C3",
         )
     }
+

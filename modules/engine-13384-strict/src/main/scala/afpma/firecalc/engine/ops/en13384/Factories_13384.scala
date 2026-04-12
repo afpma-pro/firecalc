@@ -55,9 +55,7 @@ extension (obj: CanComputePipeResult.type)
     def forThermal13384(
         en13384App: EN13384_1_A1_2019_Application_Alg,
         hafg      : HeatingAppliance.FlueGas,
-        hamf      : HeatingAppliance.MassFlows,
-        hapwr     : HeatingAppliance.Powers,
-        haeff     : HeatingAppliance.Efficiency
+        hamf      : HeatingAppliance.MassFlows
     ): CanComputePipeResult[ThermalPipeDescr_13384.type] =
         new CanComputePipeResult[ThermalPipeDescr_13384.type]:
             val descrAlg: ThermalPipeDescr_13384.type = ThermalPipeDescr_13384
@@ -72,8 +70,6 @@ extension (obj: CanComputePipeResult.type)
                     fd,
                     hafg,
                     hamf,
-                    hapwr,
-                    haeff,
                     upstream.temp_start,
                     upstream.last_pipe_density,
                     upstream.last_pipe_velocity,
@@ -84,9 +80,7 @@ extension (obj: CanComputePipeResult.type)
     def forFlowOnly13384(
         en13384App: EN13384_1_A1_2019_Application_Alg,
         hafg      : HeatingAppliance.FlueGas,
-        hamf      : HeatingAppliance.MassFlows,
-        hapwr     : HeatingAppliance.Powers,
-        haeff     : HeatingAppliance.Efficiency
+        hamf      : HeatingAppliance.MassFlows
     ): CanComputePipeResult[FlowOnlyPipeDescr_13384.type] =
         new CanComputePipeResult[FlowOnlyPipeDescr_13384.type]:
             val descrAlg: FlowOnlyPipeDescr_13384.type = FlowOnlyPipeDescr_13384
@@ -101,8 +95,6 @@ extension (obj: CanComputePipeResult.type)
                     fd,
                     hafg,
                     hamf,
-                    hapwr,
-                    haeff,
                     upstream.temp_start,
                     upstream.last_pipe_velocity,
                     gas

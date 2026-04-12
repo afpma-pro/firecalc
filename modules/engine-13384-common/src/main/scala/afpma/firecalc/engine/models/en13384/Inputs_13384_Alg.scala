@@ -14,7 +14,13 @@ import afpma.firecalc.engine.models.en13384.typedefs.*
 trait Inputs_13384_Alg extends HasPipeModules_13384_Alg:
     self =>
 
-    type Pipes_13384 <: Pipes_13384_Alg {
+    /**
+     * Pipes type. Upper bound widened from `Pipes_13384_Alg` to
+     * `HasPipeModules_13384_Alg` (mirrors the widening in
+     * `HasTypeMembers_13384_Alg`) so that EN 15544's `Pipes_15544_*` case
+     * classes — which no longer extend `Pipes_13384_Alg` — satisfy the bound.
+     */
+    type Pipes_13384 <: HasPipeModules_13384_Alg {
         type AirIntakePipe_Module_T = self.AirIntakePipe_Module_T
     }
 

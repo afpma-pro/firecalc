@@ -52,8 +52,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Resolve the expected module name from the stored scope.
-# Scope "engine" → expected marker "firecalc-engine"
-# Scope "" (empty / full project) → expected marker "firecalc-root"
+#
+# sbt project IDs use underscores (e.g. `engine_15544_strict`), but the
+# `[FIRECALC_COMPILE_DONE] module=...` marker emitted by build.sbt uses
+# `name.value`, which is a dashed string (e.g. `firecalc-engine-15544-strict`).
+# For crossProject modules, the JVM and JS sides share the same `name.value`,
+# so a `*JS` scope resolves to the same marker as its JVM sibling. The
+# `laminar-form-*` modules are the only ones without the `firecalc-` prefix.
+#
+# Examples:
+#   ""                      → firecalc-root
+#   engine                  → firecalc-engine
+#   engine_15544_strict     → firecalc-engine-15544-strict
+#   engine_15544_strictJS   → firecalc-engine-15544-strict
+#   xlsx_catalog            → firecalc-xlsx-catalog
+#   laminar_form_core       → laminar-form-core
 resolve_expected_module() {
     local scope=""
     if [ -f "$SCOPE_FILE" ]; then
@@ -62,9 +75,19 @@ resolve_expected_module() {
 
     if [ -z "$scope" ]; then
         echo "firecalc-root"
-    else
-        echo "firecalc-${scope}"
+        return
     fi
+
+    # crossProject JS scopes share `name.value` with their JVM sibling.
+    scope="${scope%JS}"
+
+    # sbt project IDs use '_'; `name := ...` values use '-'.
+    local dashed="${scope//_/-}"
+
+    case "$dashed" in
+        laminar-form-*) echo "$dashed" ;;
+        *)              echo "firecalc-$dashed" ;;
+    esac
 }
 
 EXPECTED_MODULE=$(resolve_expected_module)

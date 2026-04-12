@@ -12,6 +12,7 @@ import afpma.firecalc.engine.models.FireboxPipe_15544
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384
 import afpma.firecalc.engine.models.FluePipe_15544
 
+import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.*
 
 import cats.data.*
@@ -24,6 +25,14 @@ import org.scalatest.matchers.should.*
 class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
 
     type VNel[A] = Validated[NonEmptyList[String], A]
+
+    private val pipeChain = PipeChain_15544_Strict.build(
+        PipeChain_15544_Strict.Descriptors(
+            strict_ex01_colonne_ascendante.fluePipeDescr,
+            strict_ex01_colonne_ascendante.connectorPipeDescr,
+            strict_ex01_colonne_ascendante.chimneyPipeDescr
+        )
+    )
 
     "ex01_colonne_ascendante" - {
 
@@ -60,7 +69,7 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
     
                 "can be converted to FluePipe" in {
     
-                    val fluePipe = strict_ex01_colonne_ascendante.fluePipe
+                    val fluePipe = pipeChain.fluePipe
                     fluePipe shouldBe a [Valid[FluePipe_15544]]
                     // println(fluePipe.toOption.get.showAsCliTable)
                 }
@@ -71,7 +80,7 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
     
                 "can be converted to ConnectorPipe" in {
     
-                    val connetingPipe = strict_ex01_colonne_ascendante.connectorPipe
+                    val connetingPipe = pipeChain.connectorPipe
                     connetingPipe shouldBe a [Valid[ConnectorPipe]]
                     // println(connetingPipe.toOption.get.showAsCliTable)
                 }
@@ -82,7 +91,7 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
     
                 "can be converted to ChimneyPipe" in {
     
-                    val chimneyPipe = strict_ex01_colonne_ascendante.chimneyPipe
+                    val chimneyPipe = pipeChain.chimneyPipe
                     chimneyPipe shouldBe a [Valid[ChimneyPipe]]
                     // println(chimneyPipe.toOption.get.showAsCliTable)
                 }

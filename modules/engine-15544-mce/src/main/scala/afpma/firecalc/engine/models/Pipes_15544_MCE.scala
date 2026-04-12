@@ -11,10 +11,7 @@ import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_MCE
 case class Pipes_15544_MCE(
     val airIntake    : ThermalAirIntakePipe_13384,
     val combustionAir: CombustionAirPipe_13384,
-    val firebox      : FireboxPipe_13384,
-    val flue         : FluePipe_13384,
-    val connector    : ConnectorPipe,
-    val chimney      : ChimneyPipe
+    val firebox      : FireboxPipe_13384
 ) extends Pipes_15544_Alg
     with HasPipeModules_15544Only_MCE
-    with Pipes_13384_WithThermalAirIntake
+    with Pipes_13384_WithThermalAirIntake_PreFireboxOnly

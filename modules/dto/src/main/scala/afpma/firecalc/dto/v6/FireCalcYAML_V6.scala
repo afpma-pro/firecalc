@@ -40,19 +40,7 @@ final case class FireCalcYAML_V6(
     air_intake_descr              : Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3],
     firebox                       : Firebox_V4,
     post_firebox_pipes            : Seq[PostFireboxPipeDescrSlot]
-) extends FireCalcYAML_Format:
-
-    /** Extract flue pipe descriptors (first FlueSlot, matching V4/V5 single-flue behavior). */
-    def flue_pipe_descr: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3] =
-        post_firebox_pipes.collectFirst { case PostFireboxPipeDescrSlot.FlueSlot(d) => d }.getOrElse(Seq.empty)
-
-    /** Extract connector pipe descriptors (first ConnectorSlot). */
-    def connector_pipe_descr: Seq[ThermalPipeDescr_13384_V3] =
-        post_firebox_pipes.collectFirst { case PostFireboxPipeDescrSlot.ConnectorSlot(d) => d }.getOrElse(Seq.empty)
-
-    /** Extract chimney pipe descriptors (first ChimneySlot). */
-    def chimney_pipe_descr: Seq[ThermalPipeDescr_13384_V3] =
-        post_firebox_pipes.collectFirst { case PostFireboxPipeDescrSlot.ChimneySlot(d) => d }.getOrElse(Seq.empty)
+) extends FireCalcYAML_Format
 
 trait FireCalcYAML_V6_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V6]:
 

@@ -39,25 +39,15 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
     trait StoveProjectDescr_15544_Strict_Alg
         extends StoveProjectDescr_15544_Alg
         with HasTypeMembers_15544_Strict
-        with HasFireboxInternalPipes_15544_Strict_Alg
-        with HasFluePipe_15544_Alg:
+        with HasFireboxInternalPipes_15544_Strict_Alg:
         self =>
-
-        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
-        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
 
         val kindOfWood = afpma.firecalc.engine.models.gtypedefs.KindOfWood.HardWood
 
         override def en13384_pipesVNel: ValidatedNel[IncrementalValidation_Error, Pipes_13384] =
-            (
-                airIntakePipe,
-                connectorPipe,
-                chimneyPipe
-            ).mapN: (_airIntake, _connector, _chimney) =>
-                new Pipes_13384_WithFlowOnlyAirIntake:
+            airIntakePipe.map: _airIntake =>
+                new Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly:
                     override val airIntake: FlowOnlyAirIntakePipe_13384 = _airIntake
-                    override val connector: ConnectorPipe               = _connector
-                    override val chimney  : ChimneyPipe                 = _chimney
 
         override def en15544_inputsVNel: ValidatedNel[MCalc_Error, Inputs_15544_Strict] =
             en15544_pipesVNel.map: pipes =>
@@ -73,18 +63,12 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
             (
                 airIntakePipe,
                 combustionAirPipe,
-                fireboxPipe,
-                fluePipe,
-                connectorPipe,
-                chimneyPipe
-            ).mapN { (condAir, combChInt, combCh, flue, connector, chimney) =>
+                fireboxPipe
+            ).mapN { (condAir, combChInt, combCh) =>
                 Pipes_15544_Strict(
                     condAir,
                     combChInt,
-                    combCh,
-                    flue,
-                    connector,
-                    chimney
+                    combCh
                 )
             }
 
@@ -100,18 +84,11 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
     trait WithPipeChain_15544_Strict:
         self: StoveProjectDescr_15544_Strict_Alg =>
 
-        type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
-        type ChimneyPipe   = ChimneyPipe_Module.PipeCanBe
-
         def fluePipeDescr     : Seq[FlowOnlyPipeDescr_15544]
         def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
         def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
-        private lazy val pipeChain = PipeChain_15544_Strict.build(
-            PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
-        )
-
-        override lazy val fluePipe     : ValidatedNel[IncrementalValidation_Error, FluePipe_15544] = pipeChain.fluePipe
-        override lazy val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  =
-            pipeChain.connectorPipe
-        override lazy val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = pipeChain.chimneyPipe
+        override def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+            PipeChain_15544_Strict.toSlots(
+                PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+            )

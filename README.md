@@ -21,6 +21,12 @@ See example here : [🗎 PDF Report Example](https://raw.githubusercontent.com/a
 
 ⚠️ We're still waiting for **official validation** from French authorities
 
+## Engine Validation
+
+FireCalc's calculation engine is cross-validated **byte-for-byte** against independent reference implementations of EN 13384 and EN 15544. Validation runs via `make run-validation` and compares current engine output against committed reference files under `modules/engine/validation/`.
+
+See [Engine Validation — Golden Tests](docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md) for the full methodology, the inventory of golden fixtures, and the contribution policy (including hard rules for AI agents).
+
 ## 📖 Documentation
 
 **[Complete Documentation →](docs/README.md)**

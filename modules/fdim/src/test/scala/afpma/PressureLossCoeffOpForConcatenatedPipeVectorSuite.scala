@@ -8,7 +8,8 @@ package afpma.firecalc.engine.ops.en15544.dynfrict
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
-import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
+import afpma.firecalc.engine.api.v0_2024_10_strict
+import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
@@ -36,7 +37,7 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
 
     // sharing test / testing a behavior
     def accuFromExerciceHasDCCoefficients(
-        ex: StoveProjectDescr_15544_Strict_Alg
+        ex: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & v0_2024_10_strict.WithPipeChain_15544_Strict
     )(tableOfDirectionChanges: TableFor2[String, Double]) = {
 
         given PipeType = FluePipeT
@@ -50,10 +51,13 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
         given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make
         val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()
 
-        val pipeConcat = 
-            ex.fluePipe match
-                case Invalid(nel)   => throw new Exception(s"ERRORS: bad accumulateur definition : $nel")
-                case Valid(accu)    => accu match
+        val pipeChain = PipeChain_15544_Strict.build(
+            PipeChain_15544_Strict.Descriptors(ex.fluePipeDescr, ex.connectorPipeDescr, ex.chimneyPipeDescr)
+        )
+        val pipeConcat =
+            pipeChain.fluePipe match
+                case Invalid(nel) => throw new Exception(s"ERRORS: bad accumulateur definition : $nel")
+                case Valid(accu)  => accu match
                     case accu: FluePipe_Module_15544.FullDescr => accu
 
         val els = pipeConcat.elems
