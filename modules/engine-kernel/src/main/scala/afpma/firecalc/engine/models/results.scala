@@ -470,7 +470,9 @@ case class PipesResult_15544(
     /** The terminal chimney pipe (always last). */
     def chimney: PipeResult =
         require(postFirebox.nonEmpty, "postFirebox vector must not be empty — chimney slot is mandatory")
-        postFirebox.last._2
+        val (pt, pr) = postFirebox.last
+        require(pt == ChimneyPipeT, s"terminal slot must be ChimneyPipeT, got $pt")
+        pr
 
     // ── region boundary ──
     private val lastFluePipeIdx: Int = postFirebox.lastIndexWhere(_._1 == FluePipeT)

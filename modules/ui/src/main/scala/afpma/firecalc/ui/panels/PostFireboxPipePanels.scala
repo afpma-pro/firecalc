@@ -67,7 +67,10 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         structureVersion.update(_ + 1)
 
     private def removeSlot(idx: Int): Unit =
-        postFireboxSlots_var.update(slots => slots.zipWithIndex.collect { case (s, i) if i != idx => s })
+        postFireboxSlots_var.update: slots =>
+            if idx >= 0 && idx < slots.size && !slots(idx).isInstanceOf[PostFireboxPipeDescrSlot.ChimneySlot] then
+                slots.zipWithIndex.collect { case (s, i) if i != idx => s }
+            else slots
         structureVersion.update(_ + 1)
 
     private def moveSlot(fromIdx: Int, toIdx: Int): Unit =

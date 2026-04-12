@@ -157,10 +157,14 @@ abstract class EN13384_1_A1_2019_Common_Application(
                 ))
 
     override def connector_PipeResult =
-        postFireboxChainResults.map(_.head)
+        postFireboxChainResults.map: results =>
+            require(results.size >= 2, s"postFireboxChainResults must have at least 2 elements, got ${results.size}")
+            results(results.size - 2)
 
     override def chimney_PipeResult =
-        postFireboxChainResults.map(_.last)
+        postFireboxChainResults.map: results =>
+            require(results.nonEmpty, "postFireboxChainResults must not be empty")
+            results(results.size - 1)
 
     override final def pipesResult_13384_VNelS =
         PipesResult_13384_VNelString(
