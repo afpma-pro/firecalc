@@ -12,8 +12,8 @@ import afpma.firecalc.engine.models.en15544.HasPipeModules_15544Only_Alg
 /**
  * EN 15544 pipes algebra — pre-firebox pipes only.
  *
- * Post Phase C remediation, this trait no longer extends `Pipes_13384_Alg`
- * and no longer owns `flue` / `connector` / `chimney` fields. Post-firebox
+ * This trait no longer extends `Pipes_13384_Alg` and no longer owns
+ * `flue` / `connector` / `chimney` fields. Post-firebox
  * results are sourced from the N-pipe tagged vector
  * (`postFireboxPipeSlots` / `postFireboxPipeResults`) instead.
  *

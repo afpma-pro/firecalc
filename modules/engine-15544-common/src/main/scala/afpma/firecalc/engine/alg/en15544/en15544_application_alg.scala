@@ -247,7 +247,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]]
 
         /**
-         * Phase A.1 — chain-aware "conceptual" accessors for the flue region.
+         * Chain-aware "conceptual" accessors for the flue region.
          *
          * Strict/MCE override to bottom out at `flueRegionPipeResults.last`
          * (the HA-power-free Stage 1 result), decoupling flue-region temperature/pressure

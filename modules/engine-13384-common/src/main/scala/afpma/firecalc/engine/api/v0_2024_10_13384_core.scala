@@ -76,8 +76,7 @@ trait v0_2024_10_13384_core:
      * standalone EN 13384 path.
      *
      * EN 15544 composition extends only [[StoveProjectDescr_13384_Core_Alg]];
-     * it never mixes in this trait. See Phase C remediation plan (C8) for
-     * rationale.
+     * it never mixes in this trait.
      */
     trait StoveProjectDescr_13384_Alg extends StoveProjectDescr_13384_Core_Alg:
         self =>

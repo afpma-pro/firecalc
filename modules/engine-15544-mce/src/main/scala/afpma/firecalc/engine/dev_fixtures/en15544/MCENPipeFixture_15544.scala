@@ -32,7 +32,7 @@ import coulomb.policy.standard.given
   * independent EN 13384 / EN 15544 reference implementations. This fixture
   * has NOT been cross-validated; it exists solely to exercise the MCE
   * `WithPipeChain_15544_MCE` chain path with a multi-`ThermalFlueSlot` topology
-  * (N ≥ 4 post-firebox slots, Step 5.5 of the N-pipe topology remediation)
+  * (N ≥ 4 post-firebox slots)
   * during engine development.
   *
   * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
@@ -45,7 +45,7 @@ import coulomb.policy.standard.given
   * single `ThermalFlueSlot`, so this fixture overrides `postFireboxPipeSlots`
   * directly to produce two distinct `ThermalFlueSlot` entries — the minimum
   * required to exercise the Stage 1 chain fold over multiple thermal flue
-  * slots (Option 1 per the Step 5.5 spec).
+  * slots.
   *
   *   Slot 0 — ThermalFlueSlot #1 : horizontal exit from firebox (Right/Horizontal, 28.1 cm)
   *                                  + 90° turn upward

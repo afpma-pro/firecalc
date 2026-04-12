@@ -41,8 +41,10 @@ import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scal
 import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
-// mkforEN13384 no longer imported — decoupled from engine-13384-strict
+import afpma.firecalc.engine.ops.en13384.forThermal13384
+import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 import afpma.firecalc.dto.all.*
@@ -55,6 +57,7 @@ import coulomb.policy.standard.given
 import coulomb.ops.standard.all.{given}
 import coulomb.ops.algebra.all.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
+import scala.annotation.nowarn
 import io.taig.babel.Locales
 import io.taig.babel.Locale
 
@@ -64,7 +67,12 @@ object EN15544_V_2023_Common_Application:
     type Error   = EN15544_V_2023_Application_Alg.ErrorGen
     type VNel[X] = ValidatedNel[Error, X]
 
-abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_Application_Alg with FireboxOps {
+abstract class EN15544_V_2023_Common_Application
+    extends en15544.EN15544_V_2023_Application_Alg
+    with FireboxOps
+    with EN15544_Common_Application_Formulas
+    with EN15544_Common_HeatingAppliance
+    with EN15544_Common_Constraints {
     en15544 =>
 
     // ─── EN13384ForApp: abstract type + mixin trait ──────────────────────
@@ -106,20 +114,20 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 case ComputeAt.Middle => pr.flatMap(_.last_velocity_middle)
 
         /**
-         * Phase C4 — forward 13384 connector/chimney reads through the 15544 N-pipe chain.
+         * Forward 13384 connector/chimney reads through the 15544 N-pipe chain.
          *
          * The base class reads legacy `inputs.pipes.connector` / `.chimney` via a hardcoded
          * 2-slot `postFireboxChainResults`, which is blind to extra flue slots and seeds the
-         * chain at T_WN / T_Wmin (site #8). The 15544 `AtParams.connector_PipeResult` /
-         * `chimney_PipeResult` (made chain-aware in C3) already read the tagged N-pipe
-         * `postFireboxPipeResults` with proper upstream-state threading from Stage 1.
+         * chain incorrectly. The 15544 `AtParams.connector_PipeResult` /
+         * `chimney_PipeResult` already read the tagged N-pipe `postFireboxPipeResults`
+         * with proper upstream-state threading from Stage 1.
          *
-         * `def` (not `lazy val`) to defer evaluation and avoid the C3-observed lazy-val cycle
-         * risk between Stage 2 HA resolution and Stage 1 flue-region results.
+         * `def` (not `lazy val`) to defer evaluation and avoid a lazy-val cycle
+         * between Stage 2 HA resolution and Stage 1 flue-region results.
          *
          * Error conversion: collapse the accumulated NEL into a single MecaFlu_Error via
          * `UnexpectedThrowable` carrying the first error's string form. Downstream
-         * `.toValidatedNel.andThen(...)` in `en13384_common_application.scala:192-205` handles
+         * `.toValidatedNel.andThen(...)` in `en13384_common_application.scala` handles
          * the resulting `Either` structurally.
          */
         override def connector_PipeResult: PipeResultOp[WithParams_13384[PipeResultE]] =
@@ -160,7 +168,7 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     final lazy val firebox: Firebox_15544 = inputs.design.firebox
 
     /** Type-safe constraints access via the Self-typed member. */
-    private lazy val fc: FireboxConstraints[firebox.Self] =
+    protected lazy val fc: FireboxConstraints[firebox.Self] =
         firebox.constraints
 
     /** Build the stove-level constraint context. */
@@ -315,7 +323,13 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     given pipeWithGasFlowOps: PipeWithGasFlowOps[PipeWithGasFlowOps.Error]
 
     /** EN 13384 section-geometry-change friction coefficient factory — provided by leaf modules. */
-    given dynFrict13384Factory: afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
+    given dynFrict13384Factory: afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
+        import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.*
+        new DynFrict13384Factory:
+            def make(pt: PipeType): DynFrict13384Like =
+                val delegate = afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384()(using pt)
+                new DynFrict13384Like:
+                    def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
 
     given ssalg: afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
         afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory.make(using formulas, dynFrict13384Factory)
@@ -336,54 +350,206 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         private given LoadQty         = _lq
         private given Option[LoadQty] = Some(_lq)
 
-        // Pipe results — abstract ones (defined in strict/MCE subclasses)
+        // Pipe results — abstract (provided by strict/MCE subclasses)
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
         lazy val firebox_PipeResult      : VNelMcalcErr[PipeResult]
+        protected def flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], Option[PipeFrame])]
 
-        // Pipe results — concrete
+        /**
+         * Stage 2 of the two-stage split.
+         *
+         * Wraps Stage 1 (`flueRegionPipeResults`) then resolves HA givens
+         * (`en13384_heatingAppliance_powers`/`_efficiency`/`_temperatures`) safely,
+         * because `heatingAppliance_powers` no longer depends transitively on
+         * `postFireboxPipeResults` — it bottoms out at `flueRegionPipeResults`, which does not
+         * read HA givens.
+         *
+         * Builds connector + chimney slots with `tcThermal13384`, threading `UpstreamState` from
+         * the LAST `PipeResult` of Stage 1 into the Stage 2 chain, and concatenates results.
+         */
+        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
+            import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+            val pfbSlots = en15544.postFireboxPipeSlots
+            // Resolve Stage 1 first, then resolve HA givens for Stage 2.
+            flueRegionPipeResults.andThen { case (stage1Results, stage1LastFrame) =>
+                (
+                    en15544.en13384_heatingAppliance_powers,
+                    en15544.en13384_heatingAppliance_efficiency,
+                    en15544.en13384_heatingAppliance_temperatures
+                ).mapN((_, _, _))
+                    .andThen: (ha_pow, ha_eff, _) =>
+                        @nowarn("msg=unused local definition") given HeatingAppliance.Powers     = ha_pow
+                        @nowarn("msg=unused local definition") given HeatingAppliance.Efficiency = ha_eff
+
+                        val tcThermal13384 = CanComputePipeResult.forThermal13384(
+                            en15544.en13384_application,
+                            en15544.en13384_heatingAppliance_fluegas,
+                            en15544.en13384_heatingAppliance_massFlows
+                        )
+
+                        // Use stage1LastFrame directly — no re-trace needed.
+                        val lastFluePipeSlotIdx = pfbSlots.lastIndexWhere {
+                            case FlueSlot(_) | ThermalFlueSlot(_) => true
+                            case _                                => false
+                        }
+                        val stage2Slots     = pfbSlots.drop(lastFluePipeSlotIdx + 1)
+
+                        // Build Stage 2 PipeSlots (connector + chimney; no FluePipeT allowed here).
+                        // Thread prevFrame through foldLeft — no mutable state.
+                        val (stage2PipeSlots, _): (Vector[PipeSlot], Option[PipeFrame]) =
+                            stage2Slots.foldLeft((Vector.empty[PipeSlot], stage1LastFrame)) {
+                                case ((acc, prevFrame), slot) =>
+                                    slot match
+                                        case FlueSlot(_)            =>
+                                            // Defensive: FluePipeT after the last FluePipeT is impossible.
+                                            (acc :+ PipeSlot.noop(FluePipeT, "Flue"), prevFrame)
+                                        case ThermalFlueSlot(descr) =>
+                                            val (fdResult, ffV) =
+                                                FluePipe_Module_13384
+                                                    .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
+                                            val newFrame = ffV.toOption.flatten.orElse(prevFrame)
+                                            val pipeV =
+                                                FluePipe_Module_13384.FullDescrResult.extractPipe(fdResult)
+                                            val pipeSlot = pipeV match
+                                                case Validated.Valid(pipe) =>
+                                                    tcThermal13384.mkSlot(
+                                                        FluePipeT,
+                                                        "Flue",
+                                                        FlueGas,
+                                                        FluePipe_Module_13384.unwrap(pipe)
+                                                    )
+                                                case _                     =>
+                                                    PipeSlot.noop(FluePipeT, "Flue")
+                                            (acc :+ pipeSlot, newFrame)
+                                        case ConnectorSlot(descr)   =>
+                                            if descr.isEmpty then
+                                                (acc :+ PipeSlot.noop(ConnectorPipeT, "Connector"), prevFrame)
+                                            else
+                                                val (fdResult, ffV) =
+                                                    ConnectorPipe_Module
+                                                        .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
+                                                val newFrame = ffV.toOption.flatten.orElse(prevFrame)
+                                                val pipeV =
+                                                    ConnectorPipe_Module.FullDescrResult.extractPipe(fdResult)
+                                                val pipeSlot = pipeV match
+                                                    case Validated.Valid(pipe) =>
+                                                        ConnectorPipe_Module.foldPipeCanBe(pipe)  (
+                                                            onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
+                                                            onFullDescr = fd =>
+                                                                tcThermal13384.mkSlot(
+                                                                    ConnectorPipeT,
+                                                                    "Connector",
+                                                                    FlueGas,
+                                                                    ConnectorPipe_Module.unwrap(fd)
+                                                                )
+                                                        )
+                                                    case _                     =>
+                                                        PipeSlot.noop(ConnectorPipeT, "Connector")
+                                                (acc :+ pipeSlot, newFrame)
+                                        case ChimneySlot(descr)     =>
+                                            val chimneyFrame = prevFrame
+                                            val fdResult     = ChimneyPipe_Module
+                                                .mkPipeFromIncrDescr(descr, chimneyFrame)
+                                            val pipeV        =
+                                                ChimneyPipe_Module.FullDescrResult.extractPipe(fdResult)
+                                            val pipeSlot = pipeV match
+                                                case Validated.Valid(pipe) =>
+                                                    tcThermal13384.mkSlot(
+                                                        ChimneyPipeT,
+                                                        "Chimney",
+                                                        FlueGas,
+                                                        ChimneyPipe_Module.unwrap(pipe)
+                                                    )
+                                                case _                     =>
+                                                    PipeSlot.noop(ChimneyPipeT, "Chimney")
+                                            (acc :+ pipeSlot, prevFrame) // chimney doesn't update frame
+                            }
+
+                        // Seed Stage 2 with the UpstreamState derived from the LAST Stage 1 result.
+                        if stage1Results.isEmpty then
+                            Validated.invalidNel(
+                                UnexpectedDevError("Stage 1 flue region is empty — cannot seed Stage 2")
+                            )
+                        else
+                            val computeAt = en15544.en13384_application.computeAt
+                            val stage2InitialUpstream =
+                                UpstreamState.fromPipeResult(stage1Results.last, computeAt)
+                            val folded                =
+                                stage2PipeSlots.foldLeft[Either[
+                                    afpma.firecalc.engine.standard.MecaFlu_Error,
+                                    (UpstreamState, Vector[PipeResult])
+                                ]](Right((stage2InitialUpstream, Vector.empty))) { case (acc, slot) =>
+                                    acc.flatMap { case (upstream, results) =>
+                                        slot.compute(upstream, params).map { pr =>
+                                            val nextUpstream =
+                                                UpstreamState.fromPipeResult(pr, computeAt)
+                                            (nextUpstream, results :+ pr)
+                                        }
+                                    }
+                                }
+                            folded match
+                                case Right((_, stage2Results)) =>
+                                    val stage1Tagged =
+                                        stage1Results.map(pr => (FluePipeT: PipeType, pr))
+                                    val stage2Tagged =
+                                        stage2PipeSlots.zip(stage2Results).map {
+                                            (slot, pr) => (slot.pipeType, pr)
+                                        }
+                                    Validated.validNel(stage1Tagged ++ stage2Tagged)
+                                case Left(err)                 => Validated.invalidNel(err)
+            }
+
+        // Pipe results — concrete (N-pipe-chain-aware, shared by strict and MCE)
+
         lazy val connector_PipeResult: VNelMcalcErr[PipeResult] =
-            (
-                en13384_heatingAppliance_powers,
-                en13384_heatingAppliance_efficiency,
-                en13384_heatingAppliance_temperatures
-            )
-                .mapN { case (ha_pow, ha_eff, ha_temp) => (ha_pow, ha_eff, ha_temp) }
-                .andThen: (ha_pow, ha_eff, ha_temp) =>
-                    given HeatingAppliance.Powers       = ha_pow
-                    given HeatingAppliance.Efficiency   = ha_eff
-                    given HeatingAppliance.Temperatures = ha_temp
-                    val p: Params_13384 = params
-                    given Params_13384 = p
-                    en13384_application.connector_PipeResult.toValidatedNel
+            postFireboxPipeResults.andThen { pfb =>
+                val lastFluePipeIdx = pfb.lastIndexWhere(_._1 == FluePipeT)
+                val candidateIdx    = lastFluePipeIdx + 1
+                if candidateIdx >= 0 && candidateIdx < pfb.size - 1 then
+                    val (pt, pr) = pfb(candidateIdx)
+                    if pt == ConnectorPipeT then Validated.validNel(pr)
+                    else
+                        Validated.invalidNel(
+                            UnexpectedDevError(
+                                s"connector_PipeResult: slot after flue region is $pt, not ConnectorPipeT"
+                            )
+                        )
+                else
+                    Validated.invalidNel(
+                        UnexpectedDevError("connector_PipeResult: no ConnectorPipeT slot in N-pipe chain")
+                    )
+            }
 
         lazy val chimney_PipeResult: VNelMcalcErr[PipeResult] =
-            (
-                en13384_heatingAppliance_powers,
-                en13384_heatingAppliance_efficiency,
-                en13384_heatingAppliance_temperatures
-            )
-                .mapN { case (ha_pow, ha_eff, ha_temp) => (ha_pow, ha_eff, ha_temp) }
-                .andThen: (ha_pow, ha_eff, ha_temp) =>
-                    given HeatingAppliance.Powers       = ha_pow
-                    given HeatingAppliance.Efficiency   = ha_eff
-                    given HeatingAppliance.Temperatures = ha_temp
-                    val p: Params_13384 = params
-                    given Params_13384 = p
-                    en13384_application.chimney_PipeResult.toValidatedNel
+            postFireboxPipeResults.andThen { pfb =>
+                if pfb.isEmpty then
+                    Validated.invalidNel(
+                        UnexpectedDevError("chimney_PipeResult: N-pipe chain is empty")
+                    )
+                else
+                    val (pt, pr) = pfb.last
+                    if pt == ChimneyPipeT then Validated.validNel(pr)
+                    else
+                        Validated.invalidNel(
+                            UnexpectedDevError(
+                                s"chimney_PipeResult: last slot is $pt, not ChimneyPipeT"
+                            )
+                        )
+            }
 
         /**
-         * All post-firebox pipe results as a tagged vector: [(PipeType, PipeResult)].
-         * Abstract — concrete implementations in Strict/MCE subclasses build from the N-pipe chain.
+         * Chain-aware "conceptual" accessors for the flue region.
+         * Bottom out at `flueRegionPipeResults` (HA-power-free Stage 1),
+         * decoupling flue-region reads from Stage 2 HA resolution.
          */
-        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]]
+        lazy val conceptualFluePipeResult: VNelMcalcErr[PipeResult] =
+            flueRegionPipeResults.andThen { case (rs, _) =>
+                if rs.isEmpty then Validated.invalidNel(UnexpectedDevError("empty flue region"))
+                else Validated.validNel(rs.last)
+            }
 
-        /**
-         * Phase A.1 — chain-aware "conceptual" accessors for the flue region.
-         * Abstract — Strict/MCE override to bottom out at `flueRegionPipeResults.last`
-         * (HA-power-free Stage 1), decoupling flue-region reads from Stage 2 HA resolution.
-         */
-        lazy val conceptualFluePipeResult        : VNelMcalcErr[PipeResult]
-        lazy val conceptualFlueRegionPipeResults : VNelMcalcErr[Vector[PipeResult]]
+        lazy val conceptualFlueRegionPipeResults: VNelMcalcErr[Vector[PipeResult]] =
+            flueRegionPipeResults.map(_._1)
 
         // Section "4.8.4", "Flue gas temperature in the connector pipe"
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean] =
@@ -453,11 +619,9 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             )
 
         // Section "4.10.4", "Flue gas triple of variates"
-        // Phase A.1 — routed via `conceptualFluePipeResult` so that strict / MCE can bottom
-        // out at `flueRegionPipeResults` (HA-power-free Stage 1), breaking the lazy-val
-        // initialisation cycle described in plans/n-pipe-topology-audit-remediation.md.
-        // `conceptualFluePipeResult` is overridden in Strict/MCE to bottom out at
-        // `flueRegionPipeResults.last` (Stage 1 HA-power-free result).
+        // Routed via `conceptualFluePipeResult` so that strict / MCE bottom out at
+        // `flueRegionPipeResults` (HA-power-free Stage 1), breaking the lazy-val
+        // initialisation cycle between flue-region reads and HA resolution.
         private lazy val channel_pipe_last_element_temperature_end: VNelMcalcErr[TCelsius] =
             conceptualFluePipeResult.map(_.gas_temp_end)
 
@@ -509,7 +673,14 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 firebox_PipeResult,
                 postFireboxPipeResults
             )
-        lazy val outputs                : Outputs
+        lazy val outputs: Outputs =
+            val pipesResult = pipesResult_15544_VNelS.accumulateErrors
+            models.en15544.std.Outputs(
+                techSpecs,
+                pipesResult,
+                reference_temperatures,
+                efficiencies_values
+            )
 
         // Validations
         def validateVelocitiesInFluePipe(): VNelMcalcErr[Unit] =
@@ -630,221 +801,8 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     // TODO : add constraint on air gap (yes / no) depending on distance between inner & outer shell + more than 50% of surface built this way
 
     // Section "4", "Calculations"
-
-    // Section "4.2", "Load of fuel"
-
-    // Section "4.2.1", "Maximum Load"
-
+    // Section "4.2", "Load of fuel" through Section "4.9.5" — see EN15544_Common_Application_Formulas
     export en15544_typedefs.*
-
-    def n_min: n_min =
-        inputs.stoveParams.min_efficiency
-
-    def P_n: P_n =
-        inputs.stoveParams.mB_or_pn match
-            case Left(mb)  => formulas.P_n_calc(mb, t_n, n_min)
-            case Right(pn) => pn
-
-    def t_n: t_n =
-        inputs.stoveParams.heating_cycle
-
-    // If tested fireboxs are used, the maximum load at nominal heat output shall be the maximum
-    // fuel mass according to the type test.
-    def m_B: m_B =
-        inputs.design.firebox match
-            case dcc: Firebox_15544.SingleTested => dcc.maximumFuelMass
-            case _  : Firebox_15544              =>
-                inputs.stoveParams.mB_or_pn match
-                    case Left(mb) => mb
-                    case Right(_) => formulas.m_B_calc(P_n, t_n, n_min)
-
-    given Conversion[LoadQty, Option[Mass]] = (lq: LoadQty) =>
-        lq match
-            case _ @LoadQty.Nominal => m_B.some
-            case _ @LoadQty.Reduced => m_B_min
-
-    // Section "4.2.2", "Minimum Load"
-
-    // The definition and calculation of the minimum load is only necessary if a reduced heat output is declared
-    // by the manufacturer
-    def m_B_min: Option[m_B_min] =
-        inputs.design.firebox.pn_reduced match
-            case _: (HeatOutputReduced.HalfOfNominal | HeatOutputReduced.FromTypeTest) =>
-                inputs.design.firebox.min_load match
-                    case MinLoad.NotDefined               => None
-                    case MinLoad.HalfOfMaxLoad(Some(min)) =>
-                        // The minimum load shall be calculated as 50 % of the maximum load
-                        require(min == formulas.m_B_min_calc(m_B))
-                        (min: m_B_min).some
-                    case MinLoad.HalfOfMaxLoad(None)      =>
-                        formulas.m_B_min_calc(m_B).some
-                    case MinLoad.FromTypeTest(min)        =>
-                        // If tested fireboxs are used, the minimum load at reduced heat output shall be the minimum
-                        // fuel mass according to the type test.
-                        (min: m_B_min).some
-            case HeatOutputReduced.NotDefined => None
-
-    // Section "4.3", "Design of the essential dimensions"
-
-    // Section "4.3.1", "Firebox dimensions"
-
-    // Implementation of FireboxSizing_15544_Alg
-    type FireboxSizingAlg = FireboxSizing_15544_Common
-
-    override lazy val firebox_sizing: FireboxSizingAlg =
-        FireboxSizing_15544_Common(
-            firebox,
-            m_B
-        )
-
-    // Section "4.3.1.1", "General" — constraints now handled by FireboxConstraints typeclass
-
-    // Section "4.3.2", "Calculated flue pipe length"
-
-    def L_Z_calculated: L_N =
-        formulas.L_Z_calculated_calc(inputs.stoveParams.facing_type, m_B)
-
-    // Section "4.3.3", "Minimum flue pipe length"
-
-    // Section "4.3.3.1", "Calculation"
-
-    // TODO
-    // When using tested fireboxs, the formulas for calculating the minimum draft length
-    // (due to deviating burnout temperatures from the firebox) are not to be used.
-
-    // Section "4.3.3.2/3", "Construction with or without air gap"
-
-    def table_1_Factor_a_or_b: Option[Table_1_Factor_a_or_b] =
-        inputs.stoveParams.facing_type match
-            case FacingType.WithoutAirGap =>
-                formulas.Table_1_Factor_a_opt_calc(n_min).map(Left(_))
-            case FacingType.WithAirGap    =>
-                formulas.Table_1_Factor_b_opt_calc(n_min).map(Right(_))
-
-    def L_Z_min: VNel[L_N] =
-        table_1_Factor_a_or_b match
-            case Some(aorb) =>
-                formulas.L_Z_min_calc(aorb, m_B).validNel
-            case None       =>
-                // interpolation failed
-                EN15544_ErrorMessage(
-                    "interpolation failed: could not retrieve 'a' or 'b' factor in 'Table 1'",
-                    FireboxPipeT
-                ).invalidNel
-
-    // Section "4.3.4", "Gas groove profile"
-
-    def A_GS: A_GS = formulas.A_GS_calc(m_B)
-
-    // Section "4.4", "Calculation of the burning rate"
-
-    def m_BU: m_BU = formulas.m_BU_calc(m_B)
-
-    // Section "4.5", "Fixing of the air ratio"
-    val λ: λ = formulas.λ_calc
-
-    // Section "4.6", "Combustion air flue gas"
-
-    // Section "4.6.2", "Combustion air flow rate"
-
-    def V_L = withLoad: mb =>
-        val ft = f_t(t_combustion_air)
-        formulas.V_L_calc(mb, ft, f_s)
-
-    // Section "4.6.2.2", "Temperature correction"
-
-    def f_t(t: TempD[Celsius]): f_t =
-        formulas.f_t_calc(t)
-
-    // Section "4.6.2.3", "Altitude correction"
-
-    def z_geodetical_height: z_geodetical_height =
-        inputs.localConditions.altitude
-
-    def f_s: f_s =
-        formulas.f_s_calc(z_geodetical_height)
-
-    // Section "4.6.3", "Flue gas flow rate"
-
-    def V_G(t: TempD[Celsius]) = withLoad: mb =>
-        val ft = f_t(t)
-        formulas.V_G_calc(mb, ft, f_s)
-
-    // Section "4.6.4", "Flue gas mass flow rate"
-
-    def m_G = withLoad(mb => formulas.m_G_calc(mb).validNel)
-
-    def m_L = withLoad(mb => formulas.m_L_calc(mb).validNel)
-
-    // Section "4.7.1", "Combustion air density"
-
-    def ρ_L: EpOp[ρ_L] =
-        val ft = f_t(t_combustion_air)
-        formulas.ρ_L_calc(ft, f_s)
-
-    // Section "4.7.2", "Flue gas density"
-
-    def ρ_G(t: TempD[Celsius]): ρ_G =
-        val ft = f_t(t)
-        formulas.ρ_G_calc(ft, f_s)
-
-    // Section "4.8.1",
-    // "Mean outside air temperature and combustion air temperature"
-
-    override lazy val t_combustion_air: EpOp[t_combustion_air] =
-        en13384_application.T_mB match
-            case Valid(tmb)    => tmb.unwrap.toUnit[Celsius]
-            case Invalid(errs) =>
-                given Locale = Locales.en
-                throw new Exception(errs.head.show)
-
-    // Section "4.8.2", "Mean firebox temperature"
-
-    // import Firebox.ccDesignShow
-
-    def t_BR: t_BR =
-        formulas.t_BR_calc(inputs.design.firebox)
-
-    // Section "4.8.3", "Flue gas temperature in the flue pipe"
-
-    def t_burnout: t_burnout =
-        formulas.t_burnout_calc(inputs.design.firebox)
-
-    def t_fluepipe(L_Z: QtyD[Meter]): t_fluepipe =
-        formulas.t_fluepipe_calc(t_burnout, L_Z, L_Z_calculated)
-
-    /**
-     * Compute mean temperature of the gas in the fluepipe, between two points given their distances from the firebox outlet
-     *
-     * Computed using the integral of formula (22) between lz1 and lz2:
-     *   t_sortie * formulas.L_Z_calculated / 0.83
-     *   *
-     *   (
-     *     math.exp(0.83 * lz1 / formulas.L_Z_calculated)
-     *     -
-     *     math.exp(0.83 * lz2 / formulas.L_Z_calculated)
-     *   )
-     *
-     * @param lz1 distance from firebox to point 1
-     * @param lz2 distance from firebox to point 2
-     * @return
-     */
-    def t_fluepipe_mean(lz1: QtyD[Meter], lz2: QtyD[Meter]): VNel[t_fluepipe] =
-        val tb = t_burnout
-        val ln = L_Z_calculated
-        (
-            1.0 / (lz2 - lz1).value
-                *
-                (tb.toUnit[Celsius].value * ln.to_m.value) / 0.83
-                *
-                (
-                    math.exp(0.83 * (lz1 / ln).value)
-                        -
-                            math.exp(0.83 * (lz2 / ln).value)
-                )
-        ).degreesCelsius.validNelE
-
-    // Section "4.9", "Calculation of flow mechanics"
 
     def validateFluePipeShape(): ValidatedNel[FluePipeInvalidGeometryRatio, Unit] =
         // Collect all PipeShape configurations from flue-region slots (FlueSlot + ThermalFlueSlot).
@@ -920,290 +878,8 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                     )
             case _ : PipeResult.WithoutSections => ().validNel
 
-    // Section "4.9.4.1", "Static fricition (p_R)"
+    // Heating appliance — see EN15544_Common_HeatingAppliance
 
-    // Section "4.9.4.2", "Dynamic Pressure (p_d)"
-
-    // Section "4.9.4.3", "Friction coefficient (ƛ_f)"
-
-    enum k_f_values(val h: QtyD[Meter]):
-        case ChamottePipes extends k_f_values(0.002.meters)
-        case ChamotteSlabs extends k_f_values(0.003.meters)
-
-    // Section "4.9.5",
-    // "Calculation of the resistance due to direction change (p_u)"
-
-    // Section "4.10", "Operation control"
-
-    // Section "4.10.2", "Dew point condition"
-
-    // Section "4.10.3 – 4.10.4", "Efficiency and flue gas triple of variates"
-    // Moved to CommonAtParams
-
-    private def heatingAppliance_draft_min: VNelMcalcErr[Pressure] =
-        atDraftMin_LoadNominal.required_delivery_pressure
-
-    private def heatingAppliance_draft_max: VNelMcalcErr[Pressure] =
-        given Params_13384 = Params_15544.DraftMin_LoadNominal
-        val ap             = atDraftMin_LoadNominal
-        (
-            ap.Σ_p_R_and_Σ_p_u,
-            ap.outputs.pipesResult_15544.map(_.Σ_ph_until_fluepipe_end: Pressure),
-            airIntake_PipeResult.andThen    (_.en13384_pr_all                   ), // FIXME: fast bug fix, rewrite me
-            ap.outputs.pipesResult_15544.andThen: pr =>
-                pr.connector match
-                    case Some(c) => c.en13384_pr_all
-                    case None    => 0.0.pascals.validNel,
-            ap.outputs.pipesResult_15544.andThen(_.chimney.en13384_pr_all)
-        )
-            .mapN:
-                (
-                    Σ_p_R_and_Σ_p_u,
-                    Σ_p_h_until_fluepipe_end,
-                    `airIntake_pr_all`,
-                    `connector_pr_all`,
-                    `chimney_pr_all`
-                ) =>
-                    // tirage_max_for_en13384
-                    (
-                        // tirage max according to EN15544
-                        1.05 * (Σ_p_R_and_Σ_p_u                                           )
-                            // minus parts that en13384 will count as friction / resistances
-                            -  (`airIntake_pr_all` + `connector_pr_all` + `chimney_pr_all`)
-                            // minus parts with standing pressure that en13384 will not count
-                            - Σ_p_h_until_fluepipe_end
-                    )
-
-    def en13384_heatingAppliance_pressures: VNelMcalcErr[HeatingAppliance.Pressures] =
-        (
-            heatingAppliance_draft_min,
-            heatingAppliance_draft_max
-        ).mapN: (draftMin, draftMax) =>
-            if (draftMin > 0.0.pascals)
-                HeatingAppliance.Pressures     (
-                    underPressure      = UnderPressure.Negative,
-                    flue_gas_draft_min = draftMin.some,
-                    flue_gas_draft_max = draftMax.some,
-                    flue_gas_pdiff_min = None,
-                    flue_gas_pdiff_max = None
-                )
-            else
-                HeatingAppliance.Pressures     (
-                    underPressure      = UnderPressure.Positive,
-                    flue_gas_draft_min = None,
-                    flue_gas_draft_max = None,
-                    flue_gas_pdiff_min =
-                        (-draftMin).some, // (-) because inverted logic when chimney under positive pressure
-                    flue_gas_pdiff_max =
-                        (-draftMax).some  // (-) because inverted logic when chimney under positive pressure
-                )
-
-    def en13384_heatingAppliance_input: VNelMcalcErr[HeatingAppliance] =
-        (
-            en13384_heatingAppliance_efficiency,
-            en13384_heatingAppliance_powers,
-            en13384_heatingAppliance_pressures,
-            en13384_heatingAppliance_temperatures
-        )
-            .mapN: (eff, powers, pressures, temperatures) =>
-                HeatingAppliance(
-                    inputs.design.firebox.reference.map(r => s"${r} + EN 15544"),
-                    inputs.design.firebox.type_of_appliance,
-                    eff,
-                    en13384_heatingAppliance_fluegas,
-                    powers,
-                    temperatures,
-                    en13384_heatingAppliance_massFlows,
-                    pressures
-                )
-
-    def en13384_heatingAppliance_final: VNelMcalcErr[HeatingAppliance] =
-        en13384_heatingAppliance_input.map(inp => en13384_application.heatingAppliance_final(using inp))
-
-    // TODO: add this as examples or in documentation
-
-    // val m_B_min_test: F[m_B_min] = pure(5.kilograms)
-    // setConstraintFromQtyF[Mass, m_B](m_B_min_test, Min(_))
-
-    def airIntake_PipeResult =
-        (
-            en13384_heatingAppliance_powers,
-            en13384_heatingAppliance_efficiency
-        )
-            .mapN:
-                case (ha_pow, ha_eff) => (ha_pow, ha_eff)
-            .andThen: (ha_pow, ha_eff) =>
-                given HeatingAppliance.Powers     = ha_pow
-                given HeatingAppliance.Efficiency = ha_eff
-                en13384_application.airIntake_PipeResult.toValidatedNel
-
-    final def combustionAir_PipeResult_whenEmpty: WithParams_15544[VNelMcalcErr[PipeResult]] =
-        PipeResult
-            .useless      (
-                pt       = CombustionAirPipeT,
-                pu       = 0.0.pascals,
-                gas_temp = t_combustion_air
-            )
-            .validNel
-
-    def combustionAir_PipeResult_whenExists(
-        fd: CombustionAirPipe_Module.FullDescr
-    ): WithParams_15544[VNelMcalcErr[PipeResult]]
-
-    def pressureRequirements_EN13384: WithParams_13384[VNelMcalcErr[PressureRequirements_13384]] =
-        (
-            en13384_heatingAppliance_powers,
-            en13384_heatingAppliance_efficiency,
-            en13384_heatingAppliance_pressures,
-            en13384_heatingAppliance_temperatures
-        ).mapN_andThen_impl:
-            en13384_application.pressureRequirements
-
-    override def temperatureRequirements_EN13384: WithParams_13384[VNelMcalcErr[TemperatureRequirements_13384]] =
-        (
-            en13384_heatingAppliance_powers,
-            en13384_heatingAppliance_temperatures,
-            en13384_heatingAppliance_efficiency
-        ).mapN_andThen_impl:
-            en13384_application.temperatureRequirements.validNel
-
-    // VALIDATIONS
-
-    // Resolved: firebox overrides take precedence
-
-    // --- Resolved constraints (typeclass dispatch) ---
-
-    lazy val resolved_t_n_constraints: Seq[Option[TermConstraint[t_n]]] =
-        import afpma.firecalc.engine.impl.en15544.common.defaultStoveConstraints
-        StoveConstraints.summon.t_n_constraints(stoveConstraintContext)
-
-    lazy val resolved_m_B_constraints: Seq[Option[TermConstraint[m_B]]] =
-        fc.m_B_constraints(firebox, constraintContext)
-
-    lazy val resolved_m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]] =
-        fc.m_B_min_constraints(firebox, constraintContext)
-
-    lazy val resolved_glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]] =
-        fc.glassArea_constraints(firebox, constraintContext)
-
-    lazy val resolved_fireboxDimensionsBase_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] =
-        fc.fireboxDimensions_Base_constraints(
-            firebox,
-            constraintContext
-        )
-
-    lazy val resolved_h_br_constraints: Seq[Option[TermConstraint[H_BR]]] =
-        fc.h_br_constraints(firebox, constraintContext)
-
-    lazy val resolved_λ_constraints: Seq[Option[TermConstraint[λ]]] =
-        fc.lambda_constraints(firebox, constraintContext)
-
-    lazy val resolved_η_constraints: Seq[Option[TermConstraint[η]]] =
-        fc.eta_constraints(firebox, constraintContext)
-
-    lazy val resolved_height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] =
-        fc.height_of_lowest_opening_constraints(
-            firebox,
-            constraintContext
-        )
-
-    def citedConstraints: CitedConstraints =
-        import en15544_typedefs.{given_TermDef_Unit, given_TermDefDetails_Unit}
-        CitedConstraints                        (
-            t_n                         = CheckableConstraint.make(
-                t_n,
-                resolved_t_n_constraints
-            ),
-            m_B                         = CheckableConstraint.make(
-                m_B,
-                resolved_m_B_constraints
-            ),
-            m_B_min                     = CheckableConstraint.makeOption(
-                m_B_min,
-                resolved_m_B_min_constraints
-            ),
-            glass_area                  = CheckableConstraint.makeOption(
-                firebox.glass_area.some,
-                resolved_glassArea_constraints
-            ),
-            fireboxDimensions_Base      = CheckableConstraint.makeOption(
-                firebox.dimensions.base.some,
-                resolved_fireboxDimensionsBase_constraints
-            ),
-            h_br                        = CheckableConstraint.makeOption(
-                firebox.dimensions.height.some,
-                resolved_h_br_constraints
-            ),
-            λ                           = CheckableConstraint.make(
-                λ,
-                resolved_λ_constraints
-            ),
-            η                           = CheckableConstraint.makeOption(
-                // efficiency at tirage min or tirage max is not strictly equals
-                // only compute value at tirage min
-                atDraftMin_LoadNominal.η.toOption,
-                resolved_η_constraints
-            ),
-            height_of_lowest_opening    = CheckableConstraint.makeOption(
-                (firebox.height_of_lowest_opening: height_of_lowest_opening).some,
-                resolved_height_of_lowest_opening_constraints
-            ),
-            firebox_glass_surface_ratio = CheckableConstraint.makeOption(
-                fc.firebox_glass_surface_ratio_constraint(firebox).map(_ => ()),
-                Seq(fc.firebox_glass_surface_ratio_constraint(firebox))
-            )
-        )
-
-    final def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit] =
-        val ap = atDraftMin_LoadNominal
-        List(
-            validateFluePipeShape                            (),
-            ap.validateVelocitiesInPipes                     (),
-            ap.validatePressureRequirements_EN15544          (),
-            ap.validateChimneyWallTempIsAboveCondensationTemp(),
-
-            // validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
-
-            // According to french officials, Ecodesign is not applicable to one-off stoves
-            // So this EN 16510 constraint does not need to pass. Even if it does in practice.
-            // ap.validateSeasonalEfficiency(countryCode),
-
-            ap.validateCitedConstraints          (),
-            // Firebox
-            ap.validateFireboxSpecificConstraints()
-            // TODO: any missing validation ?
-            // - extra conditions for EN 13384 ?
-        ).sequence[VNel, Unit].map(_ => ())
-
-    final val techSpecs = TechnicalSpecficiations(
-        P_n,
-        t_n,
-        m_B,
-        m_B_min,
-        n_min,
-        inputs.stoveParams.facing_type,
-        inputs.stoveParams.inner_construction_material
-    )
-
-    final def reference_temperatures =
-        en13384_application.reference_temperatures
-
-    override final def efficiencies_values =
-        EfficienciesValues(
-            n_nominal = atDraftMin_LoadNominal.η,
-            n_lowest  = atDraftMin_LoadMin.traverse(_.η),
-            ns        = atDraftMin_LoadNominal.η_s
-        )
-
-    override final def emissions_and_efficiency_values: EmissionsAndEfficiencyValues =
-        val ev = efficiencies_values
-        inputs.design.firebox.emissions_values.copy (
-            min_efficiency_full_stove_nominal  = ev.n_nominal.map(_.some),
-            min_efficiency_full_stove_reduced  = ev.n_lowest,
-            min_seasonal_efficiency_full_stove = ev.ns.map(_.some)
-        )
-
-    override final def check_emissions_and_efficiency_values_with_local_regulations(lreg: LocalRegulations) =
-        lreg.checkFor(emissions_and_efficiency_values)
+    // Constraints & validations — see EN15544_Common_Constraints
 
 }

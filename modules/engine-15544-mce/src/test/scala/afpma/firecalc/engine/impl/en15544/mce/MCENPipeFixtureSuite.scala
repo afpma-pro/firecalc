@@ -15,7 +15,7 @@ import cats.data.Validated
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-/** Step 5.5 — Smoke test for the MCE N-pipe multi-`ThermalFlueSlot` chain path.
+/** Smoke test for the MCE N-pipe multi-`ThermalFlueSlot` chain path.
   *
   * Instantiates `MCENPipeFixture_15544` (a 4-slot N-pipe MCE topology with two
   * distinct `ThermalFlueSlot` entries) and probes the chain path end-to-end,

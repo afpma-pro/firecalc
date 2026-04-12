@@ -30,8 +30,7 @@ import coulomb.policy.standard.given
   * reserved for golden fixtures that are byte-cross-validated against
   * independent EN 13384 / EN 15544 reference implementations. This fixture
   * has NOT been cross-validated; it exists solely to exercise the MCE
-  * `WithPipeChain_15544_MCE` chain path (Step 5 of the N-pipe topology
-  * remediation) during engine development.
+  * `WithPipeChain_15544_MCE` N-pipe chain path during engine development.
   *
   * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
   * policy.

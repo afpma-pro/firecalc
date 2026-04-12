@@ -115,36 +115,46 @@ abstract class EN13384_1_A1_2019_Common_Application(
             HeatingAppliance.FlueGas.summon,
             HeatingAppliance.MassFlows.summon
         )
-        // Post Phase C remediation, `HasTypeMembers_13384_Alg.Pipes_13384`'s upper bound was
-        // widened to `HasPipeModules_13384_Alg` so the EN 15544 composition can plug in pipes
-        // classes that don't own connector/chimney. The standalone EN 13384 path still fixes
-        // `Pipes_13384 = Pipes_13384_WithFlowOnlyAirIntake` / `_WithThermalAirIntake`, both of
-        // which extend `Pipes_13384_Alg` and carry `connector`/`chimney`. This private method
-        // is only reached via the base class `connector_PipeResult` / `chimney_PipeResult`
-        // which are overridden on the 15544-composed path, so the cast below never runs on
-        // 15544. Cast to the legitimate legacy algebra to recover `connector`/`chimney`.
-        val legacyPipes = inputs.pipes.asInstanceOf[Pipes_13384_Alg]
-        val connector   = legacyPipes.connector.asInstanceOf[ConnectorPipe]
-        val chimney     = legacyPipes.chimney.asInstanceOf[ChimneyPipe]
-        val connSlot = ConnectorPipe_Module.foldPipeCanBe(connector)(
-            onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
-            onFullDescr = fd => tc.mkSlot(ConnectorPipeT, "Connector", FlueGas, ConnectorPipe_Module.unwrap(fd))
-        )
-        val chimSlot = tc.mkSlot(ChimneyPipeT, "Chimney", FlueGas, ChimneyPipe_Module.unwrap(chimney))
+        // `HasTypeMembers_13384_Alg.Pipes_13384`'s upper bound was widened to
+        // `HasPipeModules_13384_Alg` so the EN 15544 composition can plug in pipe classes
+        // that don't own connector/chimney. The standalone EN 13384 path still fixes
+        // `Pipes_13384 = Pipes_13384_WithFlowOnlyAirIntake` / `_WithThermalAirIntake`, both
+        // of which carry `connector: ConnectorPipe_Module.PipeCanBe` and
+        // `chimney: ChimneyPipe_Module.PipeCanBe`. This private method is only reached via
+        // `connector_PipeResult` / `chimney_PipeResult`, which are overridden on the
+        // 15544-composed path, so the `other` branch below is never reached at runtime.
+        def buildChain(
+            connector: ConnectorPipe_Module.PipeCanBe,
+            chimney:   ChimneyPipe_Module.PipeCanBe
+        ): Either[MecaFlu_Error, Vector[PipeResult]] =
+            val connSlot = ConnectorPipe_Module.foldPipeCanBe(connector)(
+                onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
+                onFullDescr = fd => tc.mkSlot(ConnectorPipeT, "Connector", FlueGas, ConnectorPipe_Module.unwrap(fd))
+            )
+            val chimSlot = tc.mkSlot(ChimneyPipeT, "Chimney", FlueGas, ChimneyPipe_Module.unwrap(chimney))
 
-        val chain = PostFireboxPipeChain.validated(Vector(connSlot, chimSlot)) match
-            case Validated.Valid(c)   => c
-            case Validated.Invalid(e) => throw new IllegalStateException(s"Invalid post-firebox topology: $e")
+            val chain = PostFireboxPipeChain.validated(Vector(connSlot, chimSlot)) match
+                case Validated.Valid(c)   => c
+                case Validated.Invalid(e) => throw new IllegalStateException(s"Invalid post-firebox topology: $e")
 
-        val tw              = LoadQty.summon match
-            case LoadQty.Nominal => T_WN
-            case LoadQty.Reduced => T_Wmin
-        val initialUpstream = UpstreamState(
-            temp_start         = tw,
-            last_pipe_density  = last_known_density_before_connector_pipe,
-            last_pipe_velocity = last_known_velocity_before_connector_pipe
-        )
-        chain.computeAll(Params_13384.summon, initialUpstream, computeAt)
+            val tw              = LoadQty.summon match
+                case LoadQty.Nominal => T_WN
+                case LoadQty.Reduced => T_Wmin
+            val initialUpstream = UpstreamState(
+                temp_start         = tw,
+                last_pipe_density  = last_known_density_before_connector_pipe,
+                last_pipe_velocity = last_known_velocity_before_connector_pipe
+            )
+            chain.computeAll(Params_13384.summon, initialUpstream, computeAt)
+
+        inputs.pipes match
+            case p: Pipes_13384_WithFlowOnlyAirIntake  => buildChain(p.connector, p.chimney)
+            case p: Pipes_13384_WithThermalAirIntake    => buildChain(p.connector, p.chimney)
+            case _ =>
+                Left(MecaFlu_Error.UnexpectedPipeType(
+                    s"postFireboxChainResults reached an unexpected pipes type: ${inputs.pipes.getClass.getSimpleName}",
+                    ConnectorPipeT
+                ))
 
     override def connector_PipeResult =
         postFireboxChainResults.map(_.head)

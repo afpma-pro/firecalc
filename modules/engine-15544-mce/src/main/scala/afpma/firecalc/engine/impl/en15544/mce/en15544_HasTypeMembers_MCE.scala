@@ -22,7 +22,7 @@ trait HasTypeMembers_15544_MCE
     override type Pipes_15544  = Pipes_15544_MCE
     override type Inputs_15544 = Inputs_15544_MCE
 
-    // Post Phase C: EN 15544 MCE's 13384 adapter uses the pre-firebox-only variants so
+    // EN 15544 MCE's 13384 adapter uses the pre-firebox-only variants so
     // `Pipes_15544_MCE` (which extends `Pipes_13384_WithThermalAirIntake_PreFireboxOnly`
     // and has no legacy connector/chimney fields) satisfies the widened
     // `HasTypeMembers_13384_Alg.Pipes_13384` upper bound.
