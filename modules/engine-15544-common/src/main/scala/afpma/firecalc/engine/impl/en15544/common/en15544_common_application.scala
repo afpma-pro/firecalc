@@ -348,6 +348,21 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                 Vector((FluePipeT, f), (ConnectorPipeT, c), (ChimneyPipeT, ch))
             )
 
+        /**
+         * Phase A.1 — default "conceptual" flue-region accessors (legacy 3-pipe semantics).
+         *
+         * In the 3-pipe default these simply forward to `flue_PipeResult`, preserving
+         * byte-identical behaviour with the pre-Phase-A.1 code. Strict / MCE override
+         * them to bottom out at `flueRegionPipeResults` (HA-power-free Stage 1 result)
+         * so that downstream reads (`t_fluepipe_end`, `t_F`, etc.) do not re-enter the
+         * lazy-val initialisation cycle that Phase A.1 is fixing.
+         */
+        lazy val conceptualFluePipeResult: VNelMcalcErr[PipeResult] =
+            flue_PipeResult
+
+        lazy val conceptualFlueRegionPipeResults: VNelMcalcErr[Vector[PipeResult]] =
+            flue_PipeResult.map(Vector(_))
+
         // Section "4.8.4", "Flue gas temperature in the connector pipe"
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean] =
             connector_PipeResult.map(_.gas_temp_mean: t_connector_pipe_mean)
@@ -416,14 +431,20 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             )
 
         // Section "4.10.4", "Flue gas triple of variates"
+        // Phase A.1 — routed via `conceptualFluePipeResult` so that strict / MCE can bottom
+        // out at `flueRegionPipeResults` (HA-power-free Stage 1), breaking the lazy-val
+        // initialisation cycle described in plans/n-pipe-topology-audit-remediation.md.
+        // For legacy 3-pipe configs the default `conceptualFluePipeResult = flue_PipeResult`,
+        // so this is a pure refactor.
         private lazy val channel_pipe_last_element_temperature_end: VNelMcalcErr[TCelsius] =
-            flue_PipeResult.map(_.gas_temp_end)
+            conceptualFluePipeResult.map(_.gas_temp_end)
 
         lazy val required_delivery_pressure: VNelMcalcErr[RequiredDeliveryPressure] =
             (
                 combustionAir_PipeResult.andThen(_.`en13384_pr_all-ph`),
                 firebox_PipeResult.andThen      (_.`en13384_pr_all-ph`),
-                flue_PipeResult.andThen         (_.`en13384_pr_all-ph`)
+                conceptualFlueRegionPipeResults.andThen: rs =>
+                    rs.toList.traverse(_.`en13384_pr_all-ph`).map(_.foldLeft(0.0.pascals)(_ + _))
             )
                 .mapN: (cci, cc, fp) =>
                     cci + cc + fp
@@ -470,7 +491,8 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
         // Validations
         def validateVelocitiesInFluePipe(): VNelMcalcErr[Unit] =
-            flue_PipeResult.andThen(validateVelocitiesIn)
+            conceptualFlueRegionPipeResults.andThen: rs =>
+                rs.toList.map(validateVelocitiesIn).sequence.map(_ => ())
 
         def validateVelocitiesInConnectorPipe(): VNelMcalcErr[Unit] =
             connector_PipeResult.andThen(validateVelocitiesIn)
@@ -522,11 +544,12 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
                         ().validNel // no min defined, so we're good
 
         private def validateLzMinConstraint(): VNelMcalcErr[Unit] =
-            flue_PipeResult.andThen: pr =>
+            conceptualFlueRegionPipeResults.andThen: rs =>
+                val totalLen = rs.foldLeft(0.0.m)(_ + _.lengthSum)
                 L_Z_min match
                     case Validated.Valid(lzMin) =>
-                        if pr.lengthSum.value >= lzMin.unwrap.value then ().validNel
-                        else FluePipeLengthBelowMinimum(pr.lengthSum, lzMin.unwrap).invalidNel
+                        if totalLen.value >= lzMin.unwrap.value then ().validNel
+                        else FluePipeLengthBelowMinimum(totalLen, lzMin.unwrap).invalidNel
                     case Validated.Invalid(_)   => ().validNel // can't check if L_Z_min computation failed
 
         def validateCitedConstraints(): VNelMcalcErr[Unit] =
@@ -896,8 +919,11 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
             ap.Σ_p_R_and_Σ_p_u,
             ap.outputs.pipesResult_15544.map(_.Σ_ph_until_fluepipe_end: Pressure),
             airIntake_PipeResult.andThen    (_.en13384_pr_all                   ), // FIXME: fast bug fix, rewrite me
-            ap.connector_PipeResult.andThen (_.en13384_pr_all                   ),
-            ap.chimney_PipeResult.andThen   (_.en13384_pr_all                   )
+            ap.outputs.pipesResult_15544.andThen: pr =>
+                pr.connector match
+                    case Some(c) => c.en13384_pr_all
+                    case None    => 0.0.pascals.validNel,
+            ap.outputs.pipesResult_15544.andThen(_.chimney.en13384_pr_all)
         )
             .mapN:
                 (

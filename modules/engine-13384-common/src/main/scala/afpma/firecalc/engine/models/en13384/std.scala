@@ -49,6 +49,9 @@ object std:
         type CtxOp4_EFPoM[X] =
             HeatingAppliance.Efficiency ?=> HeatingAppliance.FlueGas ?=> HeatingAppliance.Powers ?=> HeatingAppliance.MassFlows ?=> X
 
+        type CtxOp2_FM[X] =
+            HeatingAppliance.FlueGas ?=> HeatingAppliance.MassFlows ?=> X
+
         type CtxOp5_EFPoTM[X] =
             HeatingAppliance.Efficiency ?=> HeatingAppliance.FlueGas ?=> HeatingAppliance.Powers ?=> HeatingAppliance.Temperatures ?=> HeatingAppliance.MassFlows ?=> X
 

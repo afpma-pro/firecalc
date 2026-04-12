@@ -51,8 +51,6 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
         gp                   : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
         hafg                 : HeatingAppliance.FlueGas,
         hamf                 : HeatingAppliance.MassFlows,
-        hapwr                : HeatingAppliance.Powers,
-        haeff                : HeatingAppliance.Efficiency,
         temp_start           : TCelsius,
         last_pipe_velocity   : Option[FlowVelocity],
         last_CrossSectionArea: Option[Area],
@@ -63,8 +61,6 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
             gp,
             hafg,
             hamf,
-            hapwr,
-            haeff,
             temp_start,
             last_pipe_velocity,
             last_CrossSectionArea,
@@ -78,8 +74,6 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
         fd                : PipeFullDescrG[PipeElDescr],
         hafg              : HeatingAppliance.FlueGas,
         hamf              : HeatingAppliance.MassFlows,
-        hapwr             : HeatingAppliance.Powers,
-        haeff             : HeatingAppliance.Efficiency,
         temp_start        : TCelsius,
         last_pipe_velocity: Option[FlowVelocity],
         gas               : Gas
@@ -89,8 +83,6 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
                 fd,
                 hafg,
                 hamf,
-                hapwr,
-                haeff,
                 temp_start,
                 last_pipe_velocity,
                 gas,
@@ -103,8 +95,6 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     gp                   : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
     hafg                 : HeatingAppliance.FlueGas,
     hamf                 : HeatingAppliance.MassFlows,
-    hapwr                : HeatingAppliance.Powers,
-    haeff                : HeatingAppliance.Efficiency,
     temp_start           : TCelsius,
     last_pipe_velocity   : Option[FlowVelocity], // careful: last PIPE value, not last PIPE SECTION
     last_CrossSectionArea: Option[Area],
@@ -124,10 +114,8 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     given pReq   : DraftCondition = Params_13384.pressReq_from_Params_13384
     given loadQty: LoadQty        = Params_13384.loadQty_from_Params_13384
 
-    given HeatingAppliance.FlueGas    = hafg
-    given HeatingAppliance.MassFlows  = hamf
-    given HeatingAppliance.Powers     = hapwr
-    given HeatingAppliance.Efficiency = haeff
+    given HeatingAppliance.FlueGas   = hafg
+    given HeatingAppliance.MassFlows = hamf
 
     private val DEBUG = false
     private inline def debug(msg: String): Unit = if (DEBUG) println(msg) else ()
@@ -385,8 +373,6 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
     fd                : PipeFullDescrG[PipeElDescr],
     hafg              : HeatingAppliance.FlueGas,
     hamf              : HeatingAppliance.MassFlows,
-    hapwr             : HeatingAppliance.Powers,
-    haeff             : HeatingAppliance.Efficiency,
     temp_start        : TCelsius,
     last_pipe_velocity: Option[FlowVelocity],
     gas               : Gas,
@@ -412,8 +398,6 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
                 gp,
                 hafg,
                 hamf,
-                hapwr,
-                haeff,
                 st.gas_temp_start,
                 last_pipe_velocity,
                 last_CrossSectionArea,

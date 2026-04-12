@@ -115,6 +115,8 @@ object standard {
 
     given ShowUsingLocale[MCalc_Error] = showUsingLocale:
         case e: UnexpectedDevError          => s"DEV_ERROR: ${e.msg}"
+        case e: NotYetSupportedInFlueRegion =>
+            s"Not yet supported in flue region: ${e.reason}. See plans/n-pipe-topology-audit-remediation.md HR1."
         case e: Inputs_Error                => e.show // Uses ShowUsingLocale[Inputs_Error]
         case e: EN15544_Error               => e.show // Uses ShowUsingLocale[EN15544_Error]
         case e: EN13384_Error               => e.show // Uses ShowUsingLocale[EN13384_Error]
@@ -124,6 +126,14 @@ object standard {
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
+
+    /**
+     * Phase A.1 temporary restriction — certain slot topologies are not yet supported
+     * in the flue region (up to and including the last FluePipeT slot) because their
+     * computation would require HA-power givens that are not yet resolved at the time
+     * the flue region is computed. See plan HR1 and Phase A.1.
+     */
+    case class NotYetSupportedInFlueRegion(reason: String) extends MCalc_Error
 
     // Inputs_Error
 

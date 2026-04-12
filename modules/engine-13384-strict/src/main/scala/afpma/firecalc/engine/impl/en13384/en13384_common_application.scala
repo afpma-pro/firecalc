@@ -113,9 +113,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
         val tc       = CanComputePipeResult.forThermal13384(
             en13384,
             HeatingAppliance.FlueGas.summon,
-            HeatingAppliance.MassFlows.summon,
-            HeatingAppliance.Powers.summon,
-            HeatingAppliance.Efficiency.summon
+            HeatingAppliance.MassFlows.summon
         )
         // Pipes_13384_Alg has abstract ConnectorPipe/ChimneyPipe types; all concrete subtypes
         // fix these to ConnectorPipe_Module.PipeCanBe / ChimneyPipe_Module.PipeCanBe respectively.
@@ -389,28 +387,26 @@ abstract class EN13384_1_A1_2019_Common_Application(
     /** Débit massique des fumées */
     override def m_dot =
         HeatingAppliance.MassFlows.summon.flue_gas_mass_flow_nominal.getOrElse:
-            import LoadQty.givens.nominal
-            formulas.m_dot_calc(f_m1, f_m2, σ_CO2, Q_FN)
+            sys.error(
+                "EN 13384 default m_dot fallback requires HeatingAppliance.MassFlows.flue_gas_mass_flow_nominal to be populated. " +
+                    "In the 15544 strict/mce path this override is replaced; in standalone 13384 cas-types always provide this value."
+            )
 
     override def m_dot_min =
         HeatingAppliance.MassFlows.summon.flue_gas_mass_flow_reduced
-            .orElse:
-                import LoadQty.givens.reduced
-                Q_Fmin.map(qf => formulas.m_dot_calc(f_m1, f_m2, σ_CO2, qf): MassFlow)
             .getOrElse:
                 m_dot / 3.0
 
     /** Débit massique de l'air de combustion */
     override def mB_dot =
         HeatingAppliance.MassFlows.summon.combustion_air_mass_flow_nominal.getOrElse:
-            import LoadQty.givens.nominal
-            formulas.mB_dot_calc(f_m1, f_m3, σ_CO2, Q_FN)
+            sys.error(
+                "EN 13384 default mB_dot fallback requires HeatingAppliance.MassFlows.combustion_air_mass_flow_nominal to be populated. " +
+                    "In the 15544 strict/mce path this override is replaced; in standalone 13384 cas-types always provide this value."
+            )
 
     override def mB_dot_min =
         HeatingAppliance.MassFlows.summon.combustion_air_mass_flow_reduced
-            .orElse:
-                import LoadQty.givens.reduced
-                Q_Fmin.map(qf => formulas.mB_dot_calc(f_m1, f_m3, σ_CO2, qf): MassFlow)
             .getOrElse:
                 mB_dot / 3.0
 

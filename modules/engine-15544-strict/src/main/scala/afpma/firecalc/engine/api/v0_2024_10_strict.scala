@@ -115,3 +115,8 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
         override lazy val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  =
             pipeChain.connectorPipe
         override lazy val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = pipeChain.chimneyPipe
+
+        override def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+            PipeChain_15544_Strict.toSlots(
+                PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+            )

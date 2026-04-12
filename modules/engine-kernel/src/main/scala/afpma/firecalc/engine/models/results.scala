@@ -520,6 +520,6 @@ case class PipesResult_15544(
     val Σ_ph_until_fluepipe_end        = mapAndSumPressures(orderedPipesUntilFluePipe)(_.ph)
     val `Σ_pR+Σ_pu_until_fluepipe_end` = Σ_pu_until_fluepipe_end.map(Σ_pR_until_fluepipe_end + _)
 
-    val `Σ_ph-Σ_pR-Σ_pu_until_fluepipe_end` = Σ_pu_until_fluepipe_end.map(`Σ_ph_until_fluepipe_end` - _)
+    val `Σ_ph-Σ_pR-Σ_pu_until_fluepipe_end` = `Σ_pR+Σ_pu_until_fluepipe_end`.map(`Σ_ph_until_fluepipe_end` - _)
 
 }

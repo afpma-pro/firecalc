@@ -172,7 +172,7 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
                 net_calorific_value_of_dry_wood = net_calorific_value_of_dry_wood
             )
             val wComb                = new WoodCombustionImpl
-            EN15544_MCE_Application.make(en15544_mce_formulas, bs845, wComb)(i)
+            EN15544_MCE_Application.make(en15544_mce_formulas, bs845, wComb)(i, postFireboxPipeSlots)
 
     trait SimpleStoveProjectDescrFr_15544_MCE_Alg
         extends StoveProjectDescr_15544_MCE_Alg
@@ -196,3 +196,8 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         override lazy val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe]  =
             pipeChain.connectorPipe
         override lazy val chimneyPipe  : ValidatedNel[IncrementalValidation_Error, ChimneyPipe]    = pipeChain.chimneyPipe
+
+        override def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+            PipeChain_15544_MCE.toSlots(
+                PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
+            )

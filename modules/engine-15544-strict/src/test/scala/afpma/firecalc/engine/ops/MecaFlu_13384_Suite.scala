@@ -95,24 +95,16 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 val chimney_elems = CasType_15544_C2.chimneyPipe.toOption.get
                 val p             = Params_13384.DraftMin_LoadNominal
                 val r             =
-                    (
-                        en15544.en13384_heatingAppliance_powers,
-                        en15544.en13384_heatingAppliance_efficiency
-                    )
-                    .mapN_andThen: (ha_pow, ha_eff) =>
-                        ThermalMecaFlu_13384
-                            .makePipeResult(
-                                chimney_elems.unwrap,
-                                en15544.en13384_heatingAppliance_fluegas,
-                                en15544.en13384_heatingAppliance_massFlows,
-                                ha_pow,
-                                ha_eff,
-                                201.degreesCelsius,
-                                1.kg_per_m3.some,
-                                3.1.m_per_s.some,
-                                FlueGas
-                            )(using p, en15544.en13384_application)
-                            .toValidatedNel
+                    ThermalMecaFlu_13384
+                        .makePipeResult(
+                            chimney_elems.unwrap,
+                            en15544.en13384_heatingAppliance_fluegas,
+                            en15544.en13384_heatingAppliance_massFlows,
+                            201.degreesCelsius,
+                            1.kg_per_m3.some,
+                            3.1.m_per_s.some,
+                            FlueGas
+                        )(using p, en15544.en13384_application)
                 r.toOption shouldBe defined
             }
         }
@@ -132,8 +124,6 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     gip,
                     ha.fluegas,
                     ha.massFlows,
-                    ha.powers,
-                    ha.efficiency,
                     temp_start            = 550.degreesCelsius,
                     last_pipe_density     = 0.393.kg_per_m3.some, // for PG calculation
                     last_pipe_velocity    = 5.24.m_per_s.some,    // for PG calculation

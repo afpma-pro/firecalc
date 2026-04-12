@@ -225,4 +225,17 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
             chain.connectorSlot shouldBe None
             chain.chimneySlot.label shouldBe "CH"
         }
+
+        // ── Phase 0.3: 5-slot chain invariants ──────────────────────────
+
+        "5-slot chain F1+F2+F3+C+CH: slot count, region, connector, chimney" in {
+            val Valid(chain) = PostFireboxPipeChain.validated(
+                Vector(flue("F1"), flue("F2"), flue("F3"), conn("C"), chim("CH"))
+            ): @unchecked
+            chain.slots.length shouldBe 5
+            chain.fluePipeRegion.length shouldBe 3           // lastFluePipeIdx == 2
+            chain.fluePipeRegion.map(_.label) shouldBe Vector("F1", "F2", "F3")
+            chain.connectorSlot.map(_.label) shouldBe Some("C")
+            chain.chimneySlot.label shouldBe "CH"
+        }
     }

@@ -30,8 +30,6 @@ abstract class EN13384_WithFlowOnlyAirIntake_Application(
             fd                 = FlowOnlyAirIntakePipe_Module_13384.unwrap(fd),
             hafg               = HeatingAppliance.FlueGas.summon,
             hamf               = HeatingAppliance.MassFlows.summon,
-            hapwr              = HeatingAppliance.Powers.summon,
-            haeff              = HeatingAppliance.Efficiency.summon,
             temp_start         = T_L,
             last_pipe_velocity = None,
             gas                = CombustionAir

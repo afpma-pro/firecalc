@@ -38,6 +38,7 @@ Technical documentation is organized within each module for easy access by devel
 - **[Project README](../README.md)** - Project overview and quick start
 - **[Architecture Overview](../ARCHITECTURE.md)** - High-level system architecture
 - **[Developer Guides](dev/guides/)** - Installation, setup, and development workflows
+- **[Engine Validation — Golden Tests](dev/ENGINE_VALIDATION_GOLDEN_TESTS.md)** - Cross-validation methodology against EN 13384 / EN 15544 reference implementations
 
 ## 📝 Contributing to Documentation
 
