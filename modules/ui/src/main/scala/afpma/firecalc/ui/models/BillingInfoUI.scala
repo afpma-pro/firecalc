@@ -26,7 +26,7 @@ import io.taig.babel.Locale
 case class BillingInfoUI()(using DisplayUnits, Locale):
 
     private val vertical_form = new VerticalFormCommonInstances()
-    given FormRenderer = DaisyUIVertical
+    given FormRenderer        = DaisyUIVertical
 
     import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
     import FormDerivation.given
@@ -71,13 +71,12 @@ case class BillingInfoUI()(using DisplayUnits, Locale):
 
     // Hidden form for version field (user shouldn't see or edit this)
     import afpma.firecalc.ui.models.schema.common.BillingInfo_Version
-    given Defaultable[BillingInfo_Version]         = Defaultable(BillingInfo_Version(1))
-    given ValidateVar[BillingInfo_Version]         = ValidateVar.make(_ => VNelString.validUnit)
-    given Form[BillingInfo_Version] =
-        Form.makeFor[BillingInfo_Version](summon[Defaultable[BillingInfo_Version]]):
-            (variable, formConfig) =>
-                // Hidden input - version is automatic and should not be visible/editable by user
-                input(tpe := "hidden", value <-- variable.signal.map(_.toInt.toString))
+    given Defaultable[BillingInfo_Version] = Defaultable(BillingInfo_Version(1))
+    given ValidateVar[BillingInfo_Version] = ValidateVar.make(_ => VNelString.validUnit)
+    given Form[BillingInfo_Version]        =
+        Form.makeFor[BillingInfo_Version](summon[Defaultable[BillingInfo_Version]]): (variable, formConfig) =>
+            // Hidden input - version is automatic and should not be visible/editable by user
+            input(tpe := "hidden", value <-- variable.signal.map(_.toInt.toString))
 
     given Form[BillingInfo] =
         import ValidateVarCommonInstances.string.validOption_Always

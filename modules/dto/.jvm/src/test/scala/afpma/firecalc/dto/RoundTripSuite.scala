@@ -16,10 +16,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class RoundTripSuite
-    extends AnyFreeSpec
-    with Matchers
-    with ScalaCheckPropertyChecks:
+class RoundTripSuite extends AnyFreeSpec with Matchers with ScalaCheckPropertyChecks:
 
     override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
         PropertyCheckConfiguration(
@@ -28,48 +25,44 @@ class RoundTripSuite
 
     "FireCalcYAML Round-Trip (Encode → Decode)" - {
 
-        "V1 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V1) {
-            original =>
-                val encoded = FireCalcYAML_V1.encodeToYaml(original)
-                encoded.isSuccess.shouldBe(true)
+        "V1 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V1) { original =>
+            val encoded = FireCalcYAML_V1.encodeToYaml(original)
+            encoded.isSuccess.shouldBe(true)
 
-                val decoded = FireCalcYAML_V1.decodeFromYaml(encoded.get)
-                decoded.isSuccess.shouldBe(true)
+            val decoded = FireCalcYAML_V1.decodeFromYaml(encoded.get)
+            decoded.isSuccess.shouldBe(true)
 
-                decoded.get.shouldBe(original)
+            decoded.get.shouldBe(original)
         }
 
-        "V2 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V2) {
-            original =>
-                val encoded = FireCalcYAML_V2.encodeToYaml(original)
-                encoded.isSuccess.shouldBe(true)
+        "V2 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V2) { original =>
+            val encoded = FireCalcYAML_V2.encodeToYaml(original)
+            encoded.isSuccess.shouldBe(true)
 
-                val decoded = FireCalcYAML_V2.decodeFromYaml(encoded.get)
-                decoded.isSuccess.shouldBe(true)
+            val decoded = FireCalcYAML_V2.decodeFromYaml(encoded.get)
+            decoded.isSuccess.shouldBe(true)
 
-                decoded.get.shouldBe(original)
+            decoded.get.shouldBe(original)
         }
 
-        "V3 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V3) {
-            original =>
-                val encoded = FireCalcYAML_V3.encodeToYaml(original)
-                encoded.isSuccess.shouldBe(true)
+        "V3 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V3) { original =>
+            val encoded = FireCalcYAML_V3.encodeToYaml(original)
+            encoded.isSuccess.shouldBe(true)
 
-                val decoded = FireCalcYAML_V3.decodeFromYaml(encoded.get)
-                decoded.isSuccess.shouldBe(true)
+            val decoded = FireCalcYAML_V3.decodeFromYaml(encoded.get)
+            decoded.isSuccess.shouldBe(true)
 
-                decoded.get.shouldBe(original)
+            decoded.get.shouldBe(original)
         }
 
-        "V4 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V4) {
-            original =>
-                val encoded = FireCalcYAML_V4.encodeToYaml(original)
-                encoded.isSuccess.shouldBe(true)
+        "V4 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V4) { original =>
+            val encoded = FireCalcYAML_V4.encodeToYaml(original)
+            encoded.isSuccess.shouldBe(true)
 
-                val decoded = FireCalcYAML_V4.decodeFromYaml(encoded.get)
-                decoded.isSuccess.shouldBe(true)
+            val decoded = FireCalcYAML_V4.decodeFromYaml(encoded.get)
+            decoded.isSuccess.shouldBe(true)
 
-                decoded.get.shouldBe(original)
+            decoded.get.shouldBe(original)
         }
     }
 
@@ -78,7 +71,7 @@ class RoundTripSuite
         "decode V1 YAML and migrate to V3" in forAll(
             AllGenerators.genFireCalcYAML_V1
         ) { v1 =>
-            val yaml = FireCalcYAML_V1.encodeToYaml(v1).get
+            val yaml   = FireCalcYAML_V1.encodeToYaml(v1).get
             val result =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
             result.isSuccess.shouldBe(true)
@@ -87,7 +80,7 @@ class RoundTripSuite
         "decode V2 YAML and migrate to V3" in forAll(
             AllGenerators.genFireCalcYAML_V2
         ) { v2 =>
-            val yaml = FireCalcYAML_V2.encodeToYaml(v2).get
+            val yaml   = FireCalcYAML_V2.encodeToYaml(v2).get
             val result =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
             result.isSuccess.shouldBe(true)
@@ -96,7 +89,7 @@ class RoundTripSuite
         "decode V3 YAML without migration" in forAll(
             AllGenerators.genFireCalcYAML_V3
         ) { v3 =>
-            val yaml = FireCalcYAML_V3.encodeToYaml(v3).get
+            val yaml   = FireCalcYAML_V3.encodeToYaml(v3).get
             val result =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
             result.isSuccess.shouldBe(true)
@@ -105,7 +98,7 @@ class RoundTripSuite
         "decode V4 YAML without migration" in forAll(
             AllGenerators.genFireCalcYAML_V4
         ) { v4 =>
-            val yaml = FireCalcYAML_V4.encodeToYaml(v4).get
+            val yaml   = FireCalcYAML_V4.encodeToYaml(v4).get
             val result =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
             result.isSuccess.shouldBe(true)

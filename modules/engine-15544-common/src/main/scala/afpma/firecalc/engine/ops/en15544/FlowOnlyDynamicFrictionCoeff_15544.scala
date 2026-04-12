@@ -24,7 +24,7 @@ import coulomb.*
 import coulomb.policy.standard.given
 
 class FlowOnlyDynamicFrictionCoeff_15544()(using
-    sectionTyp: PipeType,
+    sectionTyp     : PipeType,
     dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
 ):
 
@@ -130,13 +130,15 @@ end FlowOnlyDynamicFrictionCoeff_15544
 
 object FlowOnlyDynamicFrictionCoeff_15544:
 
-    /** Abstraction over the EN 13384 section-geometry-change friction coefficient.
+    /**
+     * Abstraction over the EN 13384 section-geometry-change friction coefficient.
      *  Provides the specific operation needed by the 15544 flow-only calculator.
      */
     trait DynFrict13384Like:
         def thermalSectionGeometryChange: DynamicFrictionCoeffOp[SectionGeometryChange_13384]
 
-    /** Factory that creates a [[DynFrict13384Like]] for a given [[PipeType]].
+    /**
+     * Factory that creates a [[DynFrict13384Like]] for a given [[PipeType]].
      *  Leaf modules provide a concrete implementation backed by `DynamicFrictionCoeff_13384`.
      */
     trait DynFrict13384Factory:

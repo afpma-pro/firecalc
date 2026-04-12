@@ -23,14 +23,12 @@ trait PipeShapeGenerators extends PrimitiveGenerators:
     // Based on examples: 11.1x15.3cm, 16.1x15.3cm, 37.1x32cm, 26x27cm, 21x32cm
     def genRectangleShape: Gen[PipeShape.Rectangle] =
         for
-            a <- Gen.choose(10.0, 40.0)
-            b <- Gen.choose(10.0, 40.0)
+            a      <- Gen.choose(10.0, 40.0)
+            b      <- Gen.choose(10.0, 40.0)
             // Ensure variety and non-square rectangles most of the time
             result <-
-                if a == b then
-                    Gen.const(PipeShape.Rectangle(a.cm, (b + 0.1).cm))
-                else
-                    Gen.const(PipeShape.Rectangle(a.cm, b.cm))
+                if a == b then Gen.const(PipeShape.Rectangle(a.cm, (b + 0.1).cm))
+                else Gen.const          (PipeShape.Rectangle(a.cm, b.cm)        )
         yield result
 
     // Any pipe shape with frequency weighting
@@ -61,12 +59,12 @@ trait PipeShapeGenerators extends PrimitiveGenerators:
             PipeShape.Rectangle(16.1.cm, 15.3.cm),
             PipeShape.Rectangle(16.1.cm, 11.1.cm),
             PipeShape.Rectangle(37.1.cm, 32.0.cm),
-            PipeShape.Rectangle(32.1.cm, 27.cm),
-            PipeShape.Rectangle(26.cm, 27.cm),
-            PipeShape.Rectangle(21.cm, 32.cm),
-            PipeShape.Square(11.1.cm),
-            PipeShape.Rectangle(20.cm, 25.cm),
-            PipeShape.Rectangle(15.cm, 20.cm)
+            PipeShape.Rectangle(32.1.cm, 27.cm  ),
+            PipeShape.Rectangle(26.cm, 27.cm    ),
+            PipeShape.Rectangle(21.cm, 32.cm    ),
+            PipeShape.Square   (11.1.cm         ),
+            PipeShape.Rectangle(20.cm, 25.cm    ),
+            PipeShape.Rectangle(15.cm, 20.cm    )
         )
 
 end PipeShapeGenerators

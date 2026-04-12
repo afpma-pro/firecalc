@@ -74,4 +74,3 @@ object FluePipe_Module_13384
                 .map(_.toUnit[Meter].value)
                 .sum
                 .meters
-

@@ -424,7 +424,9 @@ object Main extends IOApp:
 
                                         // Send email to user containing PDF invoice and PDF report
                                         _ <- logger
-                                            .info(s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(newContext.customer.email)}")
+                                            .info(
+                                                s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(newContext.customer.email)}"
+                                            )
                                         _ <- logger.info(
                                             s"[EMAIL-NOTIFIER] Product: ${newContext.product.name} - Amount: ${newContext.order.amount} ${newContext.order.currency}"
                                         )
@@ -532,7 +534,9 @@ object Main extends IOApp:
                             Set(domain.OrderStatus.Failed, domain.OrderStatus.Cancelled),
                             { context =>
                                 val adminEmail = paymentsConfig.adminConfig.email
-                                IO.println(s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(context.customer.email)}") *>
+                                IO.println(
+                                    s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(context.customer.email)}"
+                                ) *>
                                     IO.println(
                                         s"[EMAIL-NOTIFIER] Product: ${context.product.name} - Amount: ${context.order.amount}"
                                     )
@@ -586,9 +590,9 @@ object Main extends IOApp:
                         jwtMiddleware = AuthMiddleware[IO](authService)
 
                         // SEC-010: Enforce 50 MB request body size limit on routes that accept bodies
-                        maxBodySize        = 50L * 1024 * 1024
-                        purchaseRoutes_V1  = EntityLimiter.httpRoutes(purchaseRoutes.routes_V1, maxBodySize)
-                        webhookRoutes_V1   = EntityLimiter.httpRoutes(webhookRoutes.routes_V1, maxBodySize)
+                        maxBodySize       = 50L * 1024 * 1024
+                        purchaseRoutes_V1 = EntityLimiter.httpRoutes(purchaseRoutes.routes_V1, maxBodySize)
+                        webhookRoutes_V1  = EntityLimiter.httpRoutes(webhookRoutes.routes_V1, maxBodySize)
 
                         // Apply selective logging middleware to each route group
                         // SEC-006: Disable body logging on sensitive routes to prevent PII leakage

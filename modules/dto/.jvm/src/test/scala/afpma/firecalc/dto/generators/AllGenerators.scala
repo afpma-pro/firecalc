@@ -50,27 +50,19 @@ object AllGenerators:
     private val v4Generators: FireCalcYAML_V4_Generators =
         new FireCalcYAML_V4_Generators {}
 
-    /**
-     * Generate a complete FireCalcYAML_V1 instance
-     */
+    /** Generate a complete FireCalcYAML_V1 instance */
     def genFireCalcYAML_V1: Gen[FireCalcYAML_V1] =
         v1Generators.genFireCalcYAML_V1
 
-    /**
-     * Generate a complete FireCalcYAML_V2 instance
-     */
+    /** Generate a complete FireCalcYAML_V2 instance */
     def genFireCalcYAML_V2: Gen[FireCalcYAML_V2] =
         v2Generators.genFireCalcYAML_V2
 
-    /**
-     * Generate a complete FireCalcYAML_V3 instance
-     */
+    /** Generate a complete FireCalcYAML_V3 instance */
     def genFireCalcYAML_V3: Gen[FireCalcYAML_V3] =
         v3Generators.genFireCalcYAML_V3
 
-    /**
-     * Generate a complete FireCalcYAML_V4 instance
-     */
+    /** Generate a complete FireCalcYAML_V4 instance */
     def genFireCalcYAML_V4: Gen[FireCalcYAML_V4] =
         v4Generators.genFireCalcYAML_V4
 

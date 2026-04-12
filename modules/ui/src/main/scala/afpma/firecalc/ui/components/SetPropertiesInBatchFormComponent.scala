@@ -37,27 +37,31 @@ case class SetPropertiesInBatchFormComponent(
     entriesSignal: Signal[Seq[SetPropertiesInBatch]],
     titleEl      : HtmlElement,
     contentEl    : HtmlElement
-)(using Locale, DisplayUnits) extends Component:
+)                                           (using Locale, DisplayUnits)
+    extends Component:
 
     private val modal = PipeCatalogSelectComponent(
         entriesSignal = entriesSignal,
-        onSelect = Observer { entry =>
-            v.set(entry)
+        onSelect      = Observer { entry =>
+            v.set (entry                           )
             // Close the parent property-edit dialog (opened by PipePanel)
             Option(node.ref.closest("dialog.modal")).foreach {
                 case d: HTMLDialogElement => d.close()
-                case _                   => ()
+                case _ => ()
             }
         }
     )
 
     val node: HtmlElement =
-        DaisyUIAccordionWithTitleAndButton.Element(
-            title = DaisyUIAccordionWithTitleAndButton.Title(
-                title_sig     = Signal.fromValue(titleEl),
-                onSelectClick = Observer(_ => modal.open())
-            ),
-            content = contentEl
-        ).node.amend(modal.node)
+        DaisyUIAccordionWithTitleAndButton
+            .Element  (
+                title   = DaisyUIAccordionWithTitleAndButton.Title(
+                    title_sig     = Signal.fromValue(titleEl),
+                    onSelectClick = Observer(_ => modal.open())
+                ),
+                content = contentEl
+            )
+            .node
+            .amend(modal.node)
 
 end SetPropertiesInBatchFormComponent

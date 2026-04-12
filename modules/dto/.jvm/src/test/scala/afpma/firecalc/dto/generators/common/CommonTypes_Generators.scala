@@ -33,11 +33,11 @@ trait CommonTypes_Generators extends PrimitiveGenerators:
     def genProjectDescr: Gen[ProjectDescr] =
         for
             reference <- Gen.alphaNumStr.map(_.take(20))
-            country <- genCountry
+            country   <- genCountry
         yield ProjectDescr(
             reference = reference,
-            date = "2025-01-15",
-            country = country
+            date      = "2025-01-15",
+            country   = country
         )
 
     def genChimneyTermination: Gen[LocalConditions.ChimneyTermination] =
@@ -45,12 +45,12 @@ trait CommonTypes_Generators extends PrimitiveGenerators:
 
     def genLocalConditions: Gen[LocalConditions] =
         for
-            altitude <- genAltitude
-            coastal_region <- Gen.oneOf(true, false)
+            altitude            <- genAltitude
+            coastal_region      <- Gen.oneOf(true, false)
             chimney_termination <- genChimneyTermination
-        yield LocalConditions(
-            altitude = altitude,
-            coastal_region = coastal_region,
+        yield LocalConditions           (
+            altitude            = altitude,
+            coastal_region      = coastal_region,
             chimney_termination = chimney_termination
         )
 

@@ -13,17 +13,18 @@ import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
-/** CSS framework abstraction — context parameter at render site.
-  *
-  * Switching between vertical/horizontal is just switching the `given FormRenderer`:
-  * {{{
-  *   // Vertical rendering
-  *   { given FormRenderer = DaisyUIVertical; myVar.as_HtmlElement }
-  *
-  *   // Horizontal rendering
-  *   { given FormRenderer = DaisyUIHorizontal; myVar.as_HtmlElement }
-  * }}}
-  */
+/**
+ * CSS framework abstraction — context parameter at render site.
+ *
+ * Switching between vertical/horizontal is just switching the `given FormRenderer`:
+ * {{{
+ *   // Vertical rendering
+ *   { given FormRenderer = DaisyUIVertical; myVar.as_HtmlElement }
+ *
+ *   // Horizontal rendering
+ *   { given FormRenderer = DaisyUIHorizontal; myVar.as_HtmlElement }
+ * }}}
+ */
 trait FormRenderer:
 
     /** Whether this renderer uses floating labels for input fields. */
@@ -38,19 +39,19 @@ trait FormRenderer:
         v            : Var[Option[String]],
         label        : Option[String],
         optionalField: OptionalField
-    )(using ValidateVar[Option[String]]): HtmlElement
+    )            (using ValidateVar[Option[String]]): HtmlElement
 
     def numericInput(
         v            : Var[Option[Double]],
         label        : Option[String],
         optionalField: OptionalField
-    )(using ValidateVar[Option[Double]]): HtmlElement
+    )               (using ValidateVar[Option[Double]]): HtmlElement
 
     def dateInput(
         v            : Var[Option[LocalDate]],
         label        : Option[String],
         optionalField: OptionalField
-    )(using ValidateVar[Option[LocalDate]]): HtmlElement
+    )            (using ValidateVar[Option[LocalDate]]): HtmlElement
 
     // =========
     // Enum/select widgets
@@ -75,7 +76,7 @@ trait FormRenderer:
         label        : Option[String],
         options      : List[A],
         optionalField: OptionalField
-    )(using ValidateVar[Option[A]]): HtmlElement
+    )                          (using ValidateVar[Option[A]]): HtmlElement
 
     // =========
     // Numeric with unit display
@@ -87,7 +88,7 @@ trait FormRenderer:
         currentUnit  : UnitDisplay,
         optionalField: OptionalField,
         disabled     : Signal[Boolean]
-    )(using ValidateVar[Option[Double]]): HtmlElement
+    )                        (using ValidateVar[Option[Double]]): HtmlElement
 
     // =========
     // Structural layout

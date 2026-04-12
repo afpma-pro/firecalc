@@ -23,25 +23,26 @@ import scala.util.Try
 import afpma.laminar.form.*
 import magnolia1.*
 
-/** Magnolia-based derivation for Form[A].
-  *
-  * Provides automatic Form instances for case classes and sealed traits,
-  * plus given instances for primitive types and factory methods.
-  *
-  * Unlike the old LaminarFormFactory which coupled derivation with rendering,
-  * this derivation produces Form[A] instances that defer to FormRenderer
-  * at render time via context parameter.
-  *
-  * i18n: `@Transl`-based translations are applied via `.autoOverwriteFieldNames`
-  * (from `FormI18nExtensions`). Use `autoDeriveAndOverwriteFieldNames[A]` or
-  * `FormDerivation.derived[A].autoOverwriteFieldNames` to get translated field names.
-  * This is mandatory for types with `@Transl` annotations.
-  *
-  * Note: automatic i18n via a given-level override is not possible because
-  * the universal `HasTranslatedFieldsWithValues` derivation would conflict with
-  * explicit Form instances for enums/sum types (e.g. BillableCustomerType),
-  * causing magnolia to re-derive them instead of using the hand-written instance.
-  */
+/**
+ * Magnolia-based derivation for Form[A].
+ *
+ * Provides automatic Form instances for case classes and sealed traits,
+ * plus given instances for primitive types and factory methods.
+ *
+ * Unlike the old LaminarFormFactory which coupled derivation with rendering,
+ * this derivation produces Form[A] instances that defer to FormRenderer
+ * at render time via context parameter.
+ *
+ * i18n: `@Transl`-based translations are applied via `.autoOverwriteFieldNames`
+ * (from `FormI18nExtensions`). Use `autoDeriveAndOverwriteFieldNames[A]` or
+ * `FormDerivation.derived[A].autoOverwriteFieldNames` to get translated field names.
+ * This is mandatory for types with `@Transl` annotations.
+ *
+ * Note: automatic i18n via a given-level override is not possible because
+ * the universal `HasTranslatedFieldsWithValues` derivation would conflict with
+ * explicit Form instances for enums/sum types (e.g. BillableCustomerType),
+ * causing magnolia to re-derive them instead of using the hand-written instance.
+ */
 object FormDerivation extends AutoDerivation[Form]:
 
     type Typeclass[T] = Form[T]
@@ -81,7 +82,7 @@ object FormDerivation extends AutoDerivation[Form]:
         def render(v: Var[A], config: FormConfig)(using renderer: FormRenderer): HtmlElement =
             val formConfig     = formConfigFrom(caseClass, config)
             val renderedParams = caseClass.params.map: param =>
-                val fn         = fieldNameFor(param, formConfig)
+                val fn          = fieldNameFor(param, formConfig)
                 val paramConfig = formConfig.withFieldName(fn)
                 renderParam(caseClass, param, v, paramConfig)
             renderer.caseClassLayout(formConfig.fieldName, renderedParams)
@@ -111,7 +112,7 @@ object FormDerivation extends AutoDerivation[Form]:
             val subt_labels = sealedTrait.subtypes.map: sub =>
                 fieldNameForSubtype(sub)
 
-            val a = v.now()
+            val a                   = v.now()
             val var_subt_label_curr = Var(fieldNameForSubtypeFromValue(sealedTrait)(a))
 
             val subt_typeclasses = sealedTrait.subtypes.map(
@@ -119,7 +120,8 @@ object FormDerivation extends AutoDerivation[Form]:
             )
 
             renderSumTypeWithSelectAndOptions(
-                v, var_subt_label_curr,
+                v,
+                var_subt_label_curr,
                 value_to_subt_label = fieldNameForSubtypeFromValue(sealedTrait),
                 select_field_label  = config.shownFieldName,
                 subt_defaultables   = subt_defaultables,
@@ -156,11 +158,12 @@ object FormDerivation extends AutoDerivation[Form]:
             .map:
                 case ((subt_tc, subt_d), subt_label) =>
                     new Form[A]:
-                        def defaultable = subt_d
-                        def validateVar = subt_tc.validateVar
+                        def defaultable                                                    = subt_d
+                        def validateVar                                                    = subt_tc.validateVar
                         def render(va: Var[A], config: FormConfig)(using fr: FormRenderer) =
                             val doNotDisplay = var_subt_label_curr.signal.map(_ != subt_label)
-                            subt_tc.render(va, config)(using fr)
+                            subt_tc
+                                .render(va, config)(using fr)
                                 .amend(cls("hidden") <-- doNotDisplay)
 
         val vars_subt = subt_labels
@@ -179,7 +182,7 @@ object FormDerivation extends AutoDerivation[Form]:
             val subt_label = value_to_subt_label(a)
             val idx        = subt_labels.indexOf(subt_label)
             val var_subt   = vars_subt(idx)
-            Var.set(
+            Var.set           (
                 var_subt            -> a,
                 var_subt_label_curr -> subt_label
             )
@@ -193,10 +196,9 @@ object FormDerivation extends AutoDerivation[Form]:
                     val prevValue = variable.now()
                     val newIdx    = subt_labels.indexOf(newLabel)
                     if newIdx >= 0 then
-                        val newDefault   = vars_subt(newIdx).now()
-                        val transformed  = transform(prevValue, newDefault)
-                        if transformed != newDefault then
-                            vars_subt(newIdx).set(transformed)
+                        val newDefault  = vars_subt(newIdx).now()
+                        val transformed = transform(prevValue, newDefault)
+                        if transformed != newDefault then vars_subt(newIdx).set(transformed)
             }
         }
 
@@ -210,7 +212,7 @@ object FormDerivation extends AutoDerivation[Form]:
                 .combineWith(subt_selected_sig)
                 .map:
                     case (subt_value, true) => Some(subt_value)
-                    case (_, false)         => None
+                    case (_, false        ) => None
                 .distinct
                 .changes
                 .filter(_.isDefined)
@@ -230,7 +232,8 @@ object FormDerivation extends AutoDerivation[Form]:
                 subt_form.render(var_subt, FormConfig.default)
             .toIndexedSeq
 
-        renderer.sumTypeWrapper(selectNode, nodes)
+        renderer
+            .sumTypeWrapper(selectNode, nodes)
             .amend(
                 vars_subt_to_variable_binders,
                 manual_vars_binders,
@@ -260,7 +263,8 @@ object FormDerivation extends AutoDerivation[Form]:
         annots.find(_.isInstanceOf[FormConfig]).map(_.asInstanceOf[FormConfig]).flatMap(_.fieldName)
 
     private def fieldNameFor[A](param: CaseClass.Param[Form, A], parentConfig: FormConfig): String =
-        parentConfig.fieldNameForParam(param.label)
+        parentConfig
+            .fieldNameForParam(param.label)
             .orElse(fieldNameFromFieldNameAnnotation(param.annotations.toList))
             .getOrElse(NameUtils.titleCase(param.label))
 
@@ -299,8 +303,8 @@ object FormDerivation extends AutoDerivation[Form]:
     // String: rendered via FormRenderer.textInput (Option wrapping for empty = None)
     given forOptionString(using vv: ValidateVar[Option[String]]): Form[Option[String]] =
         new Form[Option[String]]:
-            def defaultable = Defaultable(Some(""))
-            def validateVar = vv
+            def defaultable                                                                      = Defaultable(Some(""))
+            def validateVar                                                                      = vv
             def render(v: Var[Option[String]], config: FormConfig)(using renderer: FormRenderer) =
                 renderer.textInput(v, config.shownFieldName, OptionalField.No)
 
@@ -310,8 +314,8 @@ object FormDerivation extends AutoDerivation[Form]:
     // Double: rendered via FormRenderer.numericInput
     given forOptionDouble(using vv: ValidateVar[Option[Double]]): Form[Option[Double]] =
         new Form[Option[Double]]:
-            def defaultable = Defaultable(Some(0.0))
-            def validateVar = vv
+            def defaultable                                                                      = Defaultable(Some(0.0))
+            def validateVar                                                                      = vv
             def render(v: Var[Option[Double]], config: FormConfig)(using renderer: FormRenderer) =
                 renderer.numericInput(v, config.shownFieldName, OptionalField.No)
 
@@ -321,10 +325,10 @@ object FormDerivation extends AutoDerivation[Form]:
     // Int: mapped from Double
     given forOptionInt(using vv: ValidateVar[Option[Int]]): Form[Option[Int]] =
         new Form[Option[Int]]:
-            def defaultable = Defaultable(Some(0))
-            def validateVar = vv
+            def defaultable                                                                   = Defaultable(Some(0))
+            def validateVar                                                                   = vv
             def render(v: Var[Option[Int]], config: FormConfig)(using renderer: FormRenderer) =
-                val dVar = v.bimap(_.map(_.toDouble))(_.map(_.toInt))
+                val dVar                          = v.bimap(_.map(_.toDouble))(_.map(_.toInt))
                 given ValidateVar[Option[Double]] = vv.contramapOpt[Double](_.toInt)
                 renderer.numericInput(dVar, config.shownFieldName, OptionalField.No)
 
@@ -334,16 +338,16 @@ object FormDerivation extends AutoDerivation[Form]:
     // Boolean: rendered via FormRenderer.checkbox
     given forBoolean(using d: Defaultable[Boolean], vv: ValidateVar[Boolean]): Form[Boolean] =
         new Form[Boolean]:
-            def defaultable = d
-            def validateVar = vv
+            def defaultable                                                               = d
+            def validateVar                                                               = vv
             def render(v: Var[Boolean], config: FormConfig)(using renderer: FormRenderer) =
                 renderer.checkbox(v, config.shownFieldName)
 
     // LocalDate: rendered via FormRenderer.dateInput
     given forOptionLocalDate(using vv: ValidateVar[Option[LocalDate]]): Form[Option[LocalDate]] =
         new Form[Option[LocalDate]]:
-            def defaultable = Defaultable(Some(LocalDate.now()))
-            def validateVar = vv
+            def defaultable                                                                         = Defaultable(Some(LocalDate.now()))
+            def validateVar                                                                         = vv
             def render(v: Var[Option[LocalDate]], config: FormConfig)(using renderer: FormRenderer) =
                 renderer.dateInput(v, config.shownFieldName, OptionalField.No)
 
@@ -370,8 +374,8 @@ object FormDerivation extends AutoDerivation[Form]:
     // List[A]: rendered as split children
     given forList[A, K](using fa: Form[A], idOf: A => K): Form[List[A]] =
         new Form[List[A]]:
-            def defaultable = Defaultable.forList(using fa.defaultable)
-            def validateVar = ValidateVar.forList(using fa.validateVar)
+            def defaultable                                                               = Defaultable.forList(using fa.defaultable)
+            def validateVar                                                               = ValidateVar.forList(using fa.validateVar)
             def render(v: Var[List[A]], config: FormConfig)(using renderer: FormRenderer) =
                 val items = div(
                     children <-- v.split(idOf)((id, _, aVar) =>
@@ -389,15 +393,18 @@ object FormDerivation extends AutoDerivation[Form]:
         vv : ValidateVar[Option[A]]
     ): Form[Option[A]] =
         new Form[Option[A]]:
-            def defaultable = Defaultable(None)
-            def validateVar = vv
+            def defaultable                                                                 = Defaultable(None)
+            def validateVar                                                                 = vv
             def render(v: Var[Option[A]], config: FormConfig)(using renderer: FormRenderer) =
-                val dVar = v.bimap(_.map(nfv.toDouble))(_.map(nfv.fromDouble))
+                val dVar                          = v.bimap(_.map(nfv.toDouble))(_.map(nfv.fromDouble))
                 given ValidateVar[Option[Double]] = vv.contramapOpt[Double](nfv.fromDouble)
                 renderer.numericWithUnitsInput(
-                    dVar, config.shownFieldName,
-                    nfv.unitDisplays, nfv.unitDisplays.head,
-                    OptionalField.No, Val(false)
+                    dVar,
+                    config.shownFieldName,
+                    nfv.unitDisplays,
+                    nfv.unitDisplays.head,
+                    OptionalField.No,
+                    Val(false)
                 )
 
     // =========================================================================
@@ -409,8 +416,8 @@ object FormDerivation extends AutoDerivation[Form]:
         underlying: Form[Option[A]]
     )(using d: Defaultable[A]): Form[A] =
         new Form[A]:
-            def defaultable = d
-            def validateVar = underlying.validateVar.flatten
+            def defaultable                                               = d
+            def validateVar                                               = underlying.validateVar.flatten
             def render(v: Var[A], config: FormConfig)(using FormRenderer) =
                 val (optionVar, binders) = VarSync.makeOptionVarFromVar_BiDirAsync[A](v)
                 underlying.render(optionVar, config).amend(binders)
@@ -421,8 +428,8 @@ object FormDerivation extends AutoDerivation[Form]:
         foa            : Form[Option[A]]
     )(using d: Defaultable[A]): Form[A] =
         new Form[A]:
-            def defaultable = d
-            def validateVar = foa.validateVar.flatten
+            def defaultable                                               = d
+            def validateVar                                               = foa.validateVar.flatten
             def render(v: Var[A], config: FormConfig)(using FormRenderer) =
                 given ValidateVar[A] = foa.validateVar.flatten
                 val (optionVar, binder) = VarSync.makeAndValidateOptionVarFromVar_MonoDirSync(v)
@@ -430,7 +437,9 @@ object FormDerivation extends AutoDerivation[Form]:
                     .amend(binder)
 
     /** Create a Form that is always valid (for display-only / always-valid fields). */
-    def mk_AlwaysValid[A](renderFunc: (Var[A], FormConfig) => FormRenderer ?=> HtmlElement)(using d: Defaultable[A]): Form[A] =
+    def mk_AlwaysValid[A](renderFunc: (Var[A], FormConfig) => FormRenderer ?=> HtmlElement)(using
+        d: Defaultable[A]
+    ): Form[A] =
         given ValidateVar[A] = ValidateVar.valid
         Form.makeFor(d)(renderFunc)
 
@@ -457,7 +466,7 @@ object FormDerivation extends AutoDerivation[Form]:
                     case None    => d.default
                 } { case (_, a) => Some(a) }
 
-                val activationDefaultVar: Var[Option[A]] = Var(Option.empty[A])
+                val activationDefaultVar : Var[Option[A]]      = Var(Option.empty[A])
                 val syncActivationDefault: Binder[HtmlElement] =
                     activationDefault --> activationDefaultVar.writer
 
@@ -466,8 +475,8 @@ object FormDerivation extends AutoDerivation[Form]:
                         .withCurrentValueOf(voa)
                         .map((c, oa) =>
                             if (cond.check(c))
-                                oa.orElse(activationDefaultVar.now())
-                                  .orElse(Some(d.default))
+                                oa.orElse  (activationDefaultVar.now())
+                                    .orElse(Some(d.default)           )
                             else oa
                         )
                         .distinct --> voa.writer
@@ -480,10 +489,11 @@ object FormDerivation extends AutoDerivation[Form]:
                         extraBinders
                     )
 
-    /** Either[L, R] from conditional on C.
-      *
-      * API status: permanent. Replaces the deprecated eitherAsSelectWithOptions.
-      */
+    /**
+     * Either[L, R] from conditional on C.
+     *
+     * API status: permanent. Replaces the deprecated eitherAsSelectWithOptions.
+     */
     def eitherFromOption[C, L, R](
         condVar: Var[C],
         convert: C => Either[L, R],
@@ -496,7 +506,7 @@ object FormDerivation extends AutoDerivation[Form]:
         cfl: ConditionalFor[C, L],
         cfr: ConditionalFor[C, R]
     ): Form[Either[L, R]] =
-        val d_either = Defaultable[Either[L, R]]:
+        val d_either                    = Defaultable[Either[L, R]]:
             convert(condVar.now()).bimap(_ => dl.default, _ => dr.default)
         given ValidateVar[Either[L, R]] = ValidateVar.forEither(using fl.validateVar, fr.validateVar)
         Form.makeFor(d_either): (_, _) =>
@@ -506,7 +516,7 @@ object FormDerivation extends AutoDerivation[Form]:
                 val ei = Either.fromOption(ol, dr.default).swap
                 revert(c, ei)
             }
-            val vor   = condVar.zoomLazy(convert.map(_.toOption)) { (c, or) =>
+            val vor   = condVar.zoomLazy(convert.map(_.toOption)     ) { (c, or) =>
                 val ei = Either.fromOption(or, dl.default)
                 revert(c, ei)
             }
@@ -528,13 +538,16 @@ object FormDerivation extends AutoDerivation[Form]:
         mk_AlwaysValid[A]((_, _) => (_: FormRenderer) ?=> span(display := "none"))
 
     /** Create a Form from a component factory (always valid). */
-    def mkFromComponent_AlwaysValid[A](factory: (Var[A], FormConfig) => FormRenderer ?=> HtmlElement)(using d: Defaultable[A]): Form[A] =
+    def mkFromComponent_AlwaysValid[A](factory: (Var[A], FormConfig) => FormRenderer ?=> HtmlElement)(using
+        d: Defaultable[A]
+    ): Form[A] =
         mk_AlwaysValid[A]((va, fc) => (fr: FormRenderer) ?=> factory(va, fc)(using fr))
 
-    /** Select from enum values using Show as id. Renderer-agnostic — uses FormRenderer.selectRequired.
-      *
-      * API status: permanent. Primary pattern for enum/sum-type selects throughout the app.
-      */
+    /**
+     * Select from enum values using Show as id. Renderer-agnostic — uses FormRenderer.selectRequired.
+     *
+     * API status: permanent. Primary pattern for enum/sum-type selects throughout the app.
+     */
     def forEnumOrSumTypeLike_UsingShowAsId[A: {Show, Defaultable, ValidateVar}](
         options        : List[A],
         updateFieldName: Option[String] => Option[String] = identity
@@ -580,22 +593,24 @@ object FormDerivation extends AutoDerivation[Form]:
 
         FormDerivation.derived[OptionOfEither[L, R]]
 
-    /** Sealed trait rendering without select — renders only the matching subtype.
-      * Used when the type discriminator is determined elsewhere.
-      * Requires Form instances for all subtypes to be in scope.
-      *
-      * API status: permanent. Core pattern for types whose discriminator is
-      * controlled externally (e.g. SetSingleProp subtypes selected by pipe panel menus).
-      */
+    /**
+     * Sealed trait rendering without select — renders only the matching subtype.
+     * Used when the type discriminator is determined elsewhere.
+     * Requires Form instances for all subtypes to be in scope.
+     *
+     * API status: permanent. Core pattern for types whose discriminator is
+     * controlled externally (e.g. SetSingleProp subtypes selected by pipe panel menus).
+     */
     inline def splitViaMatchingOnly[A](using inline m: Mirror.SumOf[A]): Form[A] =
         _SplitViaMatchingHelper.derivedMirrorSum[A](m)
 
-    /** Helper object that reuses magnolia's Derivation machinery
-      * but applies splitViaMatchingOnlyImpl instead of the standard select-based split.
-      */
+    /**
+     * Helper object that reuses magnolia's Derivation machinery
+     * but applies splitViaMatchingOnlyImpl instead of the standard select-based split.
+     */
     /** @note Must not be private due to inline expansion across files. */
     object _SplitViaMatchingHelper extends magnolia1.Derivation[Form]:
-        def join[T](cc: CaseClass[Form, T]): Form[T] = FormDerivation.join(cc) // required by Derivation but unused here
+        def join[T] (cc: CaseClass[Form, T]  ): Form[T] = FormDerivation.join(cc) // required by Derivation but unused here
         def split[T](st: SealedTrait[Form, T]): Form[T] = FormDerivation.splitViaMatchingOnlyImpl(st)
 
     private def splitViaMatchingOnlyImpl[A](sealedTrait: SealedTrait[Form, A]): Form[A] =
@@ -612,20 +627,21 @@ object FormDerivation extends AutoDerivation[Form]:
                 }
 
             def render(v: Var[A], config: FormConfig)(using renderer: FormRenderer): HtmlElement =
-                val a = v.now()
+                val a                   = v.now()
                 val subt_typeclass_curr = sealedTrait.choose(a)(_.typeclass.asInstanceOf[Form[A]])
                 // Prefer the subtype Form's own configuredFieldName (set by autoOverwriteFieldNames
                 // or withFieldName) over the annotation/titleCase fallback.
-                val subt_label = sealedTrait.choose(a): sub =>
+                val subt_label          = sealedTrait.choose(a): sub =>
                     sub.typeclass.configuredFieldName
                         .getOrElse(fieldNameForSubtype(sub.subtype))
 
                 val content = subt_typeclass_curr.render(v, config)
                 renderer.sumTypeContentOnly(subt_label, content)
 
-    /** Either[L, R] as select with options — renders a select with Left/Right subtypes.
-      * Migration alias for the old eitherAsSelectWithOptions.
-      */
+    /**
+     * Either[L, R] as select with options — renders a select with Left/Right subtypes.
+     * Migration alias for the old eitherAsSelectWithOptions.
+     */
     @deprecated("Use eitherFromOption instead", "0.9.0")
     inline def eitherAsSelectWithOptions[L, R](
         selectFieldName: String
@@ -660,16 +676,17 @@ object FormDerivation extends AutoDerivation[Form]:
         @nowarn val derivedForm = FormDerivation.derived[Either[L, R]]
         derivedForm
 
-    /** Select + sub-value form — select from options, edit sub-value T.
-      * Renderer-agnostic: the select uses FormRenderer.selectWithCustomId,
-      * the T form uses the active FormRenderer.
-      *
-      * @param getId maps each option to a stable string identifier used as the HTML option value.
-      *              This is distinct from `Show[A]` which controls the display label.
-      *              Both `getId` and `Show[A]` are required: Show for display, getId for value matching.
-      *
-      * API status: permanent. Used for material selectors with editable sub-values (e.g. roughness).
-      */
+    /**
+     * Select + sub-value form — select from options, edit sub-value T.
+     * Renderer-agnostic: the select uses FormRenderer.selectWithCustomId,
+     * the T form uses the active FormRenderer.
+     *
+     * @param getId maps each option to a stable string identifier used as the HTML option value.
+     *              This is distinct from `Show[A]` which controls the display label.
+     *              Both `getId` and `Show[A]` are required: Show for display, getId for value matching.
+     *
+     * API status: permanent. Used for material selectors with editable sub-values (e.g. roughness).
+     */
     def forSelectionWithDefaultValue_usingSelectInput[A, T](
         selectOptions   : List[A],
         getDefaultValue : A => T,
@@ -684,17 +701,19 @@ object FormDerivation extends AutoDerivation[Form]:
     ): Form[A] =
         Form.makeFor[A](defaultableA): (variable, formConfig) =>
             (renderer: FormRenderer) ?=>
-                val defaultValueVar = variable.zoomLazy(getDefaultValue)(withDefaultValue)
-                val selectNode = renderer.selectWithCustomId(
-                    variable, formConfig.shownFieldName, selectOptions,
-                    show  = showA.show,
-                    getId = getId,
+                val defaultValueVar   = variable.zoomLazy(getDefaultValue)(withDefaultValue)
+                val selectNode        = renderer.selectWithCustomId(
+                    variable,
+                    formConfig.shownFieldName,
+                    selectOptions,
+                    show    = showA.show,
+                    getId   = getId,
                     getById = id => selectOptions.find(getId(_) == id).get
                 )
                 val defaultValueInput = formForT.render(defaultValueVar, FormConfig.default)
                 div(
                     cls := "flex flex-row gap-2 items-end",
-                    div(cls := "flex-auto", selectNode),
+                    div(cls := "flex-auto", selectNode       ),
                     div(cls := "flex-auto", defaultValueInput)
                 )
 

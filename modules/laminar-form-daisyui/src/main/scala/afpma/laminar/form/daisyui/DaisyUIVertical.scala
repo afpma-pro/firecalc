@@ -26,17 +26,23 @@ object DaisyUIVertical extends FormRenderer:
         DaisyUIInputs.CheckboxFieldsetInput(v, withLabel = label).node
 
     def textInput(
-        v: Var[Option[String]], label: Option[String], optionalField: OptionalField
+        v            : Var[Option[String]],
+        label        : Option[String],
+        optionalField: OptionalField
     )(using ValidateVar[Option[String]]): HtmlElement =
         DaisyUIInputs.TextFieldsetLabelAndInput.make(v, label, optionalField)
 
     def numericInput(
-        v: Var[Option[Double]], label: Option[String], optionalField: OptionalField
+        v            : Var[Option[Double]],
+        label        : Option[String],
+        optionalField: OptionalField
     )(using ValidateVar[Option[Double]]): HtmlElement =
         DaisyUIInputs.DoubleFieldsetLabelAndInput.make(v, label, optionalField)
 
     def dateInput(
-        v: Var[Option[LocalDate]], label: Option[String], optionalField: OptionalField
+        v            : Var[Option[LocalDate]],
+        label        : Option[String],
+        optionalField: OptionalField
     )(using ValidateVar[Option[LocalDate]]): HtmlElement =
         DaisyUIInputs.LocalDateFieldsetLabelAndInput.make(v, label, optionalField)
 
@@ -45,45 +51,64 @@ object DaisyUIVertical extends FormRenderer:
     def selectRequired[A: Show](v: Var[A], label: Option[String], options: Seq[A]): HtmlElement =
         DaisyUIInputs.SelectFieldsetLabelAndInput.makeUsingShowAsId_required(label, v, options)
 
-    def selectWithCustomId[A](v: Var[A], label: Option[String], options: Seq[A], show: A => String, getId: A => String, getById: String => A): HtmlElement =
-        DaisyUIInputs.SelectFieldsetLabelAndInput(
-            labelOpt    = label,
-            selectedVar = v,
-            options     = options,
-            show        = show,
-            makeId      = getId,
-            getById     = getById
-        ).node
+    def selectWithCustomId[A](
+        v      : Var[A],
+        label  : Option[String],
+        options: Seq[A],
+        show   : A => String,
+        getId  : A => String,
+        getById: String => A
+    ): HtmlElement =
+        DaisyUIInputs
+            .SelectFieldsetLabelAndInput   (
+                labelOpt    = label,
+                selectedVar = v,
+                options     = options,
+                show        = show,
+                makeId      = getId,
+                getById     = getById
+            )
+            .node
 
     def selectOptional[A: Show](
-        v: Var[Option[A]], label: Option[String], options: List[A], optionalField: OptionalField
+        v            : Var[Option[A]],
+        label        : Option[String],
+        options      : List[A],
+        optionalField: OptionalField
     )(using ValidateVar[Option[A]]): HtmlElement =
         // Wrap Option[A] into select with empty option for None
         val allOptions: Seq[Option[A]] = None +: options.map(Some(_))
-        DaisyUIInputs.SelectFieldsetLabelAndInput[Option[A]](
-            labelOpt    = label,
-            selectedVar = v,
-            options     = allOptions,
-            show        = (oa: Option[A]) => oa.map(_.show).getOrElse("--"),
-            makeId      = (oa: Option[A]) => oa.map(_.show).getOrElse(""),
-            getById     = id => allOptions.find(_.map(_.show).getOrElse("") == id).flatten
-        ).node
+        DaisyUIInputs
+            .SelectFieldsetLabelAndInput[Option[A]]   (
+                labelOpt    = label,
+                selectedVar = v,
+                options     = allOptions,
+                show        = (oa: Option[A]) => oa.map(_.show).getOrElse("--"),
+                makeId      = (oa: Option[A]) => oa.map(_.show).getOrElse(""),
+                getById     = id => allOptions.find(_.map(_.show).getOrElse("") == id).flatten
+            )
+            .node
 
     // Numeric with units
 
     def numericWithUnitsInput(
-        v: Var[Option[Double]], label: Option[String],
-        units: List[UnitDisplay], currentUnit: UnitDisplay,
-        optionalField: OptionalField, disabled: Signal[Boolean]
+        v            : Var[Option[Double]],
+        label        : Option[String],
+        units        : List[UnitDisplay],
+        currentUnit  : UnitDisplay,
+        optionalField: OptionalField,
+        disabled     : Signal[Boolean]
     )(using ValidateVar[Option[Double]]): HtmlElement =
-        DaisyUIInputs.NumberInputWithUnitsAndFloatingLabel(
-            doubleOptVar = v,
-            fieldNameOpt = label,
-            units        = units,
-            currentUnit  = currentUnit,
-            optionalField = optionalField,
-            disabled      = disabled
-        ).node
+        DaisyUIInputs
+            .NumberInputWithUnitsAndFloatingLabel (
+                doubleOptVar  = v,
+                fieldNameOpt  = label,
+                units         = units,
+                currentUnit   = currentUnit,
+                optionalField = optionalField,
+                disabled      = disabled
+            )
+            .node
 
     // Structural layout
 
@@ -98,27 +123,31 @@ object DaisyUIVertical extends FormRenderer:
         )
 
     def sumTypeSelect(label: Option[String], selected: Var[String], options: IArray[String]): HtmlElement =
-        val selectNode = DaisyUIInputs.SelectAndOptionsOnly(
-            selectedVar           = selected,
-            labelAsDisabledOption = label,
-            options               = options,
-            show                  = identity,
-            makeId                = identity,
-            getById               = identity,
-            selectCls             = "select"
-        ).node
+        val selectNode = DaisyUIInputs
+            .SelectAndOptionsOnly          (
+                selectedVar           = selected,
+                labelAsDisabledOption = label,
+                options               = options,
+                show                  = identity,
+                makeId                = identity,
+                getById               = identity,
+                selectCls             = "select"
+            )
+            .node
         label match
             case Some(lbl) =>
                 L.label(cls := "floating-label whitespace-nowrap", selectNode, span(lbl))
-            case None => selectNode
+            case None      => selectNode
 
     def sumTypeContentOnly(label: String, content: HtmlElement): HtmlElement =
-        DaisyUIInputs.FieldsetLegendWithContent(
-            legendOpt   = Some(label),
-            content     = content,
-            bgClass     = "bg-base-100",
-            borderClass = "border-base-300 border-dashed"
-        ).node
+        DaisyUIInputs
+            .FieldsetLegendWithContent  (
+                legendOpt   = Some(label),
+                content     = content,
+                bgClass     = "bg-base-100",
+                borderClass = "border-base-300 border-dashed"
+            )
+            .node
 
     def listLayout(items: Seq[HtmlElement]): HtmlElement =
         div(items)

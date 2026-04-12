@@ -7,10 +7,10 @@ package afpma.firecalc.i18n.utils
 
 object NameUtils {
 
-  def titleCase(string: String): String =
-    string
-      .filter(_.isLetter)
-      .split("(?=[A-Z])")
-      .map(_.capitalize)
-      .mkString(" ")
+    def titleCase(string: String): String =
+        string
+            .filter(_.isLetter)
+            .split("(?=[A-Z])")
+            .map(_.capitalize)
+            .mkString(" ")
 }

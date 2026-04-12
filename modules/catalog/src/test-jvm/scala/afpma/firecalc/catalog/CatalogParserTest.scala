@@ -32,20 +32,20 @@ class CatalogParserTest extends FunSuite:
         val result = CatalogParser.parse(minimalYaml)
         assert(result.isRight, s"Expected Right but got: $result")
         val file = result.toOption.get
-        assert(file.sections.isEmpty)
+        assert      (file.sections.isEmpty                              )
         assertEquals(file.catalog_name.get("fr"), Some("Catalogue Test"))
 
     test("parse catalog with empty sections"):
         val result = CatalogParser.parse(yamlWithEmptySections)
         assert(result.isRight, s"Expected Right but got: $result")
         val file = result.toOption.get
-        assertEquals(file.catalog_name.get("en"), Some("Test Catalog"))
+        assertEquals(file.catalog_name.get("en"), Some("Test Catalog")                        )
         import CatalogCategoryInstances.given
-        assertEquals(file.entriesFor[Firebox.Door15aFirebox_Catalog], Seq.empty)
+        assertEquals(file.entriesFor[Firebox.Door15aFirebox_Catalog], Seq.empty               )
         assertEquals(file.entriesFor[SetThermalPipeProp_13384.SetPropertiesInBatch], Seq.empty)
 
     test("parse catalog with version too new"):
-        val yaml = """
+        val yaml   = """
           |catalog_version: 999
           |catalog_name:
           |  fr: "Futur"
@@ -58,12 +58,12 @@ class CatalogParserTest extends FunSuite:
         )
 
     test("parse catalog with missing version"):
-        val yaml = """
+        val yaml   = """
           |catalog_name:
           |  fr: "Sans version"
           |""".stripMargin
         val result = CatalogParser.parse(yaml)
-        assert(result.isLeft)
+        assert      (result.isLeft                                             )
         assertEquals(result.left.toOption.get, CatalogParseError.MissingVersion)
 
     test("parse catalog with invalid YAML"):
@@ -75,7 +75,7 @@ class CatalogParserTest extends FunSuite:
         )
 
     test("parse catalog with version too old returns MigrationFailed"):
-        val yaml = """
+        val yaml   = """
           |catalog_version: 1
           |catalog_name:
           |  fr: "Ancien"
@@ -95,7 +95,7 @@ class CatalogParserTest extends FunSuite:
         assertEquals(file.entriesFor[SetThermalPipeProp_13384.SetPropertiesInBatch].length, 0)
 
     test("parse catalog with malformed section entry returns DecodeError"):
-        val yaml = """
+        val yaml   = """
           |catalog_version: 4
           |catalog_name:
           |  fr: "Test"
@@ -112,7 +112,7 @@ class CatalogParserTest extends FunSuite:
         assertEquals(err.category, "door_15a_fireboxes")
 
     test("parse catalog with non-array section returns DecodeError"):
-        val yaml = """
+        val yaml   = """
           |catalog_version: 4
           |catalog_name:
           |  fr: "Test"
@@ -121,11 +121,11 @@ class CatalogParserTest extends FunSuite:
         val result = CatalogParser.parse(yaml)
         assert(result.isLeft, s"Expected Left but got: $result")
         val err = result.left.toOption.get
-        assert(err.isInstanceOf[CatalogParseError.DecodeError], s"Expected DecodeError but got: $err")
-        assertEquals(err.asInstanceOf[CatalogParseError.DecodeError].category, "door_15a_fireboxes")
+        assert      (err.isInstanceOf[CatalogParseError.DecodeError], s"Expected DecodeError but got: $err")
+        assertEquals(err.asInstanceOf[CatalogParseError.DecodeError].category, "door_15a_fireboxes"        )
 
     test("parse catalog with malformed catalog_name returns InvalidFile"):
-        val yaml = """
+        val yaml   = """
           |catalog_version: 4
           |catalog_name: "just a string"
           |""".stripMargin
@@ -137,31 +137,31 @@ class CatalogParserTest extends FunSuite:
         )
 
     test("parse sample catalog file"):
-        val yaml = Using.resource(getClass.getResourceAsStream("/sample-catalog.fcalc-db")): stream =>
+        val yaml   = Using.resource(getClass.getResourceAsStream("/sample-catalog.fcalc-db")): stream =>
             scala.io.Source.fromInputStream(stream).mkString
         val result = CatalogParser.parse(yaml)
         assert(result.isRight, s"Expected Right but got: $result")
         val file = result.toOption.get
         assertEquals(file.catalog_version.unwrap, 5) // V4 sample migrated to current
-        assert(file.catalog_name.nonEmpty)
+        assert      (file.catalog_name.nonEmpty    )
         import CatalogCategoryInstances.given
         val fireboxes = file.entriesFor[Firebox.Door15aFirebox_Catalog]
-        assert(fireboxes.nonEmpty, "Expected at least one Door15aFirebox_Catalog entry")
-        assertEquals(fireboxes.head.reference, "Door15aFirebox_Catalog_Example")
+        assert      (fireboxes.nonEmpty, "Expected at least one Door15aFirebox_Catalog entry")
+        assertEquals(fireboxes.head.reference, "Door15aFirebox_Catalog_Example"              )
         val singleTested = file.entriesFor[Firebox.SingleTested]
         assert(singleTested.nonEmpty, "Expected at least one SingleTested entry")
         val st = singleTested.head
-        assertEquals(st.reference, "SingleTested_Example")
-        assert(st.efficiency_reduced.isDefined, "efficiency_reduced should be decoded")
-        assert(st.minimum_fuel_mass.isDefined, "minimum_fuel_mass should be decoded")
-        assert(st.air_fuel_ratio_lowest.isDefined, "air_fuel_ratio_lowest should be decoded")
-        assert(st.co2_dry_lowest.isDefined, "co2_dry_lowest should be decoded")
-        assert(st.pellets_load_burn_duration.isDefined, "pellets_load_burn_duration should be decoded")
+        assertEquals(st.reference, "SingleTested_Example"                                                   )
+        assert      (st.efficiency_reduced.isDefined, "efficiency_reduced should be decoded"                )
+        assert      (st.minimum_fuel_mass.isDefined, "minimum_fuel_mass should be decoded"                  )
+        assert      (st.air_fuel_ratio_lowest.isDefined, "air_fuel_ratio_lowest should be decoded"          )
+        assert      (st.co2_dry_lowest.isDefined, "co2_dry_lowest should be decoded"                        )
+        assert      (st.pellets_load_burn_duration.isDefined, "pellets_load_burn_duration should be decoded")
         val pipes = file.entriesFor[SetThermalPipeProp_13384.SetPropertiesInBatch]
         assert(pipes.nonEmpty, "Expected at least one pipe preset entry")
         val casings = file.entriesFor[CasingPreset]
-        assert(casings.nonEmpty, "Expected at least one casing preset entry")
-        assertEquals(casings.head.unwrap.batch_name, "Boisseau terre cuite 20x20")
+        assert      (casings.nonEmpty, "Expected at least one casing preset entry")
+        assertEquals(casings.head.unwrap.batch_name, "Boisseau terre cuite 20x20" )
         val flowResistances = file.entriesFor[FlowResistanceCatalogEntry]
-        assert(flowResistances.nonEmpty, "Expected at least one flow resistance preset entry")
-        assertEquals(flowResistances.head.name, "Wire mesh screen")
+        assert      (flowResistances.nonEmpty, "Expected at least one flow resistance preset entry")
+        assertEquals(flowResistances.head.name, "Wire mesh screen"                                 )

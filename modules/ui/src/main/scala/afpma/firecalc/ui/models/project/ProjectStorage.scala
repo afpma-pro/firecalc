@@ -29,7 +29,7 @@ object ProjectStorage:
                     LocalStorageKeys.projectAppState(id.value),
                     yaml
                 )
-            case scala.util.Failure(e) =>
+            case scala.util.Failure(e)    =>
                 org.scalajs.dom.console.error(s"Failed to save project ${id.value}: ${e.getMessage}")
 
     def delete(id: ProjectId): Unit =

@@ -30,23 +30,25 @@ object GenerateExampleProjectFixture:
 
     /** Constructs the same FireCalcYAML as EngineState.example_projet_15544 (UI module). */
     def exampleFireCalcYaml: FireCalcYAML =
-        FireCalcYAMLMigrations.migrateV5ToV6(FireCalcYAML_V5(
-        locale                         = Locale(Languages.Fr),
-        display_units                  = DisplayUnits.SI,
-        standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
-        project_description            = ProjectDescr(
-            reference = ExampleProject_15544.project.reference,
-            date      = ExampleProject_15544.project.date,
-            country   = ExampleProject_15544.project.country
-        ),
-        local_conditions               = ExampleProject_15544.localConditions,
-        stove_params                   = ExampleProject_15544.stoveParams,
-        air_intake_descr               = ExampleProject_15544.conduit_air_descr,
-        firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional],
-        flue_pipe_descr                = ExampleProject_15544.accumulateur_descr,
-        connector_pipe_descr           = ExampleProject_15544.conduit_raccordement_descr,
-        chimney_pipe_descr             = ExampleProject_15544.conduit_fumees_descr
-    ))
+        FireCalcYAMLMigrations.migrateV5ToV6(
+            FireCalcYAML_V5                        (
+                locale                         = Locale(Languages.Fr),
+                display_units                  = DisplayUnits.SI,
+                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                project_description            = ProjectDescr(
+                    reference = ExampleProject_15544.project.reference,
+                    date      = ExampleProject_15544.project.date,
+                    country   = ExampleProject_15544.project.country
+                ),
+                local_conditions               = ExampleProject_15544.localConditions,
+                stove_params                   = ExampleProject_15544.stoveParams,
+                air_intake_descr               = ExampleProject_15544.conduit_air_descr,
+                firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional],
+                flue_pipe_descr                = ExampleProject_15544.accumulateur_descr,
+                connector_pipe_descr           = ExampleProject_15544.conduit_raccordement_descr,
+                chimney_pipe_descr             = ExampleProject_15544.conduit_fumees_descr
+            )
+        )
 
     /** Encodes the example project to a YAML string. */
     def generateYamlContent(): String =
@@ -57,18 +59,18 @@ object GenerateExampleProjectFixture:
         java.util.Base64.getEncoder.encodeToString(generateYamlContent().getBytes("UTF-8"))
 
     def main(args: Array[String]): Unit =
-        val wd      = os.pwd
-        val resDir  = wd / "modules" / "payments" / "src" / "main" / "resources"
-        val fcalc   = resDir / "project.fcalc"
-        val base64  = resDir / "project.fcalc.base64"
+        val wd     = os.pwd
+        val resDir = wd / "modules" / "payments" / "src" / "main" / "resources"
+        val fcalc  = resDir / "project.fcalc"
+        val base64 = resDir / "project.fcalc.base64"
 
         val yamlContent   = generateYamlContent()
         val base64Content = generateBase64Content()
 
-        os.write.over(fcalc,  yamlContent  )
+        os.write.over(fcalc, yamlContent   )
         os.write.over(base64, base64Content)
 
-        println(s"[OK] Written ${yamlContent.length} bytes  → ${fcalc.toString}")
+        println(s"[OK] Written ${yamlContent.length} bytes  → ${fcalc.toString}"  )
         println(s"[OK] Written ${base64Content.length} bytes → ${base64.toString}")
 
 end GenerateExampleProjectFixture

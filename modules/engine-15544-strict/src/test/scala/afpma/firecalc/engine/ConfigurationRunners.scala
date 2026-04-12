@@ -25,8 +25,6 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
 
     given Locale = Locales.en // acceptable to force Locale in tests
 
-    
-
     private def showDetailedNoteAsText(
         ex      : StoveProjectDescr_Alg,
         _en15544: EN15544_V_2023_Common_Application,

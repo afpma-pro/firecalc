@@ -39,38 +39,38 @@ trait SetThermalPipeProp_13384_V2_Generators
 
     // SetMaterial
     def genSetMaterial_Thermal_V2: Gen[SetMaterial] =
-        Gen.oneOf(
-            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel())),
-            Gen.const(SetMaterial(Material_13384_V2.Glass())),
-            Gen.const(SetMaterial(Material_13384_V2.Plastic())),
-            Gen.const(SetMaterial(Material_13384_V2.Aluminium())),
-            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners())),
-            Gen.const(SetMaterial(Material_13384_V2.Bricks())),
-            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal())),
-            Gen.const(SetMaterial(Material_13384_V2.Concrete())),
-            Gen.const(SetMaterial(Material_13384_V2.Fibrociment())),
-            Gen.const(SetMaterial(Material_13384_V2.Masonry())),
+        Gen.oneOf    (
+            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Glass()          )),
+            Gen.const(SetMaterial(Material_13384_V2.Plastic()        )),
+            Gen.const(SetMaterial(Material_13384_V2.Aluminium()      )),
+            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners() )),
+            Gen.const(SetMaterial(Material_13384_V2.Bricks()         )),
+            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal()  )),
+            Gen.const(SetMaterial(Material_13384_V2.Concrete()       )),
+            Gen.const(SetMaterial(Material_13384_V2.Fibrociment()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Masonry()        )),
             Gen.const(SetMaterial(Material_13384_V2.CorrugatedMetal()))
         )
 
     // SetLayer
     def genSetLayer_Thermal_V2: Gen[SetLayer] =
         for
-            thickness <- genLayerThickness
+            thickness    <- genLayerThickness
             conductivity <- genThermalConductivity
         yield SetLayer(thickness, conductivity)
 
     // SetLayers
     def genSetLayers_Thermal_V2: Gen[SetLayers] =
         for
-            n <- Gen.choose(1, 3)
+            n      <- Gen.choose(1, 3)
             layers <- Gen.listOfN(n, genAppendLayerDescr)
         yield SetLayers(layers)
 
     // Helper for AppendLayerDescr
     def genAppendLayerDescr: Gen[AppendLayerDescr] =
         for
-            thickness <- genLayerThickness
+            thickness    <- genLayerThickness
             conductivity <- genThermalConductivity
         yield AppendLayerDescr.FromLambdaUsingThickness(thickness, conductivity)
 
@@ -78,18 +78,18 @@ trait SetThermalPipeProp_13384_V2_Generators
     def genSetAirSpaceAfterLayers_Thermal_V2: Gen[SetAirSpaceAfterLayers] =
         genAirSpaceDetailed.map(SetAirSpaceAfterLayers(_))
 
-    //Helper for AirSpaceDetailed
+    // Helper for AirSpaceDetailed
     def genAirSpaceDetailed: Gen[AirSpaceDetailed_V1] =
         Gen.oneOf(
             Gen.const(AirSpaceDetailed_V1.WithoutAirSpace),
             for
-                width <- Gen.choose(0.5, 5.0).map(_.cm)
+                width     <- Gen.choose(0.5, 5.0).map(_.cm)
                 direction <- Gen.oneOf(
                     AirSpaceDetailed_V1.VentilDirection.UndefinedDir,
                     AirSpaceDetailed_V1.VentilDirection.SameDirAsFlueGas,
                     AirSpaceDetailed_V1.VentilDirection.OppositeDirOfFlueGas
                 )
-                openings <- Gen.oneOf(
+                openings  <- Gen.oneOf(
                     AirSpaceDetailed_V1.VentilOpenings.NoOpening,
                     AirSpaceDetailed_V1.VentilOpenings.AnnularAreaFullyOpened,
                     AirSpaceDetailed_V1.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
@@ -100,9 +100,9 @@ trait SetThermalPipeProp_13384_V2_Generators
     // SetPipeLocation
     def genSetPipeLocation_Thermal_V2: Gen[SetPipeLocation] =
         Gen.oneOf(
-            SetPipeLocation(PipeLocation.BoilerRoom),
-            SetPipeLocation(PipeLocation.HeatedArea),
-            SetPipeLocation(PipeLocation.UnheatedInside),
+            SetPipeLocation(PipeLocation.BoilerRoom       ),
+            SetPipeLocation(PipeLocation.HeatedArea       ),
+            SetPipeLocation(PipeLocation.UnheatedInside   ),
             SetPipeLocation(PipeLocation.OutsideOrExterior)
         )
 
@@ -110,8 +110,8 @@ trait SetThermalPipeProp_13384_V2_Generators
     def genSetDuctType_Thermal_V2: Gen[SetDuctType] =
         Gen.oneOf(
             SetDuctType(DuctType.NonConcentricDuctsHighThermalResistance),
-            SetDuctType(DuctType.NonConcentricDuctsLowThermalResistance),
-            SetDuctType(DuctType.ConcentricDucts)
+            SetDuctType(DuctType.NonConcentricDuctsLowThermalResistance ),
+            SetDuctType(DuctType.ConcentricDucts                        )
         )
 
     // SetNumberOfFlows
@@ -139,14 +139,14 @@ trait SetThermalPipeProp_13384_V2_Generators
         for
             // Initial SetProps (shape, material, etc.)
             innerShape <- genSetInnerShape_Thermal_V2
-            material <- genSetMaterial_Thermal_V2
-            roughness <- genSetRoughness_Thermal_V2
-            
+            material   <- genSetMaterial_Thermal_V2
+            roughness  <- genSetRoughness_Thermal_V2
+
             // Some optional additional SetProps
-            maybeLayer <- Gen.option(genSetLayer_Thermal_V2)
+            maybeLayer    <- Gen.option(genSetLayer_Thermal_V2)
             maybeLocation <- Gen.option(genSetPipeLocation_Thermal_V2)
-            
-           // Follow with AddElements (simplified - just use a fixed sequence for testing)
+
+            // Follow with AddElements (simplified - just use a fixed sequence for testing)
             nElements <- Gen.choose(2, 3)
         yield
             val setProps = List[ThermalPipeDescr_13384_V2](
@@ -154,7 +154,7 @@ trait SetThermalPipeProp_13384_V2_Generators
                 material,
                 roughness
             ) ++ maybeLayer.toList ++ maybeLocation.toList
-            
+
             setProps
 
 end SetThermalPipeProp_13384_V2_Generators

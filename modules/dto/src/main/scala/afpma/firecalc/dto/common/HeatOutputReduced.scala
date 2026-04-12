@@ -43,9 +43,7 @@ object HeatOutputReduced:
         Show.show(_ => I18N.not_defined)
 
     given show_HalfOfNominal: Locale => Show[HalfOfNominal] =
-        Show.show(_ =>
-            I18N.heat_output_reduced.defined_as_half_of_nominal
-        )
+        Show.show(_ => I18N.heat_output_reduced.defined_as_half_of_nominal)
 
     given show_FromTypeTest: Locale => Show[FromTypeTest] =
         Show.show(x => I18N.heat_output_reduced.defined_when_tested(x.pn_reduced.showP))

@@ -24,62 +24,70 @@ val babel_version_custom = "0.5.4"
 // Shared i18n Configuration
 // =========
 
-/** Supported language IDs for i18n modules.
-  * Add new languages here to automatically include them in all i18n modules.
-  */
+/**
+ * Supported language IDs for i18n modules.
+ * Add new languages here to automatically include them in all i18n modules.
+ */
 val SUPPORTED_LANGUAGES_IDS: Seq[String] = Seq("en", "fr")
 
-/** Helper function to create watch sources for i18n conf files.
-  *
-  * @param i18nModules List of i18n module names (e.g., "i18n", "ui-i18n", "payments-i18n")
-  * @return Seq of watch source settings
-  */
+/**
+ * Helper function to create watch sources for i18n conf files.
+ *
+ * @param i18nModules List of i18n module names (e.g., "i18n", "ui-i18n", "payments-i18n")
+ * @return Seq of watch source settings
+ */
 def watchI18nSources(i18nModules: String*): Seq[Setting[_]] = Seq(
-  Compile / watchSources ++= i18nModules.flatMap { moduleName =>
-    SUPPORTED_LANGUAGES_IDS.map { lang =>
-      file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
+    Compile / watchSources ++= i18nModules.flatMap { moduleName =>
+        SUPPORTED_LANGUAGES_IDS.map { lang =>
+            file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
+        }
     }
-  }
 )
 
-/** Helper function to generate i18n source files from HOCON conf files.
-  *
-  * @param moduleName The i18n module name (e.g., "i18n", "ui-i18n")
-  * @param packagePath The package path for the generated file (e.g., Seq("afpma", "firecalc", "i18n"))
-  * @return Source generator task
-  */
+/**
+ * Helper function to generate i18n source files from HOCON conf files.
+ *
+ * @param moduleName The i18n module name (e.g., "i18n", "ui-i18n")
+ * @param packagePath The package path for the generated file (e.g., Seq("afpma", "firecalc", "i18n"))
+ * @return Source generator task
+ */
 def i18nSourceGenerator(moduleName: String, packagePath: Seq[String]): Def.Initialize[Task[Seq[File]]] = Def.task {
-  val cachedFun = FileFunction.cached(
-    streams.value.cacheDirectory / "i18n"
-  ) { (in: Set[File]) =>
-    
-    // Read all language files with explicit UTF-8 encoding
-    val langContents = SUPPORTED_LANGUAGES_IDS.map { lang =>
-      val langFile = in.find(_.getName == s"$lang.conf").get
-      lang -> Source.fromFile(langFile, "UTF-8").getLines().mkString("\n")
-    }.toMap
-    
-    System.err.println(s"[info] => Importing HOCON files:")
-    in.toList.map(f => s"\t${f.getName()}").foreach(name => System.err.println(s"[info] $name"))
-    
-    val packageName = packagePath.mkString(".")
-    val i18nFile = (Compile / sourceManaged).value / packagePath.mkString("/") / "files.scala"
-    
-    // Generate val declarations for each language
-    val langVals = SUPPORTED_LANGUAGES_IDS.map { lang =>
-      s"""  val $lang: String =
+    val cachedFun = FileFunction.cached(
+        streams.value.cacheDirectory / "i18n"
+    ) { (in: Set[File]) =>
+        // Read all language files with explicit UTF-8 encoding
+        val langContents = SUPPORTED_LANGUAGES_IDS.map { lang =>
+            val langFile = in.find(_.getName == s"$lang.conf").get
+            lang -> Source.fromFile(langFile, "UTF-8").getLines().mkString("\n")
+        }.toMap
+
+        System.err.println                             (s"[info] => Importing HOCON files:"        )
+        in.toList.map(f => s"\t${f.getName()}").foreach(name => System.err.println(s"[info] $name"))
+
+        val packageName = packagePath.mkString(".")
+        val i18nFile    = (Compile / sourceManaged).value / packagePath.mkString("/") / "files.scala"
+
+        // Generate val declarations for each language
+        val langVals = SUPPORTED_LANGUAGES_IDS
+            .map { lang =>
+                s"""  val $lang: String =
          |    \"\"\"
          |${langContents(lang)}
          |\"\"\"
          |""".stripMargin
-    }.mkString("\n")
-    
-    // Generate configs map entries
-    val configsMap = SUPPORTED_LANGUAGES_IDS.map { lang =>
-      s""""$lang" -> files.$lang"""
-    }.mkString(",\n  ")
-    
-    IO.write(i18nFile, s"""
+            }
+            .mkString("\n")
+
+        // Generate configs map entries
+        val configsMap = SUPPORTED_LANGUAGES_IDS
+            .map { lang =>
+                s""""$lang" -> files.$lang"""
+            }
+            .mkString(",\n  ")
+
+        IO.write(
+            i18nFile,
+            s"""
       |package $packageName
       |
       |object files {
@@ -91,163 +99,209 @@ def i18nSourceGenerator(moduleName: String, packagePath: Seq[String]): Def.Initi
       |  $configsMap
       |)
       |""".stripMargin
-    )
-    Set(i18nFile)
-  }
-  
-  val inputFiles = SUPPORTED_LANGUAGES_IDS.map { lang =>
-    file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
-  }.toSet
-  
-  cachedFun(inputFiles).toSeq
+        )
+        Set     (i18nFile)
+    }
+
+    val inputFiles = SUPPORTED_LANGUAGES_IDS.map { lang =>
+        file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
+    }.toSet
+
+    cachedFun(inputFiles).toSeq
 }
 
-ThisBuild / scalaVersion        := scala_version
-ThisBuild / organization        := "pro.afpma"
-ThisBuild / organizationName    := "Association Française du Poêle Maçonné Artisanal"
-ThisBuild / startYear           := Some(2025)
-ThisBuild / licenses            := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
-ThisBuild / homepage            := Some(url("https://www.afpma.pro"))
+ThisBuild / scalaVersion     := scala_version
+ThisBuild / organization     := "pro.afpma"
+ThisBuild / organizationName := "Association Française du Poêle Maçonné Artisanal"
+ThisBuild / startYear        := Some(2025)
+ThisBuild / licenses         := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
+ThisBuild / homepage         := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version         = "0.3.0-b19-SNAPSHOT"
-lazy val reports_base_version   = "0.9.0-b19-SNAPSHOT"
-lazy val payments_base_version  = "0.9.0-b19-SNAPSHOT"
-lazy val ui_base_version        = "0.9.0-b19-SNAPSHOT"
+lazy val engine_version        = "0.3.0-b19-SNAPSHOT"
+lazy val reports_base_version  = "0.9.0-b19-SNAPSHOT"
+lazy val payments_base_version = "0.9.0-b19-SNAPSHOT"
+lazy val ui_base_version       = "0.9.0-b19-SNAPSHOT"
 
 // Repository information (single source of truth)
-lazy val githubOwner            = "afpma-pro"
-lazy val githubRepo             = "firecalc"
+lazy val githubOwner = "afpma-pro"
+lazy val githubRepo  = "firecalc"
 
-lazy val reports_version       = s"${reports_base_version}+engine-${engine_version}"
-lazy val payments_version      = s"${payments_base_version}+reports-${reports_base_version}+engine-${engine_version}"
-lazy val ui_version            = s"${ui_base_version}+engine-${engine_version}"
+lazy val reports_version  = s"${reports_base_version}+engine-${engine_version}"
+lazy val payments_version = s"${payments_base_version}+reports-${reports_base_version}+engine-${engine_version}"
+lazy val ui_version       = s"${ui_base_version}+engine-${engine_version}"
 
 // uncomment so that scala 3 traces are valid JSON (parallelExecution seems to procude badly formatted JSON traces)
 // parallelExecution in Global := false
 
 val commonSettings = Seq(
-  scalaVersion := scala_version,
-  scalacOptions ++= Seq(
-    // "-explain",
-    // "-explain-cyclic",
-    // "-deprecation", // TODO: uncomment when building (deactivation should improve compile time)
-    // "-encoding",
-    // "utf8",
-    "-feature",
-    // "-language:existentials",
-    // "-language:higherKinds",
-    "-language:implicitConversions",
-    "-unchecked",
-    // "-Wunused:all",
-    // "-Wunused:all",
-    "-Wunused:imports,privates,locals",
-    // Silence all warnings from auto-generated Molecule boilerplate in src_managed
-    "-Wconf:src=src_managed/.*:silent",
-    // "-Xfatal-warnings",
-    // "-source:future",
-  ),
-  // Activate for generating scala 3 compiler traces
-  // See: scripts/analyze_compiler_traces.py
+    scalaVersion      := scala_version,
+    scalacOptions ++= Seq(
+        // "-explain",
+        // "-explain-cyclic",
+        // "-deprecation", // TODO: uncomment when building (deactivation should improve compile time)
+        // "-encoding",
+        // "utf8",
+        "-feature",
+        // "-language:existentials",
+        // "-language:higherKinds",
+        "-language:implicitConversions",
+        "-unchecked",
+        // "-Wunused:all",
+        // "-Wunused:all",
+        "-Wunused:imports,privates,locals",
+        // Silence all warnings from auto-generated Molecule boilerplate in src_managed
+        "-Wconf:src=src_managed/.*:silent"
+        // "-Xfatal-warnings",
+        // "-source:future",
+    ),
+    // Activate for generating scala 3 compiler traces
+    // See: scripts/analyze_compiler_traces.py
 //   scalacOptions ++= Def.setting {
 //     Seq(
 //       "-Yprofile-enabled",
 //       s"-Yprofile-trace:traces/${name.value}.trace"
 //     )
 //   }.value,
-  // Output compilation scope marker for watch mode parsing
-  Compile / compile := {
-    val result = (Compile / compile).value
-    System.err.println(s"[FIRECALC_COMPILE_DONE] module=${name.value}")
-    result
-  }
-)
-val commonAssemblyMergeStrategy: String => MergeStrategy = {
-  case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
-  case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-  case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".SF")) => MergeStrategy.discard
-  case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".DSA")) => MergeStrategy.discard
-  case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".RSA")) => MergeStrategy.discard
-  case PathList("META-INF", xs @ _*) => MergeStrategy.first
-  case PathList("reference.conf") => MergeStrategy.concat
-  case _ => MergeStrategy.first
-}
-
-
-lazy val root = (project in file("."))
-  .aggregate(i18n.js, i18n.jvm, domain.js, domain.jvm, dto.js, dto.jvm, catalog.js, catalog.jvm, engine_kernel.js, engine_kernel.jvm, engine.js, engine.jvm, engine_13384_common.js, engine_13384_common.jvm, engine_13384_strict.js, engine_13384_strict.jvm, engine_15544_common.js, engine_15544_common.jvm, engine_15544_strict.js, engine_15544_strict.jvm, engine_15544_mce.js, engine_15544_mce.jvm, engine_15544_labo.js, engine_15544_labo.jvm, viz, graph, laminar_form_core, laminar_form_i18n, laminar_form_derivation, laminar_form_coulomb, laminar_form_daisyui, ui, ui_i18n.js/*, ui_i18n.jvm*/, payments_i18n, invoices_i18n, invoices, reports, payments_shared.js, payments_shared.jvm, payments, xlsx_catalog, fdim, labo, engineValidation)
-  .settings(
-    name := "firecalc-root",
     // Output compilation scope marker for watch mode parsing
     Compile / compile := {
-      val result = (Compile / compile).value
-      System.err.println(s"[FIRECALC_COMPILE_DONE] module=${name.value}")
-      result
+        val result = (Compile / compile).value
+        System.err.println(s"[FIRECALC_COMPILE_DONE] module=${name.value}")
+        result
     }
-  )
+)
+val commonAssemblyMergeStrategy: String => MergeStrategy = {
+    case PathList("META-INF", "services", xs @ _*)                      => MergeStrategy.concat
+    case PathList("META-INF", "MANIFEST.MF")                            => MergeStrategy.discard
+    case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".SF"))  => MergeStrategy.discard
+    case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".DSA")) => MergeStrategy.discard
+    case PathList("META-INF", xs @ _*) if xs.exists(_.endsWith(".RSA")) => MergeStrategy.discard
+    case PathList("META-INF", xs @ _*)                                  => MergeStrategy.first
+    case PathList("reference.conf")                                     => MergeStrategy.concat
+    case _                                                              => MergeStrategy.first
+}
+
+lazy val root = (project in file("."))
+    .aggregate(
+        i18n.js,
+        i18n.jvm,
+        domain.js,
+        domain.jvm,
+        dto.js,
+        dto.jvm,
+        catalog.js,
+        catalog.jvm,
+        engine_kernel.js,
+        engine_kernel.jvm,
+        engine.js,
+        engine.jvm,
+        engine_13384_common.js,
+        engine_13384_common.jvm,
+        engine_13384_strict.js,
+        engine_13384_strict.jvm,
+        engine_15544_common.js,
+        engine_15544_common.jvm,
+        engine_15544_strict.js,
+        engine_15544_strict.jvm,
+        engine_15544_mce.js,
+        engine_15544_mce.jvm,
+        engine_15544_labo.js,
+        engine_15544_labo.jvm,
+        viz,
+        graph,
+        laminar_form_core,
+        laminar_form_i18n,
+        laminar_form_derivation,
+        laminar_form_coulomb,
+        laminar_form_daisyui,
+        ui,
+        ui_i18n.js /*, ui_i18n.jvm*/,
+        payments_i18n,
+        invoices_i18n,
+        invoices,
+        reports,
+        payments_shared.js,
+        payments_shared.jvm,
+        payments,
+        xlsx_catalog,
+        fdim,
+        labo,
+        engineValidation
+    )
+    .settings             (
+        name              := "firecalc-root",
+        // Output compilation scope marker for watch mode parsing
+        Compile / compile := {
+            val result = (Compile / compile).value
+            System.err.println(s"[FIRECALC_COMPILE_DONE] module=${name.value}")
+            result
+        }
+    )
 
 // =========
 // i18n-utils
 
 lazy val i18n_utils = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/i18n-utils"))
-  .settings(
-    commonSettings,
-    name := "firecalc-i18n-utils",
-    version := engine_version,
-    scalacOptions ++= Seq(
-        // "-Xmax-inlines:48",
-    ),
-    libraryDependencies ++= Seq(
-        // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
-        "pro.afpma" %%% "magnolia" % "1.3.16",
-
-        "org.typelevel" %%% "cats-core" % "2.13.0",
-        "io.taig" %%% "babel-loader"  % babel_version_custom,
-    ),
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/i18n-utils"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-i18n-utils",
+        version := engine_version,
+        scalacOptions ++= Seq(
+            // "-Xmax-inlines:48",
+        ),
+        libraryDependencies ++= Seq        (
+            // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
+            "pro.afpma"     %%% "magnolia"     % "1.3.16",
+            "org.typelevel" %%% "cats-core"    % "2.13.0",
+            "io.taig"       %%% "babel-loader" % babel_version_custom
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
 
 // =========
 // utils
 
 lazy val utils = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/utils"))
-  .settings(
-    commonSettings,
-    name := "firecalc-utils",
-    version := engine_version,
-    libraryDependencies ++= Seq(
-        // encoding / decoding
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/utils"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-utils",
+        version := engine_version,
+        libraryDependencies ++= Seq(
+            // encoding / decoding
 
-        // generic JSON
-        "io.circe"            %%% "circe-core"    % "0.14.13",
-        "io.circe"            %%% "circe-generic" % "0.14.13",
-        "io.circe"            %%% "circe-parser"  % "0.14.13",
+            // generic JSON
+            "io.circe" %%% "circe-core"    % "0.14.13",
+            "io.circe" %%% "circe-generic" % "0.14.13",
+            "io.circe" %%% "circe-parser"  % "0.14.13",
 
-        // JSON <-> YAML
-        "io.circe"            %%% "circe-yaml-scalayaml" % "0.16.0",
+            // JSON <-> YAML
+            "io.circe" %%% "circe-yaml-scalayaml" % "0.16.0",
 
-        // Testing
-        "org.scalameta" %% "munit" % "1.0.0" % "test",
-    ),
+            // Testing
+            "org.scalameta" %% "munit" % "1.0.0" % "test"
+        ),
 
-    // Generate BuildInfo.scala with version and repository information from build.sbt
-    Compile / sourceGenerators += Def.task {
-        val buildInfoFile = (Compile / sourceManaged).value / "afpma" / "firecalc" / "utils" / "BuildInfo.scala"
+        // Generate BuildInfo.scala with version and repository information from build.sbt
+        Compile / sourceGenerators += Def.task {
+            val buildInfoFile = (Compile / sourceManaged).value / "afpma" / "firecalc" / "utils" / "BuildInfo.scala"
 
-        System.err.println("[info] => Generating BuildInfo.scala with versions and repository info:")
-        System.err.println(s"[info] \tengine_version: $engine_version")
-        System.err.println(s"[info] \treports_base_version: $reports_base_version")
-        System.err.println(s"[info] \treports_version: $reports_version")
-        System.err.println(s"[info] \tpayments_base_version: $payments_base_version")
-        System.err.println(s"[info] \tpayments_version: $payments_version")
-        System.err.println(s"[info] \tui_latest_version: $ui_version")
-        System.err.println(s"[info] \trepository: https://github.com/$githubOwner/$githubRepo")
+            System.err.println("[info] => Generating BuildInfo.scala with versions and repository info:")
+            System.err.println(s"[info] \tengine_version: $engine_version"                              )
+            System.err.println(s"[info] \treports_base_version: $reports_base_version"                  )
+            System.err.println(s"[info] \treports_version: $reports_version"                            )
+            System.err.println(s"[info] \tpayments_base_version: $payments_base_version"                )
+            System.err.println(s"[info] \tpayments_version: $payments_version"                          )
+            System.err.println(s"[info] \tui_latest_version: $ui_version"                               )
+            System.err.println(s"[info] \trepository: https://github.com/$githubOwner/$githubRepo"      )
 
-        IO.write(buildInfoFile, s"""
+            IO.write(
+                buildInfoFile,
+                s"""
         |package afpma.firecalc.utils
         |
         |// Auto-generated from build.sbt - DO NOT EDIT MANUALLY
@@ -266,180 +320,195 @@ lazy val utils = crossProject(JVMPlatform, JSPlatform)
         |  }
         |}
         |""".stripMargin
-        )
+            )
 
-        Seq(buildInfoFile)
-    }.taskValue,
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
+            Seq(buildInfoFile)
+        }.taskValue
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
 
 // =========
 // units
 
 lazy val units = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/units"))
-  .settings(
-    commonSettings,
-    name := "firecalc-units",
-    version := engine_version,
-    scalacOptions ++= Seq(
-        // "-Xmax-inlines:48",
-    ),
-    libraryDependencies ++= Seq(
-        "com.manyangled"  %%% "coulomb-core"  % "0.8.0",
-        "com.manyangled"  %%% "coulomb-units" % "0.8.0",
-    ),
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(i18n)
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/units"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-units",
+        version := engine_version,
+        scalacOptions ++= Seq(
+            // "-Xmax-inlines:48",
+        ),
+        libraryDependencies ++= Seq (
+            "com.manyangled" %%% "coulomb-core"  % "0.8.0",
+            "com.manyangled" %%% "coulomb-units" % "0.8.0"
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(i18n)
 
 // =========
 // domain
 
 lazy val domain = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/domain"))
-  .settings(
-    commonSettings,
-    name := "firecalc-domain",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:48"),
-    libraryDependencies ++= Seq(
-        "org.typelevel" %%% "kittens" % "3.5.0",
-    ),
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(units, i18n)
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/domain"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-domain",
+        version := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:48"),
+        libraryDependencies ++= Seq(
+            "org.typelevel" %%% "kittens" % "3.5.0"
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(units, i18n)
 
 // =========
 // dto
 
 lazy val dto = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/dto"))
-  .settings(
-    commonSettings,
-    name := "firecalc-dto",
-    version := engine_version,
-    scalacOptions ++= Seq(
-        "-Xmax-inlines:48",
-        // "-explain-cyclic",
-    ),
-    libraryDependencies ++= Seq(
-        "io.scalaland"      %%% "chimney"           % "1.8.2",
-        "io.taig"           %%% "babel-generic"     % babel_version_custom,
-        "org.typelevel"     %%% "kittens"           % "3.5.0",
-        // Test
-        "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-    ),
-  ).jvmConfigure(_.settings(
-    Test / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "scala",
-    Test / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "resources",
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  )).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(utils, i18n, units, domain)
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/dto"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-dto",
+        version := engine_version,
+        scalacOptions ++= Seq(
+            "-Xmax-inlines:48"
+            // "-explain-cyclic",
+        ),
+        libraryDependencies ++= Seq       (
+            "io.scalaland"  %%% "chimney"       % "1.8.2",
+            "io.taig"       %%% "babel-generic" % babel_version_custom,
+            "org.typelevel" %%% "kittens"       % "3.5.0",
+            // Test
+            "org.scalatest" %%% "scalatest"     % "3.2.19" % "test"
+        )
+    )
+    .jvmConfigure(
+        _.settings  (
+            Test / unmanagedSourceDirectories +=   (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "scala",
+            Test / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "dto" / ".jvm" / "src" / "test" / "resources",
+            libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(utils, i18n, units, domain)
 
 // =========
 // catalog
 
 lazy val catalog = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/catalog"))
-  .settings(
-    commonSettings,
-    name := "firecalc-catalog",
-    version := engine_version,
-    libraryDependencies ++= Seq(
-        // Testing
-        "org.scalameta" %%% "munit" % "1.0.0" % "test",
-    ),
-  )
-  .jvmConfigure(_.settings(
-    Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala",
-  ))
-  .jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .dependsOn(dto)
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/catalog"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-catalog",
+        version := engine_version,
+        libraryDependencies ++= Seq(
+            // Testing
+            "org.scalameta" %%% "munit" % "1.0.0" % "test"
+        )
+    )
+    .jvmConfigure(
+        _.settings(
+            Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala"
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .dependsOn(dto)
 
 // =========
 // engine-kernel (pure algebras, typeclasses, models, error types — stable foundation)
 
 lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine-kernel"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-kernel",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:32"),
-    libraryDependencies += "com.manyangled"             %%% "coulomb-core"                       % "0.8.0",
-    libraryDependencies += "com.manyangled"             %%% "coulomb-units"                      % "0.8.0",
-    libraryDependencies += "org.typelevel"              %%% "cats-core"                          % "2.13.0",
-    libraryDependencies += "org.typelevel"              %%% "kittens"                            % "3.5.0",
-    libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"                          % "1.9.12",
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine-kernel"))
+    .settings                                                 (
+        commonSettings,
+        name                                                 := "firecalc-engine-kernel",
+        version                                              := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:32"),
+        libraryDependencies += "com.manyangled"             %%% "coulomb-core"  % "0.8.0",
+        libraryDependencies += "com.manyangled"             %%% "coulomb-units" % "0.8.0",
+        libraryDependencies += "org.typelevel"              %%% "cats-core"     % "2.13.0",
+        libraryDependencies += "org.typelevel"              %%% "kittens"       % "3.5.0",
+        libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"     % "1.9.12",
 
-    // Test
-    libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
+        // Test
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
 
-    // i18n
-    libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
-    libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
-    libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
-  ).jvmSettings(
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ).jsSettings(
-    // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
-    // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(i18n, units, dto, domain)
+        // i18n
+        libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
+        libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
+        libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom
+    )
+    .jvmSettings(
+        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    )
+    .jsSettings(
+        // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
+        // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
+        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(i18n, units, dto, domain)
 
 // =========
 // engine
 
 lazy val engine = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine",
-    version := engine_version,
-    mainClass := Some("afpma.firecalc.MCalc"),
-    scalacOptions ++= Seq(
-        "-Xmax-inlines:32",
-        // "-Yprofile-enabled",
-        // "-Yprofile-trace:compiler.trace"
-    ),
-    libraryDependencies += "com.manyangled"             %%% "coulomb-core"                       % "0.8.0",
-    libraryDependencies += "com.manyangled"             %%% "coulomb-units"                      % "0.8.0",
-    libraryDependencies += "org.typelevel"              %%% "cats-core"                          % "2.13.0",
-    libraryDependencies += "org.typelevel"              %%% "cats-effect"                        % "3.6.1",
-    libraryDependencies += "org.typelevel"              %%% "kittens"                            % "3.5.0",
-    libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"                          % "1.9.12",
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine"))
+    .settings                                                 (
+        commonSettings,
+        name                                                 := "firecalc-engine",
+        version                                              := engine_version,
+        mainClass                                            := Some("afpma.firecalc.MCalc"),
+        scalacOptions ++= Seq(
+            "-Xmax-inlines:32"
+            // "-Yprofile-enabled",
+            // "-Yprofile-trace:compiler.trace"
+        ),
+        libraryDependencies += "com.manyangled"             %%% "coulomb-core"  % "0.8.0",
+        libraryDependencies += "com.manyangled"             %%% "coulomb-units" % "0.8.0",
+        libraryDependencies += "org.typelevel"              %%% "cats-core"     % "2.13.0",
+        libraryDependencies += "org.typelevel"              %%% "cats-effect"   % "3.6.1",
+        libraryDependencies += "org.typelevel"              %%% "kittens"       % "3.5.0",
+        libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"     % "1.9.12",
 
-    // Test
+        // Test
 
-    // scalatest
-    libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
+        // scalatest
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
 
-    // i18n
-    libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
-    libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
-    libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
-  ).jvmConfigure(_.settings(
-    Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala",
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ))
-  .jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_kernel, i18n, units, dto, engine_kernel % "test->test")
+        // i18n
+        libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
+        libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
+        libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom
+    )
+    .jvmConfigure(
+        _.settings(
+            Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala",
+            libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(engine_kernel, i18n, units, dto, engine_kernel % "test->test")
 
 // =========
 // engine-13384-strict (EN 13384 implementation — physically separated from core engine)
@@ -448,227 +517,273 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
 // engine-validation (golden-file validation tests for engine)
 
 lazy val engineValidation = (project in file("modules/engine-validation"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-validation",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:32"),
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-  )
-  .dependsOn(engine.jvm, engine.jvm % "test->test", engine_15544_common.jvm, engine_15544_common.jvm % "test->test", engine_15544_strict.jvm, engine_15544_strict.jvm % "test->test")
+    .settings                                  (
+        commonSettings,
+        name                                   := "firecalc-engine-validation",
+        version                                := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:32"),
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
+    )
+    .dependsOn             (
+        engine.jvm,
+        engine.jvm              % "test->test",
+        engine_15544_common.jvm,
+        engine_15544_common.jvm % "test->test",
+        engine_15544_strict.jvm,
+        engine_15544_strict.jvm % "test->test"
+    )
 
 // =========
 // engine-13384-common (EN 13384 pure algebras, models, ops, typeclasses — shared foundation)
 
 lazy val engine_13384_common = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine-13384-common"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-13384-common",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:32"),
-    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-  ).jvmSettings(
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine, engine % "test->test")
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine-13384-common"))
+    .settings                                   (
+        commonSettings,
+        name                                    := "firecalc-engine-13384-common",
+        version                                 := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:32"),
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+    )
+    .jvmSettings(
+        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(engine, engine % "test->test")
 
 // =========
 // engine-13384-strict (EN 13384 implementation — physically separated from core engine)
 
 lazy val engine_13384_strict = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine-13384-strict"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-13384-strict",
-    version := engine_version,
-    scalacOptions ++= Seq(
-        "-Xmax-inlines:32",
-    ),
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine-13384-strict"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-engine-13384-strict",
+        version := engine_version,
+        scalacOptions ++= Seq(
+            "-Xmax-inlines:32"
+        ),
 
-    // Test
-    libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-  ).jvmSettings(
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_13384_common, engine_13384_common % "test->test", engine_kernel % "test->test")
+        // Test
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+    )
+    .jvmSettings(
+        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(engine_13384_common, engine_13384_common % "test->test", engine_kernel % "test->test")
 
 lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine-15544-common"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-15544-common",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:32"),
-    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-  ).jvmSettings(
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine, engine_13384_common, engine_13384_strict, engine % "test->test", engine_13384_common % "test->test", engine_13384_strict % "test->test")
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine-15544-common"))
+    .settings                                   (
+        commonSettings,
+        name                                    := "firecalc-engine-15544-common",
+        version                                 := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:32"),
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+    )
+    .jvmSettings(
+        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn             (
+        engine,
+        engine_13384_common,
+        engine_13384_strict,
+        engine              % "test->test",
+        engine_13384_common % "test->test",
+        engine_13384_strict % "test->test"
+    )
 
 lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine-15544-strict"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-15544-strict",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:32"),
-    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-  ).jvmSettings(
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test", engine_13384_strict % "test->test", engine % "test->test")
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine-15544-strict"))
+    .settings                                   (
+        commonSettings,
+        name                                    := "firecalc-engine-15544-strict",
+        version                                 := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:32"),
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+    )
+    .jvmSettings(
+        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(
+        engine_15544_common,
+        engine_13384_strict,
+        engine_15544_common % "test->test",
+        engine_13384_strict % "test->test",
+        engine              % "test->test"
+    )
 
 lazy val engine_15544_mce = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine-15544-mce"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-15544-mce",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:32"),
-    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-  ).jvmSettings(
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test")
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine-15544-mce"))
+    .settings                                   (
+        commonSettings,
+        name                                    := "firecalc-engine-15544-mce",
+        version                                 := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:32"),
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+    )
+    .jvmSettings(
+        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test")
 
 lazy val engine_15544_labo = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/engine-15544-labo"))
-  .settings(
-    commonSettings,
-    name := "firecalc-engine-15544-labo",
-    version := engine_version,
-    scalacOptions ++= Seq("-Xmax-inlines:32"),
-    libraryDependencies += "org.scalatest"     %%% "scalatest"       % "3.2.19"   % "test",
-  ).jvmSettings(
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine_15544_mce, engine_15544_mce % "test->test")
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/engine-15544-labo"))
+    .settings                                   (
+        commonSettings,
+        name                                    := "firecalc-engine-15544-labo",
+        version                                 := engine_version,
+        scalacOptions ++= Seq("-Xmax-inlines:32"),
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+    )
+    .jvmSettings(
+        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(engine_15544_mce, engine_15544_mce % "test->test")
 
 // =========
 // viz (3D visualization library - framework-agnostic, Scala.js only)
 
 lazy val viz = (project in file("modules/viz"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    commonSettings,
-    name := "firecalc-viz",
-    version := ui_version,
-    libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "2.8.0"
-    ),
-    scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.ESModule)
-    },
-    scalaJSUseMainModuleInitializer := false,
-  )
-  .settings(jsSourceMapSettings)
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "firecalc-viz",
+        version                         := ui_version,
+        libraryDependencies ++= Seq(
+            "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+        ),
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
 
 // =========
 // graph (2D chart visualization library - framework-agnostic, Scala.js only)
 
 lazy val graph = (project in file("modules/graph"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    commonSettings,
-    name := "firecalc-graph",
-    version := ui_version,
-    libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "2.8.0"
-    ),
-    scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.ESModule)
-    },
-    scalaJSUseMainModuleInitializer := false,
-  )
-  .settings(jsSourceMapSettings)
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "firecalc-graph",
+        version                         := ui_version,
+        libraryDependencies ++= Seq(
+            "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+        ),
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
 
 // =========
 // fdim
 
 lazy val fdim = (project in file("modules/fdim"))
-  .settings(
-    name := "firecalc-fdim",
-    version := engine_version,
-    commonSettings,
-    // scalatest
-    libraryDependencies += "org.scalatest"      %%% "scalatest"         % "3.2.19"      % "test",
-    scalacOptions ++= Seq(
-      "-Xmax-inlines:32",
-    ),
-  )
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, engine_15544_mce.jvm, engine.jvm % "test->test", engine_13384_strict.jvm % "test->test", engine_15544_strict.jvm % "test->test", engine_15544_mce.jvm % "test->test")
+    .settings                                   (
+        name                                    := "firecalc-fdim",
+        version                                 := engine_version,
+        commonSettings,
+        // scalatest
+        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
+        scalacOptions ++= Seq(
+            "-Xmax-inlines:32"
+        )
+    )
+    .settings(watchI18nSources("i18n"))
+    .dependsOn             (
+        engine.jvm,
+        engine_13384_strict.jvm,
+        engine_15544_strict.jvm,
+        engine_15544_mce.jvm,
+        engine.jvm              % "test->test",
+        engine_13384_strict.jvm % "test->test",
+        engine_15544_strict.jvm % "test->test",
+        engine_15544_mce.jvm    % "test->test"
+    )
 
 // =========
 // i18n
 
 lazy val i18n = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/i18n"))
-  .settings(
-    commonSettings,
-    name := "firecalc-i18n",
-    version := engine_version,
-    scalacOptions ++= Seq(
-        "-Xmax-inlines:64",
-    ),
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/i18n"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-i18n",
+        version := engine_version,
+        scalacOptions ++= Seq(
+            "-Xmax-inlines:64"
+        ),
 
-    // i18n
-    libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
-    libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
-    libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
+        // i18n
+        libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
+        libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
+        libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
 
-    // Make Bloop/Metals watch the i18n conf files for changes
-    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-      file(s"modules/i18n/src/main/resources/i18n/$lang.conf")
-    },
+        // Make Bloop/Metals watch the i18n conf files for changes
+        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+            file(s"modules/i18n/src/main/resources/i18n/$lang.conf")
+        },
 
-    // Generate Scala source files from HOCON conf files
-    Compile / sourceGenerators += i18nSourceGenerator("i18n", Seq("afpma", "firecalc", "i18n")),
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .dependsOn(i18n_utils)
+        // Generate Scala source files from HOCON conf files
+        Compile / sourceGenerators += i18nSourceGenerator("i18n", Seq("afpma", "firecalc", "i18n"))
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .dependsOn(i18n_utils)
 
 lazy val i18nJVM = i18n.jvm
-lazy val i18nJS = i18n.js
+lazy val i18nJS  = i18n.js
 
 // =========
 // labo
 
 lazy val labo = (project in file("modules/labo"))
-  .settings(
-    name := "firecalc-labo",
-    version := engine_version,
-  )
-  .settings(
-    commonSettings,
-    scalacOptions ++= Seq(
-      "-Xmax-inlines:32",
-    ),
-  )
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_labo.jvm, engine.jvm % "test->test", engine_15544_labo.jvm % "test->test")
-
-
+    .settings   (
+        name    := "firecalc-labo",
+        version := engine_version
+    )
+    .settings(
+        commonSettings,
+        scalacOptions ++= Seq(
+            "-Xmax-inlines:32"
+        )
+    )
+    .settings(watchI18nSources("i18n"))
+    .dependsOn           (
+        engine.jvm,
+        engine_13384_strict.jvm,
+        engine_15544_labo.jvm,
+        engine.jvm            % "test->test",
+        engine_15544_labo.jvm % "test->test"
+    )
 
 // =========
 // ui
@@ -678,70 +793,69 @@ lazy val labo = (project in file("modules/labo"))
 //
 
 val hackScalablyTypedRemoveSourceFuture: Seq[Setting[_]] = {
-  import org.scalablytyped.converter.internal.scalajs.Versions
-  import org.scalablytyped.converter.internal.ZincCompiler
+    import org.scalablytyped.converter.internal.scalajs.Versions
+    import org.scalablytyped.converter.internal.ZincCompiler
 
-  /* First, we need to override stConversionOptions.versions with a hacked
-   * subclass that gets rid of "-source:future".
-   */
+    /* First, we need to override stConversionOptions.versions with a hacked
+     * subclass that gets rid of "-source:future".
+     */
 
-  // Yes, I'm extending a case class; I will burn in hell.
-  class HackedVersions(orig: Versions)
-      extends Versions(orig.scala, orig.scalaJs) {
-    override val scalacOptions: List[String] =
-      orig.scalacOptions.filterNot(_ == "-source:future")
+    // Yes, I'm extending a case class; I will burn in hell.
+    class HackedVersions(orig: Versions) extends Versions(orig.scala, orig.scalaJs) {
+        override val scalacOptions: List[String] =
+            orig.scalacOptions.filterNot(_ == "-source:future")
 
-    override def toString(): String =
-      s"${super.toString()} hacked with $scalacOptions"
-  }
+        override def toString(): String =
+            s"${super.toString()} hacked with $scalacOptions"
+    }
 
-  val conversionSetting: Setting[_] = stConversionOptions := {
-    val prev = stConversionOptions.value
-    prev.copy(versions = new HackedVersions(prev.versions))
-  }
+    val conversionSetting: Setting[_] = stConversionOptions := {
+        val prev = stConversionOptions.value
+        prev.copy(versions = new HackedVersions(prev.versions))
+    }
 
-  /* Unfortunately, the internal stInternalZincCompiler task recreates its
-   * own Versions object, so we will also have to patch that one.
-   * This is much trickier, because there is no real public access to that
-   * thing. We're on the JVM, though, so nothing is ever *really* private,
-   * if we try hard enough.
-   */
+    /* Unfortunately, the internal stInternalZincCompiler task recreates its
+     * own Versions object, so we will also have to patch that one.
+     * This is much trickier, because there is no real public access to that
+     * thing. We're on the JVM, though, so nothing is ever *really* private,
+     * if we try hard enough.
+     */
 
-  // Get access to the private `inputs` field of ZincCompiler:
-  // https://github.com/ScalablyTyped/Converter/blob/02257bf3588da08deec5a3b07f306fcc6236642d/sbt-converter/src/main/scala/org/scalablytyped/converter/internal/ZincCompiler.scala#L25
-  val inputsField = classOf[ZincCompiler].getDeclaredField("inputs")
-  inputsField.setAccessible(true)
+    // Get access to the private `inputs` field of ZincCompiler:
+    // https://github.com/ScalablyTyped/Converter/blob/02257bf3588da08deec5a3b07f306fcc6236642d/sbt-converter/src/main/scala/org/scalablytyped/converter/internal/ZincCompiler.scala#L25
+    val inputsField = classOf[ZincCompiler].getDeclaredField("inputs")
+    inputsField.setAccessible(true)
 
-  // Access to a private setting
-  // https://github.com/ScalablyTyped/Converter/blob/02257bf3588da08deec5a3b07f306fcc6236642d/sbt-converter/src/main/scala/org/scalablytyped/converter/plugin/ScalablyTypedConverterExternalNpmPlugin.scala#L15C19-L15C97
-  val stInternalZincCompiler = taskKey[ZincCompiler]("Hijack compiler settings")
+    // Access to a private setting
+    // https://github.com/ScalablyTyped/Converter/blob/02257bf3588da08deec5a3b07f306fcc6236642d/sbt-converter/src/main/scala/org/scalablytyped/converter/plugin/ScalablyTypedConverterExternalNpmPlugin.scala#L15C19-L15C97
+    val stInternalZincCompiler = taskKey[ZincCompiler]("Hijack compiler settings")
 
-  val zincCompilerSetting: Setting[_] = stInternalZincCompiler := {
-    val prev = stInternalZincCompiler.value
-    val prevInputs = inputsField.get(prev).asInstanceOf[xsbti.compile.Inputs]
-    val prevScalacOptions = prevInputs.options().scalacOptions()
-    val newScalacOptions = prevScalacOptions.filterNot(_ == "-source:future")
-    val newOptions = prevInputs.options().withScalacOptions(newScalacOptions)
-    val newInputs = prevInputs.withOptions(newOptions)
+    val zincCompilerSetting: Setting[_] = stInternalZincCompiler := {
+        val prev              = stInternalZincCompiler.value
+        val prevInputs        = inputsField.get(prev).asInstanceOf[xsbti.compile.Inputs]
+        val prevScalacOptions = prevInputs.options().scalacOptions()
+        val newScalacOptions  = prevScalacOptions.filterNot(_ == "-source:future")
+        val newOptions        = prevInputs.options().withScalacOptions(newScalacOptions)
+        val newInputs         = prevInputs.withOptions(newOptions)
 
-    // And brutally set the immutable field, because we can.
-    // (What do you mean, that's less bad than extending a case class?)
-    inputsField.set(prev, newInputs)
+        // And brutally set the immutable field, because we can.
+        // (What do you mean, that's less bad than extending a case class?)
+        inputsField.set(prev, newInputs)
 
-    prev
-  }
+        prev
+    }
 
-  Def.settings(
-    conversionSetting,
-    zincCompilerSetting
-  )
+    Def.settings(
+        conversionSetting,
+        zincCompilerSetting
+    )
 }
 
 // In CI on Windows, disable the reflective hack that touches ScalablyTyped's internal Zinc compiler,
 // as it might contribute to timing/locking issues on some runners.
 val maybeHackScalablyTypedRemoveSourceFuture: Seq[Setting[_]] =
-  if (sys.env.get("FIRECALC_CI_NO_ST_HACK").nonEmpty) Def.settings()
-  else hackScalablyTypedRemoveSourceFuture
+    if (sys.env.get("FIRECALC_CI_NO_ST_HACK").nonEmpty) Def.settings()
+    else hackScalablyTypedRemoveSourceFuture
 
 // lazy val jsSourceMapSettings = Def.settings(
 //     scalacOptions += {
@@ -759,8 +873,8 @@ lazy val jsSourceMapSettings = Def.settings(
         // - Port is configurable via FIRECALC_VITE_DEV_SERVER_PORT env var (default: 5173)
         val vitePort = sys.env.getOrElse("FIRECALC_VITE_DEV_SERVER_PORT", "5173")
         Seq(
-          s"-scalajs-mapSourceURI:file:/->https://localhost:$vitePort/@fs/",
-          s"-scalajs-mapSourceURI:file:///->https://localhost:$vitePort/@fs/"
+            s"-scalajs-mapSourceURI:file:/->https://localhost:$vitePort/@fs/",
+            s"-scalajs-mapSourceURI:file:///->https://localhost:$vitePort/@fs/"
         )
     }
 )
@@ -769,179 +883,181 @@ lazy val jsSourceMapSettings = Def.settings(
 // laminar-form-core (Form[A], FormRenderer, Defaultable, ValidateVar, FormConfig, etc.)
 
 lazy val laminar_form_core = (project in file("modules/laminar-form-core"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    commonSettings,
-    name := "laminar-form-core",
-    version := ui_version,
-    libraryDependencies ++= Seq(
-      "com.raquo"       %%% "laminar"  % "17.2.1",
-      "com.raquo"       %%% "airstream" % "17.2.1",
-      "org.typelevel"   %%% "cats-core" % "2.13.0",
-      // magnolia for Defaultable + FormAnnotations derivation
-      "pro.afpma"       %%% "magnolia"  % "1.3.16",
-      // testing
-      "com.lihaoyi"     %%% "utest"    % "0.8.4" % Test,
-    ),
-    testFrameworks += new TestFramework("utest.runner.Framework"),
-    scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.ESModule)
-    },
-    scalaJSUseMainModuleInitializer := false,
-  )
-  .settings(jsSourceMapSettings)
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "laminar-form-core",
+        version                         := ui_version,
+        libraryDependencies ++= Seq      (
+            "com.raquo"     %%% "laminar"   % "17.2.1",
+            "com.raquo"     %%% "airstream" % "17.2.1",
+            "org.typelevel" %%% "cats-core" % "2.13.0",
+            // magnolia for Defaultable + FormAnnotations derivation
+            "pro.afpma"     %%% "magnolia"  % "1.3.16",
+            // testing
+            "com.lihaoyi"   %%% "utest"     % "0.8.4" % Test
+        ),
+        testFrameworks += new TestFramework("utest.runner.Framework"),
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
 
 // =========
 // laminar-form-i18n (autoOverwriteFieldNames i18n extension for Form[A])
 
 lazy val laminar_form_i18n = (project in file("modules/laminar-form-i18n"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    commonSettings,
-    name := "laminar-form-i18n",
-    version := ui_version,
-    scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.ESModule)
-    },
-    scalaJSUseMainModuleInitializer := false,
-  )
-  .settings(jsSourceMapSettings)
-  .dependsOn(laminar_form_core, i18n_utils.js)
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "laminar-form-i18n",
+        version                         := ui_version,
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
+    .dependsOn(laminar_form_core, i18n_utils.js)
 
 // =========
 // laminar-form-derivation (magnolia join/split, primitives, factory methods)
 
 lazy val laminar_form_derivation = (project in file("modules/laminar-form-derivation"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    commonSettings,
-    name := "laminar-form-derivation",
-    version := ui_version,
-    libraryDependencies ++= Seq(
-      // magnolia for AutoDerivation[Form]
-      "pro.afpma"       %%% "magnolia"  % "1.3.16",
-      // java.time for LocalDate
-      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
-      // testing
-      "com.lihaoyi"     %%% "utest"    % "0.8.4" % Test,
-    ),
-    testFrameworks += new TestFramework("utest.runner.Framework"),
-    scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.ESModule)
-    },
-    scalaJSUseMainModuleInitializer := false,
-  )
-  .settings(jsSourceMapSettings)
-  .dependsOn(laminar_form_core, laminar_form_i18n, i18n_utils.js)
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "laminar-form-derivation",
+        version                         := ui_version,
+        libraryDependencies ++= Seq               (
+            // magnolia for AutoDerivation[Form]
+            "pro.afpma"         %%% "magnolia"        % "1.3.16",
+            // java.time for LocalDate
+            "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+            // testing
+            "com.lihaoyi"       %%% "utest"           % "0.8.4" % Test
+        ),
+        testFrameworks += new TestFramework("utest.runner.Framework"),
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
+    .dependsOn(laminar_form_core, laminar_form_i18n, i18n_utils.js)
 
 // =========
 // laminar-form-coulomb (NumericFormValue instances for QtyD/TempD)
 
 lazy val laminar_form_coulomb = (project in file("modules/laminar-form-coulomb"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    commonSettings,
-    name := "laminar-form-coulomb",
-    version := ui_version,
-    libraryDependencies ++= Seq(
-      "com.manyangled"  %%% "coulomb-core"  % "0.8.0",
-      "com.manyangled"  %%% "coulomb-units" % "0.8.0",
-      // testing
-      "com.lihaoyi"     %%% "utest"    % "0.8.4" % Test,
-    ),
-    testFrameworks += new TestFramework("utest.runner.Framework"),
-    scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.ESModule)
-    },
-    scalaJSUseMainModuleInitializer := false,
-  )
-  .settings(jsSourceMapSettings)
-  .dependsOn(laminar_form_derivation, units.js)
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "laminar-form-coulomb",
+        version                         := ui_version,
+        libraryDependencies ++= Seq (
+            "com.manyangled" %%% "coulomb-core"  % "0.8.0",
+            "com.manyangled" %%% "coulomb-units" % "0.8.0",
+            // testing
+            "com.lihaoyi"    %%% "utest"         % "0.8.4" % Test
+        ),
+        testFrameworks += new TestFramework("utest.runner.Framework"),
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
+    .dependsOn(laminar_form_derivation, units.js)
 
 // =========
 // laminar-form-daisyui (DaisyUIVertical/Horizontal FormRenderer implementations)
 
 lazy val laminar_form_daisyui = (project in file("modules/laminar-form-daisyui"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    commonSettings,
-    name := "laminar-form-daisyui",
-    version := ui_version,
-    scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.ESModule)
-    },
-    scalaJSUseMainModuleInitializer := false,
-  )
-  .settings(jsSourceMapSettings)
-  .dependsOn(laminar_form_derivation)
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "laminar-form-daisyui",
+        version                         := ui_version,
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
+    .dependsOn(laminar_form_derivation)
 
 // =========
 // ui (firecalc frontend — Laminar SPA)
 
 lazy val ui = (project in file("modules/ui"))
-  .enablePlugins(ScalaJSPlugin)
-  .enablePlugins(ScalablyTypedConverterExternalNpmPlugin)
-  .settings(
-    name := "firecalc-ui",
-    version := ui_version,
-    stIgnore := List("@tailwindcss/vite", "three", "chart.js"),
-    maybeHackScalablyTypedRemoveSourceFuture,
-    
-    // Generate .env.electron file with repository and version information
-    TaskKey[Unit]("generateEnvVars") := {
-      val envFilePath = file("web/.env.electron")
-      val envContent = s"""# Auto-generated from build.sbt - DO NOT EDIT MANUALLY
+    .enablePlugins(ScalaJSPlugin)
+    .enablePlugins(ScalablyTypedConverterExternalNpmPlugin)
+    .settings    (
+        name     := "firecalc-ui",
+        version  := ui_version,
+        stIgnore := List("@tailwindcss/vite", "three", "chart.js"),
+        maybeHackScalablyTypedRemoveSourceFuture,
+
+        // Generate .env.electron file with repository and version information
+        TaskKey[Unit]("generateEnvVars") := {
+            val envFilePath = file("web/.env.electron")
+            val envContent  = s"""# Auto-generated from build.sbt - DO NOT EDIT MANUALLY
                           |GITHUB_REPO_OWNER=$githubOwner
                           |GITHUB_REPO_NAME=$githubRepo
                           |UI_VERSION=$ui_version
                           |""".stripMargin
-      
-      IO.write(envFilePath, envContent)
-      System.err.println("[info] => Generated web/.env.electron with repository info")
-      System.err.println(s"[info] \tGITHUB_REPO_OWNER=$githubOwner")
-      System.err.println(s"[info] \tGITHUB_REPO_NAME=$githubRepo")
-      System.err.println(s"[info] \tUI_VERSION=$ui_version")
-    },
-    
-    // Generate JavaScript constants for renderer process
-    TaskKey[Unit]("generateJsConstants") := {
-      val jsFilePath = file("web/generated-constants.js")
-      
-      // Read backend URLs from .env files
-      def readEnvFile(envFile: File): Map[String, String] = {
-        if (envFile.exists()) {
-          Source.fromFile(envFile).getLines()
-            .filter(_.contains("="))
-            .filterNot(_.trim.startsWith("#"))
-            .map { line =>
-              val Array(key, value) = line.split("=", 2).map(_.trim)
-              key -> value
+
+            IO.write          (envFilePath, envContent                                     )
+            System.err.println("[info] => Generated web/.env.electron with repository info")
+            System.err.println(s"[info] \tGITHUB_REPO_OWNER=$githubOwner"                  )
+            System.err.println(s"[info] \tGITHUB_REPO_NAME=$githubRepo"                    )
+            System.err.println(s"[info] \tUI_VERSION=$ui_version"                          )
+        },
+
+        // Generate JavaScript constants for renderer process
+        TaskKey[Unit]("generateJsConstants") := {
+            val jsFilePath = file("web/generated-constants.js")
+
+            // Read backend URLs from .env files
+            def readEnvFile(envFile: File): Map[String, String] = {
+                if (envFile.exists()) {
+                    Source
+                        .fromFile(envFile)
+                        .getLines()
+                        .filter(_.contains("="))
+                        .filterNot(_.trim.startsWith("#"))
+                        .map { line =>
+                            val Array(key, value) = line.split("=", 2).map(_.trim)
+                            key -> value
+                        }
+                        .toMap
+                } else Map.empty
             }
-            .toMap
-        } else Map.empty
-      }
-      
-      // Build backend URLs from environment files
-      def buildBackendUrl(envMap: Map[String, String]): String = {
-        val protocol = envMap.getOrElse("VITE_BACKEND_PROTOCOL", "http")
-        val host = envMap.getOrElse("VITE_BACKEND_HOST", "localhost")
-        val port = envMap.getOrElse("VITE_BACKEND_PORT", "8181")
-        val portSuffix = if (port == "443" || port == "80") "" else s":$port"
-        s"$protocol://$host$portSuffix"
-      }
-      
-      val devEnv = readEnvFile(file("modules/ui/.env.development"))
-      val stagingEnvLocal = readEnvFile(file("modules/ui/.env.staging.local"))
-      val stagingEnv = readEnvFile(file("modules/ui/.env.staging"))
-      val prodEnvLocal = readEnvFile(file("modules/ui/.env.production.local"))
-      val prodEnv = readEnvFile(file("modules/ui/.env.production"))
-      
-      // Prefer .local files over base files (local overrides base)
-      val devBackendUrl = buildBackendUrl(devEnv)
-      val stagingBackendUrl = buildBackendUrl(stagingEnv ++ stagingEnvLocal)
-      val prodBackendUrl = buildBackendUrl(prodEnv ++ prodEnvLocal)
-      
-      val jsContent = s"""// Auto-generated from build.sbt - DO NOT EDIT MANUALLY
+
+            // Build backend URLs from environment files
+            def buildBackendUrl(envMap: Map[String, String]): String = {
+                val protocol   = envMap.getOrElse("VITE_BACKEND_PROTOCOL", "http")
+                val host       = envMap.getOrElse("VITE_BACKEND_HOST", "localhost")
+                val port       = envMap.getOrElse("VITE_BACKEND_PORT", "8181")
+                val portSuffix = if (port == "443" || port == "80") "" else s":$port"
+                s"$protocol://$host$portSuffix"
+            }
+
+            val devEnv          = readEnvFile(file("modules/ui/.env.development")     )
+            val stagingEnvLocal = readEnvFile(file("modules/ui/.env.staging.local")   )
+            val stagingEnv      = readEnvFile(file("modules/ui/.env.staging")         )
+            val prodEnvLocal    = readEnvFile(file("modules/ui/.env.production.local"))
+            val prodEnv         = readEnvFile(file("modules/ui/.env.production")      )
+
+            // Prefer .local files over base files (local overrides base)
+            val devBackendUrl     = buildBackendUrl(devEnv)
+            val stagingBackendUrl = buildBackendUrl(stagingEnv ++ stagingEnvLocal)
+            val prodBackendUrl    = buildBackendUrl(prodEnv ++ prodEnvLocal)
+
+            val jsContent = s"""// Auto-generated from build.sbt - DO NOT EDIT MANUALLY
                         |export const GITHUB_REPO_OWNER = '$githubOwner';
                         |export const GITHUB_REPO_NAME = '$githubRepo';
                         |export const UI_VERSION = '$ui_version';
@@ -951,241 +1067,250 @@ lazy val ui = (project in file("modules/ui"))
                         |export const BACKEND_API_STAGING = '$stagingBackendUrl';
                         |export const BACKEND_API_PRODUCTION = '$prodBackendUrl';
                         |""".stripMargin
-      
-      IO.write(jsFilePath, jsContent)
-      System.err.println("[info] => Generated web/generated-constants.js for renderer process")
-      System.err.println(s"[info] \tBACKEND_API_DEV: $devBackendUrl")
-      System.err.println(s"[info] \tBACKEND_API_STAGING: $stagingBackendUrl")
-      System.err.println(s"[info] \tBACKEND_API_PRODUCTION: $prodBackendUrl")
-    },
-    
-    // Combined task to sync all build configuration
-    TaskKey[Unit]("syncBuildConfig") := {
-      // Update package.json version
-      val packageJsonPath = file("web/package.json")
-      if (packageJsonPath.exists()) {
-        val content = IO.read(packageJsonPath)
-        val updatedContent = content.replaceFirst(
-          "\"version\"\\s*:\\s*\"[^\"]*\"",
-          s""""version": "$ui_version""""
+
+            IO.write          (jsFilePath, jsContent                                                )
+            System.err.println("[info] => Generated web/generated-constants.js for renderer process")
+            System.err.println(s"[info] \tBACKEND_API_DEV: $devBackendUrl"                          )
+            System.err.println(s"[info] \tBACKEND_API_STAGING: $stagingBackendUrl"                  )
+            System.err.println(s"[info] \tBACKEND_API_PRODUCTION: $prodBackendUrl"                  )
+        },
+
+        // Combined task to sync all build configuration
+        TaskKey[Unit]("syncBuildConfig") := {
+            // Update package.json version
+            val packageJsonPath = file("web/package.json")
+            if (packageJsonPath.exists()) {
+                val content        = IO.read(packageJsonPath)
+                val updatedContent = content.replaceFirst(
+                    "\"version\"\\s*:\\s*\"[^\"]*\"",
+                    s""""version": "$ui_version""""
+                )
+                IO.write          (packageJsonPath, updatedContent                     )
+                System.err.println(s"[info] => Synced Electron version to: $ui_version")
+            } else {
+                System.err.println(s"[warn] => Warning: web/package.json not found")
+            }
+
+            // Generate environment variables
+            val generateEnvTask = (TaskKey[Unit]("generateEnvVars")).value
+            val generateJsTask  = (TaskKey[Unit]("generateJsConstants")).value
+        },
+        libraryDependencies ++= Seq    (
+            "com.raquo"   %%% "laminar"   % "17.2.1",
+            "com.raquo"   %%% "waypoint"  % "9.0.0",
+            "com.raquo"   %%% "airstream" % "17.2.1",
+            "com.lihaoyi" %%% "upickle"   % "4.1.0",
+
+            // provides implementation of java.time for scala js
+            "io.github.cquiroz" %%% "scala-java-time"      % "2.6.0",
+            "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
+
+            // automatic data transformations (helps going from 'ui' models to 'engine' models)
+            "io.scalaland" %%% "chimney" % "1.8.2",
+
+            // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
+            "pro.afpma" %%% "magnolia"      % "1.3.16",
+            "io.taig"   %%% "babel-circe"   % babel_version_custom,
+            "io.taig"   %%% "babel-generic" % babel_version_custom,
+            "io.taig"   %%% "babel-loader"  % babel_version_custom,
+
+            // encoding / decoding
+
+            // generic JSON
+            "io.circe" %%% "circe-core"    % "0.14.13",
+            "io.circe" %%% "circe-generic" % "0.14.13",
+            "io.circe" %%% "circe-parser"  % "0.14.13",
+
+            // JSON <-> YAML
+            "io.circe" %%% "circe-yaml-scalayaml" % "0.16.0",
+
+            // Runtime unit
+            "com.manyangled" %%% "coulomb-parser" % "0.8.0",
+
+            // Testing
+            "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
+            "com.lihaoyi"   %%% "utest"     % "0.8.4"  % Test
+        ),
+        testFrameworks += new TestFramework("utest.runner.Framework"),
+
+        // common Scala.js config for dev / prod
+        scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+
+        // Development settings (applied when using fastLinkJS)
+        // Dev: keep bundles minimal to reduce the number of emitted .js/.map files
+        Compile / fastLinkJS / scalaJSLinkerConfig ~= {
+            _.withModuleSplitStyle(ModuleSplitStyle.FewestModules)
+                //   .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("afpma.firecalc.ui")))
+                .withSourceMap(true)
+                .withCheckIR(false) // Skip IR validation in dev for faster incremental compiles
+            //   .withOptimizer(false) // only deactivate optimizer for debugging (temporarily). See https://github.com/scala-js/scala-js/issues/5159
+        },
+
+        // Production settings (applied when using fullLinkJS)
+        Compile / fullLinkJS / scalaJSLinkerConfig ~= {
+            _.withModuleSplitStyle(ModuleSplitStyle.FewestModules)
+                .withSourceMap(false)
+                .withOptimizer(true)
+                .withClosureCompiler(false)
+        },
+        scalaJSUseMainModuleInitializer := true,
+        Compile / sourceGenerators += Def.task {
+            List(
+                (ui_i18n.js / Compile / sourceManaged).value / "afpma" / "firecalc" / "ui" / "i18n" / "files.scala"
+            )
+        },
+
+        // Tell ScalablyTyped that we manage `npm install` ourselves
+        externalNpm := (baseDirectory).value
+    )
+    .settings(
+        commonSettings,
+        scalacOptions ++= Seq(
+            "-Xmax-inlines:40" // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
+            //   "--explain-cyclic",
         )
-        IO.write(packageJsonPath, updatedContent)
-        System.err.println(s"[info] => Synced Electron version to: $ui_version")
-      } else {
-        System.err.println(s"[warn] => Warning: web/package.json not found")
-      }
-      
-      // Generate environment variables
-      val generateEnvTask = (TaskKey[Unit]("generateEnvVars")).value
-      val generateJsTask = (TaskKey[Unit]("generateJsConstants")).value
-    },
-    
-    libraryDependencies ++= Seq(
-      "com.raquo"                     %%% "laminar"             % "17.2.1",
-      "com.raquo"                     %%% "waypoint"            % "9.0.0",
-      "com.raquo"                     %%% "airstream"           % "17.2.1",
-      "com.lihaoyi"                   %%% "upickle"             % "4.1.0",
-
-      // provides implementation of java.time for scala js
-      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
-
-      // automatic data transformations (helps going from 'ui' models to 'engine' models)
-      "io.scalaland"      %%% "chimney" % "1.8.2",
-
-      // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
-      "pro.afpma" %%% "magnolia" % "1.3.16", 
-
-      "io.taig"             %%% "babel-circe"   % babel_version_custom,
-      "io.taig"             %%% "babel-generic" % babel_version_custom,
-      "io.taig"             %%% "babel-loader"  % babel_version_custom,
-
-      // encoding / decoding
-      
-      // generic JSON
-      "io.circe"            %%% "circe-core"    % "0.14.13",
-      "io.circe"            %%% "circe-generic" % "0.14.13",
-      "io.circe"            %%% "circe-parser"  % "0.14.13",
-      
-      // JSON <-> YAML
-      "io.circe"            %%% "circe-yaml-scalayaml" % "0.16.0",
-
-      // Runtime unit
-      "com.manyangled"      %%% "coulomb-parser" % "0.8.0",
-
-      // Testing
-      "org.scalatest"       %%% "scalatest"     % "3.2.19" % "test",
-      "com.lihaoyi"         %%% "utest"         % "0.8.4"  % Test,
-    ),
-    testFrameworks += new TestFramework("utest.runner.Framework"),
-
-    // common Scala.js config for dev / prod
-    scalaJSLinkerConfig ~= { _
-        .withModuleKind(ModuleKind.ESModule) 
-    },
-
-    // Development settings (applied when using fastLinkJS)
-    // Dev: keep bundles minimal to reduce the number of emitted .js/.map files
-    Compile / fastLinkJS / scalaJSLinkerConfig ~= { _
-      .withModuleSplitStyle(ModuleSplitStyle.FewestModules)
-    //   .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("afpma.firecalc.ui")))
-      .withSourceMap(true)
-      .withCheckIR(false)  // Skip IR validation in dev for faster incremental compiles
-    //   .withOptimizer(false) // only deactivate optimizer for debugging (temporarily). See https://github.com/scala-js/scala-js/issues/5159
-    },
-
-    // Production settings (applied when using fullLinkJS)
-    Compile / fullLinkJS / scalaJSLinkerConfig ~= { _
-      .withModuleSplitStyle(ModuleSplitStyle.FewestModules)
-      .withSourceMap(false)
-      .withOptimizer(true)
-      .withClosureCompiler(false)
-    },
-
-    scalaJSUseMainModuleInitializer := true,
-
-    Compile / sourceGenerators += Def.task { List(
-      (ui_i18n.js / Compile / sourceManaged).value / "afpma" / "firecalc" / "ui" / "i18n" / "files.scala"
-    )},
-
-    // Tell ScalablyTyped that we manage `npm install` ourselves
-    externalNpm := (baseDirectory).value,
-  )
-  .settings(
-    commonSettings,
-    scalacOptions ++= Seq(
-      "-Xmax-inlines:40", // increase for deep circe encoding / decoding (extract this logic into its own subproject to reduce compile time if needed ?)
-    //   "--explain-cyclic",
-    ),
-  )
-  .settings(jsSourceMapSettings)
-  .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
-  .dependsOn(dto.js, i18n.js, i18n_utils.js, engine.js, engine_13384_strict.js, engine_15544_strict.js, engine_15544_mce.js, ui_i18n.js, payments_shared.js, catalog.js, viz, graph, laminar_form_daisyui, laminar_form_coulomb, laminar_form_i18n)
+    )
+    .settings(jsSourceMapSettings)
+    .settings(watchI18nSources("i18n", "ui-i18n", "payments-shared-i18n"))
+    .dependsOn(
+        dto.js,
+        i18n.js,
+        i18n_utils.js,
+        engine.js,
+        engine_13384_strict.js,
+        engine_15544_strict.js,
+        engine_15544_mce.js,
+        ui_i18n.js,
+        payments_shared.js,
+        catalog.js,
+        viz,
+        graph,
+        laminar_form_daisyui,
+        laminar_form_coulomb,
+        laminar_form_i18n
+    )
 
 // =========
 // ui-i18n
 
-lazy val ui_i18n = crossProject(JSPlatform/*, JVMPlatform*/)
-  .crossType(CrossType.Pure)
-  .in(file("modules/ui-i18n"))
-  .settings(
-    commonSettings,
-    name    := "firecalc-ui-i18n",
-    version := ui_version,
+lazy val ui_i18n = crossProject(JSPlatform /*, JVMPlatform*/ )
+    .crossType(CrossType.Pure)
+    .in(file("modules/ui-i18n"))
+    .settings                                       (
+        commonSettings,
+        name                                    := "firecalc-ui-i18n",
+        version                                 := ui_version,
+        libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
+        libraryDependencies += "io.taig"       %%% "babel-generic" % babel_version_custom,
 
-    libraryDependencies += "org.typelevel"  %%% "cats-core"     % "2.13.0",
-    
-    libraryDependencies += "io.taig"        %%% "babel-generic" % babel_version_custom,
+        // Make Bloop/Metals watch the i18n conf files for changes
+        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+            file(s"modules/ui-i18n/src/main/resources/i18n/$lang.conf")
+        },
 
-    // Make Bloop/Metals watch the i18n conf files for changes
-    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-      file(s"modules/ui-i18n/src/main/resources/i18n/$lang.conf")
-    },
+        // Generate Scala source files from HOCON conf files
+        Compile / sourceGenerators += i18nSourceGenerator("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n"))
 
-    // Generate Scala source files from HOCON conf files
-    Compile / sourceGenerators += i18nSourceGenerator("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n")),
-
-    // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
-    // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
-  )
-  .dependsOn(i18n_utils)
-  .jsConfigure(
-    _.enablePlugins(ScalaJSPlugin)
-     .settings(jsSourceMapSettings: _*)
-  )
+        // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
+        // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+    )
+    .dependsOn(i18n_utils)
+    .jsConfigure(
+        _.enablePlugins(ScalaJSPlugin)
+            .settings(jsSourceMapSettings: _*)
+    )
 
 // =========
 // payments-shared-i18n
 
 lazy val payments_shared_i18n = crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/payments-shared-i18n"))
-  .settings(
-    commonSettings,
-    name    := "firecalc-payments-shared-i18n",
-    version := payments_base_version,
+    .crossType(CrossType.Pure)
+    .in(file("modules/payments-shared-i18n"))
+    .settings                                       (
+        commonSettings,
+        name                                    := "firecalc-payments-shared-i18n",
+        version                                 := payments_base_version,
+        libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
+        libraryDependencies += "io.taig"       %%% "babel-generic" % babel_version_custom,
 
-    libraryDependencies += "org.typelevel"  %%% "cats-core"     % "2.13.0",
+        // Make Bloop/Metals watch the i18n conf files for changes
+        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+            file(s"modules/payments-shared-i18n/src/main/resources/i18n/$lang.conf")
+        },
 
-    libraryDependencies += "io.taig"        %%% "babel-generic" % babel_version_custom,
+        // Generate Scala source files from HOCON conf files
+        Compile / sourceGenerators += i18nSourceGenerator(
+            "payments-shared-i18n",
+            Seq("afpma", "firecalc", "payments", "shared", "i18n")
+        )
 
-    // Make Bloop/Metals watch the i18n conf files for changes
-    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-      file(s"modules/payments-shared-i18n/src/main/resources/i18n/$lang.conf")
-    },
-
-    // Generate Scala source files from HOCON conf files
-    Compile / sourceGenerators += i18nSourceGenerator("payments-shared-i18n", Seq("afpma", "firecalc", "payments", "shared", "i18n")),
-
-    // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
-    // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
-  )
-  .dependsOn(i18n_utils)
-  .jsConfigure(
-    _.enablePlugins(ScalaJSPlugin)
-     .settings(jsSourceMapSettings: _*)
-  )
+        // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
+        // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+    )
+    .dependsOn(i18n_utils)
+    .jsConfigure(
+        _.enablePlugins(ScalaJSPlugin)
+            .settings(jsSourceMapSettings: _*)
+    )
 
 // =========
 // payments-shared
 
 lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
-  .withoutSuffixFor(JVMPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/payments-shared"))
-  .settings(
-    commonSettings,
-    name := "firecalc-payments-shared",
-    version := payments_version,
-    scalacOptions ++= Seq(
-    ),
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/payments-shared"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-payments-shared",
+        version := payments_version,
+        scalacOptions ++= Seq(
+        ),
+        libraryDependencies ++= Seq(
+            // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
+            "pro.afpma" %%% "magnolia" % "1.3.16",
 
-    libraryDependencies ++= Seq(
-        // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
-        "pro.afpma" %%% "magnolia" % "1.3.16",
+            // transformers
+            "io.scalaland" %% "chimney" % "1.8.2",
 
-        // transformers
-        "io.scalaland"   %% "chimney"             % "1.8.2",
+            // i18n
+            "io.taig" %% "babel-circe"   % babel_version_custom,
+            "io.taig" %% "babel-generic" % babel_version_custom,
+            "io.taig" %% "babel-loader"  % babel_version_custom,
 
-        // i18n
-        "io.taig" %% "babel-circe"   % babel_version_custom,
-        "io.taig" %% "babel-generic" % babel_version_custom,
-        "io.taig" %% "babel-loader"  % babel_version_custom,
+            // encoding / decoding
+            "io.circe" %% "circe-core"    % "0.14.13",
+            "io.circe" %% "circe-generic" % "0.14.13",
+            "io.circe" %% "circe-parser"  % "0.14.13",
 
-        // encoding / decoding
-        "io.circe" %% "circe-core"    % "0.14.13",
-        "io.circe" %% "circe-generic" % "0.14.13",
-        "io.circe" %% "circe-parser"  % "0.14.13",
-
-        // testing
-        "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-    ),
-  ).jsConfigure(_.settings(jsSourceMapSettings: _*))
-  .settings(watchI18nSources("payments-shared-i18n"))
-  .dependsOn(utils, payments_shared_i18n)
+            // testing
+            "org.scalatest" %% "scalatest" % "3.2.19" % "test"
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(watchI18nSources("payments-shared-i18n"))
+    .dependsOn(utils, payments_shared_i18n)
 
 // =========
 // payments-i18n
 
 lazy val payments_i18n = (project in file("modules/payments-i18n"))
-  .settings(
-    commonSettings,
-    name    := "firecalc-payments-i18n",
-    version := payments_version,
+    .settings                                      (
+        commonSettings,
+        name                                   := "firecalc-payments-i18n",
+        version                                := payments_version,
+        libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
+        libraryDependencies += "io.taig"       %% "babel-generic" % babel_version_custom,
 
-    libraryDependencies += "org.typelevel"  %% "cats-core"     % "2.13.0",
-    
-    libraryDependencies += "io.taig"        %% "babel-generic" % babel_version_custom,
+        // Make Bloop/Metals watch the i18n conf files for changes
+        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+            file(s"modules/payments-i18n/src/main/resources/i18n/$lang.conf")
+        },
 
-    // Make Bloop/Metals watch the i18n conf files for changes
-    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-      file(s"modules/payments-i18n/src/main/resources/i18n/$lang.conf")
-    },
-
-    // Generate Scala source files from HOCON conf files
-    Compile / sourceGenerators += i18nSourceGenerator("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n")),
-  )
-  .dependsOn(i18n_utils.jvm)
+        // Generate Scala source files from HOCON conf files
+        Compile / sourceGenerators += i18nSourceGenerator("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n"))
+    )
+    .dependsOn(i18n_utils.jvm)
 //   .jsConfigure(
 //     _.enablePlugins(ScalaJSPlugin)
 //   )
@@ -1194,218 +1319,213 @@ lazy val payments_i18n = (project in file("modules/payments-i18n"))
 // invoices-i18n
 
 lazy val invoices_i18n = (project in file("modules/invoices-i18n"))
-  .settings(
-    commonSettings,
-    name    := "firecalc-invoices-i18n",
-    version := payments_version,
+    .settings                                      (
+        commonSettings,
+        name                                   := "firecalc-invoices-i18n",
+        version                                := payments_version,
+        libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
+        libraryDependencies += "io.taig"       %% "babel-generic" % babel_version_custom,
 
-    libraryDependencies += "org.typelevel"  %% "cats-core"     % "2.13.0",
-    
-    libraryDependencies += "io.taig"        %% "babel-generic" % babel_version_custom,
+        // Make Bloop/Metals watch the i18n conf files for changes
+        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
+            file(s"modules/invoices-i18n/src/main/resources/i18n/$lang.conf")
+        },
 
-    // Make Bloop/Metals watch the i18n conf files for changes
-    Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-      file(s"modules/invoices-i18n/src/main/resources/i18n/$lang.conf")
-    },
-
-    // Generate Scala source files from HOCON conf files
-    Compile / sourceGenerators += i18nSourceGenerator("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n")),
-  )
-  .dependsOn(i18n_utils.jvm)
-
+        // Generate Scala source files from HOCON conf files
+        Compile / sourceGenerators += i18nSourceGenerator("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n"))
+    )
+    .dependsOn(i18n_utils.jvm)
 
 lazy val reports = (project in file("modules/reports"))
-  .settings(
-    name := "firecalc-reports",
-    version := reports_version,
-    commonSettings,
-    resolvers += Resolver.mavenLocal, // lookup "java-typst" in local maven repo (~/.m2/local/...)
-    scalacOptions ++= Seq(
-    ),
+    .settings   (
+        name    := "firecalc-reports",
+        version := reports_version,
+        commonSettings,
+        resolvers += Resolver.mavenLocal, // lookup "java-typst" in local maven repo (~/.m2/local/...)
+        scalacOptions ++= Seq(
+        ),
 
-    // Assembly configuration for fat jar
-    assembly / assemblyJarName := "firecalc-reports-assembly.jar",
+        // Assembly configuration for fat jar
+        assembly / assemblyJarName := "firecalc-reports-assembly.jar",
 
-    // Merge strategy for conflicting files
-    assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
+        // Merge strategy for conflicting files
+        assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
+        libraryDependencies ++= Seq  (
+            // i18n
+            "io.taig" %% "babel-circe"   % babel_version_custom,
+            "io.taig" %% "babel-generic" % babel_version_custom,
+            "io.taig" %% "babel-loader"  % babel_version_custom,
 
-    libraryDependencies ++= Seq(
-        // i18n
-        "io.taig" %% "babel-circe"   % babel_version_custom,
-        "io.taig" %% "babel-generic" % babel_version_custom,
-        "io.taig" %% "babel-loader"  % babel_version_custom,
+            // os
+            "com.lihaoyi" %% "os-lib" % "0.11.4",
 
-        // os
-        "com.lihaoyi" %% "os-lib" % "0.11.4",
-
-        // java-typst
-        "io.github.fatihcatalkaya" % "java-typst" % "1.4.0",
-    ),
-  )
-  .settings(watchI18nSources("i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, utils.jvm)
+            // java-typst
+            "io.github.fatihcatalkaya" % "java-typst" % "1.4.0"
+        )
+    )
+    .settings(watchI18nSources("i18n"))
+    .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, utils.jvm)
 
 lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
-  .settings(
-    name := "firecalc-xlsx-catalog",
-    version := engine_version,
-    commonSettings,
-    libraryDependencies ++= Seq(
-      "org.apache.poi" % "poi"       % "5.3.0",
-      "org.apache.poi" % "poi-ooxml" % "5.3.0",
-      "org.scalameta" %% "munit"     % "1.0.0" % "test",
-    ),
-  )
-  .dependsOn(catalog.jvm)
+    .settings   (
+        name    := "firecalc-xlsx-catalog",
+        version := engine_version,
+        commonSettings,
+        libraryDependencies ++= Seq      (
+            "org.apache.poi" % "poi"       % "5.3.0",
+            "org.apache.poi" % "poi-ooxml" % "5.3.0",
+            "org.scalameta" %% "munit"     % "1.0.0" % "test"
+        )
+    )
+    .dependsOn(catalog.jvm)
 
 lazy val payments = (project in file("modules/payments"))
-  .enablePlugins(MoleculePlugin)
-  .settings(
-    name := "firecalc-payments",
-    version := payments_version,
-    commonSettings,
-    scalacOptions ++= Seq(
-    ),
+    .enablePlugins(MoleculePlugin)
+    .settings   (
+        name    := "firecalc-payments",
+        version := payments_version,
+        commonSettings,
+        scalacOptions ++= Seq(
+        ),
 
-    // Ensure moleculeGen runs before compile and copy SQL files to classpath.
-    // moleculeGen is guarded: it only runs when generated sources are missing
-    // (e.g. after clean). Without this guard, moleculeGen deletes and recreates
-    // all files on every invocation, causing an infinite recompilation loop
-    // with Metals/BSP (changed sources retrigger compile).
-    Compile / compile := {
-      val compilationResult = (Compile / compile).value
+        // Ensure moleculeGen runs before compile and copy SQL files to classpath.
+        // moleculeGen is guarded: it only runs when generated sources are missing
+        // (e.g. after clean). Without this guard, moleculeGen deletes and recreates
+        // all files on every invocation, causing an infinite recompilation loop
+        // with Metals/BSP (changed sources retrigger compile).
+        Compile / compile := {
+            val compilationResult = (Compile / compile).value
 
-      // Copy moleculeGen SQL files to target classes directory after compilation
-      val moleculeGenSourceDir = baseDirectory.value / "src" / "main" / "resources" / "moleculeGen"
-      val targetClassesDir = (Compile / classDirectory).value / "moleculeGen"
+            // Copy moleculeGen SQL files to target classes directory after compilation
+            val moleculeGenSourceDir = baseDirectory.value / "src" / "main" / "resources" / "moleculeGen"
+            val targetClassesDir     = (Compile / classDirectory).value / "moleculeGen"
 
-      if (moleculeGenSourceDir.exists()) {
-        if (targetClassesDir.exists()) {
-          IO.delete(targetClassesDir)
-        }
-        val mappings = (moleculeGenSourceDir ** "*.sql").get.map { file =>
-          val relativePath = file.relativeTo(moleculeGenSourceDir).get
-          (file, targetClassesDir / relativePath.getPath)
-        }
-        IO.copy(mappings)
-        System.err.println(s"[info] => Copied ${mappings.length} SQL files to classpath")
-      }
+            if (moleculeGenSourceDir.exists()) {
+                if (targetClassesDir.exists()) {
+                    IO.delete(targetClassesDir)
+                }
+                val mappings = (moleculeGenSourceDir ** "*.sql").get.map { file =>
+                    val relativePath = file.relativeTo(moleculeGenSourceDir).get
+                    (file, targetClassesDir / relativePath.getPath)
+                }
+                IO.copy(mappings)
+                System.err.println(s"[info] => Copied ${mappings.length} SQL files to classpath")
+            }
 
-      compilationResult
-    },
+            compilationResult
+        },
 
-    // Guard moleculeGen: only run when generated sources directory is empty/missing.
-    // Uses Def.taskDyn because .value cannot be called conditionally in Def.task.
-    // Returns Seq.empty because MoleculePlugin already adds sourceManaged to
-    // unmanagedSourceDirectories, so the generated files are picked up automatically.
-    Compile / sourceGenerators += Def.taskDyn {
-      val srcManagedDir = (Compile / sourceManaged).value / "moleculeGen"
-      val needsGen = !srcManagedDir.exists() || IO.listFiles(srcManagedDir).isEmpty
-      if (needsGen) {
-        Def.task {
-          val _ = moleculeGen.value
-          Seq.empty[File]
-        }
-      } else {
-        Def.task(Seq.empty[File])
-      }
-    },
+        // Guard moleculeGen: only run when generated sources directory is empty/missing.
+        // Uses Def.taskDyn because .value cannot be called conditionally in Def.task.
+        // Returns Seq.empty because MoleculePlugin already adds sourceManaged to
+        // unmanagedSourceDirectories, so the generated files are picked up automatically.
+        Compile / sourceGenerators += Def.taskDyn {
+            val srcManagedDir = (Compile / sourceManaged).value / "moleculeGen"
+            val needsGen      = !srcManagedDir.exists() || IO.listFiles(srcManagedDir).isEmpty
+            if (needsGen) {
+                Def.task {
+                    val _ = moleculeGen.value
+                    Seq.empty[File]
+                }
+            } else {
+                Def.task(Seq.empty[File])
+            }
+        },
+        Compile / run / fork          := true,
+        Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
+        assembly / mainClass          := Some("afpma.firecalc.payments.Main"),
+        assembly / assemblyJarName    := "firecalc-payments-assembly.jar",
 
-    Compile / run / fork := true,
-    Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
+        // Merge strategy for conflicting files
+        assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
+        libraryDependencies ++= Seq   (
+            "org.http4s"    %% "http4s-ember-server" % "0.23.30",
+            "org.http4s"    %% "http4s-ember-client" % "0.23.30",
+            "org.http4s"    %% "http4s-circe"        % "0.23.30",
+            "org.http4s"    %% "http4s-dsl"          % "0.23.30",
+            "org.http4s"    %% "http4s-scalatags"    % "0.25.2",
+            "io.circe"      %% "circe-generic"       % "0.14.14",
+            "io.circe"      %% "circe-literal"       % "0.14.14",
+            "org.typelevel" %% "cats-effect"         % "3.6.1",
+            "ch.qos.logback" % "logback-classic"     % "1.5.18",
+            "org.typelevel" %% "log4cats-slf4j"      % "2.7.1",
+            "com.lihaoyi"   %% "scalatags"           % "0.13.1",
 
-    assembly / mainClass       := Some("afpma.firecalc.payments.Main"),
-    assembly / assemblyJarName := "firecalc-payments-assembly.jar",
+            // transformers
+            "io.scalaland" %% "chimney" % "1.8.2",
 
-    // Merge strategy for conflicting files
-    assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
+            // configuration
+            "com.typesafe" % "config" % "1.4.3",
 
-    libraryDependencies ++= Seq(
-        "org.http4s"     %% "http4s-ember-server" % "0.23.30",
-        "org.http4s"     %% "http4s-ember-client" % "0.23.30", 
-        "org.http4s"     %% "http4s-circe"        % "0.23.30",
-        "org.http4s"     %% "http4s-dsl"          % "0.23.30",
-        "org.http4s"     %% "http4s-scalatags"    % "0.25.2",
+            // email
+            "com.github.eikek" %% "emil-common"   % "0.15.0",
+            "com.github.eikek" %% "emil-javamail" % "0.15.0",
 
-        "io.circe"       %% "circe-generic"       % "0.14.14",
-        "io.circe"       %% "circe-literal"       % "0.14.14",
-        
-        "org.typelevel"  %% "cats-effect"         % "3.6.1",
+            // molecule
+            "org.scalamolecule" %% "molecule-db-sqlite" % "0.25.1",
 
-        "ch.qos.logback" % "logback-classic"      % "1.5.18",
+            // flyway
+            "org.flywaydb" % "flyway-core" % "11.10.4",
+            "org.xerial"   % "sqlite-jdbc" % "3.50.3.0",
 
-        "org.typelevel"  %% "log4cats-slf4j"      % "2.7.1",
+            // JWT - cryptographic token signing (HMAC-SHA256)
+            "com.github.jwt-scala" %% "jwt-circe" % "10.0.1",
 
-        "com.lihaoyi"    %% "scalatags"           % "0.13.1",
+            // testing
+            "com.lihaoyi" %% "utest" % "0.9.0" % "test",
 
-        // transformers
-        "io.scalaland"   %% "chimney"             % "1.8.2",
-
-        // configuration
-        "com.typesafe"   % "config"               % "1.4.3",
-
-        // email
-        "com.github.eikek" %% "emil-common"     % "0.15.0",
-        "com.github.eikek" %% "emil-javamail"   % "0.15.0",
-
-        // molecule
-        "org.scalamolecule" %% "molecule-db-sqlite" % "0.25.1",
-
-        // flyway
-        "org.flywaydb" % "flyway-core" % "11.10.4",
-        "org.xerial" % "sqlite-jdbc" % "3.50.3.0",
-
-        // JWT - cryptographic token signing (HMAC-SHA256)
-        "com.github.jwt-scala" %% "jwt-circe" % "10.0.1",
-
-        // testing
-        "com.lihaoyi" %% "utest" % "0.9.0" % "test",
-
-        // TODO: remove, only use utest
-        "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-        "org.typelevel" %% "cats-effect-testing-scalatest" % "1.6.0" % "test"
-    ),
-    testFrameworks += new TestFramework("utest.runner.Framework"),
-  )
-  .settings(watchI18nSources("payments-i18n", "invoices-i18n"))
-  .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, payments_i18n, invoices, reports, payments_shared.jvm)
+            // TODO: remove, only use utest
+            "org.scalatest" %% "scalatest"                     % "3.2.19" % "test",
+            "org.typelevel" %% "cats-effect-testing-scalatest" % "1.6.0"  % "test"
+        ),
+        testFrameworks += new TestFramework("utest.runner.Framework")
+    )
+    .settings(watchI18nSources("payments-i18n", "invoices-i18n"))
+    .dependsOn(
+        engine.jvm,
+        engine_13384_strict.jvm,
+        engine_15544_strict.jvm,
+        payments_i18n,
+        invoices,
+        reports,
+        payments_shared.jvm
+    )
 
 lazy val invoices = (project in file("modules/invoices"))
-  .settings(
-    name := "firecalc-invoices",
-    version := payments_version,
-    commonSettings,
-    resolvers += Resolver.mavenLocal, // lookup "java-typst" in local maven repo (~/.m2/local/...)
-    scalacOptions ++= Seq(
-    ),
+    .settings   (
+        name    := "firecalc-invoices",
+        version := payments_version,
+        commonSettings,
+        resolvers += Resolver.mavenLocal, // lookup "java-typst" in local maven repo (~/.m2/local/...)
+        scalacOptions ++= Seq(
+        ),
 
-    // Assembly configuration for fat jar
-    assembly / assemblyJarName := "firecalc-invoices-assembly.jar",
+        // Assembly configuration for fat jar
+        assembly / assemblyJarName := "firecalc-invoices-assembly.jar",
 
-    // Merge strategy for conflicting files
-    assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
+        // Merge strategy for conflicting files
+        assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
+        libraryDependencies ++= Seq  (
+            // i18n
+            "io.taig" %% "babel-circe"   % babel_version_custom,
+            "io.taig" %% "babel-generic" % babel_version_custom,
+            "io.taig" %% "babel-loader"  % babel_version_custom,
 
-    libraryDependencies ++= Seq(
-        // i18n
-        "io.taig" %% "babel-circe"   % babel_version_custom,
-        "io.taig" %% "babel-generic" % babel_version_custom,
-        "io.taig" %% "babel-loader"  % babel_version_custom,
+            // os
+            "com.lihaoyi" %% "os-lib" % "0.11.4",
 
-        // os
-        "com.lihaoyi" %% "os-lib" % "0.11.4",
+            // java-typst
+            "io.github.fatihcatalkaya" % "java-typst" % "1.4.0",
 
-        // java-typst
-        "io.github.fatihcatalkaya" % "java-typst" % "1.4.0",
+            // json/yaml support
+            "io.circe" %% "circe-core"           % "0.14.13",
+            "io.circe" %% "circe-generic"        % "0.14.13",
+            "io.circe" %% "circe-parser"         % "0.14.13",
+            "io.circe" %% "circe-yaml-scalayaml" % "0.16.0",
 
-        // json/yaml support
-        "io.circe" %% "circe-core"    % "0.14.13",
-        "io.circe" %% "circe-generic" % "0.14.13",
-        "io.circe" %% "circe-parser"  % "0.14.13",
-        "io.circe" %% "circe-yaml-scalayaml" % "0.16.0",
-
-        // testing
-        "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-    ),
-  )
-  .settings(watchI18nSources("invoices-i18n"))
-  .dependsOn(invoices_i18n)
+            // testing
+            "org.scalatest" %% "scalatest" % "3.2.19" % "test"
+        )
+    )
+    .settings(watchI18nSources("invoices-i18n"))
+    .dependsOn(invoices_i18n)

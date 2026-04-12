@@ -65,7 +65,7 @@ private[dynfrict] final case class FWindow(
     np1 : Option[Named[S_or_DC]], // n+1
     np2 : Option[Named[S_or_DC]], // n+2
     np3 : Option[Named[S_or_DC]]  // n+3
-)(sectionTyp: PipeType)(using FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory) {
+)                                         (sectionTyp: PipeType)(using FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory) {
 
     val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using sectionTyp)
 
@@ -264,5 +264,7 @@ private[dynfrict] object FWindow:
         np1 : Option[Named[S_or_DC]], // n+1
         np2 : Option[Named[S_or_DC]], // n+2
         np3 : Option[Named[S_or_DC]]  // n+3
-    )(sectionTyp: PipeType)(using FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory): Either[FluePipeShapeSequenceError, FWindow] =
+    )(sectionTyp: PipeType)(using
+        FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
+    ): Either[FluePipeShapeSequenceError, FWindow] =
         FWindow(nm3, nm2, nm1, curr, np1, np2, np3)(sectionTyp).makeChecks

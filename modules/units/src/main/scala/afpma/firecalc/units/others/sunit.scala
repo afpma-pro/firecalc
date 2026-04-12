@@ -22,7 +22,7 @@ object sunit:
         def fromString[U](s: String): ShowUnitFull[U] = new ShowUnitFull[U]:
             def showUnitFull = s
 
-    inline def mkShowUnitFull[U]: ShowUnitFull[U] = 
+    inline def mkShowUnitFull[U]: ShowUnitFull[U] =
         ShowUnitFull.fromString[U](coulomb.showUnitFull[U])
 
     // Selectable Unit
@@ -31,12 +31,12 @@ object sunit:
         type Unit = U
         def key = showUnitFull
         def translated(using I18NUnits: I18nData.Units) = i18nKey(I18NUnits)
-        val showUnit: String = ShowUnit[U].showUnit
+        val showUnit    : String = ShowUnit[U].showUnit
         val showUnitFull: String = ShowUnitFull[U].showUnitFull
         def makeQtyD(v: Double): QtyD[U] = v.withUnit[U]
-        val prettyQtyDfmt: String = "%.3f"
-        val prettyTempDfmt: String = "%.1f"
-        given showQtyDInstance: Show[QtyD[U]] = coulombutils.shows.mkShowForQtyD[U](prettyQtyDfmt)
+        val prettyQtyDfmt      : String         = "%.3f"
+        val prettyTempDfmt     : String         = "%.1f"
+        given showQtyDInstance : Show[QtyD[U]]  = coulombutils.shows.mkShowForQtyD[U](prettyQtyDfmt)
         given showTempDInstance: Show[TempD[U]] = coulombutils.shows.mkShowForTempD[U](prettyTempDfmt)
 
     object SUnit:
@@ -44,7 +44,7 @@ object sunit:
         def suKeyToEither[U0: SUnit, U1: SUnit](suKey: String) =
             val su0 = SUnit[U0]
             val su1 = SUnit[U1]
-            if (suKey == su0.showUnitFull) Left(su0)
+            if      (suKey == su0.showUnitFull) Left(su0)
             else if (suKey == su1.showUnitFull) Right(su1)
             else throw new Exception(s"unexpected unit '$suKey'")
 

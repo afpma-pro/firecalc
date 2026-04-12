@@ -16,8 +16,8 @@ object ProjectId:
 
     extension (id: ProjectId) def value: String = id
 
-    given Encoder[ProjectId] = Encoder.encodeString
-    given Decoder[ProjectId] = Decoder.decodeString
+    given Encoder[ProjectId]    = Encoder.encodeString
+    given Decoder[ProjectId]    = Decoder.decodeString
     given ReadWriter[ProjectId] = readwriter[String].bimap[ProjectId](_.value, ProjectId.apply)
 
 case class ProjectEntry(id: ProjectId, name: String, lastModified: Double, createdAt: Double)
@@ -28,5 +28,5 @@ object ProjectEntry:
 
 def generateProjectId(): ProjectId =
     val ts   = java.lang.Long.toString(System.currentTimeMillis(), 36)
-    val rand = java.lang.Integer.toString(scala.util.Random.nextInt(0xFFFF), 36)
+    val rand = java.lang.Integer.toString(scala.util.Random.nextInt(0xffff), 36)
     ProjectId(s"${ts}_${rand}")

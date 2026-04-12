@@ -56,11 +56,11 @@ object ValidateVar:
                         case Validated.Invalid(errs) =>
                             val indexedErrors = errs.map(err => s"[$idx]: $err")
                             acc.appended(indexedErrors)
-                        case _ => acc
+                        case _                       => acc
             if (indexedErrorsVec.size > 0)
                 VNelString.invalidUnsafe(indexedErrorsVec.toList.map(_.toList).flatten)
             else
-                VNelString.valid(())
+                VNelString.valid        (()                                           )
 
     def valid[A]: ValidateVar[A] =
         _ => VNelString.validUnit
@@ -68,7 +68,9 @@ object ValidateVar:
     def validWhen[A](cond: A => Boolean)(err: A => String): ValidateVar[A] =
         a => VNelString.validUnitWhen(a)(cond)(err(a))
 
-    def validOption_WhenDefinedAnd[A](cond: A => Boolean)(err: A => String)(using fm: FormMessages): ValidateVar[Option[A]] =
+    def validOption_WhenDefinedAnd[A](
+        cond: A => Boolean
+    )(err: A => String)(using fm: FormMessages): ValidateVar[Option[A]] =
         oa =>
             oa match
                 case Some(a) => VNelString.validUnitWhenOption(oa)(cond)(err(a))
@@ -85,8 +87,8 @@ object ValidateVar:
 
     extension [A](vv: ValidateVar[A])
         def validate(a: A): VNelString[Unit] = vv(a)
-        def unwrap: A => VNelString[Unit] = vv
-        def contramap[B](f: B => A): ValidateVar[B] =
+        def unwrap                 : A => VNelString[Unit] = vv
+        def contramap[B](f: B => A): ValidateVar[B]        =
             (b: B) => vv(f(b))
 
         def toOption_WithNoneAsInvalid(using fm: FormMessages): ValidateVar[Option[A]] =
@@ -116,7 +118,7 @@ object ValidateVar:
     extension [A](vvoa: ValidateVar[Option[A]])
         def contramapOpt[B](f: B => A): ValidateVar[Option[B]] =
             vvoa.contramap[Option[B]](ob => ob.map(f))
-        def flatten: ValidateVar[A] =
+        def flatten                   : ValidateVar[A]         =
             vvoa.contramap[A](a => Some(a))
 
     extension [A](a: A)

@@ -34,7 +34,6 @@ import org.scalajs.dom.HTMLDialogElement
 
 case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Component:
 
-
     protected final case class PDFReportOrderingState(
         cgv_accepted                      : Boolean        = false,
         // send_validation_code_btn_shown: Boolean = false,
@@ -340,13 +339,13 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
         Observer[Either[String, VerifyAndProcessResponse]] {
             case Right(response)    =>
                 // Store the response in the state on success
-                verify_and_process_response_var.set(Some(Right(response))                           )
+                verify_and_process_response_var.set                       (Some(Right(response))                           )
                 // Store payment_link - this acts as both data and transition flag
                 // Its presence tells the order modal close handler not to reset state
-                pdf_report_ordering_var.update     (_.copy(payment_link = Some(response.paymentUrl)))
+                pdf_report_ordering_var.update                            (_.copy(payment_link = Some(response.paymentUrl)))
                 // Close the order modal and open the payment success modal
-                mainModal.ref.asInstanceOf[HTMLDialogElement].close()
-                successModal.ref.asInstanceOf[HTMLDialogElement].showModal()
+                mainModal.ref.asInstanceOf[HTMLDialogElement].close       (                                                )
+                successModal.ref.asInstanceOf[HTMLDialogElement].showModal(                                                )
             case Left(errorMessage) =>
                 // Log error and store in state for display
                 verify_and_process_response_var.set(Some(Left(errorMessage)))
@@ -354,8 +353,8 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
 
     lazy val node =
         div(
-            div         (
-                cls    := "flex items-stretch gap-2",
+            div(
+                cls := "flex items-stretch gap-2",
                 DaisyUITooltip (
                     ttContent  = div(
                         text <-- conditions_and_results_satisfied_except_emissions_sig
@@ -394,8 +393,8 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                                 mainModal.ref.asInstanceOf[HTMLDialogElement].showModal()
                             } else {
                                 // Show warning modal first
-                                emissions_warning_acknowledged_var.set(false) // Reset checkbox
-                                warningModal.ref.asInstanceOf[HTMLDialogElement].showModal()
+                                emissions_warning_acknowledged_var.set                    (false) // Reset checkbox
+                                warningModal.ref.asInstanceOf[HTMLDialogElement].showModal(     )
                             }
                         }
                     ),
@@ -411,513 +410,511 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
     lazy val mainModal: HtmlElement =
         dialogTag(
             cls := "modal",
-                onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
-                    mount   = ctx => {
-                        val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
-                        val closeHandler: js.Function1[dom.Event, Unit] = _ => {
-                            // Only reset state if payment_link is empty (user cancelled)
-                            // If payment_link is set, we're transitioning to the success modal
-                            if (pdf_report_ordering_var.now().payment_link.isEmpty) {
-                                pdf_report_ordering_var.set            (PDFReportOrderingState.init)
-                                create_purchase_intent_response_var.set(None                       )
-                                verify_and_process_response_var.set    (None                       )
-                            }
-                        }
-                        dialog.addEventListener("close", closeHandler)
-                        closeHandler
-                    },
-                    unmount = (thisNode, maybeHandler) => {
-                        maybeHandler.foreach { handler =>
-                            val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
-                            dialog.removeEventListener("close", handler)
+            onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
+                mount   = ctx => {
+                    val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
+                    val closeHandler: js.Function1[dom.Event, Unit] = _ => {
+                        // Only reset state if payment_link is empty (user cancelled)
+                        // If payment_link is set, we're transitioning to the success modal
+                        if (pdf_report_ordering_var.now().payment_link.isEmpty) {
+                            pdf_report_ordering_var.set            (PDFReportOrderingState.init)
+                            create_purchase_intent_response_var.set(None                       )
+                            verify_and_process_response_var.set    (None                       )
                         }
                     }
+                    dialog.addEventListener("close", closeHandler)
+                    closeHandler
+                },
+                unmount = (thisNode, maybeHandler) => {
+                    maybeHandler.foreach { handler =>
+                        val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
+                        dialog.removeEventListener("close", handler)
+                    }
+                }
+            ),
+            div                                                                          (
+                cls := "modal-box w-8/12 max-w-5xl max-h-10/12",
+                h3 (
+                    cls := "text-lg font-bold",
+                    I18N_UI.pdf_ordering.modal.title
                 ),
-                div                                                                          (
-                    cls := "modal-box w-8/12 max-w-5xl max-h-10/12",
-                    h3 (
-                        cls := "text-lg font-bold",
-                        I18N_UI.pdf_ordering.modal.title
+                div(
+                    cls := "py-4",
+                    p              (I18N_UI.pdf_ordering.modal.report.compliant_with_standard + " ", b("EN 15544:2023")),
+                    br             (                                                                                   ),
+                    p              (I18N_UI.pdf_ordering.modal.report.will_be_sent_to_email                            ),
+                    br             (                                                                                   ),
+                    p(b(I18N_UI.pdf_ordering.modal.report.price)),
+                    br             (                                                                                   ),
+                    ul             (
+                        I18N_UI.pdf_ordering.modal.order_steps.title,
+                        li(
+                            cls := "mt-4",
+                            I18N_UI.pdf_ordering.modal.order_steps.step_1
+                        ),
+                        li(I18N_UI.pdf_ordering.modal.order_steps.step_2),
+                        li(I18N_UI.pdf_ordering.modal.order_steps.step_3),
+                        li(I18N_UI.pdf_ordering.modal.order_steps.step_4)
                     ),
-                    div(
-                        cls := "py-4",
-                        p              (I18N_UI.pdf_ordering.modal.report.compliant_with_standard + " ", b("EN 15544:2023")),
-                        br             (                                                                                   ),
-                        p              (I18N_UI.pdf_ordering.modal.report.will_be_sent_to_email                            ),
-                        br             (                                                                                   ),
-                        p(b(I18N_UI.pdf_ordering.modal.report.price)),
-                        br             (                                                                                   ),
-                        ul             (
-                            I18N_UI.pdf_ordering.modal.order_steps.title,
-                            li(
-                                cls := "mt-4",
-                                I18N_UI.pdf_ordering.modal.order_steps.step_1
+                    div            (cls := "divider"                                                                   ),
+                    BillingInfoUI()._form,
+
+                    // CGV
+
+                    button         (
+                        cls          := "btn btn-block h-24 mt-6",
+                        onClick
+                            .compose(
+                                _.withCurrentValueOf(cgv_accepted_sig).collect { case (_, curr) => curr }
+                            ) --> { curr =>
+                            if (curr == false)
+                                pdf_report_ordering_var.update(_.copy(cgv_accepted = true) )
+                            else
+                                pdf_report_ordering_var.update(_.copy(cgv_accepted = false))
+                        },
+                        div(
+                            cls := "flex flex-row items-center w-full gap-3",
+                            div(cls := "flex-none w-14", ""),
+                            div(
+                                cls := "flex-none w-14",
+                                child <-- cgv_accepted_sig.map: cgv_accepted =>
+                                    if (cgv_accepted)
+                                        lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
+                                    else
+                                        lucide.square        (w = 32, h = 32, stroke_width = 2)
                             ),
-                            li(I18N_UI.pdf_ordering.modal.order_steps.step_2),
-                            li(I18N_UI.pdf_ordering.modal.order_steps.step_3),
-                            li(I18N_UI.pdf_ordering.modal.order_steps.step_4)
-                        ),
-                        div            (cls := "divider"                                                                   ),
-                        BillingInfoUI()._form,
-
-                        // CGV
-
-                        button         (
-                            cls          := "btn btn-block h-24 mt-6",
-                            onClick
-                                .compose(
-                                    _.withCurrentValueOf(cgv_accepted_sig).collect { case (_, curr) => curr }
-                                ) --> { curr =>
-                                if (curr == false)
-                                    pdf_report_ordering_var.update(_.copy(cgv_accepted = true) )
-                                else
-                                    pdf_report_ordering_var.update(_.copy(cgv_accepted = false))
-                            },
                             div(
-                                cls := "flex flex-row items-center w-full gap-3",
-                                div(cls := "flex-none w-14", ""),
-                                div(
-                                    cls := "flex-none w-14",
-                                    child <-- cgv_accepted_sig.map: cgv_accepted =>
-                                        if (cgv_accepted)
-                                            lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
-                                        else
-                                            lucide.square        (w = 32, h = 32, stroke_width = 2)
-                                ),
-                                div(
-                                    cls := "flex flex-initial",
-                                    p(cls := "text-xl", I18N_UI.pdf_ordering.modal.accept_terms_and_conditions)
-                                ),
-                                div(cls := "flex-1", ""        )
-                            )
-                        ),
-
-                        // Connectivity : Internet + Backend
-
-                        button         (
-                            cls          := "btn btn-block h-24 mt-6",
-                            disabledAttr := true,
-                            cls <-- hiddenUnless(backend_polling_active_sig),
-                            div(
-                                cls := "flex flex-row items-center w-full gap-3",
-                                div(cls := "flex-none w-14", ""),
-                                div(
-                                    cls := "flex-none w-14",
-                                    child <-- connectivity_details_sig.map:
-                                        case PaymentsBackendApiConnectivity.FullConnection(_, _) =>
-                                            lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
-                                        case _                                                   =>
-                                            lucide.square(w = 32, h = 32, stroke_width = 2)
-                                ),
-                                div(
-                                    cls := "flex flex-initial",
-                                    p(
-                                        cls := "text-xl",
-                                        child <-- backend_polling_active_sig
-                                            .combineWith(connectivity_details_sig)
-                                            .map:
-                                                case (false, _                                                 ) =>
-                                                    p(I18N_UI.pdf_ordering.modal.connection.no_connection_attempt)
-                                                case (true, PaymentsBackendApiConnectivity.CheckDisabled       ) =>
-                                                    p(I18N_UI.pdf_ordering.modal.connection.internet_check_disabled)
-                                                case (
-                                                        true,
-                                                        PaymentsBackendApiConnectivity.InternetCheckInProgress(_)
-                                                    ) =>
-                                                    p(
-                                                        I18N_UI.pdf_ordering.modal.connection.internet_checking,
-                                                        span(cls := "ml-4 loading loading-dots loading-lg")
-                                                    )
-                                                case (true, PaymentsBackendApiConnectivity.InternetOnly(_)     ) =>
-                                                    p(
-                                                        I18N_UI.pdf_ordering.modal.connection.internet_disconnected,
-                                                        span(cls := "ml-4 loading loading-dots loading-lg")
-                                                    )
-                                                case (
-                                                        true,
-                                                        PaymentsBackendApiConnectivity.BackendCheckInProgress(_, _)
-                                                    ) =>
-                                                    p(
-                                                        I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_checking,
-                                                        span(cls := "ml-4 loading loading-dots loading-lg")
-                                                    )
-                                                case (
-                                                        true,
-                                                        PaymentsBackendApiConnectivity.PartialConnection(
-                                                            _,
-                                                            PaymentsBackendApiConnectivity.BackendDisconnected(
-                                                                PaymentsBackendApiConnectivity.JsonValidationError(msg)
-                                                            )
-                                                        )
-                                                    ) =>
-                                                    p(
-                                                        I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_error
-                                                            .apply(msg)
-                                                    )
-                                                case (
-                                                        true,
-                                                        PaymentsBackendApiConnectivity.PartialConnection(
-                                                            _,
-                                                            PaymentsBackendApiConnectivity.BackendDisconnected(
-                                                                PaymentsBackendApiConnectivity.NetworkError(msg)
-                                                            )
-                                                        )
-                                                    ) =>
-                                                    p(
-                                                        I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_error
-                                                            .apply(msg)
-                                                    )
-                                                case (true, PaymentsBackendApiConnectivity.FullConnection(_, _)) =>
-                                                    p(I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_ok)
-                                    )
-                                ),
-                                div(cls := "flex-1", ""        )
-                            )
-                        ),
-
-                        // SEND 6-DIGIT VALIDATION CODE
-
-                        button         (
-                            cls          := "btn btn-block h-24 mt-6",
-                            cls <-- hiddenUnless(send_validation_code_btn_shown_sig),
-                            disabledAttr <-- send_validation_code_btn_active_sig
-                                .combineWith(create_purchase_intent_response_var.signal)
-                                .map:
-                                    case (btn_active, Some(Left(_))) => false // Allow retry after error
-                                    case (btn_active, _            ) => !btn_active
-                            ,
-                            onClick.flatMap(_ =>
-                                makePurchaseCreateIntentRequest()
-                            ) --> handlePurchaseCreateIntentResponse(),
-                            div(
-                                cls := "flex flex-row items-center w-full gap-3",
-                                div(cls := "flex-none w-14", ""),
-                                div(
-                                    cls := "flex-none w-14",
-                                    child <-- create_purchase_intent_response_var.signal
-                                        .combineWith(validation_code_sent_sig)
-                                        .map:
-                                            case (Some(Left(_)), _) =>
-                                                lucide.`square-x`(w = 32, h = 32, stroke_width = 2)
-                                            case (_, true         ) =>
-                                                lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
-                                            case _ =>
-                                                lucide.square(w = 32, h = 32, stroke_width = 2)
-                                ),
-                                div(
-                                    cls := "flex flex-initial",
-                                    child <-- create_purchase_intent_response_var.signal
-                                        .combineWith(validation_code_sent_sig)
-                                        .combineWith(send_validation_code_btn_active_sig)
-                                        .combineWith(billing_email_sig)
-                                        .map: (response, code_sent, btn_active, billing_email) =>
-                                            response match
-                                                case Some(Left(errorMsg)) =>
-                                                    p(
-                                                        cls := "text-xl",
-                                                        I18N_UI.pdf_ordering.modal.validation.error_prefix
-                                                            .apply(errorMsg)
-                                                    )
-                                                case _                    =>
-                                                    p(
-                                                        cls := "text-xl",
-                                                        (code_sent, btn_active) match
-                                                            case (true, _     ) =>
-                                                                I18N_UI.pdf_ordering.modal.validation.code_sent_to
-                                                                    .apply(billing_email)
-                                                            case (false, true ) =>
-                                                                I18N_UI.pdf_ordering.modal.validation.send_code_to
-                                                                    .apply(billing_email)
-                                                            case (false, false) =>
-                                                                I18N_UI.pdf_ordering.modal.validation.invalid_email
-                                                                    .apply(billing_email)
-                                                    )
-                                ),
-                                div(cls := "flex-1", ""        )
-                            )
-                        ),
-
-                        // Button + 6-digit code validation Input form
-
-                        button         (
-                            cls          := "btn btn-block h-24 mt-6 hover:bg-base-200 focus:bg-base-200 hover:border-base-200 focus:border-base-200",
-                            cls <-- hiddenUnless(validation_code_sent_sig),
-                            div(
-                                cls := "flex flex-row items-center w-full gap-3",
-                                div(cls := "flex-none w-14", ""),
-                                div(
-                                    cls := "flex-none w-14",
-                                    child <-- verify_and_process_response_var.signal.map:
-                                        case None                  =>
-                                            lucide.square(w = 32, h = 32, stroke_width = 2)
-                                        case Some(Left(msg))       =>
-                                            lucide.`square-x`(w = 32, h = 32, stroke_width = 2)
-                                        case Some(Right(vap_resp)) =>
-                                            lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
-                                ),
-                                div(
-                                    cls := "flex flex-initial",
-                                    child <--
-                                        verify_and_process_response_var.signal
-                                            .map:
-                                                case None                  =>
-                                                    DaisyUIInputs.SixDigitCodeInputWithPrefixAndButton         (
-                                                        six_digits_code_var,
-                                                        inputId          = "six_digit_validation_code",
-                                                        prefix           =
-                                                            I18N_UI.pdf_ordering.modal.validation.six_digit_code_label,
-                                                        buttonTxt        =
-                                                            I18N_UI.pdf_ordering.modal.validation.validate_button,
-                                                        buttonClickedObs = send_validation_code_btn_clicked_bus.writer
-                                                    )
-                                                case Some(Left(msg))       =>
-                                                    p(
-                                                        cls := "text-xl",
-                                                        I18N_UI.pdf_ordering.modal.validation.error_prefix.apply(msg)
-                                                    )
-                                                case Some(Right(vap_resp)) =>
-                                                    p(
-                                                        cls := "text-xl",
-                                                        I18N_UI.pdf_ordering.modal.validation.email_validated
-                                                    )
-                                ),
-                                div(cls := "flex-1", ""        )
-                            )
+                                cls := "flex flex-initial",
+                                p(cls := "text-xl", I18N_UI.pdf_ordering.modal.accept_terms_and_conditions)
+                            ),
+                            div(cls := "flex-1", ""        )
                         )
                     ),
-                    div(
-                        cls := "modal-action",
-                        form(
-                            method := "dialog",
-                            button(
-                                cls := "btn btn-outline btn-error",
-                                I18N_UI.pdf_ordering.modal.button_cancel
-                            )
+
+                    // Connectivity : Internet + Backend
+
+                    button         (
+                        cls          := "btn btn-block h-24 mt-6",
+                        disabledAttr := true,
+                        cls <-- hiddenUnless(backend_polling_active_sig),
+                        div(
+                            cls := "flex flex-row items-center w-full gap-3",
+                            div(cls := "flex-none w-14", ""),
+                            div(
+                                cls := "flex-none w-14",
+                                child <-- connectivity_details_sig.map:
+                                    case PaymentsBackendApiConnectivity.FullConnection(_, _) =>
+                                        lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
+                                    case _                                                   =>
+                                        lucide.square(w = 32, h = 32, stroke_width = 2)
+                            ),
+                            div(
+                                cls := "flex flex-initial",
+                                p(
+                                    cls := "text-xl",
+                                    child <-- backend_polling_active_sig
+                                        .combineWith(connectivity_details_sig)
+                                        .map:
+                                            case (false, _                                                 ) =>
+                                                p(I18N_UI.pdf_ordering.modal.connection.no_connection_attempt)
+                                            case (true, PaymentsBackendApiConnectivity.CheckDisabled       ) =>
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_check_disabled)
+                                            case (
+                                                    true,
+                                                    PaymentsBackendApiConnectivity.InternetCheckInProgress(_)
+                                                ) =>
+                                                p(
+                                                    I18N_UI.pdf_ordering.modal.connection.internet_checking,
+                                                    span(cls := "ml-4 loading loading-dots loading-lg")
+                                                )
+                                            case (true, PaymentsBackendApiConnectivity.InternetOnly(_)     ) =>
+                                                p(
+                                                    I18N_UI.pdf_ordering.modal.connection.internet_disconnected,
+                                                    span(cls := "ml-4 loading loading-dots loading-lg")
+                                                )
+                                            case (
+                                                    true,
+                                                    PaymentsBackendApiConnectivity.BackendCheckInProgress(_, _)
+                                                ) =>
+                                                p(
+                                                    I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_checking,
+                                                    span(cls := "ml-4 loading loading-dots loading-lg")
+                                                )
+                                            case (
+                                                    true,
+                                                    PaymentsBackendApiConnectivity.PartialConnection(
+                                                        _,
+                                                        PaymentsBackendApiConnectivity.BackendDisconnected(
+                                                            PaymentsBackendApiConnectivity.JsonValidationError(msg)
+                                                        )
+                                                    )
+                                                ) =>
+                                                p(
+                                                    I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_error
+                                                        .apply(msg)
+                                                )
+                                            case (
+                                                    true,
+                                                    PaymentsBackendApiConnectivity.PartialConnection(
+                                                        _,
+                                                        PaymentsBackendApiConnectivity.BackendDisconnected(
+                                                            PaymentsBackendApiConnectivity.NetworkError(msg)
+                                                        )
+                                                    )
+                                                ) =>
+                                                p(
+                                                    I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_error
+                                                        .apply(msg)
+                                                )
+                                            case (true, PaymentsBackendApiConnectivity.FullConnection(_, _)) =>
+                                                p(I18N_UI.pdf_ordering.modal.connection.internet_ok_backend_ok)
+                                )
+                            ),
+                            div(cls := "flex-1", ""        )
+                        )
+                    ),
+
+                    // SEND 6-DIGIT VALIDATION CODE
+
+                    button         (
+                        cls          := "btn btn-block h-24 mt-6",
+                        cls <-- hiddenUnless(send_validation_code_btn_shown_sig),
+                        disabledAttr <-- send_validation_code_btn_active_sig
+                            .combineWith(create_purchase_intent_response_var.signal)
+                            .map:
+                                case (btn_active, Some(Left(_))) => false // Allow retry after error
+                                case (btn_active, _            ) => !btn_active
+                        ,
+                        onClick.flatMap(_ =>
+                            makePurchaseCreateIntentRequest()
+                        ) --> handlePurchaseCreateIntentResponse(),
+                        div(
+                            cls := "flex flex-row items-center w-full gap-3",
+                            div(cls := "flex-none w-14", ""),
+                            div(
+                                cls := "flex-none w-14",
+                                child <-- create_purchase_intent_response_var.signal
+                                    .combineWith(validation_code_sent_sig)
+                                    .map:
+                                        case (Some(Left(_)), _) =>
+                                            lucide.`square-x`(w = 32, h = 32, stroke_width = 2)
+                                        case (_, true         ) =>
+                                            lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
+                                        case _ =>
+                                            lucide.square(w = 32, h = 32, stroke_width = 2)
+                            ),
+                            div(
+                                cls := "flex flex-initial",
+                                child <-- create_purchase_intent_response_var.signal
+                                    .combineWith(validation_code_sent_sig)
+                                    .combineWith(send_validation_code_btn_active_sig)
+                                    .combineWith(billing_email_sig)
+                                    .map: (response, code_sent, btn_active, billing_email) =>
+                                        response match
+                                            case Some(Left(errorMsg)) =>
+                                                p(
+                                                    cls := "text-xl",
+                                                    I18N_UI.pdf_ordering.modal.validation.error_prefix
+                                                        .apply(errorMsg)
+                                                )
+                                            case _                    =>
+                                                p(
+                                                    cls := "text-xl",
+                                                    (code_sent, btn_active) match
+                                                        case (true, _     ) =>
+                                                            I18N_UI.pdf_ordering.modal.validation.code_sent_to
+                                                                .apply(billing_email)
+                                                        case (false, true ) =>
+                                                            I18N_UI.pdf_ordering.modal.validation.send_code_to
+                                                                .apply(billing_email)
+                                                        case (false, false) =>
+                                                            I18N_UI.pdf_ordering.modal.validation.invalid_email
+                                                                .apply(billing_email)
+                                                )
+                            ),
+                            div(cls := "flex-1", ""        )
+                        )
+                    ),
+
+                    // Button + 6-digit code validation Input form
+
+                    button         (
+                        cls          := "btn btn-block h-24 mt-6 hover:bg-base-200 focus:bg-base-200 hover:border-base-200 focus:border-base-200",
+                        cls <-- hiddenUnless(validation_code_sent_sig),
+                        div(
+                            cls := "flex flex-row items-center w-full gap-3",
+                            div(cls := "flex-none w-14", ""),
+                            div(
+                                cls := "flex-none w-14",
+                                child <-- verify_and_process_response_var.signal.map:
+                                    case None                  =>
+                                        lucide.square(w = 32, h = 32, stroke_width = 2)
+                                    case Some(Left(msg))       =>
+                                        lucide.`square-x`(w = 32, h = 32, stroke_width = 2)
+                                    case Some(Right(vap_resp)) =>
+                                        lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
+                            ),
+                            div(
+                                cls := "flex flex-initial",
+                                child <--
+                                    verify_and_process_response_var.signal
+                                        .map:
+                                            case None                  =>
+                                                DaisyUIInputs.SixDigitCodeInputWithPrefixAndButton         (
+                                                    six_digits_code_var,
+                                                    inputId          = "six_digit_validation_code",
+                                                    prefix           = I18N_UI.pdf_ordering.modal.validation.six_digit_code_label,
+                                                    buttonTxt        = I18N_UI.pdf_ordering.modal.validation.validate_button,
+                                                    buttonClickedObs = send_validation_code_btn_clicked_bus.writer
+                                                )
+                                            case Some(Left(msg))       =>
+                                                p(
+                                                    cls := "text-xl",
+                                                    I18N_UI.pdf_ordering.modal.validation.error_prefix.apply(msg)
+                                                )
+                                            case Some(Right(vap_resp)) =>
+                                                p(
+                                                    cls := "text-xl",
+                                                    I18N_UI.pdf_ordering.modal.validation.email_validated
+                                                )
+                            ),
+                            div(cls := "flex-1", ""        )
+                        )
+                    )
+                ),
+                div(
+                    cls := "modal-action",
+                    form(
+                        method := "dialog",
+                        button(
+                            cls := "btn btn-outline btn-error",
+                            I18N_UI.pdf_ordering.modal.button_cancel
                         )
                     )
                 )
+            )
         )
 
     // Emissions Warning Modal - shown when user tries to order with unmet emissions criteria
     lazy val warningModal: HtmlElement =
         dialogTag(
             cls := "modal",
-                onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
-                    mount   = ctx => {
-                        val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
-                        val closeHandler: js.Function1[dom.Event, Unit] = _ => {
-                            // Reset acknowledgment state when modal is closed
-                            emissions_warning_acknowledged_var.set(false)
-                        }
-                        dialog.addEventListener("close", closeHandler)
-                        closeHandler
-                    },
-                    unmount = (thisNode, maybeHandler) => {
-                        maybeHandler.foreach { handler =>
-                            val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
-                            dialog.removeEventListener("close", handler)
-                        }
+            onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
+                mount   = ctx => {
+                    val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
+                    val closeHandler: js.Function1[dom.Event, Unit] = _ => {
+                        // Reset acknowledgment state when modal is closed
+                        emissions_warning_acknowledged_var.set(false)
                     }
+                    dialog.addEventListener("close", closeHandler)
+                    closeHandler
+                },
+                unmount = (thisNode, maybeHandler) => {
+                    maybeHandler.foreach { handler =>
+                        val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
+                        dialog.removeEventListener("close", handler)
+                    }
+                }
+            ),
+            div                                                                          (
+                cls := "modal-box w-10/12 max-w-4xl",
+                h3 (
+                    cls := "text-lg font-bold text-warning",
+                    I18N_UI.pdf_ordering.modal.emissions_warning.title
                 ),
-                div                                                                          (
-                    cls := "modal-box w-10/12 max-w-4xl",
-                    h3 (
-                        cls := "text-lg font-bold text-warning",
-                        I18N_UI.pdf_ordering.modal.emissions_warning.title
-                    ),
+                div(
+                    cls := "py-4",
+                    // Warning message
                     div(
-                        cls := "py-4",
-                        // Warning message
-                        div(
-                            cls := "alert alert-warning mb-4",
-                            lucide.`triangle-alert`(w = 24, h = 24                                      ),
-                            span                   (I18N_UI.pdf_ordering.modal.emissions_warning.message)
-                        ),
-                        // Unmet criteria table
-                        div(
-                            cls := "overflow-x-auto",
-                            child <-- en15544_strict_local_regulations_and_check_results.map {
-                                case (lregOpt, checkResults) =>
-                                    val unmetCriterias = checkResults.unmetCriterias
-                                    div(
-                                        if (unmetCriterias.isEmpty) {
-                                            p(cls := "text-success", "All criteria met")
-                                        } else {
-                                            table(
-                                                cls := "table table-zebra w-full",
-                                                thead(
-                                                    tr(
-                                                        th(
-                                                            I18N_UI.pdf_ordering.modal.emissions_warning.table.parameter
-                                                        ),
-                                                        th(
-                                                            I18N_UI.pdf_ordering.modal.emissions_warning.table.current_value
-                                                        ),
-                                                        th(
-                                                            I18N_UI.pdf_ordering.modal.emissions_warning.table.required + "*"
-                                                        ),
-                                                        th(I18N_UI.pdf_ordering.modal.emissions_warning.table.status)
-                                                    )
-                                                ),
-                                                tbody(
-                                                    unmetCriterias.map { res =>
-                                                        tr(
-                                                            td(res.showDetailedParamDescription),
-                                                            td(res.showValue.getOrElse("-")),
-                                                            td(res.showCriteria                ),
-                                                            td(
-                                                                cls := "text-warning font-bold",
-                                                                I18N_UI.pdf_ordering.modal.emissions_warning.not_met
-                                                            )
-                                                        )
-                                                    }
+                        cls := "alert alert-warning mb-4",
+                        lucide.`triangle-alert`(w = 24, h = 24                                      ),
+                        span                   (I18N_UI.pdf_ordering.modal.emissions_warning.message)
+                    ),
+                    // Unmet criteria table
+                    div(
+                        cls := "overflow-x-auto",
+                        child <-- en15544_strict_local_regulations_and_check_results.map {
+                            case (lregOpt, checkResults) =>
+                                val unmetCriterias = checkResults.unmetCriterias
+                                div(
+                                    if (unmetCriterias.isEmpty) {
+                                        p(cls := "text-success", "All criteria met")
+                                    } else {
+                                        table(
+                                            cls := "table table-zebra w-full",
+                                            thead(
+                                                tr(
+                                                    th(
+                                                        I18N_UI.pdf_ordering.modal.emissions_warning.table.parameter
+                                                    ),
+                                                    th(
+                                                        I18N_UI.pdf_ordering.modal.emissions_warning.table.current_value
+                                                    ),
+                                                    th(
+                                                        I18N_UI.pdf_ordering.modal.emissions_warning.table.required + "*"
+                                                    ),
+                                                    th(I18N_UI.pdf_ordering.modal.emissions_warning.table.status)
                                                 )
-                                            )
-                                        },
-                                        // Local regulation citation
-                                        lregOpt.map { lreg =>
-                                            p(
-                                                cls := "mt-4 text-sm italic text-base-content/70", {
-                                                    val local_ref_and_country =
-                                                        s"${lreg.regulation_ref} (${lreg.country.show})"
-                                                    val full_ref_sentence     = I18N_UI.pdf_ordering.modal.emissions_warning
-                                                        .according_to(local_ref_and_country)
-                                                    s"*$full_ref_sentence" // prefix with an asterisk
+                                            ),
+                                            tbody(
+                                                unmetCriterias.map { res =>
+                                                    tr(
+                                                        td(res.showDetailedParamDescription),
+                                                        td(res.showValue.getOrElse("-")),
+                                                        td(res.showCriteria                ),
+                                                        td(
+                                                            cls := "text-warning font-bold",
+                                                            I18N_UI.pdf_ordering.modal.emissions_warning.not_met
+                                                        )
+                                                    )
                                                 }
                                             )
-                                        }
-                                    )
-                            }
-                        ),
-                        // Acknowledgment checkbox
-                        div(
-                            cls := "form-control mt-6",
-                            label(
-                                cls := "label cursor-pointer justify-start gap-4",
-                                input(
-                                    typ := "checkbox",
-                                    cls := "checkbox checkbox-warning",
-                                    checked <-- emissions_warning_acknowledged_var.signal,
-                                    onChange.mapToChecked --> emissions_warning_acknowledged_var.writer
-                                ),
-                                span (
-                                    cls := "label-text text-base",
-                                    I18N_UI.pdf_ordering.modal.emissions_warning.acknowledge_checkbox
+                                        )
+                                    },
+                                    // Local regulation citation
+                                    lregOpt.map { lreg =>
+                                        p(
+                                            cls := "mt-4 text-sm italic text-base-content/70", {
+                                                val local_ref_and_country =
+                                                    s"${lreg.regulation_ref} (${lreg.country.show})"
+                                                val full_ref_sentence     = I18N_UI.pdf_ordering.modal.emissions_warning
+                                                    .according_to(local_ref_and_country)
+                                                s"*$full_ref_sentence" // prefix with an asterisk
+                                            }
+                                        )
+                                    }
                                 )
-                            )
-                        )
+                        }
                     ),
+                    // Acknowledgment checkbox
                     div(
-                        cls := "modal-action flex gap-2",
-                        // Cancel button
-                        form  (
-                            method := "dialog",
-                            button(
-                                cls := "btn btn-outline",
-                                I18N_UI.pdf_ordering.modal.emissions_warning.button_cancel
+                        cls := "form-control mt-6",
+                        label(
+                            cls := "label cursor-pointer justify-start gap-4",
+                            input(
+                                typ := "checkbox",
+                                cls := "checkbox checkbox-warning",
+                                checked <-- emissions_warning_acknowledged_var.signal,
+                                onChange.mapToChecked --> emissions_warning_acknowledged_var.writer
+                            ),
+                            span (
+                                cls := "label-text text-base",
+                                I18N_UI.pdf_ordering.modal.emissions_warning.acknowledge_checkbox
                             )
-                        ),
-                        // Confirm button - disabled until checkbox is checked
-                        button(
-                            cls    := "btn btn-warning",
-                            disabledAttr <-- emissions_warning_acknowledged_var.signal.map(!_),
-                            onClick --> { _ =>
-                                // Close warning modal
-                                warningModal.ref.asInstanceOf[HTMLDialogElement].close()
-                                // Open main PDF order modal
-                                mainModal.ref.asInstanceOf[HTMLDialogElement].showModal()
-                            },
-                            I18N_UI.pdf_ordering.modal.emissions_warning.button_confirm
                         )
                     )
+                ),
+                div(
+                    cls := "modal-action flex gap-2",
+                    // Cancel button
+                    form  (
+                        method := "dialog",
+                        button(
+                            cls := "btn btn-outline",
+                            I18N_UI.pdf_ordering.modal.emissions_warning.button_cancel
+                        )
+                    ),
+                    // Confirm button - disabled until checkbox is checked
+                    button(
+                        cls    := "btn btn-warning",
+                        disabledAttr <-- emissions_warning_acknowledged_var.signal.map(!_),
+                        onClick --> { _ =>
+                            // Close warning modal
+                            warningModal.ref.asInstanceOf[HTMLDialogElement].close ()
+                            // Open main PDF order modal
+                            mainModal.ref.asInstanceOf[HTMLDialogElement].showModal()
+                        },
+                        I18N_UI.pdf_ordering.modal.emissions_warning.button_confirm
+                    )
                 )
+            )
         )
 
     // Payment Success Modal - shown after 6-digit code validation
     lazy val successModal: HtmlElement =
         dialogTag(
             cls := "modal",
-                onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
-                    mount   = ctx => {
-                        val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
-                        val closeHandler: js.Function1[dom.Event, Unit] = _ => {
-                            // Reset all state when success modal is closed
-                            pdf_report_ordering_var.set            (PDFReportOrderingState.init)
-                            create_purchase_intent_response_var.set(None                       )
-                            verify_and_process_response_var.set    (None                       )
-                        }
-                        dialog.addEventListener("close", closeHandler)
-                        closeHandler
-                    },
-                    unmount = (thisNode, maybeHandler) => {
-                        maybeHandler.foreach { handler =>
-                            val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
-                            dialog.removeEventListener("close", handler)
-                        }
+            onMountUnmountCallbackWithState[HtmlElement, js.Function1[dom.Event, Unit]]  (
+                mount   = ctx => {
+                    val dialog = ctx.thisNode.ref.asInstanceOf[HTMLDialogElement]
+                    val closeHandler: js.Function1[dom.Event, Unit] = _ => {
+                        // Reset all state when success modal is closed
+                        pdf_report_ordering_var.set            (PDFReportOrderingState.init)
+                        create_purchase_intent_response_var.set(None                       )
+                        verify_and_process_response_var.set    (None                       )
                     }
+                    dialog.addEventListener("close", closeHandler)
+                    closeHandler
+                },
+                unmount = (thisNode, maybeHandler) => {
+                    maybeHandler.foreach { handler =>
+                        val dialog = thisNode.ref.asInstanceOf[HTMLDialogElement]
+                        dialog.removeEventListener("close", handler)
+                    }
+                }
+            ),
+            div                                                                          (
+                cls := "modal-box w-8/12 max-w-2xl",
+                h3 (
+                    cls := "text-lg font-bold",
+                    I18N_UI.pdf_ordering.modal.payment.required_title
                 ),
-                div                                                                          (
-                    cls := "modal-box w-8/12 max-w-2xl",
-                    h3 (
-                        cls := "text-lg font-bold",
-                        I18N_UI.pdf_ordering.modal.payment.required_title
+                div(
+                    cls := "py-4",
+                    // Payment instruction text
+                    p     (
+                        cls := "text-center text-xl mt-4",
+                        I18N_UI.pdf_ordering.modal.payment.instruction
                     ),
-                    div(
-                        cls := "py-4",
-                        // Payment instruction text
-                        p     (
-                            cls := "text-center text-xl mt-4",
-                            I18N_UI.pdf_ordering.modal.payment.instruction
-                        ),
-                        // Payment link button - styled like other modal buttons
-                        button(
-                            cls := "btn btn-block h-24 mt-6",
+                    // Payment link button - styled like other modal buttons
+                    button(
+                        cls := "btn btn-block h-24 mt-6",
+                        div(
+                            cls := "flex flex-row items-center w-full gap-3",
+                            div(cls := "flex-none w-14", ""),
                             div(
-                                cls := "flex flex-row items-center w-full gap-3",
-                                div(cls := "flex-none w-14", ""),
-                                div(
-                                    cls := "flex-none w-14",
-                                    lucide.square(w = 32, h = 32, stroke_width = 2)
-                                ),
-                                div(
-                                    cls := "flex flex-initial",
-                                    // Read from payment_link (single source of truth)
-                                    child <-- pdf_report_ordering_var.signal
-                                        .map(_.payment_link)
-                                        .map:
-                                            case Some(paymentUrl) =>
-                                                a   (
-                                                    cls    := "btn btn-xl btn-outline btn-accent",
-                                                    href   := paymentUrl,
-                                                    target := "blank",
-                                                    I18N_UI.pdf_ordering.modal.payment.go_to_payment_page
-                                                )
-                                            case None             =>
-                                                emptyNode
-                                ),
-                                div(cls := "flex-1", ""        )
-                            )
-                        ),
-                        // Confirmation notice
-                        p     (
-                            cls := "text-center mt-6",
-                            I18N_UI.pdf_ordering.modal.payment.confirmation_notice
-                        ),
-                        // Close window hint
-                        p     (
-                            cls := "text-center mt-4 font-bold",
-                            I18N_UI.pdf_ordering.modal.payment.close_window_hint
+                                cls := "flex-none w-14",
+                                lucide.square(w = 32, h = 32, stroke_width = 2)
+                            ),
+                            div(
+                                cls := "flex flex-initial",
+                                // Read from payment_link (single source of truth)
+                                child <-- pdf_report_ordering_var.signal
+                                    .map(_.payment_link)
+                                    .map:
+                                        case Some(paymentUrl) =>
+                                            a   (
+                                                cls    := "btn btn-xl btn-outline btn-accent",
+                                                href   := paymentUrl,
+                                                target := "blank",
+                                                I18N_UI.pdf_ordering.modal.payment.go_to_payment_page
+                                            )
+                                        case None             =>
+                                            emptyNode
+                            ),
+                            div(cls := "flex-1", ""        )
                         )
                     ),
-                    div(
-                        cls := "modal-action",
-                        form(
-                            method := "dialog",
-                            button(
-                                cls := "btn btn-outline",
-                                I18N_UI.pdf_ordering.modal.payment.button_close
-                            )
+                    // Confirmation notice
+                    p     (
+                        cls := "text-center mt-6",
+                        I18N_UI.pdf_ordering.modal.payment.confirmation_notice
+                    ),
+                    // Close window hint
+                    p     (
+                        cls := "text-center mt-4 font-bold",
+                        I18N_UI.pdf_ordering.modal.payment.close_window_hint
+                    )
+                ),
+                div(
+                    cls := "modal-action",
+                    form(
+                        method := "dialog",
+                        button(
+                            cls := "btn btn-outline",
+                            I18N_UI.pdf_ordering.modal.payment.button_close
                         )
                     )
                 )
             )
+        )

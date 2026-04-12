@@ -36,10 +36,10 @@ object PoiHelpers:
         Option(row.getCell(col)).flatMap: cell =>
             cell.getCellType match
                 case CellType.NUMERIC => Some(cell.getNumericCellValue)
-                case CellType.STRING =>
+                case CellType.STRING  =>
                     val s = cell.getStringCellValue.trim
                     s.toDoubleOption.orElse(s.replace(",", ".").toDoubleOption)
-                case _ => None
+                case _                => None
 
     def readInt(row: Row, col: Int): Option[Int] =
         readDouble(row, col).map(_.toInt)
@@ -54,32 +54,36 @@ object PoiHelpers:
 
     /** Convert picture bytes + MIME type to a data URI string. */
     private def toDataUri(pic: XSSFPicture): String =
-        val data = pic.getPictureData
-        val mime = data.getMimeType
+        val data   = pic.getPictureData
+        val mime   = data.getMimeType
         val base64 = java.util.Base64.getEncoder.encodeToString(data.getData)
         s"data:$mime;base64,$base64"
 
-    /** Read the first embedded picture from a sheet as a data URI.
-      * Used for form-based templates (one entry per workbook).
-      */
+    /**
+     * Read the first embedded picture from a sheet as a data URI.
+     * Used for form-based templates (one entry per workbook).
+     */
     def readFirstPicture(wb: XSSFWorkbook, sheetIndex: Int): Option[String] =
         val sheet = wb.getSheetAt(sheetIndex).asInstanceOf[XSSFSheet]
         Option(sheet.getDrawingPatriarch()).flatMap: drawing =>
             drawing.getShapes.asScala.collectFirst:
                 case pic: XSSFPicture => toDataUri(pic)
 
-    /** Read all embedded pictures from a sheet, keyed by their anchor row.
-      * Only includes pictures whose anchor column matches `imageCol`.
-      * Used for tabular templates (multiple entries per workbook).
-      */
+    /**
+     * Read all embedded pictures from a sheet, keyed by their anchor row.
+     * Only includes pictures whose anchor column matches `imageCol`.
+     * Used for tabular templates (multiple entries per workbook).
+     */
     def readPicturesByRow(wb: XSSFWorkbook, sheetIndex: Int, imageCol: Int): Map[Int, String] =
         val sheet = wb.getSheetAt(sheetIndex).asInstanceOf[XSSFSheet]
-        Option(sheet.getDrawingPatriarch()).map: drawing =>
-            drawing.getShapes.asScala.collect:
-                case pic: XSSFPicture if pic.getClientAnchor.getCol1 == imageCol =>
-                    pic.getClientAnchor.getRow1 -> toDataUri(pic)
-            .toMap
-        .getOrElse(Map.empty)
+        Option        (sheet.getDrawingPatriarch())
+            .map: drawing =>
+                drawing.getShapes.asScala
+                    .collect:
+                        case pic: XSSFPicture if pic.getClientAnchor.getCol1 == imageCol =>
+                            pic.getClientAnchor.getRow1 -> toDataUri(pic)
+                    .toMap
+            .getOrElse(Map.empty                  )
 
     // ---- Writing helpers ----
 
@@ -111,22 +115,23 @@ object PoiHelpers:
         case "image/jpeg" => Workbook.PICTURE_TYPE_JPEG
         case _            => Workbook.PICTURE_TYPE_PNG // best-effort fallback
 
-    /** Embed a base64 data URI image into a sheet at the given anchor position.
-      * Used for export flow (DTO → xlsx).
-      */
+    /**
+     * Embed a base64 data URI image into a sheet at the given anchor position.
+     * Used for export flow (DTO → xlsx).
+     */
     def embedDataUriImage(wb: XSSFWorkbook, sheet: Sheet, dataUri: String, row: Int, col: Int): Unit =
         dataUri match
             case DataUriPattern(mime, base64) =>
-                val bytes = java.util.Base64.getDecoder.decode(base64)
+                val bytes      = java.util.Base64.getDecoder.decode(base64)
                 val pictureIdx = wb.addPicture(bytes, mimeToPoiType(mime))
-                val drawing = sheet.createDrawingPatriarch()
-                val anchor = wb.getCreationHelper.createClientAnchor()
-                anchor.setRow1(row)
-                anchor.setCol1(col)
-                anchor.setRow2(row + 15)
-                anchor.setCol2(col + 3)
+                val drawing    = sheet.createDrawingPatriarch()
+                val anchor     = wb.getCreationHelper.createClientAnchor()
+                anchor.setRow1       (row               )
+                anchor.setCol1       (col               )
+                anchor.setRow2       (row + 15          )
+                anchor.setCol2       (col + 3           )
                 drawing.createPicture(anchor, pictureIdx)
-            case _ => () // silently skip malformed data URIs
+            case _                            => () // silently skip malformed data URIs
 
     // ---- File I/O ----
 
@@ -137,5 +142,5 @@ object PoiHelpers:
 
     def saveWorkbook(wb: XSSFWorkbook, path: Path): Unit =
         val fos = new FileOutputStream(path.toFile)
-        try wb.write(fos)
-        finally fos.close()
+        try wb.write     (fos)
+        finally fos.close(   )

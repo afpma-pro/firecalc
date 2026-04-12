@@ -23,26 +23,27 @@ import io.taig.babel.Locale
 case class FireboxCatalogSelectComponent(
     entriesSignal: Signal[Seq[Firebox.Door15aFirebox_Catalog]],
     onSelect     : Observer[Firebox.Door15aFirebox_Catalog]
-)(using Locale, DisplayUnits) extends Component:
+)                                       (using Locale, DisplayUnits)
+    extends Component:
 
     private val cat = summon[CatalogCategory[Firebox.Door15aFirebox_Catalog]]
 
     private val dialog = CatalogSelectDialog(
-        entriesSignal = entriesSignal,
-        entryKey      = _.reference,
-        onSelect      = onSelect,
-        datalistId    = "firebox-catalog-datalist",
+        entriesSignal  = entriesSignal,
+        entryKey       = _.reference,
+        onSelect       = onSelect,
+        datalistId     = "firebox-catalog-datalist",
         previewContent = Some(selectedSig =>
             CatalogSearchWidget.imagePreview(
                 selectedSig.combineWith(CatalogImageStore.imagesVar.signal).map {
                     case (Some(entry), imgs) => imgs.get(s"${cat.yamlKey}:${cat.uniqueKey(entry)}")
-                    case _                   => None
+                    case _ => None
                 }
             )
         )
     )
 
-    def open(): Unit      = dialog.open()
+    def open(): Unit = dialog.open()
     val node: HtmlElement = dialog.node
 
 end FireboxCatalogSelectComponent

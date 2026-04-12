@@ -95,8 +95,8 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "(1,1) interpolates on diagonal grid" in {
             // Each x-column has exactly 1 y-value
-            val data = List(
-                (10.0, 1.7, 6.0),
+            val data   = List(
+                (10.0, 1.7, 6.0 ),
                 (20.0, 2.5, 10.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
@@ -108,8 +108,8 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(1,1) rejects yi out of tolerance" in {
-            val data = List(
-                (10.0, 1.7, 6.0),
+            val data   = List(
+                (10.0, 1.7, 6.0 ),
                 (20.0, 2.5, 10.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
@@ -119,8 +119,8 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(1,1) returns exact value at grid point" in {
-            val data = List(
-                (10.0, 1.7, 6.0),
+            val data   = List(
+                (10.0, 1.7, 6.0 ),
                 (20.0, 2.5, 10.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
@@ -132,11 +132,11 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "(1,n) interpolates when left column has 1 y-value" in {
             // x=0 has y=[3] only, x=10 has y=[1, 3, 5]
-            val data = List(
-                (0.0, 3.0, 100.0),   // x=0, y=3
-                (10.0, 1.0, 10.0),   // x=10, y=1
-                (10.0, 3.0, 50.0),   // x=10, y=3
-                (10.0, 5.0, 90.0)    // x=10, y=5
+            val data   = List(
+                (0.0, 3.0, 100.0), // x=0, y=3
+                (10.0, 1.0, 10.0), // x=10, y=1
+                (10.0, 3.0, 50.0), // x=10, y=3
+                (10.0, 5.0, 90.0)  // x=10, y=5
             )
             val interp = new CustomInterpolator("x", "y", data)
 
@@ -149,7 +149,7 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(1,n) interpolates near boundary" in {
-            val data = List(
+            val data   = List(
                 (0.0, 3.0, 100.0),
                 (10.0, 1.0, 10.0),
                 (10.0, 3.0, 50.0),
@@ -167,7 +167,7 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(1,n) rejects yi out of range" in {
-            val data = List(
+            val data   = List(
                 (0.0, 3.0, 100.0),
                 (10.0, 1.0, 10.0),
                 (10.0, 3.0, 50.0),
@@ -182,10 +182,10 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "(n,1) interpolates when right column has 1 y-value" in {
             // x=0 has y=[1, 3, 5], x=10 has y=[3] only
-            val data = List(
-                (0.0, 1.0, 10.0),
-                (0.0, 3.0, 50.0),
-                (0.0, 5.0, 90.0),
+            val data   = List(
+                (0.0, 1.0, 10.0  ),
+                (0.0, 3.0, 50.0  ),
+                (0.0, 5.0, 90.0  ),
                 (10.0, 3.0, 100.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
@@ -199,10 +199,10 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(n,1) interpolates near boundary" in {
-            val data = List(
-                (0.0, 1.0, 10.0),
-                (0.0, 3.0, 50.0),
-                (0.0, 5.0, 90.0),
+            val data   = List(
+                (0.0, 1.0, 10.0  ),
+                (0.0, 3.0, 50.0  ),
+                (0.0, 5.0, 90.0  ),
                 (10.0, 3.0, 100.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
@@ -217,10 +217,10 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(n,1) rejects yi out of range" in {
-            val data = List(
-                (0.0, 1.0, 10.0),
-                (0.0, 3.0, 50.0),
-                (0.0, 5.0, 90.0),
+            val data   = List(
+                (0.0, 1.0, 10.0  ),
+                (0.0, 3.0, 50.0  ),
+                (0.0, 5.0, 90.0  ),
                 (10.0, 3.0, 100.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
@@ -231,7 +231,7 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "(n,n) rectangular grid gives same result as bilinear" in {
             // Standard 2x2 rectangular grid
-            val data = List(
+            val data   = List(
                 (0.0, 0.0, 1.0),
                 (0.0, 1.0, 2.0),
                 (1.0, 0.0, 3.0),
@@ -244,11 +244,11 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(n,n) rectangular grid interpolates along x for known y" in {
-            val data = List(
-                (10.0, 1.6, 4.0),
-                (10.0, 2.4, 3.0),
-                (10.0, 3.2, 2.0),
-                (10.0, 4.0, 1.0),
+            val data   = List(
+                (10.0, 1.6, 4.0 ),
+                (10.0, 2.4, 3.0 ),
+                (10.0, 3.2, 2.0 ),
+                (10.0, 4.0, 1.0 ),
                 (25.0, 1.6, 22.0),
                 (25.0, 2.4, 20.0),
                 (25.0, 3.2, 18.0),
@@ -261,11 +261,11 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(n,n) rectangular grid interpolates along y for known x" in {
-            val data = List(
-                (10.0, 1.6, 4.0),
-                (10.0, 2.4, 3.0),
-                (10.0, 3.2, 2.0),
-                (10.0, 4.0, 1.0),
+            val data   = List(
+                (10.0, 1.6, 4.0 ),
+                (10.0, 2.4, 3.0 ),
+                (10.0, 3.2, 2.0 ),
+                (10.0, 4.0, 1.0 ),
                 (25.0, 1.6, 22.0),
                 (25.0, 2.4, 20.0),
                 (25.0, 3.2, 18.0),
@@ -282,9 +282,9 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "(n,n) non-rectangular grid: x2 wider than x1" in {
             // x=0 has y=[2, 4], x=10 has y=[1, 3, 5]
-            val data = List(
-                (0.0, 2.0, 20.0),
-                (0.0, 4.0, 40.0),
+            val data   = List(
+                (0.0, 2.0, 20.0 ),
+                (0.0, 4.0, 40.0 ),
                 (10.0, 1.0, 10.0),
                 (10.0, 3.0, 30.0),
                 (10.0, 5.0, 50.0)
@@ -301,10 +301,10 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "(n,n) non-rectangular grid: x1 wider than x2" in {
             // x=0 has y=[1, 3, 5], x=10 has y=[2, 4]
-            val data = List(
-                (0.0, 1.0, 10.0),
-                (0.0, 3.0, 30.0),
-                (0.0, 5.0, 50.0),
+            val data   = List(
+                (0.0, 1.0, 10.0 ),
+                (0.0, 3.0, 30.0 ),
+                (0.0, 5.0, 50.0 ),
                 (10.0, 2.0, 20.0),
                 (10.0, 4.0, 40.0)
             )
@@ -320,9 +320,9 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
 
         "(n,n) non-rectangular grid: no y-overlap" in {
             // x=0 has y=[1, 2], x=10 has y=[4, 5]
-            val data = List(
-                (0.0, 1.0, 10.0),
-                (0.0, 2.0, 20.0),
+            val data   = List(
+                (0.0, 1.0, 10.0 ),
+                (0.0, 2.0, 20.0 ),
                 (10.0, 4.0, 40.0),
                 (10.0, 5.0, 50.0)
             )
@@ -337,9 +337,9 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "(n,n) non-rectangular rejects yi out of range" in {
-            val data = List(
-                (0.0, 2.0, 20.0),
-                (0.0, 4.0, 40.0),
+            val data   = List(
+                (0.0, 2.0, 20.0 ),
+                (0.0, 4.0, 40.0 ),
                 (10.0, 1.0, 10.0),
                 (10.0, 5.0, 50.0)
             )
@@ -352,9 +352,9 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         // ── Common: exact grid point and empty data ──────────────────
 
         "returns exact value at grid point for any configuration" in {
-            val data = List(
-                (0.0, 1.0, 10.0),
-                (0.0, 3.0, 30.0),
+            val data   = List(
+                (0.0, 1.0, 10.0 ),
+                (0.0, 3.0, 30.0 ),
                 (10.0, 2.0, 20.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
@@ -369,7 +369,7 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "rejects xi out of range" in {
-            val data = List(
+            val data   = List(
                 (10.0, 1.0, 10.0),
                 (20.0, 1.0, 20.0)
             )
@@ -381,9 +381,15 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         // ── Boundary: xi == x_max / x_min with interpolated yi ──
 
         "interpolates at xi == x_max with interpolated yi" in {
-            val data = List(
-                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0), (10.0, 3.2, 2.0), (10.0, 4.0, 1.0),
-                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0), (25.0, 3.2, 18.0), (25.0, 4.0, 16.0)
+            val data   = List(
+                (10.0, 1.6, 4.0 ),
+                (10.0, 2.4, 3.0 ),
+                (10.0, 3.2, 2.0 ),
+                (10.0, 4.0, 1.0 ),
+                (25.0, 1.6, 22.0),
+                (25.0, 2.4, 20.0),
+                (25.0, 3.2, 18.0),
+                (25.0, 4.0, 16.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
             // At x=25 (x_max), y=2.0: between (1.6,22) and (2.4,20) → z = 22 + (20-22)*(2.0-1.6)/(2.4-1.6) = 21
@@ -391,9 +397,15 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "interpolates at xi == x_min with interpolated yi" in {
-            val data = List(
-                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0), (10.0, 3.2, 2.0), (10.0, 4.0, 1.0),
-                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0), (25.0, 3.2, 18.0), (25.0, 4.0, 16.0)
+            val data   = List(
+                (10.0, 1.6, 4.0 ),
+                (10.0, 2.4, 3.0 ),
+                (10.0, 3.2, 2.0 ),
+                (10.0, 4.0, 1.0 ),
+                (25.0, 1.6, 22.0),
+                (25.0, 2.4, 20.0),
+                (25.0, 3.2, 18.0),
+                (25.0, 4.0, 16.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
             // At x=10 (x_min), y=2.0: between (1.6,4) and (2.4,3) → z = 4 + (3-4)*(2.0-1.6)/(2.4-1.6) = 3.5
@@ -401,9 +413,12 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "interpolates at xi == x_max on non-rectangular grid" in {
-            val data = List(
-                (0.0, 2.0, 20.0), (0.0, 4.0, 40.0),
-                (10.0, 1.0, 10.0), (10.0, 3.0, 30.0), (10.0, 5.0, 50.0)
+            val data   = List(
+                (0.0, 2.0, 20.0 ),
+                (0.0, 4.0, 40.0 ),
+                (10.0, 1.0, 10.0),
+                (10.0, 3.0, 30.0),
+                (10.0, 5.0, 50.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
             // At x=10 (x_max), y=2.0: between (1,10) and (3,30) → z = 10 + (30-10)*(2-1)/(3-1) = 20
@@ -411,18 +426,22 @@ class InterpolationSuite extends AnyFreeSpec with Matchers {
         }
 
         "rejects yi out of range at xi == x_max" in {
-            val data = List(
-                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0),
-                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0)
+            val data   = List(
+                (10.0, 1.6, 4.0 ),
+                (10.0, 2.4, 3.0 ),
+                (25.0, 1.6, 22.0),
+                (25.0, 2.4, 20.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
             interp.interpolateAt(25.0, 5.0) shouldBe a[Left[?, ?]]
         }
 
         "still rejects xi > x_max" in {
-            val data = List(
-                (10.0, 1.6, 4.0), (10.0, 2.4, 3.0),
-                (25.0, 1.6, 22.0), (25.0, 2.4, 20.0)
+            val data   = List(
+                (10.0, 1.6, 4.0 ),
+                (10.0, 2.4, 3.0 ),
+                (25.0, 1.6, 22.0),
+                (25.0, 2.4, 20.0)
             )
             val interp = new CustomInterpolator("x", "y", data)
             interp.interpolateAt(30.0, 2.0) shouldBe a[Left[?, ?]]

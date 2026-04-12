@@ -15,14 +15,15 @@ import cats.data.Validated
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-/** Smoke test for the MCE `WithPipeChain_15544_MCE` chain path.
-  *
-  * Instantiates `MCEBaselineFixture_15544` (a baseline 3-pipe topology that
-  * mixes in `WithPipeChain_15544_MCE`) and probes the chain path end-to-end.
-  *
-  * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
-  * policy — this suite is NOT a golden validation.
-  */
+/**
+ * Smoke test for the MCE `WithPipeChain_15544_MCE` chain path.
+ *
+ * Instantiates `MCEBaselineFixture_15544` (a baseline 3-pipe topology that
+ * mixes in `WithPipeChain_15544_MCE`) and probes the chain path end-to-end.
+ *
+ * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
+ * policy — this suite is NOT a golden validation.
+ */
 class MCEBaselineFixtureSuite extends AnyFreeSpec with Matchers:
 
     "MCEBaselineFixture_15544" - {
@@ -40,7 +41,7 @@ class MCEBaselineFixtureSuite extends AnyFreeSpec with Matchers:
         "drives the MCE chain-aware Stage 1 path (flueRegionPipeResults non-empty branch)" in {
             val algV = MCEBaselineFixture_15544.en15544_Alg
             algV match
-                case Validated.Valid(app) =>
+                case Validated.Valid(app)   =>
                     val stage1V = app.atDraftMin_LoadNominal.conceptualFlueRegionPipeResults
                     stage1V match
                         case Validated.Valid(results) =>
@@ -54,7 +55,7 @@ class MCEBaselineFixtureSuite extends AnyFreeSpec with Matchers:
         "produces a 3-tuple postFireboxPipeResults (flue, connector, chimney)" in {
             val algV = MCEBaselineFixture_15544.en15544_Alg
             algV match
-                case Validated.Valid(app) =>
+                case Validated.Valid(app)   =>
                     val pfbV = app.atDraftMin_LoadNominal.postFireboxPipeResults
                     pfbV match
                         case Validated.Valid(vec)   =>

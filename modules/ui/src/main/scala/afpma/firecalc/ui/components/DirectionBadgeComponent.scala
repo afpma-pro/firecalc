@@ -46,13 +46,14 @@ import org.scalajs.dom
  * @param deflectionAngle   Deflection angle in degrees for computing reachable directions
  */
 case class DirectionBadgeComponent(
-    absDirection  : Signal[Option[Vec3]],
+    absDirection     : Signal[Option[Vec3]],
     previousDirection: Signal[Option[Vec3]],
-    frameBefore     : Signal[Option[PipeFrame]],
-    absDirVar     : Option[Var[Option[AbsoluteDirection]]],
-    deflectionAngle : Signal[Option[Double]] = Signal.fromValue(None),
-    compact         : Boolean = false
-)(using Locale) extends Component:
+    frameBefore      : Signal[Option[PipeFrame]],
+    absDirVar        : Option[Var[Option[AbsoluteDirection]]],
+    deflectionAngle  : Signal[Option[Double]] = Signal.fromValue(None),
+    compact          : Boolean                = false
+)                                 (using Locale)
+    extends Component:
 
     private val details = htmlTag("details")
     private val summary = htmlTag("summary")
@@ -60,14 +61,16 @@ case class DirectionBadgeComponent(
     /** True when fd is geometrically reachable from frame at the given deflection (tolerance 1°). */
     private def isReachable(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): Boolean =
         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-        val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
+        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
         frame.rollAngleForOutputDirection(targetVec, deflDeg).isDefined
 
-    /** Signal: whether the current absDir is reachable from frameBefore at the bend deflection.
-      * None when context (frame or deflection) is not yet available. */
+    /**
+     * Signal: whether the current absDir is reachable from frameBefore at the bend deflection.
+     * None when context (frame or deflection) is not yet available.
+     */
     private lazy val isCompatibleSig: Signal[Option[Boolean]] =
         absDirVar match
-            case None => Signal.fromValue(None)
+            case None        => Signal.fromValue(None)
             case Some(fdVar) =>
                 fdVar.signal
                     .combineWith(frameBefore, deflectionAngle)
@@ -96,8 +99,16 @@ case class DirectionBadgeComponent(
     private def translateDisplayString(s: String): String =
         // Compound cardinals first (longer match), then simple cardinals
         val cardinals = List(
-            "Rear+Right", "Front+Right", "Front+Left", "Rear+Left",
-            "Up", "Down", "Rear", "Front", "Right", "Left"
+            "Rear+Right",
+            "Front+Right",
+            "Front+Left",
+            "Rear+Left",
+            "Up",
+            "Down",
+            "Rear",
+            "Front",
+            "Right",
+            "Left"
         )
         cardinals.find(c => s == c || s.startsWith(s"$c ")) match
             case Some(c) => s.replaceFirst(java.util.regex.Pattern.quote(c), translateCardinal(c))
@@ -126,29 +137,32 @@ case class DirectionBadgeComponent(
         incl match
             case InclinationDirection.Up | InclinationDirection.Down =>
                 new AbsoluteDirection(None, incl)
-            case _ =>
+            case _                                                   =>
                 AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
 
     private def tooltipContent: HtmlElement =
         val i18n = I18N_UI.direction_badge
         div(
             cls := "text-xs",
-            child <-- absDirection.combineWith(isCompatibleSig).map:
-                case (None, _) => emptyNode
-                case (Some(dir), compat) =>
-                    val (az, el)   = dir.toAzimuthElevation
-                    val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
-                    val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
-                    val azElLine   =
-                        if isVertical then i18n.tooltip_elevation(if el > 0 then elStr else s"-$elStr")
-                        else
-                            val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
-                            s"${i18n.tooltip_azimuth(azStr)} \u00b7 ${i18n.tooltip_elevation(elStr)}"
-                    div(
-                        p(azElLine),
-                        if compat.contains(false) then p(cls := "text-warning mt-1", i18n.direction_incompatible_warning)
-                        else emptyNode
-                    )
+            child <-- absDirection
+                .combineWith(isCompatibleSig)
+                .map:
+                    case (None, _          ) => emptyNode
+                    case (Some(dir), compat) =>
+                        val (az, el) = dir.toAzimuthElevation
+                        val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
+                        val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
+                        val azElLine   =
+                            if isVertical then i18n.tooltip_elevation(if el > 0 then elStr else s"-$elStr")
+                            else
+                                val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
+                                s"${i18n.tooltip_azimuth(azStr)} \u00b7 ${i18n.tooltip_elevation(elStr)}"
+                        div(
+                            p(azElLine),
+                            if compat.contains(false                                                          ) then
+                                p             (cls := "text-warning mt-1", i18n.direction_incompatible_warning)
+                            else emptyNode
+                        )
         )
 
     /** Read-only badge span (no chevron, no interactivity). */
@@ -161,14 +175,14 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                span(cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label),
-                badgeText(dir)
+                span     (cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label),
+                badgeText(dir                                                                      )
             )
         else
-            div(
+            div (
                 cls := "flex flex-col",
                 label(cls := "fieldset-label text-[0.75rem]", I18N_UI.direction_badge.abs_dir_label),
-                span(
+                span (
                     cls <-- isCompatibleSig.map:
                         case Some(false) => "input input-xs pointer-events-none bg-base-200 text-warning"
                         case _           => "input input-xs pointer-events-none bg-base-200",
@@ -183,47 +197,55 @@ case class DirectionBadgeComponent(
      */
     private def editableBadge(dir: Vec3, fdVar: Var[Option[AbsoluteDirection]]): HtmlElement =
         val presetsSig: Signal[List[(Vec3, Double)]] =
-            frameBefore.combineWith(deflectionAngle).map:
-                case (Some(frame), Some(deflDeg)) => frame.reachableCardinals(deflDeg)
-                case _                            => Nil
+            frameBefore
+                .combineWith(deflectionAngle)
+                .map:
+                    case (Some(frame), Some(deflDeg)) => frame.reachableCardinals(deflDeg)
+                    case _ => Nil
 
         val dropdown = details(
             cls := "dropdown",
             summary(
                 if compact then
-                    cls <-- isCompatibleSig.combineWith(presetsSig).map: (compat, presets) =>
-                        val warn  = if compat.contains(false) then "badge-warning" else "badge-ghost"
-                        val inter = if presets.nonEmpty then " cursor-pointer list-none" else ""
-                        s"inline-flex items-center gap-1 badge $warn badge-sm font-mono$inter"
+                    cls <-- isCompatibleSig
+                        .combineWith(presetsSig)
+                        .map: (compat, presets) =>
+                            val warn  = if compat.contains(false) then "badge-warning" else "badge-ghost"
+                            val inter = if presets.nonEmpty then " cursor-pointer list-none" else ""
+                            s"inline-flex items-center gap-1 badge $warn badge-sm font-mono$inter"
                 else
-                    cls <-- isCompatibleSig.combineWith(presetsSig).map: (compat, presets) =>
-                        val warn = if compat.contains(false) then " text-warning" else ""
-                        if presets.nonEmpty then s"select select-xs cursor-pointer list-none$warn"
-                        else s"input input-xs pointer-events-none bg-base-200$warn",
+                    cls <-- isCompatibleSig
+                        .combineWith(presetsSig)
+                        .map: (compat, presets) =>
+                            val warn = if compat.contains(false) then " text-warning" else ""
+                            if presets.nonEmpty then s"select select-xs cursor-pointer list-none$warn"
+                            else s"input input-xs pointer-events-none bg-base-200$warn"
+                ,
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
                 when(compact)(span(cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label)),
                 child.text <-- presetsSig.map: presets =>
                     if presets.isEmpty then toArrowString(dir)
-                    else badgeText(dir)
+                    else badgeText                       (dir)
             ),
             child <-- presetsSig.map:
-                case Nil => emptyNode
+                case Nil     => emptyNode
                 case presets =>
                     ul(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
                         presets.map: (cardinalVec, _) =>
-                            val fd = vec3ToAbsoluteDirection(cardinalVec)
+                            val fd  = vec3ToAbsoluteDirection(cardinalVec)
                             val lbl = translateCardinal(cardinalVec.toDisplayString)
                             li(
                                 a(
                                     cls <-- fdVar.signal.map: cur =>
                                         val active = cur.contains(fd)
-                                        if active then "active" else "",
+                                        if active then "active" else ""
+                                    ,
                                     lbl,
                                     onClick --> { _ =>
-                                        fdVar.set(Some(fd))
+                                        fdVar.set   (Some(fd)                        )
                                         org.scalajs.dom.document
                                             .querySelectorAll("details[open]")
                                             .foreach(el => el.removeAttribute("open"))
@@ -246,9 +268,9 @@ case class DirectionBadgeComponent(
                 case None      => emptyNode
                 case Some(dir) =>
                     val badgeEl = absDirVar match
-                        case None       => readOnlyBadge(dir)
+                        case None        => readOnlyBadge(dir)
                         case Some(fdVar) => editableBadge(dir, fdVar)
-                    DaisyUITooltip(
+                    DaisyUITooltip (
                         ttContent  = tooltipContent,
                         element    = badgeEl,
                         ttPosition = "tooltip-top"

@@ -56,7 +56,7 @@ import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import io.taig.babel.Locale
 
 class VerticalFormCommonInstances(using DisplayUnits, Locale):
-    
+
     import SUnits.given
     // import defaultable.given
     import hastranslations.given
@@ -66,7 +66,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     private val vv: ValidateVarCommonInstances = ValidateVarCommonInstances()
 
-    type DF[A]    = Form[A]
+    type DF[A] = Form[A]
 
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
 
@@ -164,25 +164,23 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     val vertical_form_EmissionValueU: Form[EmissionValueU] =
         given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
-        given Defaultable[QtyD[Milli * Gram / (Meter ^ 3)]] = Defaultable(0.0.mg_per_Nm3)
-        given Form[QtyD[Milli * Gram / (Meter ^ 3)]] =
+        given Defaultable[QtyD[Milli * Gram / (Meter ^ 3)]]         = Defaultable(0.0.mg_per_Nm3)
+        given Form[QtyD[Milli * Gram / (Meter ^ 3)]]                =
             CoulombFormInstances.forQtyD[Milli * Gram / (Meter ^ 3)](using SUnits.sunit_MilligramPerNm3)
         Form.formConversionOpaque[EmissionValueU, QtyD[Milli * Gram / (Meter ^ 3)]]
 
-    val given_HeatOutputReduced_NotDefined_Or_Tested
-        : Form[HeatOutputReduced.NotDefined_Or_Tested] =
-        val fromTypeTestDefault
-            : HeatOutputReduced.NotDefined_Or_Tested = HeatOutputReduced.FromTypeTest(0.0.kW)
+    val given_HeatOutputReduced_NotDefined_Or_Tested: Form[HeatOutputReduced.NotDefined_Or_Tested] =
+        val fromTypeTestDefault: HeatOutputReduced.NotDefined_Or_Tested = HeatOutputReduced.FromTypeTest(0.0.kW)
         given Defaultable[HeatOutputReduced.NotDefined_Or_Tested] = Defaultable(
             HeatOutputReduced.NotDefined
         )
         FormDerivation.mk_AlwaysValid[HeatOutputReduced.NotDefined_Or_Tested]: (va, _) =>
             FieldsetLabelAndContent(
                 label = I18N.en15544.terms.P_n_reduced.name,
-                SelectAndOptionsOnly.fromShow[HeatOutputReduced.NotDefined_Or_Tested](
+                SelectAndOptionsOnly.fromShow[HeatOutputReduced.NotDefined_Or_Tested]          (
                     selectedVar           = va,
                     labelAsDisabledOption = None,
-                    options = Seq(
+                    options               = Seq(
                         HeatOutputReduced.NotDefined,
                         fromTypeTestDefault
                     )
@@ -218,7 +216,8 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     given vertical_form_Area_cm2_m2: DF[Area] =
         import defaultable.qty_d.area.zero
         import vv.area.valid_whenStrictlyPositive
-        given_dual_Area_cm2_m2_or_in2.form()
+        given_dual_Area_cm2_m2_or_in2
+            .form()
             .withFieldName(I18N.terms.area)
 
     // Firebox
@@ -274,10 +273,10 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             case Right(_) => Version_2
         }
 
-        given ValidateVar[Version]         = ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Version]
-        given Form[Version] = FormDerivation
+        given ValidateVar[Version] = ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[Version]
+        given Form[Version]        = FormDerivation
             .forEnumOrSumTypeLike_UsingShowAsId[Version](Version.values.toList)
-        given Show[Version]                = Show.show:
+        given Show[Version]        = Show.show:
             case Version.Version_1 => "Version 1"
             case Version.Version_2 => "Version 2"
 
@@ -321,7 +320,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given ConditionalFor[Version, PipeShape] = ConditionalFor:
             case Version.Version_1 => false
             case Version.Version_2 => true
-
 
         given DF[PipeShape] =
             horizontal_form.horizontal_form_PipeShape.showFieldName
@@ -367,9 +365,10 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     // TODO: handle specific national standard like ONORM 8303 ?
     given given_TestStandard: DF[TestStandard] =
         import ValidateVarCommonInstances.testStandard.valid_Always
-        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId(
+        FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = List(TestStandard.EN_15250, TestStandard.EN_13229),
-            updateFieldName = _ => Some(I18N.firebox.single_tested.test_standard)  // TODO: handle National standard (e.g. ÖNORM B 8303)
+            updateFieldName = _ =>
+                Some(I18N.firebox.single_tested.test_standard) // TODO: handle National standard (e.g. ÖNORM B 8303)
         )
 
     given given_TypeOfAppliance: DF[TypeOfAppliance] =
@@ -380,23 +379,23 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
     given given_Firebox_SingleTested: DF[Firebox.SingleTested] =
         import defaultable.qty_d.zeroWithUnit
         given defaultable_TCelsius: Defaultable[TCelsius] = defaultable.given_TCelsius
-        given DF[TestStandard]                           = given_TestStandard
-        given DF[String]                                 = string_emptyAsDefault_alwaysValid
-        given DF[Length]                                 = vertical_form_Length_cm
-        given DF[Boolean]                                = boolean_trueAsDefault_alwaysValid
-        given percDF: DF[Percentage]                     = given_QtyD_Percent
-        given optPerc: DF[Option[Percentage]]            = vertical_form_Option_QtyD_Percent
-        given massDF: DF[Mass]                           = given_QtyD_Kilogram
-        given minuteDF: DF[Option[QtyD[Minute]]]         = vertical_form_Option_QtyD_Minute
-        given optMass: DF[Option[Mass]]                  = vertical_form_Option_QtyD_Kilogram
-        given dimDF: DF[Dimensionless]                   = given_QtyD_Dimensionless
-        given optDim: DF[Option[Dimensionless]]          = vertical_form_Option_QtyD_Dimensionless
-        given tempDF: DF[TCelsius]                       = given_TCelsius
-        given optTemp: DF[Option[TCelsius]]              = vertical_form_Option_TCelsius
+        given DF[TestStandard] = given_TestStandard
+        given DF[String]       = string_emptyAsDefault_alwaysValid
+        given DF[Length]       = vertical_form_Length_cm
+        given DF[Boolean]      = boolean_trueAsDefault_alwaysValid
+        given percDF  : DF[Percentage]            = given_QtyD_Percent
+        given optPerc : DF[Option[Percentage]]    = vertical_form_Option_QtyD_Percent
+        given massDF  : DF[Mass]                  = given_QtyD_Kilogram
+        given minuteDF: DF[Option[QtyD[Minute]]]  = vertical_form_Option_QtyD_Minute
+        given optMass : DF[Option[Mass]]          = vertical_form_Option_QtyD_Kilogram
+        given dimDF   : DF[Dimensionless]         = given_QtyD_Dimensionless
+        given optDim  : DF[Option[Dimensionless]] = vertical_form_Option_QtyD_Dimensionless
+        given tempDF  : DF[TCelsius]              = given_TCelsius
+        given optTemp : DF[Option[TCelsius]]      = vertical_form_Option_TCelsius
         given DF[HeatOutputReduced.NotDefined_Or_Tested] = given_HeatOutputReduced_NotDefined_Or_Tested
         // EmissionsAndEfficiencyValues_DTO (emissions_values)
-        given DF[EmissionsAndEfficiencyValues_DTO] =
-            given DF[PolluantName] =
+        given DF[EmissionsAndEfficiencyValues_DTO]       =
+            given DF[PolluantName]           =
                 import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
                 given Defaultable[PolluantName] = Defaultable(PolluantName.CO)
                 FormDerivation.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
@@ -405,21 +404,25 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             given DF[Option[EmissionValueU]] =
                 given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
                 val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
-                    CoulombFormInstances.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
-                underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
-            given DF[TestEmissionValue_DTO] =
+                    CoulombFormInstances.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using
+                        SUnits.sunit_MilligramPerNm3
+                    )
+                underlying.bimap[Option[EmissionValueU]](
+                    _.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_))
+                )(_.map(_.unwrap))
+            given DF[TestEmissionValue_DTO]  =
                 FormDerivation.derived[TestEmissionValue_DTO].autoOverwriteFieldNames
-            given DF[TestReport] =
+            given DF[TestReport]             =
                 FormDerivation.derived[TestReport].autoOverwriteFieldNames
-            given DF[List[TestReport]] =
+            given DF[List[TestReport]]       =
                 given (TestReport => Int) = System.identityHashCode(_)
                 FormDerivation.forList[TestReport, Int]
-            given DF[EmissionValues_DTO] =
+            given DF[EmissionValues_DTO]     =
                 FormDerivation.derived[EmissionValues_DTO].autoOverwriteFieldNames
             FormDerivation.derived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
 
-        val autoDerivedForm = FormDerivation.derived[Firebox.SingleTested].autoOverwriteFieldNames
-        val d               = autoDerivedForm.defaultable
+        val autoDerivedForm                     = FormDerivation.derived[Firebox.SingleTested].autoOverwriteFieldNames
+        val d                                   = autoDerivedForm.defaultable
         given ValidateVar[Firebox.SingleTested] = autoDerivedForm.validateVar
 
         Form.makeFor[Firebox.SingleTested](d): (v, fc) =>
@@ -430,14 +433,14 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                     onSelect      = Observer(v.set)
                 )
                 div(
-                    button(
-                        cls     := "btn btn-secondary btn-sm mb-2",
+                    button                (
+                        cls := "btn btn-secondary btn-sm mb-2",
                         I18N_UI.catalog.select_from_catalog,
                         onClick --> { _ => modal.open() }
                     ),
                     autoDerivedForm.render(v, fc),
-                   modal.node
-               )
+                    modal.node
+                )
         .withFieldName(I18N.firebox_names.single_tested)
 
     given given_Firebox_Door15aFirebox_Catalog: DF[Firebox.Door15aFirebox_Catalog] =
@@ -447,24 +450,24 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given Defaultable[QtyD[Percent]] = defaultable.qty_d.zeroWithUnit[Percent]
 
         // Standard field definitions
-        given DF[String]                           = string_emptyAsDefault_alwaysValid
-        given DF[Length]                           = vertical_form_Length_cm
-        given DF[QtyD[Centimeter]]                 = given_QtyD_Centimer
-        given percDF: DF[Percentage]               = given_QtyD_Percent
-        given optPerc: DF[Option[Percentage]]      = vertical_form_Option_QtyD_Percent
+        given DF[String]           = string_emptyAsDefault_alwaysValid
+        given DF[Length]           = vertical_form_Length_cm
+        given DF[QtyD[Centimeter]] = given_QtyD_Centimer
+        given percDF : DF[Percentage]         = given_QtyD_Percent
+        given optPerc: DF[Option[Percentage]] = vertical_form_Option_QtyD_Percent
 
         // Optional centimeter (sb_min, sb_max)
         val vertical_form_Option_QtyD_Centimeter: DF[Option[QtyD[Centimeter]]] =
             import vv.centimeter.validOption_whenStrictlyPositive
             CoulombFormInstances.forOptionQtyD_default[Centimeter]()
-        given optCm: DF[Option[QtyD[Centimeter]]] = vertical_form_Option_QtyD_Centimeter
+        given optCm                             : DF[Option[QtyD[Centimeter]]] = vertical_form_Option_QtyD_Centimeter
 
         // Plain Option[Mass] — mb_min and mb_max are independent supplier constraints, no stove_params link.
         // load_size_nominal sync is handled explicitly in the makeFor lambda below.
         given optMassDF: DF[Option[Mass]] = vertical_form_Option_QtyD_Kilogram
 
         // PipeShape (actualAirIntakePipeShape)
-        given DF[PipeShape] = horizontal_form.horizontal_form_PipeShape
+        given DF[PipeShape]       = horizontal_form.horizontal_form_PipeShape
         // List[PipeShape] (expectedAirIntakePipeShapes)
         given DF[List[PipeShape]] =
             given (PipeShape => Int) = System.identityHashCode(_)
@@ -476,10 +479,10 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             FormDerivation.mk_AlwaysValid[HeatOutputReduced]: (va, _) =>
                 FieldsetLabelAndContent(
                     label = I18N.en15544.terms.P_n_reduced.name,
-                    SelectAndOptionsOnly.fromShow[HeatOutputReduced](
+                    SelectAndOptionsOnly.fromShow[HeatOutputReduced]          (
                         selectedVar           = va,
                         labelAsDisabledOption = None,
-                        options = Seq(
+                        options               = Seq(
                             HeatOutputReduced.NotDefined,
                             HeatOutputReduced.HalfOfNominal.makeWithoutValue,
                             HeatOutputReduced.FromTypeTest(0.0.kW)
@@ -493,7 +496,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         // EmissionsAndEfficiencyValues_DTO (emissions_values)
         given DF[EmissionsAndEfficiencyValues_DTO] =
             // PolluantName select
-            given DF[PolluantName] =
+            given DF[PolluantName]           =
                 given Defaultable[PolluantName] = Defaultable(PolluantName.CO)
                 given ValidateVar[PolluantName] = ValidateVar.valid
                 FormDerivation.forEnumOrSumTypeLike_UsingShowAsId[PolluantName](
@@ -503,25 +506,29 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             given DF[Option[EmissionValueU]] =
                 given ValidateVar[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] = ValidateVar.valid
                 val underlying: DF[Option[QtyD[Milli * Gram / (Meter ^ 3)]]] =
-                    CoulombFormInstances.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using SUnits.sunit_MilligramPerNm3)
-                underlying.bimap[Option[EmissionValueU]](_.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_)))(_.map(_.unwrap))
+                    CoulombFormInstances.forOptionQtyD_default[Milli * Gram / (Meter ^ 3)]()(using
+                        SUnits.sunit_MilligramPerNm3
+                    )
+                underlying.bimap[Option[EmissionValueU]](
+                    _.map(summon[Conversion[QtyD[Milli * Gram / (Meter ^ 3)], EmissionValueU]].apply(_))
+                )(_.map(_.unwrap))
             // TestEmissionValue_DTO
-            given DF[TestEmissionValue_DTO] =
+            given DF[TestEmissionValue_DTO]  =
                 FormDerivation.derived[TestEmissionValue_DTO].autoOverwriteFieldNames
             // TestReport
-            given DF[TestReport] =
+            given DF[TestReport]             =
                 FormDerivation.derived[TestReport].autoOverwriteFieldNames
             // List[TestReport]
-            given DF[List[TestReport]] =
+            given DF[List[TestReport]]       =
                 given (TestReport => Int) = System.identityHashCode(_)
                 FormDerivation.forList[TestReport, Int]
             // EmissionValues_DTO
-            given DF[EmissionValues_DTO] =
+            given DF[EmissionValues_DTO]     =
                 FormDerivation.derived[EmissionValues_DTO].autoOverwriteFieldNames
             FormDerivation.derived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
 
-        val autoDerivedForm = FormDerivation.derived[Firebox.Door15aFirebox_Catalog].autoOverwriteFieldNames
-        val d               = autoDerivedForm.defaultable
+        val autoDerivedForm                               = FormDerivation.derived[Firebox.Door15aFirebox_Catalog].autoOverwriteFieldNames
+        val d                                             = autoDerivedForm.defaultable
         given ValidateVar[Firebox.Door15aFirebox_Catalog] = autoDerivedForm.validateVar
 
         Form.makeFor[Firebox.Door15aFirebox_Catalog](d): (v, fc) =>
@@ -531,23 +538,24 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 // mb_min and mb_max are independent — they must NOT participate in this sync.
                 val loadSizeNominalVar: Var[Option[Mass]] =
                     v.zoomLazy(_.load_size_nominal)((fb, m) => fb.copy(load_size_nominal = m))
-                val maximumLoadVar: Var[Option[Mass]] =
+                val maximumLoadVar    : Var[Option[Mass]] =
                     stove_params_var.zoomLazy(_.maximum_load)((sp, m) =>
                         if (m == sp.maximum_load) sp
-                        else if (m.isDefined) sp.with_mB(m.get) else sp
+                        else if (m.isDefined) sp.with_mB(m.get)
+                        else sp
                     )
-                val syncLoadToMax = loadSizeNominalVar.signal
-                    .distinct.changes.debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                val syncLoadToMax = loadSizeNominalVar.signal.distinct.changes
+                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                     .withCurrentValueOf(maximumLoadVar)
                     .collect { case (fv, lv) if fv != lv => fv } --> maximumLoadVar.writer
-                val syncMaxToLoad = maximumLoadVar.signal
-                    .distinct.changes.debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+                val syncMaxToLoad = maximumLoadVar.signal.distinct.changes
+                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                     .withCurrentValueOf(loadSizeNominalVar)
                     .collect { case (lv, fv) if lv != fv => lv } --> loadSizeNominalVar.writer
 
                 val modal = FireboxCatalogSelectComponent(
                     entriesSignal = door15aFireboxesSignal,
-                    onSelect = Observer { entry =>
+                    onSelect      = Observer { entry =>
                         val ml = stove_params_var.now().maximum_load
                         v.set(if ml.isDefined then entry.copy(load_size_nominal = ml) else entry)
                     }
@@ -555,25 +563,25 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 div(
                     syncLoadToMax,
                     syncMaxToLoad,
-                    button(
-                        cls     := "btn btn-secondary btn-sm mb-2",
+                    button                (
+                        cls := "btn btn-secondary btn-sm mb-2",
                         I18N_UI.catalog.select_from_catalog,
                         onClick --> { _ => modal.open() }
                     ),
                     autoDerivedForm.render(v, fc),
-                   modal.node
-               )
+                    modal.node
+                )
         .withFieldName(I18N.firebox_names.door_15a_firebox)
 
     given given_Firebox: DF[Firebox] =
         // given DF[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
         //     horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal
 
-        given DF[Firebox.Traditional]             = given_Firebox_Traditional
-        given DF[Firebox.AFPMA_PRSE]              = given_AFPMA_PRSE
-        given DF[Firebox.Ecolabeled]              = ecolabeled(default_version = Version.Version_1)
-        given DF[Firebox.SingleTested]            = given_Firebox_SingleTested
-        given DF[Firebox.Door15aFirebox_Catalog]  = given_Firebox_Door15aFirebox_Catalog
+        given DF[Firebox.Traditional]            = given_Firebox_Traditional
+        given DF[Firebox.AFPMA_PRSE]             = given_AFPMA_PRSE
+        given DF[Firebox.Ecolabeled]             = ecolabeled(default_version = Version.Version_1)
+        given DF[Firebox.SingleTested]           = given_Firebox_SingleTested
+        given DF[Firebox.Door15aFirebox_Catalog] = given_Firebox_Door15aFirebox_Catalog
 
         FormDerivation
             .derived[Firebox]
@@ -632,7 +640,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         )
 
     given given_HorizontalDistanceBetweenChimneyAndAdjacentBuildings
-       : Locale => Form[HorizontalDistanceBetweenChimneyAndAdjacentBuildings] =
+        : Locale => Form[HorizontalDistanceBetweenChimneyAndAdjacentBuildings] =
         import ValidateVarCommonInstances.valid_always.given
         FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalDistanceBetweenChimneyAndAdjacentBuildings.values.toList,
@@ -641,7 +649,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         )
 
     given given_HorizontalDistanceBetweenChimneyAndRidgelineBis
-       : Locale => Form[HorizontalDistanceBetweenChimneyAndRidgelineBis] =
+        : Locale => Form[HorizontalDistanceBetweenChimneyAndRidgelineBis] =
         import ValidateVarCommonInstances.valid_always.given
         FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalDistanceBetweenChimneyAndRidgelineBis.values.toList,
@@ -650,7 +658,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         )
 
     given given_HorizontalDistanceBetweenChimneyAndRidgeline
-       : Locale => Form[HorizontalDistanceBetweenChimneyAndRidgeline] =
+        : Locale => Form[HorizontalDistanceBetweenChimneyAndRidgeline] =
         import ValidateVarCommonInstances.valid_always.given
         FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalDistanceBetweenChimneyAndRidgeline.values.toList,
@@ -666,7 +674,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         )
 
     given given_HorizontalAngleBetweenChimneyAndAdjacentBuildings
-       : Locale => Form[HorizontalAngleBetweenChimneyAndAdjacentBuildings] =
+        : Locale => Form[HorizontalAngleBetweenChimneyAndAdjacentBuildings] =
         import ValidateVarCommonInstances.valid_always.given
         FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = HorizontalAngleBetweenChimneyAndAdjacentBuildings.values.toList,
@@ -674,8 +682,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 _ => Some(I18N_COS.adjacent_buildings.horizontal_angle_between_chimney_and_adjacent_buildings.explain)
         )
 
-    given given_OutsideAirIntakeAndChimneyLocations
-       : Locale => Form[OutsideAirIntakeAndChimneyLocations] =
+    given given_OutsideAirIntakeAndChimneyLocations: Locale => Form[OutsideAirIntakeAndChimneyLocations] =
         import ValidateVarCommonInstances.valid_always.given
         FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = OutsideAirIntakeAndChimneyLocations.values.toList,
@@ -702,7 +709,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         )
 
     given given_VerticalAngleBetweenChimneyAndAdjacentBuildings
-       : Locale => Form[VerticalAngleBetweenChimneyAndAdjacentBuildings] =
+        : Locale => Form[VerticalAngleBetweenChimneyAndAdjacentBuildings] =
         import ValidateVarCommonInstances.valid_always.given
         FormDerivation.forEnumOrSumTypeLike_UsingShowAsId        (
             options         = VerticalAngleBetweenChimneyAndAdjacentBuildings.values.toList,

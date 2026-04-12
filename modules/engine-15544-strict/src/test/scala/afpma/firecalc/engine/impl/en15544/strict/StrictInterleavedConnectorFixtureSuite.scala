@@ -15,26 +15,27 @@ import cats.data.Validated
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-/** Smoke test for interleaved `ConnectorSlot` support in Strict Stage 1.
-  *
-  * Instantiates `StrictInterleavedConnectorFixture_15544` (a 5-slot Strict topology with
-  * a `ConnectorSlot` interleaved between two `FlueSlot`s in the flue region) and probes
-  * the chain path end-to-end, verifying that Stage 1 folds correctly over the
-  * interleaved connector using Thermal 13384 computation.
-  *
-  * ── Design ──────────────────────────────────────────────────────────────────
-  *
-  * `StrictInterleavedConnectorFixture_15544` overrides `postFireboxPipeSlots` directly
-  * with a hand-crafted 5-slot vector:
-  *   [FlueSlot, ConnectorSlot, FlueSlot, ConnectorSlot, ChimneySlot]
-  *
-  * The flue region spans slots 0-2 (up to and including the last FlueSlot at index 2).
-  * Slot 1 (ConnectorSlot) is interleaved within the flue region and must be computed
-  * via Thermal 13384 rather than rejected.
-  *
-  * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
-  * policy — this suite is NOT a golden validation.
-  */
+/**
+ * Smoke test for interleaved `ConnectorSlot` support in Strict Stage 1.
+ *
+ * Instantiates `StrictInterleavedConnectorFixture_15544` (a 5-slot Strict topology with
+ * a `ConnectorSlot` interleaved between two `FlueSlot`s in the flue region) and probes
+ * the chain path end-to-end, verifying that Stage 1 folds correctly over the
+ * interleaved connector using Thermal 13384 computation.
+ *
+ * ── Design ──────────────────────────────────────────────────────────────────
+ *
+ * `StrictInterleavedConnectorFixture_15544` overrides `postFireboxPipeSlots` directly
+ * with a hand-crafted 5-slot vector:
+ *   [FlueSlot, ConnectorSlot, FlueSlot, ConnectorSlot, ChimneySlot]
+ *
+ * The flue region spans slots 0-2 (up to and including the last FlueSlot at index 2).
+ * Slot 1 (ConnectorSlot) is interleaved within the flue region and must be computed
+ * via Thermal 13384 rather than rejected.
+ *
+ * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
+ * policy — this suite is NOT a golden validation.
+ */
 class StrictInterleavedConnectorFixtureSuite extends AnyFreeSpec with Matchers:
 
     "StrictInterleavedConnectorFixture_15544" - {
@@ -61,7 +62,7 @@ class StrictInterleavedConnectorFixtureSuite extends AnyFreeSpec with Matchers:
         "Stage 1 computes FlueSlot + ConnectorSlot + FlueSlot in flue region (3 results)" in {
             val algV = StrictInterleavedConnectorFixture_15544.en15544_Alg
             algV match
-                case Validated.Valid(app) =>
+                case Validated.Valid(app)   =>
                     val stage1V = app.atDraftMin_LoadNominal.conceptualFlueRegionPipeResults
                     stage1V match
                         case Validated.Valid(results) =>
@@ -76,12 +77,18 @@ class StrictInterleavedConnectorFixtureSuite extends AnyFreeSpec with Matchers:
         "produces a 5-tuple postFireboxPipeResults" in {
             val algV = StrictInterleavedConnectorFixture_15544.en15544_Alg
             algV match
-                case Validated.Valid(app) =>
+                case Validated.Valid(app)   =>
                     val pfbV = app.atDraftMin_LoadNominal.postFireboxPipeResults
                     pfbV match
                         case Validated.Valid(vec)   =>
                             vec.size shouldBe 5
-                            vec.map(_._1) shouldBe Vector(FluePipeT, ConnectorPipeT, FluePipeT, ConnectorPipeT, ChimneyPipeT)
+                            vec.map(_._1) shouldBe Vector(
+                                FluePipeT,
+                                ConnectorPipeT,
+                                FluePipeT,
+                                ConnectorPipeT,
+                                ChimneyPipeT
+                            )
                         case Validated.Invalid(nel) =>
                             fail(s"postFireboxPipeResults failed: ${nel.toList.mkString("; ")}")
                 case Validated.Invalid(nel) =>

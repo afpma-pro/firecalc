@@ -13,7 +13,7 @@ object LogSanitizer:
         email.split("@") match
             case Array(local, domain) if local.nonEmpty =>
                 s"${local.head}***@$domain"
-            case _ => "***@***"
+            case _                                      => "***@***"
 
     /** Mask a token: show first 8 and last 4 chars */
     def maskToken(token: String): String =

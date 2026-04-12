@@ -253,8 +253,8 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
          * (the HA-power-free Stage 1 result), decoupling flue-region temperature/pressure
          * reads from Stage 2 HA resolution and breaking the lazy-val initialization cycle.
          */
-        lazy val conceptualFluePipeResult        : VNelMcalcErr[PipeResult]
-        lazy val conceptualFlueRegionPipeResults : VNelMcalcErr[Vector[PipeResult]]
+        lazy val conceptualFluePipeResult       : VNelMcalcErr[PipeResult]
+        lazy val conceptualFlueRegionPipeResults: VNelMcalcErr[Vector[PipeResult]]
 
         // Derived temperatures (Section 4.8.4 – 4.8.5)
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean]

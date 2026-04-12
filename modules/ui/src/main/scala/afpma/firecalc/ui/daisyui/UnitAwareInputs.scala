@@ -17,22 +17,23 @@ import afpma.laminar.form.*
 import afpma.laminar.form.daisyui.DaisyUIInputs.*
 import afpma.laminar.form.daisyui.DaisyUITooltip
 
-/** Unit-aware input components that depend on the `units` module.
-  *
-  * Extracted from `DaisyUIInputs` to keep `laminar-form-daisyui` free of
-  * the `units.js` dependency.
-  */
+/**
+ * Unit-aware input components that depend on the `units` module.
+ *
+ * Extracted from `DaisyUIInputs` to keep `laminar-form-daisyui` free of
+ * the `units.js` dependency.
+ */
 object UnitAwareInputs:
 
     final case class NumberInputWithUnitsAndFloatingLabelAndTooltipValidation(
         doubleOptVar     : Var[Option[Double]],
-        fieldNameOpt     : Option[String] = None,
-        withFloatingLabel: Boolean        = false,
-        optionalField    : OptionalField  = OptionalField.No,
+        fieldNameOpt     : Option[String]  = None,
+        withFloatingLabel: Boolean         = false,
+        optionalField    : OptionalField   = OptionalField.No,
         sunitsVar        : Var[List[SUnit[?]]],
         sunitCurrentVar  : Var[SUnit[?]],
         validate         : (Option[Double], SUnit[?]) => VNelString[Unit], // = (_, _) => Valid(())
-        disabled         : Signal[Boolean] = DISABLED_SIG,
+        disabled         : Signal[Boolean] = DISABLED_SIG
     ) extends Component:
 
         val vnelErrorsVar =
@@ -134,12 +135,12 @@ object UnitAwareInputs:
             sunitsVar        : Var[List[SUnit[?]]],
             sunitCurrentVar  : Var[SUnit[?]],
             withFloatingLabel: Boolean,
-            disabled         : Signal[Boolean] = DISABLED_SIG,
+            disabled         : Signal[Boolean] = DISABLED_SIG
         ) extends CommonRenderingFactory[Double]:
             def make(
                 v            : Var[Option[Double]],
                 label        : Option[String],
-                optionalField: OptionalField,
+                optionalField: OptionalField
             )(using
                 ValidateVar[Option[Double]]
             ): L.HtmlElement =
@@ -153,5 +154,5 @@ object UnitAwareInputs:
                     sunitCurrentVar   = sunitCurrentVar,
                     withFloatingLabel = withFloatingLabel,
                     validate          = validate,
-                    disabled          = disabled,
+                    disabled          = disabled
                 )

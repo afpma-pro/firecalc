@@ -35,7 +35,7 @@ case class ConstraintContext(
     H_BR                          : H_BR,
     n_min                         : n_min,
     /** Last inner shape of the air intake pipe, if available. */
-    airIntakePipeShape: Option[PipeShape] = None
+    airIntakePipeShape            : Option[PipeShape] = None
 )
 
 /**

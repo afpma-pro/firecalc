@@ -113,7 +113,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
      * done between `connector_PipeResult` and `chimney_PipeResult`.
      */
     private def postFireboxChainResults: PipeResultOp[WithParams_13384[Either[MecaFlu_Error, Vector[PipeResult]]]] =
-        val tc       = CanComputePipeResult.forThermal13384(
+        val tc = CanComputePipeResult.forThermal13384(
             en13384,
             HeatingAppliance.FlueGas.summon,
             HeatingAppliance.MassFlows.summon
@@ -128,7 +128,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
         // 15544-composed path, so the `other` branch below is never reached at runtime.
         def buildChain(
             connector: ConnectorPipe_Module.PipeCanBe,
-            chimney:   ChimneyPipe_Module.PipeCanBe
+            chimney  : ChimneyPipe_Module.PipeCanBe
         ): Either[MecaFlu_Error, Vector[PipeResult]] =
             val connSlot = ConnectorPipe_Module.foldPipeCanBe(connector)(
                 onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
@@ -151,23 +151,25 @@ abstract class EN13384_1_A1_2019_Common_Application(
             chain.computeAll(Params_13384.summon, initialUpstream, computeAt)
 
         inputs.pipes match
-            case p: Pipes_13384_WithFlowOnlyAirIntake  => buildChain(p.connector, p.chimney)
-            case p: Pipes_13384_WithThermalAirIntake    => buildChain(p.connector, p.chimney)
+            case p: Pipes_13384_WithFlowOnlyAirIntake => buildChain(p.connector, p.chimney)
+            case p: Pipes_13384_WithThermalAirIntake  => buildChain(p.connector, p.chimney)
             case _ =>
-                Left(MecaFlu_Error.UnexpectedPipeType(
-                    s"postFireboxChainResults reached an unexpected pipes type: ${inputs.pipes.getClass.getSimpleName}",
-                    ConnectorPipeT
-                ))
+                Left(
+                    MecaFlu_Error.UnexpectedPipeType(
+                        s"postFireboxChainResults reached an unexpected pipes type: ${inputs.pipes.getClass.getSimpleName}",
+                        ConnectorPipeT
+                    )
+                )
 
     override def connector_PipeResult =
         postFireboxChainResults.map: results =>
             require(results.size >= 2, s"postFireboxChainResults must have at least 2 elements, got ${results.size}")
-            results(results.size - 2)
+            results(results.size - 2                                                                                )
 
     override def chimney_PipeResult =
         postFireboxChainResults.map: results =>
             require(results.nonEmpty, "postFireboxChainResults must not be empty")
-            results(results.size - 1)
+            results(results.size - 1                                             )
 
     override final def pipesResult_13384_VNelS =
         PipesResult_13384_VNelString(
@@ -408,17 +410,18 @@ abstract class EN13384_1_A1_2019_Common_Application(
 
     // Section "5.5.2"
 
-    /** Standalone EN 13384 nominal flue-gas mass flow.
-      *
-      * INVARIANT — intentional hard crash (`sys.error`):
-      * - Standalone EN 13384 REQUIRES nominal mass flow to be populated.
-      * - The EN 15544 strict/mce composed path overrides this method with a
-      *   computed value from wood combustion, so this fallback is never reached.
-      * - In standalone EN 13384 (golden cas-types), `flue_gas_mass_flow_nominal`
-      *   is always explicitly provided.
-      * - Using `HeatingAppliance.MassFlows.undefined` in a standalone EN 13384
-      *   context is a developer error and will crash. This is by design.
-      */
+    /**
+     * Standalone EN 13384 nominal flue-gas mass flow.
+     *
+     * INVARIANT — intentional hard crash (`sys.error`):
+     * - Standalone EN 13384 REQUIRES nominal mass flow to be populated.
+     * - The EN 15544 strict/mce composed path overrides this method with a
+     *   computed value from wood combustion, so this fallback is never reached.
+     * - In standalone EN 13384 (golden cas-types), `flue_gas_mass_flow_nominal`
+     *   is always explicitly provided.
+     * - Using `HeatingAppliance.MassFlows.undefined` in a standalone EN 13384
+     *   context is a developer error and will crash. This is by design.
+     */
     override def m_dot =
         HeatingAppliance.MassFlows.summon.flue_gas_mass_flow_nominal.getOrElse:
             sys.error(
@@ -431,10 +434,11 @@ abstract class EN13384_1_A1_2019_Common_Application(
             .getOrElse:
                 m_dot / 3.0
 
-    /** Standalone EN 13384 nominal combustion-air mass flow.
-      *
-      * Same invariant as `m_dot` — see above.
-      */
+    /**
+     * Standalone EN 13384 nominal combustion-air mass flow.
+     *
+     * Same invariant as `m_dot` — see above.
+     */
     override def mB_dot =
         HeatingAppliance.MassFlows.summon.combustion_air_mass_flow_nominal.getOrElse:
             sys.error(

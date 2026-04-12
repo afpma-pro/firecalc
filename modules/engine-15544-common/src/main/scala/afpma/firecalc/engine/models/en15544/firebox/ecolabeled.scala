@@ -34,7 +34,6 @@ sealed trait Ecolabeled extends CertifiedDesign:
     override val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double = 0.5
     override val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double = 2.0
 
-
     override val emissions_values = EcoPlus_Combustion_Firebox
     override val min_load         = MinLoad.HalfOfMaxLoad.makeWithoutValue
 

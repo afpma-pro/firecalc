@@ -33,17 +33,16 @@ object AuthMiddlewareTest extends TestSuite {
 
     // Stub AuthenticationService: "valid-token" -> Some(testCustomerId), anything else -> None
     val stubAuthService: AuthenticationService[IO] = new AuthenticationService[IO]:
-        def generateAuthCode(): IO[String]                     = ???
-        def generateJWT(customerId: CustomerId): IO[String]    = ???
+        def generateAuthCode(                      ): IO[String] = ???
+        def generateJWT     (customerId: CustomerId): IO[String] = ???
         def validateJWT(token: String): IO[Option[CustomerId]] =
             IO.pure(if token == "valid-token" then Some(testCustomerId) else None)
 
     val middleware = AuthMiddleware[IO](stubAuthService)
 
     // A trivial authed route that returns 200 with the customer ID
-    val authedRoutes = org.http4s.AuthedRoutes.of[AuthenticatedUser, IO] {
-        case GET -> Root / "protected" as user =>
-            Ok(user.customerId.value.toString)
+    val authedRoutes = org.http4s.AuthedRoutes.of[AuthenticatedUser, IO] { case GET -> Root / "protected" as user =>
+        Ok(user.customerId.value.toString)
     }
 
     val protectedRoutes: HttpRoutes[IO] = middleware(authedRoutes)
@@ -58,12 +57,12 @@ object AuthMiddlewareTest extends TestSuite {
         val wwwAuth = resp.headers.get[`WWW-Authenticate`]
         assert(wwwAuth.isDefined)
         val challenges = wwwAuth.get.value
-        assert(challenges.contains("Bearer"))
+        assert(challenges.contains("Bearer")           )
         assert(challenges.contains("firecalc-payments"))
 
         // JSON error envelope must contain expected fields
         val json = resp.as[Json].unsafeRunSync()
-        assert(json.hcursor.get[String]("error").contains("unauthorized"))
+        assert(json.hcursor.get[String]("error").contains("unauthorized")                 )
         assert(json.hcursor.get[String]("message").contains("Valid Bearer token required"))
     }
 
@@ -86,7 +85,7 @@ object AuthMiddlewareTest extends TestSuite {
         }
 
         test("missing Authorization header returns 401 with WWW-Authenticate and JSON body") {
-            val req = Request[IO](Method.GET, uri"/protected")
+            val req  = Request[IO](Method.GET, uri"/protected")
             val resp = app.run(req).unsafeRunSync()
             assert401Contract(resp)
         }

@@ -54,10 +54,11 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
 
-    /** Normalize: if the chain has a flue region followed directly by chimney
-      * (no connector slot), insert an explicit ConnectorSlot(Seq.empty) so
-      * downstream code always sees the mandatory three-region shape.
-      */
+    /**
+     * Normalize: if the chain has a flue region followed directly by chimney
+     * (no connector slot), insert an explicit ConnectorSlot(Seq.empty) so
+     * downstream code always sees the mandatory three-region shape.
+     */
     private def normalizePostFireboxSlots(
         slots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot]
     ): Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
@@ -68,9 +69,9 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                 case _                                => false
             if lastFlueIdx < 0 then slots // no flue region → nothing to normalize
             else
-                val lastIdx = slots.size - 1
+                val lastIdx                = slots.size - 1
                 val afterFlueBeforeChimney = slots.slice(lastFlueIdx + 1, lastIdx)
-                val hasConnector = afterFlueBeforeChimney.exists:
+                val hasConnector           = afterFlueBeforeChimney.exists:
                     case ConnectorSlot(_) => true
                     case _                => false
                 if hasConnector then slots

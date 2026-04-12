@@ -5,7 +5,6 @@
 
 package afpma.firecalc.engine.cas_types
 
-
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
@@ -27,16 +26,16 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
     private def showDebug_impl(
         cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap: _en15544.AtParams
+        ap      : _en15544.AtParams
     )(emit: String => Unit) =
 
         import cas_type.given_Locale
         given _en15544.Params_15544 = ap.params
 
-        given LocalRegulations = cas_type.localRegulations
+        given LocalRegulations            = cas_type.localRegulations
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
 
-        val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
+        val showAsTableInstances       = new afpma.firecalc.engine.ops.ShowAsTableInstances
         val showAsTableInstances_15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
         val showAsTableInstances_13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
 
@@ -77,7 +76,6 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         emit(_en15544.citedConstraints.showAsCliTable)
 
         seperate_tables
-
 
         emit(s""" Calcul avec Params = ${ap.params}""")
 
@@ -124,7 +122,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         seperate_tables
 
-        emit(_en15544.inputs.localConditions.showAsCliTable)
+        emit(_en15544.inputs.localConditions.showAsCliTable )
         emit(_en15544.en13384_application.P_L.showAsCliTable)
 
         seperate_tables
@@ -143,11 +141,13 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
     private def showDebug(
         cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap: _en15544.AtParams
+        ap      : _en15544.AtParams
     ) =
         showDebug_impl(cas_type, _en15544, ap)(println)
 
-    def run_cas_type_15544_strict(cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg) =
+    def run_cas_type_15544_strict(
+        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg
+    ) =
         val out = cas_type.en15544_Alg.map: _strict =>
             showDebug(cas_type, _strict, _strict.atDraftMin_LoadNominal)
         out.fold(

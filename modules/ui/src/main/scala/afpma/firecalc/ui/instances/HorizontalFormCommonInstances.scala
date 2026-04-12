@@ -33,7 +33,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     import SUnits.given
     // import defaultable.given
-    
+
     given dual: DualCommonInstances = new DualCommonInstances()
     import dual.given
 
@@ -210,7 +210,8 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     val horizontal_form_Roughness: Form[QtyD[Meter]] =
         import defaultable.given_Roughness
         import vv.meter.valid_whenStrictlyPositive
-        given_dual_Roughness.form()
+        given_dual_Roughness
+            .form()
             .withFieldName(I18N.terms.roughness)
 
     given horizontal_form_TCelsius: Locale => Form[TCelsius] =
@@ -227,24 +228,29 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         import afpma.firecalc.ui.instances.defaultable.qty_d.area_in_cm2.zero
 
         import vv.area_in_cm2.valid_whenStrictlyPositive
-        given Form[PipeShape]  = horizontal_form_PipeShape
-        given Form[AreaInCm2]  = given_dual_Area_cm2_or_in2.form()
+        given Form[PipeShape] = horizontal_form_PipeShape
+        given Form[AreaInCm2] = given_dual_Area_cm2_or_in2
+            .form()
             .withFieldName(I18N.terms.area)
 
         import afpma.laminar.form.derivation.{NoneOfEither as DerivNone, SomeLeft as DerivSL, SomeRight as DerivSR}
-        FormDerivation.optionOfEither[AreaInCm2, PipeShape](
-            noneLabel  = "-",
-            leftLabel  = I18N.terms.area,
-            rightLabel = I18N.terms.pipe_shape._self
-        ).bimap[OptionOfEither[AreaInCm2, PipeShape]](derivOoe => derivOoe match
-            case DerivNone    => NoneOfEither
-            case DerivSL(l)   => SomeLeft(l)
-            case DerivSR(r)   => SomeRight(r)
-        )(utilsOoe => utilsOoe match
-            case NoneOfEither => DerivNone
-            case SomeLeft(l)  => DerivSL(l)
-            case SomeRight(r) => DerivSR(r)
-        )
+        FormDerivation
+            .optionOfEither[AreaInCm2, PipeShape] (
+                noneLabel  = "-",
+                leftLabel  = I18N.terms.area,
+                rightLabel = I18N.terms.pipe_shape._self
+            )
+            .bimap[OptionOfEither[AreaInCm2, PipeShape]](derivOoe =>
+                derivOoe match
+                    case DerivNone  => NoneOfEither
+                    case DerivSL(l) => SomeLeft(l)
+                    case DerivSR(r) => SomeRight(r)
+            )(utilsOoe =>
+                utilsOoe match
+                    case NoneOfEither => DerivNone
+                    case SomeLeft(l)  => DerivSL(l)
+                    case SomeRight(r) => DerivSR(r)
+            )
 
     // ThermalConductivity
 
@@ -286,15 +292,19 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_AzimuthDirection: Locale => Form[AzimuthDirection] =
         import cats.Show
         import afpma.firecalc.ui.i18n.implicits.I18N_UI
-        given Show[AzimuthDirection] = Show.show:
+        given Show[AzimuthDirection]        = Show.show:
             case AzimuthDirection.Rear       => I18N_UI.direction_badge.cardinal_rear
-            case AzimuthDirection.RearRight  => s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_right}"
+            case AzimuthDirection.RearRight  =>
+                s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_right}"
             case AzimuthDirection.Right      => I18N_UI.direction_badge.cardinal_right
-            case AzimuthDirection.FrontRight => s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_right}"
+            case AzimuthDirection.FrontRight =>
+                s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_right}"
             case AzimuthDirection.Front      => I18N_UI.direction_badge.cardinal_front
-            case AzimuthDirection.FrontLeft  => s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_left}"
+            case AzimuthDirection.FrontLeft  =>
+                s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_left}"
             case AzimuthDirection.Left       => I18N_UI.direction_badge.cardinal_left
-            case AzimuthDirection.RearLeft   => s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_left}"
+            case AzimuthDirection.RearLeft   =>
+                s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_left}"
             case AzimuthDirection.Custom(az) => s"${az.value}\u00b0"
         given Defaultable[AzimuthDirection] = Defaultable(AzimuthDirection.Rear)
         given ValidateVar[AzimuthDirection] =
@@ -307,7 +317,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_InclinationDirection: Locale => Form[InclinationDirection] =
         import cats.Show
         import afpma.firecalc.ui.i18n.implicits.I18N_UI
-        given Show[InclinationDirection] = Show.show:
+        given Show[InclinationDirection]        = Show.show:
             case InclinationDirection.Up         => I18N_UI.direction_badge.cardinal_up
             case InclinationDirection.Down       => I18N_UI.direction_badge.cardinal_down
             case InclinationDirection.Horizontal => I18N_UI.direction_badge.cardinal_horizontal
@@ -336,11 +346,12 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         //     ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[InclinationDirection]
 
         val azForm   = horizontal_form_AzimuthDirection.render(azVar, FormConfig(fieldName = Some(I18N.terms.azimuth)))
-        val inclForm = horizontal_form_InclinationDirection.render(inclVar, FormConfig(fieldName = Some(I18N.terms.inclination)))
+        val inclForm =
+            horizontal_form_InclinationDirection.render(inclVar, FormConfig(fieldName = Some(I18N.terms.inclination)))
 
         val dialog = CustomDirectionDialog(
             onApply = Observer[(AzimuthDirection, InclinationDirection)]: (az, incl) =>
-                azVar.set(az)
+                azVar.set  (az  )
                 inclVar.set(incl)
         )
 
@@ -353,10 +364,12 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         val customBadge = span(
             cls := "badge badge-ghost badge-sm font-mono text-xs",
             display <-- isCustom.map(if _ then "inline-flex" else "none"),
-            child.text <-- azVar.signal.combineWith(inclVar.signal).map: (az, incl) =>
-                val azDeg   = AzimuthDirection.toDegrees(az)
-                val inclDeg = InclinationDirection.toDegrees(incl)
-                s"${azDeg}\u00b0 / ${inclDeg}\u00b0"
+            child.text <-- azVar.signal
+                .combineWith(inclVar.signal)
+                .map: (az, incl) =>
+                    val azDeg   = AzimuthDirection.toDegrees(az)
+                    val inclDeg = InclinationDirection.toDegrees(incl)
+                    s"${azDeg}\u00b0 / ${inclDeg}\u00b0"
         )
 
         val customBtn = button(
@@ -368,7 +381,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
         div(
             cls := "flex flex-row gap-1 items-center",
-            div(cls := "flex-auto", azForm),
+            div(cls := "flex-auto", azForm  ),
             div(cls := "flex-auto", inclForm),
             customBadge,
             customBtn,

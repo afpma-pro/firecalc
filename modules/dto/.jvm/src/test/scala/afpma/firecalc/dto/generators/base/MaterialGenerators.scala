@@ -37,7 +37,7 @@ trait MaterialGenerators extends PrimitiveGenerators:
     // Material_13384_V2 with custom roughness - allow overriding roughness
     def genMaterial_13384_V2_WithCustomRoughness: Gen[Material_13384_V2] =
         for
-            mat <- genMaterial_13384_V2
+            mat       <- genMaterial_13384_V2
             roughness <- genRoughness
             useCustom <- Gen.oneOf(true, false)
         yield if useCustom then mat.withRoughness(roughness) else mat
@@ -56,18 +56,18 @@ trait MaterialGenerators extends PrimitiveGenerators:
     // Material_15544_V2 with custom roughness - allow overriding roughness
     def genMaterial_15544_V2_WithCustomRoughness: Gen[Material_15544_V2] =
         for
-            mat <- genMaterial_15544_V2
+            mat       <- genMaterial_15544_V2
             roughness <- genRoughness
             useCustom <- Gen.oneOf(true, false)
         yield if useCustom then mat.withRoughness(roughness) else mat
 
     // Common material generator - picks from most common materials
     def genCommonMaterial_13384_V2: Gen[Material_13384_V2] =
-        Gen.oneOf(
-            Gen.const(Material_13384_V2.WeldedSteel()),
-            Gen.const(Material_13384_V2.Masonry()),
-            Gen.const(Material_13384_V2.Concrete()),
-            Gen.const(Material_13384_V2.Bricks()),
+        Gen.oneOf   (
+            Gen.const(Material_13384_V2.WeldedSteel()   ),
+            Gen.const(Material_13384_V2.Masonry()       ),
+            Gen.const(Material_13384_V2.Concrete()      ),
+            Gen.const(Material_13384_V2.Bricks()        ),
             Gen.const(Material_13384_V2.ClayFlueLiners())
         )
 
@@ -75,7 +75,7 @@ trait MaterialGenerators extends PrimitiveGenerators:
     def genCommonMaterial_15544_V2: Gen[Material_15544_V2] =
         Gen.oneOf(
             Gen.const(Material_15544_V2.TuyauxEnChamotte()),
-            Gen.const(Material_15544_V2.BlocsDeChamotte())
+            Gen.const(Material_15544_V2.BlocsDeChamotte() )
         )
 
 end MaterialGenerators

@@ -23,30 +23,31 @@ import cats.syntax.all.*
 
 import io.taig.babel.Languages
 
-/** Dev fixture — NOT a golden validation fixture.
-  *
-  * The names `cas_type`, `CasType_*`, and the `cas_types/` directory are
-  * reserved for golden fixtures that are byte-cross-validated against
-  * independent EN 13384 / EN 15544 reference implementations. This fixture
-  * has NOT been cross-validated; it exists to prove that a `ConnectorSlot`
-  * with empty descriptors (`Seq.empty`) computes as a stable no-op and
-  * does not break downstream computation.
-  *
-  * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
-  * policy.
-  *
-  * ── Topology ──────────────────────────────────────────────────────────
-  * Minimal 3-slot N-pipe topology with an empty connector.
-  *
-  * Field values mirror `CasType_15544_C1` (colonne ascendante). The
-  * connector slot is intentionally empty so that it builds to a Without
-  * (PipeSlot.noop) — proving that upstream temperature, density, and
-  * velocity propagate through unchanged to the chimney.
-  *
-  *   Slot 0 — FlueSlot          : full flue path (same as default single-slot)
-  *   Slot 1 — ConnectorSlot     : empty descriptors → PipeSlot.noop
-  *   Slot 2 — ChimneySlot       : standard chimney
-  */
+/**
+ * Dev fixture — NOT a golden validation fixture.
+ *
+ * The names `cas_type`, `CasType_*`, and the `cas_types/` directory are
+ * reserved for golden fixtures that are byte-cross-validated against
+ * independent EN 13384 / EN 15544 reference implementations. This fixture
+ * has NOT been cross-validated; it exists to prove that a `ConnectorSlot`
+ * with empty descriptors (`Seq.empty`) computes as a stable no-op and
+ * does not break downstream computation.
+ *
+ * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
+ * policy.
+ *
+ * ── Topology ──────────────────────────────────────────────────────────
+ * Minimal 3-slot N-pipe topology with an empty connector.
+ *
+ * Field values mirror `CasType_15544_C1` (colonne ascendante). The
+ * connector slot is intentionally empty so that it builds to a Without
+ * (PipeSlot.noop) — proving that upstream temperature, density, and
+ * velocity propagate through unchanged to the chimney.
+ *
+ *   Slot 0 — FlueSlot          : full flue path (same as default single-slot)
+ *   Slot 1 — ConnectorSlot     : empty descriptors → PipeSlot.noop
+ *   Slot 2 — ChimneySlot       : standard chimney
+ */
 object StrictWithoutConnectorFixture_15544
     extends v2024_10_Alg
     with v0_2024_10_strict.Firebox_15544_Strict_Alg
@@ -106,42 +107,42 @@ object StrictWithoutConnectorFixture_15544
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection(
+            setInitialDirection    (
                 azimuth     = AzimuthDirection.Right,
                 inclination = InclinationDirection.Horizontal
             ),
-            roughness(3.mm),
+            roughness              (3.mm                        ),
             innerShape(rectangle(11.1.cm, 12.2.cm)),
-            addSectionHorizontal("sortie foyer", 28.1.cm),
-            addSharpAngle_90deg(
+            addSectionHorizontal   ("sortie foyer", 28.1.cm     ),
+            addSharpAngle_90deg    (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical("colonne ascendante", 3.20.m)
+            addSectionVertical     ("colonne ascendante", 3.20.m)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
-            roughness(Material_13384.WeldedSteel()),
-            innerShape(circle(130.mm)),
-            layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("buse", 5.cm)
+        Seq (
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(130.mm)              ),
+            layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
+            pipeLocation      (PipeLocation.HeatedArea                     ),
+            addSectionVertical("buse", 5.cm                                )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
         Seq(
-            roughness(1.mm),
+            roughness         (1.mm                                           ),
             innerShape(circle(130.mm)),
-            layer(e = 26.mm, tr = SquareMeterKelvinPerWatt(0.260)),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("etage", 90.cm),
-            pipeLocation(PipeLocation.OutsideOrExterior),
-            addSectionVertical("sortie de toit", 60.cm),
-            addFlowResistance("element terminal", 1.461.unitless: ζ)
+            layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.260)),
+            pipeLocation      (PipeLocation.HeatedArea                        ),
+            addSectionVertical("etage", 90.cm                                 ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                 ),
+            addSectionVertical("sortie de toit", 60.cm                        ),
+            addFlowResistance ("element terminal", 1.461.unitless: ζ)
         )
 
     // ── 3-slot N-pipe override (FlueSlot, ConnectorSlot-empty, ChimneySlot) ─────
@@ -159,11 +160,11 @@ object StrictWithoutConnectorFixture_15544
     override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot] =
         Seq(
             // Slot 0 — FlueSlot: use the FULL fluePipeDescr (same as default single-slot)
-            PostFireboxPipeDescrSlot.FlueSlot(fluePipeDescr),
+            PostFireboxPipeDescrSlot.FlueSlot     (fluePipeDescr   ),
             // Slot 1 — ConnectorSlot: empty descriptors → builds to Without → PipeSlot.noop
-            PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
+            PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty       ),
             // Slot 2 — ChimneySlot: standard chimney
-            PostFireboxPipeDescrSlot.ChimneySlot(chimneyPipeDescr)
+            PostFireboxPipeDescrSlot.ChimneySlot  (chimneyPipeDescr)
         )
 
 end StrictWithoutConnectorFixture_15544

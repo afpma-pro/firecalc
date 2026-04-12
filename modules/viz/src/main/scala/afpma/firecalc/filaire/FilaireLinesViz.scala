@@ -10,48 +10,52 @@ import scala.scalajs.js
 import afpma.firecalc.filaire.FilaireTypes.*
 import org.scalajs.dom
 
-/** Framework-agnostic Filaire visualization API.
-  * Returns plain DOM elements that can be wrapped by any UI framework.
-  */
+/**
+ * Framework-agnostic Filaire visualization API.
+ * Returns plain DOM elements that can be wrapped by any UI framework.
+ */
 object FilaireLinesViz:
 
-    /** Result of rendering a Filaire visualization.
-      * @param element The container div element containing the 3D canvas
-      * @param handle Handle for lifecycle management (dispose, etc.)
-      */
+    /**
+     * Result of rendering a Filaire visualization.
+     * @param element The container div element containing the 3D canvas
+     * @param handle Handle for lifecycle management (dispose, etc.)
+     */
     case class FilaireVizResult(
-      element: dom.HTMLDivElement,
-      handle: FilaireVizHandleJS
+        element: dom.HTMLDivElement,
+        handle : FilaireVizHandleJS
     )
 
-    /** Render the Filaire visualization for a flat list of lines (backward-compatible).
-      * All lines are placed in a single group.
-      */
+    /**
+     * Render the Filaire visualization for a flat list of lines (backward-compatible).
+     * All lines are placed in a single group.
+     */
     @scala.annotation.targetName("renderLines")
     def render(
         fcalcLines  : FireCalcFilaireLines,
-        config      : FilaireVizConfig                    = FilaireVizConfig(),
-        displayType : DisplayType                         = DisplayType.FullShape,
+        config      : FilaireVizConfig                            = FilaireVizConfig(),
+        displayType : DisplayType                                 = DisplayType.FullShape,
         onShapeClick: Option[Option[FireCalcFilaireLine] => Unit] = None,
         onShapeHover: Option[Option[FireCalcFilaireLine] => Unit] = None
     ): FilaireVizResult =
         render(
-          List(FireCalcFilaireGroup(fcalcLines)),
-          config,
-          displayType,
-          onShapeClick,
-          onShapeHover
+            List(FireCalcFilaireGroup(fcalcLines)),
+            config,
+            displayType,
+            onShapeClick,
+            onShapeHover
         )
 
-    /** Render the Filaire visualization into a new div element.
-      * Miter joints only form between consecutive pipes within the same group.
-      *
-      * @param groups The pipe groups to visualize
-      * @param config Configuration for the visualization
-      * @param displayType How to render the pipes (CenterLine, FullShape, or Mixed)
-      * @param onShapeClick Optional global callback when a pipe is clicked
-      * @return A result containing the DOM element and handle for lifecycle management
-      */
+    /**
+     * Render the Filaire visualization into a new div element.
+     * Miter joints only form between consecutive pipes within the same group.
+     *
+     * @param groups The pipe groups to visualize
+     * @param config Configuration for the visualization
+     * @param displayType How to render the pipes (CenterLine, FullShape, or Mixed)
+     * @param onShapeClick Optional global callback when a pipe is clicked
+     * @return A result containing the DOM element and handle for lifecycle management
+     */
     def render(
         groups      : FireCalcFilaireGroups,
         config      : FilaireVizConfig,
@@ -60,16 +64,16 @@ object FilaireLinesViz:
         onShapeHover: Option[Option[FireCalcFilaireLine] => Unit]
     ): FilaireVizResult =
         val container = dom.document.createElement("div").asInstanceOf[dom.HTMLDivElement]
-        container.className = "filaire-viz"
-        container.style.width = "100%"
-        container.style.height = "100%"
+        container.className      = "filaire-viz"
+        container.style.width    = "100%"
+        container.style.height   = "100%"
         container.style.overflow = "hidden"
 
         // Flat list of all lines across all groups (for click/hover callback lookup)
         val allLines = groups.flatMap(_.lines)
 
         val pipeGroupsJs = groupsToJs(groups)
-        val configJs = configToJs(config, displayType)
+        val configJs     = configToJs(config, displayType)
 
         val hasAnyCallback = onShapeClick.isDefined || allLines.exists(_.onClick.isDefined)
         val clickCallback: js.UndefOr[js.Function1[Int, Unit]] =
@@ -90,17 +94,18 @@ object FilaireLinesViz:
                     if idx >= 0 && idx < allLines.length then cb(Some(allLines(idx)))
                     else cb(None)
                 }): js.Function1[Int, Unit])
-            case None => js.undefined
+            case None     => js.undefined
 
         val handle = ThreeVizFacade(container, pipeGroupsJs, configJs, clickCallback, hoverCallback)
 
         FilaireVizResult(container, handle)
 
-    /** Convert Scala domain model groups to JS facade objects.
-      * lineIndex is a global running counter across all groups.
-      */
+    /**
+     * Convert Scala domain model groups to JS facade objects.
+     * lineIndex is a global running counter across all groups.
+     */
     private def groupsToJs(groups: FireCalcFilaireGroups): js.Array[PipeGroupJS] =
-        val result = new js.Array[PipeGroupJS]()
+        val result    = new js.Array[PipeGroupJS]()
         var lineIndex = 0
         groups.foreach { group =>
             val pipesArr = new js.Array[PipeDataJS]()
@@ -114,41 +119,43 @@ object FilaireLinesViz:
                         PipeShapeJS.circle(d.value)
 
                 val originJs = PipeOriginJS(
-                  line.origin.x.value,
-                  line.origin.y.value,
-                  line.origin.z.value
+                    line.origin.x.value,
+                    line.origin.y.value,
+                    line.origin.z.value
                 )
 
                 val directionJs = PipeDirectionJS(
-                  line.direction.dx,
-                  line.direction.dy,
-                  line.direction.dz
+                    line.direction.dx,
+                    line.direction.dy,
+                    line.direction.dz
                 )
 
                 val nameJs: js.UndefOr[String] = line.name match
                     case Some(n) => n
-                    case None => js.undefined
+                    case None    => js.undefined
 
                 val displayNameJs: js.UndefOr[String] = line.displayName match
                     case Some(n) => n
-                    case None => js.undefined
+                    case None    => js.undefined
 
-                pipesArr.push(PipeDataJS(
-                  origin = originJs,
-                  direction = directionJs,
-                  length = line.length.value,
-                  color = line.color.value,
-                  shape = shapeJs,
-                  shapeOrientation = line.shapeOrientation.degrees,
-                  lineIndex = lineIndex,
-                  name = nameJs,
-                  displayName = displayNameJs
-                ))
+                pipesArr.push(
+                    PipeDataJS          (
+                        origin           = originJs,
+                        direction        = directionJs,
+                        length           = line.length.value,
+                        color            = line.color.value,
+                        shape            = shapeJs,
+                        shapeOrientation = line.shapeOrientation.degrees,
+                        lineIndex        = lineIndex,
+                        name             = nameJs,
+                        displayName      = displayNameJs
+                    )
+                )
                 lineIndex += 1
             }
             val groupNameJs: js.UndefOr[String] = group.name match
                 case Some(n) => n
-                case None => js.undefined
+                case None    => js.undefined
             result.push(PipeGroupJS(pipes = pipesArr, name = groupNameJs))
         }
         result
@@ -176,28 +183,28 @@ object FilaireLinesViz:
 
         val cameraStateJs: js.UndefOr[CameraStateJS] = config._cameraState match
             case Some(cs) => cs
-            case None => js.undefined
+            case None     => js.undefined
 
-        VizConfigJS(
-          canvasWidth = optIntToJs(config.canvasWidth),
-          canvasHeight = optIntToJs(config.canvasHeight),
-          shapeColor = config.shapeColor,
-          hoverColor = config.hoverColor,
-          backgroundColor = config.backgroundColor,
-          displayType = displayTypeStr,
-          viewPadding = config.viewPadding,
-          mixedShapeOpacity = config.mixedShapeOpacity,
-          centerLineSphereRadius = config.centerLineSphereRadius,
-          centerLineStrokeWidth = config.centerLineStrokeWidth,
-          displayName = config.displayName,
-          displayNameInModes = displayNameInModesJs,
-          nameVerticalOffset = config.nameVerticalOffset,
-          watermark = optStrToJs(config.watermark),
-          _cameraState = cameraStateJs,
-          labelResetView = optStrToJs(config.labelResetView),
-          labelViewMode = optStrToJs(config.labelViewMode),
-          labelAnnotations = optStrToJs(config.labelAnnotations),
-          labelAxisRear = optStrToJs(config.labelAxisRear),
-          labelAxisUp = optStrToJs(config.labelAxisUp),
-          labelAxisRight = optStrToJs(config.labelAxisRight)
+        VizConfigJS           (
+            canvasWidth            = optIntToJs(config.canvasWidth),
+            canvasHeight           = optIntToJs(config.canvasHeight),
+            shapeColor             = config.shapeColor,
+            hoverColor             = config.hoverColor,
+            backgroundColor        = config.backgroundColor,
+            displayType            = displayTypeStr,
+            viewPadding            = config.viewPadding,
+            mixedShapeOpacity      = config.mixedShapeOpacity,
+            centerLineSphereRadius = config.centerLineSphereRadius,
+            centerLineStrokeWidth  = config.centerLineStrokeWidth,
+            displayName            = config.displayName,
+            displayNameInModes     = displayNameInModesJs,
+            nameVerticalOffset     = config.nameVerticalOffset,
+            watermark              = optStrToJs(config.watermark),
+            _cameraState           = cameraStateJs,
+            labelResetView         = optStrToJs(config.labelResetView),
+            labelViewMode          = optStrToJs(config.labelViewMode),
+            labelAnnotations       = optStrToJs(config.labelAnnotations),
+            labelAxisRear          = optStrToJs(config.labelAxisRear),
+            labelAxisUp            = optStrToJs(config.labelAxisUp),
+            labelAxisRight         = optStrToJs(config.labelAxisRight)
         )

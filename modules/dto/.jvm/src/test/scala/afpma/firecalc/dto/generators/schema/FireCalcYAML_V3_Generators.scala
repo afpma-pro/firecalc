@@ -44,30 +44,30 @@ trait FireCalcYAML_V3_Generators
      */
     def genFireCalcYAML_V3: Gen[FireCalcYAML_V3] =
         for
-            locale <- genLocale
-            displayUnits <- genDisplayUnits
-            method <- genStandardOrComputationMethod
-            projectDescr <- genProjectDescr
+            locale          <- genLocale
+            displayUnits    <- genDisplayUnits
+            method          <- genStandardOrComputationMethod
+            projectDescr    <- genProjectDescr
             localConditions <- genLocalConditions
-            stoveParams <- genStoveParams
-            airIntake <- genFlowOnlyPipeDescr_13384_V2_Seq
-            firebox <- genFirebox_V2
-            fluePipe <- genFlowOnlyPipeDescr_15544_V2_Seq
-            connector <- genThermalPipeDescr_13384_V2_Seq
-            chimney <- genThermalPipeDescr_13384_V2_Seq
-        yield FireCalcYAML_V3(
-            version = FireCalcYAML_V3.VERSION,
-            locale = locale,
-            display_units = displayUnits,
+            stoveParams     <- genStoveParams
+            airIntake       <- genFlowOnlyPipeDescr_13384_V2_Seq
+            firebox         <- genFirebox_V2
+            fluePipe        <- genFlowOnlyPipeDescr_15544_V2_Seq
+            connector       <- genThermalPipeDescr_13384_V2_Seq
+            chimney         <- genThermalPipeDescr_13384_V2_Seq
+        yield FireCalcYAML_V3                       (
+            version                        = FireCalcYAML_V3.VERSION,
+            locale                         = locale,
+            display_units                  = displayUnits,
             standard_or_computation_method = method,
-            project_description = projectDescr,
-            local_conditions = localConditions,
-            stove_params = stoveParams,
-            air_intake_descr = airIntake,
-            firebox = firebox,
-            flue_pipe_descr = fluePipe,
-            connector_pipe_descr = connector,
-            chimney_pipe_descr = chimney
+            project_description            = projectDescr,
+            local_conditions               = localConditions,
+            stove_params                   = stoveParams,
+            air_intake_descr               = airIntake,
+            firebox                        = firebox,
+            flue_pipe_descr                = fluePipe,
+            connector_pipe_descr           = connector,
+            chimney_pipe_descr             = chimney
         )
 
 end FireCalcYAML_V3_Generators

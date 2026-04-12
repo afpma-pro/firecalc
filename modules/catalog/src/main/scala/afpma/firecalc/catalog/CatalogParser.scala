@@ -21,9 +21,10 @@ enum CatalogParseError:
 /** Parses .fcalc-db YAML strings into CatalogFile values. */
 object CatalogParser:
 
-    /** Parse a .fcalc-db file content string into a CatalogFile.
-      * Returns Left(CatalogParseError) on any failure.
-      */
+    /**
+     * Parse a .fcalc-db file content string into a CatalogFile.
+     * Returns Left(CatalogParseError) on any failure.
+     */
     def parse(yamlString: String): Either[CatalogParseError, CatalogFile] =
         for
             json    <- yamlParser.parse(yamlString).left.map(e => CatalogParseError.InvalidFile(e.getMessage))
@@ -42,10 +43,12 @@ object CatalogParser:
             // When a future version changes catalog types, add version-specific migration here.
             decodeCurrent(json, CatalogMigrations.CURRENT_VERSION)
         else
-            Left(CatalogParseError.MigrationFailed(
-                version,
-                s"Version V${version.unwrap} is too old; oldest supported is V${CatalogMigrations.OLDEST_SUPPORTED_VERSION.unwrap}"
-            ))
+            Left(
+                CatalogParseError.MigrationFailed(
+                    version,
+                    s"Version V${version.unwrap} is too old; oldest supported is V${CatalogMigrations.OLDEST_SUPPORTED_VERSION.unwrap}"
+                )
+            )
 
     private def decodeCurrent(json: Json, version: FireCalc_Version): Either[CatalogParseError, CatalogFile] =
         val cursor = json.hcursor
@@ -55,8 +58,10 @@ object CatalogParser:
         val catalogNameEither: Either[CatalogParseError, Map[String, String]] =
             cursor.downField("catalog_name").focus match
                 case None       => Right(Map.empty)
-                case Some(json) => json.as[Map[String, String]]
-                    .left.map(e => CatalogParseError.InvalidFile(s"catalog_name: ${e.getMessage}"))
+                case Some(json) =>
+                    json.as[Map[String, String]]
+                        .left
+                        .map(e => CatalogParseError.InvalidFile(s"catalog_name: ${e.getMessage}"))
 
         // Decode each category section using the registry.
         // Absent sections are skipped (forward-compatible).
@@ -67,12 +72,13 @@ object CatalogParser:
                 (accOrErr, cat) =>
                     accOrErr.flatMap: acc =>
                         cursor.downField(cat.yamlKey).focus match
-                            case None => Right(acc)  // section absent — skip (forward-compatible)
+                            case None                                     => Right(acc) // section absent — skip (forward-compatible)
                             case Some(sectionJson) if sectionJson.isArray =>
                                 cat.decodeSectionJson(sectionJson) match
                                     case Right(entries) => Right(acc + (cat.yamlKey -> entries))
-                                    case Left(failure)  => Left(CatalogParseError.DecodeError(cat.yamlKey, failure.getMessage))
-                            case Some(_) =>
+                                    case Left(failure)  =>
+                                        Left(CatalogParseError.DecodeError(cat.yamlKey, failure.getMessage))
+                            case Some(_)                                  =>
                                 Left(CatalogParseError.DecodeError(cat.yamlKey, "expected an array"))
 
         for

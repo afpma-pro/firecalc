@@ -29,34 +29,34 @@ trait SetFlowOnlyPipeProp_13384_V2_Generators
 
     // SetMaterial
     def genSetMaterial_FlowOnly_V2: Gen[SetMaterial] =
-        Gen.oneOf(
-            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel())),
-            Gen.const(SetMaterial(Material_13384_V2.Glass())),
-            Gen.const(SetMaterial(Material_13384_V2.Plastic())),
-            Gen.const(SetMaterial(Material_13384_V2.Aluminium())),
-            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners())),
-            Gen.const(SetMaterial(Material_13384_V2.Bricks())),
-            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal())),
-            Gen.const(SetMaterial(Material_13384_V2.Concrete())),
-            Gen.const(SetMaterial(Material_13384_V2.Fibrociment())),
-            Gen.const(SetMaterial(Material_13384_V2.Masonry())),
+        Gen.oneOf    (
+            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Glass()          )),
+            Gen.const(SetMaterial(Material_13384_V2.Plastic()        )),
+            Gen.const(SetMaterial(Material_13384_V2.Aluminium()      )),
+            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners() )),
+            Gen.const(SetMaterial(Material_13384_V2.Bricks()         )),
+            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal()  )),
+            Gen.const(SetMaterial(Material_13384_V2.Concrete()       )),
+            Gen.const(SetMaterial(Material_13384_V2.Fibrociment()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Masonry()        )),
             Gen.const(SetMaterial(Material_13384_V2.CorrugatedMetal()))
         )
 
     // Helper: SetMaterial with optional custom roughness override
     override def genMaterial_13384_V2_WithCustomRoughness: Gen[Material_13384_V2] =
         for
-            mat <- Gen.oneOf(
-                Material_13384_V2.WeldedSteel(),
-                Material_13384_V2.Glass(),
-                Material_13384_V2.Plastic(),
-                Material_13384_V2.Aluminium(),
-                Material_13384_V2.ClayFlueLiners(),
-                Material_13384_V2.Bricks(),
-                Material_13384_V2.SolderedMetal(),
-                Material_13384_V2.Concrete(),
-                Material_13384_V2.Fibrociment(),
-                Material_13384_V2.Masonry(),
+            mat       <- Gen.oneOf(
+                Material_13384_V2.WeldedSteel    (),
+                Material_13384_V2.Glass          (),
+                Material_13384_V2.Plastic        (),
+                Material_13384_V2.Aluminium      (),
+                Material_13384_V2.ClayFlueLiners (),
+                Material_13384_V2.Bricks         (),
+                Material_13384_V2.SolderedMetal  (),
+                Material_13384_V2.Concrete       (),
+                Material_13384_V2.Fibrociment    (),
+                Material_13384_V2.Masonry        (),
                 Material_13384_V2.CorrugatedMetal()
             )
             roughness <- genRoughness
@@ -81,9 +81,9 @@ trait SetFlowOnlyPipeProp_13384_V2_Generators
         for
             // Initial SetProps (shape, material, roughness)
             innerShape <- genSetInnerShape_FlowOnly_V2
-            material <- genSetMaterial_FlowOnly_V2
-            roughness <- genSetRoughness_FlowOnly_V2
-            
+            material   <- genSetMaterial_FlowOnly_V2
+            roughness  <- genSetRoughness_FlowOnly_V2
+
             // Optional number of flows
             maybeFlows <- Gen.option(genSetNumberOfFlows_FlowOnly_V2)
         yield
@@ -92,7 +92,7 @@ trait SetFlowOnlyPipeProp_13384_V2_Generators
                 material,
                 roughness
             ) ++ maybeFlows.toList
-            
+
             setProps
 
 end SetFlowOnlyPipeProp_13384_V2_Generators

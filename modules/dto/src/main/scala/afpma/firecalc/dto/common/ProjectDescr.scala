@@ -84,4 +84,3 @@ object Address:
             List(a.zip, a.city).filter(_.nonEmpty).mkString                 (" "),
             List(a.region_state, a.country.show).filter(_.nonEmpty).mkString(" ")
         ).filter(_.nonEmpty).mkString(", ")
-

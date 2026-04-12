@@ -336,7 +336,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                                         curr.typ
                                     )
                                     .invalidNel
-                            case None | Some(_)                        =>
+                            case None | Some(_)                           =>
                                 inel
 
     def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt): Either[MecaFlu_Error, TCelsius] =

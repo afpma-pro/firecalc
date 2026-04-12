@@ -187,21 +187,21 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         aa              : AA,
         sig             : Signal[(Int, AA, XtraOutputs)],
         isProperty      : Boolean,
-        extra           : Var[AA] => HtmlElement                              = (_: Var[AA]) => span(),
+        extra           : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
         badgeFinalDirVar: Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None,
-        afterBadge      : Var[AA] => HtmlElement                              = (_: Var[AA]) => span(),
-        propertyShow    : Option[Show[AA]]                                    = None
+        afterBadge      : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
+        propertyShow    : Option[Show[AA]]                                  = None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
-        val extraNode         = extra(elem_v)
-        val afterBadgeNode    = afterBadge(elem_v)
-        val xtra_sig          = sig.map(_._3)
+        val extraNode      = extra(elem_v)
+        val afterBadgeNode = afterBadge(elem_v)
+        val xtra_sig       = sig.map(_._3)
 
         def mkBadge(compact: Boolean = false) = DirectionBadgeComponent(
-            absDirection    = directionBadgeSig(i, xtra_sig),
+            absDirection      = directionBadgeSig(i, xtra_sig),
             previousDirection = previousDirectionSig_badge(i),
             frameBefore       = frameBeforeSig_badge(i),
-            absDirVar       = badgeFinalDirVar(elem_v),
+            absDirVar         = badgeFinalDirVar(elem_v),
             deflectionAngle   = deflectionAngleSig(i),
             compact           = compact
         ).node
@@ -209,9 +209,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         // Full form node (used inline for non-property, or inside dialog for property)
         val formNode = div(
             cls := "flex flex-row justify-start items-end gap-2",
-            div(cls := "flex-none", elem_v.as_HtmlElement),
+            div    (cls := "flex-none", elem_v.as_HtmlElement),
             extraNode,
-            mkBadge(),
+            mkBadge(                                         ),
             afterBadgeNode
         )
 
@@ -220,9 +220,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 // Compact property rendering with click-to-edit dialog
                 lazy val dialogNode: HtmlElement = dialogTag(
                     cls := "modal",
-                    div(
+                    div (
                         cls := "modal-box w-11/12 max-w-5xl",
-                        h3(cls := "font-bold text-lg mb-4", title),
+                        h3 (cls := "font-bold text-lg mb-4", title),
                         formNode,
                         div(
                             cls := "modal-action",
@@ -255,7 +255,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 ).amend(
                     binders,
                     idAttr := vizFieldsetId(i),
-                    cls := pipeTypeCls,
+                    cls    := pipeTypeCls,
                     cls <-- vizHighlightSignal(i)
                 )
 
@@ -264,22 +264,22 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
             case _ =>
                 // Standard rendering (non-property or no Show instance)
-                val node = formNode
+                val node              = formNode
                 val isDirectionChange = badgeFinalDirVar(elem_v).isDefined
-                val dcIcon = Option.when(isDirectionChange)(span(lucide.`corner-down-right`(16, 16)))
-                val sectionCls = if isDirectionChange then "pipe-section-dc" else "pipe-section-straight"
-                val header_and_node = renderIncrDescr(title, node, isProperty, legendIcon = dcIcon).amend(
+                val dcIcon            = Option.when(isDirectionChange)(span(lucide.`corner-down-right`(16, 16)))
+                val sectionCls        = if isDirectionChange then "pipe-section-dc" else "pipe-section-straight"
+                val header_and_node   = renderIncrDescr(title, node, isProperty, legendIcon = dcIcon).amend(
                     binders,
                     idAttr := vizFieldsetId(i),
-                    cls := s"$pipeTypeCls $sectionCls",
+                    cls    := s"$pipeTypeCls $sectionCls",
                     cls <-- vizHighlightSignal(i)
                 )
-                val summary_node = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon)
+                val summary_node      = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon)
                 if !isProperty then
                     header_and_node.amend(cls := "ml-[20px]")
-                    summary_node.amend(cls := "ml-[20px]")
+                    summary_node.amend   (cls := "ml-[20px]")
                 summary_node.amend(cls := s"$pipeTypeCls $sectionCls")
-                val incrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
+                val incrNode          = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
                 given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
                 given Show[Pressure]          = Show.show(v => "%.1f Pa".format(v.value))
@@ -324,8 +324,13 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             children(detailed_columns) <-- expertModeOn
         )
 
-    def wrapLine(title: String, content: HtmlElement, isProperty: Boolean, legendIcon: Option[HtmlElement] = None): HtmlElement =
-        DaisyUIInputs.FieldsetLegendWithContent    (
+    def wrapLine(
+        title         : String,
+        content       : HtmlElement,
+        isProperty    : Boolean,
+        legendIcon    : Option[HtmlElement] = None
+    ): HtmlElement =
+        DaisyUIInputs.FieldsetLegendWithContent(
             if isProperty then None else Some(title),
             content,
             bgClass     = if (isProperty) "bg-base-100" else "bg-base-200",
@@ -333,12 +338,18 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             legendIcon  = legendIcon
         )
 
-    protected def renderIncrDescr(title: String, el: HtmlElement, isProperty: Boolean, legendIcon: Option[HtmlElement] = None): HtmlElement =
+    protected def renderIncrDescr(
+        title     : String,
+        el        : HtmlElement,
+        isProperty: Boolean,
+        legendIcon: Option[HtmlElement] = None
+    ): HtmlElement =
         wrapLine(title, el, isProperty, legendIcon)
 
-    /** Build a reverse mapping from engine PipeIdx → UI IdIncr
-      * so that error messages can reference the element number the user sees.
-      */
+    /**
+     * Build a reverse mapping from engine PipeIdx → UI IdIncr
+     * so that error messages can reference the element number the user sees.
+     */
     private def buildReverseIdsMap(
         idsMappingOpt: Option[PipeIdsMapping],
         elemsSize    : Int
@@ -350,26 +361,29 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             }.toMap
         }
 
-    /** Remap the sectionId on known error types from PipeIdx to IdIncr
-      * so that the displayed section number matches the UI element number.
-      */
+    /**
+     * Remap the sectionId on known error types from PipeIdx to IdIncr
+     * so that the displayed section number matches the UI element number.
+     */
     private def remapErrorSectionId(
         err       : MCalc_Error,
         reverseMap: Map[Int, Int]
     ): MCalc_Error =
         err match
-            case e: FlueGasVelocityError =>
-                reverseMap.get(e.sectionId)
+            case e: FlueGasVelocityError         =>
+                reverseMap
+                    .get(e.sectionId)
                     .fold(err)(idIncr => e.copy(sectionId = idIncr))
             case e: FluePipeInvalidGeometryRatio =>
-                reverseMap.get(e.sectionId)
+                reverseMap
+                    .get(e.sectionId)
                     .fold(err)(idIncr => e.copy(sectionId = idIncr))
             case other => other
 
     def statusIcon =
         vnel_signal
             .combineWith(pipeMappings_vnel_signal.map(_.toOption))
-            .combineWith(elems_v.signal.map(_.size))
+            .combineWith(elems_v.signal.map(_.size)              )
             .map: (vnel, idsMappingOpt, elemsSize) =>
                 val reverseMap = buildReverseIdsMap(idsMappingOpt, elemsSize)
                 PanelStatusHelper
@@ -413,9 +427,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 quadrionSubtotal_sig = quadrionSubtotal_sig,
                 bottomContent_sig    = expertModeOn
                     .combineWith(panelOpened.signal)
-                    .map((expert, open) =>
-                        Option.when(expert && open)(detailed_headers_title)
-                    ),
+                    .map((expert, open) => Option.when(expert && open)(detailed_headers_title)),
                 titlePrefix          = accordionTitlePrefix
             ),
             content = content,
@@ -452,18 +464,18 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     private class InsertElementDialog:
         private val insertIdxVar: Var[Option[Int]] = Var(None)
-        private val openMenuBus: EventBus[Unit]    = new EventBus[Unit]
+        private val openMenuBus : EventBus[Unit]   = new EventBus[Unit]
 
         private val insertObserver: Observer[CollectionCommand[(Int, Elem)]] = Observer { cmd =>
             insertIdxVar.now() match
                 case Some(atIdx) =>
                     cmd match
                         case CollectionCommand.Append(item) =>
-                            command_bus.emit(CollectionCommand.Insert(item, atIndex = atIdx))
-                            insertIdxVar.update(_.map(_ + 1))
-                        case other =>
+                            command_bus.emit   (CollectionCommand.Insert(item, atIndex = atIdx))
+                            insertIdxVar.update(_.map(_ + 1)                                   )
+                        case other                          =>
                             command_bus.emit(other)
-                case None =>
+                case None        =>
                     command_bus.emit(cmd)
         }
 
@@ -476,21 +488,21 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         )
 
         def open(atIndex: Int): Unit =
-            insertIdxVar.set(Some(atIndex))
-            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
-            openMenuBus.emit(())
+            insertIdxVar.set                                        (Some(atIndex))
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(             )
+            openMenuBus.emit                                        (()           )
 
         private def close(): Unit =
-            dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
-            insertIdxVar.set(None)
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].close(    )
+            insertIdxVar.set                                    (None)
 
         private lazy val dialogNode: HtmlElement = dialogTag(
             cls := "modal",
-            div(
-                cls := "modal-box w-11/12 max-w-5xl",
+            div    (
+                cls    := "modal-box w-11/12 max-w-5xl",
                 innerMenu.node
             ),
-            form(
+            form   (
                 method := "dialog",
                 cls    := "modal-backdrop",
                 button("close")
@@ -507,7 +519,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             cls := "insert-sep group/isep",
             td(
                 colSpan := 100,
-                cls := "!p-0 !border-none",
+                cls     := "!p-0 !border-none",
                 div(
                     cls := "h-0 flex items-center justify-start ml-[5rem] top-[5rem]",
                     button(

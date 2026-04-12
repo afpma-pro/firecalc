@@ -23,7 +23,15 @@ object readtable:
             case x: ValueOutOfBound     =>
                 I18N.errors.value_out_of_bound(x.vTermName, x.v.show, x.vMin.show, x.vTermName, x.vMax.show)
             case x: CouldNotInterpolate =>
-                I18N.errors.could_not_interpolate(x.resourceName, x.xHeader, x.yHeader, x.zHeader, x.xi.show, x.yi.show, x.err.show)
+                I18N.errors.could_not_interpolate(
+                    x.resourceName,
+                    x.xHeader,
+                    x.yHeader,
+                    x.zHeader,
+                    x.xi.show,
+                    x.yi.show,
+                    x.err.show
+                )
 
     case class ValueOutOfBound(
         vTermName: String,
@@ -34,12 +42,12 @@ object readtable:
 
     case class CouldNotInterpolate(
         resourceName: String,
-        xHeader: String,
-        yHeader: String,
-        zHeader: String,
-        xi: Double,
-        yi: Double,
-        err: InterpolationError,
+        xHeader     : String,
+        yHeader     : String,
+        zHeader     : String,
+        xi          : Double,
+        yi          : Double,
+        err         : InterpolationError
     ) extends ReadTableError
 
     def fromTSVTableRaw_withBiInterpolatation(

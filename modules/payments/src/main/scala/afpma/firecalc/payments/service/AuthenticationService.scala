@@ -15,9 +15,9 @@ import cats.effect.Async
 import org.typelevel.log4cats.Logger
 
 trait AuthenticationService[F[_]]:
-    def generateAuthCode(                                       ): F[String]
-    def generateJWT     (customerId: CustomerId                 ): F[String]
-    def validateJWT     (token     : String                     ): F[Option[CustomerId]]
+    def generateAuthCode(                      ): F[String]
+    def generateJWT     (customerId: CustomerId): F[String]
+    def validateJWT     (token     : String    ): F[Option[CustomerId]]
 
 object AuthenticationService:
     def create[F[_]: Async](

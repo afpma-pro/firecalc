@@ -96,7 +96,7 @@ trait PrimitiveGenerators:
                 "element",
                 "channel"
             )
-            num <- Gen.choose(1, 20)
+            num    <- Gen.choose(1, 20)
         yield s"$prefix-$num"
 
     // Section names from examples: sortie foyer, colonne ascendante, buse, etc.

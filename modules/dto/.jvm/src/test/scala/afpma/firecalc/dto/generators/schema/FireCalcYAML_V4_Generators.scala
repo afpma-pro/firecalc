@@ -43,18 +43,18 @@ trait FireCalcYAML_V4_Generators
      */
     def genFireCalcYAML_V4: Gen[FireCalcYAML_V4] =
         for
-            locale        <- genLocale
-            displayUnits  <- genDisplayUnits
-            method        <- genStandardOrComputationMethod
-            projectDescr  <- genProjectDescr
+            locale          <- genLocale
+            displayUnits    <- genDisplayUnits
+            method          <- genStandardOrComputationMethod
+            projectDescr    <- genProjectDescr
             localConditions <- genLocalConditions
-            stoveParams   <- genStoveParams
-            airIntake     <- genFlowOnlyPipeDescr_13384_V3_Seq
-            firebox       <- genFirebox_V3
-            fluePipe      <- genFlowOnlyPipeDescr_15544_V3_Seq
-            connector     <- genThermalPipeDescr_13384_V3_Seq
-            chimney       <- genThermalPipeDescr_13384_V3_Seq
-        yield FireCalcYAML_V4(
+            stoveParams     <- genStoveParams
+            airIntake       <- genFlowOnlyPipeDescr_13384_V3_Seq
+            firebox         <- genFirebox_V3
+            fluePipe        <- genFlowOnlyPipeDescr_15544_V3_Seq
+            connector       <- genThermalPipeDescr_13384_V3_Seq
+            chimney         <- genThermalPipeDescr_13384_V3_Seq
+        yield FireCalcYAML_V4                       (
             version                        = FireCalcYAML_V4.VERSION,
             locale                         = locale,
             display_units                  = displayUnits,

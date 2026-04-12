@@ -80,18 +80,22 @@ object AutoCalcHelper:
     def replayFrame[E](elems: Seq[(Int, E)], upToIdx: Int)(using ext: ElemExtractors[E]): Option[PipeFrame] =
         var frame: Option[PipeFrame] = None
         for (idx, elem) <- elems if idx <= upToIdx do
-            ext.asInitialDirection.lift(elem).foreach: (az, incl) =>
-                val azDeg = AzimuthDirection.toDegrees(az)
-                val elDeg = InclinationDirection.toDegrees(incl)
-                frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-            ext.asDirectionChange.lift(elem).foreach: (angle, absDirOpt) =>
-                for
-                    f  <- frame
-                    fd <- absDirOpt
-                do
-                    val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                    val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                    frame = Some(f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec))
+            ext.asInitialDirection
+                .lift(elem)
+                .foreach: (az, incl) =>
+                    val azDeg = AzimuthDirection.toDegrees(az)
+                    val elDeg = InclinationDirection.toDegrees(incl)
+                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
+            ext.asDirectionChange
+                .lift(elem)
+                .foreach: (angle, absDirOpt) =>
+                    for
+                        f  <- frame
+                        fd <- absDirOpt
+                    do
+                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                        frame = Some(f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec))
         frame
 
     /**
@@ -125,8 +129,8 @@ object AutoCalcHelper:
      */
     def projectOnBoundary(dir: Vec3, box: TargetBox): (Double, Double) =
         val scale = math.max(math.abs(dir.x), math.abs(dir.y))
-        val x = box.centerX + (if scale > 1e-9 then (dir.x / scale) * box.halfWidth else 0.0)
-        val y = box.centerY + (if scale > 1e-9 then (dir.y / scale) * box.halfDepth else 0.0)
+        val x     = box.centerX + (if scale > 1e-9 then (dir.x / scale) * box.halfWidth else 0.0)
+        val y     = box.centerY + (if scale > 1e-9 then (dir.y / scale) * box.halfDepth else 0.0)
         (x, y)
 
     /**
@@ -146,10 +150,8 @@ object AutoCalcHelper:
         val tx = if math.abs(dx) > 1e-9 then box.halfWidth / math.abs(dx) else Double.MaxValue
         val ty = if math.abs(dy) > 1e-9 then box.halfDepth / math.abs(dy) else Double.MaxValue
         val t  = math.min(tx, ty)
-        if t == Double.MaxValue then
-            (box.centerX, box.centerY)
-        else
-            (box.centerX + dx * t, box.centerY + dy * t)
+        if t == Double.MaxValue then (box.centerX, box.centerY                  )
+        else                         (box.centerX + dx * t, box.centerY + dy * t)
 
     /**
      * Compute position on a box boundary for a pipe exiting at the TOP.
@@ -160,11 +162,10 @@ object AutoCalcHelper:
      */
     def computeTopAlignedPosition(frame: PipeFrame, shape: PipeShape, box: TargetBox): (Double, Double, Double) =
         val dir = frame.direction
-        if math.abs(dir.z) > 0.99 then
-            (box.centerX, box.centerY, box.topZ)
+        if math.abs(dir.z) > 0.99 then (box.centerX, box.centerY, box.topZ)
         else
-            val ih     = innerHeight(shape)
-            val z      = box.topZ - ih / 2.0
+            val ih = innerHeight(shape)
+            val z  = box.topZ - ih / 2.0
             val (x, y) = projectOnBoundary(dir, box)
             (x, y, z)
 
@@ -181,13 +182,11 @@ object AutoCalcHelper:
      */
     def computeBottomAlignedPosition(frame: PipeFrame, shape: PipeShape, box: TargetBox): (Double, Double, Double) =
         val dir = frame.direction
-        if dir.z > 0.99 then
-            (box.centerX, box.centerY, box.bottomZ)
-        else if dir.z < -0.99 then
-            (box.centerX, box.centerY, box.topZ)
+        if dir.z > 0.99 then (box.centerX, box.centerY, box.bottomZ)
+        else if dir.z < -0.99 then (box.centerX, box.centerY, box.topZ)
         else
-            val ih     = innerHeight(shape)
-            val z      = box.bottomZ + ih / 2.0
+            val ih = innerHeight(shape)
+            val z  = box.bottomZ + ih / 2.0
             // Ray-box intersection: entry point where dir aims at center
             val (x, y) = rayIntersectBoxSurface(dir, box)
             (x, y, z)
@@ -205,17 +204,19 @@ object AutoCalcHelper:
         hasFrameSig: Signal[Boolean],
         hasShapeSig: Signal[Boolean]
     )(using Locale): Signal[(Boolean, Option[String])] =
-        hasFrameSig.combineWith(hasShapeSig).map: (hasFrame, hasShape) =>
-            val enabled = hasFrame && hasShape
-            val tooltip =
-                if enabled then None
-                else Some((hasFrame, hasShape) match
-                    case (false, false) => I18N_UI.tooltips.auto_calc_needs_direction_shape
-                    case (false, true ) => I18N_UI.tooltips.auto_calc_needs_direction
-                    case (true , false) => I18N_UI.tooltips.auto_calc_needs_shape
-                    case _              => ""
-                )
-            (enabled, tooltip)
+        hasFrameSig
+            .combineWith(hasShapeSig)
+            .map: (hasFrame, hasShape) =>
+                val enabled = hasFrame && hasShape
+                val tooltip =
+                    if enabled then None
+                    else
+                        Some((hasFrame, hasShape) match
+                            case (false, false) => I18N_UI.tooltips.auto_calc_needs_direction_shape
+                            case (false, true ) => I18N_UI.tooltips.auto_calc_needs_direction
+                            case (true, false ) => I18N_UI.tooltips.auto_calc_needs_shape
+                            case _ => "")
+                (enabled, tooltip)
 
     /**
      * Render the auto-calc button with disabled state and DaisyUI tooltip.
@@ -231,9 +232,9 @@ object AutoCalcHelper:
             val disabledSig = statusSig.map(!_._1)
             val tooltipSig  = statusSig.map(_._2.getOrElse(""))
             div(
-                cls("tooltip")     <-- disabledSig,
+                cls("tooltip") <-- disabledSig,
                 cls("tooltip-top") <-- disabledSig,
-                dataAttr("tip")    <-- tooltipSig,
+                dataAttr("tip") <-- tooltipSig,
                 button(
                     cls := "btn btn-sm btn-secondary",
                     disabled <-- disabledSig,

@@ -12,104 +12,105 @@ import coulomb.*
 object sunits:
     object SUnits:
 
-        def findByKey(suKey: String): Option[SUnit[?]] = 
+        def findByKey(suKey: String): Option[SUnit[?]] =
             sunit_all.find(_.key == suKey)
 
-        def findByKeyOrThrow[U](suKey: String): SUnit[U] = 
-            SUnits.findByKey(suKey)
+        def findByKeyOrThrow[U](suKey: String): SUnit[U] =
+            SUnits
+                .findByKey(suKey)
                 .getOrElse(throw new Exception(s"unexpected unit '$suKey'"))
                 .asInstanceOf[SUnit[U]]
 
-        given sunit_BTU_per_Hour: SUnit[BTU / Hour] = 
+        given sunit_BTU_per_Hour: SUnit[BTU / Hour] =
             val su = mkShowUnitFull[BTU / Hour]
             new SUnit[BTU / Hour](_.btu_per_hour)(using su)
 
-        given sunit_Celsius: SUnit[Celsius] = 
-            val su = ShowUnit.fromCoulombUnit[Celsius]
+        given sunit_Celsius: SUnit[Celsius] =
+            val su  = ShowUnit.fromCoulombUnit[Celsius]
             val suf = mkShowUnitFull[Celsius]
             new SUnit[Celsius](_.celsius)(using suf, su)
 
-        given sunit_Centimeter: SUnit[Centimeter] = 
+        given sunit_Centimeter: SUnit[Centimeter] =
             val su = mkShowUnitFull[Centimeter]
             new SUnit[Centimeter](_.centimeter)(using su)
 
-        given sunit_Degree: SUnit[Degree] = 
-            val su = ShowUnit.fromCoulombUnit[Degree]
+        given sunit_Degree: SUnit[Degree] =
+            val su  = ShowUnit.fromCoulombUnit[Degree]
             val suf = mkShowUnitFull[Degree]
             new SUnit[Degree](_.degree)(using suf, su)
 
-        given sunit_Foot: SUnit[Foot] = 
-            val su = ShowUnit.fromCoulombUnit[Foot]
+        given sunit_Foot: SUnit[Foot] =
+            val su  = ShowUnit.fromCoulombUnit[Foot]
             val suf = mkShowUnitFull[Foot]
             new SUnit[Foot](_.foot)(using suf, su)
 
-        given sunit_Hour: SUnit[Hour] = 
+        given sunit_Hour: SUnit[Hour] =
             val su = mkShowUnitFull[Hour]
             new SUnit[Hour](_.hour)(using su)
 
-        given sunit_Minute: SUnit[Minute] = 
+        given sunit_Minute: SUnit[Minute] =
             val su = mkShowUnitFull[Minute]
             new SUnit[Minute](_.minute)(using su)
 
-        given sunit_Inch: SUnit[Inch] = 
-            val su = ShowUnit.fromCoulombUnit[Inch]
+        given sunit_Inch: SUnit[Inch] =
+            val su  = ShowUnit.fromCoulombUnit[Inch]
             val suf = mkShowUnitFull[Inch]
             new SUnit[Inch](_.inch)(using suf, su)
 
-        given sunit_Kelvin: SUnit[Kelvin] = 
-            val su = ShowUnit.fromCoulombUnit[Kelvin]
+        given sunit_Kelvin: SUnit[Kelvin] =
+            val su  = ShowUnit.fromCoulombUnit[Kelvin]
             val suf = mkShowUnitFull[Kelvin]
             new SUnit[Kelvin](_.kelvin)(using suf, su)
 
-        given sunit_Kilogram: SUnit[Kilogram] = 
+        given sunit_Kilogram: SUnit[Kilogram] =
             val su = mkShowUnitFull[Kilogram]
             new SUnit[Kilogram](_.kilogram)(using su)
 
-        given sunit_Kilowatt: SUnit[Kilo * Watt] = 
+        given sunit_Kilowatt: SUnit[Kilo * Watt] =
             val su = mkShowUnitFull[Kilo * Watt]
             new SUnit[Kilo * Watt](_.kilowatt)(using su)
 
-        given sunit_Meter: SUnit[Meter] = 
+        given sunit_Meter: SUnit[Meter] =
             val su = mkShowUnitFull[Meter]
             new SUnit[Meter](_.meter)(using su)
 
-        given sunit_Millimeter: SUnit[Millimeter] = 
+        given sunit_Millimeter: SUnit[Millimeter] =
             val su = mkShowUnitFull[Millimeter]
             new SUnit[Millimeter](_.millimeter)(using su)
 
-        given sunit_Pascal: SUnit[Pascal] = 
+        given sunit_Pascal: SUnit[Pascal] =
             val su = mkShowUnitFull[Pascal]
             new SUnit[Pascal](_.pascal)(using su)
 
-        given sunit_Percent: SUnit[Percent] = 
+        given sunit_Percent: SUnit[Percent] =
             val su = mkShowUnitFull[Percent]
             new SUnit[Percent](_.percent)(using su)
 
-        given sunit_Pound: SUnit[Pound] = 
-            val su = ShowUnit.fromCoulombUnit[Pound]
+        given sunit_Pound: SUnit[Pound] =
+            val su  = ShowUnit.fromCoulombUnit[Pound]
             val suf = mkShowUnitFull[Pound]
             new SUnit[Pound](_.pound)(using suf, su)
 
-        given sunit_SquareCentimeter: SUnit[(Centimeter ^ 2)] = 
+        given sunit_SquareCentimeter: SUnit[(Centimeter ^ 2)] =
             val su = mkShowUnitFull[(Centimeter ^ 2)]
             new SUnit[(Centimeter ^ 2)](_.square_centimeter)(using su)
 
-        given sunit_SquareInch: SUnit[(Inch ^ 2)] = 
-            val su = ShowUnit.fromString[(Inch ^ 2)]("in²")
+        given sunit_SquareInch: SUnit[(Inch ^ 2)] =
+            val su  = ShowUnit.fromString[(Inch ^ 2)]("in²")
             val suf = mkShowUnitFull[(Inch ^ 2)]
             new SUnit[(Inch ^ 2)](_.square_inch)(using suf, su)
 
-        given sunit_SquareMeter: SUnit[(Meter ^ 2)] = 
+        given sunit_SquareMeter: SUnit[(Meter ^ 2)] =
             val su = mkShowUnitFull[(Meter ^ 2)]
             new SUnit[(Meter ^ 2)](_.square_meter)(using su)
 
         given sunit_SquareMeter_Kelvin_per_Watt_alias: SUnit[SquareMeterKelvinPerWatt] =
-            val su = ShowUnit.fromString[SquareMeterKelvinPerWatt]("m².K/W")
+            val su  = ShowUnit.fromString[SquareMeterKelvinPerWatt]("m².K/W")
             val suf = mkShowUnitFull[SquareMeterKelvinPerWatt]
             new SUnit[SquareMeterKelvinPerWatt](_.square_meter_kelvin_per_watt)(using suf, su)
 
         given sunit_SquareMeter_Kelvin_per_Watt: SUnit[(Meter ^ 2) * Kelvin / Watt] =
-            val su = ShowUnit.fromString[(Meter ^ 2) * Kelvin / Watt]("m².K/W")
+            val su  = ShowUnit.fromString[(Meter ^ 2) * Kelvin / Watt]("m².K/W")
             val suf = mkShowUnitFull[(Meter ^ 2) * Kelvin / Watt]
             new SUnit[(Meter ^ 2) * Kelvin / Watt](_.square_meter_kelvin_per_watt)(using suf, su)
 
@@ -123,7 +124,7 @@ object sunits:
             new SUnit[1](_.unitless)(using su)
 
         given sunit_Watt_per_MeterKelvin: SUnit[Watt / (Meter * Kelvin)] =
-            val su = ShowUnit.fromString[Watt / (Meter * Kelvin)]("W/m.K")
+            val su  = ShowUnit.fromString[Watt / (Meter * Kelvin)]("W/m.K")
             val suf = mkShowUnitFull[Watt / (Meter * Kelvin)]
             new SUnit[Watt / (Meter * Kelvin)](_.watt_per_meter_kelvin)(using suf, su)
 
@@ -151,8 +152,8 @@ object sunits:
             SUnits.sunit_SquareMeter_Kelvin_per_Watt,
             SUnits.sunit_SquareInch,
             SUnits.sunit_Unitless,
-            SUnits.sunit_Watt_per_MeterKelvin,
+            SUnits.sunit_Watt_per_MeterKelvin
         )
 
-        given sunit_all_map: Map[String, SUnit[?]] = 
+        given sunit_all_map: Map[String, SUnit[?]] =
             sunit_all.map(su => su.showUnitFull -> su).toMap

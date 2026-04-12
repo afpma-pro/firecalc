@@ -15,5 +15,5 @@ package afpma.firecalc.ui.models
  * ui/models/transformers/PaymentTransformers.scala
  */
 object SchemaTransformers
-    // This object is kept for future transformers between UI and schema types
-    // Currently empty as all types use direct aliases
+// This object is kept for future transformers between UI and schema types
+// Currently empty as all types use direct aliases

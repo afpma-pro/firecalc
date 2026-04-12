@@ -21,7 +21,7 @@ object CorsValidationTest extends TestSuite {
     // productCatalog must be "development", "staging", or "production"
 
     private def mkConfig(environment: String, productCatalog: String, corsOrigins: List[String]) =
-        PaymentsConfig(
+        PaymentsConfig                 (
             environment                  = environment,
             productCatalog               = productCatalog,
             invoiceNumberPrefix          = "FC",
@@ -40,22 +40,22 @@ object CorsValidationTest extends TestSuite {
     val tests = Tests {
         test("staging with wildcard CORS crashes on startup") {
             val config = mkConfig("staging", "staging", List("*"))
-            val ex = scala.util.Try(ConfigLoader.validatePaymentsConfig[IO](config).unsafeRunSync())
-            assert(ex.isFailure)
+            val ex     = scala.util.Try(ConfigLoader.validatePaymentsConfig[IO](config).unsafeRunSync())
+            assert(ex.isFailure                                     )
             assert(ex.failed.get.isInstanceOf[IllegalStateException])
         }
 
         test("production with wildcard CORS crashes on startup") {
             val config = mkConfig("production", "production", List("*"))
-            val ex = scala.util.Try(ConfigLoader.validatePaymentsConfig[IO](config).unsafeRunSync())
-            assert(ex.isFailure)
+            val ex     = scala.util.Try(ConfigLoader.validatePaymentsConfig[IO](config).unsafeRunSync())
+            assert(ex.isFailure                                     )
             assert(ex.failed.get.isInstanceOf[IllegalStateException])
         }
 
         test("production with empty CORS crashes on startup") {
             val config = mkConfig("production", "production", List.empty)
-            val ex = scala.util.Try(ConfigLoader.validatePaymentsConfig[IO](config).unsafeRunSync())
-            assert(ex.isFailure)
+            val ex     = scala.util.Try(ConfigLoader.validatePaymentsConfig[IO](config).unsafeRunSync())
+            assert(ex.isFailure                                     )
             assert(ex.failed.get.isInstanceOf[IllegalStateException])
         }
 

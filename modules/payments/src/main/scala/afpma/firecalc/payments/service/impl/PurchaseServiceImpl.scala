@@ -65,12 +65,13 @@ class PurchaseServiceImpl[F[_]: Async](
             productOpt <- productRepo.findById(request.productId)
             product    <- productOpt.liftTo[F](ProductNotFoundException(request.productId.value.toString))
 
-            now      <- Async[F].delay(Instant.now())
+            now <- Async[F].delay(Instant.now())
 
             // Check per-email cooldown: max 10 intents per hour
             recentCount <- purchaseIntentRepo.countRecentByEmail(validatedEmail, since = now.minusSeconds(3600))
-            _           <- Async[F].raiseError(TooManyIntentsForEmailException(validatedEmail))
-                               .whenA(recentCount >= 10)
+            _           <- Async[F]
+                .raiseError(TooManyIntentsForEmailException(validatedEmail))
+                .whenA     (recentCount >= 10                              )
 
             authCode <- authService.generateAuthCode()
 
@@ -151,8 +152,9 @@ class PurchaseServiceImpl[F[_]: Async](
             // retry abuse where an attacker replays the same token to create duplicate
             // orders or payment links.
             wasMarked <- purchaseIntentRepo.atomicMarkAsProcessed(request.purchaseToken)
-            _         <- Async[F].raiseError(AlreadyProcessedException(request.purchaseToken.value.toString))
-                             .whenA(!wasMarked)
+            _         <- Async[F]
+                .raiseError(AlreadyProcessedException(request.purchaseToken.value.toString))
+                .whenA     (!wasMarked                                                     )
 
             // Step 3: Find customer with typed error
             customer <- findCustomer(intent.customerId)
@@ -169,17 +171,20 @@ class PurchaseServiceImpl[F[_]: Async](
 
     private def validateAuthenticationCode(token: PurchaseToken, code: String): F[PurchaseIntent] =
         for
-            intent <- purchaseIntentRepo.findByToken(token)
+            intent <- purchaseIntentRepo
+                .findByToken(token)
                 .flatMap(_.liftTo[F](PurchaseIntentNotFoundException(token.value.toString)))
 
             // Check lockout before doing anything else
-            _ <- Async[F].raiseError(TooManyAttemptsException(token.value.toString))
-                     .whenA(intent.failedAttempts >= MAX_ATTEMPTS)
+            _ <- Async[F]
+                .raiseError(TooManyAttemptsException(token.value.toString))
+                .whenA     (intent.failedAttempts >= MAX_ATTEMPTS         )
 
             // Check expiry
             now <- Async[F].delay(Instant.now())
-            _   <- Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString))
-                       .whenA(now.isAfter(intent.expiresAt))
+            _   <- Async[F]
+                .raiseError(InvalidOrExpiredCodeException(token.value.toString))
+                .whenA     (now.isAfter(intent.expiresAt)                      )
 
             // Constant-time comparison to prevent timing attacks
             isValid = java.security.MessageDigest.isEqual(
@@ -188,8 +193,8 @@ class PurchaseServiceImpl[F[_]: Async](
             )
 
             _ <- (purchaseIntentRepo.incrementFailedAttempts(token) *>
-                     Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString)))
-                     .whenA(!isValid)
+                Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString)))
+                .whenA             (!isValid                                           )
         yield intent
 
     private def findCustomer(customerId: CustomerId): F[Customer] =

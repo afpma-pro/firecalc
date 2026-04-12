@@ -46,9 +46,9 @@ object EngineState:
             FireboxTransformers.transformer_inv_TraditionalFirebox_Standard
         ),
         post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot(ExampleProject_15544.accumulateur_descr),
+            PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
             PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
-            PostFireboxPipeDescrSlot.ChimneySlot(ExampleProject_15544.conduit_fumees_descr)
+            PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
         )
     )
 
@@ -68,9 +68,9 @@ object EngineState:
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
         post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot(CasType_15544_C3.accumulateur_descr),
+            PostFireboxPipeDescrSlot.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
             PostFireboxPipeDescrSlot.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
-            PostFireboxPipeDescrSlot.ChimneySlot(CasType_15544_C3.conduit_fumees_descr)
+            PostFireboxPipeDescrSlot.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )
         )
     )
 
@@ -90,9 +90,9 @@ object EngineState:
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
         post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot(CasPratique_15544_FDIM_EX_03.accumulateur_descr),
+            PostFireboxPipeDescrSlot.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
             PostFireboxPipeDescrSlot.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
-            PostFireboxPipeDescrSlot.ChimneySlot(CasPratique_15544_FDIM_EX_03.conduit_fumees_descr)
+            PostFireboxPipeDescrSlot.ChimneySlot  (CasPratique_15544_FDIM_EX_03.conduit_fumees_descr      )
         )
     )
 
@@ -106,9 +106,9 @@ object EngineState:
         air_intake_descr               = Seq.empty,
         firebox                        = defaultable.firebox_traditional_empty.default,
         post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot(Seq.empty),
+            PostFireboxPipeDescrSlot.FlueSlot     (Seq.empty),
             PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-            PostFireboxPipeDescrSlot.ChimneySlot(Seq.empty)
+            PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
         )
     )
 
@@ -125,17 +125,29 @@ object EngineState:
             PostFireboxPipeDescrSlot.FlueSlot {
                 import FluePipe_Module_15544.*
                 Seq(
-                    roughness           (3.mm                                          ),
-                    innerShape(rectangle(18.cm, 18.cm)                                 ),
-                    setInitialDirection (azimuth = AzimuthDirection.Right, inclination = InclinationDirection.Horizontal), // Right
-                    setInitialPosition((+33.0/2).cm, (33.0/2-18.0/2).cm, (52-18.0/2).cm),
-                    addSectionHorizontal("sortie de foyer", 30.cm                      ),
-                    addSharpAngle_90deg ("vers descente", absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
-                    addSectionVertical  ("descente", -100.cm                                                                   ),
-                    addSharpAngle_90deg ("vers section horizontale", absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
-                    addSectionHorizontal("section horizontale", 200.cm                                                         ),
-                    addSharpAngle_90deg ("vers remontée", absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
-                    addSectionVertical  ("remontée", 200.cm                            )
+                    roughness              (3.mm                                                        ),
+                    innerShape(rectangle(18.cm, 18.cm)),
+                    setInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    ), // Right
+                    setInitialPosition     ((+33.0 / 2).cm, (33.0 / 2 - 18.0 / 2).cm, (52 - 18.0 / 2).cm),
+                    addSectionHorizontal   ("sortie de foyer", 30.cm                                    ),
+                    addSharpAngle_90deg    (
+                        "vers descente",
+                        absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+                    ), // Down
+                    addSectionVertical     ("descente", -100.cm                                         ),
+                    addSharpAngle_90deg    (
+                        "vers section horizontale",
+                        absDir      = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                    ), // Right
+                    addSectionHorizontal   ("section horizontale", 200.cm                               ),
+                    addSharpAngle_90deg    (
+                        "vers remontée",
+                        absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                    ), // Up
+                    addSectionVertical     ("remontée", 200.cm                                          )
                 )
             },
             PostFireboxPipeDescrSlot.ConnectorSlot {

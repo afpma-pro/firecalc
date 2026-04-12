@@ -56,7 +56,7 @@ object AuthMiddleware:
                             case Some(id) => Right(AuthenticatedUser(id))
                             case None     => Left("Invalid or expired token")
                         }
-                    case _ =>
+                    case _                                                                =>
                         Async[F].pure(Left("Missing Bearer token"))
             }
 
@@ -64,13 +64,13 @@ object AuthMiddleware:
             Kleisli { _ =>
                 OptionT.liftF(
                     logger.debug("JWT authentication failed") *>
-                    Unauthorized(
-                        `WWW-Authenticate`(Challenge("Bearer", "firecalc-payments")),
-                        ErrorResponseEnvelope(
-                            error   = "unauthorized",
-                            message = "Valid Bearer token required"
-                        ).asJson
-                    )
+                        Unauthorized(
+                            `WWW-Authenticate`(Challenge("Bearer", "firecalc-payments")),
+                            ErrorResponseEnvelope  (
+                                error   = "unauthorized",
+                                message = "Valid Bearer token required"
+                            ).asJson
+                        )
                 )
             }
 

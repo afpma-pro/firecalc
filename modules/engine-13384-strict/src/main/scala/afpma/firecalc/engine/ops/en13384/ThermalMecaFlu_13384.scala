@@ -610,7 +610,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                                         curr.typ
                                     )
                                     .invalidNel
-                            case None | Some(_)                        =>
+                            case None | Some(_)                           =>
                                 inel
 
     private def temperature_i_o_b_calc = temperature_i_x_b_calc(section_length, to)

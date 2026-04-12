@@ -10,9 +10,10 @@ import scala.scalajs.js.annotation.*
 
 import org.scalajs.dom
 
-/** Facade for the pre-bundled TypeScript graph module.
-  * The JS file is bundled into JAR resources at build time.
-  */
+/**
+ * Facade for the pre-bundled TypeScript graph module.
+ * The JS file is bundled into JAR resources at build time.
+ */
 @js.native
 @JSImport("/afpma/firecalc/graph/graph-viz.js", "initGraphViz")
 private[graph] object GraphVizFacade extends js.Object:

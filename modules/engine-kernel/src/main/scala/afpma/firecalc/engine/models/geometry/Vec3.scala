@@ -79,7 +79,7 @@ case class Vec3(x: Double, y: Double, z: Double):
                     case Some(horName) =>
                         val elev    = math.toDegrees(math.atan2(n.z, horNorm))
                         val sign    = if elev >= 0 then "\u2191" else "\u2193"
-                        val elevStr = fmtD1(math.abs(elev))
+                        val elevStr = fmtD1         (math.abs(elev)          )
                         s"$horName $sign${elevStr}\u00b0"
                     case None          => azElString(n)
 

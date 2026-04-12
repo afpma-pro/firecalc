@@ -18,14 +18,14 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
         "encoding to JSON" - {
 
             "should produce valid JSON" in {
-                val a = EngineState.init
+                val a    = EngineState.init
                 val json = a.asJson
                 json.isObject shouldBe true
             }
 
             "should round-trip correctly" in {
-                val a = EngineState.init
-                val json = a.asJson.noSpaces
+                val a       = EngineState.init
+                val json    = a.asJson.noSpaces
                 val decoded = decode[EngineState](json)
                 decoded shouldBe Right(a)
             }

@@ -19,7 +19,7 @@ object ProjectMigration:
      * @return Some(projectId) if migration was performed (caller should redirect), None otherwise
      */
     def migrateIfNeeded(): Option[ProjectId] =
-        val hasOldData = org.scalajs.dom.window.localStorage.getItem(LocalStorageKeys.APP_STATE_SCHEMA) != null
+        val hasOldData  = org.scalajs.dom.window.localStorage.getItem(LocalStorageKeys.APP_STATE_SCHEMA) != null
         val hasNewIndex = ProjectIndex.exists
 
         if hasOldData && !hasNewIndex then
@@ -33,22 +33,21 @@ object ProjectMigration:
                     val now         = scala.scalajs.js.Date.now()
                     val entry       = ProjectEntry(id, projectName, lastModified = now, createdAt = now)
 
-                    ProjectStorage.save(id, schema)
-                    ProjectIndex.save(Vector(entry))
+                    ProjectStorage.save(id, schema   )
+                    ProjectIndex.save  (Vector(entry))
 
                     // Remove old key
                     org.scalajs.dom.window.localStorage.removeItem(LocalStorageKeys.APP_STATE_SCHEMA)
 
                     org.scalajs.dom.console.log(s"Migrated single-project data to project ${id.value} ('$projectName')")
-                    Some(id)
+                    Some                       (id                                                                     )
 
                 case None =>
                     // Corrupted data — start fresh
-                    org.scalajs.dom.window.localStorage.removeItem(LocalStorageKeys.APP_STATE_SCHEMA)
-                    ProjectIndex.save(Vector.empty)
-                    org.scalajs.dom.console.warn("Old project data was corrupted, starting fresh")
+                    org.scalajs.dom.window.localStorage.removeItem(LocalStorageKeys.APP_STATE_SCHEMA               )
+                    ProjectIndex.save                             (Vector.empty                                    )
+                    org.scalajs.dom.console.warn                  ("Old project data was corrupted, starting fresh")
                     None
-
         else if !hasNewIndex then
             // First-ever load with new code, no old data
             ProjectIndex.save(Vector.empty)

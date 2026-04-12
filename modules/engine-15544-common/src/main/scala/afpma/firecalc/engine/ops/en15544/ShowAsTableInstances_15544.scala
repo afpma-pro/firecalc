@@ -128,7 +128,7 @@ class ShowAsTableInstances_15544(using Locale):
     given showAsTable_PipesResult_15544: ShowAsTable[PipesResult_15544] =
         ShowAsTable.mkLightFor(I18N.headers.pipes_details) { presults =>
             import Preview.*
-            val preFirebox = List(
+            val preFirebox  = List(
                 presults.airIntake.toPreviewAndShowValuesAsSeq,
                 presults.combustionAir.toPreviewAndShowValuesAsSeq,
                 presults.firebox.toPreviewAndShowValuesAsSeq

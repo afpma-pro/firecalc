@@ -44,17 +44,17 @@ trait SetThermalPipeProp_13384_V3_Generators
 
     // SetMaterial
     def genSetMaterial_Thermal_V3: Gen[SetMaterial] =
-        Gen.oneOf(
-            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel())),
-            Gen.const(SetMaterial(Material_13384_V2.Glass())),
-            Gen.const(SetMaterial(Material_13384_V2.Plastic())),
-            Gen.const(SetMaterial(Material_13384_V2.Aluminium())),
-            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners())),
-            Gen.const(SetMaterial(Material_13384_V2.Bricks())),
-            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal())),
-            Gen.const(SetMaterial(Material_13384_V2.Concrete())),
-            Gen.const(SetMaterial(Material_13384_V2.Fibrociment())),
-            Gen.const(SetMaterial(Material_13384_V2.Masonry())),
+        Gen.oneOf    (
+            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Glass()          )),
+            Gen.const(SetMaterial(Material_13384_V2.Plastic()        )),
+            Gen.const(SetMaterial(Material_13384_V2.Aluminium()      )),
+            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners() )),
+            Gen.const(SetMaterial(Material_13384_V2.Bricks()         )),
+            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal()  )),
+            Gen.const(SetMaterial(Material_13384_V2.Concrete()       )),
+            Gen.const(SetMaterial(Material_13384_V2.Fibrociment()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Masonry()        )),
             Gen.const(SetMaterial(Material_13384_V2.CorrugatedMetal()))
         )
 
@@ -105,9 +105,9 @@ trait SetThermalPipeProp_13384_V3_Generators
     // SetPipeLocation
     def genSetPipeLocation_Thermal_V3: Gen[SetPipeLocation] =
         Gen.oneOf(
-            SetPipeLocation(PipeLocation.BoilerRoom),
-            SetPipeLocation(PipeLocation.HeatedArea),
-            SetPipeLocation(PipeLocation.UnheatedInside),
+            SetPipeLocation(PipeLocation.BoilerRoom       ),
+            SetPipeLocation(PipeLocation.HeatedArea       ),
+            SetPipeLocation(PipeLocation.UnheatedInside   ),
             SetPipeLocation(PipeLocation.OutsideOrExterior)
         )
 
@@ -115,8 +115,8 @@ trait SetThermalPipeProp_13384_V3_Generators
     def genSetDuctType_Thermal_V3: Gen[SetDuctType] =
         Gen.oneOf(
             SetDuctType(DuctType.NonConcentricDuctsHighThermalResistance),
-            SetDuctType(DuctType.NonConcentricDuctsLowThermalResistance),
-            SetDuctType(DuctType.ConcentricDucts)
+            SetDuctType(DuctType.NonConcentricDuctsLowThermalResistance ),
+            SetDuctType(DuctType.ConcentricDucts                        )
         )
 
     // SetNumberOfFlows
@@ -194,12 +194,12 @@ trait SetThermalPipeProp_13384_V3_Generators
     // Composite: realistic sequence of SetProps (including optional batch and lined flue) for a pipe
     def genThermalPipeDescr_13384_V3_Seq: Gen[Seq[ThermalPipeDescr_13384_V3]] =
         for
-            innerShape    <- genSetInnerShape_Thermal_V3
-            material      <- genSetMaterial_Thermal_V3
-            roughness     <- genSetRoughness_Thermal_V3
-            maybeLayer    <- Gen.option(genSetLayer_Thermal_V3)
-            maybeLocation <- Gen.option(genSetPipeLocation_Thermal_V3)
-            maybeBatch    <- Gen.option(genSetPropertiesInBatch_Thermal_V3)
+            innerShape     <- genSetInnerShape_Thermal_V3
+            material       <- genSetMaterial_Thermal_V3
+            roughness      <- genSetRoughness_Thermal_V3
+            maybeLayer     <- Gen.option(genSetLayer_Thermal_V3)
+            maybeLocation  <- Gen.option(genSetPipeLocation_Thermal_V3)
+            maybeBatch     <- Gen.option(genSetPropertiesInBatch_Thermal_V3)
             maybeLinedFlue <- Gen.option(genLinedFlue_Thermal_V3)
         yield
             val setProps = List[ThermalPipeDescr_13384_V3](

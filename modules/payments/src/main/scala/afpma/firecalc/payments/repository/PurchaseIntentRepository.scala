@@ -38,12 +38,12 @@ trait PurchaseIntentRepository[F[_]]:
         productMetadataId : Option[Long]
     ): F[PurchaseIntent]
 
-    def findByToken            (token: PurchaseToken              ): F[Option[PurchaseIntent]]
-    def findByTokenAndCode     (token: PurchaseToken, code: String): F[Option[PurchaseIntent]]
-    def atomicMarkAsProcessed  (token: PurchaseToken              ): F[Boolean]
-    def deleteExpired          (                                  ): F[Int]
-    def incrementFailedAttempts(token: PurchaseToken              ): F[Unit]
-    def countRecentByEmail     (email: String, since: Instant     ): F[Int]
+    def findByToken            (token: PurchaseToken               ): F[Option[PurchaseIntent]]
+    def findByTokenAndCode     (token: PurchaseToken, code: String ): F[Option[PurchaseIntent]]
+    def atomicMarkAsProcessed  (token: PurchaseToken               ): F[Boolean]
+    def deleteExpired          (                                   ): F[Int]
+    def incrementFailedAttempts(token: PurchaseToken               ): F[Unit]
+    def countRecentByEmail     (email: String, since      : Instant): F[Int]
 
 object PurchaseIntentRepository:
 

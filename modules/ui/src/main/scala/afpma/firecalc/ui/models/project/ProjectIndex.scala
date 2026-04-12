@@ -9,7 +9,7 @@ import afpma.firecalc.ui.models.schema.LocalStorageKeys
 
 object ProjectIndex:
 
-    import ProjectEntry.given  // Circe codecs
+    import ProjectEntry.given // Circe codecs
 
     def exists: Boolean =
         org.scalajs.dom.window.localStorage.getItem(LocalStorageKeys.PROJECTS_INDEX) != null
@@ -20,7 +20,7 @@ object ProjectIndex:
         else
             io.circe.parser.decode[Vector[ProjectEntry]](raw) match
                 case Right(entries) => entries
-                case Left(err) =>
+                case Left(err)      =>
                     org.scalajs.dom.console.error(s"Failed to decode projects index: ${err.getMessage}")
                     Vector.empty
 

@@ -34,7 +34,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                 val delegate = DynamicFrictionCoeff_13384()(using pt)
                 new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
                     def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
-    given ssalg      : ShortSectionAlg             = ShortSectionAlgFactory.make
+    given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make
 
     private val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
 

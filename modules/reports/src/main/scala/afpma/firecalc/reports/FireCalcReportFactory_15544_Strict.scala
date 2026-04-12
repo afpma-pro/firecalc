@@ -112,7 +112,7 @@ object FireCalcReportFactory_15544_Strict:
                     val typstReportFactory = new TypstReportFactory_15544_Strict(isDraft) {
                         override val en15544_app: EN15544_Application = strict_appl
                         override val stove_proj_15544_strict = fcProj
-                        override val atParams = en15544_app.primary
+                        override val atParams                = en15544_app.primary
                     }
                     // update local state
                     typString = Some(typstReportFactory.build())

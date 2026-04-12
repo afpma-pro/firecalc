@@ -163,7 +163,7 @@ object I18nData:
         tested                                     : Firebox_15544.Tested,
         traditional                                : Firebox_15544.Traditional,
         single_tested                              : Firebox_15544.SingleTested,
-        door_15a_firebox                           : Firebox_15544.Door15aFirebox,
+        door_15a_firebox                           : Firebox_15544.Door15aFirebox
     )
 
     object Firebox_15544:
@@ -212,7 +212,7 @@ object I18nData:
             injector_width_door_wall_Lt              : String,
             injector_height_door_wall_Zt             : String,
             air_column_thickness_door_wall_St        : String,
-            computed_values                          : String,
+            computed_values                          : String
         )
 
         case class Tested(
@@ -245,39 +245,39 @@ object I18nData:
         )
 
         case class SingleTested(
-            test_standard                       : String,
-            reference                           : String,
-            efficiency_nominal                  : String,
-            efficiency_reduced                  : String,
-            heat_output_reduced                 : String,
-            minimum_fuel_mass                   : String,
-            maximum_fuel_mass                   : String,
-            air_fuel_ratio_nominal              : String,
-            air_fuel_ratio_lowest               : String,
-            co2_dry_nominal                     : String,
-            co2_dry_lowest                      : String,
-            pellets_load_burn_duration          : String,
-            mean_firebox_temperature            : String,
-            t_burnout                           : String,
+            test_standard                         : String,
+            reference                             : String,
+            efficiency_nominal                    : String,
+            efficiency_reduced                    : String,
+            heat_output_reduced                   : String,
+            minimum_fuel_mass                     : String,
+            maximum_fuel_mass                     : String,
+            air_fuel_ratio_nominal                : String,
+            air_fuel_ratio_lowest                 : String,
+            co2_dry_nominal                       : String,
+            co2_dry_lowest                        : String,
+            pellets_load_burn_duration            : String,
+            mean_firebox_temperature              : String,
+            t_burnout                             : String,
             is_glass_surface_ratio_below_one_fifth: String,
-            emissions_firebox_name              : String,
-            emissions_accredited_body           : String,
-            emissions_co                        : String,
-            emissions_dust                      : String,
-            emissions_ogc                       : String,
-            emissions_nox                       : String
+            emissions_firebox_name                : String,
+            emissions_accredited_body             : String,
+            emissions_co                          : String,
+            emissions_dust                        : String,
+            emissions_ogc                         : String,
+            emissions_nox                         : String
         )
 
         case class Door15aFirebox(
-            sb                            : String,
-            sb_min                        : String,
-            sb_max                        : String,
-            mb_min                        : String,
-            mb_max                        : String,
-            load_size_nominal             : String,
-            pressure_loss_table           : String,
+            sb                             : String,
+            sb_min                         : String,
+            sb_max                         : String,
+            mb_min                         : String,
+            mb_max                         : String,
+            load_size_nominal              : String,
+            pressure_loss_table            : String,
             expected_air_intake_pipe_shapes: String,
-            actual_air_intake_pipe_shape  : String,
+            actual_air_intake_pipe_shape   : String
         )
 
     case class FireboxNames(
@@ -289,7 +289,7 @@ object I18nData:
         certified        : String,
         custom_lab_tested: String,
         single_tested    : String,
-        door_15a_firebox : String,
+        door_15a_firebox : String
     )
 
     case class PolluantNames(
@@ -497,7 +497,7 @@ object I18nData:
         t_stove_out                 : EN15544_TermDef,
         necessary_delivery_pressure : EN15544_TermDef,
         flue_gas_mass_rate          : EN15544_TermDef,
-        t_BU                        : EN15544_TermDef,
+        t_BU                        : EN15544_TermDef
     )
 
     case class EN16510(
@@ -530,7 +530,7 @@ object I18nData:
         parse_error                          : StringFormat1,
         value_out_of_range                   : StringFormat2,
         value_out_of_range_with_range        : StringFormat6,
-        missing_grid_point                   : StringFormat2,
+        missing_grid_point                   : StringFormat2
     )
 
     case class Headers(
@@ -611,8 +611,8 @@ object I18nData:
         )
 
     case class Inputs_Error(
-        invald_type_of_appliance          : Inputs_Error.InvalidTypeOfAppliance,
-        stove_params_sizing_input_missing : String
+        invald_type_of_appliance         : Inputs_Error.InvalidTypeOfAppliance,
+        stove_params_sizing_input_missing: String
     )
 
     object Inputs_Error:
@@ -786,8 +786,8 @@ object I18nData:
 
     object SetProp:
         case class Shortcuts(
-            start_a_new_pipe: String,
-            add_new_connector: String,
+            start_a_new_pipe : String,
+            add_new_connector: String
         )
 
     case class TechnicalSpecficiations(
@@ -811,7 +811,7 @@ object I18nData:
         azimuth                 : String,
         curvature_radius        : String,
         diameter                : String,
-        absolute_direction         : String,
+        absolute_direction      : String,
         height                  : String,
         horizontal_length       : String,
         inclination             : String,
@@ -917,13 +917,13 @@ object I18nData:
     )
 
     case class IncrementalValidation(
-        _self                        : String,
-        not_defined_yet              : IncrementalValidation.NotDefinedYet,
-        property_must_be_set         : IncrementalValidation.PropertyMustBeSet,
-        property_must_be_defined     : IncrementalValidation.PropertyMustBeDefined,
-        prerequisites                : IncrementalValidation.Prerequisites,
-        conflicts                    : IncrementalValidation.Conflicts,
-        forbidden_element_position   : IncrementalValidation.ForbiddenElementPosition
+        _self                     : String,
+        not_defined_yet           : IncrementalValidation.NotDefinedYet,
+        property_must_be_set      : IncrementalValidation.PropertyMustBeSet,
+        property_must_be_defined  : IncrementalValidation.PropertyMustBeDefined,
+        prerequisites             : IncrementalValidation.Prerequisites,
+        conflicts                 : IncrementalValidation.Conflicts,
+        forbidden_element_position: IncrementalValidation.ForbiddenElementPosition
     )
 
     object IncrementalValidation:
@@ -945,10 +945,10 @@ object I18nData:
         )
 
         case class PropertyMustBeDefined(
-            section_geometry          : String,
-            next_section_length       : String,
-            pressure_loss             : String,
-            pressure_loss_table_error : StringFormat1
+            section_geometry         : String,
+            next_section_length      : String,
+            pressure_loss            : String,
+            pressure_loss_table_error: StringFormat1
         )
 
         case class Prerequisites(
@@ -1031,7 +1031,7 @@ object I18nData:
         two_successive_direction_change_not_allowed     : StringFormat2,
         two_successive_straight_section_not_allowed     : StringFormat2,
         holes_should_not_happen                         : StringFormat1,
-        flue_pipe_length_below_minimum                  : StringFormat2,
+        flue_pipe_length_below_minimum                  : StringFormat2
     )
 
     case class TestReportI18n(

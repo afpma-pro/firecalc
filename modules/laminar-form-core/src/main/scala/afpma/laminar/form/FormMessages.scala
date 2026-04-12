@@ -5,10 +5,11 @@
 
 package afpma.laminar.form
 
-/** I18n abstraction for form error/status messages.
-  *
-  * Implement this typeclass in firecalc-ui and wire to I18N_UI.
-  */
+/**
+ * I18n abstraction for form error/status messages.
+ *
+ * Implement this typeclass in firecalc-ui and wire to I18N_UI.
+ */
 trait FormMessages:
-    def valueIsUndefined: String
+    def valueIsUndefined : String
     def notImplementedYet: String

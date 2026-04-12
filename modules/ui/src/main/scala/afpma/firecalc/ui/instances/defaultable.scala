@@ -83,7 +83,7 @@ object defaultable:
         )
 
     given firebox_ecolabeled_minimal: Defaultable[Firebox.Ecolabeled] = Defaultable:
-        Firebox.Ecolabeled                 (
+        Firebox.Ecolabeled                    (
             heat_output_reduced                     = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
             version                                 = Left("Version 1"),
             air_intake_shape                        = None,
@@ -110,37 +110,37 @@ object defaultable:
 
     given firebox_single_tested_minimal: Defaultable[Firebox.SingleTested] = Defaultable:
         import afpma.firecalc.dto.v4.*
-        Firebox.SingleTested(
-            reference                             = "",
-            type_of_appliance                     = TypeOfAppliance.WoodLogs,
-            test_standard                         = Firebox.TestStandard.EN_15250,
-            firebox_depth                         = 0.cm,
-            firebox_width                         = 0.cm,
-            firebox_height                        = 0.cm,
-            ash_pit_height                        = 5.cm,
+        Firebox.SingleTested                             (
+            reference                              = "",
+            type_of_appliance                      = TypeOfAppliance.WoodLogs,
+            test_standard                          = Firebox.TestStandard.EN_15250,
+            firebox_depth                          = 0.cm,
+            firebox_width                          = 0.cm,
+            firebox_height                         = 0.cm,
+            ash_pit_height                         = 5.cm,
             is_glass_surface_ratio_below_one_fifth = false,
-            glass_area                            = 0.cm2,
-            mean_firebox_temperature              = None,
-            t_burnout                             = 700.0.degreesCelsius,
-            efficiency_nominal                    = 75.0.percent,
-            efficiency_reduced                    = None,
-            heat_output_reduced                   = HeatOutputReduced.NotDefined,
-            minimum_fuel_mass                     = None,
-            maximum_fuel_mass                     = 10.0.kg,
-            air_fuel_ratio_nominal                = 4.0.unitless,
-            air_fuel_ratio_lowest                 = None,
-            co2_dry_nominal                       = 12.0.percent,
-            co2_dry_lowest                        = None,
-            pellets_load_burn_duration            = None,
-            emissions_values                      = EmissionsAndEfficiencyValues_DTO(
+            glass_area                             = 0.cm2,
+            mean_firebox_temperature               = None,
+            t_burnout                              = 700.0.degreesCelsius,
+            efficiency_nominal                     = 75.0.percent,
+            efficiency_reduced                     = None,
+            heat_output_reduced                    = HeatOutputReduced.NotDefined,
+            minimum_fuel_mass                      = None,
+            maximum_fuel_mass                      = 10.0.kg,
+            air_fuel_ratio_nominal                 = 4.0.unitless,
+            air_fuel_ratio_lowest                  = None,
+            co2_dry_nominal                        = 12.0.percent,
+            co2_dry_lowest                         = None,
+            pellets_load_burn_duration             = None,
+            emissions_values                       = EmissionsAndEfficiencyValues_DTO(
                 firebox_name                = "",
                 accredited_or_notified_body = "",
                 test_reports                = Nil,
                 emissions_values            = EmissionValues_DTO(
-                    co   = TestEmissionValue_DTO(PolluantName.CO,   Some(0.0.mg_per_Nm3), "", 13.0.percent),
+                    co   = TestEmissionValue_DTO(PolluantName.CO, Some(0.0.mg_per_Nm3), "", 13.0.percent),
                     dust = TestEmissionValue_DTO(PolluantName.Dust, Some(0.0.mg_per_Nm3), "", 13.0.percent),
-                    ogc  = TestEmissionValue_DTO(PolluantName.OGC,  Some(0.0.mg_per_Nm3), "", 13.0.percent),
-                    nox  = TestEmissionValue_DTO(PolluantName.NOx,  Some(0.0.mg_per_Nm3), "", 13.0.percent)
+                    ogc  = TestEmissionValue_DTO(PolluantName.OGC, Some(0.0.mg_per_Nm3), "", 13.0.percent),
+                    nox  = TestEmissionValue_DTO(PolluantName.NOx, Some(0.0.mg_per_Nm3), "", 13.0.percent)
                 )
             )
         )
@@ -200,14 +200,14 @@ object defaultable:
 
         inline given optionZeroWithUnit: [U] => Defaultable[Option[QtyD[U]]] =
             zeroWithUnit[U].map(Some.apply)
-        
+
         inline given optionNoneWithUnit: [U] => Defaultable[Option[QtyD[U]]] =
             Defaultable(None)
 
         object angle      :
             given ninety: Defaultable[Angle]:
                 def default: Angle = 90.degrees
-            
+
             @deprecated
             given zero: Defaultable[Angle] = zeroWithUnit[Degree]
         object area       :
@@ -217,10 +217,10 @@ object defaultable:
         object centimeter :
             given zero: Defaultable[QtyD[Centimeter]] = zeroWithUnit[Centimeter]
 
-        object kilogram   :
+        object kilogram:
             given zero: Defaultable[QtyD[Kilogram]] = zeroWithUnit[Kilogram]
-            given ten: Defaultable[QtyD[Kilogram]] = Defaultable(10.withUnit[Kilogram])
-        object kilowatt   :
+            given ten : Defaultable[QtyD[Kilogram]] = Defaultable(10.withUnit[Kilogram])
+        object kilowatt:
             given zero: Defaultable[QtyD[Kilo * Watt]] = zeroWithUnit[Kilo * Watt]
 
         object meter :

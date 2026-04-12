@@ -171,10 +171,10 @@ trait PrimitiveInputs:
 
     final case class NumberInputOnly(
         valueOptVar  : Var[Option[Double]],
-        placeholder  : String        = DEFAULT_PLACEHOLDER,
-        optionalField: OptionalField = OptionalField.No,
-        inputCls     : String        = "",
-        disabled     : Signal[Boolean] = DISABLED_SIG,
+        placeholder  : String          = DEFAULT_PLACEHOLDER,
+        optionalField: OptionalField   = OptionalField.No,
+        inputCls     : String          = "",
+        disabled     : Signal[Boolean] = DISABLED_SIG
     ) extends Component:
 
         val inputNoLabel = input(

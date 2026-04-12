@@ -23,8 +23,8 @@ object CoulombFormInstances:
     // =========================================================================
 
     given numericFormValueForQtyD[U: SUnit]: NumericFormValue[QtyD[U]] with
-        def toDouble(q: QtyD[U]): Double = q.value
-        def fromDouble(d: Double): QtyD[U] = d.withUnit[U]
+        def toDouble  (q: QtyD[U]): Double  = q.value
+        def fromDouble(d: Double ): QtyD[U] = d.withUnit[U]
         def unitDisplays: List[UnitDisplay] =
             val su = SUnit[U]
             List(UnitDisplay(label = su.showUnitFull, abbreviation = su.showUnit))
@@ -34,8 +34,8 @@ object CoulombFormInstances:
     // =========================================================================
 
     given numericFormValueForTempD[U: SUnit]: NumericFormValue[TempD[U]] with
-        def toDouble(t: TempD[U]): Double = t.value
-        def fromDouble(d: Double): TempD[U] = d.withTemperature[U]
+        def toDouble  (t: TempD[U]): Double   = t.value
+        def fromDouble(d: Double  ): TempD[U] = d.withTemperature[U]
         def unitDisplays: List[UnitDisplay] =
             val su = SUnit[U]
             List(UnitDisplay(label = su.showUnitFull, abbreviation = su.showUnit))
@@ -76,27 +76,24 @@ object CoulombFormInstances:
     // =========================================================================
 
     extension [A](form: Form[Option[A]])
-        /** Creates a new Form that bidirectionally syncs with a linked Var.
-          *
-          * Useful when a form field should stay in sync with another Var,
-          * such as a field in a parent model.
-          */
+        /**
+         * Creates a new Form that bidirectionally syncs with a linked Var.
+         *
+         * Useful when a form field should stay in sync with another Var,
+         * such as a field in a parent model.
+         */
         def withLinkedVar(linkedVar: Var[Option[A]]): Form[Option[A]] =
             new Form[Option[A]]:
-                def defaultable = form.defaultable
-                def validateVar = form.validateVar
+                def defaultable                                                       = form.defaultable
+                def validateVar                                                       = form.validateVar
                 def render(v: Var[Option[A]], config: FormConfig)(using FormRenderer) =
-                    val syncToLinkedVar = v.signal
-                        .distinct
-                        .changes
+                    val syncToLinkedVar = v.signal.distinct.changes
                         .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                         .collect { case Some(x) => Some(x) }
                         .withCurrentValueOf(linkedVar.signal)
                         .collect { case (newVal, curVal) if newVal != curVal => newVal } --> linkedVar.writer
 
-                    val syncFromLinkedVar = linkedVar.signal
-                        .distinct
-                        .changes
+                    val syncFromLinkedVar = linkedVar.signal.distinct.changes
                         .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                         .withCurrentValueOf(v.signal)
                         .collect { case (newVal, curVal) if newVal != curVal => newVal } --> v.writer

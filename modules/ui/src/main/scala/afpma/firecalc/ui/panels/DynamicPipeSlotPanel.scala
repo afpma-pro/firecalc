@@ -40,7 +40,10 @@ import io.taig.babel.Locale
 object DynamicPipeSlotPanel:
 
     /** Create a panel for the given slot index and type. */
-    def forSlot(slotIndex: Int, slot: PostFireboxPipeDescrSlot, slotControlsNode: Option[HtmlElement] = None)(using Locale, DisplayUnits): PipePanel =
+    def forSlot(slotIndex: Int, slot: PostFireboxPipeDescrSlot, slotControlsNode: Option[HtmlElement] = None)(using
+        Locale,
+        DisplayUnits
+    ): PipePanel =
         slot match
             case PostFireboxPipeDescrSlot.FlueSlot(_)        =>
                 DynamicFlowOnlyPipeSlotPanel(slotIndex, slotControlsNode)
@@ -57,11 +60,13 @@ end DynamicPipeSlotPanel
 // FlowOnly 15544 variant (flue pipe in Strict mode)
 // ═══════════════════════════════════════════════════════════════════
 
-final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: Option[HtmlElement] = None)(using Locale, DisplayUnits)
-    extends PipePanel:
+final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: Option[HtmlElement] = None)(using
+    Locale,
+    DisplayUnits
+) extends PipePanel:
 
-    override protected def vizFieldsetIdPrefix: String = s"slot-$slotIndex"
-    override protected lazy val pipeTypeCls: String    = "pipe-type-flue"
+    override protected def vizFieldsetIdPrefix : String              = s"slot-$slotIndex"
+    override protected lazy val pipeTypeCls    : String              = "pipe-type-flue"
     override protected def accordionTitlePrefix: Option[HtmlElement] = slotControlsNode
 
     override protected def ownsVizElement(id: VizElementId): Boolean = id match
@@ -93,8 +98,8 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     /** Zoom into the slot's descriptor sequence within the slot vector. */
     lazy val elems_v: Var[Seq[FlowOnlyPipeDescr_15544]] =
-        postFireboxSlots_var.zoomLazy(
-            slots => slots.lift(slotIndex) match
+        postFireboxSlots_var.zoomLazy(slots =>
+            slots.lift(slotIndex) match
                 case Some(PostFireboxPipeDescrSlot.FlueSlot(d)) => d
                 case _                                          => Seq.empty
         )((slots, descr) =>
@@ -126,9 +131,12 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
         slotBuildResults_sig
             .combineWith(pipeResult_vnel_signal)
             .map: (results, pipeResultV) =>
-                val buildV = results.lift(slotIndex).map(_.pipe).getOrElse(
-                    Validated.invalidNel(FluePipeNotDefinedYet)
-                )
+                val buildV = results
+                    .lift(slotIndex)
+                    .map(_.pipe)
+                    .getOrElse(
+                        Validated.invalidNel(FluePipeNotDefinedYet)
+                    )
                 // Chain build validation + pipe result validation
                 buildV
                     .andThen(_ => pipeResultV)
@@ -139,7 +147,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
     override lazy val quadrionSubtotal_sig: Signal[Option[QuadrionSubtotal]] =
         pipeResult_vnel_signal.map: vnel =>
             vnel.toOption.map: pr =>
-                QuadrionSubtotal(
+                QuadrionSubtotal   (
                     ph    = Some(pr.ph.value).filter(!_.isNaN),
                     pr    = Some(-1.0 * pr.pR.value).filter(!_.isNaN),
                     pu    = pr.pu.map(pu => (-1.0 * pu.value)).toOption.filter(!_.isNaN),
@@ -157,10 +165,10 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             for (idx, elem) <- elems do
                 elem match
                     case SetInitialDirection(az, incl) =>
-                        val azDeg  = AzimuthDirection.toDegrees(az)
-                        val elDeg  = InclinationDirection.toDegrees(incl)
+                        val azDeg = AzimuthDirection.toDegrees(az)
+                        val elDeg = InclinationDirection.toDegrees(incl)
                         frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                    case _ => ()
+                    case _                             => ()
                 frame.foreach(f => builder += (idx -> f))
                 elem match
                     case dc: AddDirectionChange =>
@@ -175,19 +183,26 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             builder.result()
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
-        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
-            elems.flatMap: (idx, elem) =>
-                frameMap.get(idx).flatMap: frameBefore =>
-                    elem match
-                        case dc: AddDirectionChange =>
-                            dc.absDir.map: fd =>
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                idx -> frameBefore.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec).direction
-                        case _: AddFlowOnlyPipeElement_15544 =>
-                            Some(idx -> frameBefore.direction)
-                        case _ => None
-            .toMap
+        welems_var.signal
+            .combineWith(frameBeforeByIdx)
+            .map: (elems, frameMap) =>
+                elems
+                    .flatMap: (idx, elem) =>
+                        frameMap
+                            .get(idx)
+                            .flatMap: frameBefore =>
+                                elem match
+                                    case dc: AddDirectionChange           =>
+                                        dc.absDir.map: fd =>
+                                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            idx -> frameBefore
+                                                .applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec)
+                                                .direction
+                                    case _ : AddFlowOnlyPipeElement_15544 =>
+                                        Some(idx -> frameBefore.direction)
+                                    case _ => None
+                    .toMap
 
     override protected def directionBadgeSig(idx: Int, xtraSig: Signal[XtraOutputs]): Signal[Option[Vec3]] =
         directionAfterByIdx.map(_.get(idx))
@@ -196,11 +211,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
         frameBeforeByIdx.map(_.get(idx))
 
     private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
-        welems_var.signal.combineWith(frameBeforeByIdx).map: (elems, frameMap) =>
-            elems
-                .collect { case (idx, _: AddDirectionChange) => idx }
-                .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
-                .toMap
+        welems_var.signal
+            .combineWith(frameBeforeByIdx)
+            .map: (elems, frameMap) =>
+                elems
+                    .collect { case (idx, _: AddDirectionChange) => idx }
+                    .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
+                    .toMap
 
     override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
         previousDirectionByIdx.map(_.get(idx))
@@ -218,10 +235,10 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
     ): Var[A] => HtmlElement =
         ev =>
             val fdVar = ev.zoomLazy(getter)(setter)
-            RelativeDirectionInput(
+            RelativeDirectionInput    (
                 frameBefore     = frameBeforeSig_badge(idx),
                 deflectionAngle = deflectionAngleSig(idx),
-                absDirVar     = fdVar
+                absDirVar       = fdVar
             ).node
 
     override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
@@ -237,88 +254,221 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInnerShape, XtraOutputs), HtmlElement] {
                 case (i, incr: SetInnerShape, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInnerShape](iix._1, I18N.set_prop.SetInnerShape, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInnerShape]]))
+                renderElemTyped[SetInnerShape]  (
+                    iix._1,
+                    I18N.set_prop.SetInnerShape,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetInnerShape]])
+                )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetRoughness, XtraOutputs), HtmlElement] {
                 case (i, incr: SetRoughness, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetRoughness](iix._1, I18N.set_prop.SetRoughness, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetRoughness]]))
+                renderElemTyped[SetRoughness]  (
+                    iix._1,
+                    I18N.set_prop.SetRoughness,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetRoughness]])
+                )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetMaterial, XtraOutputs), HtmlElement] {
                 case (i, incr: SetMaterial, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetMaterial](iix._1, I18N.set_prop.SetMaterial, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetMaterial]]))
+                renderElemTyped[SetMaterial]  (
+                    iix._1,
+                    I18N.set_prop.SetMaterial,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetMaterial]])
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetNumberOfFlows, XtraOutputs), HtmlElement] {
-                case (i, incr: SetNumberOfFlows, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, SetNumberOfFlows, XtraOutputs       ),
+                HtmlElement
+            ] { case (i, incr: SetNumberOfFlows, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetNumberOfFlows](iix._1, I18N.set_prop.SetNumberOfFlows, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetNumberOfFlows]]))
+                renderElemTyped[SetNumberOfFlows]  (
+                    iix._1,
+                    I18N.set_prop.SetNumberOfFlows,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetNumberOfFlows]])
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialDirection, XtraOutputs), HtmlElement] {
-                case (i, incr: SetInitialDirection, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, SetInitialDirection, XtraOutputs    ),
+                HtmlElement
+            ] { case (i, incr: SetInitialDirection, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInitialDirection](iix._1, I18N.set_prop.SetInitialDirection, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialDirection]]))
+                renderElemTyped[SetInitialDirection]  (
+                    iix._1,
+                    I18N.set_prop.SetInitialDirection,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetInitialDirection]])
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
-                case (i, incr: SetInitialPosition, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, SetInitialPosition, XtraOutputs     ),
+                HtmlElement
+            ] { case (i, incr: SetInitialPosition, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInitialPosition](iix._1, I18N.set_prop.SetInitialPosition, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetInitialPosition]]))
+                renderElemTyped[SetInitialPosition]  (
+                    iix._1,
+                    I18N.set_prop.SetInitialPosition,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetInitialPosition]])
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
-                case (i, incr: SetFinalPosition, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, SetFinalPosition, XtraOutputs       ),
+                HtmlElement
+            ] { case (i, incr: SetFinalPosition, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetFinalPosition](iix._1, I18N.set_prop.SetFinalPosition, iix._2, sig, isProperty = true, propertyShow = Some(summon[Show[SetFinalPosition]]))
+                renderElemTyped[SetFinalPosition]  (
+                    iix._1,
+                    I18N.set_prop.SetFinalPosition,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetFinalPosition]])
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionSlopped, XtraOutputs), HtmlElement] {
-                case (i, incr: AddSectionSlopped, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddSectionSlopped, XtraOutputs      ),
+                HtmlElement
+            ] { case (i, incr: AddSectionSlopped, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddSectionSlopped](iix._1, I18N.add_element.AddSectionSlopped, iix._2, sig, isProperty = false)
+                renderElemTyped[AddSectionSlopped](
+                    iix._1,
+                    I18N.add_element.AddSectionSlopped,
+                    iix._2,
+                    sig,
+                    isProperty = false
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs), HtmlElement] {
-                case (i, incr: AddSectionSloppedForceManualElevationGain, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs                  ),
+                (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: AddSectionSloppedForceManualElevationGain, x) =>
+                (i, incr, x)
             } { (_, _) => ??? }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionHorizontal, XtraOutputs), HtmlElement] {
-                case (i, incr: AddSectionHorizontal, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddSectionHorizontal, XtraOutputs   ),
+                HtmlElement
+            ] { case (i, incr: AddSectionHorizontal, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddSectionHorizontal](iix._1, I18N.add_element.AddSectionHorizontal, iix._2, sig, isProperty = false)
+                renderElemTyped[AddSectionHorizontal](
+                    iix._1,
+                    I18N.add_element.AddSectionHorizontal,
+                    iix._2,
+                    sig,
+                    isProperty = false
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionVertical, XtraOutputs), HtmlElement] {
-                case (i, incr: AddSectionVertical, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddSectionVertical, XtraOutputs     ),
+                HtmlElement
+            ] { case (i, incr: AddSectionVertical, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddSectionVertical](iix._1, I18N.add_element.AddSectionVertical, iix._2, sig, isProperty = false)
+                renderElemTyped[AddSectionVertical](
+                    iix._1,
+                    I18N.add_element.AddSectionVertical,
+                    iix._2,
+                    sig,
+                    isProperty = false
+                )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSharpeAngle_0_to_180, XtraOutputs), HtmlElement] {
-                case (i, incr: AddSharpeAngle_0_to_180, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddSharpeAngle_0_to_180, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: AddSharpeAngle_0_to_180, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddSharpeAngle_0_to_180](
-                    iix._1, I18N.add_element.AddSharpeAngle_0_to_180, iix._2, sig, isProperty = false,
-                    extra = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                renderElemTyped[AddSharpeAngle_0_to_180]      (
+                    iix._1,
+                    I18N.add_element.AddSharpeAngle_0_to_180,
+                    iix._2,
+                    sig,
+                    isProperty       = false,
+                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
                     badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddCircularArc_60, XtraOutputs), HtmlElement] {
                 case (i, incr: AddCircularArc_60, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddCircularArc_60](
-                    iix._1, I18N.add_element.AddCircularArc_60, iix._2, sig, isProperty = false,
-                    extra = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                renderElemTyped[AddCircularArc_60]      (
+                    iix._1,
+                    I18N.add_element.AddCircularArc_60,
+                    iix._2,
+                    sig,
+                    isProperty       = false,
+                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
                     badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
                 )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddSectionShapeChange, XtraOutputs), HtmlElement] {
-                case (i, incr: AddSectionShapeChange, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddSectionShapeChange, XtraOutputs  ),
+                HtmlElement
+            ] { case (i, incr: AddSectionShapeChange, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddSectionShapeChange](iix._1, I18N.add_element.AddSectionShapeChange, iix._2, sig, isProperty = false)
+                renderElemTyped[AddSectionShapeChange](
+                    iix._1,
+                    I18N.add_element.AddSectionShapeChange,
+                    iix._2,
+                    sig,
+                    isProperty = false
+                )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddFlowResistance, XtraOutputs), HtmlElement] {
                 case (i, incr: AddFlowResistance, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddFlowResistance](iix._1, I18N.add_element.AddFlowResistance, iix._2, sig, isProperty = false)
+                renderElemTyped[AddFlowResistance](
+                    iix._1,
+                    I18N.add_element.AddFlowResistance,
+                    iix._2,
+                    sig,
+                    isProperty = false
+                )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddPressureDiff, XtraOutputs), HtmlElement] {
                 case (i, incr: AddPressureDiff, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddPressureDiff](iix._1, I18N.add_element.AddPressureDiff, iix._2, sig, isProperty = false)
+                renderElemTyped[AddPressureDiff](
+                    iix._1,
+                    I18N.add_element.AddPressureDiff,
+                    iix._2,
+                    sig,
+                    isProperty = false
+                )
             }
             .toSignal
 
@@ -335,13 +485,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     lazy val shortcut_start_new_pipe =
         import afpma.laminar.form.{Defaultable as D}
-        TagTreeMenu.Shortcut(
+        TagTreeMenu.Shortcut  (
             txt   = I18N.set_prop.shortcuts.start_a_new_pipe,
             elems = (summon[D[SetMaterial]].default, summon[D[SetInnerShape]].default)
         )
 
     lazy val shortcut_add_new_connector =
-        TagTreeMenu.Shortcut(
+        TagTreeMenu.Shortcut  (
             txt   = I18N.set_prop.shortcuts.add_new_connector,
             elems = (SetRoughness(1.mm), SetInnerShape(Circle(180.mm)), AddSectionSlopped("connecteur", 6.cm))
         )
@@ -350,22 +500,22 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
         txt  = I18N.add_element._self,
         next = List(
             TagTreeMenu.Leaf[AddSectionSlopped],
-            TagTreeMenu.Group(
+            TagTreeMenu.Group (
                 txt  = I18N.add_element.add_direction_change_element,
                 next = List(TagTreeMenu.Leaf[AddSharpeAngle_0_to_180], TagTreeMenu.Leaf[AddCircularArc_60])
             ),
-            TagTreeMenu.Group(
+            TagTreeMenu.Group (
                 txt  = I18N.set_prop.SetNumberOfFlows,
                 next = List(
                     TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_NumberOfChannels, SetNumberOfFlows(2)),
-                    TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_Join, SetNumberOfFlows(1))
+                    TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_Join, SetNumberOfFlows(1)            )
                 )
             ),
-            TagTreeMenu.Group(
+            TagTreeMenu.Group (
                 txt  = I18N.add_element.AddFlowResistance,
                 next = List(
-                    TagTreeMenu.Modal[FlowOnlyPipeDescr_15544](
-                        txt = afpma.firecalc.ui.i18n.implicits.I18N_UI.catalog.flow_resistance_presets,
+                    TagTreeMenu.Modal[FlowOnlyPipeDescr_15544]         (
+                        txt          = afpma.firecalc.ui.i18n.implicits.I18N_UI.catalog.flow_resistance_presets,
                         modalContent = (onSelect) =>
                             FlowResistanceCatalogSelectComponent(
                                 entriesSignal = flowResistancePresetsSignal,
@@ -374,7 +524,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
                                 )
                             ).node
                     ),
-                    TagTreeMenu.Leaf[AddFlowResistance]("ζ spécifique")
+                    TagTreeMenu.Leaf[AddFlowResistance]                ("ζ spécifique")
                 )
             )
         )
@@ -383,11 +533,15 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
         next = List(
-            TagTreeMenu.Group(
+            TagTreeMenu.Group (
                 txt  = I18N.set_prop._position_and_direction,
-                next = List(TagTreeMenu.Leaf[SetInitialPosition], TagTreeMenu.Leaf[SetInitialDirection], TagTreeMenu.Leaf[SetFinalPosition])
+                next = List(
+                    TagTreeMenu.Leaf[SetInitialPosition],
+                    TagTreeMenu.Leaf[SetInitialDirection],
+                    TagTreeMenu.Leaf[SetFinalPosition]
+                )
             ),
-            TagTreeMenu.Group(
+            TagTreeMenu.Group (
                 txt  = I18N.set_prop._material_and_roughness,
                 next = List(TagTreeMenu.Leaf[SetMaterial], TagTreeMenu.Leaf[SetRoughness])
             ),
@@ -402,16 +556,16 @@ end DynamicFlowOnlyPipeSlotPanel
 // ═══════════════════════════════════════════════════════════════════
 
 final case class DynamicThermalPipeSlotPanel(
-    slotIndex: Int,
-    pipeTypeVal: PipeType,
-    title: String,
+    slotIndex       : Int,
+    pipeTypeVal     : PipeType,
+    title           : String,
     slotControlsNode: Option[HtmlElement] = None
-)(using Locale, DisplayUnits)
+)                                           (using Locale, DisplayUnits)
     extends PipePanel_13384_Thermal:
 
-    override protected def vizFieldsetIdPrefix: String = s"slot-$slotIndex"
+    override protected def vizFieldsetIdPrefix : String              = s"slot-$slotIndex"
     override protected def accordionTitlePrefix: Option[HtmlElement] = slotControlsNode
-    override protected lazy val pipeTypeCls: String = pipeTypeVal match
+    override protected lazy val pipeTypeCls    : String              = pipeTypeVal match
         case FluePipeT      => "pipe-type-flue"
         case ConnectorPipeT => "pipe-type-connector"
         case ChimneyPipeT   => "pipe-type-chimney"
@@ -420,9 +574,9 @@ final case class DynamicThermalPipeSlotPanel(
     override protected def ownsVizElement(id: VizElementId): Boolean = id match
         case VizElementId.PostFireboxSlotElement(si, _) => si == slotIndex
         // backward compat for existing viz element IDs
-        case VizElementId.ConnectorPipeElement(_) => pipeTypeVal == ConnectorPipeT
-        case VizElementId.ChimneyPipeElement(_)   => pipeTypeVal == ChimneyPipeT
-        case _                                    => false
+        case VizElementId.ConnectorPipeElement(_)       => pipeTypeVal == ConnectorPipeT
+        case VizElementId.ChimneyPipeElement(_)         => pipeTypeVal == ChimneyPipeT
+        case _                                          => false
 
     override protected def vizElementIndex(id: VizElementId): Int = id match
         case VizElementId.PostFireboxSlotElement(_, ei) => ei
@@ -439,20 +593,22 @@ final case class DynamicThermalPipeSlotPanel(
     // ── Slot-indexed wiring ──────────────────────────────────────
 
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] =
-        postFireboxSlots_var.zoomLazy(
-            slots => slots.lift(slotIndex) match
+        postFireboxSlots_var.zoomLazy(slots =>
+            slots.lift(slotIndex) match
                 case Some(PostFireboxPipeDescrSlot.ThermalFlueSlot(d)) => d
                 case Some(PostFireboxPipeDescrSlot.ConnectorSlot(d))   => d
-                case Some(PostFireboxPipeDescrSlot.ChimneySlot(d))    => d
+                case Some(PostFireboxPipeDescrSlot.ChimneySlot(d))     => d
                 case _                                                 => Seq.empty
         )((slots, descr) =>
             slots.zipWithIndex.map { case (s, i) =>
                 if i != slotIndex then s
-                else s match
-                    case PostFireboxPipeDescrSlot.ThermalFlueSlot(_) => PostFireboxPipeDescrSlot.ThermalFlueSlot(descr)
-                    case PostFireboxPipeDescrSlot.ConnectorSlot(_)   => PostFireboxPipeDescrSlot.ConnectorSlot(descr)
-                    case PostFireboxPipeDescrSlot.ChimneySlot(_)    => PostFireboxPipeDescrSlot.ChimneySlot(descr)
-                    case other                                       => other // shouldn't happen
+                else
+                    s match
+                        case PostFireboxPipeDescrSlot.ThermalFlueSlot(_) =>
+                            PostFireboxPipeDescrSlot.ThermalFlueSlot(descr)
+                        case PostFireboxPipeDescrSlot.ConnectorSlot(_)   => PostFireboxPipeDescrSlot.ConnectorSlot(descr)
+                        case PostFireboxPipeDescrSlot.ChimneySlot(_)     => PostFireboxPipeDescrSlot.ChimneySlot(descr)
+                        case other                                       => other // shouldn't happen
             }
         )
 
@@ -482,9 +638,12 @@ final case class DynamicThermalPipeSlotPanel(
         slotBuildResults_sig
             .combineWith(pipeResult_vnel_signal)
             .map: (results, pipeResultV) =>
-                val buildV = results.lift(slotIndex).map(_.pipe).getOrElse(
-                    Validated.invalidNel(ChimneyPipeNotDefinedYet)
-                )
+                val buildV = results
+                    .lift(slotIndex)
+                    .map(_.pipe)
+                    .getOrElse(
+                        Validated.invalidNel(ChimneyPipeNotDefinedYet)
+                    )
                 buildV
                     .andThen(_ => pipeResultV)
                     .andThen(_ => buildV)
@@ -494,7 +653,7 @@ final case class DynamicThermalPipeSlotPanel(
     override lazy val quadrionSubtotal_sig: Signal[Option[QuadrionSubtotal]] =
         pipeResult_vnel_signal.map: vnel =>
             vnel.toOption.map: pr =>
-                QuadrionSubtotal(
+                QuadrionSubtotal   (
                     ph    = Some(pr.ph.value).filter(!_.isNaN),
                     pr    = Some(-1.0 * pr.pR.value).filter(!_.isNaN),
                     pu    = pr.pu.map(pu => (-1.0 * pu.value)).toOption.filter(!_.isNaN),

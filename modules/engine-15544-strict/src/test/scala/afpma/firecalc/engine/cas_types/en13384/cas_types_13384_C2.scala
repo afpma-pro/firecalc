@@ -12,9 +12,9 @@ class cas_types_13384_C2_Suite extends CasTypesRunner_13384_WithThermalAirIntake
     import CasTypes13384_ExpectedValues.C2 as qc2_result
 
     "cas types EN13384 - C2" in {
-        run_cas_type_13384_withThermalAirIntake(afpma.firecalc.engine.cas_types.en13384.v20241001.CasType_13384_C2)
-        compute_and_show_results(
-            ex = afpma.firecalc.engine.cas_types.en13384.v20241001.CasType_13384_C2,
+        run_cas_type_13384_withThermalAirIntake       (afpma.firecalc.engine.cas_types.en13384.v20241001.CasType_13384_C2)
+        compute_and_show_results                      (
+            ex        = afpma.firecalc.engine.cas_types.en13384.v20241001.CasType_13384_C2,
             compareTo = qc2_result
         )
     }

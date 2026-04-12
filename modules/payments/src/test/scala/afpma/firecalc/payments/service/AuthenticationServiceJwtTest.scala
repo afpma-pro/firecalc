@@ -34,14 +34,28 @@ object AuthenticationServiceJwtTest extends TestSuite {
 
     // Minimal stub — JWT tests do not call any repo methods
     val stubRepo: PurchaseIntentRepository[IO] = new PurchaseIntentRepository[IO]:
-        def create(productId: ProductId, amount: BigDecimal, currency: Currency, authCode: String, customerId: CustomerId, productMetadataId: Option[Long]): IO[PurchaseIntent]                                    = ???
-        def createWithInternalCustomerId(productId: ProductId, amount: BigDecimal, currency: Currency, authCode: String, customerInternalId: Long, productMetadataId: Option[Long]): IO[PurchaseIntent]           = ???
-        def findByToken(token: PurchaseToken): IO[Option[PurchaseIntent]]                                                                                                                                          = ???
-        def findByTokenAndCode(token: PurchaseToken, code: String): IO[Option[PurchaseIntent]]                                                                                                                     = ???
-        def atomicMarkAsProcessed(token: PurchaseToken): IO[Boolean]                                                                                                                                              = ???
-        def deleteExpired(): IO[Int]                                                                                                                                                                               = ???
-        def incrementFailedAttempts(token: PurchaseToken): IO[Unit]                                                                                                                                                = ???
-        def countRecentByEmail(email: String, since: java.time.Instant): IO[Int]                                                                                                                                   = ???
+        def create(
+            productId        : ProductId,
+            amount           : BigDecimal,
+            currency         : Currency,
+            authCode         : String,
+            customerId       : CustomerId,
+            productMetadataId: Option[Long]
+        ): IO[PurchaseIntent] = ???
+        def createWithInternalCustomerId(
+            productId         : ProductId,
+            amount            : BigDecimal,
+            currency          : Currency,
+            authCode          : String,
+            customerInternalId: Long,
+            productMetadataId : Option[Long]
+        ): IO[PurchaseIntent] = ???
+        def findByToken            (token: PurchaseToken                         ): IO[Option[PurchaseIntent]] = ???
+        def findByTokenAndCode     (token: PurchaseToken, code: String           ): IO[Option[PurchaseIntent]] = ???
+        def atomicMarkAsProcessed  (token: PurchaseToken                         ): IO[Boolean]                = ???
+        def deleteExpired          (                                             ): IO[Int]                    = ???
+        def incrementFailedAttempts(token: PurchaseToken                         ): IO[Unit]                   = ???
+        def countRecentByEmail     (email: String, since      : java.time.Instant): IO[Int]                    = ???
 
     val service = new AuthenticationServiceImpl[IO](stubRepo, testJwtConfig)
 
@@ -49,7 +63,7 @@ object AuthenticationServiceJwtTest extends TestSuite {
 
         test("generateJWT produces a token that validateJWT can decode") {
             val customerId = CustomerId(UUID.randomUUID())
-            val result = (for
+            val result     = (for
                 token     <- service.generateJWT(customerId)
                 recovered <- service.validateJWT(token)
             yield recovered).unsafeRunSync()
@@ -58,9 +72,9 @@ object AuthenticationServiceJwtTest extends TestSuite {
         }
 
         test("validateJWT rejects an old-format forged token") {
-            val customerId = CustomerId(UUID.randomUUID())
+            val customerId  = CustomerId(UUID.randomUUID())
             val forgedToken = s"jwt_${customerId.value}_${System.currentTimeMillis()}"
-            val result = service.validateJWT(forgedToken).unsafeRunSync()
+            val result      = service.validateJWT(forgedToken).unsafeRunSync()
             assert(result == None)
         }
 
@@ -70,9 +84,9 @@ object AuthenticationServiceJwtTest extends TestSuite {
                 stubRepo,
                 testJwtConfig.copy(secret = "completely-different-secret-for-another-server")
             )
-            val result = (for
+            val result       = (for
                 token     <- otherService.generateJWT(customerId)
-                recovered <- service.validateJWT(token)  // validates with testSecret
+                recovered <- service.validateJWT(token) // validates with testSecret
             yield recovered).unsafeRunSync()
 
             assert(result == None)
@@ -84,7 +98,7 @@ object AuthenticationServiceJwtTest extends TestSuite {
         }
 
         test("validateJWT rejects an expired token") {
-            val customerId = CustomerId(UUID.randomUUID())
+            val customerId   = CustomerId(UUID.randomUUID())
             // Craft a validly signed token whose exp is 1 hour in the past
             val expiredClaim = JwtClaim(
                 subject    = Some(customerId.value.toString),
@@ -96,15 +110,15 @@ object AuthenticationServiceJwtTest extends TestSuite {
         }
 
         test("validateJWT rejects a token issued by a different service (wrong iss)") {
-            val customerId    = CustomerId(UUID.randomUUID())
+            val customerId  = CustomerId(UUID.randomUUID())
             // Token signed with the same secret but a different issuer
-            val wrongIssuer   = new AuthenticationServiceImpl[IO](
+            val wrongIssuer = new AuthenticationServiceImpl[IO](
                 stubRepo,
                 testJwtConfig.copy(issuer = "some-other-service")
             )
-            val result = (for
+            val result      = (for
                 token     <- wrongIssuer.generateJWT(customerId)
-                recovered <- service.validateJWT(token)  // expects issuer = "firecalc-test"
+                recovered <- service.validateJWT(token) // expects issuer = "firecalc-test"
             yield recovered).unsafeRunSync()
 
             assert(result == None)
@@ -117,23 +131,23 @@ object AuthenticationServiceJwtTest extends TestSuite {
 
         test("JwtConfig rejects secrets shorter than 32 characters") {
             val ex = scala.util.Try(JwtConfig(secret = "too-short"))
-            assert(ex.isFailure)
+            assert(ex.isFailure                                        )
             assert(ex.failed.get.isInstanceOf[IllegalArgumentException])
         }
 
         test("JwtConfig rejects zero or negative expirationMinutes") {
             val ex0 = scala.util.Try(JwtConfig(secret = testSecret, expirationMinutes = 0))
-            assert(ex0.isFailure)
+            assert(ex0.isFailure                                        )
             assert(ex0.failed.get.isInstanceOf[IllegalArgumentException])
 
             val exNeg = scala.util.Try(JwtConfig(secret = testSecret, expirationMinutes = -1))
-            assert(exNeg.isFailure)
+            assert(exNeg.isFailure                                        )
             assert(exNeg.failed.get.isInstanceOf[IllegalArgumentException])
         }
 
         test("JwtConfig rejects empty issuer") {
             val ex = scala.util.Try(JwtConfig(secret = testSecret, issuer = ""))
-            assert(ex.isFailure)
+            assert(ex.isFailure                                        )
             assert(ex.failed.get.isInstanceOf[IllegalArgumentException])
         }
     }

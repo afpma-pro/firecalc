@@ -119,8 +119,8 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
     // Both places must be updated together when adding a new DC subtype.
     inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): Form[A] =
         import com.raquo.laminar.api.L.span
-        @nowarn given Form[String] = horizontal_form.string_emptyAsDefault_alwaysValid
-        given ValidateVar[Option[AbsoluteDirection]] =
+        @nowarn given Form[String]                    = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[AbsoluteDirection]]  =
             ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[AbsoluteDirection]
         @nowarn given Form[Option[AbsoluteDirection]] =
             Form.makeFor[Option[AbsoluteDirection]](Defaultable(None))((_, _) => span())

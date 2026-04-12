@@ -16,10 +16,7 @@ import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
 import org.scalactic.anyvals.PosInt
 
-class FormatStabilitySuite
-    extends AnyFreeSpec
-    with Matchers
-    with ScalaCheckPropertyChecks:
+class FormatStabilitySuite extends AnyFreeSpec with Matchers with ScalaCheckPropertyChecks:
 
     override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
         PropertyCheckConfiguration(
@@ -110,7 +107,7 @@ class FormatStabilitySuite
         "V1 encoded YAML should be parseable and migratable" in forAll(
             AllGenerators.genFireCalcYAML_V1
         ) { v1 =>
-            val yaml =
+            val yaml      =
                 FireCalcYAML_V1.encodeToYaml(v1).get
             val migration =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
@@ -120,7 +117,7 @@ class FormatStabilitySuite
         "V2 encoded YAML should be parseable and migratable" in forAll(
             AllGenerators.genFireCalcYAML_V2
         ) { v2 =>
-            val yaml =
+            val yaml      =
                 FireCalcYAML_V2.encodeToYaml(v2).get
             val migration =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
@@ -130,7 +127,7 @@ class FormatStabilitySuite
         "V3 encoded YAML should be parseable" in forAll(
             AllGenerators.genFireCalcYAML_V3
         ) { v3 =>
-            val yaml =
+            val yaml      =
                 FireCalcYAML_V3.encodeToYaml(v3).get
             val migration =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
@@ -140,7 +137,7 @@ class FormatStabilitySuite
         "V4 encoded YAML should be parseable" in forAll(
             AllGenerators.genFireCalcYAML_V4
         ) { v4 =>
-            val yaml =
+            val yaml      =
                 FireCalcYAML_V4.encodeToYaml(v4).get
             val migration =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)

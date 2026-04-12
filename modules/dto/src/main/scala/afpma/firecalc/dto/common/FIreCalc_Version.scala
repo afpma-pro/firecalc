@@ -44,8 +44,8 @@ object FireCalc_Version:
 
     def v[N <: Int & Singleton](using n: ValueOf[N]): V[N] = n.value
 
-    given [N <: Int & Singleton]: Encoder[V[N]] = Encoder.encodeInt
+    given [N <: Int & Singleton]                     : Encoder[V[N]] = Encoder.encodeInt
     given [N <: Int & Singleton](using n: ValueOf[N]): Decoder[V[N]] =
         Decoder.decodeInt.emap: i =>
-            if i == n.value then Right(i)
-            else Left(s"Expected version ${n.value}, got $i")
+            if i == n.value then Right(i                                     )
+            else Left                 (s"Expected version ${n.value}, got $i")

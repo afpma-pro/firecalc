@@ -43,9 +43,9 @@ object ProjectManager:
                 import afpma.firecalc.ui.models.fireboxCacheStateVar
                 val cachedFirebox = loadFireboxCache(id)
                 fireboxCacheStateVar.set(cachedFirebox)
-                activeProjectIdVar.set(Some(id))
+                activeProjectIdVar.set  (Some(id)     )
                 true
-            case None =>
+            case None         =>
                 org.scalajs.dom.console.error(s"Project ${id.value} not found in localStorage")
                 false
 
@@ -55,25 +55,28 @@ object ProjectManager:
 
         activeProjectIdVar.now().foreach { id =>
             val schema = appStateSchemaVar.now()
-            ProjectStorage.save(id, schema)
-            saveFireboxCache(id, fireboxCacheStateVar.now())
+            ProjectStorage.save(id, schema                    )
+            saveFireboxCache   (id, fireboxCacheStateVar.now())
             // Update index metadata
             val name = schema.engine_state.project_description.reference
-            ProjectIndex.updateEntry(id, _.copy(
-                name = if name.nonEmpty then name else "Sans titre",
-                lastModified = scala.scalajs.js.Date.now()
-            ))
+            ProjectIndex.updateEntry(
+                id,
+                _.copy        (
+                    name         = if name.nonEmpty then name else "Sans titre",
+                    lastModified = scala.scalajs.js.Date.now()
+                )
+            )
         }
 
     /** Create a new blank project, switch to it, and return its ID. */
     def createNewProject(): ProjectId =
         saveCurrentProject()
-        val id      = generateProjectId()
-        val schema  = AppStateSchemaHelper.createInitialSchema()
-        val now     = scala.scalajs.js.Date.now()
-        ProjectStorage.save(id, schema)
+        val id     = generateProjectId()
+        val schema = AppStateSchemaHelper.createInitialSchema()
+        val now    = scala.scalajs.js.Date.now()
+        ProjectStorage.save  (id, schema                                               )
         ProjectIndex.addEntry(ProjectEntry(id, "", lastModified = now, createdAt = now))
-        switchToProject(id)
+        switchToProject      (id                                                       )
         id
 
     /** Delete a project from storage and index. */
@@ -81,12 +84,12 @@ object ProjectManager:
         if activeProjectIdVar.now().contains(id) then
             import afpma.firecalc.ui.models.undoManager
             activeProjectIdVar.set(None)
-            undoManager.reset()
-        ProjectStorage.delete(id)
+            undoManager.reset     (    )
+        ProjectStorage.delete                         (id)
         org.scalajs.dom.window.localStorage.removeItem(
             afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value)
         )
-        ProjectIndex.removeEntry(id)
+        ProjectIndex.removeEntry                      (id)
 
     /** Create a new project from imported AppStateSchema (e.g., from file open). */
     def openFromFile(schema: AppStateSchema): ProjectId =
@@ -94,9 +97,11 @@ object ProjectManager:
         val id   = generateProjectId()
         val name = schema.engine_state.project_description.reference
         val now  = scala.scalajs.js.Date.now()
-        ProjectStorage.save(id, schema)
-        ProjectIndex.addEntry(ProjectEntry(id, if name.nonEmpty then name else "Importé", lastModified = now, createdAt = now))
-        switchToProject(id)
+        ProjectStorage.save  (id, schema)
+        ProjectIndex.addEntry(
+            ProjectEntry(id, if name.nonEmpty then name else "Importé", lastModified = now, createdAt = now)
+        )
+        switchToProject      (id        )
         id
 
     def saveFireboxCache(id: ProjectId, cache: afpma.firecalc.ui.models.FireboxCacheState): Unit =

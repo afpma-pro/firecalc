@@ -15,19 +15,20 @@ import cats.data.Validated
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-/** Smoke test for the Strict N-pipe `ConnectorSlot(Seq.empty)` no-op semantics.
-  *
-  * Instantiates `StrictWithoutConnectorFixture_15544` (a 3-slot Strict topology
-  * where the connector slot carries empty descriptors) and proves that:
-  *   1. The 3-slot vector is correctly shaped (FlueSlot, ConnectorSlot-empty, ChimneySlot).
-  *   2. `en15544_Alg` validates successfully.
-  *   3. `postFireboxPipeResults` produces 3 results with correct pipe-type tags.
-  *   4. The empty connector propagates upstream state (no-op) without breaking
-  *      downstream chimney computation.
-  *
-  * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
-  * policy — this suite is NOT a golden validation.
-  */
+/**
+ * Smoke test for the Strict N-pipe `ConnectorSlot(Seq.empty)` no-op semantics.
+ *
+ * Instantiates `StrictWithoutConnectorFixture_15544` (a 3-slot Strict topology
+ * where the connector slot carries empty descriptors) and proves that:
+ *   1. The 3-slot vector is correctly shaped (FlueSlot, ConnectorSlot-empty, ChimneySlot).
+ *   2. `en15544_Alg` validates successfully.
+ *   3. `postFireboxPipeResults` produces 3 results with correct pipe-type tags.
+ *   4. The empty connector propagates upstream state (no-op) without breaking
+ *      downstream chimney computation.
+ *
+ * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
+ * policy — this suite is NOT a golden validation.
+ */
 class StrictWithoutConnectorFixtureSuite extends AnyFreeSpec with Matchers:
 
     "StrictWithoutConnectorFixture_15544" - {
@@ -45,7 +46,7 @@ class StrictWithoutConnectorFixtureSuite extends AnyFreeSpec with Matchers:
         "en15544_Alg is valid" in {
             val algV = StrictWithoutConnectorFixture_15544.en15544_Alg
             algV match
-                case Validated.Valid(_)    => succeed
+                case Validated.Valid(_)     => succeed
                 case Validated.Invalid(nel) =>
                     fail(s"en15544_Alg failed: ${nel.toList.mkString("; ")}")
         }
@@ -53,10 +54,10 @@ class StrictWithoutConnectorFixtureSuite extends AnyFreeSpec with Matchers:
         "produces a 3-tuple postFireboxPipeResults (flue, connector, chimney)" in {
             val algV = StrictWithoutConnectorFixture_15544.en15544_Alg
             algV match
-                case Validated.Valid(app) =>
+                case Validated.Valid(app)   =>
                     val pfbV = app.atDraftMin_LoadNominal.postFireboxPipeResults
                     pfbV match
-                        case Validated.Valid(vec) =>
+                        case Validated.Valid(vec)   =>
                             vec.size shouldBe 3
                             vec.map(_._1) shouldBe Vector(FluePipeT, ConnectorPipeT, ChimneyPipeT)
                         case Validated.Invalid(nel) =>
@@ -68,15 +69,15 @@ class StrictWithoutConnectorFixtureSuite extends AnyFreeSpec with Matchers:
         "connector result propagates upstream state (no-op semantics)" in {
             val algV = StrictWithoutConnectorFixture_15544.en15544_Alg
             algV match
-                case Validated.Valid(app) =>
+                case Validated.Valid(app)   =>
                     val pfbV = app.atDraftMin_LoadNominal.postFireboxPipeResults
                     pfbV match
-                        case Validated.Valid(vec) =>
+                        case Validated.Valid(vec)   =>
                             // Connector result should exist and be tagged ConnectorPipeT
                             val (connType, connResult) = vec(1)
                             connType shouldBe ConnectorPipeT
                             // Chimney should also succeed (it receives propagated state from connector)
-                            val (chimType, _) = vec(2)
+                            val (chimType, _         ) = vec(2)
                             chimType shouldBe ChimneyPipeT
                         case Validated.Invalid(nel) =>
                             fail(s"postFireboxPipeResults failed: ${nel.toList.mkString("; ")}")

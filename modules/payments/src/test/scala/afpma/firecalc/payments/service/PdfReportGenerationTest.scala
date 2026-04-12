@@ -24,69 +24,69 @@ import utest.*
 
 object PdfReportGenerationTest extends TestSuite {
 
-  val tests = Tests {
+    val tests = Tests {
 
-    test("generate PDF from FileDescriptionWithContent") {
-      // Create sample customer language
-      given Locale = Locales.fr // Using French locale as in the YAML project
+        test("generate PDF from FileDescriptionWithContent") {
+            // Create sample customer language
+            given Locale = Locales.fr // Using French locale as in the YAML project
 
-      IO.blocking {
-        // Generate base64 content from ExampleProject_15544
-        val base64Content = GenerateExampleProjectFixture.generateBase64Content()
+            IO.blocking {
+                // Generate base64 content from ExampleProject_15544
+                val base64Content = GenerateExampleProjectFixture.generateBase64Content()
 
-        // Create FileDescriptionWithContent with base64 content
-        val fileDesc = FileDescriptionWithContent(
-          filename = s"test-project${FIRECALC_FILE_EXTENSION}",
-          mimeType = "application/yaml",
-          content = base64Content
-        )
+                // Create FileDescriptionWithContent with base64 content
+                val fileDesc = FileDescriptionWithContent(
+                    filename = s"test-project${FIRECALC_FILE_EXTENSION}",
+                    mimeType = "application/yaml",
+                    content  = base64Content
+                )
 
-        // Convert to file (this decodes base64 and creates temp file)
-        fileDesc.toFile match {
-          case Right(tempFile) =>
-            try {
-              // Read the decoded content
-              val yamlContent = Source.fromFile(tempFile).mkString
+                // Convert to file (this decodes base64 and creates temp file)
+                fileDesc.toFile match {
+                    case Right(tempFile) =>
+                        try {
+                            // Read the decoded content
+                            val yamlContent = Source.fromFile(tempFile).mkString
 
-              // Initialize report factory
-              val reportFactory = FireCalcReportFactory_15544_Strict.init()
+                            // Initialize report factory
+                            val reportFactory = FireCalcReportFactory_15544_Strict.init()
 
-              // Load YAML string and verify success
-              reportFactory.loadYAMLString(yamlContent) match
-                case Left(error) =>
-                  throw new RuntimeException(s"Failed to load YAML: $error")
+                            // Load YAML string and verify success
+                            reportFactory.loadYAMLString(yamlContent) match
+                                case Left(error) =>
+                                    throw new RuntimeException(s"Failed to load YAML: $error")
 
-                case Right(loadedFactory) =>
-                  // Generate PDF and verify success (using isDraft = true for tests)
-                  loadedFactory.makePDF(isDraft = true) match
+                                case Right(loadedFactory) =>
+                                    // Generate PDF and verify success (using isDraft = true for tests)
+                                    loadedFactory.makePDF(isDraft = true) match
+                                        case Left(error) =>
+                                            throw new RuntimeException(s"Failed to generate PDF: $error")
+
+                                        case Right(pdfFile) =>
+                                            // Verify PDF file exists and has content
+                                            assert(pdfFile.exists()    )
+                                            assert(pdfFile.length() > 0)
+
+                                            val pdfPath = pdfFile.getAbsolutePath
+
+                                            // Test successful - PDF generation works
+                                            assert(pdfPath.endsWith(".pdf"))
+
+                                            // Clean up generated PDF file (not the temp file, as it's auto-cleaned)
+                                            if (pdfFile.exists()) {
+                                                pdfFile.delete()
+                                            }
+                        } finally {
+                            // Clean up temp file (though it should auto-delete)
+                            if (tempFile.exists()) {
+                                tempFile.delete()
+                            }
+                        }
+
                     case Left(error) =>
-                      throw new RuntimeException(s"Failed to generate PDF: $error")
-
-                    case Right(pdfFile) =>
-                      // Verify PDF file exists and has content
-                      assert(pdfFile.exists())
-                      assert(pdfFile.length() > 0)
-
-                      val pdfPath = pdfFile.getAbsolutePath
-
-                      // Test successful - PDF generation works
-                      assert(pdfPath.endsWith(".pdf"))
-
-                      // Clean up generated PDF file (not the temp file, as it's auto-cleaned)
-                      if (pdfFile.exists()) {
-                        pdfFile.delete()
-                      }
-            } finally {
-              // Clean up temp file (though it should auto-delete)
-              if (tempFile.exists()) {
-                tempFile.delete()
-              }
-            }
-
-          case Left(error) =>
-            throw new RuntimeException(s"Failed to convert file: $error")
+                        throw new RuntimeException(s"Failed to convert file: $error")
+                }
+            }.unsafeRunSync()
         }
-      }.unsafeRunSync()
     }
-  }
 }

@@ -30,7 +30,7 @@ class AuthenticationServiceImpl[F[_]: Async](
 )                                           (implicit logger: Logger[F])
     extends AuthenticationService[F]:
 
-    private val algorithm   = JwtAlgorithm.HS256
+    private val algorithm    = JwtAlgorithm.HS256
     private val secureRandom = new SecureRandom()
 
     def generateAuthCode(): F[String] =
@@ -56,17 +56,19 @@ class AuthenticationServiceImpl[F[_]: Async](
         for
             _       <- logger.debug("Validating JWT token")
             decoded <- Async[F].delay(JwtCirce.decode(token, jwtConfig.secret, Seq(algorithm)).toOption)
-            result <- decoded match
+            result  <- decoded match
                 case Some(claim) if claim.issuer != Some(jwtConfig.issuer) =>
-                    logger.debug(
-                        s"JWT rejected: issuer mismatch (expected '${jwtConfig.issuer}', got '${claim.issuer.getOrElse("<none>")}')"
-                    ).as(None)
-                case Some(claim) =>
+                    logger
+                        .debug(
+                            s"JWT rejected: issuer mismatch (expected '${jwtConfig.issuer}', got '${claim.issuer.getOrElse("<none>")}')"
+                        )
+                        .as(None)
+                case Some(claim)                                           =>
                     Async[F].delay {
                         for
                             sub  <- claim.subject
                             uuid <- Try(UUID.fromString(sub)).toOption
                         yield CustomerId(uuid)
                     }
-                case None => Async[F].pure(None)
+                case None                                                  => Async[F].pure(None)
         yield result

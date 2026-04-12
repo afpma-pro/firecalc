@@ -15,27 +15,28 @@ import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
 import org.scalajs.dom.HTMLDialogElement
 
-/** Simple click-to-dismiss info modal dialog.
-  *
-  * Call [[show]] with a message to display. The user clicks "Close" or the
-  * backdrop to dismiss.
-  */
+/**
+ * Simple click-to-dismiss info modal dialog.
+ *
+ * Call [[show]] with a message to display. The user clicks "Close" or the
+ * backdrop to dismiss.
+ */
 case class InfoDialog()(using Locale) extends Component:
 
     private val messageVar: Var[String] = Var("")
 
     def show(message: String): Unit =
-        messageVar.set(message)
-        dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
+        messageVar.set                                          (message)
+        dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(       )
 
     private def close(): Unit =
         dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
 
     private lazy val dialogNode: HtmlElement = dialogTag(
         cls := "modal",
-        div(
-            cls := "modal-box",
-            p(cls := "py-2", child.text <-- messageVar.signal),
+        div    (
+            cls    := "modal-box",
+            p  (cls := "py-2", child.text <-- messageVar.signal),
             div(
                 cls := "modal-action",
                 button(
@@ -45,7 +46,7 @@ case class InfoDialog()(using Locale) extends Component:
                 )
             )
         ),
-        form(
+        form   (
             method := "dialog",
             cls    := "modal-backdrop",
             button("close")

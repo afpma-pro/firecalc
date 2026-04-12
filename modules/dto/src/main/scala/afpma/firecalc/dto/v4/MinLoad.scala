@@ -43,9 +43,7 @@ object MinLoad:
         Show.show(_ => I18N.not_defined)
 
     given show_HalfOfMaxLoad: Locale => Show[HalfOfMaxLoad] =
-        Show.show(x =>
-            I18N.min_load.defined_as_half_of_nominal(x.showP)
-        )
+        Show.show(x => I18N.min_load.defined_as_half_of_nominal(x.showP))
 
     given show_FromTypeTest: Locale => Show[FromTypeTest] =
         Show.show(x => I18N.min_load.defined_when_tested(x.min_load.showP))

@@ -106,6 +106,6 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
         FormDerivation.derived[StoveParams].autoOverwriteFieldNames
 
     given FormRenderer = DaisyUIVertical
-    lazy val _form = stove_params_var.as_HtmlElement
+    lazy val _form     = stove_params_var.as_HtmlElement
 
 end StoveParamsUI

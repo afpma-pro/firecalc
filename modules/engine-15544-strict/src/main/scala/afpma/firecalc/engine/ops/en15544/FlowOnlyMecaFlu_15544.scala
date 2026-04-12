@@ -168,7 +168,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
     private given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = en15544.dynFrict13384Factory
 
     val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using gip.pipeEl.typ)
-    
+
     val gas    = gip.gas
     val curr   = gip.pipeEl
     val params = gip.params

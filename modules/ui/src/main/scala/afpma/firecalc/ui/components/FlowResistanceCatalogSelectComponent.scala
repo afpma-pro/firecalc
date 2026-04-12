@@ -23,26 +23,27 @@ import io.taig.babel.Locale
 case class FlowResistanceCatalogSelectComponent(
     entriesSignal: Signal[Seq[FlowResistanceCatalogEntry]],
     onSelect     : Observer[FlowResistanceCatalogEntry]
-)(using Locale, DisplayUnits) extends Component:
+)                                              (using Locale, DisplayUnits)
+    extends Component:
 
     private val cat = summon[CatalogCategory[FlowResistanceCatalogEntry]]
 
     private val dialog = CatalogSelectDialog(
-        entriesSignal = entriesSignal,
-        entryKey      = _.name,
-        onSelect      = onSelect,
-        datalistId    = "flow-resistance-catalog-datalist",
+        entriesSignal  = entriesSignal,
+        entryKey       = _.name,
+        onSelect       = onSelect,
+        datalistId     = "flow-resistance-catalog-datalist",
         previewContent = Some(selectedSig =>
             CatalogSearchWidget.imagePreview(
                 selectedSig.combineWith(CatalogImageStore.imagesVar.signal).map {
                     case (Some(entry), imgs) => imgs.get(s"${cat.yamlKey}:${cat.uniqueKey(entry)}")
-                    case _                   => None
+                    case _ => None
                 }
             )
         )
     )
 
-    def open(): Unit      = dialog.open()
+    def open(): Unit = dialog.open()
     val node: HtmlElement = dialog.node
 
 end FlowResistanceCatalogSelectComponent

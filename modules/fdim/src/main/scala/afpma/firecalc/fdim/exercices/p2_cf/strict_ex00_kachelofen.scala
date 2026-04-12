@@ -35,102 +35,111 @@ object strict_ex00_kachelofen
     val exercice_name: String = "exercices // p2_cf // ex00_kachelofen"
 
     val localConditions = LocalConditions(
-        altitude                    = 128.meters,
-        coastal_region              = false,
-        chimney_termination    = ChimneyTermination.Classic,
+        altitude            = 128.meters,
+        coastal_region      = false,
+        chimney_termination = ChimneyTermination.Classic
     )
 
     val stoveParams = StoveParams.fromNominalHeatOutput(
-        nominal_heat_output   = 3.76.kilowatts,
-        heating_cycle         = 12.hours,
-        min_efficiency        = 78.percent,
-        facing_type           = FacingType.WithoutAirGap
+        nominal_heat_output = 3.76.kilowatts,
+        heating_cycle       = 12.hours,
+        min_efficiency      = 78.percent,
+        facing_type         = FacingType.WithoutAirGap
     )
 
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        h11_profondeurDuFoyer                               = 44.cm,
-        h12_largeurDuFoyer                                  = 42.cm,
-        h13_hauteurDuFoyer                                  = 78.cm,
-        h66_coeffPerteDeChargePorte                         = 0.3.unitless,
-        h67_sectionCumuleeEntreeAirPorte                    = 170.cm2,
-        h71_largeurVitre                                    = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        h72_hauteurVitre                                    = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        ash_pit_height                                      = 5.cm,
+        h11_profondeurDuFoyer            = 44.cm,
+        h12_largeurDuFoyer               = 42.cm,
+        h13_hauteurDuFoyer               = 78.cm,
+        h66_coeffPerteDeChargePorte      = 0.3.unitless,
+        h67_sectionCumuleeEntreeAirPorte = 170.cm2,
+        h71_largeurVitre                 = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        h72_hauteurVitre                 = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height                   = 5.cm
     )
 
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
-            roughness(3.mm),
-
+            setInitialDirection (azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
+            roughness           (3.mm                                                                          ),
             innerShape(rectangle(25.1.cm, 23.cm)),
-            addSectionHorizontal("sortie foyer", 32.cm),
-
-            addSharpAngle_90deg("virage avant descente", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)), // Down
+            addSectionHorizontal("sortie foyer", 32.cm                                                         ),
+            addSharpAngle_90deg (
+                "virage avant descente",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+            ), // Down
 
             innerShape(rectangle(25.1.cm, 22.cm)),
-            addSectionVertical("descente", -81.cm),
-
-            addSharpAngle_90deg("virage avant avant banc", AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)), // Left
+            addSectionVertical  ("descente", -81.cm                                                            ),
+            addSharpAngle_90deg (
+                "virage avant avant banc",
+                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+            ), // Left
 
             innerShape(rectangle(22.cm, 24.cm)),
-            addSectionHorizontal("avant banc", 1.79.meters),
-
-            addSharpAngle_90deg("virage avant bout du banc", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)),  // Rear
+            addSectionHorizontal("avant banc", 1.79.meters                                                     ),
+            addSharpAngle_90deg (
+                "virage avant bout du banc",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+            ), // Rear
 
             innerShape(rectangle(20.cm, 24.cm)),
-            addSectionHorizontal("bout du banc", 44.cm),
-
-            addSharpAngle_90deg("virage avant arrière banc", AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)), // Right
+            addSectionHorizontal("bout du banc", 44.cm                                                         ),
+            addSharpAngle_90deg (
+                "virage avant arrière banc",
+                AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+            ), // Right
 
             innerShape(rectangle(19.cm, 24.cm)),
-            addSectionHorizontal("arrière banc", 2.07.meters),
-
-            addSharpAngle_90deg("virage avant vers remontée", AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)), // Front
+            addSectionHorizontal("arrière banc", 2.07.meters                                                   ),
+            addSharpAngle_90deg (
+                "virage avant vers remontée",
+                AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+            ), // Front
 
             innerShape(rectangle(21.cm, 24.cm)),
-            addSectionHorizontal("vers remontée", 44.cm),
-
-            addSharpAngle_90deg("virage avant remontée", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSectionHorizontal("vers remontée", 44.cm                                                        ),
+            addSharpAngle_90deg (
+                "virage avant remontée",
+                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+            ), // Up
 
             innerShape(rectangle(21.cm, 22.cm)),
-            addSectionVertical("remontée", 98.cm),
+            addSectionVertical  ("remontée", 98.cm                                                             )
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
-            roughness(Material_13384.WeldedSteel()),
-            innerShape(circle(200.mm)),
-            layer(
-                e = 0.1.mm, // ???
+        Seq (
+            setInitialDirection (azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(200.mm)              ),
+            layer               (
+                e  = 0.1.mm, // ???
                 tr = SquareMeterKelvinPerWatt(0.001) // TOFIX:
             ),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("buse", 5.cm)
+            pipeLocation        (PipeLocation.HeatedArea                                               ),
+            addSectionVertical  ("buse", 5.cm                                                          )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        Seq(
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
-            roughness(Material_13384.WeldedSteel()),
-            innerShape(circle(200.mm)),
-            layer(
-                e = 2.5.cm,
+        Seq (
+            setInitialDirection (azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(200.mm)              ),
+            layer               (
+                e  = 2.5.cm,
                 tr = SquareMeterKelvinPerWatt(0.440)
             ),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("intérieur", 2.4.meters),
-
-            pipeLocation(PipeLocation.OutsideOrExterior),
-            addSectionVertical("extérieur", 80.cm),
-
-            addFlowResistance("element terminal", 0.6.unitless: ζ)
+            pipeLocation        (PipeLocation.HeatedArea                                               ),
+            addSectionVertical  ("intérieur", 2.4.meters                                               ),
+            pipeLocation        (PipeLocation.OutsideOrExterior                                        ),
+            addSectionVertical  ("extérieur", 80.cm                                                    ),
+            addFlowResistance   ("element terminal", 0.6.unitless: ζ)
         )
 
 end strict_ex00_kachelofen

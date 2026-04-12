@@ -28,10 +28,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
  * The generator only produces topologies that satisfy these rules, so all
  * generated instances are valid by construction.
  */
-class RoundTripV6Suite
-    extends AnyFreeSpec
-    with Matchers
-    with ScalaCheckPropertyChecks:
+class RoundTripV6Suite extends AnyFreeSpec with Matchers with ScalaCheckPropertyChecks:
 
     private val generators = new FireCalcYAML_V6_Generators {}
 
@@ -64,8 +61,8 @@ class RoundTripV6Suite
                 encoded.isSuccess.shouldBe(true)
 
                 val decoded = FireCalcYAML_V6.decodeFromYaml(encoded.get)
-                decoded.isSuccess.shouldBe(true)
-                decoded.get.shouldBe(original)
+                decoded.isSuccess.shouldBe(true    )
+                decoded.get.shouldBe      (original)
             }
 
         "V6 round-trip: N=2 (flue|connector then chimney)" in
@@ -79,8 +76,8 @@ class RoundTripV6Suite
                 encoded.isSuccess.shouldBe(true)
 
                 val decoded = FireCalcYAML_V6.decodeFromYaml(encoded.get)
-                decoded.isSuccess.shouldBe(true)
-                decoded.get.shouldBe(original)
+                decoded.isSuccess.shouldBe(true    )
+                decoded.get.shouldBe      (original)
             }
 
         "V6 round-trip: N=4 through N=8 (extended flue regions)" in {
@@ -95,8 +92,8 @@ class RoundTripV6Suite
                     encoded.isSuccess.shouldBe(true)
 
                     val decoded = FireCalcYAML_V6.decodeFromYaml(encoded.get)
-                    decoded.isSuccess.shouldBe(true)
-                    decoded.get.shouldBe(original)
+                    decoded.isSuccess.shouldBe(true    )
+                    decoded.get.shouldBe      (original)
                 }
         }
     }

@@ -41,7 +41,7 @@ final case class EquilibriumIndicator()(using Locale, DisplayUnits) extends Comp
             pc_sig.mapAndFoldVNelE(
                 pr =>
                     if pr.isInValidRange then Some(IndicatorConfig.green)
-                    else                      Some(IndicatorConfig.rose),
+                    else Some                     (IndicatorConfig.rose ),
                 None
             )
 

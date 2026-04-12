@@ -28,16 +28,16 @@ trait SetFlowOnlyPipeProp_13384_V1_Generators
     // SetMaterial
     def genSetMaterial_FlowOnly_V1: Gen[SetMaterial] =
         Gen.oneOf(
-            SetMaterial(Material_13384_V1.WeldedSteel),
-            SetMaterial(Material_13384_V1.Glass),
-            SetMaterial(Material_13384_V1.Plastic),
-            SetMaterial(Material_13384_V1.Aluminium),
-            SetMaterial(Material_13384_V1.ClayFlueLiners),
-            SetMaterial(Material_13384_V1.Bricks),
-            SetMaterial(Material_13384_V1.SolderedMetal),
-            SetMaterial(Material_13384_V1.Concrete),
-            SetMaterial(Material_13384_V1.Fibrociment),
-            SetMaterial(Material_13384_V1.Masonry),
+            SetMaterial(Material_13384_V1.WeldedSteel    ),
+            SetMaterial(Material_13384_V1.Glass          ),
+            SetMaterial(Material_13384_V1.Plastic        ),
+            SetMaterial(Material_13384_V1.Aluminium      ),
+            SetMaterial(Material_13384_V1.ClayFlueLiners ),
+            SetMaterial(Material_13384_V1.Bricks         ),
+            SetMaterial(Material_13384_V1.SolderedMetal  ),
+            SetMaterial(Material_13384_V1.Concrete       ),
+            SetMaterial(Material_13384_V1.Fibrociment    ),
+            SetMaterial(Material_13384_V1.Masonry        ),
             SetMaterial(Material_13384_V1.CorrugatedMetal)
         )
 
@@ -59,22 +59,22 @@ trait SetFlowOnlyPipeProp_13384_V1_Generators
         for
             // Initial SetProps (shape, material, roughness)
             innerShape <- genSetInnerShape_FlowOnly_V1
-            material <- genSetMaterial_FlowOnly_V1
-            roughness <- genSetRoughness_FlowOnly_V1
-            
+            material   <- genSetMaterial_FlowOnly_V1
+            roughness  <- genSetRoughness_FlowOnly_V1
+
             // Optional number of flows
             maybeFlows <- Gen.option(genSetNumberOfFlows_FlowOnly_V1)
-            
+
             // Follow with AddElements (sections and direction changes)
             nElements <- Gen.choose(2, 5)
-            elements <- Gen.listOfN(nElements, genAddFlowOnlyPipeElement_13384)
+            elements  <- Gen.listOfN(nElements, genAddFlowOnlyPipeElement_13384)
         yield
             val setProps = List[FlowOnlyPipeDescr_13384_V1](
                 innerShape,
                 material,
                 roughness
             ) ++ maybeFlows.toList
-            
+
             setProps ++ elements
 
 end SetFlowOnlyPipeProp_13384_V1_Generators

@@ -23,7 +23,7 @@ import afpma.firecalc.engine.models.gtypedefs.*
 object ShortSectionAlgFactory:
 
     def make(using
-        en15544: afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg,
+        en15544        : afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg,
         dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
     ): ShortSectionAlg = new ShortSectionAlg:
 
@@ -35,7 +35,7 @@ object ShortSectionAlgFactory:
                     case None    => (0.0.unitless: ζ)
                     case Some(_) => ζα2_prev
 
-            val dc02  = DirectionChange.AngleVifDe0A180(
+            val dc02        = DirectionChange.AngleVifDe0A180(
                 o_dc12 match
                     case None       =>
                         // dc12 is not present or not considered so we assume α2 is zero
@@ -45,14 +45,14 @@ object ShortSectionAlgFactory:
                 angleN2 = None
             )
             val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
-            val ζα3_v = flowOnlyDFC.whenRegularFor(dc02)
-            val α1    = dc01.angleN1
-            val α2    =
+            val ζα3_v       = flowOnlyDFC.whenRegularFor(dc02)
+            val α1          = dc01.angleN1
+            val α2          =
                 o_dc12 match
                     case None       => 0.0.degrees // dc12 is not present or not considered so we assume α2 is zero
                     case Some(dc12) => dc12.angleN1
-            val lz    = s1.length
-            val dh    = s1.geometry.dh
+            val lz          = s1.length
+            val dh          = s1.geometry.dh
             // require(lz < dh, "TOFIX: not a straight section (dev error)") // TOFIX (require this should work on full test suite)
 
             (ζα3_v).map: ζα3 =>

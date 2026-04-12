@@ -24,14 +24,14 @@ trait StoveParams_Generators extends PrimitiveGenerators:
     def genStoveParams: Gen[StoveParams] =
         for
             sizingMethod <- genSizingMethod
-            result <-
+            result       <-
                 sizingMethod match
-                    case StoveParams.SizingMethod.MaxLoad =>
+                    case StoveParams.SizingMethod.MaxLoad           =>
                         for
-                            maxLoad <- genMaxLoad
+                            maxLoad      <- genMaxLoad
                             heatingCycle <- genHeatingCycle
-                            efficiency <- genEfficiency
-                            facingType <- genFacingType
+                            efficiency   <- genEfficiency
+                            facingType   <- genFacingType
                         yield StoveParams.fromMaxLoadAndStoragePeriod(
                             maxLoad,
                             heatingCycle,
@@ -41,9 +41,9 @@ trait StoveParams_Generators extends PrimitiveGenerators:
                     case StoveParams.SizingMethod.NominalHeatOutput =>
                         for
                             nominalOutput <- Gen.choose(3.0, 15.0).map(_.kW)
-                            heatingCycle <- genHeatingCycle
-                            efficiency <- genEfficiency
-                            facingType <- genFacingType
+                            heatingCycle  <- genHeatingCycle
+                            efficiency    <- genEfficiency
+                            facingType    <- genFacingType
                         yield StoveParams.fromNominalHeatOutput(
                             nominalOutput,
                             heatingCycle,

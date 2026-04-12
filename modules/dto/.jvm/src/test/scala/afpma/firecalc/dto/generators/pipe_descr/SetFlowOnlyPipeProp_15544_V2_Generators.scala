@@ -31,15 +31,15 @@ trait SetFlowOnlyPipeProp_15544_V2_Generators
     def genSetMaterial_FlowOnly_15544_V2: Gen[SetMaterial] =
         Gen.oneOf(
             Gen.const(SetMaterial(Material_15544_V2.TuyauxEnChamotte())),
-            Gen.const(SetMaterial(Material_15544_V2.BlocsDeChamotte()))
+            Gen.const(SetMaterial(Material_15544_V2.BlocsDeChamotte() ))
         )
 
     // Helper: SetMaterial with optional custom roughness override
     override def genMaterial_15544_V2_WithCustomRoughness: Gen[Material_15544_V2] =
         for
-            mat <- Gen.oneOf(
+            mat       <- Gen.oneOf(
                 Material_15544_V2.TuyauxEnChamotte(),
-                Material_15544_V2.BlocsDeChamotte()
+                Material_15544_V2.BlocsDeChamotte ()
             )
             roughness <- genRoughness
             useCustom <- Gen.oneOf(true, false)
@@ -63,9 +63,9 @@ trait SetFlowOnlyPipeProp_15544_V2_Generators
         for
             // Initial SetProps (shape, material, roughness)
             innerShape <- genSetInnerShape_FlowOnly_15544_V2
-            material <- genSetMaterial_FlowOnly_15544_V2
-            roughness <- genSetRoughness_FlowOnly_15544_V2
-            
+            material   <- genSetMaterial_FlowOnly_15544_V2
+            roughness  <- genSetRoughness_FlowOnly_15544_V2
+
             // Optional number of flows
             maybeFlows <- Gen.option(genSetNumberOfFlows_FlowOnly_15544_V2)
         yield
@@ -74,7 +74,7 @@ trait SetFlowOnlyPipeProp_15544_V2_Generators
                 material,
                 roughness
             ) ++ maybeFlows.toList
-            
+
             setProps
 
 end SetFlowOnlyPipeProp_15544_V2_Generators

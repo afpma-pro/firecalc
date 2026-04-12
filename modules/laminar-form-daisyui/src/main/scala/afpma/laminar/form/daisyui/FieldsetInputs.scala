@@ -83,7 +83,7 @@ trait FieldsetInputs:
         dVar         : Var[Option[Double]],
         placeholder  : String          = DEFAULT_PLACEHOLDER,
         optionalField: OptionalField   = OptionalField.No,
-        disabled     : Signal[Boolean] = DISABLED_SIG,
+        disabled     : Signal[Boolean] = DISABLED_SIG
     ) extends FieldsetLabelAndInput[Double](labelOpt, optionalField = OptionalField.No):
         def inputNode: L.HtmlElement =
             NumberInputOnly(dVar, placeholder, optionalField, disabled = disabled)
@@ -181,6 +181,7 @@ trait FieldsetInputs:
                 labelAndInputSeq.map(n => div(cls := "flex-auto", n))
             )
         )
+
         /** Alternate entry point used by FormRenderer implementations. */
         def amend(content: Seq[HtmlElement]): HtmlElement =
             fieldSet(

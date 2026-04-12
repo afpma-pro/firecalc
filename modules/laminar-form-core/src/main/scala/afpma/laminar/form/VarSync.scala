@@ -11,11 +11,12 @@ import cats.data.Validated.Valid
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
-/** Standalone Var synchronization utilities.
-  *
-  * These were previously methods on `LaminarForm` companion object.
-  * Now they are free functions in the core module.
-  */
+/**
+ * Standalone Var synchronization utilities.
+ *
+ * These were previously methods on `LaminarForm` companion object.
+ * Now they are free functions in the core module.
+ */
 object VarSync:
 
     /** Mono-directional sync: Var[A] -> Var[Option[A]], validated before propagation. */
@@ -24,12 +25,12 @@ object VarSync:
     )(using ValidateVar[A]): (Var[Option[A]], Binder[HtmlElement]) =
         val voa: Var[Option[A]] = Var(Some(va.now()))
 
-        val obs = Observer[Option[A]] {
+        val obs    = Observer[Option[A]] {
             case Some(a) =>
                 ValidateVar[A].validate(a) match
                     case Valid(())  => va.set(a)
                     case Invalid(_) => ()
-            case None => ()
+            case None    => ()
         }
         val binder = voa.signal --> obs
         (voa, binder)
@@ -42,8 +43,8 @@ object VarSync:
 
     /** Bi-directional asynchronous: Var[A] <-> Var[Option[A]] with debounce. */
     def makeOptionVarFromVar_BiDirAsync[A](
-        va                 : Var[A],
-        writeDefaultDelayMs: Int = LAMINAR_WRITE_DEFAULT_VALUE_WHEN_EMPTY_DELAY_MS
+        va                                  : Var[A],
+        writeDefaultDelayMs                 : Int = LAMINAR_WRITE_DEFAULT_VALUE_WHEN_EMPTY_DELAY_MS
     )(using da: Defaultable[A]): (Var[Option[A]], Seq[Binder[HtmlElement]]) =
         makeOptionVarFromVar_BiDirAsync_Tuple1(
             va                  = va,
@@ -63,8 +64,7 @@ object VarSync:
         val a_init = va.now()
         val vob: Var[Option[B]] = Var(Some(f(a_init)))
 
-        val vobDebounced = vob.signal.distinct
-            .changes
+        val vobDebounced = vob.signal.distinct.changes
             .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
 
         val maybeWriteDefaultAfterDelay = vobDebounced

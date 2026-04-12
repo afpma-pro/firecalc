@@ -13,26 +13,24 @@ import afpma.firecalc.engine.cas_types.en13384.v20241001.CasType_13384_C16
 
 import cats.syntax.all.*
 
-class EN13384_GoldenValidation_Suite
-    extends CasTypesRunner_13384_WithThermalAirIntake
-    with GoldenFileSupport:
+class EN13384_GoldenValidation_Suite extends CasTypesRunner_13384_WithThermalAirIntake with GoldenFileSupport:
 
     private def validateCasType(
-        casType: ProjectDescr_Alg,
+        casType       : ProjectDescr_Alg,
         expectedValues: CasType13384_Result,
-        currentFile: String,
-        goldenPath: String,
-        label: String,
+        currentFile   : String,
+        goldenPath    : String,
+        label         : String
     ): Unit =
-        val runOutput = run_cas_type_13384_asString(casType).fold(
+        val runOutput     = run_cas_type_13384_asString(casType).fold(
             nel => fail(nel.toList.map(_.show).mkString("\n")),
-            identity,
+            identity
         )
         val compareOutput = compute_and_show_results_asString(casType, expectedValues).fold(
             nel => fail(nel.toList.map(_.show).mkString("\n")),
-            identity,
+            identity
         )
-        val fullOutput = runOutput + compareOutput
+        val fullOutput    = runOutput + compareOutput
 
         writeCurrentOutput(currentFile, fullOutput)
 
@@ -45,7 +43,7 @@ class EN13384_GoldenValidation_Suite
             CasTypes13384_ExpectedValues.C2,
             "cas_types_13384/current/C2.afpma.txt",
             "/validation/cas_types_13384/C2.afpma.txt",
-            "EN13384 C2",
+            "EN13384 C2"
         )
     }
 
@@ -55,6 +53,6 @@ class EN13384_GoldenValidation_Suite
             CasTypes13384_ExpectedValues.C16,
             "cas_types_13384/current/C16.afpma.txt",
             "/validation/cas_types_13384/C16.afpma.txt",
-            "EN13384 C16",
+            "EN13384 C16"
         )
     }

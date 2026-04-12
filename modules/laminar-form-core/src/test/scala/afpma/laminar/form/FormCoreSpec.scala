@@ -12,7 +12,7 @@ import cats.data.NonEmptyList
 
 // Test sealed trait for Defaultable derivation — must be top-level for Scala.js magnolia
 sealed trait TestColor
-case class TestRed(shade: Int) extends TestColor
+case class TestRed(shade: Int)  extends TestColor
 case class TestBlue(shade: Int) extends TestColor
 
 object FormCoreSpec extends TestSuite:
@@ -21,7 +21,7 @@ object FormCoreSpec extends TestSuite:
     // Test FormMessages instance (needed by some ValidateVar methods)
     // =========================================================================
     given FormMessages with
-        def valueIsUndefined: String = "Value is undefined"
+        def valueIsUndefined : String = "Value is undefined"
         def notImplementedYet: String = "Not implemented yet"
 
     val tests = Tests {
@@ -33,13 +33,13 @@ object FormCoreSpec extends TestSuite:
         test("Defaultable") {
 
             test("primitive defaults") {
-                assert(Defaultable.summon[Boolean].default == false)
-                assert(Defaultable.summon[Int].default == 0)
-                assert(Defaultable.summon[Double].default == 0.0)
-                assert(Defaultable.summon[Float].default == 0.0f)
+                assert(Defaultable.summon[Boolean].default == false           )
+                assert(Defaultable.summon[Int].default == 0                   )
+                assert(Defaultable.summon[Double].default == 0.0              )
+                assert(Defaultable.summon[Float].default == 0.0f              )
                 assert(Defaultable.summon[BigDecimal].default == BigDecimal(0))
-                assert(Defaultable.summon[BigInt].default == BigInt(0))
-                assert(Defaultable.summon[String].default == "")
+                assert(Defaultable.summon[BigInt].default == BigInt(0)        )
+                assert(Defaultable.summon[String].default == ""               )
             }
 
             test("Defaultable.apply creates custom default") {
@@ -48,13 +48,13 @@ object FormCoreSpec extends TestSuite:
             }
 
             test("map transforms the default value") {
-                val d = Defaultable(10)
+                val d      = Defaultable(10)
                 val mapped = d.map(_ * 2)
                 assert(mapped.default == 20)
             }
 
             test("map composes") {
-                val d = Defaultable("hello")
+                val d      = Defaultable("hello")
                 val mapped = d.map(_.length).map(_ + 1)
                 assert(mapped.default == 6)
             }
@@ -76,10 +76,10 @@ object FormCoreSpec extends TestSuite:
 
             test("selectFirstSubtypeAsDefaultableOrThrow picks first") {
                 val subs = IArray(
-                    Defaultable("first"),
+                    Defaultable("first" ),
                     Defaultable("second")
                 )
-                val d = Defaultable.selectFirstSubtypeAsDefaultableOrThrow[String]("Test")(subs)
+                val d    = Defaultable.selectFirstSubtypeAsDefaultableOrThrow[String]("Test")(subs)
                 assert(d.default == "first")
             }
 
@@ -98,13 +98,13 @@ object FormCoreSpec extends TestSuite:
             }
 
             test("sealed trait auto-derivation picks a consistent subtype with default fields") {
-                val d = Defaultable.derived[TestColor]
-                val v = d.default
+                val d              = Defaultable.derived[TestColor]
+                val v              = d.default
                 // Must be a valid subtype with default inner values
                 val isValidSubtype = v == TestRed(0) || v == TestBlue(0)
-                assert(isValidSubtype)
+                assert(isValidSubtype                             )
                 // Must be deterministic — same result every time
-                assert(d.default == v)
+                assert(d.default == v                             )
                 assert(Defaultable.derived[TestColor].default == v)
             }
         }
@@ -119,7 +119,7 @@ object FormCoreSpec extends TestSuite:
                 val vv = ValidateVar.valid[Int]
                 assert(vv.validate(42).isValid)
                 assert(vv.validate(-1).isValid)
-                assert(vv.validate(0).isValid)
+                assert(vv.validate(0).isValid )
             }
 
             test("make with custom validation") {
@@ -127,14 +127,14 @@ object FormCoreSpec extends TestSuite:
                     if i > 0 then VNelString.validUnit
                     else VNelString.invalidOne("must be positive")
 
-                assert(vv.validate(5).isValid)
-                assert(vv.validate(0).isInvalid)
+                assert(vv.validate(5).isValid   )
+                assert(vv.validate(0).isInvalid )
                 assert(vv.validate(-1).isInvalid)
             }
 
             test("validWhen") {
                 val vv = ValidateVar.validWhen[Int](_ > 0)(i => s"$i is not positive")
-                assert(vv.validate(1).isValid)
+                assert(vv.validate(1).isValid  )
                 assert(vv.validate(0).isInvalid)
             }
 
@@ -146,89 +146,89 @@ object FormCoreSpec extends TestSuite:
             }
 
             test("contramap transforms input") {
-                val vv = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                val vv    = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
                 val vvStr = vv.contramap[String](_.length)
-                assert(vvStr.validate("hello").isValid)  // length 5 > 0
-                assert(vvStr.validate("").isInvalid)     // length 0
+                assert(vvStr.validate("hello").isValid) // length 5 > 0
+                assert(vvStr.validate("").isInvalid   ) // length 0
             }
 
             test("toOption_WithNoneAsValid - None is valid") {
-                val vv = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                val vv    = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
                 val vvOpt = vv.toOption_WithNoneAsValid
-                assert(vvOpt.validate(None).isValid)
-                assert(vvOpt.validate(Some(5)).isValid)
+                assert(vvOpt.validate(None).isValid      )
+                assert(vvOpt.validate(Some(5) ).isValid  )
                 assert(vvOpt.validate(Some(-1)).isInvalid)
             }
 
             test("toOption_WithNoneAsInvalid - None is invalid") {
-                val vv = ValidateVar.valid[Int]
+                val vv    = ValidateVar.valid[Int]
                 val vvOpt = vv.toOption_WithNoneAsInvalid
-                assert(vvOpt.validate(None).isInvalid)
+                assert(vvOpt.validate(None).isInvalid )
                 assert(vvOpt.validate(Some(5)).isValid)
             }
 
             test("contramapOpt transforms inner value") {
-                val vv = ValidateVar.validWhen[Option[Int]](_ match {
+                val vv    = ValidateVar.validWhen[Option[Int]](_ match {
                     case Some(i) => i > 0
                     case None    => false
                 })(_ => "invalid")
                 val vvStr = vv.contramapOpt[String](_.length)
-                assert(vvStr.validate(Some("hi")).isValid)  // Some(2) > 0
-                assert(vvStr.validate(Some("")).isInvalid)  // Some(0)
-                assert(vvStr.validate(None).isInvalid)
+                assert(vvStr.validate(Some("hi")).isValid  ) // Some(2) > 0
+                assert(vvStr.validate(Some("")  ).isInvalid) // Some(0)
+                assert(vvStr.validate(None).isInvalid      )
             }
 
             test("flatten wraps in Some") {
                 val vvOpt = ValidateVar.make[Option[Int]]:
                     case Some(i) if i > 0 => VNelString.validUnit
-                    case _ => VNelString.invalidOne("bad")
+                    case _                => VNelString.invalidOne("bad")
 
                 val vvFlat = vvOpt.flatten
-                assert(vvFlat.validate(5).isValid)    // Some(5) > 0
+                assert(vvFlat.validate(5).isValid   ) // Some(5) > 0
                 assert(vvFlat.validate(-1).isInvalid) // Some(-1)
             }
 
             test("forEither dispatches to left or right") {
-                given ValidateVar[Int] = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                given ValidateVar[Int]    = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
                 given ValidateVar[String] = ValidateVar.validWhen[String](_.nonEmpty)(_ => "empty")
 
                 val vv = ValidateVar.forEither[Int, String]
-                assert(vv.validate(Left(5)).isValid)
-                assert(vv.validate(Left(-1)).isInvalid)
-                assert(vv.validate(Right("ok")).isValid)
-                assert(vv.validate(Right("")).isInvalid)
+                assert(vv.validate(Left(5)    ).isValid  )
+                assert(vv.validate(Left(-1)   ).isInvalid)
+                assert(vv.validate(Right("ok")).isValid  )
+                assert(vv.validate(Right("")  ).isInvalid)
             }
 
             test("forList validates each element") {
                 given ValidateVar[Int] = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
-                val vv = ValidateVar.forList[Int]
-                assert(vv.validate(List(1, 2, 3)).isValid)
+                val vv                 = ValidateVar.forList[Int]
+                assert(vv.validate(List(1, 2, 3) ).isValid  )
                 assert(vv.validate(List(1, -1, 3)).isInvalid)
-                assert(vv.validate(List.empty).isValid)
+                assert(vv.validate(List.empty).isValid      )
             }
 
             test("forList error messages include index") {
-                given ValidateVar[Int] = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
-                val vv = ValidateVar.forList[Int]
-                val result = vv.validate(List(1, -1, 3))
+                given ValidateVar[Int]      = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                val vv                      = ValidateVar.forList[Int]
+                val result                  = vv.validate(List(1, -1, 3))
                 val Validated.Invalid(errs) = result: @unchecked
                 assert(errs.head.contains("[1]"))
             }
 
             test("toLeft_WithRightAsAlwaysValid") {
-                val vv = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                val vv   = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
                 val vvEi = vv.toLeft_WithRightAsAlwaysValid[String]
-                assert(vvEi.validate(Left(5)).isValid)
-                assert(vvEi.validate(Left(-1)).isInvalid)
-                assert(vvEi.validate(Right("anything")).isValid)
+                assert(vvEi.validate(Left(5)          ).isValid  )
+                assert(vvEi.validate(Left(-1)         ).isInvalid)
+                assert(vvEi.validate(Right("anything")).isValid  )
             }
 
             test("toRight_WithLeftAsAlwaysValid") {
-                val vv = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                val vv   = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
                 val vvEi = vv.toRight_WithLeftAsAlwaysValid[String]
-                assert(vvEi.validate(Right(5)).isValid)
-                assert(vvEi.validate(Right(-1)).isInvalid)
-                assert(vvEi.validate(Left("anything")).isValid)
+                assert(vvEi.validate(Right(5)        ).isValid  )
+                assert(vvEi.validate(Right(-1)       ).isInvalid)
+                assert(vvEi.validate(Left("anything")).isValid  )
             }
 
             test("validateVarValue extension method") {
@@ -253,7 +253,7 @@ object FormCoreSpec extends TestSuite:
             test("withFieldName sets name and shows it") {
                 val fc = FormConfig.default.withFieldName("Temperature")
                 assert(fc.fieldName == Some("Temperature"))
-                assert(fc.showFieldName == true)
+                assert(fc.showFieldName == true           )
             }
 
             test("shownFieldName returns name when showFieldName is true") {
@@ -273,19 +273,19 @@ object FormCoreSpec extends TestSuite:
 
             test("withoutFieldName clears name and hides") {
                 val fc = FormConfig.default.withFieldName("Temp").withoutFieldName
-                assert(fc.fieldName == None)
+                assert(fc.fieldName == None     )
                 assert(fc.showFieldName == false)
             }
 
             test("withFieldNameOpt with Some sets and shows") {
                 val fc = FormConfig.default.withFieldNameOpt(Some("X"))
                 assert(fc.fieldName == Some("X"))
-                assert(fc.showFieldName == true)
+                assert(fc.showFieldName == true )
             }
 
             test("withFieldNameOpt with None clears and hides") {
                 val fc = FormConfig.default.withFieldName("X").withFieldNameOpt(None)
-                assert(fc.fieldName == None)
+                assert(fc.fieldName == None     )
                 assert(fc.showFieldName == false)
             }
 
@@ -295,11 +295,11 @@ object FormCoreSpec extends TestSuite:
                     .withFieldNameForParam("width", "Largeur")
                 assert(fc.fieldNameForParam("height") == Some("Hauteur"))
                 assert(fc.fieldNameForParam("width") == Some("Largeur"))
-                assert(fc.fieldNameForParam("depth") == None)
+                assert(fc.fieldNameForParam("depth") == None           )
             }
 
             test("updateFieldNameWith applies function") {
-                val fc = FormConfig.default.withFieldName("old")
+                val fc      = FormConfig.default.withFieldName("old")
                 val updated = fc.updateFieldNameWith(_.map(_.toUpperCase))
                 assert(updated.fieldName == Some("OLD"))
             }
@@ -369,7 +369,7 @@ object FormCoreSpec extends TestSuite:
 
             test("invalid wraps NonEmptyList") {
                 val nel = NonEmptyList.of("e1", "e2")
-                val v = VNelString.invalid[Unit](nel)
+                val v   = VNelString.invalid[Unit](nel)
                 assert(v.isInvalid)
                 val Validated.Invalid(errs) = v: @unchecked
                 assert(errs.toList == List("e1", "e2"))
@@ -413,7 +413,7 @@ object FormCoreSpec extends TestSuite:
 
             test("basic check") {
                 val cf = ConditionalFor[Int, String](_ > 0)
-                assert(cf.check(5) == true)
+                assert(cf.check(5) == true  )
                 assert(cf.check(-1) == false)
             }
 
@@ -424,8 +424,8 @@ object FormCoreSpec extends TestSuite:
 
             test("with custom deref") {
                 val cf = ConditionalFor[Int, String](_ > 0, i => Some(i.toString))
-                assert(cf.check(5) == true)
-                assert(cf.deref(5) == Some("5"))
+                assert(cf.check(5) == true       )
+                assert(cf.deref(5) == Some("5")  )
                 assert(cf.deref(-1) == Some("-1"))
             }
         }

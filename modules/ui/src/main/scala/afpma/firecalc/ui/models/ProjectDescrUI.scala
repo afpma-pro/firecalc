@@ -43,7 +43,7 @@ case class ProjectDescrUI()(using Locale, DisplayUnits):
 
     private val vertical_form = new VerticalFormCommonInstances()
     import vertical_form.given
-    given FormRenderer = DaisyUIVertical
+    given FormRenderer        = DaisyUIVertical
 
     lazy val form_customer        = customer_var.as_HtmlElement
     lazy val form_project_descr   = project_descr_var.as_HtmlElement

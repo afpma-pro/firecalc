@@ -10,7 +10,6 @@ import org.scalatest.freespec.AnyFreeSpec
 import afpma.firecalc.engine.ConfigurationRunners
 import afpma.firecalc.fdim.exercices.en15544_mce.p1_decouverte.mce_ex01_colonne_ascendante
 
-
 class mce_p1_decouverte_Suite extends ConfigurationRunners {
 
     type VNel[A] = Validated[NonEmptyList[String], A]

@@ -337,7 +337,10 @@ object std:
                     pressureLossTable.availableSbValues
 
                 /** Interpolated pressure loss for any (mb, sb) within table bounds. */
-                def get_pressure_loss_for_mb_sb(mb: Mass, sb_value: QtyD[Centimeter]): Either[InterpolationError, Pressure] =
+                def get_pressure_loss_for_mb_sb(
+                    mb      : Mass,
+                    sb_value: QtyD[Centimeter]
+                ): Either[InterpolationError, Pressure] =
                     pressureLossTable.interpolate(mb, sb_value)
 
         object Door15aFirebox_Catalog:

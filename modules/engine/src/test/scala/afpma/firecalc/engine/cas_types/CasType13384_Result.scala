@@ -50,43 +50,43 @@ object CasType13384_Results:
                     import x.lowest
                     List(
                         x.descr,
-                        nominal.pz.map(_.show).getOrElse("-"),
-                        nominal.pze.map(_.show).getOrElse("-"),
-                        nominal.pb.map(_.show).getOrElse("-"),
-                        nominal.`pz-pze`.map(_.show).getOrElse("-"),
-                        nominal.`pz-pb`.map(_.show).getOrElse("-"),
-                        nominal.tg.map(_.show).getOrElse("-"),
-                        nominal.tob.map(_.show).getOrElse("-"),
-                        nominal.tiob.map(_.show).getOrElse("-"),
+                        nominal.pz.map(_.show).getOrElse       ("-"),
+                        nominal.pze.map(_.show).getOrElse      ("-"),
+                        nominal.pb.map(_.show).getOrElse       ("-"),
+                        nominal.`pz-pze`.map(_.show).getOrElse ("-"),
+                        nominal.`pz-pb`.map(_.show).getOrElse  ("-"),
+                        nominal.tg.map(_.show).getOrElse       ("-"),
+                        nominal.tob.map(_.show).getOrElse      ("-"),
+                        nominal.tiob.map(_.show).getOrElse     ("-"),
                         nominal.`tiob-tg`.map(_.show).getOrElse("-"),
                         "-",
-                        lowest.pz.map(_.show).getOrElse("-"),
-                        lowest.pze.map(_.show).getOrElse("-"),
-                        lowest.pb.map(_.show).getOrElse("-"),
-                        lowest.`pz-pze`.map(_.show).getOrElse("-"),
-                        lowest.`pz-pb`.map(_.show).getOrElse("-"),
-                        lowest.tg.map(_.show).getOrElse("-"),
-                        lowest.tob.map(_.show).getOrElse("-"),
-                        lowest.tiob.map(_.show).getOrElse("-"),
-                        lowest.`tiob-tg`.map(_.show).getOrElse("-")
+                        lowest.pz.map(_.show).getOrElse        ("-"),
+                        lowest.pze.map(_.show).getOrElse       ("-"),
+                        lowest.pb.map(_.show).getOrElse        ("-"),
+                        lowest.`pz-pze`.map(_.show).getOrElse  ("-"),
+                        lowest.`pz-pb`.map(_.show).getOrElse   ("-"),
+                        lowest.tg.map(_.show).getOrElse        ("-"),
+                        lowest.tob.map(_.show).getOrElse       ("-"),
+                        lowest.tiob.map(_.show).getOrElse      ("-"),
+                        lowest.`tiob-tg`.map(_.show).getOrElse ("-")
                     )
         )
 
 case class CasType13384_Result(
-    val descr: String,
+    val descr  : String,
     val nominal: CasType13384_Result.Values,
-    val lowest: CasType13384_Result.Values
+    val lowest : CasType13384_Result.Values
 )
 
 object CasType13384_Result:
     case class Values(
-        pz: Option[Pressure],
-        pze: Option[Pressure],
-        pb: Option[Pressure],
-        `pz-pze`: Option[Pressure],
-        `pz-pb`: Option[Pressure],
-        tg: Option[TCelsius],
-        tob: Option[TCelsius],
-        tiob: Option[TCelsius],
+        pz       : Option[Pressure],
+        pze      : Option[Pressure],
+        pb       : Option[Pressure],
+        `pz-pze` : Option[Pressure],
+        `pz-pb`  : Option[Pressure],
+        tg       : Option[TCelsius],
+        tob      : Option[TCelsius],
+        tiob     : Option[TCelsius],
         `tiob-tg`: Option[TCelsius]
     )

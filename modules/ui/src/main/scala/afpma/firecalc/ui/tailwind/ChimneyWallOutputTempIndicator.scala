@@ -44,7 +44,7 @@ final case class ChimneyWallOutputTempIndicator()(using Locale, DisplayUnits) ex
             indicator      = Indicator(
                 style_sig    = chimney_wall_temp_above_condensation_temp_sig.map(above =>
                     if above then Some(IndicatorConfig.green)
-                    else          Some(IndicatorConfig.rose)
+                    else Some         (IndicatorConfig.rose )
                 ),
                 title        = p(
                     I18N_UI.indicators.chimney_wall_out_temp_line1,

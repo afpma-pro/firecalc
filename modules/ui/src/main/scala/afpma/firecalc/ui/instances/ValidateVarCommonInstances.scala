@@ -35,13 +35,15 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
     import SUnits.given
 
     private given FormMessages with
-        def valueIsUndefined = I18N.errors.value_is_undefined
+        def valueIsUndefined  = I18N.errors.value_is_undefined
         def notImplementedYet = I18N.ui_messages.not_implemented_yet
 
     inline def validOption_WhenDefinedAndPositive[A: Show](isPositive: A => Boolean): ValidateVar[Option[A]] =
         ValidateVar.validOption_WhenDefinedAnd[A](isPositive)(a => I18N.errors.value_ge_0(a.showP))
-    
-    inline def validOption_WhenDefinedAndStrictlyPositive[A: Show](isStrictlyPositive: A => Boolean): ValidateVar[Option[A]] =
+
+    inline def validOption_WhenDefinedAndStrictlyPositive[A: Show](
+        isStrictlyPositive: A => Boolean
+    ): ValidateVar[Option[A]] =
         ValidateVar.validOption_WhenDefinedAnd[A](isStrictlyPositive)(a => I18N.errors.value_gt_0(a.showP))
 
     inline def validOptionQtyD_WhenDefinedAndPositive[U](using su: SUnit[U]): ValidateVar[Option[QtyD[U]]] =
@@ -82,19 +84,19 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
         given valid_whenStrictlyPositive      : ValidateVar[A]         =
             validOption_whenStrictlyPositive.flatten
 
-    object angle       
+    object angle
         extends ValidOptionQtyD_WhenPositive_Factory[Degree]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Degree]
-    
-    object area        
+
+    object area
         extends ValidOptionQtyD_WhenPositive_Factory[(Meter ^ 2)]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[(Meter ^ 2)]
-    
-    object area_in_cm2 
+
+    object area_in_cm2
         extends ValidOptionQtyD_WhenPositive_Factory[(Centimeter ^ 2)]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[(Centimeter ^ 2)]
 
-    object centimeter 
+    object centimeter
         extends ValidOptionQtyD_WhenPositive_Factory[Centimeter]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Centimeter]
 
@@ -106,7 +108,7 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
         extends ValidOptionQtyD_WhenPositive_Factory[Minute]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Minute]
 
-    object meter 
+    object meter
         extends ValidOptionQtyD_WhenPositive_Factory[Meter]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Meter]
 
@@ -144,9 +146,9 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
         extends ValidOptionQtyD_WhenPositive_Factory[Watt / (Meter * Kelvin)]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Watt / (Meter * Kelvin)]
 
-    object roughness 
-        extends ValidOption_WhenPositive_Factory[Roughness](_ >= 0.meters)
-        with ValidOption_WhenStrictlyPositive_Factory[Roughness](_ > 0.meters)
+    object roughness
+        extends ValidOption_WhenPositive_Factory[Roughness]     (_ >= 0.meters)
+        with ValidOption_WhenStrictlyPositive_Factory[Roughness](_ > 0.meters )
 
 object ValidateVarCommonInstances:
 

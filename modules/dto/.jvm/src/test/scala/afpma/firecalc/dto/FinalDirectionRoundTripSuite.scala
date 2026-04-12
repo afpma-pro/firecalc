@@ -30,10 +30,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
  * AzimuthDirection and InclinationDirection variants) survives encode/decode
  * through FireCalcYAML_V4.
  */
-class AbsoluteDirectionRoundTripSuite
-    extends AnyFreeSpec
-    with Matchers
-    with ScalaCheckPropertyChecks:
+class AbsoluteDirectionRoundTripSuite extends AnyFreeSpec with Matchers with ScalaCheckPropertyChecks:
 
     override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
         PropertyCheckConfiguration(
@@ -44,41 +41,40 @@ class AbsoluteDirectionRoundTripSuite
 
     /** Build a minimal FireCalcYAML_V4 with the given air intake pipe descriptors. */
     private def minimalV4WithAirIntake(
-        airIntake: Seq[FlowOnlyPipeDescr_13384_V3]
+        airIntake                       : Seq[FlowOnlyPipeDescr_13384_V3]
     ): FireCalcYAML_V4 =
         FireCalcYAML_V4(
-            version = FireCalcYAML_V4.VERSION,
-            locale = Locale(Language("en")),
-            display_units = DisplayUnits.SI,
-            standard_or_computation_method =
-                StandardOrComputationMethod.EN_15544_2023,
-            project_description = ProjectDescr(
+            version                        = FireCalcYAML_V4.VERSION,
+            locale                         = Locale(Language("en")),
+            display_units                  = DisplayUnits.SI,
+            standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+            project_description            = ProjectDescr(
                 reference = "FINAL-DIR-TEST",
-                date = "2025-01-01",
-                country = Country.France
+                date      = "2025-01-01",
+                country   = Country.France
             ),
-            local_conditions = LocalConditions.default,
-            stove_params = StoveParams.fromMaxLoadAndStoragePeriod(
-                maximum_load = 20.kg,
-                heating_cycle = 12.hours,
+            local_conditions               = LocalConditions.default,
+            stove_params                   = StoveParams.fromMaxLoadAndStoragePeriod(
+                maximum_load   = 20.kg,
+                heating_cycle  = 12.hours,
                 min_efficiency = 80.percent,
-                facing_type = FacingType.WithoutAirGap
+                facing_type    = FacingType.WithoutAirGap
             ),
-            air_intake_descr = airIntake,
-            firebox = Firebox_V3.Traditional(
-                heat_output_reduced = HeatOutputReduced.NotDefined,
-                firebox_depth = 40.cm,
-                firebox_width = 50.cm,
-                firebox_height = 60.cm,
-                height_of_lowest_opening = 5.cm,
-                pressure_loss_coefficient_from_door = 0.5.withUnit[1],
+            air_intake_descr               = airIntake,
+            firebox                        = Firebox_V3.Traditional(
+                heat_output_reduced                   = HeatOutputReduced.NotDefined,
+                firebox_depth                         = 40.cm,
+                firebox_width                         = 50.cm,
+                firebox_height                        = 60.cm,
+                height_of_lowest_opening              = 5.cm,
+                pressure_loss_coefficient_from_door   = 0.5.withUnit[1],
                 total_air_intake_surface_area_on_door = 0.01.m2,
-                glass_width = 30.cm,
-                glass_height = 40.cm
+                glass_width                           = 30.cm,
+                glass_height                          = 40.cm
             ),
-            flue_pipe_descr = Seq(),
-            connector_pipe_descr = Seq(),
-            chimney_pipe_descr = Seq()
+            flue_pipe_descr                = Seq(),
+            connector_pipe_descr           = Seq(),
+            chimney_pipe_descr             = Seq()
         )
 
     /** Encode a V4 instance to YAML, decode it back, and return both the YAML string and the decoded value. */
@@ -87,7 +83,7 @@ class AbsoluteDirectionRoundTripSuite
         withClue(s"Encoding failed: ${encoded.failed.toOption}\n") {
             encoded.isSuccess.shouldBe(true)
         }
-        val yaml = encoded.get
+        val yaml    = encoded.get
         val decoded = FireCalcYAML_V4.decodeFromYaml(yaml)
         withClue(s"Decoding failed: ${decoded.failed.toOption}\nYAML was:\n$yaml\n") {
             decoded.isSuccess.shouldBe(true)
@@ -100,86 +96,95 @@ class AbsoluteDirectionRoundTripSuite
 
         "roundtrips a pipe with SetInitialDirection and direction changes with named AbsoluteDirection" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
-                SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-                SetInnerShape(PipeShape.Circle(15.cm)),
-                SetRoughness(3.mm),
-                SetMaterial(afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
-                AddSectionVertical("vertical-1", 100.cm),
+                SetInitialDirection   (AzimuthDirection.Rear, InclinationDirection.Up),
+                SetInnerShape(PipeShape.Circle(15.cm)                         ),
+                SetRoughness          (3.mm                                          ),
+                SetMaterial  (afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
+                AddSectionVertical    ("vertical-1", 100.cm                          ),
                 AddSharpeAngle_0_to_90(
-                    "bend-1", 90.degrees,
+                    "bend-1",
+                    90.degrees,
                     absDir = Some(AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))
                 ),
-                AddSectionHorizontal("horizontal-1", 50.cm),
-                AddSmoothCurve_90(
-                    "curve-1", 15.cm,
+                AddSectionHorizontal  ("horizontal-1", 50.cm                         ),
+                AddSmoothCurve_90     (
+                    "curve-1",
+                    15.cm,
                     absDir = Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up))
                 )
             )
 
             val original = minimalV4WithAirIntake(airIntake)
-            val decoded = roundTripV4(original)
+            val decoded  = roundTripV4(original)
             decoded.shouldBe(original)
         }
 
         "roundtrips a pipe with custom angle AbsoluteDirection" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
                 SetInitialDirection(
-                    AzimuthDirection.Custom(42.5.degrees),
+                    AzimuthDirection.Custom    (42.5.degrees),
                     InclinationDirection.Custom(15.0.degrees)
                 ),
-                SetInnerShape(PipeShape.Circle(12.cm)),
-                SetRoughness(2.mm),
-                SetMaterial(afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
-                AddSectionSlopped("slopped-1", 80.cm),
-                AddAngleAdjustable(
-                    "adj-bend-1", 45.degrees, 0.5.withUnit[1],
-                    absDir = Some(AbsoluteDirection(
-                        AzimuthDirection.Custom(123.0.degrees),
-                        InclinationDirection.Custom(-15.0.degrees)
-                    ))
+                SetInnerShape(PipeShape.Circle(12.cm)                              ),
+                SetRoughness       (2.mm              ),
+                SetMaterial  (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
+                AddSectionSlopped  ("slopped-1", 80.cm),
+                AddAngleAdjustable (
+                    "adj-bend-1",
+                    45.degrees,
+                    0.5.withUnit[1],
+                    absDir = Some(
+                        AbsoluteDirection(
+                            AzimuthDirection.Custom    (123.0.degrees),
+                            InclinationDirection.Custom(-15.0.degrees)
+                        )
+                    )
                 )
             )
 
             val original = minimalV4WithAirIntake(airIntake)
-            val decoded = roundTripV4(original)
+            val decoded  = roundTripV4(original)
             decoded.shouldBe(original)
         }
 
         "roundtrips a pipe with mixed named and custom AbsoluteDirection variants" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
-                SetInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal),
-                SetInnerShape(PipeShape.Rectangle(20.cm, 15.cm)),
-                SetRoughness(3.mm),
-                SetMaterial(afpma.firecalc.dto.v3.Material_13384_V2.ClayFlueLiners()),
-                AddSectionHorizontal("horiz-1", 100.cm),
+                SetInitialDirection   (AzimuthDirection.Front, InclinationDirection.Horizontal),
+                SetInnerShape(PipeShape.Rectangle(20.cm, 15.cm)                       ),
+                SetRoughness          (3.mm                                                   ),
+                SetMaterial  (afpma.firecalc.dto.v3.Material_13384_V2.ClayFlueLiners()),
+                AddSectionHorizontal  ("horiz-1", 100.cm                                      ),
                 AddSharpeAngle_0_to_90(
-                    "bend-named", 90.degrees,
-                    absDir = Some(AbsoluteDirection(AzimuthDirection.FrontLeft, InclinationDirection.Custom(45.0.degrees)))
+                    "bend-named",
+                    90.degrees,
+                    absDir =
+                        Some(AbsoluteDirection(AzimuthDirection.FrontLeft, InclinationDirection.Custom(45.0.degrees)))
                 ),
-                AddSectionSlopped("slopped-1", 60.cm),
-                AddSmoothCurve_60(
-                    "curve-custom", 20.cm,
+                AddSectionSlopped     ("slopped-1", 60.cm                                     ),
+                AddSmoothCurve_60     (
+                    "curve-custom",
+                    20.cm,
                     absDir = Some(AbsoluteDirection(AzimuthDirection.Custom(200.0.degrees), InclinationDirection.Down))
                 )
             )
 
             val original = minimalV4WithAirIntake(airIntake)
-            val decoded = roundTripV4(original)
+            val decoded  = roundTripV4(original)
             decoded.shouldBe(original)
         }
 
         "roundtrips direction changes with absDir = None" in {
             val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
-                SetInnerShape(PipeShape.Circle(15.cm)),
-                SetRoughness(3.mm),
-                SetMaterial(afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
-                AddSectionVertical("vertical-1", 100.cm),
+                SetInnerShape(PipeShape.Circle(15.cm)                         ),
+                SetRoughness          (3.mm                     ),
+                SetMaterial  (afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
+                AddSectionVertical    ("vertical-1", 100.cm     ),
                 AddSharpeAngle_0_to_90("bend-no-dir", 90.degrees),
-                AddSectionHorizontal("horizontal-1", 50.cm)
+                AddSectionHorizontal  ("horizontal-1", 50.cm    )
             )
 
             val original = minimalV4WithAirIntake(airIntake)
-            val decoded = roundTripV4(original)
+            val decoded  = roundTripV4(original)
             decoded.shouldBe(original)
         }
     }
@@ -198,19 +203,20 @@ class AbsoluteDirectionRoundTripSuite
 
             s"AzimuthDirection.$label with InclinationDirection.Horizontal" in {
                 val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
-                    SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-                    SetInnerShape(PipeShape.Circle(15.cm)),
-                    SetRoughness(3.mm),
-                    SetMaterial(afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
-                    AddSectionVertical("vert", 100.cm),
+                    SetInitialDirection   (AzimuthDirection.Rear, InclinationDirection.Up),
+                    SetInnerShape(PipeShape.Circle(15.cm)                         ),
+                    SetRoughness          (3.mm                                          ),
+                    SetMaterial  (afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
+                    AddSectionVertical    ("vert", 100.cm                                ),
                     AddSharpeAngle_0_to_90(
-                        s"bend-$label", 90.degrees,
+                        s"bend-$label",
+                        90.degrees,
                         absDir = Some(AbsoluteDirection(azDir, InclinationDirection.Horizontal))
                     )
                 )
 
                 val original = minimalV4WithAirIntake(airIntake)
-                val decoded = roundTripV4(original)
+                val decoded  = roundTripV4(original)
                 decoded.shouldBe(original)
             }
         }
@@ -228,19 +234,20 @@ class AbsoluteDirectionRoundTripSuite
 
             s"InclinationDirection.$label with AzimuthDirection.Rear" in {
                 val airIntake: Seq[FlowOnlyPipeDescr_13384_V3] = Seq(
-                    SetInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal),
-                    SetInnerShape(PipeShape.Circle(15.cm)),
-                    SetRoughness(3.mm),
-                    SetMaterial(afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
-                    AddSectionHorizontal("horiz", 100.cm),
-                    AddSmoothCurve_90(
-                        s"curve-$label", 15.cm,
+                    SetInitialDirection (AzimuthDirection.Front, InclinationDirection.Horizontal),
+                    SetInnerShape(PipeShape.Circle(15.cm)                         ),
+                    SetRoughness        (3.mm                                                   ),
+                    SetMaterial  (afpma.firecalc.dto.v3.Material_13384_V2.Bricks()),
+                    AddSectionHorizontal("horiz", 100.cm                                        ),
+                    AddSmoothCurve_90   (
+                        s"curve-$label",
+                        15.cm,
                         absDir = Some(AbsoluteDirection(AzimuthDirection.Rear, inclDir))
                     )
                 )
 
                 val original = minimalV4WithAirIntake(airIntake)
-                val decoded = roundTripV4(original)
+                val decoded  = roundTripV4(original)
                 decoded.shouldBe(original)
             }
         }
@@ -258,7 +265,7 @@ class AbsoluteDirectionRoundTripSuite
                 encoded.isSuccess.shouldBe(true)
             }
 
-            val yaml = encoded.get
+            val yaml    = encoded.get
             val decoded = FireCalcYAML_V4.decodeFromYaml(yaml)
             withClue(s"Decoding failed: ${decoded.failed.toOption}\nYAML was:\n$yaml\n") {
                 decoded.isSuccess.shouldBe(true)

@@ -12,30 +12,31 @@ import com.raquo.laminar.codecs.*
 
 import afpma.laminar.form.*
 
-/** Low-level DaisyUI form input components.
-  *
-  * Merged from afpma.firecalc.ui.daisyui.DaisyUIInputs (legacy)
-  * and afpma.laminar.form.daisyui.DaisyUIInputs (new form-lib).
-  *
-  * Implementations are split across trait mix-ins:
-  *   - [[FieldsetInputs]]       — fieldset/legend vertical components
-  *   - [[FloatingLabelInputs]]  — floating-label horizontal components
-  *   - [[SelectInputs]]         — select/dropdown components
-  *   - [[PrimitiveInputs]]      — basic input-only components
-  */
-object DaisyUIInputs
-    extends FieldsetInputs,
-            FloatingLabelInputs,
-            SelectInputs,
-            PrimitiveInputs:
+/**
+ * Low-level DaisyUI form input components.
+ *
+ * Merged from afpma.firecalc.ui.daisyui.DaisyUIInputs (legacy)
+ * and afpma.laminar.form.daisyui.DaisyUIInputs (new form-lib).
+ *
+ * Implementations are split across trait mix-ins:
+ *   - [[FieldsetInputs]]       — fieldset/legend vertical components
+ *   - [[FloatingLabelInputs]]  — floating-label horizontal components
+ *   - [[SelectInputs]]         — select/dropdown components
+ *   - [[PrimitiveInputs]]      — basic input-only components
+ */
+object DaisyUIInputs extends FieldsetInputs, FloatingLabelInputs, SelectInputs, PrimitiveInputs:
 
     // formatPrecise extension for Double
     extension (d: Double)
         inline def formatPrecise(maxPrecision: Int = 6): String =
-            BigDecimal(d).setScale(maxPrecision, BigDecimal.RoundingMode.HALF_UP).bigDecimal.stripTrailingZeros.toPlainString
+            BigDecimal(d)
+                .setScale(maxPrecision, BigDecimal.RoundingMode.HALF_UP)
+                .bigDecimal
+                .stripTrailingZeros
+                .toPlainString
 
-    val disabledAttr : HtmlAttr[Boolean] = htmlAttr("disabled", BooleanAsAttrPresenceCodec)
-    val stepAttr: HtmlAttr[String] = htmlAttr("step", StringAsIsCodec)
+    val disabledAttr: HtmlAttr[Boolean] = htmlAttr("disabled", BooleanAsAttrPresenceCodec)
+    val stepAttr    : HtmlAttr[String]  = htmlAttr("step", StringAsIsCodec)
 
     val DEFAULT_PLACEHOLDER = "..."
 
@@ -89,7 +90,5 @@ object DaisyUIInputs
     // =========================================================================
     // Helpers
     // =========================================================================
-
-    
 
 end DaisyUIInputs

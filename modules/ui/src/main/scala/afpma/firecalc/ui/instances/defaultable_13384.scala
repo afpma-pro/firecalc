@@ -32,45 +32,45 @@ object defaultable_13384:
 
         // given Defaultable[SetThermalPipeProp_13384] = Defaultable.derived[SetThermalPipeProp_13384]
 
-        given defaultable_Seq_SetSingleProp: Defaultable[Seq[SetSingleProp]]              :
+        given defaultable_Seq_SetSingleProp: Defaultable[Seq[SetSingleProp]]:
             def default = Seq.empty
-        given Defaultable[SetInnerShape]              :
+        given Defaultable[SetInnerShape]:
             def default = SetInnerShape(pipeShapeInner.default)
-        given Defaultable[SetOuterShape]              :
+        given Defaultable[SetOuterShape]:
             def default = SetOuterShape(pipeShapeOuter.default)
-        given Defaultable[SetThickness]               :
+        given Defaultable[SetThickness]:
             def default = SetThickness(thickness.default)
-        given Defaultable[SetRoughness]               :
+        given Defaultable[SetRoughness]:
             def default = SetRoughness(roughness.default)
-        given Defaultable[SetMaterial]                :
+        given Defaultable[SetMaterial]:
             def default = SetMaterial(defaultable_Material_13384_v2.default)
-        given Defaultable[SetLayer]                   :
+        given Defaultable[SetLayer]:
             def default = SetLayer(thickness.default, thermalConductivity.default)
-        given Defaultable[SetLayers]                  :
+        given Defaultable[SetLayers]:
             def default = SetLayers(Nil)
-        given Defaultable[LinedFlue]                  :
+        given Defaultable[LinedFlue]:
             def default = LinedFlue(
                 batch_name = "",
                 liner      = SetPropertiesInBatch("", Seq.empty),
                 air_space  = AirSpaceDetailed.WithoutAirSpace_V2,
                 casing     = SetPropertiesInBatch("", Seq.empty)
             )
-        given Defaultable[SetAirSpaceAfterLayers]     :
+        given Defaultable[SetAirSpaceAfterLayers]:
             def default = SetAirSpaceAfterLayers(airSpaceDetailed.default)
-        given Defaultable[SetPipeLocation]            :
+        given Defaultable[SetPipeLocation]:
             def default = SetPipeLocation(pipeLocation.default)
-        given Defaultable[SetDuctType]                :
+        given Defaultable[SetDuctType]:
             def default = SetDuctType(DuctType.NonConcentricDuctsHighThermalResistance)
-        given Defaultable[SetInitialDirection]        :
+        given Defaultable[SetInitialDirection]:
             def default = SetInitialDirection(
                 azimuth     = AzimuthDirection.Rear,
                 inclination = InclinationDirection.Up
             )
-        given Defaultable[SetInitialPosition]         :
+        given Defaultable[SetInitialPosition]:
             def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
-        given Defaultable[SetFinalPosition]           :
+        given Defaultable[SetFinalPosition]:
             def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
-        given Defaultable[SetNumberOfFlows]           :
+        given Defaultable[SetNumberOfFlows]:
             def default = SetNumberOfFlows(divideFlowIn.default)
         given Locale => Defaultable[AddSectionSlopped]:
             def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
@@ -86,7 +86,10 @@ object defaultable_13384:
             def default = AddSharpeAngle_0_to_90(I18N.add_element.AddSharpeAngle_0_to_90, qty_d.angle.ninety.default)
         given Locale => Defaultable[AddSharpeAngle_0_to_90_Unsafe]:
             def default =
-                AddSharpeAngle_0_to_90_Unsafe(I18N.add_element.AddSharpeAngle_0_to_90_Unsafe, qty_d.angle.ninety.default)
+                AddSharpeAngle_0_to_90_Unsafe(
+                    I18N.add_element.AddSharpeAngle_0_to_90_Unsafe,
+                    qty_d.angle.ninety.default
+                )
         given Locale => Defaultable[AddSmoothCurve_90]            :
             def default =
                 AddSmoothCurve_90(I18N.add_element.AddSmoothCurve_90, curvature_radius = radiusOfCurvature.default)
@@ -122,11 +125,13 @@ object defaultable_13384:
     val airSpaceDetailed = Defaultable(AirSpaceDetailed.WithoutAirSpace_V2)
 
     /** Default for LinedFlueCatalogSelectComponent: 3cm air space with standard ventilation. */
-    val airSpaceDetailed_WithAirSpace = Defaultable(AirSpaceDetailed.WithAirSpace_V2(
-        width           = 3.cm,
-        direction       = AirSpaceDetailed.VentilDirection.SameDirAsFlueGas,
-        ventil_openings = AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
-    ))
+    val airSpaceDetailed_WithAirSpace = Defaultable(
+        AirSpaceDetailed.WithAirSpace_V2          (
+            width           = 3.cm,
+            direction       = AirSpaceDetailed.VentilDirection.SameDirAsFlueGas,
+            ventil_openings = AirSpaceDetailed.VentilOpenings.PartiallyOpened_InAccordanceWith_DTU_24_1
+        )
+    )
 
     val appendLayerDescr =
         import defaultable.pipeShapeOuter // scalafix:ok

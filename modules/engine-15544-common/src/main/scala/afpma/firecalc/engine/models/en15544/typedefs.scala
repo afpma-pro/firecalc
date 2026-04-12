@@ -385,7 +385,7 @@ object typedefs:
     // NOTE: PressureRequirement has been moved to engine-kernel (same package: afpma.firecalc.engine.models.en15544)
     // Re-exported here so that `import typedefs.*` still provides PressureRequirement to downstream code.
     type PressureRequirement = afpma.firecalc.engine.models.en15544.PressureRequirement
-    val  PressureRequirement = afpma.firecalc.engine.models.en15544.PressureRequirement
+    val PressureRequirement = afpma.firecalc.engine.models.en15544.PressureRequirement
 
     // Section "4.10.3", "Efficiency of the combustion (η)"
 

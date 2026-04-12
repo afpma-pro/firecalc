@@ -103,26 +103,25 @@ final case class DaisyUIVerticalAccordionAndJoin(
             idx           = 0,
             title         = Title.WithTitleOnly(
                 I18N.panels.output_and_other_parameters,
-                xtra_sig =
-                    stove_params_var.signal
+                xtra_sig = stove_params_var.signal
                     .combineWith(results_en15544_strict_sig)
                     .map { (pdm, vnel_appl) =>
                         given Show[QtyD[Kilogram]] = shows.defaults.show_Kilograms_1
                         given showPound0: Show[QtyD[Pound]] = shows.defaults.show_Pound_0
-                        val opt_appl = vnel_appl.toOption
+                        val opt_appl      = vnel_appl.toOption
                         // For each value: prefer user input when active, fall back to engine result.
                         // The engine fallback handles the transient state during sizing method switch
                         // where the newly-activated field's value hasn't been set yet.
-                        val mb_value = pdm.sizing_method match
+                        val mb_value      = pdm.sizing_method match
                             case SizingMethod.NominalHeatOutput => opt_appl.map(_.m_B)
                             case SizingMethod.MaxLoad           => pdm.maximum_load.orElse(opt_appl.map(_.m_B))
                         val mb_value_show = mb_value.map(_.showP_orImpUnits[Pound]).getOrElse("-")
-                        val mb_show = s"${I18N.technical_specifications.maximum_load_short} = ${mb_value_show}"
-                        val pn_value = pdm.sizing_method match
+                        val mb_show       = s"${I18N.technical_specifications.maximum_load_short} = ${mb_value_show}"
+                        val pn_value      = pdm.sizing_method match
                             case SizingMethod.NominalHeatOutput => pdm.nominal_heat_output.orElse(opt_appl.map(_.P_n))
                             case SizingMethod.MaxLoad           => opt_appl.map(_.P_n)
                         val pn_value_show = pn_value.map(_.showP_orImpUnits[BTU / Hour]).getOrElse("-")
-                        val pn_show = s"${I18N.technical_specifications.nominal_heat_output_short} = ${pn_value_show}"
+                        val pn_show       = s"${I18N.technical_specifications.nominal_heat_output_short} = ${pn_value_show}"
                         div(
                             cls := "flex flex-row",
                             div(cls := "flex-grow w-36", mb_show),
@@ -239,11 +238,11 @@ object DaisyUIVerticalAccordionAndJoin:
         val node = div(
             div(
                 cls := "flex items-center",
-                titlePrefix.getOrElse(emptyNode),
+                titlePrefix.getOrElse(emptyNode             ),
                 TitleChild,
                 XtraFlexChild, // grows and shrink
                 child <-- quadrionSubtotal_sig.map(_.map(_.node).getOrElse(emptyNode)),
-                div(cls := "flex-none w-2") // right margin
+                div                  (cls := "flex-none w-2") // right margin
             ),
             child.maybe <-- bottomContent_sig
         )
@@ -303,10 +302,10 @@ object DaisyUIVerticalAccordionAndJoin:
 
         final case class WithQuadrionSubtotal(
             title               : String,
-            xtra_sig            : Signal[Option[HtmlElement]]            = Signal.fromValue(None),
+            xtra_sig            : Signal[Option[HtmlElement]] = Signal.fromValue(None),
             quadrionSubtotal_sig: Signal[Option[Title.QuadrionSubtotal]],
-            bottomContent_sig   : Signal[Option[HtmlElement]]            = Signal.fromValue(None),
-            titlePrefix         : Option[HtmlElement]                    = None
+            bottomContent_sig   : Signal[Option[HtmlElement]] = Signal.fromValue(None),
+            titlePrefix         : Option[HtmlElement]         = None
         ) extends Title(title, xtra_sig, quadrionSubtotal_sig, bottomContent_sig, titlePrefix)
 
         final case class QuadrionValueWithTooltip(

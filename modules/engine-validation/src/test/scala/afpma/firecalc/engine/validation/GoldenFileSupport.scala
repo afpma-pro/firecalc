@@ -18,7 +18,7 @@ trait GoldenFileSupport:
         if stream == null then
             fail(
                 s"Golden reference file not found: $resourcePath\n" +
-                "Run `make run-validation` then `make update-validation` to create the baseline."
+                    "Run `make run-validation` then `make update-validation` to create the baseline."
             )
         try
             val content = scala.io.Source.fromInputStream(stream)(using scala.io.Codec.UTF8).mkString
@@ -28,8 +28,8 @@ trait GoldenFileSupport:
     /** Write current output to validation/current/ for git-diff workflow. */
     protected def writeCurrentOutput(relativePath: String, content: String): Unit =
         val path = validationBaseDir.resolve(relativePath)
-        java.nio.file.Files.createDirectories(path.getParent)
-        java.nio.file.Files.writeString(path, content, java.nio.charset.StandardCharsets.UTF_8)
+        java.nio.file.Files.createDirectories(path.getParent                                        )
+        java.nio.file.Files.writeString      (path, content, java.nio.charset.StandardCharsets.UTF_8)
 
     /** Assert exact text match. On failure, show numeric diff diagnostic. */
     protected def assertGoldenMatch(actual: String, expected: String, label: String): Unit =
@@ -86,14 +86,14 @@ trait GoldenFileSupport:
                             val sign  = if delta >= 0 then "+" else ""
                             sb.append(
                                 f"  line ${i + 1}%4d: expected ${eNum}%8s ${eUnit}%-8s  " +
-                                f"actual ${aNum}%8s ${aUnit}%-8s  delta = $sign$delta%.4f\n"
+                                    f"actual ${aNum}%8s ${aUnit}%-8s  delta = $sign$delta%.4f\n"
                             )
                             diffCount += 1
                         catch
                             case _: NumberFormatException =>
                                 sb.append(
                                     f"  line ${i + 1}%4d: expected '${eLine.trim.take(60)}' " +
-                                    f"≠ actual '${aLine.trim.take(60)}'\n"
+                                        f"≠ actual '${aLine.trim.take(60)}'\n"
                                 )
                                 diffCount += 1
 
@@ -102,9 +102,9 @@ trait GoldenFileSupport:
             val diffLines = (0 until maxLines).filter: i =>
                 expectedLines.lift(i).getOrElse("") != actualLines.lift(i).getOrElse("")
             for i <- diffLines.take(5) do
-                sb.append(f"  line ${i + 1}%4d:\n")
+                sb.append(f"  line ${i + 1}%4d:\n"                                   )
                 sb.append(s"    - ${expectedLines.lift(i).getOrElse("").take(100)}\n")
-                sb.append(s"    + ${actualLines.lift(i).getOrElse("").take(100)}\n")
+                sb.append(s"    + ${actualLines.lift(i).getOrElse("").take(100)}\n"  )
 
         sb.append(s"\n  Total numeric differences: $diffCount")
         if expectedLines.length != actualLines.length then

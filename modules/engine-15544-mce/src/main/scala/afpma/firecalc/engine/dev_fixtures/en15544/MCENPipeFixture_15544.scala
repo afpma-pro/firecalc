@@ -27,37 +27,38 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
-/** Dev fixture — NOT a golden validation fixture.
-  *
-  * The names `cas_type`, `CasType_*`, and the `cas_types/` directory are
-  * reserved for golden fixtures that are byte-cross-validated against
-  * independent EN 13384 / EN 15544 reference implementations. This fixture
-  * has NOT been cross-validated; it exists solely to exercise the MCE
-  * `WithPipeChain_15544_MCE` chain path with a multi-`ThermalFlueSlot` topology
-  * (N ≥ 4 post-firebox slots)
-  * during engine development.
-  *
-  * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
-  * policy.
-  *
-  * ── Topology ──────────────────────────────────────────────────────────────
-  * N-pipe MCE topology with multiple thermal flue segments (4 slots total).
-  *
-  * `PipeChain_15544_MCE.toSlots` maps the entire `fluePipeDescr` Seq into a
-  * single `ThermalFlueSlot`, so this fixture overrides `postFireboxPipeSlots`
-  * directly to produce two distinct `ThermalFlueSlot` entries — the minimum
-  * required to exercise the Stage 1 chain fold over multiple thermal flue
-  * slots.
-  *
-  *   Slot 0 — ThermalFlueSlot #1 : horizontal exit from firebox (Right/Horizontal, 28.1 cm)
-  *                                  + 90° turn upward
-  *   Slot 1 — ThermalFlueSlot #2 : ascending vertical column (11.1 × 11.1 cm, 3.737 m)
-  *   Slot 2 — ConnectorSlot      : short steel connector (Ø 130 mm, 6 cm)
-  *   Slot 3 — ChimneySlot        : insulated steel chimney (Ø 130 mm, 57 cm + 93 cm)
-  *
-  * Field values mirror `MCEBaselineFixture_15544` (realistic but not physically
-  * validated).
-  */
+/**
+ * Dev fixture — NOT a golden validation fixture.
+ *
+ * The names `cas_type`, `CasType_*`, and the `cas_types/` directory are
+ * reserved for golden fixtures that are byte-cross-validated against
+ * independent EN 13384 / EN 15544 reference implementations. This fixture
+ * has NOT been cross-validated; it exists solely to exercise the MCE
+ * `WithPipeChain_15544_MCE` chain path with a multi-`ThermalFlueSlot` topology
+ * (N ≥ 4 post-firebox slots)
+ * during engine development.
+ *
+ * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
+ * policy.
+ *
+ * ── Topology ──────────────────────────────────────────────────────────────
+ * N-pipe MCE topology with multiple thermal flue segments (4 slots total).
+ *
+ * `PipeChain_15544_MCE.toSlots` maps the entire `fluePipeDescr` Seq into a
+ * single `ThermalFlueSlot`, so this fixture overrides `postFireboxPipeSlots`
+ * directly to produce two distinct `ThermalFlueSlot` entries — the minimum
+ * required to exercise the Stage 1 chain fold over multiple thermal flue
+ * slots.
+ *
+ *   Slot 0 — ThermalFlueSlot #1 : horizontal exit from firebox (Right/Horizontal, 28.1 cm)
+ *                                  + 90° turn upward
+ *   Slot 1 — ThermalFlueSlot #2 : ascending vertical column (11.1 × 11.1 cm, 3.737 m)
+ *   Slot 2 — ConnectorSlot      : short steel connector (Ø 130 mm, 6 cm)
+ *   Slot 3 — ChimneySlot        : insulated steel chimney (Ø 130 mm, 57 cm + 93 cm)
+ *
+ * Field values mirror `MCEBaselineFixture_15544` (realistic but not physically
+ * validated).
+ */
 object MCENPipeFixture_15544
     extends v0_2024_10_mce.SimpleStoveProjectDescrFr_15544_MCE_Alg
     with v0_2024_10_mce.Firebox_15544_MCE_Alg
@@ -129,46 +130,46 @@ object MCENPipeFixture_15544
     val fluePipeDescr =
         import FluePipe_Module_13384.*
         Seq(
-            setInitialDirection(
+            setInitialDirection    (
                 azimuth     = AzimuthDirection.Right,
                 inclination = InclinationDirection.Horizontal
             ),
-            pipeLocation(PipeLocation.HeatedArea),
-            roughness(3.mm),
+            pipeLocation           (PipeLocation.HeatedArea      ),
+            roughness              (3.mm                         ),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
-            layer(e = 1.cm, λ = 0.89.W_per_mK),
-            addSectionHorizontal("sortie foyer", 28.1.cm),
-            addSharpAngle_90deg(
+            layer                  (e = 1.cm, λ = 0.89.W_per_mK  ),
+            addSectionHorizontal   ("sortie foyer", 28.1.cm      ),
+            addSharpAngle_90deg    (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical("colonne ascendante", 3.737.m)
+            addSectionVertical     ("colonne ascendante", 3.737.m)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
-            roughness(Material_13384.WeldedSteel()),
-            innerShape(circle(130.mm)),
-            layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("buse", 6.cm)
+        Seq (
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(130.mm)              ),
+            layer              (e       = 2.mm, tr                           = SquareMeterKelvinPerWatt(0.001)),
+            pipeLocation       (PipeLocation.HeatedArea                                                       ),
+            addSectionVertical ("buse", 6.cm                                                                  )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        Seq(
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
-            roughness(Material_13384.WeldedSteel()),
-            innerShape(circle(130.mm)),
-            layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("etage", 57.cm),
-            pipeLocation(PipeLocation.OutsideOrExterior),
-            addSectionVertical("sortie de toit", 93.cm),
-            addFlowResistance("element terminal", 1.423.unitless: ζ)
+        Seq (
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(130.mm)              ),
+            layer              (e       = 2.5.cm, tr                         = SquareMeterKelvinPerWatt(0.260)),
+            pipeLocation       (PipeLocation.HeatedArea                                                       ),
+            addSectionVertical ("etage", 57.cm                                                                ),
+            pipeLocation       (PipeLocation.OutsideOrExterior                                                ),
+            addSectionVertical ("sortie de toit", 93.cm                                                       ),
+            addFlowResistance  ("element terminal", 1.423.unitless: ζ)
         )
 
     // ── 4-slot N-pipe override ────────────────────────────────────────────────────
@@ -191,45 +192,53 @@ object MCENPipeFixture_15544
         import ChimneyPipe_Module as CHPM
         Seq(
             // Slot 0 — ThermalFlueSlot #1: horizontal exit from firebox + 90° turn upward
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(Seq(
-                setInitialDirection(
-                    azimuth     = AzimuthDirection.Right,
-                    inclination = InclinationDirection.Horizontal
-                ),
-                pipeLocation(PipeLocation.HeatedArea),
-                roughness(3.mm),
-                innerShape(rectangle(11.1.cm, 15.3.cm)),
-                layer(e = 1.cm, λ = 0.89.W_per_mK),
-                addSectionHorizontal("F1-sortie foyer", 28.1.cm),
-                addSharpAngle_90deg(
-                    "F1-virage 90 deg (-> Haut)",
-                    AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+            PostFireboxPipeDescrSlot.ThermalFlueSlot(
+                Seq(
+                    setInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    ),
+                    pipeLocation           (PipeLocation.HeatedArea    ),
+                    roughness              (3.mm                       ),
+                    innerShape(rectangle(11.1.cm, 15.3.cm)),
+                    layer                  (e = 1.cm, λ = 0.89.W_per_mK),
+                    addSectionHorizontal   ("F1-sortie foyer", 28.1.cm ),
+                    addSharpAngle_90deg    (
+                        "F1-virage 90 deg (-> Haut)",
+                        AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+                    )
                 )
-            )),
+            ),
             // Slot 1 — ThermalFlueSlot #2: ascending vertical column (continues from Up frame)
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(Seq(
-                innerShape(rectangle(11.1.cm, 11.1.cm)),
-                addSectionVertical("F2-colonne ascendante", 3.737.m)
-            )),
+            PostFireboxPipeDescrSlot.ThermalFlueSlot(
+                Seq(
+                    innerShape(rectangle(11.1.cm, 11.1.cm)),
+                    addSectionVertical("F2-colonne ascendante", 3.737.m)
+                )
+            ),
             // Slot 2 — ConnectorSlot: short steel connector (inherits Up frame from Slot 1)
-            PostFireboxPipeDescrSlot.ConnectorSlot(Seq(
-                CPM.roughness(Material_13384.WeldedSteel()),
-                CPM.innerShape(circle(130.mm)),
-                CPM.layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
-                CPM.pipeLocation(PipeLocation.HeatedArea),
-                CPM.addSectionVertical("C-buse", 6.cm)
-            )),
+            PostFireboxPipeDescrSlot.ConnectorSlot  (
+                Seq (
+                    CPM.roughness (Material_13384.WeldedSteel()),
+                    CPM.innerShape(circle(130.mm)              ),
+                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
+                    CPM.pipeLocation      (PipeLocation.HeatedArea                       ),
+                    CPM.addSectionVertical("C-buse", 6.cm                                )
+                )
+            ),
             // Slot 3 — ChimneySlot: insulated steel chimney
-            PostFireboxPipeDescrSlot.ChimneySlot(Seq(
-                CHPM.roughness(Material_13384.WeldedSteel()),
-                CHPM.innerShape(circle(130.mm)),
-                CHPM.layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
-                CHPM.pipeLocation(PipeLocation.HeatedArea),
-                CHPM.addSectionVertical("CH-etage", 57.cm),
-                CHPM.pipeLocation(PipeLocation.OutsideOrExterior),
-                CHPM.addSectionVertical("CH-sortie de toit", 93.cm),
-                CHPM.addFlowResistance("CH-element terminal", 1.423.unitless: ζ)
-            ))
+            PostFireboxPipeDescrSlot.ChimneySlot    (
+                Seq (
+                    CHPM.roughness (Material_13384.WeldedSteel()),
+                    CHPM.innerShape(circle(130.mm)              ),
+                    CHPM.layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
+                    CHPM.pipeLocation      (PipeLocation.HeatedArea                         ),
+                    CHPM.addSectionVertical("CH-etage", 57.cm                               ),
+                    CHPM.pipeLocation      (PipeLocation.OutsideOrExterior                  ),
+                    CHPM.addSectionVertical("CH-sortie de toit", 93.cm                      ),
+                    CHPM.addFlowResistance ("CH-element terminal", 1.423.unitless: ζ)
+                )
+            )
         )
 
 end MCENPipeFixture_15544

@@ -88,7 +88,11 @@ object FireCalcYAMLMigrations:
             case fcv2: FireCalcYAML_V2 =>
                 Right((migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)(fcv2))
             case fcv1: FireCalcYAML_V1 =>
-                Right((migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)(fcv1))
+                Right(
+                    (migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)(
+                        fcv1
+                    )
+                )
             case other =>
                 Left(new Exception(s"Unsupported file version: ${other.getClass().getName}"))
 
@@ -125,19 +129,33 @@ object FireCalcYAMLMigrations:
                 Left("Could not detect version field in YAML")
             case Some(1)       =>
                 // V1→V2 always had a correct transformer — no corrupted V1-marker files exist
-                decodeV1(json).map(migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)
+                decodeV1(json).map(
+                    migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6
+                )
             case Some(2)       =>
-                decodeWithFallback(json, 2, decodeV2, migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6,
-                                         3, decodeV3, migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)
+                decodeWithFallback(
+                    json,
+                    2,
+                    decodeV2,
+                    migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6,
+                    3,
+                    decodeV3,
+                    migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6
+                )
             case Some(3)       =>
-                decodeWithFallback(json, 3, decodeV3, migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6,
-                                         4, decodeV4, migrateV4ToV5 andThen migrateV5ToV6)
+                decodeWithFallback(
+                    json,
+                    3,
+                    decodeV3,
+                    migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6,
+                    4,
+                    decodeV4,
+                    migrateV4ToV5 andThen migrateV5ToV6
+                )
             case Some(4)       =>
-                decodeWithFallback(json, 4, decodeV4, migrateV4ToV5 andThen migrateV5ToV6,
-                                         5, decodeV5, migrateV5ToV6)
+                decodeWithFallback(json, 4, decodeV4, migrateV4ToV5 andThen migrateV5ToV6, 5, decodeV5, migrateV5ToV6)
             case Some(5)       =>
-                decodeWithFallback(json, 5, decodeV5, migrateV5ToV6,
-                                         6, decodeV6, identity)
+                decodeWithFallback(json, 5, decodeV5, migrateV5ToV6, 6, decodeV6, identity)
             case Some(6)       =>
                 decodeV6(json)
             case Some(version) =>
@@ -160,18 +178,22 @@ object FireCalcYAMLMigrations:
      * @param fallbackMigrate migration chain from version N+1 to current
      */
     private def decodeWithFallback[A <: FireCalcYAML_Format, B <: FireCalcYAML_Format](
-        json: Json,
-        primaryVersion:  Int, primaryDecode:  Json => Either[String, A], primaryMigrate:  A => FireCalcYAML,
-        fallbackVersion: Int, fallbackDecode: Json => Either[String, B], fallbackMigrate: B => FireCalcYAML
+        json           : Json,
+        primaryVersion : Int,
+        primaryDecode  : Json => Either[String, A],
+        primaryMigrate : A => FireCalcYAML,
+        fallbackVersion: Int,
+        fallbackDecode : Json => Either[String, B],
+        fallbackMigrate: B => FireCalcYAML
     ): Either[String, FireCalcYAML] =
         primaryDecode(json) match
-            case Right(decoded) =>
+            case Right(decoded)   =>
                 Right(primaryMigrate(decoded))
             case Left(primaryErr) =>
                 // Fallback: patch the version field so the stricter V[N+1] decoder accepts it
                 val patchedJson = json.mapObject(_.add("version", Json.fromInt(fallbackVersion)))
                 fallbackDecode(patchedJson) match
-                    case Right(decoded) =>
+                    case Right(decoded)    =>
                         Right(fallbackMigrate(decoded))
                     case Left(fallbackErr) =>
                         Left(

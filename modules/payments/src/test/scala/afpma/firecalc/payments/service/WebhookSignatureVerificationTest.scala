@@ -18,9 +18,10 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import utest.*
 
-/** SEC-005: Verify that webhook HMAC verification is enforced in all environments
-  * and uses timing-safe comparison.
-  */
+/**
+ * SEC-005: Verify that webhook HMAC verification is enforced in all environments
+ * and uses timing-safe comparison.
+ */
 object WebhookSignatureVerificationTest extends TestSuite {
 
     implicit val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -31,7 +32,7 @@ object WebhookSignatureVerificationTest extends TestSuite {
     private def computeHmac(body: String, secret: String): String = {
         val mac       = Mac.getInstance("HmacSHA256")
         val secretKey = new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256")
-        mac.init(secretKey)
+        mac.init   (secretKey             )
         mac.doFinal(body.getBytes("UTF-8")).map("%02x".format(_)).mkString
     }
 
@@ -40,7 +41,7 @@ object WebhookSignatureVerificationTest extends TestSuite {
         val config = GoCardlessConfig
             .sandbox("unused", "unused.local", "https", "admin@test.com")
             .withWebhookSecret(testWebhookSecret)
-        new GoCardlessPaymentServiceImpl[IO](
+        new GoCardlessPaymentServiceImpl[IO]  (
             httpClient   = null,
             config       = config,
             emailService = null,
@@ -56,7 +57,7 @@ object WebhookSignatureVerificationTest extends TestSuite {
             domain        = "unused.local",
             adminEmail    = "admin@test.com"
         )
-        new GoCardlessPaymentServiceImpl[IO](
+        new GoCardlessPaymentServiceImpl[IO]  (
             httpClient   = null,
             config       = config,
             emailService = null,
@@ -120,7 +121,7 @@ object WebhookSignatureVerificationTest extends TestSuite {
             for (service <- List(mkSandboxService(), mkLiveService())) {
                 val validResult  = service.verifyWebhookSignature(body, validSig).unsafeRunSync()
                 val forgedResult = service.verifyWebhookSignature(body, forgedSig).unsafeRunSync()
-                assert(validResult == true)
+                assert(validResult == true  )
                 assert(forgedResult == false)
             }
         }

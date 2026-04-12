@@ -27,7 +27,7 @@ import coulomb.ops.standard.all.given
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
     pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]]
-)(using SSAlg: ShortSectionAlg, dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory)
+)                                                         (using SSAlg: ShortSectionAlg, dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory)
     extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] {
     // merge successive straight sections into a single one
     // and keep only direction change + straight section elements

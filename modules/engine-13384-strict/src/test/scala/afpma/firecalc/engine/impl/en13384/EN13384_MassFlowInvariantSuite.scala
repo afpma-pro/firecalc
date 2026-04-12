@@ -10,16 +10,17 @@ import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-/** Invariant test: standalone EN 13384 nominal mass flows must be defined.
-  *
-  * `HeatingAppliance.MassFlows.undefined` (all `None`) is the default for
-  * composed paths (EN 15544 strict/mce) where `m_dot` is overridden. In
-  * standalone EN 13384, using `undefined` is a developer error and the
-  * application deliberately crashes with `sys.error`.
-  *
-  * This suite locks in that contract so future refactors don't silently
-  * restore a permissive fallback.
-  */
+/**
+ * Invariant test: standalone EN 13384 nominal mass flows must be defined.
+ *
+ * `HeatingAppliance.MassFlows.undefined` (all `None`) is the default for
+ * composed paths (EN 15544 strict/mce) where `m_dot` is overridden. In
+ * standalone EN 13384, using `undefined` is a developer error and the
+ * application deliberately crashes with `sys.error`.
+ *
+ * This suite locks in that contract so future refactors don't silently
+ * restore a permissive fallback.
+ */
 class EN13384_MassFlowInvariantSuite extends AnyFreeSpec with Matchers:
 
     "HeatingAppliance.MassFlows.undefined" - {

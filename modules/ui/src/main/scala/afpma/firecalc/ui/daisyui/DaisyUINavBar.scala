@@ -35,7 +35,7 @@ object DaisyUINavBar:
         onClick --> { _ =>
             ProjectManager.activeProjectIdVar.now() match
                 case Some(pid) => router.pushState(ProjectPage(lang, pid, Some(du)))
-                case None      => router.pushState(ProjectSelectorPage(lang))
+                case None      => router.pushState(ProjectSelectorPage(lang)       )
         }
 
     val details = htmlTag("details")
@@ -82,7 +82,7 @@ object DaisyUINavBar:
                         DaisyUITooltip (
                             ttContent  = div(I18N_UI.buttons.undo),
                             element    = div(
-                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
                                 cls("text-base-content") <-- undoManager.canUndo,
                                 cls("text-base-content/40") <-- undoManager.cannotUndo,
                                 lucide.undo(stroke_width = 1.5, w = 16, h = 16),
@@ -97,7 +97,7 @@ object DaisyUINavBar:
                         DaisyUITooltip (
                             ttContent  = div(I18N_UI.buttons.redo),
                             element    = div(
-                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
                                 cls("text-base-content") <-- undoManager.canRedo,
                                 cls("text-base-content/40") <-- undoManager.cannotRedo,
                                 lucide.redo(stroke_width = 1.5, w = 16, h = 16),
@@ -111,21 +111,21 @@ object DaisyUINavBar:
                 // Group 2: File operations
                 div(
                     cls := "flex flex-row items-center gap-x-6",
-                    FireCalcProjet.NewBlankComponent            (),
-                    FireCalcProjet.UploadComponent              (),
-                    DaisyUITooltip(
-                        ttContent  = p(I18N_UI.project_selector.back_to_projects),
-                        element    = div(
+                    FireCalcProjet.NewBlankComponent                 (),
+                    FireCalcProjet.UploadComponent                   (),
+                    DaisyUITooltip                                   (
+                        ttContent       = p(I18N_UI.project_selector.back_to_projects),
+                        element         = div(
                             cls := "w-4 h-4 cursor-pointer",
                             lucide.`file-stack`(stroke_width = 1),
                             onClick --> { _ =>
                                 router.pushState(ProjectSelectorPage(localeVar.now().language))
                             }
                         ),
-                        ttPosition = "tooltip-bottom"
+                        ttPosition      = "tooltip-bottom"
                     ),
-                    FireCalcProjet.BackupComponent              (),
-                    FireCalcProjet.HardCodedEngineStateComponent(
+                    FireCalcProjet.BackupComponent                   (),
+                    FireCalcProjet.HardCodedEngineStateComponent     (
                         nextEngineState = EngineState.example_projet_15544,
                         buttonTitle     = I18N_UI.buttons.load_example_project_15544
                     )
@@ -134,10 +134,10 @@ object DaisyUINavBar:
                 // Group 3: Catalog
                 div(
                     cls := "flex items-center h-6",
-                    DaisyUITooltip(
+                    DaisyUITooltip (
                         ttContent  = div(I18N_UI.catalog.manager_title),
                         element    = div(
-                            cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
+                            cls := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) text-base-content/60 !w-6 !h-6 !min-h-0 !p-0",
                             lucide.database(stroke_width = 1.5, w = 16, h = 16),
                             onClick --> { _ => catalogManagerDialog.open() }
                         ),
@@ -151,10 +151,10 @@ object DaisyUINavBar:
                     // Expert mode toggle
                     div(
                         cls := "flex items-center h-6",
-                        DaisyUITooltip(
+                        DaisyUITooltip (
                             ttContent  = div(I18N_UI.tooltips.display_details),
                             element    = div(
-                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
                                 cls("bg-base-300 text-base-content border-base-content/30") <-- expertModeOn,
                                 cls("text-base-content/40 hover:text-base-content") <-- expertModeOff,
                                 lucide.`flask-conical`(stroke_width = 1.5),
@@ -166,10 +166,10 @@ object DaisyUINavBar:
                     // 3D visualization toggle
                     div(
                         cls := "flex items-center h-6",
-                        DaisyUITooltip(
+                        DaisyUITooltip (
                             ttContent  = div("3D"),
                             element    = div(
-                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
                                 cls("bg-base-300 text-base-content border-base-content/30") <-- viz3DPanelOn,
                                 cls("text-base-content/40 hover:text-base-content") <-- viz3DPanelOff,
                                 lucide.box(stroke_width = 1.5, w = 16, h = 16),
@@ -181,10 +181,10 @@ object DaisyUINavBar:
                     // Graph (2D chart) toggle
                     div(
                         cls := "flex items-center h-6",
-                        DaisyUITooltip(
+                        DaisyUITooltip (
                             ttContent  = div(I18N_UI.graph.title),
                             element    = div(
-                                cls      := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
+                                cls := "btn btn-outline btn-square hover:bg-transparent hover:border-(--btn-color) !w-6 !h-6 !min-h-0 !p-0",
                                 cls("bg-base-300 text-base-content border-base-content/30") <-- graphPanelOn,
                                 cls("text-base-content/40 hover:text-base-content") <-- graphPanelOff,
                                 lucide.`chart-line`(stroke_width = 1.5, w = 16, h = 16),
@@ -194,8 +194,7 @@ object DaisyUINavBar:
                         )
                     )
                 ),
-
-                div(cls := "flex-grow"),
+                div(cls := "flex-grow")
             ),
             // OPTIONAL
 
@@ -349,13 +348,13 @@ object DaisyUINavBar:
 
             // Dismissible warning banner when catalog cache was reset (e.g., after DTO version bump)
             div(
-                cls     := "fixed bottom-4 right-4 z-50 max-w-md",
+                cls := "fixed bottom-4 right-4 z-50 max-w-md",
                 display <-- catalogDecodeFailed.signal.map(if _ then "" else "none"),
                 div(
                     cls := "alert alert-warning shadow-lg text-sm",
-                    span(I18N_UI.catalog.errors.cache_reset),
+                    span  (I18N_UI.catalog.errors.cache_reset),
                     button(
-                        cls     := "btn btn-sm btn-ghost",
+                        cls := "btn btn-sm btn-ghost",
                         "✕",
                         onClick --> { _ => catalogDecodeFailed.set(false) }
                     )

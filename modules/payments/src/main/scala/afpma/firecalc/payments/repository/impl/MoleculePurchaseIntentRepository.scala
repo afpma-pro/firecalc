@@ -226,7 +226,7 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
 
     def atomicMarkAsProcessed(token: api.PurchaseToken): F[Boolean] =
         for
-            _ <- logger.info(s"Atomically marking purchase intent as processed: ${token}")
+            _      <- logger.info(s"Atomically marking purchase intent as processed: ${token}")
             result <- future2AsyncF {
                 rawTransact(
                     s"UPDATE PurchaseIntent SET processed = 1 WHERE token = '${token.value}' AND processed = 0"
@@ -263,8 +263,9 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
 
     def countRecentByEmail(email: String, since: Instant): F[Int] =
         future2AsyncF {
-            PurchaseIntent.createdAt
-                .Customer.email_(email)
-                .query.get
+            PurchaseIntent.createdAt.Customer
+                .email_(email)
+                .query
+                .get
                 .map(_.count(_.isAfter(since)))
         }

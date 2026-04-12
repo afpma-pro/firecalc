@@ -6,6 +6,6 @@
 package afpma.firecalc.graph
 
 case class GraphVizConfig(
-    responsive          : Boolean = true,
-    maintainAspectRatio : Boolean = false
+    responsive         : Boolean = true,
+    maintainAspectRatio: Boolean = false
 )

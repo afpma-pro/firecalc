@@ -21,13 +21,15 @@ object vnel_monoid:
     given semigroupVNel: [E, A] => Semigroup[ValidatedNel[E, A]] =
         SemigroupK[[X] =>> ValidatedNel[E, X]].algebra[A]
 
-    def mkMonoidSumForVNelQtyD[E, U](zero: QtyD[U]): Monoid[ValidatedNel[E, QtyD[U]]] = 
-        Monoid.instance(zero.validNel, {
-            case (Valid(q1), Valid(q2))       => Valid(q1 + q2)
-            case (Valid(_), i @ Invalid(_))   => i
-            case (i @ Invalid(_), Valid(_))   => i
-            case (Invalid(na), Invalid(nb))   => 
-                NonEmptyList.fromListUnsafe(na.toList ++ nb.toList).invalid
+    def mkMonoidSumForVNelQtyD[E, U](zero: QtyD[U]): Monoid[ValidatedNel[E, QtyD[U]]] =
+        Monoid.instance(
+            zero.validNel,
+            {
+                case (Valid(q1), Valid(q2)    ) => Valid(q1 + q2)
+                case (Valid(_), i @ Invalid(_)) => i
+                case (i @ Invalid(_), Valid(_)) => i
+                case (Invalid(na), Invalid(nb)) =>
+                    NonEmptyList.fromListUnsafe(na.toList ++ nb.toList).invalid
 
-
-        })
+            }
+        )

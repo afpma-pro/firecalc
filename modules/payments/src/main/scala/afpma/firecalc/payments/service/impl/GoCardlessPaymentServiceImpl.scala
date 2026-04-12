@@ -136,9 +136,9 @@ object GoCardlessLanguage:
 // GoCardless API Models
 case class CreateCustomerRequest private (
     email       : String,
-    given_name  : Option[String], //      = None,
-    family_name : Option[String], //      = None,
-    company_name: Option[String], //      = None,
+    given_name  : Option[String],     //      = None,
+    family_name : Option[String],     //      = None,
+    company_name: Option[String],     //      = None,
     language    : String,
     metadata    : Map[String, String] // = Map.empty
 )
@@ -387,7 +387,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 uri     = uri,
                 headers = gcHeaders
             )
-            requestWithBody <- body.fold          (Async[F].pure(request)                                  ) { b =>
+            requestWithBody <- body.fold          (Async[F].pure(request)                                   ) { b =>
                 val jsonBody = b.asJson
                 // SEC-006: Demote to debug, no JSON body in logs
                 logger.debug(s"Making GoCardless request: $method $path") *>
@@ -495,15 +495,12 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             // Timing-safe comparison — prevents side-channel attacks
             java.security.MessageDigest.isEqual(
                 computedSignatureHex.getBytes("UTF-8"),
-                signature.getBytes("UTF-8")
+                signature.getBytes           ("UTF-8")
             )
         }.getOrElse(false)
 
-        (if isValid then
-             logger.info(s"Webhook signature verification passed (env: ${config.environment})")
-         else
-             logger.error(s"Webhook signature verification FAILED (env: ${config.environment})")
-        ).map(_ => isValid)
+        (if isValid then logger.info(s"Webhook signature verification passed (env: ${config.environment})")
+         else logger.error(s"Webhook signature verification FAILED (env: ${config.environment})")).map(_ => isValid)
 
     private def getPayment(paymentId: String): F[GoCardlessPayment] =
         makeRequest[Unit, PaymentResponseEnvelope](

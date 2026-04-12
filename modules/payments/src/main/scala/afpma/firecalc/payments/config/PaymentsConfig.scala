@@ -20,8 +20,8 @@ case class PaymentsConfig(
     adminConfig                 : AdminConfig,
     reportAsDraft               : Boolean,
     jwtConfig                   : JwtConfig,
-    loggingConfig               : LoggingConfig      = LoggingConfig(),
-    corsAllowedOrigins          : List[String]        = List("*") // SEC-016: validated fail-closed in ConfigLoader for non-dev
+    loggingConfig               : LoggingConfig = LoggingConfig(),
+    corsAllowedOrigins          : List[String]  = List("*") // SEC-016: validated fail-closed in ConfigLoader for non-dev
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
     require(
@@ -73,16 +73,16 @@ case class JwtConfig(
     issuer           : String = "firecalc-payments"
 ) {
     require(secret.length >= 32, "JWT secret must be at least 32 characters (256 bits)")
-    require(expirationMinutes > 0, "JWT expiration minutes must be positive")
-    require(issuer.nonEmpty, "JWT issuer cannot be empty")
+    require(expirationMinutes > 0, "JWT expiration minutes must be positive"           )
+    require(issuer.nonEmpty, "JWT issuer cannot be empty"                              )
 }
 
 case class LoggingConfig(
-    rootLevel       : String             = "INFO",
+    rootLevel       : String              = "INFO",
     packageOverrides: Map[String, String] = Map.empty
 ) {
-    LoggingConfig.requireValidLevel(rootLevel, "root-level")
-    packageOverrides.foreach((pkg, level) => LoggingConfig.requireValidLevel(level, s"package '$pkg'"))
+    LoggingConfig.requireValidLevel(rootLevel, "root-level"                                                  )
+    packageOverrides.foreach       ((pkg, level) => LoggingConfig.requireValidLevel(level, s"package '$pkg'"))
 }
 
 object LoggingConfig:

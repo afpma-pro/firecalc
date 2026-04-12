@@ -138,7 +138,7 @@ object PostFireboxPipeChain:
         val rule6 =
             if lastFlueIdx >= 0 && afterFlueBeforeChimney.count(_.pipeType == ConnectorPipeT) == 0 then
                 Validated.invalidNel(MissingConnectorAfterFlue)
-            else Validated.validNel(())
+            else Validated.validNel (()                       )
 
         import cats.syntax.all.*
 

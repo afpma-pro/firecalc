@@ -16,13 +16,13 @@ enum PolluantName:
 
 object PolluantName:
     @Transl(I(_.pollutant_names.CO))
-    type CO = PolluantName.CO.type
+    type CO         = PolluantName.CO.type
     @Transl(I(_.pollutant_names.Dust))
-    type Dust = PolluantName.Dust.type
+    type Dust       = PolluantName.Dust.type
     @Transl(I(_.pollutant_names.OGC))
-    type OGC = PolluantName.OGC.type
+    type OGC        = PolluantName.OGC.type
     @Transl(I(_.pollutant_names.NOx))
-    type NOx = PolluantName.NOx.type
+    type NOx        = PolluantName.NOx.type
     @Transl(I(_.pollutant_names.Dust_OGC))
     type `Dust+OGC` = PolluantName.`Dust+OGC`.type
 

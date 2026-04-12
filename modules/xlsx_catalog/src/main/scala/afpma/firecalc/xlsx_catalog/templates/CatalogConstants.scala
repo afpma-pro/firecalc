@@ -9,22 +9,31 @@ package afpma.firecalc.xlsx_catalog.templates
 object CatalogConstants:
 
     val Materials: Seq[String] = Seq(
-        "WeldedSteel", "Glass", "Plastic", "Aluminium", "ClayFlueLiners",
-        "Bricks", "SolderedMetal", "Concrete", "Fibrociment", "Masonry", "CorrugatedMetal",
+        "WeldedSteel",
+        "Glass",
+        "Plastic",
+        "Aluminium",
+        "ClayFlueLiners",
+        "Bricks",
+        "SolderedMetal",
+        "Concrete",
+        "Fibrociment",
+        "Masonry",
+        "CorrugatedMetal"
     )
 
     val MaterialDefaultRoughness: Seq[(String, Double)] = Seq(
-        "WeldedSteel"    -> 0.001,
-        "Glass"          -> 0.001,
-        "Plastic"        -> 0.001,
-        "Aluminium"      -> 0.001,
-        "ClayFlueLiners" -> 0.0015,
-        "Bricks"         -> 0.005,
-        "SolderedMetal"  -> 0.002,
-        "Concrete"       -> 0.003,
-        "Fibrociment"    -> 0.003,
-        "Masonry"        -> 0.005,
-        "CorrugatedMetal" -> 0.005,
+        "WeldedSteel"     -> 0.001,
+        "Glass"           -> 0.001,
+        "Plastic"         -> 0.001,
+        "Aluminium"       -> 0.001,
+        "ClayFlueLiners"  -> 0.0015,
+        "Bricks"          -> 0.005,
+        "SolderedMetal"   -> 0.002,
+        "Concrete"        -> 0.003,
+        "Fibrociment"     -> 0.003,
+        "Masonry"         -> 0.005,
+        "CorrugatedMetal" -> 0.005
     )
 
     val Shapes: Seq[String] = Seq("Circle", "Square", "Rectangle")
@@ -119,16 +128,16 @@ object CatalogConstants:
 
     // Row indices for pressure loss sheet (0-based)
     object PressureRows:
-        val Title       = 0
-        val Subtitle    = 1
-        val HeaderRow   = 2
-        val Instruction = 3
+        val Title        = 0
+        val Subtitle     = 1
+        val HeaderRow    = 2
+        val Instruction  = 3
         val FirstDataRow = 4  // mB = 10
         val LastDataRow  = 19 // mB = 25
-        val MbStart     = 10
-        val MbEnd       = 25
-        val SbFirstCol  = 1  // Column B
-        val SbLastCol   = 8  // Column I
+        val MbStart      = 10
+        val MbEnd        = 25
+        val SbFirstCol   = 1  // Column B
+        val SbLastCol    = 8  // Column I
 
     // Row indices for emissions sheet (0-based)
     object EmissionsRows:

@@ -167,7 +167,7 @@ abstract class EN15544_V_2023_Common_Application
 
     /** Build the constraint context from sizing results. */
     lazy val constraintContext: ConstraintContext =
-        ConstraintContext     (
+        ConstraintContext                           (
             m_B                            = m_B,
             O_BR                           = firebox_sizing.O_BR,
             FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = firebox_sizing.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO,
@@ -313,7 +313,8 @@ abstract class EN15544_V_2023_Common_Application
     given pipeWithGasFlowOps: PipeWithGasFlowOps[PipeWithGasFlowOps.Error]
 
     /** EN 13384 section-geometry-change friction coefficient factory — provided by leaf modules. */
-    given dynFrict13384Factory: afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
+    given dynFrict13384Factory
+        : afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
         import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.*
         new DynFrict13384Factory:
             def make(pt: PipeType): DynFrict13384Like =
@@ -382,7 +383,7 @@ abstract class EN15544_V_2023_Common_Application
                             case FlueSlot(_) | ThermalFlueSlot(_) => true
                             case _                                => false
                         }
-                        val stage2Slots     = pfbSlots.drop(lastFluePipeSlotIdx + 1)
+                        val stage2Slots         = pfbSlots.drop(lastFluePipeSlotIdx + 1)
 
                         // Build Stage 2 PipeSlots (connector + chimney; no FluePipeT allowed here).
                         // Thread prevFrame through foldLeft — no mutable state.
@@ -397,10 +398,10 @@ abstract class EN15544_V_2023_Common_Application
                                             val (fdResult, ffV) =
                                                 FluePipe_Module_13384
                                                     .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                            val newFrame = ffV.toOption.flatten.orElse(prevFrame)
-                                            val pipeV =
+                                            val newFrame        = ffV.toOption.flatten.orElse(prevFrame)
+                                            val pipeV           =
                                                 FluePipe_Module_13384.FullDescrResult.extractPipe(fdResult)
-                                            val pipeSlot = pipeV match
+                                            val pipeSlot        = pipeV match
                                                 case Validated.Valid(pipe) =>
                                                     tcThermal13384.mkSlot(
                                                         FluePipeT,
@@ -418,10 +419,10 @@ abstract class EN15544_V_2023_Common_Application
                                                 val (fdResult, ffV) =
                                                     ConnectorPipe_Module
                                                         .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                                val newFrame = ffV.toOption.flatten.orElse(prevFrame)
-                                                val pipeV =
+                                                val newFrame        = ffV.toOption.flatten.orElse(prevFrame)
+                                                val pipeV           =
                                                     ConnectorPipe_Module.FullDescrResult.extractPipe(fdResult)
-                                                val pipeSlot = pipeV match
+                                                val pipeSlot        = pipeV match
                                                     case Validated.Valid(pipe) =>
                                                         ConnectorPipe_Module.foldPipeCanBe(pipe)  (
                                                             onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
@@ -442,7 +443,7 @@ abstract class EN15544_V_2023_Common_Application
                                                 .mkPipeFromIncrDescr(descr, chimneyFrame)
                                             val pipeV        =
                                                 ChimneyPipe_Module.FullDescrResult.extractPipe(fdResult)
-                                            val pipeSlot = pipeV match
+                                            val pipeSlot     = pipeV match
                                                 case Validated.Valid(pipe) =>
                                                     tcThermal13384.mkSlot(
                                                         ChimneyPipeT,
@@ -461,7 +462,7 @@ abstract class EN15544_V_2023_Common_Application
                                 UnexpectedDevError("Stage 1 flue region is empty — cannot seed Stage 2")
                             )
                         else
-                            val computeAt = en15544.en13384_application.computeAt
+                            val computeAt             = en15544.en13384_application.computeAt
                             val stage2InitialUpstream =
                                 UpstreamState.fromPipeResult(stage1Results.last, computeAt)
                             val folded                =
@@ -480,16 +481,16 @@ abstract class EN15544_V_2023_Common_Application
                             folded match
                                 case Right((_, stage2Results)) =>
                                     val flueRegionSlots = pfbSlots.take(lastFluePipeSlotIdx + 1).toVector
-                                    val stage1Tagged =
+                                    val stage1Tagged    =
                                         flueRegionSlots.zip(stage1Results).map { (slot, pr) =>
                                             val pipeType: PipeType = slot match
                                                 case ConnectorSlot(_) => ConnectorPipeT
                                                 case _                => FluePipeT
                                             (pipeType, pr)
                                         }
-                                    val stage2Tagged =
-                                        stage2PipeSlots.zip(stage2Results).map {
-                                            (slot, pr) => (slot.pipeType, pr)
+                                    val stage2Tagged    =
+                                        stage2PipeSlots.zip(stage2Results).map { (slot, pr) =>
+                                            (slot.pipeType, pr)
                                         }
                                     Validated.validNel(stage1Tagged ++ stage2Tagged)
                                 case Left(err)                 => Validated.invalidNel(err)
@@ -669,7 +670,7 @@ abstract class EN15544_V_2023_Common_Application
                 firebox_PipeResult,
                 postFireboxPipeResults
             )
-        lazy val outputs: Outputs =
+        lazy val outputs                : Outputs                      =
             val pipesResult = pipesResult_15544_VNelS.accumulateErrors
             models.en15544.std.Outputs(
                 techSpecs,
@@ -806,14 +807,14 @@ abstract class EN15544_V_2023_Common_Application
         // Rectangle shape that must satisfy the 1:4 aspect-ratio constraint.
         val flueRegionShapes: Seq[PipeShape] =
             postFireboxPipeSlots.flatMap:
-                case PostFireboxPipeDescrSlot.FlueSlot(descr) =>
+                case PostFireboxPipeDescrSlot.FlueSlot(descr)        =>
                     descr.collect:
                         case SetFlowOnlyPipeProp_15544_V3.SetInnerShape(shape)                 => shape
                         case AddFlowOnlyPipeElement_15544_V3.AddSectionShapeChange(_, toShape) => toShape
                 case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
                     descr.collect:
                         case SetThermalPipeProp_13384_V3.SetInnerShape(shape) => shape
-                case _ => Seq.empty
+                case _                                               => Seq.empty
         val checks =
             flueRegionShapes.zipWithIndex.map: (shape, idx) =>
                 shape match
@@ -834,7 +835,7 @@ abstract class EN15544_V_2023_Common_Application
                                     )
                                 )
                             .map(_ => ())
-                    case _ =>
+                    case _                                =>
                         ().validNel[FluePipeInvalidGeometryRatio]
         checks.toList.sequence[[x] =>> ValidatedNel[FluePipeInvalidGeometryRatio, x], Unit].map(_ => ())
 

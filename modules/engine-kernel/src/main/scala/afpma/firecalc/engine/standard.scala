@@ -149,7 +149,7 @@ object standard {
                 I18N.inputs_error.invald_type_of_appliance.pellets_incompatible_with_wood_log_fuel_type
             case e: InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType.type =>
                 I18N.inputs_error.invald_type_of_appliance.wood_logs_incompatible_with_pellets_fuel_type
-            case e: StoveParamsSizingInputMissing.type =>
+            case e: StoveParamsSizingInputMissing.type                                  =>
                 I18N.inputs_error.stove_params_sizing_input_missing
 
     // EN 15544
@@ -194,7 +194,8 @@ object standard {
         given ShowUsingLocale[FireboxBaseSurfaceNotInRange] = showUsingLocale: e =>
             I18N.errors.firebox_base_surface_not_in_range(e.actual, e.min, e.max)
 
-    case class FireboxBaseRatioInvalid(ratio: String, depth: String, width: String, minRatio: String, maxRatio: String) extends FireboxError
+    case class FireboxBaseRatioInvalid(ratio: String, depth: String, width: String, minRatio: String, maxRatio: String)
+        extends FireboxError
     object FireboxBaseRatioInvalid:
         given ShowUsingLocale[FireboxBaseRatioInvalid] = showUsingLocale: e =>
             I18N.errors.firebox_base_ratio_invalid(e.ratio, e.depth, e.width, e.minRatio, e.maxRatio)
@@ -512,7 +513,8 @@ object standard {
 
     sealed trait SingularFlowResistanceCoeffErrorI extends MecaFlu_Error
 
-    sealed class SingularFlowResistanceCoeffError(val msg: String, val sectionTyp: PipeType) extends SingularFlowResistanceCoeffErrorI
+    sealed class SingularFlowResistanceCoeffError(val msg: String, val sectionTyp: PipeType)
+        extends SingularFlowResistanceCoeffErrorI
 
     sealed trait FluePipeShapeSequenceError extends SingularFlowResistanceCoeffErrorI:
         override val sectionTyp: PipeType = FluePipeT
@@ -551,15 +553,19 @@ object standard {
         extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT) derives Show
 
     given show_SingularFlowResistanceCoeffError: ShowUsingLocale[SingularFlowResistanceCoeffError] = showUsingLocale:
-        case x: MissingAlpha3AngleForShortFluePipeSection =>
+        case x: MissingAlpha3AngleForShortFluePipeSection                 =>
             I18N.en15544_errors.missing_alpha3_angle_for_short_flue_pipe_section(x.msg)
         case x: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?] =>
             I18N.en15544_errors.unexpected_ratio_ld_dh("%.1f".format(x.ratio))
-        case x: SingularFlowResistanceCoeffError.NoGivenRatio_Ld_Dh[?] =>
+        case x: SingularFlowResistanceCoeffError.NoGivenRatio_Ld_Dh[?]    =>
             I18N.en15544_errors.no_given_ratio_ld_dh
-        case x: SingularFlowResistanceCoeffError.ValueOutOfBound[?] =>
+        case x: SingularFlowResistanceCoeffError.ValueOutOfBound[?]       =>
             I18N.errors.value_out_of_bound(
-                x.vTermName, "%.1f".format(x.v), x.vMin.toString, x.vTermName, x.vMax.toString
+                x.vTermName,
+                "%.1f".format(x.v),
+                x.vMin.toString,
+                x.vTermName,
+                x.vMax.toString
             )
         case x =>
             I18N.en15544_errors.singular_flow_resistance_coeff_error(x.msg)
@@ -578,16 +584,17 @@ object standard {
     object SingularFlowResistanceCoeffError {
 
         sealed abstract class CouldNotSelectCoeffValuesForInterpolation[S: Show](
-            shape: S,
-            m    : String,
-            sectionTyp: PipeType,
+            shape     : S,
+            m         : String,
+            sectionTyp: PipeType
         ) extends SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > could not select coeff values for interpolation > $m",
-                sectionTyp,
+                sectionTyp
             )
 
-        case class UnexpectedRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType, ratio: Double)(using val show_shape: Show[S])
-            extends CouldNotSelectCoeffValuesForInterpolation[S](
+        case class UnexpectedRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType, ratio: Double)(using
+            val show_shape: Show[S]
+        ) extends CouldNotSelectCoeffValuesForInterpolation[S](
                 shape,
                 s"unexpected ratio Ld/Dh = ${"%.3f".format(ratio)}",
                 sectionTyp
@@ -598,7 +605,11 @@ object standard {
                 s"UnexpectedRatio_Ld_Dh(shape = ${u.shape.show}, ratio = ${u.ratio})"
 
         case class NoGivenRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType)(using val show_shape: Show[S])
-            extends CouldNotSelectCoeffValuesForInterpolation[S](shape, "expecing ratio Ld/Dh but none given", sectionTyp)
+            extends CouldNotSelectCoeffValuesForInterpolation[S](
+                shape,
+                "expecing ratio Ld/Dh but none given",
+                sectionTyp
+            )
 
         given show_NoGivenRatio: [S] => (show_Shape: Show[S]) => Show[NoGivenRatio_Ld_Dh[S]] =
             Show.show[NoGivenRatio_Ld_Dh[S]]: u =>
@@ -608,24 +619,23 @@ object standard {
             new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m", sectionTyp)
 
         case class ValueOutOfBound[S: Show](
-            shape    : S,
+            shape                  : S,
             override val sectionTyp: PipeType,
-            vTermName: String,
-            v        : Double,
-            vMin     : Double,
-            vMax     : Double
+            vTermName              : String,
+            v                      : Double,
+            vMin                   : Double,
+            vMax                   : Double
         ) extends SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)",
-                sectionTyp: PipeType,
+                sectionTyp: PipeType
             ) {
             def prettyShape: String = shape.show
         }
 
-
         def CouldNotComputeIndividualCoefficientForShape[S: Show](
-            shape: S,
+            shape     : S,
             sectionTyp: PipeType,
-            m    : String
+            m         : String
         ) =
             new SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > could not compute individual coefficient > $m",
@@ -825,8 +835,8 @@ object standard {
     sealed trait PropertyMustBeDefined extends IncrementalValidation_Error
 
     case class SectionGeometryMustBeDefined(sectionTyp: PipeType)                    extends PropertyMustBeDefined
-    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)                 extends PropertyMustBeDefined
-    case class PressureLossMustBeDefined(sectionTyp: PipeType)                      extends PropertyMustBeDefined
+    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)                  extends PropertyMustBeDefined
+    case class PressureLossMustBeDefined(sectionTyp: PipeType)                       extends PropertyMustBeDefined
     case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType) extends PropertyMustBeDefined
 
     object PropertyMustBeDefined:

@@ -37,9 +37,9 @@ object FlowOnlyDefaultable_13384:
             azimuth     = AzimuthDirection.Rear,
             inclination = InclinationDirection.Up
         )
-    given Defaultable[SetInitialPosition]                    :
+    given Defaultable[SetInitialPosition]                     :
         def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
-    given Defaultable[SetFinalPosition]                      :
+    given Defaultable[SetFinalPosition]                       :
         def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
     given Locale => Defaultable[AddSectionSlopped]            :
         def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)

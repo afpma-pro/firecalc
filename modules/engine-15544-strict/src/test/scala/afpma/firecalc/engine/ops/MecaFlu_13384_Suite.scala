@@ -96,11 +96,13 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 val chimney_elems = {
                     // Build the typed chimney pipe via PipeChain_15544_Strict, which
                     // chains frames from flue → connector → chimney descriptors.
-                    val chain = PipeChain_15544_Strict.build(PipeChain_15544_Strict.Descriptors(
-                        CasType_15544_C2.fluePipeDescr,
-                        CasType_15544_C2.connectorPipeDescr,
-                        CasType_15544_C2.chimneyPipeDescr
-                    ))
+                    val chain = PipeChain_15544_Strict.build(
+                        PipeChain_15544_Strict.Descriptors(
+                            CasType_15544_C2.fluePipeDescr,
+                            CasType_15544_C2.connectorPipeDescr,
+                            CasType_15544_C2.chimneyPipeDescr
+                        )
+                    )
                     chain.chimneyPipe.toOption.get
                 }
                 val p             = Params_13384.DraftMin_LoadNominal
@@ -130,13 +132,13 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 val first         = chimney_elems.elems.head
                 val p             = Params_13384.DraftMin_LoadNominal
                 val gip           = GasInPipeEl[NamedPipeElDescrG[ChimneyPipe_Module.El], Gas, Params_13384](FlueGas, first, p)
-                ThermalMecaFlu_13384.makePipeSectionResult(
+                ThermalMecaFlu_13384.makePipeSectionResult           (
                     gip,
                     ha.fluegas,
                     ha.massFlows,
                     temp_start            = 550.degreesCelsius,
                     last_pipe_density     = 0.393.kg_per_m3.some, // for PG calculation
-                    last_pipe_velocity    = 5.24.m_per_s.some,    // for PG calculation
+                    last_pipe_velocity    = 5.24.m_per_s.some, // for PG calculation
                     last_AirSpaceDetailed = None,
                     last_CrossSectionArea = None,
                     last_InnerGeom        = None,

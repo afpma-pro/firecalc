@@ -5,10 +5,11 @@
 
 package afpma.laminar.form
 
-/** laminar-form-coulomb — Coulomb unit-aware form instances.
-  *
-  * Import:
-  *   - `import afpma.laminar.form.coulomb.CoulombFormInstances.given` for NumericFormValue instances
-  *   - `import afpma.laminar.form.coulomb.CoulombFormInstances.withLinkedVar` for extension
-  */
+/**
+ * laminar-form-coulomb — Coulomb unit-aware form instances.
+ *
+ * Import:
+ *   - `import afpma.laminar.form.coulomb.CoulombFormInstances.given` for NumericFormValue instances
+ *   - `import afpma.laminar.form.coulomb.CoulombFormInstances.withLinkedVar` for extension
+ */
 package object coulomb

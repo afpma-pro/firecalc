@@ -15,24 +15,26 @@ import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
 
-/** Modal component for selecting properties from a pipe catalog.
-  *
-  * Displays a datalist-backed search input. On confirmation the selected
-  * [[SetPropertiesInBatch]] entry is emitted through `onSelect`.
-  */
+/**
+ * Modal component for selecting properties from a pipe catalog.
+ *
+ * Displays a datalist-backed search input. On confirmation the selected
+ * [[SetPropertiesInBatch]] entry is emitted through `onSelect`.
+ */
 case class PipeCatalogSelectComponent(
     entriesSignal: Signal[Seq[SetPropertiesInBatch]],
     onSelect     : Observer[SetPropertiesInBatch]
-)(using Locale, DisplayUnits) extends Component:
+)                                    (using Locale, DisplayUnits)
+    extends Component:
 
     private val dialog = CatalogSelectDialog(
-        entriesSignal  = entriesSignal,
-        entryKey       = _.batch_name,
-        onSelect       = onSelect,
-        datalistId     = "pipe-catalog-datalist"
+        entriesSignal = entriesSignal,
+        entryKey      = _.batch_name,
+        onSelect      = onSelect,
+        datalistId    = "pipe-catalog-datalist"
     )
 
-    def open(): Unit      = dialog.open()
+    def open(): Unit = dialog.open()
     val node: HtmlElement = dialog.node
 
 end PipeCatalogSelectComponent

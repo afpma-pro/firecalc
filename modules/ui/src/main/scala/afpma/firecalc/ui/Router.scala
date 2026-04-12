@@ -28,8 +28,8 @@ object Page:
 
 lazy val defaultRoute = Route.static(DefaultPage, root / endOfSegments, basePath = Route.fragmentBasePath)
 
-case object DefaultPage extends Page
-case class ProjectSelectorPage(lang: Language)                                                              extends Page
+case object DefaultPage                                                                                    extends Page
+case class ProjectSelectorPage(lang: Language)                                                             extends Page
 case class ProjectPage(lang: Language, projectId: ProjectId, displayUnitsOpt: Option[DisplayUnits] = None) extends Page
 
 lazy val projectSelectorRoute = Route[ProjectSelectorPage, String](
@@ -47,7 +47,7 @@ lazy val projectRoute = Route[ProjectPage, (String, String)](
 )
 
 object router
-    extends com.raquo.waypoint.Router[Page](
+    extends com.raquo.waypoint.Router[Page]         (
         routes          = List(projectRoute, projectSelectorRoute, defaultRoute),
         routeFallback   = _ => ProjectSelectorPage(lang = Languages.Fr),
         serializePage   = page => write(page), // serialize page data for storage in History API log

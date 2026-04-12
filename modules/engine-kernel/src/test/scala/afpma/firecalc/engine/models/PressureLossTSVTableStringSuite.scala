@@ -18,8 +18,8 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
 
     private val rawTable: String =
         "mb_in_kg/sb_in_cm\t1.6\t2.4\t3.2\t4.0\n" +
-        "10\t4\t3\t2\t1\n" +
-        "25\t22\t20\t18\t16\n"
+            "10\t4\t3\t2\t1\n" +
+            "25\t22\t20\t18\t16\n"
 
     private val table = PressureLossTSVTableString(rawTable)
 
@@ -169,22 +169,22 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
     //   (10, 1.7)=6.81  (15, 2.6)=8.18  (20, 3.5)=12.94  (22, 3.9)=15.79
     private val sparseRawTable: String =
         "mb_in_kg/sb_in_cm\t1.7\t2.6\t3.5\t3.9\n" +
-        "10\t6.81\t\t\t\n" +
-        "11\t\t\t\t\n" +
-        "12\t\t\t\t\n" +
-        "13\t\t\t\t\n" +
-        "14\t\t\t\t\n" +
-        "15\t\t8.18\t\t\n" +
-        "16\t\t\t\t\n" +
-        "17\t\t\t\t\n" +
-        "18\t\t\t\t\n" +
-        "19\t\t\t\t\n" +
-        "20\t\t\t12.94\t\n" +
-        "21\t\t\t\t\n" +
-        "22\t\t\t\t15.79\n" +
-        "23\t\t\t\t\n" +
-        "24\t\t\t\t\n" +
-        "25"
+            "10\t6.81\t\t\t\n" +
+            "11\t\t\t\t\n" +
+            "12\t\t\t\t\n" +
+            "13\t\t\t\t\n" +
+            "14\t\t\t\t\n" +
+            "15\t\t8.18\t\t\n" +
+            "16\t\t\t\t\n" +
+            "17\t\t\t\t\n" +
+            "18\t\t\t\t\n" +
+            "19\t\t\t\t\n" +
+            "20\t\t\t12.94\t\n" +
+            "21\t\t\t\t\n" +
+            "22\t\t\t\t15.79\n" +
+            "23\t\t\t\t\n" +
+            "24\t\t\t\t\n" +
+            "25"
 
     private val sparseTable = PressureLossTSVTableString(sparseRawTable)
 
@@ -242,8 +242,8 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         val all = sparseTable.readAll
 
         val expected = List(
-            (10.0, 1.7, 6.81),
-            (15.0, 2.6, 8.18),
+            (10.0, 1.7, 6.81 ),
+            (15.0, 2.6, 8.18 ),
             (20.0, 3.5, 12.94),
             (22.0, 3.9, 15.79)
         )

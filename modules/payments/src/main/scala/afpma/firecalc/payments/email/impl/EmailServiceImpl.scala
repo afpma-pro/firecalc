@@ -149,7 +149,9 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         )
 
         for {
-            _      <- logger.info(s"Sending admin invoice ${invoice.invoiceNumber} to ${LogSanitizer.maskEmail(invoice.email.value)}")
+            _      <- logger.info(
+                s"Sending admin invoice ${invoice.invoiceNumber} to ${LogSanitizer.maskEmail(invoice.email.value)}"
+            )
             result <- sendEmilMail(mail)
             _      <- logger.info(s"Admin invoice email result: $result")
         } yield result
@@ -207,7 +209,9 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         )
 
         for {
-            _      <- logger.info(s"Sending user notification: $subject to ${LogSanitizer.maskEmail(notification.email.value)}")
+            _      <- logger.info(
+                s"Sending user notification: $subject to ${LogSanitizer.maskEmail(notification.email.value)}"
+            )
             result <- sendEmilMail(mail)
             _      <- logger.info(s"User notification result: $result")
         } yield result
@@ -308,7 +312,9 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
             s"<p>${translations.emails.authentication.product_info(translatedProductName)}</p>"
         )
 
-        val expire_in = translations.emails.authentication.auth_code_expiration_in_min(PurchaseIntentRepository.DEFAULT_AUTH_CODE_EXPIRATION_DURATION_MINUTES.toString)
+        val expire_in    = translations.emails.authentication.auth_code_expiration_in_min(
+            PurchaseIntentRepository.DEFAULT_AUTH_CODE_EXPIRATION_DURATION_MINUTES.toString
+        )
         val final_footer = translations.emails.authentication.footer(expire_in)
 
         s"""

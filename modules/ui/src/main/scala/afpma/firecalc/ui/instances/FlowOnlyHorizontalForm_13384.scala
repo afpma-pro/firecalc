@@ -119,8 +119,8 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     // Both places must be updated together when adding a new DC subtype.
     inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): Form[A] =
         import com.raquo.laminar.api.L.span
-        @nowarn given Form[String] = horizontal_form.string_emptyAsDefault_alwaysValid
-        given ValidateVar[Option[AbsoluteDirection]] =
+        @nowarn given Form[String]                    = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[AbsoluteDirection]]  =
             ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[AbsoluteDirection]
         @nowarn given Form[Option[AbsoluteDirection]] =
             Form.makeFor[Option[AbsoluteDirection]](Defaultable(None))((_, _) => span())
@@ -191,7 +191,8 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
     // AmbiantAirTemperatureSet
 
     given horizontal_form_AmbiantAirTemperatureSet: Form[AmbiantAirTemperatureSet] =
-        given Form[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] = horizontal_form_TuTemperature_Or_TCelsius
+        given Form[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] =
+            horizontal_form_TuTemperature_Or_TCelsius
         autoDeriveAndOverwriteFieldNames[AmbiantAirTemperatureSet]
 
     // AppendLayerDescr
@@ -215,7 +216,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.AirSpaceUsingOuterShape]
 
     given horizontal_form_AirSpaceUsingThickness: Form[AppendLayerDescr.AirSpaceUsingThickness] =
-        given Form[QtyD[Meter]]     = horizontal_form_Length_mm_cm
+        given Form[QtyD[Meter]] = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.AirSpaceUsingThickness]
 
     given horizontal_form_AppendLayerDescr: Form[AppendLayerDescr] =
@@ -230,7 +231,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace_V2]
 
     given horizontal_form_AirSpaceDetailed_WithAirSpace: Form[AirSpaceDetailed.WithAirSpace_V2] =
-        given Form[QtyD[Meter]]     = horizontal_form_Length_mm_cm
+        given Form[QtyD[Meter]] = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace_V2]
 
     // PipeLocation.AreaName
@@ -245,7 +246,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.OutsideOrExterior]
     given horizontal_form_PipeLocation_AreaName_CustomArea       : Form[PipeLocation.AreaName.CustomArea]        =
         given ValidateVar[Option[String]] = ValidateVarCommonInstances.string.validOption_Always
-        given Form[String] = FormDerivation.forString
+        given Form[String]                = FormDerivation.forString
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.CustomArea]
 
     given horizontal_form_PipeLocation_AreaName: Form[PipeLocation.AreaName] =
@@ -288,12 +289,10 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
 
     // Ventil Direction
 
-    given horizontal_form_AirSpaceDetailed_VentilDirection_UndefinedDir
-        : Form[VentilDirection.UndefinedDir] =
+    given horizontal_form_AirSpaceDetailed_VentilDirection_UndefinedDir: Form[VentilDirection.UndefinedDir] =
         autoDeriveAndOverwriteFieldNames[VentilDirection.UndefinedDir]
 
-    given horizontal_form_AirSpaceDetailed_VentilDirection_SameDirAsFlueGas
-        : Form[VentilDirection.SameDirAsFlueGas] =
+    given horizontal_form_AirSpaceDetailed_VentilDirection_SameDirAsFlueGas: Form[VentilDirection.SameDirAsFlueGas] =
         autoDeriveAndOverwriteFieldNames[VentilDirection.SameDirAsFlueGas]
 
     given horizontal_form_AirSpaceDetailed_VentilDirection_OppositeDirOfFlueGas

@@ -7,19 +7,19 @@
 // This helps avoid Ivy POM parsing quirks like:
 //   "bad module name: expected='sbt-crossproject_2.12_1.0' found='sbt-crossproject'"
 resolvers ++= Seq(
-  Resolver.sbtPluginRepo("releases"),
-  "sbt-plugin-snapshots" at "https://repo.scala-sbt.org/scalasbt/sbt-plugin-snapshots",
-  Resolver.mavenCentral,
+    Resolver.sbtPluginRepo("releases"),
+    "sbt-plugin-snapshots" at "https://repo.scala-sbt.org/scalasbt/sbt-plugin-snapshots",
+    Resolver.mavenCentral,
 //   Resolver.sonatypeRepo("releases") // deprecated
-  Resolver.sonatypeCentralSnapshots
+    Resolver.sonatypeCentralSnapshots
 )
 
-addSbtPlugin("io.spray"                     % "sbt-revolver"             % "0.10.0")
-addSbtPlugin("org.portable-scala"           % "sbt-scalajs-crossproject" % "1.3.2")
-addSbtPlugin("org.scala-js"                 % "sbt-scalajs"              % "1.20.2")
-addSbtPlugin("ch.epfl.scala"                % "sbt-scalafix"             % "0.14.5")
-addSbtPlugin("org.scalablytyped.converter"  % "sbt-converter"            % "1.0.0-beta44")
-addSbtPlugin("org.scalamolecule"            % "sbt-molecule"             % "1.20.0")
+addSbtPlugin("io.spray"                    % "sbt-revolver"             % "0.10.0"      )
+addSbtPlugin("org.portable-scala"          % "sbt-scalajs-crossproject" % "1.3.2"       )
+addSbtPlugin("org.scala-js"                % "sbt-scalajs"              % "1.20.2"      )
+addSbtPlugin("ch.epfl.scala"               % "sbt-scalafix"             % "0.14.5"      )
+addSbtPlugin("org.scalablytyped.converter" % "sbt-converter"            % "1.0.0-beta44")
+addSbtPlugin("org.scalamolecule"           % "sbt-molecule"             % "1.20.0"      )
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.3.1")
 

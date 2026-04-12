@@ -110,30 +110,49 @@ object OrderStatusTransitionTest extends TestSuite {
         }
 
         val productRepo = new ProductRepository[IO] {
-            def findById(id: ProductId): IO[Option[Product]]         = IO.pure(Some(testProduct))
+            def findById(id: ProductId): IO[Option[Product]] = IO.pure(Some(testProduct))
             def findOrCreate(name: String, description: String, price: BigDecimal, currency: Currency): IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
-            def create(id: ProductId, name: String, description: String, price: BigDecimal, currency: Currency, active: Boolean): IO[Product] =
+            def create(
+                id         : ProductId,
+                name       : String,
+                description: String,
+                price      : BigDecimal,
+                currency   : Currency,
+                active     : Boolean
+            )                                                                                         : IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
-            def update(id: ProductId, name: String, description: String, price: BigDecimal, currency: Currency, active: Boolean): IO[Product] =
+            def update(
+                id         : ProductId,
+                name       : String,
+                description: String,
+                price      : BigDecimal,
+                currency   : Currency,
+                active     : Boolean
+            )                                                                                         : IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
-            def upsert(productInfo: v1.ProductInfo): IO[Product] =
+            def upsert(productInfo: v1.ProductInfo)                                                   : IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
         }
 
         val customerRepo = new CustomerRepository[IO] {
-            def findByEmail(email: String): IO[Option[Customer]]                                     = IO.pure(Some(testCustomer))
-            def findByEmailAndUpdate(email: String, newCustomerInfo: CustomerInfo): IO[Option[Customer]] = IO.pure(Some(testCustomer))
-            def findById(id: CustomerId): IO[Option[Customer]]                                       = IO.pure(Some(testCustomer))
-            def create(customerInfo: CustomerInfo): IO[Customer]                                     = IO.pure(testCustomer)
-            def createFull(customer: Customer): IO[Boolean]                                          = IO.pure(true)
-            def updatePaymentProvider(customerId: CustomerId, paymentProviderId: String, paymentProvider: PaymentProvider): IO[Boolean] =
+            def findByEmail(email: String): IO[Option[Customer]] = IO.pure(Some(testCustomer))
+            def findByEmailAndUpdate(email: String, newCustomerInfo: CustomerInfo): IO[Option[Customer]] =
+                IO.pure(Some(testCustomer))
+            def findById  (id          : CustomerId  ): IO[Option[Customer]] = IO.pure(Some(testCustomer))
+            def create    (customerInfo: CustomerInfo): IO[Customer]         = IO.pure(testCustomer)
+            def createFull(customer    : Customer    ): IO[Boolean]          = IO.pure(true)
+            def updatePaymentProvider(
+                customerId       : CustomerId,
+                paymentProviderId: String,
+                paymentProvider  : PaymentProvider
+            ): IO[Boolean] =
                 IO.pure(true)
         }
 
         val productMetadataRepo = new ProductMetadataRepository[IO] {
-            def create(metadata: ProductMetadata): IO[Long]            = IO.pure(1L)
-            def findById(id: Long): IO[Option[ProductMetadata]]        = IO.pure(None)
+            def create  (metadata: ProductMetadata): IO[Long]                    = IO.pure(1L)
+            def findById(id      : Long           ): IO[Option[ProductMetadata]] = IO.pure(None)
         }
 
         new OrderServiceImpl[IO](orderRepo, productRepo, customerRepo, productMetadataRepo)
@@ -143,25 +162,25 @@ object OrderStatusTransitionTest extends TestSuite {
 
         test("valid transitions are accepted") {
             val validCases = List(
-                (OrderStatus.Pending, OrderStatus.Processing),
-                (OrderStatus.Pending, OrderStatus.Confirmed),
-                (OrderStatus.Pending, OrderStatus.Failed),
-                (OrderStatus.Pending, OrderStatus.Cancelled),
+                (OrderStatus.Pending, OrderStatus.Processing  ),
+                (OrderStatus.Pending, OrderStatus.Confirmed   ),
+                (OrderStatus.Pending, OrderStatus.Failed      ),
+                (OrderStatus.Pending, OrderStatus.Cancelled   ),
                 (OrderStatus.Processing, OrderStatus.Confirmed),
-                (OrderStatus.Processing, OrderStatus.Failed),
+                (OrderStatus.Processing, OrderStatus.Failed   ),
                 (OrderStatus.Processing, OrderStatus.Cancelled),
-                (OrderStatus.Confirmed, OrderStatus.PaidOut),
-                (OrderStatus.Confirmed, OrderStatus.Failed)
+                (OrderStatus.Confirmed, OrderStatus.PaidOut   ),
+                (OrderStatus.Confirmed, OrderStatus.Failed    )
             )
 
             validCases.foreach { case (from, to) =>
-                val state   = TestState()
-                val order   = mkOrder(from)
+                val state = TestState()
+                val order = mkOrder(from)
                 state.orders = Map(order.id -> order)
                 val service = createService(state)
 
                 val result = service.updateOrderStatus(order.id, to).unsafeRunSync()
-                Predef.assert(result)
+                Predef.assert(result                             )
                 Predef.assert(state.orders(order.id).status == to)
             }
         }
@@ -172,13 +191,13 @@ object OrderStatusTransitionTest extends TestSuite {
 
             terminalStatuses.foreach { terminal =>
                 allTargetStatuses.filterNot(_ == terminal).foreach { target =>
-                    val state   = TestState()
-                    val order   = mkOrder(terminal)
+                    val state = TestState()
+                    val order = mkOrder(terminal)
                     state.orders = Map(order.id -> order)
                     val service = createService(state)
 
                     val result = service.updateOrderStatus(order.id, target).unsafeRunSync()
-                    Predef.assert(!result)
+                    Predef.assert(!result                                  )
                     Predef.assert(state.orders(order.id).status == terminal)
                 }
             }
@@ -186,43 +205,43 @@ object OrderStatusTransitionTest extends TestSuite {
 
         test("invalid non-terminal transitions are rejected") {
             val invalidCases = List(
-                (OrderStatus.Pending, OrderStatus.PaidOut),
-                (OrderStatus.Processing, OrderStatus.Pending),
-                (OrderStatus.Processing, OrderStatus.PaidOut),
-                (OrderStatus.Confirmed, OrderStatus.Pending),
+                (OrderStatus.Pending, OrderStatus.PaidOut     ),
+                (OrderStatus.Processing, OrderStatus.Pending  ),
+                (OrderStatus.Processing, OrderStatus.PaidOut  ),
+                (OrderStatus.Confirmed, OrderStatus.Pending   ),
                 (OrderStatus.Confirmed, OrderStatus.Processing),
-                (OrderStatus.Confirmed, OrderStatus.Cancelled)
+                (OrderStatus.Confirmed, OrderStatus.Cancelled )
             )
 
             invalidCases.foreach { case (from, to) =>
-                val state   = TestState()
-                val order   = mkOrder(from)
+                val state = TestState()
+                val order = mkOrder(from)
                 state.orders = Map(order.id -> order)
                 val service = createService(state)
 
                 val result = service.updateOrderStatus(order.id, to).unsafeRunSync()
-                Predef.assert(!result)
+                Predef.assert(!result                              )
                 Predef.assert(state.orders(order.id).status == from)
             }
         }
 
         test("same-status update is a no-op") {
             OrderStatus.values.foreach { status =>
-                val state   = TestState()
-                val order   = mkOrder(status)
+                val state = TestState()
+                val order = mkOrder(status)
                 state.orders = Map(order.id -> order)
                 val service = createService(state)
 
                 val result = service.updateOrderStatus(order.id, status).unsafeRunSync()
                 // Should return false (no actual update performed)
-                Predef.assert(!result)
+                Predef.assert(!result                                )
                 Predef.assert(state.orders(order.id).status == status)
             }
         }
 
         test("update on missing order returns false") {
-            val state   = TestState()
-            val service = createService(state)
+            val state     = TestState()
+            val service   = createService(state)
             val missingId = OrderId(UUID.randomUUID())
 
             // When order not found, repo.updateStatus returns false

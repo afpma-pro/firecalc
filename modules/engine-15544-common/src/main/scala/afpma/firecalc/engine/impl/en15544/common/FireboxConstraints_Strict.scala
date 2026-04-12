@@ -103,7 +103,7 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
                             .GenericTyped[
                                 Dimensions.Base,
                                 FireboxBaseSurfaceNotInRange
-                            ](
+                            ]  (
                                 value   = firebox.dimensions.base,
                                 isValid = base =>
                                     val area = base.area
@@ -143,17 +143,18 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
                                     val (l, w) = (sq.depth, sq.width)
                                     val ratio: Dimensionless = l / w
                                     ratio.value match
-                                        case r if r < ctx.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO || r > ctx.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO =>
+                                        case r
+                                            if r < ctx.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO || r > ctx.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO =>
                                             Left(
                                                 FireboxBaseRatioInvalid(
-                                                    "%.1f".format(r),
+                                                    "%.1f".format(r                                 ),
                                                     l.showP,
                                                     w.showP,
                                                     "%.1f".format(ctx.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO),
                                                     "%.1f".format(ctx.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO)
                                                 )
                                             )
-                                        case _                   => Right(sq)
+                                        case _ => Right(sq)
                         )
                     )
 

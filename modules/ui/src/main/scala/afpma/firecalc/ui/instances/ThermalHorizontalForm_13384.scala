@@ -25,7 +25,6 @@ import afpma.laminar.form.Form.*
 import afpma.laminar.form.derivation.FormDerivation
 import io.taig.babel.Locale
 
-
 class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
     import AddThermalPipeElement_13384.*
@@ -53,8 +52,8 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
             import com.raquo.laminar.api.L.*
             import FormDerivation.WrappedWithEphemeralId
             new Form[List[SetSingleProp]]:
-                def defaultable = Defaultable.forList(using horizontal_form_SetSingleProp.defaultable)
-                def validateVar = ValidateVar.forList(using horizontal_form_SetSingleProp.validateVar)
+                def defaultable                                                                           = Defaultable.forList(using horizontal_form_SetSingleProp.defaultable)
+                def validateVar                                                                           = ValidateVar.forList(using horizontal_form_SetSingleProp.validateVar)
                 def render(v: Var[List[SetSingleProp]], config: FormConfig)(using renderer: FormRenderer) =
                     val wrappedVar = v.zoomLazy(_.zipWithIndex.map((a, idx) => WrappedWithEphemeralId(idx, a))) {
                         (_, wrapped) => wrapped.map(_.a)
@@ -77,7 +76,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
                 _.toSeq
             )
 
-        val d: Defaultable[SetPropertiesInBatch] = summon[Defaultable[SetPropertiesInBatch]]
+        val d         : Defaultable[SetPropertiesInBatch] = summon[Defaultable[SetPropertiesInBatch]]
         given vv_batch: ValidateVar[SetPropertiesInBatch] = ValidateVar.valid
 
         val stringForm: Form[String] = string_emptyAsDefault_alwaysValid
@@ -92,7 +91,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
             val titleElement   = stringForm.render(titleVar, fc)
             val contentElement = seqForm.render(contentVar, fc)
 
-            SetPropertiesInBatchFormComponent(
+            SetPropertiesInBatchFormComponent            (
                 v             = v,
                 entriesSignal = pipePresetsSignal,
                 titleEl       = titleElement,
@@ -134,18 +133,17 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
             // Preserves the existing shape type; only changes the smallest side.
             def adjustCasingInnerShape(existing: Option[PipeShape], requiredMinDim: Length): PipeShape =
                 existing match
-                    case Some(Circle(_))                                      => Circle(requiredMinDim)
-                    case Some(Square(_))                                      => Square(requiredMinDim)
-                    case Some(Rectangle(a, b)) if a.value == b.value          => Rectangle(requiredMinDim, requiredMinDim)
-                    case Some(Rectangle(a, b)) if a.value < b.value           => Rectangle(requiredMinDim, b)
-                    case Some(Rectangle(a, b))                                => Rectangle(a, requiredMinDim)
-                    case None                                                 => Square(requiredMinDim)
+                    case Some(Circle(_))                             => Circle(requiredMinDim)
+                    case Some(Square(_))                             => Square(requiredMinDim)
+                    case Some(Rectangle(a, b)) if a.value == b.value => Rectangle(requiredMinDim, requiredMinDim)
+                    case Some(Rectangle(a, b)) if a.value < b.value  => Rectangle(requiredMinDim, b)
+                    case Some(Rectangle(a, b))                       => Rectangle(a, requiredMinDim)
+                    case None                                        => Square(requiredMinDim)
 
             def upsertInnerShape(props: Seq[SetSingleProp], newShape: PipeShape): Seq[SetSingleProp] =
                 if props.exists(_.isInstanceOf[SetInnerShape]) then
                     props.map { case _: SetInnerShape => SetInnerShape(newShape); case other => other }
-                else
-                    SetInnerShape(newShape) +: props
+                else SetInnerShape(newShape) +: props
 
             // Derived signal: liner's outer shape (inner shape expanded through wall layers)
             val linerOuterSig: Signal[Option[PipeShape]] =
@@ -153,13 +151,15 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
             // Binder 1: (linerOuter + airWidth) → casing inner shape
             val airToCasingBinder =
-                linerOuterSig.combineWith(airVar.signal)
+                linerOuterSig
+                    .combineWith(airVar.signal)
                     .distinct
                     .changes
                     .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                     .map {
                         case (Some(los), AirSpaceDetailed_V2.WithAirSpace_V2(width, _, _)) =>
-                            val requiredMinDim = (los.dh.toUnit[Meter].value + 2.0 * width.toUnit[Meter].value).withUnit[Meter]
+                            val requiredMinDim =
+                                (los.dh.toUnit[Meter].value + 2.0 * width.toUnit[Meter].value).withUnit[Meter]
                             Some(requiredMinDim)
                         case _ => None
                     }
@@ -170,24 +170,25 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
                     .collect { case Some((newShape, curShape)) if !curShape.contains(newShape) => newShape }
                     --> Observer[PipeShape](newShape =>
                         casingVar.update(c => c.copy(props = upsertInnerShape(c.props, newShape)))
-                        infoDialog.show(I18N.set_prop.LinedFlue_sync_casing)
+                        infoDialog.show (I18N.set_prop.LinedFlue_sync_casing                     )
                     )
 
             // Binder 2: (linerOuter + casing inner shape) → air width
             // Observe the full casingVar (not just extractInnerShape) to ensure
             // changes to PipeShape dimensions propagate even through nested zooms.
             val casingToAirBinder =
-                linerOuterSig.combineWith(casingVar.signal)
+                linerOuterSig
+                    .combineWith(casingVar.signal)
                     .distinct
                     .changes
                     .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                     .map { case (los, casing) =>
                         (los, casing.props.extractInnerShape) match
                             case (Some(l), Some(cis)) =>
-                                val dh = cis match
-                                    case Rectangle(min, b) if min < b   => min
-                                    case Rectangle(a, min) if min < a   => min
-                                    case other                          => other.dh
+                                val dh             = cis match
+                                    case Rectangle(min, b) if min < b => min
+                                    case Rectangle(a, min) if min < a => min
+                                    case other                        => other.dh
                                 val airWidthMeters = (dh.toUnit[Meter].value - l.dh.toUnit[Meter].value) / 2.0
                                 if airWidthMeters > 0 then Some(airWidthMeters.withUnit[Meter])
                                 else None
@@ -197,17 +198,17 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
                     .withCurrentValueOf(airVar.signal)
                     .collect {
                         case (Some(newWidth), AirSpaceDetailed_V2.WithAirSpace_V2(curWidth, _, _))
-                            if math.abs(newWidth.toUnit[Meter].value - curWidth.toUnit[Meter].value) >= 0.001 => 
-                                // equality means diff less than 1mm.
-                                // should be enough to prevent looping because of floating computations
-                                newWidth
+                            if math.abs(newWidth.toUnit[Meter].value - curWidth.toUnit[Meter].value) >= 0.001 =>
+                            // equality means diff less than 1mm.
+                            // should be enough to prevent looping because of floating computations
+                            newWidth
 
                     }
                     --> Observer[Length](newWidth =>
                         airVar.update {
                             case AirSpaceDetailed_V2.WithAirSpace_V2(_, dir, vo) =>
                                 AirSpaceDetailed_V2.WithAirSpace_V2(newWidth, dir, vo)
-                            case other => other
+                            case other                                           => other
                         }
                         infoDialog.show(I18N.set_prop.LinedFlue_sync_airspace)
                     )
@@ -216,17 +217,17 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
                 airToCasingBinder,
                 casingToAirBinder,
                 infoDialog.node,
-                h4(cls := "font-semibold text-sm mb-1", I18N.set_prop.LinedFlue_liner),
-                linerForm.render(linerVar, fc),
-                h4(cls := "font-semibold text-sm mb-1 mt-2", I18N.en13384.air_space_detailed),
-                horizontal_form_AirSpaceDetailed.render(airVar, fc),
-                h4(cls := "font-semibold text-sm mb-1 mt-2", I18N.set_prop.LinedFlue_casing),
-                casingForm.render(casingVar, fc)
+                h4                                     (cls := "font-semibold text-sm mb-1", I18N.set_prop.LinedFlue_liner       ),
+                linerForm.render                       (linerVar, fc                                                             ),
+                h4                                     (cls := "font-semibold text-sm mb-1 mt-2", I18N.en13384.air_space_detailed),
+                horizontal_form_AirSpaceDetailed.render(airVar, fc                                                               ),
+                h4                                     (cls := "font-semibold text-sm mb-1 mt-2", I18N.set_prop.LinedFlue_casing ),
+                casingForm.render                      (casingVar, fc                                                            )
             )
 
     given horizontal_form_SetSingleProp: Form[SetSingleProp] =
         FormDerivation.splitViaMatchingOnly[SetSingleProp]
-    
+
     given horizontal_form_SetInnerShape: Form[SetInnerShape] =
         autoDeriveAndOverwriteFieldNames[SetInnerShape]
 
@@ -282,7 +283,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[SetMaterial]
 
     given horizontal_form_SetLayer: Form[SetLayer] =
-        given Form[QtyD[Meter]]         = horizontal_form_Thickness
+        given Form[QtyD[Meter]] = horizontal_form_Thickness
         autoDeriveAndOverwriteFieldNames[SetLayer]
 
     given horizontal_form_SetLayers: Form[SetLayers] =
@@ -337,8 +338,8 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     // Both places must be updated together when adding a new DC subtype.
     inline def autoDeriveAndOverwriteFieldNames_DC_Subtype[A](using inline m: Mirror.Of[A]): Form[A] =
         import com.raquo.laminar.api.L.span
-        @nowarn given Form[String] = horizontal_form.string_emptyAsDefault_alwaysValid
-        given ValidateVar[Option[AbsoluteDirection]] =
+        @nowarn given Form[String]                    = horizontal_form.string_emptyAsDefault_alwaysValid
+        given ValidateVar[Option[AbsoluteDirection]]  =
             ValidateVarCommonInstances.validOption_always.given_ValidateVarOption_AlwaysValid[AbsoluteDirection]
         @nowarn given Form[Option[AbsoluteDirection]] =
             Form.makeFor[Option[AbsoluteDirection]](Defaultable(None))((_, _) => span())
@@ -409,7 +410,8 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     // AmbiantAirTemperatureSet
 
     given horizontal_form_AmbiantAirTemperatureSet: Form[AmbiantAirTemperatureSet] =
-        given Form[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] = horizontal_form_TuTemperature_Or_TCelsius
+        given Form[Either[AmbiantAirTemperatureSet.UseTuoOverride, TCelsius]] =
+            horizontal_form_TuTemperature_Or_TCelsius
         autoDeriveAndOverwriteFieldNames[AmbiantAirTemperatureSet]
 
     // AppendLayerDescr
@@ -433,12 +435,12 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.AirSpaceUsingOuterShape]
 
     given horizontal_form_AirSpaceUsingThickness: Form[AppendLayerDescr.AirSpaceUsingThickness] =
-        given Form[QtyD[Meter]]     = horizontal_form_Length_mm_cm
+        given Form[QtyD[Meter]] = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr.AirSpaceUsingThickness]
 
     @nowarn
     given horizontal_form_AppendLayerDescr: Form[AppendLayerDescr] =
-        given Form[QtyD[Meter]]     = horizontal_form_Length_mm_cm
+        given Form[QtyD[Meter]] = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AppendLayerDescr]
 
     // AirSpaceDetailed
@@ -450,7 +452,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithoutAirSpace_V2]
 
     given horizontal_form_AirSpaceDetailed_WithAirSpace: Form[AirSpaceDetailed.WithAirSpace_V2] =
-        given Form[QtyD[Meter]]     = horizontal_form_Length_mm_cm
+        given Form[QtyD[Meter]] = horizontal_form_Length_mm_cm
         autoDeriveAndOverwriteFieldNames[AirSpaceDetailed.WithAirSpace_V2]
 
     // PipeLocation.AreaName
@@ -465,7 +467,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.OutsideOrExterior]
     given horizontal_form_PipeLocation_AreaName_CustomArea       : Form[PipeLocation.AreaName.CustomArea]        =
         given ValidateVar[Option[String]] = ValidateVarCommonInstances.string.validOption_Always
-        given Form[String] = FormDerivation.forString
+        given Form[String]                = FormDerivation.forString
         autoDeriveAndOverwriteFieldNames[PipeLocation.AreaName.CustomArea]
 
     given horizontal_form_PipeLocation_AreaName: Form[PipeLocation.AreaName] =

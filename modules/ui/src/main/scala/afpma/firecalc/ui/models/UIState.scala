@@ -12,7 +12,7 @@ import io.circe.syntax.*
 case class CameraState(position: List[Double], up: List[Double], target: List[Double])
 
 case class UIState(
-    cameraState: Option[CameraState] = None,
+    cameraState: Option[CameraState]  = None,
     panelStates: Map[String, Boolean] = Map.empty
 )
 

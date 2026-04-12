@@ -33,6 +33,6 @@ object OptionOfEither:
 
     def convertToOptionEither[L, R](in: OptionOfEither[L, R]): Option[Either[L, R]] =
         in match
-            case NoneOfEither  => None
-            case SomeLeft(l)   => Some(Left(l))
-            case SomeRight(r)  => Some(Right(r))
+            case NoneOfEither => None
+            case SomeLeft(l)  => Some(Left(l) )
+            case SomeRight(r) => Some(Right(r))

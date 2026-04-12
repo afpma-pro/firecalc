@@ -28,17 +28,17 @@ trait SetFlowOnlyPipeProp_13384_V3_Generators
         genRoughness.map(SetRoughness(_))
 
     def genSetMaterial_FlowOnly_13384_V3: Gen[SetMaterial] =
-        Gen.oneOf(
-            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel())),
-            Gen.const(SetMaterial(Material_13384_V2.Glass())),
-            Gen.const(SetMaterial(Material_13384_V2.Plastic())),
-            Gen.const(SetMaterial(Material_13384_V2.Aluminium())),
-            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners())),
-            Gen.const(SetMaterial(Material_13384_V2.Bricks())),
-            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal())),
-            Gen.const(SetMaterial(Material_13384_V2.Concrete())),
-            Gen.const(SetMaterial(Material_13384_V2.Fibrociment())),
-            Gen.const(SetMaterial(Material_13384_V2.Masonry())),
+        Gen.oneOf    (
+            Gen.const(SetMaterial(Material_13384_V2.WeldedSteel()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Glass()          )),
+            Gen.const(SetMaterial(Material_13384_V2.Plastic()        )),
+            Gen.const(SetMaterial(Material_13384_V2.Aluminium()      )),
+            Gen.const(SetMaterial(Material_13384_V2.ClayFlueLiners() )),
+            Gen.const(SetMaterial(Material_13384_V2.Bricks()         )),
+            Gen.const(SetMaterial(Material_13384_V2.SolderedMetal()  )),
+            Gen.const(SetMaterial(Material_13384_V2.Concrete()       )),
+            Gen.const(SetMaterial(Material_13384_V2.Fibrociment()    )),
+            Gen.const(SetMaterial(Material_13384_V2.Masonry()        )),
             Gen.const(SetMaterial(Material_13384_V2.CorrugatedMetal()))
         )
 
@@ -75,7 +75,6 @@ trait SetFlowOnlyPipeProp_13384_V3_Generators
             material   <- genSetMaterial_FlowOnly_13384_V3
             roughness  <- genSetRoughness_FlowOnly_13384_V3
             maybeFlows <- Gen.option(genSetNumberOfFlows_FlowOnly_13384_V3)
-        yield
-            List[FlowOnlyPipeDescr_13384_V3](innerShape, material, roughness) ++ maybeFlows.toList
+        yield List[FlowOnlyPipeDescr_13384_V3](innerShape, material, roughness) ++ maybeFlows.toList
 
 end SetFlowOnlyPipeProp_13384_V3_Generators

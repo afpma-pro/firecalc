@@ -86,7 +86,6 @@ object AppStateSchemaMigrations:
             )
             .buildTransformer
 
-
     // ─── Explicit AppStateSchema version-bumping transformers ────────────────────
     //
     // Each transformer MUST use .withFieldConst(_.version, ...) to bump the schema version.
@@ -153,10 +152,10 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV3ToV4)
                     .flatMap(migrateFromV4ToV5)
                     .flatMap(migrateFromV5ToV6) match
-                        case Success(v_latest) => Some(v_latest)
-                        case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V1 to $V_LATEST: ${e.getMessage()}")
-                            None
+                    case Success(v_latest) => Some(v_latest)
+                    case Failure(e)        =>
+                        dom.console.error(s"Failed to migrate V1 to $V_LATEST: ${e.getMessage()}")
+                        None
 
             case Some(2) =>
                 // V2 - decode and migrate to V6
@@ -164,47 +163,47 @@ object AppStateSchemaMigrations:
                 // Decode as V1 then migrate V1→V2 (Chimney adds height_of_first_row_of_air_injectors = 5.cm).
                 decodeV2(rawData)
                     .orElse {
-                        dom.console.warn("V2 decode failed, falling back to V1 decode + migration")
-                        decodeV1(rawData).flatMap(migrateFromV1ToV2)
+                        dom.console.warn         ("V2 decode failed, falling back to V1 decode + migration")
+                        decodeV1(rawData).flatMap(migrateFromV1ToV2                                        )
                     }
                     .flatMap(migrateFromV2ToV3)
                     .flatMap(migrateFromV3ToV4)
                     .flatMap(migrateFromV4ToV5)
                     .flatMap(migrateFromV5ToV6) match
-                        case Success(v_latest) => Some(v_latest)
-                        case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V2 to $V_LATEST: ${e.getMessage()}")
-                            None
+                    case Success(v_latest) => Some(v_latest)
+                    case Failure(e)        =>
+                        dom.console.error(s"Failed to migrate V2 to $V_LATEST: ${e.getMessage()}")
+                        None
 
             case Some(3) =>
                 // V3 - decode and migrate to V6
-                decodeV3(rawData) 
+                decodeV3(rawData)
                     .flatMap(migrateFromV3ToV4)
                     .flatMap(migrateFromV4ToV5)
                     .flatMap(migrateFromV5ToV6) match
-                        case Success(v_latest) => Some(v_latest)
-                        case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
-                            None
+                    case Success(v_latest) => Some(v_latest)
+                    case Failure(e)        =>
+                        dom.console.error(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
+                        None
 
             case Some(4) =>
                 // V4 - decode and migrate to V6
                 decodeV4(rawData)
                     .flatMap(migrateFromV4ToV5)
                     .flatMap(migrateFromV5ToV6) match
-                        case Success(v_latest) => Some(v_latest)
-                        case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V4 to $V_LATEST: ${e.getMessage()}")
-                            None
+                    case Success(v_latest) => Some(v_latest)
+                    case Failure(e)        =>
+                        dom.console.error(s"Failed to migrate V4 to $V_LATEST: ${e.getMessage()}")
+                        None
 
             case Some(5) =>
                 // V5 - decode and migrate to V6
                 decodeV5(rawData)
                     .flatMap(migrateFromV5ToV6) match
-                        case Success(v_latest) => Some(v_latest)
-                        case Failure(e)  =>
-                            dom.console.error(s"Failed to migrate V5 to $V_LATEST: ${e.getMessage()}")
-                            None
+                    case Success(v_latest) => Some(v_latest)
+                    case Failure(e)        =>
+                        dom.console.error(s"Failed to migrate V5 to $V_LATEST: ${e.getMessage()}")
+                        None
 
             case Some(6) =>
                 // Current version - decode directly
@@ -323,7 +322,7 @@ object AppStateSchemaMigrations:
             dom.console.log("Migrating AppStateSchema from V4 to V5")
             schema.transformInto[AppStateSchema_V5]
         }
-     
+
     /**
      * Migrate from V3 to V4 schema.
      *

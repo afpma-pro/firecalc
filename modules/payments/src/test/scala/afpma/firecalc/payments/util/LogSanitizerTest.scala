@@ -32,7 +32,7 @@ object LogSanitizerTest extends TestSuite:
         }
 
         test("maskToken - long token") {
-            val token = "sk_live_abcdefghijklmnop"
+            val token  = "sk_live_abcdefghijklmnop"
             val masked = LogSanitizer.maskToken(token)
             assert(masked == "sk_live_...mnop")
         }
@@ -50,34 +50,34 @@ object LogSanitizerTest extends TestSuite:
         }
 
         test("redactJson - redacts email field") {
-            val json    = """{"email": "user@example.com", "name": "John"}"""
+            val json     = """{"email": "user@example.com", "name": "John"}"""
             val redacted = LogSanitizer.redactJson(json)
-            assert(!redacted.contains("user@example.com"))
+            assert(!redacted.contains("user@example.com")       )
             assert(redacted.contains(""""email":"[REDACTED]""""))
-            assert(redacted.contains(""""name": "John""""))
+            assert(redacted.contains(""""name": "John"""")      )
         }
 
         test("redactJson - redacts multiple sensitive fields") {
-            val json =
+            val json     =
                 """{"email":"a@b.com","given_name":"John","family_name":"Doe","address_line1":"123 Main St"}"""
             val redacted = LogSanitizer.redactJson(json)
-            assert(!redacted.contains("a@b.com"))
-            assert(!redacted.contains("John"))
-            assert(!redacted.contains("Doe"))
+            assert(!redacted.contains("a@b.com")    )
+            assert(!redacted.contains("John")       )
+            assert(!redacted.contains("Doe")        )
             assert(!redacted.contains("123 Main St"))
         }
 
         test("redactJson - redacts password field") {
             val json     = """{"password": "s3cret!"}"""
             val redacted = LogSanitizer.redactJson(json)
-            assert(!redacted.contains("s3cret!"))
+            assert(!redacted.contains("s3cret!")                   )
             assert(redacted.contains(""""password":"[REDACTED]""""))
         }
 
         test("redactJson - redacts access_token field") {
             val json     = """{"access_token": "sk_live_abc123"}"""
             val redacted = LogSanitizer.redactJson(json)
-            assert(!redacted.contains("sk_live_abc123"))
+            assert(!redacted.contains("sk_live_abc123")                )
             assert(redacted.contains(""""access_token":"[REDACTED]""""))
         }
 

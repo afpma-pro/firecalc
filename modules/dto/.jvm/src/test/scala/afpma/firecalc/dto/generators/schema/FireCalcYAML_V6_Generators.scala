@@ -112,9 +112,7 @@ trait FireCalcYAML_V6_Generators
                     yield flues ++ Seq(chimney)
                 )
 
-    /**
-     * Generate a valid post-firebox pipe sequence with N chosen uniformly from [1, 8].
-     */
+    /** Generate a valid post-firebox pipe sequence with N chosen uniformly from [1, 8]. */
     def genPostFireboxPipes: Gen[Seq[PostFireboxPipeDescrSlot]] =
         Gen.choose(1, 8).flatMap(genPostFireboxPipesN)
 
@@ -135,7 +133,7 @@ trait FireCalcYAML_V6_Generators
             airIntake        <- genFlowOnlyPipeDescr_13384_V3_Seq
             firebox          <- genFirebox_V4
             postFireboxPipes <- genPostFireboxPipes
-        yield FireCalcYAML_V6(
+        yield FireCalcYAML_V6                       (
             version                        = FireCalcYAML_V6.VERSION,
             locale                         = locale,
             display_units                  = displayUnits,

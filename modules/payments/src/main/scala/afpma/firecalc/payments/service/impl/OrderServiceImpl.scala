@@ -73,20 +73,21 @@ class OrderServiceImpl[F[_]: Async](
                     val currentStatus = oldOrder.status
                     if currentStatus == status then
                         // No-op: already in the requested status
-                        logger.debug(s"Order ${orderId} is already in status $status, skipping update").as(None)
+                        logger.debug(s"Order ${orderId} is already in status $status, skipping update").as(None                                             )
                     else if validTransitions.getOrElse(currentStatus, Set.empty).contains(status) then
-                        Async[F].pure(Some(OrderStateTransition(currentStatus, status)))
+                        Async[F].pure                                                                     (Some(OrderStateTransition(currentStatus, status)))
                     else
                         logger
                             .warn(
                                 s"Rejecting invalid order status transition for order ${orderId}: $currentStatus -> $status"
                             )
-                            .as(None)
-                case None           => Async[F].pure(Some(OrderStateTransition(status, status))) // Sentinel; let repo handle missing order
-            result <- transition match
+                            .as                                                          (None  )
+                case None           =>
+                    Async[F].pure(Some(OrderStateTransition(status, status))) // Sentinel; let repo handle missing order
+            result      <- transition match
                 case Some(_) => orderRepo.updateStatus(orderId, status)
                 case None    => Async[F].pure(false)
-            _      <- (transition, oldOrderOpt, result) match
+            _           <- (transition, oldOrderOpt, result) match
                 case (Some(t), Some(_), true) if t.from != t.to =>
                     // Order status changed, trigger both transition and final state callbacks
                     for
@@ -271,7 +272,12 @@ object OrderServiceImpl:
 
     /** Valid order status transitions. Terminal states (PaidOut, Failed, Cancelled) have no outgoing transitions. */
     val validTransitions: Map[OrderStatus, Set[OrderStatus]] = Map(
-        OrderStatus.Pending    -> Set(OrderStatus.Processing, OrderStatus.Confirmed, OrderStatus.Failed, OrderStatus.Cancelled),
+        OrderStatus.Pending    -> Set(
+            OrderStatus.Processing,
+            OrderStatus.Confirmed,
+            OrderStatus.Failed,
+            OrderStatus.Cancelled
+        ),
         OrderStatus.Processing -> Set(OrderStatus.Confirmed, OrderStatus.Failed, OrderStatus.Cancelled),
         OrderStatus.Confirmed  -> Set(OrderStatus.PaidOut, OrderStatus.Failed),
         OrderStatus.PaidOut    -> Set.empty,

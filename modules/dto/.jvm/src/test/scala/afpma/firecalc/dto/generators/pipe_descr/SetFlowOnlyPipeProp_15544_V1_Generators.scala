@@ -28,7 +28,7 @@ trait SetFlowOnlyPipeProp_15544_V1_Generators
     def genSetMaterial_FlowOnly_15544_V1: Gen[SetMaterial] =
         Gen.oneOf(
             Gen.const(SetMaterial(Material_15544_V1.TuyauxEnChamotte)),
-            Gen.const(SetMaterial(Material_15544_V1.BlocsDeChamotte))
+            Gen.const(SetMaterial(Material_15544_V1.BlocsDeChamotte) )
         )
 
     // SetNumberOfFlows
@@ -49,9 +49,9 @@ trait SetFlowOnlyPipeProp_15544_V1_Generators
         for
             // Initial SetProps (shape, material, roughness)
             innerShape <- genSetInnerShape_FlowOnly_15544_V1
-            material <- genSetMaterial_FlowOnly_15544_V1
-            roughness <- genSetRoughness_FlowOnly_15544_V1
-            
+            material   <- genSetMaterial_FlowOnly_15544_V1
+            roughness  <- genSetRoughness_FlowOnly_15544_V1
+
             // Optional number of flows
             maybeFlows <- Gen.option(genSetNumberOfFlows_FlowOnly_15544_V1)
         yield
@@ -60,7 +60,7 @@ trait SetFlowOnlyPipeProp_15544_V1_Generators
                 material,
                 roughness
             ) ++ maybeFlows.toList
-            
+
             setProps
 
 end SetFlowOnlyPipeProp_15544_V1_Generators

@@ -12,13 +12,14 @@ import magnolia1.AutoDerivation
 import magnolia1.CaseClass
 import magnolia1.SealedTrait
 
-/** Typeclass for default values.
-  *
-  * Used to provide default values for form fields when creating a new object.
-  * Every type used in the application and wrapped in an Option needs a Defaultable instance.
-  *
-  * Supports magnolia auto-derivation for case classes and sealed traits.
-  */
+/**
+ * Typeclass for default values.
+ *
+ * Used to provide default values for form fields when creating a new object.
+ * Every type used in the application and wrapped in an Option needs a Defaultable instance.
+ *
+ * Supports magnolia auto-derivation for case classes and sealed traits.
+ */
 trait Defaultable[+A]:
     self =>
 

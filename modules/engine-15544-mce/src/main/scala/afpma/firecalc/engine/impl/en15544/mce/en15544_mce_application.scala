@@ -46,7 +46,7 @@ object EN15544_MCE_Application:
         i       : models.en15544.Inputs_15544_MCE,
         pfbSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] = Seq.empty
     ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb) {
-        override lazy val inputs              : models.en15544.Inputs_15544_MCE                       = i
+        override lazy val inputs              : models.en15544.Inputs_15544_MCE                     = i
         override lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] = pfbSlots
     }
 
@@ -361,11 +361,10 @@ abstract class EN15544_MCE_Application(
          * `ThermalFlueSlot` (and interleaved `ConnectorSlot`). `FlueSlot` (flow-only 15544) is
          * rejected — MCE uses thermal flue pipes exclusively. `ChimneySlot` inside the flue region
          * is defensively rejected (unreachable: chimney is always terminal).
-         *
          */
         override protected lazy val flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], Option[PipeFrame])] =
             import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
-            val pfbSlots = en15544_mce.postFireboxPipeSlots
+            val pfbSlots            = en15544_mce.postFireboxPipeSlots
             val lastFluePipeSlotIdx = pfbSlots.lastIndexWhere {
                 case FlueSlot(_) | ThermalFlueSlot(_) => true
                 case _                                => false
@@ -375,8 +374,8 @@ abstract class EN15544_MCE_Application(
                     UnexpectedDevError("No FluePipeT slot found in post-firebox slots")
                 )
             else
-                val flueRegionSlots           = pfbSlots.take(lastFluePipeSlotIdx + 1)
-                given Params_13384 = p
+                val flueRegionSlots = pfbSlots.take(lastFluePipeSlotIdx + 1)
+                given Params_13384  = p
 
                 // In MCE the Powers/Efficiency/FlueGas/MassFlows givens are safe to summon at
                 // chain-seed time — η_WN derives from `t_burnout` via BS845, not from
@@ -408,20 +407,23 @@ abstract class EN15544_MCE_Application(
                                             val (fdResult, ffV) =
                                                 FluePipe_Module_13384
                                                     .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                            val newFrame =
+                                            val newFrame        =
                                                 ffV.toOption.flatten.orElse(prevFrame)
-                                            val pipeV =
+                                            val pipeV           =
                                                 FluePipe_Module_13384.FullDescrResult
                                                     .extractPipe(fdResult)
                                             pipeV match
                                                 case Validated.Valid(pipe) =>
                                                     Validated.validNel(
-                                                        (acc :+ tcThermal13384.mkSlot(
-                                                            FluePipeT,
-                                                            "Flue",
-                                                            FlueGas,
-                                                            FluePipe_Module_13384.unwrap(pipe)
-                                                        ), newFrame)
+                                                        (
+                                                            acc :+ tcThermal13384.mkSlot(
+                                                                FluePipeT,
+                                                                "Flue",
+                                                                FlueGas,
+                                                                FluePipe_Module_13384.unwrap(pipe)
+                                                            ),
+                                                            newFrame
+                                                        )
                                                     )
                                                 case _                     =>
                                                     Validated.validNel(
@@ -430,8 +432,11 @@ abstract class EN15544_MCE_Application(
                                         case ConnectorSlot(descr)   =>
                                             if descr.isEmpty then
                                                 Validated.validNel(
-                                                    (acc :+ PipeSlot
-                                                        .noop(ConnectorPipeT, "Connector"), prevFrame)
+                                                    (
+                                                        acc :+ PipeSlot
+                                                            .noop(ConnectorPipeT, "Connector"),
+                                                        prevFrame
+                                                    )
                                                 )
                                             else
                                                 val (fdResult, ffV) =
@@ -440,9 +445,9 @@ abstract class EN15544_MCE_Application(
                                                             descr,
                                                             prevFrame
                                                         )
-                                                val newFrame =
+                                                val newFrame        =
                                                     ffV.toOption.flatten.orElse(prevFrame)
-                                                val pipeV =
+                                                val pipeV           =
                                                     ConnectorPipe_Module.FullDescrResult
                                                         .extractPipe(fdResult)
                                                 pipeV match
@@ -450,7 +455,7 @@ abstract class EN15544_MCE_Application(
                                                         val connectorSlot =
                                                             ConnectorPipe_Module.foldPipeCanBe(
                                                                 pipe
-                                                            )(
+                                                            )  (
                                                                 onWithout   = PipeSlot.noop(
                                                                     ConnectorPipeT,
                                                                     "Connector"
@@ -469,10 +474,13 @@ abstract class EN15544_MCE_Application(
                                                         )
                                                     case _                     =>
                                                         Validated.validNel(
-                                                            (acc :+ PipeSlot.noop(
-                                                                ConnectorPipeT,
-                                                                "Connector"
-                                                            ), newFrame)
+                                                            (
+                                                                acc :+ PipeSlot.noop(
+                                                                    ConnectorPipeT,
+                                                                    "Connector"
+                                                                ),
+                                                                newFrame
+                                                            )
                                                         )
                                         case FlueSlot(_)            =>
                                             // MCE uses thermal flue pipes exclusively.
@@ -524,16 +532,13 @@ abstract class EN15544_MCE_Application(
                                         FluePipe_Module_13384.FullDescrResult.extractPipe(
                                             fdResult
                                         ) match
-                                            case Validated.Valid(pipe) =>
+                                            case Validated.Valid(pipe)  =>
                                                 firebox_PipeResult.andThen: cc =>
                                                     ops_en13384.ThermalMecaFlu_13384
-                                                        .makePipeResult                 (
-                                                            fd                 =
-                                                                FluePipe_Module_13384.unwrap(pipe),
-                                                            hafg               =
-                                                                en15544_mce.en13384_heatingAppliance_fluegas,
-                                                            hamf               =
-                                                                en15544_mce.en13384_heatingAppliance_massFlows,
+                                                        .makePipeResult                (
+                                                            fd                 = FluePipe_Module_13384.unwrap(pipe),
+                                                            hafg               = en15544_mce.en13384_heatingAppliance_fluegas,
+                                                            hamf               = en15544_mce.en13384_heatingAppliance_massFlows,
                                                             temp_start         = en15544_mce.t_burnout,
                                                             last_pipe_density  =
                                                                 en15544_mce.en13384_application.computeAt match
@@ -549,8 +554,8 @@ abstract class EN15544_MCE_Application(
                                                         )
                                                         .toValidatedNel
                                             case Validated.Invalid(nel) => Validated.Invalid(nel)
-                            val computeAt = en15544_mce.en13384_application.computeAt
-                            val seedDensity: Option[Density] =
+                            val computeAt                = en15544_mce.en13384_application.computeAt
+                            val seedDensity : Option[Density]      =
                                 legacyFluePipeResult.toOption.flatMap { pr =>
                                     computeAt match
                                         case ComputeAt.Mean   =>
@@ -569,7 +574,7 @@ abstract class EN15544_MCE_Application(
                                 last_pipe_density  = seedDensity,
                                 last_pipe_velocity = seedVelocity
                             )
-                            val folded    = slots.foldLeft[Either[
+                            val folded = slots.foldLeft[Either[
                                 afpma.firecalc.engine.standard.MecaFlu_Error,
                                 (UpstreamState, Vector[PipeResult])
                             ]](Right((initialUpstream, Vector.empty))) { case (acc, slot) =>

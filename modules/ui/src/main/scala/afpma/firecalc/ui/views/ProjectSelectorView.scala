@@ -44,7 +44,7 @@ final case class ProjectSelectorView()(using Locale) extends Component:
             case Success(schema) =>
                 val id = ProjectManager.openFromFile(schema)
                 router.pushState(ProjectPage(localeVar.now().language, id))
-            case Failure(e) =>
+            case Failure(e)      =>
                 dom.window.alert(s"Failed to load: ${e.getMessage}")
 
     lazy val node: Div =
@@ -71,8 +71,8 @@ final case class ProjectSelectorView()(using Locale) extends Component:
             hiddenFileInput,
 
             // Header
-            h1(cls := "text-3xl font-bold mb-2", "FireCalc AFPMA"),
-            p(cls := "text-base-content/60 mb-8", I18N_UI.project_selector.title),
+            h1(cls := "text-3xl font-bold mb-2", "FireCalc AFPMA"                ),
+            p (cls := "text-base-content/60 mb-8", I18N_UI.project_selector.title),
 
             // Action buttons
             div(
@@ -109,8 +109,7 @@ final case class ProjectSelectorView()(using Locale) extends Component:
                             p(cls := "text-lg", I18N_UI.project_selector.no_projects)
                         )
                     )
-                else
-                    projects.sortBy(-_.lastModified).map(renderProjectCard)
+                else projects.sortBy(-_.lastModified).map(renderProjectCard)
             }
         )
 
@@ -146,7 +145,7 @@ final case class ProjectSelectorView()(using Locale) extends Component:
                     onClick --> { _ =>
                         if dom.window.confirm(I18N_UI.project_selector.confirm_delete(entry.name)) then
                             ProjectManager.deleteProject(entry.id)
-                            refresh()
+                            refresh                     (        )
                     }
                 )
             )

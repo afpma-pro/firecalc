@@ -44,8 +44,8 @@ object FireCalcProjet:
                             // p( cls := "text-sm", buttonTitle),
                         ),
                         onClick --> { _ =>
-                            engineStateVar.set(nextEngineState)
-                            undoManager.reset()
+                            engineStateVar.set      (nextEngineState        )
+                            undoManager.reset       (                       )
                             fireboxCacheStateVar.set(FireboxCacheState.empty)
                         }
                     ),
@@ -85,14 +85,14 @@ object FireCalcProjet:
             FireCalcYAMLMigrations.encodeToYamlTry(engineState) match
                 case Failure(ex) =>
                     GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage))
-                    isProcessingVar.set(false)
+                    isProcessingVar.set               (false                                                       )
 
                 case Success(yamlContent) =>
                     // Use FileSystemService which handles both browser and Electron
                     FileSystemService.saveFile(filename_var.now(), yamlContent).foreach {
                         case Left(error) =>
                             GlobalErrorDialog.showGenericError(error)
-                            isProcessingVar.set(false)
+                            isProcessingVar.set               (false)
 
                         case Right(_) =>
                             isProcessingVar.set(false)
@@ -113,7 +113,6 @@ object FireCalcProjet:
                     ),
                     ttPosition = "tooltip-bottom"
                 )
-
             )
 
     case class UploadComponent()(using Locale) extends Component:
@@ -124,22 +123,22 @@ object FireCalcProjet:
         /** Load project from file content */
         def loadFromContent(yamlContent: String, fileName: String): Unit =
             scala.scalajs.js.Dynamic.global.console.log(s"Loading file: $fileName")
-            fileNameVar.set (Some(fileName))
-            isLoadingVar.set(true          )
+            fileNameVar.set                            (Some(fileName)            )
+            isLoadingVar.set                           (true                      )
 
             // Auto-detect full schema vs legacy engine-state-only format
             AppStateSchemaHelper.decodeFromFile(yamlContent) match
                 case Failure(e) =>
-                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project")
-                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                 )
-                    GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage))
-                    isLoadingVar.set(false)
+                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project"                            )
+                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                                             )
+                    GlobalErrorDialog.showGenericError         (I18N_UI.errors.failed_to_decode_project.apply(e.getMessage))
+                    isLoadingVar.set                           (false                                                      )
 
                 case Success(schema) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
                     val id = ProjectManager.openFromFile(schema)
                     router.pushState(ProjectPage(localeVar.now().language, id))
-                    isLoadingVar.set(false)
+                    isLoadingVar.set(false                                    )
 
         /** Open file using Electron native dialog */
         def openFileElectron(): Unit =
@@ -150,7 +149,7 @@ object FireCalcProjet:
             FileSystemService.openFile().onComplete {
                 case Success(Left(error)) =>
                     GlobalErrorDialog.showGenericError(error)
-                    isLoadingVar.set(false)
+                    isLoadingVar.set                  (false)
 
                 case Success(Right(None)) =>
                     // User cancelled
@@ -161,7 +160,7 @@ object FireCalcProjet:
 
                 case Failure(ex) =>
                     GlobalErrorDialog.showGenericError(ex.getMessage)
-                    isLoadingVar.set(false)
+                    isLoadingVar.set                  (false        )
             }
 
         /** Read file from browser file input */
@@ -173,14 +172,14 @@ object FireCalcProjet:
             FileSystemService.readFileFromInput(file).onComplete {
                 case Success(Left(error)) =>
                     GlobalErrorDialog.showGenericError(error)
-                    isLoadingVar.set(false)
+                    isLoadingVar.set                  (false)
 
                 case Success(Right((content, fileName))) =>
                     loadFromContent(content, fileName)
 
                 case Failure(ex) =>
                     GlobalErrorDialog.showGenericError(ex.getMessage)
-                    isLoadingVar.set(false)
+                    isLoadingVar.set                  (false        )
             }
 
         lazy val node =

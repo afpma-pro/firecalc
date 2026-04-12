@@ -22,32 +22,33 @@ import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
 import io.taig.babel.Languages
 
-/** Dev fixture — NOT a golden validation fixture.
-  *
-  * The names `cas_type`, `CasType_*`, and the `cas_types/` directory are
-  * reserved for golden fixtures that are byte-cross-validated against
-  * independent EN 13384 / EN 15544 reference implementations. This fixture
-  * has NOT been cross-validated; it exists to exercise the N-pipe topology
-  * code path during engine development.
-  *
-  * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
-  * policy.
-  *
-  * ── Topology ──────────────────────────────────────────────────────────
-  * N-pipe topology: 3 FlueSlots + 1 ConnectorSlot + 1 ChimneySlot.
-  *
-  * Legacy 3 descriptors (fluePipeDescr / connectorPipeDescr / chimneyPipeDescr)
-  * are identical to C3 so that the legacy 3-pipe path stays exercised. The
-  * 5-slot override activates the chain-aware N-pipe path
-  * (see en15544_strict_application.scala).
-  *
-  * Slot geometry (all rectangular / horizontal first, then vertical):
-  *   Slot 0 — FlueSlot #1 : horizontal segment exiting firebox (Right, 34.8 cm)
-  *   Slot 1 — FlueSlot #2 : downward vertical segment (two sections, -109 + -244 cm)
-  *   Slot 2 — FlueSlot #3 : upward vertical column back to top (two sections, +244 + +128 cm)
-  *   Slot 3 — ConnectorSlot: short vertical steel connector (5 cm, Ø 25 cm)
-  *   Slot 4 — ChimneySlot  : insulated chimney (Ø 250 mm, 6 m + 30 cm + 150 cm)
-  */
+/**
+ * Dev fixture — NOT a golden validation fixture.
+ *
+ * The names `cas_type`, `CasType_*`, and the `cas_types/` directory are
+ * reserved for golden fixtures that are byte-cross-validated against
+ * independent EN 13384 / EN 15544 reference implementations. This fixture
+ * has NOT been cross-validated; it exists to exercise the N-pipe topology
+ * code path during engine development.
+ *
+ * See `docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS.md` for the golden-fixture
+ * policy.
+ *
+ * ── Topology ──────────────────────────────────────────────────────────
+ * N-pipe topology: 3 FlueSlots + 1 ConnectorSlot + 1 ChimneySlot.
+ *
+ * Legacy 3 descriptors (fluePipeDescr / connectorPipeDescr / chimneyPipeDescr)
+ * are identical to C3 so that the legacy 3-pipe path stays exercised. The
+ * 5-slot override activates the chain-aware N-pipe path
+ * (see en15544_strict_application.scala).
+ *
+ * Slot geometry (all rectangular / horizontal first, then vertical):
+ *   Slot 0 — FlueSlot #1 : horizontal segment exiting firebox (Right, 34.8 cm)
+ *   Slot 1 — FlueSlot #2 : downward vertical segment (two sections, -109 + -244 cm)
+ *   Slot 2 — FlueSlot #3 : upward vertical column back to top (two sections, +244 + +128 cm)
+ *   Slot 3 — ConnectorSlot: short vertical steel connector (5 cm, Ø 25 cm)
+ *   Slot 4 — ChimneySlot  : insulated chimney (Ø 250 mm, 6 m + 30 cm + 150 cm)
+ */
 object NPipeTopologyFixture_15544
     extends v2024_10_Alg
     with v0_2024_10_strict.Firebox_15544_Strict_Alg
@@ -88,23 +89,23 @@ object NPipeTopologyFixture_15544
     val conduit_air_descr =
         import AirIntakePipe_Module.*
         Seq(
-            setInitialDirection(
+            setInitialDirection    (
                 azimuth     = AzimuthDirection.Front,
                 inclination = InclinationDirection.Horizontal
             ),
-            addFlowResistance("1. grille", 0.61.unitless: ζ, hydraulic_diameter = 20.cm),
-            roughness(2.mm),
+            addFlowResistance      ("1. grille", 0.61.unitless: ζ, hydraulic_diameter = 20.cm),
+            roughness              (2.mm                                                     ),
             innerShape(circle(20.cm)),
-            addSectionHorizontal("Car. 2", 253.cm),
-            addAngleSpecifique(
+            addSectionHorizontal   ("Car. 2", 253.cm                                         ),
+            addAngleSpecifique     (
                 "3. angle 90° (ζ=0.9)",
                 90.degrees,
-                zeta   = 0.9,
-                absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                zeta        = 0.9,
+                absDir      = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
             ),
             innerShape(circle(20.cm)),
-            addSectionHorizontal("Car. 4", 40.cm),
-            addFlowResistance("5. clapet", 0.25.unitless: ζ, hydraulic_diameter = 20.cm)
+            addSectionHorizontal   ("Car. 4", 40.cm                                          ),
+            addFlowResistance      ("5. clapet", 0.25.unitless: ζ, hydraulic_diameter = 20.cm)
         )
 
     val airIntakePipe =
@@ -141,83 +142,83 @@ object NPipeTopologyFixture_15544
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection(
+            setInitialDirection    (
                 azimuth     = AzimuthDirection.Right,
                 inclination = InclinationDirection.Horizontal
             ),
-            roughness(3.mm),
+            roughness              (3.mm             ),
             innerShape(rectangle(43.cm, 40.cm)),
-            addSectionHorizontal("Car. 1", 34.8.cm),
-            addSharpAngle_90deg(
+            addSectionHorizontal   ("Car. 1", 34.8.cm),
+            addSharpAngle_90deg    (
                 "virage 90° 1-2 (-> Bas)",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)
             ),
-            addSectionVertical("Car. 2", -109.cm),
-            addSectionVertical("Car. 3", -244.cm),
-            addSharpAngle_90deg(
+            addSectionVertical     ("Car. 2", -109.cm),
+            addSectionVertical     ("Car. 3", -244.cm),
+            addSharpAngle_90deg    (
                 "virage 90° 3-4 (-> Droite)",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
             ),
             innerShape(rectangle(27.cm, 40.cm)),
-            addSectionHorizontal("Car. 4", 50.cm),
-            addSharpAngle_90deg(
+            addSectionHorizontal   ("Car. 4", 50.cm  ),
+            addSharpAngle_90deg    (
                 "virage 90° 4-5 (-> Avant)",
                 AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
             ),
             innerShape(rectangle(27.cm, 27.cm)),
-            addSectionHorizontal("Car. 5", 5.cm),
-            addSharpAngle_90deg(
+            addSectionHorizontal   ("Car. 5", 5.cm   ),
+            addSharpAngle_90deg    (
                 "virage 90° 5-6 (-> Droite)",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
             ),
-            addSectionHorizontal("Car. 6", 50.cm),
-            addSharpAngle_90deg(
+            addSectionHorizontal   ("Car. 6", 50.cm  ),
+            addSharpAngle_90deg    (
                 "virage 90° 6-7 (-> Avant)",
                 AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
             ),
-            addSectionHorizontal("Car. 7", 34.cm),
-            addSharpAngle_45deg(
+            addSectionHorizontal   ("Car. 7", 34.cm  ),
+            addSharpAngle_45deg    (
                 "virage 45° 7-8 (-> Avant+Gauche)",
                 AbsoluteDirection(AzimuthDirection.FrontLeft, InclinationDirection.Horizontal)
             ),
-            addSectionHorizontal("Car. 8", 14.1.cm),
-            addSharpAngle_45deg(
+            addSectionHorizontal   ("Car. 8", 14.1.cm),
+            addSharpAngle_45deg    (
                 "virage 45° 8-9 (-> Gauche)",
                 AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
             ),
-            addSectionHorizontal("Car. 9", 100.cm),
-            addSharpAngle_90deg(
+            addSectionHorizontal   ("Car. 9", 100.cm ),
+            addSharpAngle_90deg    (
                 "virage 90° 9-10 (-> Haut)",
                 AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
             ),
             innerShape(rectangle(21.cm, 32.cm)),
-            addSectionVertical("Car. 10", 244.cm),
-            addSectionVertical("Car. 11", 128.cm)
+            addSectionVertical     ("Car. 10", 244.cm),
+            addSectionVertical     ("Car. 11", 128.cm)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq(
-            roughness(Material_13384.WeldedSteel()),
-            innerShape(circle(25.cm)),
-            layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("Car. 12", 5.cm)
+        Seq (
+            roughness (Material_13384.WeldedSteel()),
+            innerShape(circle(25.cm)               ),
+            layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
+            pipeLocation      (PipeLocation.HeatedArea                     ),
+            addSectionVertical("Car. 12", 5.cm                             )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
         Seq(
-            roughness(1.mm),
+            roughness         (1.mm                                          ),
             innerShape(circle(250.mm)),
-            layer(e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
-            pipeLocation(PipeLocation.HeatedArea),
-            addSectionVertical("chauff.", 6.m),
-            pipeLocation(PipeLocation.UnheatedInside),
-            addSectionVertical("non-chauff", 30.cm),
-            pipeLocation(PipeLocation.OutsideOrExterior),
-            addSectionVertical("ext.", 150.cm),
-            addFlowResistance("element terminal", 1.48.unitless: ζ)
+            layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
+            pipeLocation      (PipeLocation.HeatedArea                       ),
+            addSectionVertical("chauff.", 6.m                                ),
+            pipeLocation      (PipeLocation.UnheatedInside                   ),
+            addSectionVertical("non-chauff", 30.cm                           ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                ),
+            addSectionVertical("ext.", 150.cm                                ),
+            addFlowResistance ("element terminal", 1.48.unitless: ζ)
         )
 
     // ── 5-slot N-pipe override ───────────────────────────────────────────────────
@@ -236,63 +237,73 @@ object NPipeTopologyFixture_15544
         import FluePipe_Module_15544.*
         import ConnectorPipe_Module as CPM
         import ChimneyPipe_Module as CHPM
-        Seq(
+        Seq     (
             // Slot 0 — FlueSlot #1: horizontal exit from firebox, then turn downward
-            PostFireboxPipeDescrSlot.FlueSlot(Seq(
-                setInitialDirection(
-                    azimuth     = AzimuthDirection.Right,
-                    inclination = InclinationDirection.Horizontal
-                ),
-                roughness(3.mm),
-                innerShape(rectangle(43.cm, 40.cm)),
-                addSectionHorizontal("F1-Car. 1", 34.8.cm),
-                addSharpAngle_90deg(
-                    "F1-virage 90° (-> Bas)",
-                    AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)
+            PostFireboxPipeDescrSlot.FlueSlot     (
+                Seq(
+                    setInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    ),
+                    roughness              (3.mm                ),
+                    innerShape(rectangle(43.cm, 40.cm)),
+                    addSectionHorizontal   ("F1-Car. 1", 34.8.cm),
+                    addSharpAngle_90deg    (
+                        "F1-virage 90° (-> Bas)",
+                        AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)
+                    )
                 )
-            )),
+            ),
             // Slot 1 — FlueSlot #2: descending vertical column (continues from Down)
-            PostFireboxPipeDescrSlot.FlueSlot(Seq(
-                addSectionVertical("F2-Car. 2", -109.cm),
-                addSectionVertical("F2-Car. 3", -244.cm),
-                addSharpAngle_90deg(
-                    "F2-virage 90° (-> Droite)",
-                    AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
-                ),
-                innerShape(rectangle(27.cm, 40.cm)),
-                addSectionHorizontal("F2-Car. 4", 50.cm),
-                addSharpAngle_90deg(
-                    "F2-virage 90° (-> Gauche montant)",
-                    AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
+            PostFireboxPipeDescrSlot.FlueSlot     (
+                Seq(
+                    addSectionVertical  ("F2-Car. 2", -109.cm),
+                    addSectionVertical  ("F2-Car. 3", -244.cm),
+                    addSharpAngle_90deg (
+                        "F2-virage 90° (-> Droite)",
+                        AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                    ),
+                    innerShape(rectangle(27.cm, 40.cm)),
+                    addSectionHorizontal("F2-Car. 4", 50.cm  ),
+                    addSharpAngle_90deg (
+                        "F2-virage 90° (-> Gauche montant)",
+                        AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
+                    )
                 )
-            )),
+            ),
             // Slot 2 — FlueSlot #3: ascending vertical column back to top
-            PostFireboxPipeDescrSlot.FlueSlot(Seq(
-                innerShape(rectangle(21.cm, 32.cm)),
-                addSectionVertical("F3-Car. 10", 244.cm),
-                addSectionVertical("F3-Car. 11", 128.cm)
-            )),
+            PostFireboxPipeDescrSlot.FlueSlot     (
+                Seq(
+                    innerShape(rectangle(21.cm, 32.cm)),
+                    addSectionVertical("F3-Car. 10", 244.cm),
+                    addSectionVertical("F3-Car. 11", 128.cm)
+                )
+            ),
             // Slot 3 — ConnectorSlot: short vertical steel connector
-            PostFireboxPipeDescrSlot.ConnectorSlot(Seq(
-                CPM.roughness(Material_13384.WeldedSteel()),
-                CPM.innerShape(circle(25.cm)),
-                CPM.layer(e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-                CPM.pipeLocation(PipeLocation.HeatedArea),
-                CPM.addSectionVertical("C-Car. 12", 5.cm)
-            )),
+            PostFireboxPipeDescrSlot.ConnectorSlot(
+                Seq (
+                    CPM.roughness (Material_13384.WeldedSteel()),
+                    CPM.innerShape(circle(25.cm)               ),
+                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
+                    CPM.pipeLocation      (PipeLocation.HeatedArea                     ),
+                    CPM.addSectionVertical("C-Car. 12", 5.cm                           )
+                )
+            ),
             // Slot 4 — ChimneySlot: insulated chimney pipe
-            PostFireboxPipeDescrSlot.ChimneySlot(Seq(
-                CHPM.roughness(1.mm),
-                CHPM.innerShape(circle(250.mm)),
-                CHPM.layer(e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
-                CHPM.pipeLocation(PipeLocation.HeatedArea),
-                CHPM.addSectionVertical("CH-chauff.", 6.m),
-                CHPM.pipeLocation(PipeLocation.UnheatedInside),
-                CHPM.addSectionVertical("CH-non-chauff", 30.cm),
-                CHPM.pipeLocation(PipeLocation.OutsideOrExterior),
-                CHPM.addSectionVertical("CH-ext.", 150.cm),
-                CHPM.addFlowResistance("CH-element terminal", 1.48.unitless: ζ)
-            ))
+            PostFireboxPipeDescrSlot.ChimneySlot  (
+                Seq(
+                    CHPM.roughness         (1.mm                                          ),
+                    CHPM.innerShape(circle(250.mm)),
+                    CHPM.layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
+                    CHPM.pipeLocation      (PipeLocation.HeatedArea                       ),
+                    CHPM.addSectionVertical("CH-chauff.", 6.m                             ),
+                    CHPM.pipeLocation      (PipeLocation.UnheatedInside                   ),
+                    CHPM.addSectionVertical("CH-non-chauff", 30.cm                        ),
+                    CHPM.pipeLocation      (PipeLocation.OutsideOrExterior                ),
+                    CHPM.addSectionVertical("CH-ext.", 150.cm                             ),
+                    CHPM.addFlowResistance ("CH-element terminal", 1.48.unitless: ζ)
+                )
+            )
         )
 
 end NPipeTopologyFixture_15544

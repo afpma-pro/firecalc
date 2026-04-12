@@ -244,5 +244,7 @@ class MoleculeCustomerRepository[F[_]: Async: Logger](using conn: Conn, ec: Exec
                         _                  <- logger.info(s"Successfully updated customer with email: ${LogSanitizer.maskEmail(email)}")
                     yield Some(updatedCustomer)
                 case None           =>
-                    logger.info(s"Customer with email ${LogSanitizer.maskEmail(email)} not found") *> Async[F].pure(None)
+                    logger.info(s"Customer with email ${LogSanitizer.maskEmail(email)} not found") *> Async[F].pure(
+                        None
+                    )
         yield result

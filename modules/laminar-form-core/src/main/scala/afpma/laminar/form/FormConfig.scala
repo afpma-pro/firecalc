@@ -12,10 +12,11 @@ import magnolia1.TypeInfo
 /** Annotation to override field name display in forms. */
 class FieldName(val value: String) extends StaticAnnotation
 
-/** Immutable form configuration — passed as parameter, not stored as mutable state.
-  *
-  * Can also be used as an annotation on case class fields.
-  */
+/**
+ * Immutable form configuration — passed as parameter, not stored as mutable state.
+ *
+ * Can also be used as an annotation on case class fields.
+ */
 case class FormConfig(
     fieldName          : Option[String],
     fieldNamesForParams: Map[String, String] = Map(),

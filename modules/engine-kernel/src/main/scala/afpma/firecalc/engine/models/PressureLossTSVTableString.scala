@@ -109,8 +109,8 @@ final case class PressureLossTSVTableString(
                     xi = mb.toUnit[Kilogram].value,
                     yi = sbValue.value
                 )
-        }.toEither
-            .left.map(e => InterpolationError.ParseError(e.getMessage))
+        }.toEither.left
+            .map(e => InterpolationError.ParseError(e.getMessage))
             .flatMap:
                 case Right(v) => Right(v.withUnit[Pascal])
                 case Left(e)  => Left(e)

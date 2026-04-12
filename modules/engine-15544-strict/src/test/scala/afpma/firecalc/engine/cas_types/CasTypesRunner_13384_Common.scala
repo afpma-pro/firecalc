@@ -43,15 +43,15 @@ object CasType13384_ResultFactory:
                     case _ => None
 
         val tcond = en13384_appl.temperatureRequirements
-        CasType13384_Result.Values(
-            pz = pcond.map(_.P_Z),
-            pze = pcond.map(_.P_Ze),
-            pb = pcond.map(_.P_B_min_draught),
-            `pz-pze` = pcond.map(x => x.P_Z - x.P_Ze),
-            `pz-pb` = pcond.map(x => x.P_Z - x.P_B_min_draught),
-            tg = tcond.tig.some,
-            tob = tcond.tob.some,
-            tiob = tcond.tiob.some,
+        CasType13384_Result.Values       (
+            pz        = pcond.map(_.P_Z),
+            pze       = pcond.map(_.P_Ze),
+            pb        = pcond.map(_.P_B_min_draught),
+            `pz-pze`  = pcond.map(x => x.P_Z - x.P_Ze),
+            `pz-pb`   = pcond.map(x => x.P_Z - x.P_B_min_draught),
+            tg        = tcond.tig.some,
+            tob       = tcond.tob.some,
+            tiob      = tcond.tiob.some,
             `tiob-tg` = (tcond.tiob.value - tcond.tig.value).degreesCelsius.some
         )
 
@@ -69,51 +69,47 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
      */
     type ProjectDescr_Alg <: v2024_10_Alg & v0_2024_10_strict.StoveProjectDescr_13384_Alg
 
-    /**
-     * Extract the EN13384 application from the project description.
-     */
+    /** Extract the EN13384 application from the project description. */
     def extractEn13384Appl(
         ex: ProjectDescr_Alg
     ): VNelMcalcErr[EN13384_1_A1_2019_Common_Application]
 
     private def compute_and_show_results_impl(
-        ex: ProjectDescr_Alg,
-        compareTo: CasType13384_Result,
+        ex       : ProjectDescr_Alg,
+        compareTo: CasType13384_Result
     )(emit: String => Unit): VNelMcalcErr[Unit] =
         (
             extractEn13384Appl(ex),
             ex.heatingAppliance
-        ).mapN: (
-            en13384_appl,
-            _heatingAppliance
-        ) =>
+        ).mapN:
+            (
+                en13384_appl,
+                _heatingAppliance
+            ) =>
+                given HeatingAppliance = en13384_appl.heatingAppliance_final(using
+                    _heatingAppliance
+                )
 
-            given HeatingAppliance = en13384_appl.heatingAppliance_final(
-                using _heatingAppliance
-            )
+                val result_nominal =
+                    import LoadQty.givens.nominal
+                    CasType13384_ResultFactory.makeValuesFor(en13384_appl)
 
-            val result_nominal =
-                import LoadQty.givens.nominal
-                CasType13384_ResultFactory.makeValuesFor(en13384_appl)
+                val result_lowest =
+                    import LoadQty.givens.reduced
+                    CasType13384_ResultFactory.makeValuesFor(en13384_appl)
 
-            val result_lowest =
-                import LoadQty.givens.reduced
-                CasType13384_ResultFactory.makeValuesFor(en13384_appl)
+                val result  = CasType13384_Result(
+                    ex.project.reference,
+                    result_nominal,
+                    result_lowest
+                )
+                val results = CasType13384_Results(result :: compareTo :: Nil)
+                emit(results.showAsCliTable)
 
-            val result = CasType13384_Result(
-                ex.project.reference,
-                result_nominal,
-                result_lowest
-            )
-            val results = CasType13384_Results(result :: compareTo :: Nil)
-            emit(results.showAsCliTable)
-
-    /**
-     * Compute and show results comparing with expected values.
-     */
+    /** Compute and show results comparing with expected values. */
     def compute_and_show_results(
-        ex: ProjectDescr_Alg,
-        compareTo: CasType13384_Result,
+        ex       : ProjectDescr_Alg,
+        compareTo: CasType13384_Result
     ): Unit =
         compute_and_show_results_impl(ex, compareTo)(println).fold(
             nel => nel.toList.foreach(e => fail(e.show)),
@@ -121,8 +117,8 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
         )
 
     def compute_and_show_results_asString(
-        ex: ProjectDescr_Alg,
-        compareTo: CasType13384_Result,
+        ex       : ProjectDescr_Alg,
+        compareTo: CasType13384_Result
     ): VNelMcalcErr[String] =
         val sb = new StringBuilder
         compute_and_show_results_impl(ex, compareTo)(s => sb.append(s).append("\n")).map(_ => sb.toString)
@@ -131,128 +127,124 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
         (
             extractEn13384Appl(ex),
             ex.heatingAppliance
-        ).mapN: (
-            en13384_appl,
-            _heatingAppliance
-        ) =>
+        ).mapN:
+            (
+                en13384_appl,
+                _heatingAppliance
+            ) =>
+                import ex.given_Locale
 
-            import ex.given_Locale
+                val showAsTableInstances         : afpma.firecalc.engine.ops.ShowAsTableInstances               =
+                    new afpma.firecalc.engine.ops.ShowAsTableInstances
+                val _showAsTableInstances_EN13384: afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384 =
+                    new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
 
-            val showAsTableInstances
-                : afpma.firecalc.engine.ops.ShowAsTableInstances =
-                new afpma.firecalc.engine.ops.ShowAsTableInstances
-            val _showAsTableInstances_EN13384
-                : afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384 =
-                new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+                import showAsTableInstances.given
+                import _showAsTableInstances_EN13384.given
 
-            import showAsTableInstances.given
-            import _showAsTableInstances_EN13384.given
+                given HeatingAppliance = en13384_appl.heatingAppliance_final(using
+                    _heatingAppliance
+                )
 
-            given HeatingAppliance = en13384_appl.heatingAppliance_final(
-                using _heatingAppliance
-            )
+                def seperate_tables = emit("\n".repeat(3))
 
-            def seperate_tables = emit("\n".repeat(3))
-
-            emit("""|=============================================
+                emit("""|=============================================
                         |
                         | DESCRIPTION
                         |
                         |=============================================""".stripMargin)
 
-            seperate_tables
+                seperate_tables
 
-            emit(ex.project.showAsCliTable)
+                emit(ex.project.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-            emit(en13384_appl.inputs.localConditions.showAsCliTable)
+                emit(en13384_appl.inputs.localConditions.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-            emit(en13384_appl.inputs.nationalAcceptedData.showAsCliTable)
+                emit(en13384_appl.inputs.nationalAcceptedData.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-            emit(en13384_appl.inputs.flueGasCondition.showAsCliTable)
+                emit(en13384_appl.inputs.flueGasCondition.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-            emit(en13384_appl.reference_temperatures.showAsCliTable)
+                emit(en13384_appl.reference_temperatures.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-            val _ =
-                import Params_13384.givens.DraftMin_LoadNominal
-                emit(Params_13384.show)
-                val pr = en13384_appl.pipesResult_13384
-                emit(
-                    pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
-                )
+                val _ =
+                    import Params_13384.givens.DraftMin_LoadNominal
+                    emit(Params_13384.show)
+                    val pr = en13384_appl.pipesResult_13384
+                    emit(
+                        pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
+                    )
 
-            seperate_tables
+                seperate_tables
 
-            val _ =
-                import Params_13384.givens.DraftMax_LoadNominal
-                emit(Params_13384.show)
-                val pr = en13384_appl.pipesResult_13384
-                emit(
-                    pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
-                )
+                val _ =
+                    import Params_13384.givens.DraftMax_LoadNominal
+                    emit(Params_13384.show)
+                    val pr = en13384_appl.pipesResult_13384
+                    emit(
+                        pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
+                    )
 
-            seperate_tables
+                seperate_tables
 
-            emit("""|=============================================
+                emit("""|=============================================
                         |
                         | CONFORMITÉ avec EN 13384-1
                         |
                         |=============================================""".stripMargin)
 
-            seperate_tables
+                seperate_tables
 
-            emit(HeatingAppliance.summon.showAsCliTable)
+                emit(HeatingAppliance.summon.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-            val pressure_cond_nominal =
-                import LoadQty.givens.nominal
-                en13384_appl.pressureRequirements
-            emit(
-                pressure_cond_nominal.mapShow(
-                    "EXIGENCES DE PRESSION (EN 13384-1) // Allure nominale"
-                )(_.showAsCliTable)
-            )
+                val pressure_cond_nominal =
+                    import LoadQty.givens.nominal
+                    en13384_appl.pressureRequirements
+                emit(
+                    pressure_cond_nominal.mapShow(
+                        "EXIGENCES DE PRESSION (EN 13384-1) // Allure nominale"
+                    )(_.showAsCliTable)
+                )
 
-            seperate_tables
+                seperate_tables
 
-            val pressure_cond_lowest =
-                import LoadQty.givens.reduced
-                en13384_appl.pressureRequirements
-            emit(
-                pressure_cond_lowest.mapShow(
-                    "EXIGENCES DE PRESSION (EN 13384-1) // Allure réduite"
-                )(_.showAsCliTable)
-            )
+                val pressure_cond_lowest =
+                    import LoadQty.givens.reduced
+                    en13384_appl.pressureRequirements
+                emit(
+                    pressure_cond_lowest.mapShow(
+                        "EXIGENCES DE PRESSION (EN 13384-1) // Allure réduite"
+                    )(_.showAsCliTable)
+                )
 
-            seperate_tables
+                seperate_tables
 
-            val temperature_req_at_nominal =
-                import LoadQty.givens.nominal
-                en13384_appl.temperatureRequirements
-            emit(temperature_req_at_nominal.showAsCliTable)
+                val temperature_req_at_nominal =
+                    import LoadQty.givens.nominal
+                    en13384_appl.temperatureRequirements
+                emit(temperature_req_at_nominal.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-            val temperature_req_at_lowest =
-                import LoadQty.givens.reduced
-                en13384_appl.temperatureRequirements
-            emit(temperature_req_at_lowest.showAsCliTable)
+                val temperature_req_at_lowest =
+                    import LoadQty.givens.reduced
+                    en13384_appl.temperatureRequirements
+                emit(temperature_req_at_lowest.showAsCliTable)
 
-            seperate_tables
+                seperate_tables
 
-    /**
-     * Run a full EN 13384 cas type test with detailed output.
-     */
+    /** Run a full EN 13384 cas type test with detailed output. */
     def run_cas_type_13384(ex: ProjectDescr_Alg): Unit =
         run_cas_type_13384_impl(ex)(println).fold(
             nel => nel.toList.foreach(e => fail(e.show)),

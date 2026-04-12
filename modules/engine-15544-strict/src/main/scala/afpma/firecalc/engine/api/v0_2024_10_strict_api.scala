@@ -11,10 +11,7 @@ import afpma.firecalc.dto.FireCalcYAML
  * EN 15544 strict-mode API object.
  * Provides access to strict-specific traits via `v0_2024_10_strict.TraitName`.
  */
-object v0_2024_10_strict
-    extends v0_2024_10_core
-    with v0_2024_10_13384_strict_members
-    with v0_2024_10_strict_members:
+object v0_2024_10_strict extends v0_2024_10_core with v0_2024_10_13384_strict_members with v0_2024_10_strict_members:
 
     object StoveProjectDescr:
 

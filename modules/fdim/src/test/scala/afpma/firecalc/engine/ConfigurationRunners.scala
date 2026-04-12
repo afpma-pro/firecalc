@@ -97,7 +97,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
                 ex_15544_strict.given_Locale,
                 ex_15544_strict.localRegulations,
                 _strict,
-                _strict.atDraftMin_LoadNominal,
+                _strict.atDraftMin_LoadNominal
             )
         out.fold(
             nel => nel.toList.foreach(e => fail(e.show)),
@@ -112,7 +112,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
                 ex_15544_mce.given_Locale,
                 ex_15544_mce.localRegulations,
                 _mce,
-                _mce.atDraftMax_LoadNominal,
+                _mce.atDraftMax_LoadNominal
             )
         out.fold(
             nel => nel.toList.foreach(println),

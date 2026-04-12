@@ -80,7 +80,7 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
 
     import LocalConditionsUI.*
     import defaultable.chimney_termination.given
-    
+
     private given vertical_form: VerticalFormCommonInstances = new VerticalFormCommonInstances()
     import vertical_form.given
 
@@ -178,7 +178,8 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
 
     given form_VerticalAngleBetweenChimneyAndAdjacentBuildings
         : Form[Option[VerticalAngleBetweenChimneyAndAdjacentBuildings]] =
-        given Form[VerticalAngleBetweenChimneyAndAdjacentBuildings] = vertical_form.given_VerticalAngleBetweenChimneyAndAdjacentBuildings
+        given Form[VerticalAngleBetweenChimneyAndAdjacentBuildings] =
+            vertical_form.given_VerticalAngleBetweenChimneyAndAdjacentBuildings
         FormDerivation
             .conditionalOn[AdjacentBuildings, VerticalAngleBetweenChimneyAndAdjacentBuildings](adjacent_buildings_var)
             .withFieldName(FC_I18N_COS.adjacent_buildings.vertical_angle_between_chimney_and_adjacent_buildings.explain)
@@ -203,7 +204,8 @@ case class LocalConditionsUI()(using Locale, DisplayUnits) extends Component:
     given form_z_geodetical_height: DisplayUnits => Form[QtyD[Meter]] =
         import defaultable.given_z_geodetical_height
         import vv.meter.valid_whenPositive
-        dual.given_dual_z_geodetical_height.form()
+        dual.given_dual_z_geodetical_height
+            .form()
             .withFieldName(I18N.local_conditions.altitude)
 
     // LocalConditions Clone

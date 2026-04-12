@@ -82,7 +82,7 @@ trait FloatingLabelInputs:
         ttEnd        : HtmlElement     = span(),
         placeholder  : String          = DEFAULT_PLACEHOLDER,
         optionalField: OptionalField   = OptionalField.No,
-        disabled     : Signal[Boolean] = DISABLED_SIG,
+        disabled     : Signal[Boolean] = DISABLED_SIG
     ) extends LabelledInputWithUnitAndTooltip(
             labelStart,
             ttStart,
@@ -92,9 +92,9 @@ trait FloatingLabelInputs:
         def inputNode = NumberInputOnly(v, placeholder, optionalField, disabled = disabled).inputNoLabel // TOFIX
     object LabelledNumberInputWithUnitAndTooltip extends CommonRenderingFactory[Double]:
         @nowarn def make(
-            v: Var[Option[Double]], 
-            label: Option[String], 
-            optionalField: OptionalField, 
+            v            : Var[Option[Double]],
+            label        : Option[String],
+            optionalField: OptionalField
         )(using
             ValidateVar[Option[Double]]
         ): L.HtmlElement =
@@ -233,8 +233,8 @@ trait FloatingLabelInputs:
     ) extends Component:
         def node: HtmlElement =
             val inputNode = L.input(
-                tpe         := "text",
-                cls         := "input input-bordered w-full",
+                tpe           := "text",
+                cls           := "input input-bordered w-full",
                 L.placeholder := placeholder,
                 controlled(
                     value <-- stringOptVar.signal.map(_.getOrElse("")),
@@ -248,7 +248,7 @@ trait FloatingLabelInputs:
                         inputNode,
                         span(lbl)
                     )
-                case None => inputNode
+                case None      => inputNode
 
     case class NumberInputWithFloatingLabel(
         doubleOptVar : Var[Option[Double]],
@@ -259,10 +259,10 @@ trait FloatingLabelInputs:
     ) extends Component:
         def node: HtmlElement =
             val inputNode = L.input(
-                tpe         := "number",
-                cls         := "input input-bordered w-full",
+                tpe           := "number",
+                cls           := "input input-bordered w-full",
                 L.placeholder := placeholder,
-                stepAttr    := "any",
+                stepAttr      := "any",
                 controlled(
                     value <-- doubleOptVar.signal.map(_.map(_.formatPrecise()).getOrElse("")),
                     onInput.mapToValue.map(_.toDoubleOption) --> doubleOptVar.writer
@@ -276,7 +276,7 @@ trait FloatingLabelInputs:
                         inputNode,
                         span(lbl)
                     )
-                case None => inputNode
+                case None      => inputNode
 
     case class DateInputWithFloatingLabel(
         dateOptVar   : Var[Option[LocalDate]],
@@ -286,13 +286,11 @@ trait FloatingLabelInputs:
         private val fmt = DateTimeFormatter.ISO_LOCAL_DATE
         def node: HtmlElement =
             val inputNode = L.input(
-                tpe         := "date",
-                cls         := "input input-bordered w-full",
+                tpe := "date",
+                cls := "input input-bordered w-full",
                 controlled(
                     value <-- dateOptVar.signal.map(_.map(_.format(fmt)).getOrElse("")),
-                    onInput.mapToValue.map(s =>
-                        scala.util.Try(LocalDate.parse(s, fmt)).toOption
-                    ) --> dateOptVar.writer
+                    onInput.mapToValue.map(s => scala.util.Try(LocalDate.parse(s, fmt)).toOption) --> dateOptVar.writer
                 )
             )
             fieldNameOpt match
@@ -302,7 +300,7 @@ trait FloatingLabelInputs:
                         inputNode,
                         span(lbl)
                     )
-                case None => inputNode
+                case None      => inputNode
 
     case class NumberInputWithUnitsAndFloatingLabel(
         doubleOptVar : Var[Option[Double]],
@@ -314,9 +312,9 @@ trait FloatingLabelInputs:
     ) extends Component:
         def node: HtmlElement =
             val inputNode = L.input(
-                tpe         := "number",
-                cls         := "input input-bordered w-full",
-                stepAttr    := "any",
+                tpe      := "number",
+                cls      := "input input-bordered w-full",
+                stepAttr := "any",
                 controlled(
                     value <-- doubleOptVar.signal.map(_.map(_.formatPrecise()).getOrElse("")),
                     onInput.mapToValue.map(_.toDoubleOption) --> doubleOptVar.writer
@@ -328,10 +326,10 @@ trait FloatingLabelInputs:
                 case Some(lbl) =>
                     L.label(
                         cls := "floating-label",
-                        div(cls := "flex items-center gap-1", inputNode, unitLabel),
-                        span(lbl)
+                        div (cls := "flex items-center gap-1", inputNode, unitLabel),
+                        span(lbl                                                   )
                     )
-                case None =>
+                case None      =>
                     div(cls := "flex items-center gap-1", inputNode, unitLabel)
 
     case class LabelledSelectInput[A](
@@ -362,4 +360,4 @@ trait FloatingLabelInputs:
                         selectNode,
                         span(lbl)
                     )
-                case None => selectNode
+                case None      => selectNode

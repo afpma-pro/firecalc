@@ -13,27 +13,27 @@ import afpma.firecalc.units.coulombutils.*
  * Clockwise positive when viewed from above.
  */
 enum AzimuthDirection:
-    case Rear                                //   0°
-    case RearRight                           //  +45°
-    case Right                               //  +90°
-    case FrontRight                          // +135°
-    case Front                               // ±180°
-    case FrontLeft                           // -135°
-    case Left                                //  -90°
-    case RearLeft                            //  -45°
-    case Custom(azimuth: Angle)              // arbitrary angle
+    case Rear       //   0°
+    case RearRight  //  +45°
+    case Right      //  +90°
+    case FrontRight // +135°
+    case Front      // ±180°
+    case FrontLeft  // -135°
+    case Left       //  -90°
+    case RearLeft   //  -45°
+    case Custom(azimuth: Angle) // arbitrary angle
 
 object AzimuthDirection:
     /** Convert to degrees (Double). Named cases map to their fixed angle. */
     def toDegrees(d: AzimuthDirection): Double = d match
-        case Rear      => 0.0
-        case RearRight => 45.0
-        case Right     => 90.0
+        case Rear       => 0.0
+        case RearRight  => 45.0
+        case Right      => 90.0
         case FrontRight => 135.0
-        case Front     => 180.0
-        case FrontLeft => -135.0
-        case Left      => -90.0
-        case RearLeft  => -45.0
+        case Front      => 180.0
+        case FrontLeft  => -135.0
+        case Left       => -90.0
+        case RearLeft   => -45.0
         case Custom(az) => az.value
 
     /** All named (non-Custom) cases. */
@@ -44,21 +44,23 @@ object AzimuthDirection:
     def fromDegrees(deg: Double, tolerance: Double = 1.0): AzimuthDirection =
         // Normalize to [-180, 180)
         val normalized = ((deg % 360) + 540) % 360 - 180
-        namedCases.find { c =>
-            val cdeg = toDegrees(c)
-            val cnorm = ((cdeg % 360) + 540) % 360 - 180
-            math.abs(cnorm - normalized) < tolerance
-        }.getOrElse(Custom(deg.degrees))
+        namedCases
+            .find { c =>
+                val cdeg  = toDegrees(c)
+                val cnorm = ((cdeg % 360) + 540) % 360 - 180
+                math.abs(cnorm - normalized) < tolerance
+            }
+            .getOrElse(Custom(deg.degrees))
 
 /**
  * Inclination direction (elevation from horizontal plane).
  * +90° = Up (+Z), -90° = Down (-Z), 0° = Horizontal.
  */
 enum InclinationDirection:
-    case Up                                   // +90°
-    case Down                                 // -90°
-    case Horizontal                           //   0°
-    case Custom(inclination: Angle)           // arbitrary angle
+    case Up         // +90°
+    case Down       // -90°
+    case Horizontal //   0°
+    case Custom(inclination: Angle) // arbitrary angle
 
 object InclinationDirection:
     /** Convert to degrees (Double). Named cases map to their fixed angle. */
@@ -74,9 +76,11 @@ object InclinationDirection:
 
     /** Snap a degree value to a named case if within tolerance, else Custom. */
     def fromDegrees(deg: Double, tolerance: Double = 1.0): InclinationDirection =
-        namedCases.find { c =>
-            math.abs(toDegrees(c) - deg) < tolerance
-        }.getOrElse(Custom(deg.degrees))
+        namedCases
+            .find { c =>
+                math.abs(toDegrees(c) - deg) < tolerance
+            }
+            .getOrElse(Custom(deg.degrees))
 
 /**
  * A complete direction specification: azimuth in horizontal plane + inclination from horizontal.
@@ -94,7 +98,7 @@ object AbsoluteDirection:
     def apply(azimuth: AzimuthDirection, inclination: InclinationDirection): AbsoluteDirection =
         val az = inclination match
             case InclinationDirection.Up | InclinationDirection.Down => None
-            case _ => Some(azimuth)
+            case _                                                   => Some(azimuth)
         new AbsoluteDirection(az, inclination)
 
     /** Convert to (azimuthDeg, elevationDeg) pair. Returns 0.0 azimuth when None. */

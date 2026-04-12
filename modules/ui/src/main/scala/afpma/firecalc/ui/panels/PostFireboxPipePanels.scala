@@ -23,16 +23,17 @@ import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
 
-/** Dynamic container that renders pipe panels from the post-firebox slot vector.
-  * Replaces the hardcoded FluePipePanel/ConnectorPipePanel/ChimneyPipePanel.
-  *
-  * Layout zones:
-  *   - **Flue region** (indices 0 to fixedZoneStart-1): user-managed slots (FlueSlot,
-  *     interleaved ConnectorSlot). At least one FlueSlot must remain.
-  *   - **Fixed zone** (last 2 slots): trailing ConnectorSlot + ChimneySlot.
-  *     Always present, no delete/move controls.
-  *   - **Toolbar**: between flue region and fixed zone.
-  */
+/**
+ * Dynamic container that renders pipe panels from the post-firebox slot vector.
+ * Replaces the hardcoded FluePipePanel/ConnectorPipePanel/ChimneyPipePanel.
+ *
+ * Layout zones:
+ *   - **Flue region** (indices 0 to fixedZoneStart-1): user-managed slots (FlueSlot,
+ *     interleaved ConnectorSlot). At least one FlueSlot must remain.
+ *   - **Fixed zone** (last 2 slots): trailing ConnectorSlot + ChimneySlot.
+ *     Always present, no delete/move controls.
+ *   - **Toolbar**: between flue region and fixed zone.
+ */
 final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) extends Component:
 
     import afpma.laminar.form.{Defaultable as D}
@@ -48,9 +49,10 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Slot normalization ──────────────────────────────────────
 
-    /** Ensure the slot vector always ends with `..., ConnectorSlot, ChimneySlot`.
-      * Mirrors `FireCalcYAML_Loader.normalizePostFireboxSlots` at the UI level.
-      */
+    /**
+     * Ensure the slot vector always ends with `..., ConnectorSlot, ChimneySlot`.
+     * Mirrors `FireCalcYAML_Loader.normalizePostFireboxSlots` at the UI level.
+     */
     private def normalizeSlots(slots: Seq[PostFireboxPipeDescrSlot]): Seq[PostFireboxPipeDescrSlot] =
         if slots.size < 2 then slots // degenerate — let topology error surface
         else
@@ -59,7 +61,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 case _: PostFireboxPipeDescrSlot.ChimneySlot =>
                     slots.init.lastOption match
                         case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => slots // already normalized
-                        case _ => slots.init :+ PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty) :+ chimney
+                        case _                                               => slots.init :+ PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty) :+ chimney
                 case _ => slots // no chimney at end — degenerate, let topology error surface
 
     // ── Slot mutation helpers ────────────────────────────────────
@@ -70,8 +72,8 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     /** Insert a slot into the flue region (before the fixed trailing connector + chimney). */
     private def addSlotToFlueRegion(slot: PostFireboxPipeDescrSlot): Unit =
         postFireboxSlots_var.update: slots =>
-            val normalized      = normalizeSlots(slots)
-            val fixedZoneStart  = (normalized.size - 2).max(0)
+            val normalized     = normalizeSlots(slots)
+            val fixedZoneStart = (normalized.size - 2).max(0)
             val (flueRegion, fixedZone) = normalized.splitAt(fixedZoneStart)
             flueRegion ++ Seq(slot) ++ fixedZone
         structureVersion.update(_ + 1)
@@ -97,8 +99,8 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             val fixedZoneStart = (normalized.size - 2).max(0)
             // Guard: both indices must be within the flue region
             if fromIdx < 0 || fromIdx >= fixedZoneStart ||
-               toIdx   < 0 || toIdx   >= fixedZoneStart ||
-               fromIdx == toIdx
+                toIdx < 0 || toIdx >= fixedZoneStart ||
+                fromIdx == toIdx
             then normalized
             else
                 val buf  = normalized.toBuffer
@@ -136,13 +138,15 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     private lazy val topologyWarning: Signal[Option[HtmlElement]] =
         topologyValidation_sig.map:
-            case Validated.Valid(_) => None
+            case Validated.Valid(_)        => None
             case Validated.Invalid(errors) =>
-                Some(div(
-                    cls := "alert alert-warning text-xs mx-4 my-1",
-                    lucide.`triangle-alert`(),
-                    span(errors.toList.map(topologyErrorLabel).mkString("; "))
-                ))
+                Some(
+                    div(
+                        cls := "alert alert-warning text-xs mx-4 my-1",
+                        lucide.`triangle-alert`(),
+                        span(errors.toList.map(topologyErrorLabel).mkString("; "))
+                    )
+                )
 
     // ── Per-slot controls (remove, move up/down) ─────────────────
 
@@ -155,11 +159,12 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
         val canDelete =
             if !isInFlueRegion then false
-            else slot match
-                case _: PostFireboxPipeDescrSlot.FlueSlot =>
-                    val flueRegion = postFireboxSlots_var.now().take(fixedZoneStart)
-                    flueRegion.count(_.isInstanceOf[PostFireboxPipeDescrSlot.FlueSlot]) > 1
-                case _ => true // interleaved connectors can always be deleted
+            else
+                slot match
+                    case _: PostFireboxPipeDescrSlot.FlueSlot =>
+                        val flueRegion = postFireboxSlots_var.now().take(fixedZoneStart)
+                        flueRegion.count(_.isInstanceOf[PostFireboxPipeDescrSlot.FlueSlot]) > 1
+                    case _ => true // interleaved connectors can always be deleted
 
         div(
             cls := "flex-none flex items-center",
@@ -194,11 +199,12 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Build panels from current slot snapshot ──────────────────
 
-    /** Build a stable panel list from the current slots.
-      * Called once at init and after each structural mutation.
-      *
-      * Layout: [flue region panels] [toolbar] [trailing connector panel] [chimney panel]
-      */
+    /**
+     * Build a stable panel list from the current slots.
+     * Called once at init and after each structural mutation.
+     *
+     * Layout: [flue region panels] [toolbar] [trailing connector panel] [chimney panel]
+     */
     private def buildPanels(slots: Seq[PostFireboxPipeDescrSlot]): HtmlElement =
         val normalized     = normalizeSlots(slots)
         val fixedZoneStart = (normalized.size - 2).max(0)
@@ -210,7 +216,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 val panel = DynamicPipeSlotPanel.forSlot(idx, slot, controls)
                 // Insert toolbar between flue region and fixed zone
                 if idx == fixedZoneStart then Seq(toolbar, panel.node)
-                else Seq(panel.node)
+                else Seq                         (panel.node         )
         )
 
     // ── Main node ────────────────────────────────────────────────
@@ -225,7 +231,8 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             val current    = postFireboxSlots_var.now()
             val normalized = normalizeSlots(current)
             if normalized != current then postFireboxSlots_var.set(normalized)
-            structureVersion.update(_ + 1),
+            structureVersion.update(_ + 1)
+        ,
         child.maybe <-- topologyWarning,
         child <-- structureVersion.signal.map: _ =>
             buildPanels(postFireboxSlots_var.now())

@@ -45,7 +45,7 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                                         cls := "flex-none text-base-content/40 text-sm self-center mt-1",
                                         s"(${summon[Locale].language.value})"
                                     )
-                                ),
+                                )
                             ),
                             buttonString  = I18N_UI.buttons.menu
                         ),
@@ -58,9 +58,10 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                     div(
                         cls <-- anyPanelOn.map(on =>
                             if on then "w-2/3"
-                            else "w-full"),
+                            else "w-full"
+                        ),
                         DaisyUIVerticalAccordionAndJoin(),
-                        Footer()
+                        Footer                         ()
                     ),
                     // Right: 3D and/or Graph panel (both can be active, split vertically)
                     // The outer container only mounts/unmounts on none↔any transitions (anyPanelOn deduplicates).
@@ -69,24 +70,34 @@ final case class HomeView()(using Locale, DisplayUnits) extends Component {
                     // the existing Three.js ResizeObserver handles the canvas resize.
                     child.maybe <-- anyPanelOn.map:
                         case false => None
-                        case true =>
-                            Some(div(
-                                cls := "w-1/3 fixed right-0 top-42 bottom-0 p-2 flex flex-col gap-2",
-                                child.maybe <-- viz3DPanelOn.map:
-                                    case false => None
-                                    case true => Some(div(
-                                        cls <-- graphPanelOn.map(g =>
-                                            if g then "h-1/2 overflow-hidden" else "h-full"),
-                                        Viz3DPanel().node
-                                    )),
-                                child.maybe <-- graphPanelOn.map:
-                                    case false => None
-                                    case true => Some(div(
-                                        cls <-- viz3DPanelOn.map(v =>
-                                            if v then "h-1/2 overflow-hidden" else "h-full"),
-                                        GraphPanel().node
-                                    ))
-                            ))
+                        case true  =>
+                            Some(
+                                div(
+                                    cls := "w-1/3 fixed right-0 top-42 bottom-0 p-2 flex flex-col gap-2",
+                                    child.maybe <-- viz3DPanelOn.map:
+                                        case false => None
+                                        case true  =>
+                                            Some(
+                                                div(
+                                                    cls <-- graphPanelOn.map(g =>
+                                                        if g then "h-1/2 overflow-hidden" else "h-full"
+                                                    ),
+                                                    Viz3DPanel().node
+                                                )
+                                            ),
+                                    child.maybe <-- graphPanelOn.map:
+                                        case false => None
+                                        case true  =>
+                                            Some(
+                                                div(
+                                                    cls <-- viz3DPanelOn.map(v =>
+                                                        if v then "h-1/2 overflow-hidden" else "h-full"
+                                                    ),
+                                                    GraphPanel().node
+                                                )
+                                            )
+                                )
+                            )
                 )
             )
         )

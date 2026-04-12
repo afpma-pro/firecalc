@@ -40,7 +40,7 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 
     given Locale = Locales.en
 
-    private val pipeChain = PipeChain_15544_Strict.build(
+    private val pipeChain       = PipeChain_15544_Strict.build(
         PipeChain_15544_Strict.Descriptors(
             strict_ex01_colonne_ascendante.fluePipeDescr,
             strict_ex01_colonne_ascendante.connectorPipeDescr,
@@ -48,10 +48,10 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
         )
     )
     val channel_pipe_full_descr = pipeChain.fluePipe.toOption.get
-    val channel_pipe_elems = channel_pipe_full_descr
+    val channel_pipe_elems      = channel_pipe_full_descr
 
-    val f = EN15544_Strict_Formulas.make
-    val inputs = strict_ex01_colonne_ascendante.en15544_inputsVNel.toOption.get
+    val f       = EN15544_Strict_Formulas.make
+    val inputs  = strict_ex01_colonne_ascendante.en15544_inputsVNel.toOption.get
     val en15544 = EN15544_Strict_Application.make(f)(inputs)
 
     given PipeType = FluePipeT
@@ -63,12 +63,14 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
                 new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
                     def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
 
-    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()
+    val flowOnlyDynamicFrictionCoeff_15544                           = FlowOnlyDynamicFrictionCoeff_15544()
     given DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
-        flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(channel_pipe_full_descr.elementsUnwrap)(using en15544.ssalg)
+        flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(channel_pipe_full_descr.elementsUnwrap)(using
+            en15544.ssalg
+        )
 
     import LoadQty.givens.nominal
-    
+
     val p = DraftCondition.DraftMaxOrPositivePressureMin
 
     "MecaFlu_EN15544" - {
@@ -76,28 +78,41 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
         "on FluePipe" - {
 
             "computing result on section should work" in {
-                val first = channel_pipe_elems.elems.head    
-                val gip = GasInPipeEl[NamedPipeElDescrG[FluePipe_Module_15544.El], Gas, DraftCondition](FlueGas, first, p)       
-                val gas_temp: PositionOp[TCelsius] = QtyDAtPosition.from(
-                    start   = 550.degreesCelsius,
-                    middle  = 500.degreesCelsius,
-                    end     = 450.degreesCelsius,
-                ).atPos
+                val first = channel_pipe_elems.elems.head
+                val gip   =
+                    GasInPipeEl[NamedPipeElDescrG[FluePipe_Module_15544.El], Gas, DraftCondition](FlueGas, first, p)
+                val gas_temp: PositionOp[TCelsius] = QtyDAtPosition
+                    .from (
+                        start  = 550.degreesCelsius,
+                        middle = 500.degreesCelsius,
+                        end    = 450.degreesCelsius
+                    )
+                    .atPos
                 // val next = channel_pipe_elems.elems.tail.head
                 FlowOnlyMecaFlu_15544.makePipeSectionResult(
-                    gip, nominal, None, None, 2.m_per_s.some, 1.kg_per_m3.some, gas_temp)(using en15544)
+                    gip,
+                    nominal,
+                    None,
+                    None,
+                    2.m_per_s.some,
+                    1.kg_per_m3.some,
+                    gas_temp
+                )(using en15544)
                 succeed
             }
 
             "computing result on pipe should work" in {
                 val pr = FlowOnlyMecaFlu_15544.makePipeResult(
-                    channel_pipe_full_descr.unwrap, FlueGas, nominal, en15544.z_geodetical_height, p)(using en15544, en15544.ssalg)
+                    channel_pipe_full_descr.unwrap,
+                    FlueGas,
+                    nominal,
+                    en15544.z_geodetical_height,
+                    p
+                )(using en15544, en15544.ssalg)
                 pr.toOption shouldBe defined
             }
         }
 
     }
 
-    
 }
-

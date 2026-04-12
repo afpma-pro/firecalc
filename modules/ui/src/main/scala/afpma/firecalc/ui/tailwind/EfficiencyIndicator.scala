@@ -38,28 +38,27 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Compo
 
     given Show[QtyD[Percent]] = shows.defaults.show_Percent_1
 
-    lazy val effValidation: Signal[VNelMcalcErr[Unit]] = 
+    lazy val effValidation: Signal[VNelMcalcErr[Unit]] =
         results_en15544_strict_sig.flatMapVNelE(
             _.primary.validateEfficiencyIsAboveMinEfficiency()
         )
 
-    lazy val effIsTooLow: Signal[Option[EfficiencyIsTooLow]] = 
+    lazy val effIsTooLow: Signal[Option[EfficiencyIsTooLow]] =
         effValidation.map:
             case Validated.Invalid(nel) =>
-                nel
-                .toList
-                .map: 
-                    case e: EfficiencyIsTooLow => Some(e)
-                    case _ => None
-                .headOption
-                .flatten
+                nel.toList
+                    .map:
+                        case e: EfficiencyIsTooLow => Some(e)
+                        case _ => None
+                    .headOption
+                    .flatten
 
             case _ => None
 
-    lazy val effInRange_sig: Signal[Boolean] = 
+    lazy val effInRange_sig: Signal[Boolean] =
         effValidation.mapAndFoldVNelE(_ => true, false)
 
-    private val hasError: Signal[Boolean] = 
+    private val hasError: Signal[Boolean] =
         effInRange_sig.map(!_)
 
     private val minEfficiency_sig: Signal[String] =
@@ -86,23 +85,24 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Compo
             indicator      = Indicator(
                 style_sig    = effInRange_sig.map(inRange =>
                     if inRange then Some(IndicatorConfig.green)
-                    else            Some(IndicatorConfig.rose)
+                    else Some           (IndicatorConfig.rose )
                 ),
                 title        = p(I18N_UI.indicators.efficiency),
                 subtitle_sig = flueGasTemp_sig
             )(
                 p(
                     cls := "flex-1 mx-6 py-2 text-center font-semibold w-24",
-                    text <-- eff_and_min_eff.combineWith(effIsTooLow)
+                    text <-- eff_and_min_eff
+                        .combineWith(effIsTooLow)
                         .map { t =>
                             val eff_is_too_low_opt = t._2
                             eff_is_too_low_opt match
-                                case Some(EfficiencyIsTooLow(eff, min_eff)) => 
+                                case Some(EfficiencyIsTooLow(eff, min_eff)) =>
                                     if (math.abs(eff.value - min_eff.value) < 0.1)
                                         (min_eff - 0.1.percent).showP // make sure we do not display eff = min_eff when rounded to %.1f
-                                    else 
+                                    else
                                         eff.showP
-                                case None =>
+                                case None                                   =>
                                     t._1.map(_._1.showP).getOrElse("-")
                         }
                 )

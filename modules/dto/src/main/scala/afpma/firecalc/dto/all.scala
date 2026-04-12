@@ -170,4 +170,3 @@ object all:
 
     // V6
     export afpma.firecalc.dto.v6.FireCalcYAML_V6
-

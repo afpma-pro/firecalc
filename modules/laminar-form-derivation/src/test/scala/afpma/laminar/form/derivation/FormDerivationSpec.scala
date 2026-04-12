@@ -10,11 +10,12 @@ import afpma.laminar.form.derivation.FormDerivation
 import afpma.laminar.form.derivation.FormDerivation.given
 import utest.*
 
-/** Tests for FormDerivation — magnolia-based Form[A] derivation.
-  *
-  * Tests pure logic only (Defaultable, ValidateVar, FormConfig resolution).
-  * Does NOT call .render() which would require a browser DOM.
-  */
+/**
+ * Tests for FormDerivation — magnolia-based Form[A] derivation.
+ *
+ * Tests pure logic only (Defaultable, ValidateVar, FormConfig resolution).
+ * Does NOT call .render() which would require a browser DOM.
+ */
 object FormDerivationSpec extends TestSuite:
 
     // =========================================================================
@@ -26,7 +27,7 @@ object FormDerivationSpec extends TestSuite:
     case class Person(name: String, age: Int)
 
     sealed trait Shape
-    case class Circle(radius: Double) extends Shape
+    case class Circle(radius: Double)                   extends Shape
     case class Rectangle(width: Double, height: Double) extends Shape
 
     sealed trait SingleChild
@@ -41,19 +42,20 @@ object FormDerivationSpec extends TestSuite:
     given labelledTranslations: afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues[Labelled] =
         new afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues[Labelled]:
             def getTranslatedFieldsWithValues =
-                afpma.firecalc.i18n.utils.TranslatedFieldsWithValues(
-                    classNameOrig = "Labelled",
+                afpma.firecalc.i18n.utils.TranslatedFieldsWithValues  (
+                    classNameOrig   = "Labelled",
                     classNameTransl = Some("Custom Labelled Form"),
-                    paramsTransl = Map("x" -> Some("X value"))
+                    paramsTransl    = Map("x" -> Some("X value"))
                 )
 
-    given annotatedFieldHolderTranslations: afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues[AnnotatedFieldHolder] =
+    given annotatedFieldHolderTranslations
+        : afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues[AnnotatedFieldHolder] =
         new afpma.firecalc.i18n.utils.HasTranslatedFieldsWithValues[AnnotatedFieldHolder]:
             def getTranslatedFieldsWithValues =
-                afpma.firecalc.i18n.utils.TranslatedFieldsWithValues(
-                    classNameOrig = "AnnotatedFieldHolder",
+                afpma.firecalc.i18n.utils.TranslatedFieldsWithValues  (
+                    classNameOrig   = "AnnotatedFieldHolder",
                     classNameTransl = Some("Annotated Holder"),
-                    paramsTransl = Map("myField" -> Some("Custom Annotated Field"))
+                    paramsTransl    = Map("myField" -> Some("Custom Annotated Field"))
                 )
 
     // =========================================================================
@@ -61,13 +63,13 @@ object FormDerivationSpec extends TestSuite:
     // =========================================================================
 
     given FormMessages with
-        def valueIsUndefined: String = "Value is undefined"
+        def valueIsUndefined : String = "Value is undefined"
         def notImplementedYet: String = "Not implemented yet"
 
     given vvOptDouble: ValidateVar[Option[Double]] = ValidateVar.valid
     given vvOptString: ValidateVar[Option[String]] = ValidateVar.valid
-    given vvOptInt: ValidateVar[Option[Int]] = ValidateVar.valid
-    given vvBoolean: ValidateVar[Boolean] = ValidateVar.valid
+    given vvOptInt   : ValidateVar[Option[Int]]    = ValidateVar.valid
+    given vvBoolean  : ValidateVar[Boolean]        = ValidateVar.valid
 
     val tests = Tests {
 
@@ -79,28 +81,28 @@ object FormDerivationSpec extends TestSuite:
 
             test("case class with Double fields") {
                 val form = FormDerivation.derived[Point]
-                val d = form.defaultable
+                val d    = form.defaultable
                 assert(d.default == Point(0.0, 0.0))
             }
 
             test("case class with mixed fields") {
                 val form = FormDerivation.derived[Person]
-                val d = form.defaultable
+                val d    = form.defaultable
                 assert(d.default.name == "")
-                assert(d.default.age == 0)
+                assert(d.default.age == 0  )
             }
 
             test("sealed trait picks first subtype") {
                 val form = FormDerivation.derived[Shape]
-                val d = form.defaultable
-                assert(d.default.isInstanceOf[Circle])
+                val d    = form.defaultable
+                assert(d.default.isInstanceOf[Circle]              )
                 assert(d.default.asInstanceOf[Circle].radius == 0.0)
             }
 
             test("sealed trait with single subtype") {
                 val form = FormDerivation.derived[SingleChild]
-                val d = form.defaultable
-                assert(d.default.isInstanceOf[OnlyChild])
+                val d    = form.defaultable
+                assert(d.default.isInstanceOf[OnlyChild]           )
                 assert(d.default.asInstanceOf[OnlyChild].value == 0)
             }
         }
@@ -112,7 +114,7 @@ object FormDerivationSpec extends TestSuite:
         test("ValidateVar from join") {
 
             test("validates all params - all valid") {
-                val form = FormDerivation.derived[Point]
+                val form   = FormDerivation.derived[Point]
                 val result = form.validateVar.validate(Point(1.0, 2.0))
                 assert(result.isValid)
             }
@@ -130,13 +132,13 @@ object FormDerivationSpec extends TestSuite:
         test("ValidateVar from split") {
 
             test("dispatches to matching subtype - Circle") {
-                val form = FormDerivation.derived[Shape]
+                val form   = FormDerivation.derived[Shape]
                 val result = form.validateVar.validate(Circle(5.0))
                 assert(result.isValid)
             }
 
             test("dispatches to matching subtype - Rectangle") {
-                val form = FormDerivation.derived[Shape]
+                val form   = FormDerivation.derived[Shape]
                 val result = form.validateVar.validate(Rectangle(3.0, 4.0))
                 assert(result.isValid)
             }
@@ -150,13 +152,13 @@ object FormDerivationSpec extends TestSuite:
 
             test("defaultable is transformed") {
                 given Form[Double] = FormDerivation.forDouble
-                val formInt = summon[Form[Double]].bimap[Int](_.toInt)(_.toDouble)
+                val formInt        = summon[Form[Double]].bimap[Int](_.toInt)(_.toDouble)
                 assert(formInt.defaultable.default == 0)
             }
 
             test("validateVar is contramapped") {
                 given Form[Double] = FormDerivation.forDouble
-                val formInt = summon[Form[Double]].bimap[Int](_.toInt)(_.toDouble)
+                val formInt        = summon[Form[Double]].bimap[Int](_.toInt)(_.toDouble)
                 // Should be valid since underlying ValidateVar.valid is used
                 assert(formInt.validateVar.validate(42).isValid)
             }
@@ -171,7 +173,7 @@ object FormDerivationSpec extends TestSuite:
             test("uses target Defaultable") {
                 case class Wrapper(value: Double)
                 given Defaultable[Wrapper] = Defaultable(Wrapper(99.0))
-                given Form[Double] = FormDerivation.forDouble
+                given Form[Double]         = FormDerivation.forDouble
 
                 val formWrapper = summon[Form[Double]].xmap[Wrapper]((_, d) => Wrapper(d))(_.value)
                 assert(formWrapper.defaultable.default == Wrapper(99.0))
@@ -180,7 +182,7 @@ object FormDerivationSpec extends TestSuite:
             test("validateVar uses contramap") {
                 case class Wrapper(value: Double)
                 given Defaultable[Wrapper] = Defaultable(Wrapper(0.0))
-                given Form[Double] = FormDerivation.forDouble
+                given Form[Double]         = FormDerivation.forDouble
 
                 val formWrapper = summon[Form[Double]].xmap[Wrapper]((_, d) => Wrapper(d))(_.value)
                 assert(formWrapper.validateVar.validate(Wrapper(42.0)).isValid)
@@ -197,7 +199,7 @@ object FormDerivationSpec extends TestSuite:
                 case class Meters(value: Double)
                 given Conversion[Meters, Double] = _.value
                 given Conversion[Double, Meters] = Meters(_)
-                given Form[Double] = FormDerivation.forDouble
+                given Form[Double]               = FormDerivation.forDouble
 
                 val form = Form.formConversionOpaque[Meters, Double]
                 assert(form.defaultable.default == Meters(0.0))
@@ -207,7 +209,7 @@ object FormDerivationSpec extends TestSuite:
                 case class Meters(value: Double)
                 given Conversion[Meters, Double] = _.value
                 given Conversion[Double, Meters] = Meters(_)
-                given Form[Double] = FormDerivation.forDouble
+                given Form[Double]               = FormDerivation.forDouble
 
                 val form = Form.formConversionOpaque[Meters, Double]
                 assert(form.validateVar.validate(Meters(5.0)).isValid)
@@ -221,21 +223,21 @@ object FormDerivationSpec extends TestSuite:
         test("ValidateVar.forEither") {
 
             test("Left dispatches to left validator") {
-                given ValidateVar[Int] = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                given ValidateVar[Int]    = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
                 given ValidateVar[String] = ValidateVar.valid
 
                 val vv = ValidateVar.forEither[Int, String]
-                assert(vv.validate(Left(5)).isValid)
+                assert(vv.validate(Left(5) ).isValid  )
                 assert(vv.validate(Left(-1)).isInvalid)
             }
 
             test("Right dispatches to right validator") {
-                given ValidateVar[Int] = ValidateVar.valid
+                given ValidateVar[Int]    = ValidateVar.valid
                 given ValidateVar[String] = ValidateVar.validWhen[String](_.nonEmpty)(_ => "empty")
 
                 val vv = ValidateVar.forEither[Int, String]
-                assert(vv.validate(Right("ok")).isValid)
-                assert(vv.validate(Right("")).isInvalid)
+                assert(vv.validate(Right("ok")).isValid  )
+                assert(vv.validate(Right("")  ).isInvalid)
             }
         }
 
@@ -246,7 +248,7 @@ object FormDerivationSpec extends TestSuite:
         test("ValidateVar.forOptionEither") {
 
             test("None is valid") {
-                given ValidateVar[Int] = ValidateVar.valid
+                given ValidateVar[Int]    = ValidateVar.valid
                 given ValidateVar[String] = ValidateVar.valid
 
                 val vv = ValidateVar.forOptionEither[Int, String]
@@ -254,21 +256,21 @@ object FormDerivationSpec extends TestSuite:
             }
 
             test("Some(Left) dispatches to left") {
-                given ValidateVar[Int] = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
+                given ValidateVar[Int]    = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
                 given ValidateVar[String] = ValidateVar.valid
 
                 val vv = ValidateVar.forOptionEither[Int, String]
-                assert(vv.validate(Some(Left(5))).isValid)
+                assert(vv.validate(Some(Left(5) )).isValid  )
                 assert(vv.validate(Some(Left(-1))).isInvalid)
             }
 
             test("Some(Right) dispatches to right") {
-                given ValidateVar[Int] = ValidateVar.valid
+                given ValidateVar[Int]    = ValidateVar.valid
                 given ValidateVar[String] = ValidateVar.validWhen[String](_.nonEmpty)(_ => "empty")
 
                 val vv = ValidateVar.forOptionEither[Int, String]
-                assert(vv.validate(Some(Right("ok"))).isValid)
-                assert(vv.validate(Some(Right(""))).isInvalid)
+                assert(vv.validate(Some(Right("ok"))).isValid  )
+                assert(vv.validate(Some(Right("")  )).isInvalid)
             }
         }
 
@@ -286,7 +288,7 @@ object FormDerivationSpec extends TestSuite:
             test("forString validateVar (flatten of valid)") {
                 val form: Form[String] = FormDerivation.forString
                 assert(form.validateVar.validate("test").isValid)
-                assert(form.validateVar.validate("").isValid)
+                assert(form.validateVar.validate("").isValid    )
             }
 
             test("forDouble defaultable") {
@@ -329,7 +331,7 @@ object FormDerivationSpec extends TestSuite:
             test("withFieldName preserves defaultable and validateVar") {
                 val form: Form[Double] = FormDerivation.forDouble
                 val named = form.withFieldName("Temperature")
-                assert(named.defaultable.default == 0.0)
+                assert(named.defaultable.default == 0.0        )
                 assert(named.validateVar.validate(42.0).isValid)
             }
 
@@ -342,14 +344,14 @@ object FormDerivationSpec extends TestSuite:
             test("showFieldName preserves configuredFieldName") {
                 val form: Form[Double] = FormDerivation.forDouble.withFieldName("Temperature")
                 val shown = form.showFieldName
-                assert(shown.defaultable.default == 0.0)
+                assert(shown.defaultable.default == 0.0                 )
                 assert(shown.configuredFieldName.contains("Temperature"))
             }
 
             test("hideFieldName preserves configuredFieldName") {
                 val form: Form[Double] = FormDerivation.forDouble.withFieldName("Temperature")
                 val hidden = form.hideFieldName
-                assert(hidden.defaultable.default == 0.0)
+                assert(hidden.defaultable.default == 0.0                 )
                 assert(hidden.configuredFieldName.contains("Temperature"))
             }
 
@@ -377,8 +379,8 @@ object FormDerivationSpec extends TestSuite:
             test("formConversionOpaque preserves configuredFieldName") {
                 given Conversion[Int, Double] = _.toDouble
                 given Conversion[Double, Int] = _.toInt
-                given Form[Double] = FormDerivation.forDouble.withFieldName("Temperature")
-                val mapped = Form.formConversionOpaque[Int, Double]
+                given Form[Double]            = FormDerivation.forDouble.withFieldName("Temperature")
+                val mapped                    = Form.formConversionOpaque[Int, Double]
                 assert(mapped.configuredFieldName.contains("Temperature"))
             }
         }
@@ -397,8 +399,8 @@ object FormDerivationSpec extends TestSuite:
 
         test("conditionalOn preserves configuredFieldName") {
             given ConditionalFor[Boolean, Double] = ConditionalFor[Boolean, Double](identity)
-            given Form[Double] = FormDerivation.forDouble.withFieldName("Temperature")
-            val form = FormDerivation.conditionalOn[Boolean, Double](com.raquo.airstream.state.Var(true))
+            given Form[Double]                    = FormDerivation.forDouble.withFieldName("Temperature")
+            val form                              = FormDerivation.conditionalOn[Boolean, Double](com.raquo.airstream.state.Var(true))
             assert(form.configuredFieldName.contains("Temperature"))
         }
 
@@ -410,12 +412,12 @@ object FormDerivationSpec extends TestSuite:
 
             test("always returns valid") {
                 given Defaultable[Int] = Defaultable(0)
-                val form = FormDerivation.mk_AlwaysValid[Int]((_, _) => (_: FormRenderer) ?=>
-                    throw new Exception("should not render in test")
+                val form               = FormDerivation.mk_AlwaysValid[Int]((_, _) =>
+                    (_: FormRenderer) ?=> throw new Exception("should not render in test")
                 )
                 assert(form.validateVar.validate(42).isValid)
                 assert(form.validateVar.validate(-1).isValid)
-                assert(form.defaultable.default == 0)
+                assert(form.defaultable.default == 0        )
             }
         }
 
@@ -426,7 +428,7 @@ object FormDerivationSpec extends TestSuite:
         test("conditionalOn logic") {
 
             test("validateVar: None is valid, Some delegates") {
-                given Form[Double] = FormDerivation.forDouble
+                given Form[Double]                    = FormDerivation.forDouble
                 given ConditionalFor[Boolean, Double] = ConditionalFor[Boolean, Double](identity)
 
                 val form = FormDerivation.conditionalOn[Boolean, Double](
@@ -439,7 +441,7 @@ object FormDerivationSpec extends TestSuite:
             }
 
             test("defaultable is None") {
-                given Form[Double] = FormDerivation.forDouble
+                given Form[Double]                    = FormDerivation.forDouble
                 given ConditionalFor[Boolean, Double] = ConditionalFor[Boolean, Double](identity)
 
                 val form = FormDerivation.conditionalOn[Boolean, Double](
@@ -454,11 +456,11 @@ object FormDerivationSpec extends TestSuite:
         // =====================================================================
 
         test("NameUtils.titleCase") {
-            assert(NameUtils.titleCase("camelCase") == "Camel Case")
+            assert(NameUtils.titleCase("camelCase") == "Camel Case"              )
             assert(NameUtils.titleCase("myLongFieldName") == "My Long Field Name")
-            assert(NameUtils.titleCase("PascalCase") == "Pascal Case")
-            assert(NameUtils.titleCase("word") == "Word")
-            assert(NameUtils.titleCase("") == "")
+            assert(NameUtils.titleCase("PascalCase") == "Pascal Case"            )
+            assert(NameUtils.titleCase("word") == "Word"                         )
+            assert(NameUtils.titleCase("") == ""                                 )
         }
 
         test("annotation-driven field names") {
@@ -481,20 +483,20 @@ object FormDerivationSpec extends TestSuite:
 
             test("Point form has correct structure") {
                 val form = FormDerivation.derived[Point]
-                assert(form.defaultable.default.x == 0.0)
-                assert(form.defaultable.default.y == 0.0)
+                assert(form.defaultable.default.x == 0.0                 )
+                assert(form.defaultable.default.y == 0.0                 )
                 assert(form.validateVar.validate(Point(1.0, 2.0)).isValid)
             }
 
             test("Person form has correct defaults") {
                 val form = FormDerivation.derived[Person]
                 assert(form.defaultable.default.name == "")
-                assert(form.defaultable.default.age == 0)
+                assert(form.defaultable.default.age == 0  )
             }
 
             test("Shape form defaults to first subtype") {
                 val form = FormDerivation.derived[Shape]
-                val d = form.defaultable.default
+                val d    = form.defaultable.default
                 assert(d.isInstanceOf[Circle])
             }
         }
@@ -506,12 +508,12 @@ object FormDerivationSpec extends TestSuite:
         test("Form.makeFor") {
 
             test("creates form with custom defaultable and validateVar") {
-                val d = Defaultable(42)
+                val d                  = Defaultable(42)
                 given ValidateVar[Int] = ValidateVar.validWhen[Int](_ > 0)(_ => "not positive")
-                val form = Form.makeFor[Int](d): (_, _) =>
+                val form               = Form.makeFor[Int](d): (_, _) =>
                     (_: FormRenderer) ?=> throw new Exception("should not render")
                 assert(form.defaultable.default == 42)
-                assert(form.validateVar.validate(5).isValid)
+                assert(form.validateVar.validate(5).isValid   )
                 assert(form.validateVar.validate(-1).isInvalid)
             }
         }
@@ -524,7 +526,7 @@ object FormDerivationSpec extends TestSuite:
 
             test("defaultable picks first subtype") {
                 val form = FormDerivation.splitViaMatchingOnly[Shape]
-                assert(form.defaultable.default.isInstanceOf[Circle])
+                assert(form.defaultable.default.isInstanceOf[Circle]              )
                 assert(form.defaultable.default.asInstanceOf[Circle].radius == 0.0)
             }
 
@@ -557,32 +559,32 @@ object FormDerivationSpec extends TestSuite:
         test("eitherAsSelectWithOptions") {
 
             test("defaultable picks Left as first subtype") {
-                given Defaultable[Int] = Defaultable(0)
+                given Defaultable[Int]    = Defaultable(0)
                 given Defaultable[String] = Defaultable("")
-                given Form[Int] = FormDerivation.forInt
-                given Form[String] = FormDerivation.forString
+                given Form[Int]           = FormDerivation.forInt
+                given Form[String]        = FormDerivation.forString
 
                 val form = FormDerivation.eitherAsSelectWithOptions[Int, String]("Choice")
                 // First subtype is Left
-                assert(form.defaultable.default.isLeft)
+                assert(form.defaultable.default.isLeft    )
                 assert(form.defaultable.default == Left(0))
             }
 
             test("validateVar validates Left values") {
-                given Defaultable[Int] = Defaultable(0)
+                given Defaultable[Int]    = Defaultable(0)
                 given Defaultable[String] = Defaultable("")
-                given Form[Int] = FormDerivation.forInt
-                given Form[String] = FormDerivation.forString
+                given Form[Int]           = FormDerivation.forInt
+                given Form[String]        = FormDerivation.forString
 
                 val form = FormDerivation.eitherAsSelectWithOptions[Int, String]("Choice")
                 assert(form.validateVar.validate(Left(42)).isValid)
             }
 
             test("validateVar validates Right values") {
-                given Defaultable[Int] = Defaultable(0)
+                given Defaultable[Int]    = Defaultable(0)
                 given Defaultable[String] = Defaultable("")
-                given Form[Int] = FormDerivation.forInt
-                given Form[String] = FormDerivation.forString
+                given Form[Int]           = FormDerivation.forInt
+                given Form[String]        = FormDerivation.forString
 
                 val form = FormDerivation.eitherAsSelectWithOptions[Int, String]("Choice")
                 assert(form.validateVar.validate(Right("hello")).isValid)
@@ -596,7 +598,7 @@ object FormDerivationSpec extends TestSuite:
         test("optionOfEither") {
 
             test("defaultable is NoneOfEither") {
-                given Form[Int] = FormDerivation.forInt
+                given Form[Int]    = FormDerivation.forInt
                 given Form[String] = FormDerivation.forString
 
                 val form = FormDerivation.optionOfEither[Int, String](
@@ -609,7 +611,7 @@ object FormDerivationSpec extends TestSuite:
             }
 
             test("validateVar validates NoneOfEither") {
-                given Form[Int] = FormDerivation.forInt
+                given Form[Int]    = FormDerivation.forInt
                 given Form[String] = FormDerivation.forString
 
                 val form = FormDerivation.optionOfEither[Int, String](
@@ -621,7 +623,7 @@ object FormDerivationSpec extends TestSuite:
             }
 
             test("validateVar validates SomeLeft") {
-                given Form[Int] = FormDerivation.forInt
+                given Form[Int]    = FormDerivation.forInt
                 given Form[String] = FormDerivation.forString
 
                 val form = FormDerivation.optionOfEither[Int, String](
@@ -633,7 +635,7 @@ object FormDerivationSpec extends TestSuite:
             }
 
             test("validateVar validates SomeRight") {
-                given Form[Int] = FormDerivation.forInt
+                given Form[Int]    = FormDerivation.forInt
                 given Form[String] = FormDerivation.forString
 
                 val form = FormDerivation.optionOfEither[Int, String](
@@ -654,15 +656,15 @@ object FormDerivationSpec extends TestSuite:
             test("defaultable uses provided Defaultable[A]") {
                 import cats.Show
                 case class Material(name: String, roughness: Double)
-                given Show[Material] = Show.show(_.name)
-                val materials = List(
-                    Material("Steel", 0.1),
+                given Show[Material]        = Show.show(_.name)
+                val materials               = List(
+                    Material("Steel", 0.1   ),
                     Material("Concrete", 0.5)
                 )
                 given Defaultable[Material] = Defaultable(materials.head)
                 given ValidateVar[Material] = ValidateVar.valid
-                given ValidateVar[Double] = ValidateVar.valid
-                given Form[Double] = FormDerivation.forDouble
+                given ValidateVar[Double]   = ValidateVar.valid
+                given Form[Double]          = FormDerivation.forDouble
 
                 val form = FormDerivation.forSelectionWithDefaultValue_usingSelectInput[Material, Double](
                     selectOptions    = materials,
@@ -676,15 +678,15 @@ object FormDerivationSpec extends TestSuite:
             test("validateVar uses provided ValidateVar[A]") {
                 import cats.Show
                 case class Material(name: String, roughness: Double)
-                given Show[Material] = Show.show(_.name)
-                val materials = List(
-                    Material("Steel", 0.1),
+                given Show[Material]        = Show.show(_.name)
+                val materials               = List(
+                    Material("Steel", 0.1   ),
                     Material("Concrete", 0.5)
                 )
                 given Defaultable[Material] = Defaultable(materials.head)
                 given ValidateVar[Material] = ValidateVar.validWhen[Material](_.roughness > 0)(_ => "bad roughness")
-                given ValidateVar[Double] = ValidateVar.valid
-                given Form[Double] = FormDerivation.forDouble
+                given ValidateVar[Double]   = ValidateVar.valid
+                given Form[Double]          = FormDerivation.forDouble
 
                 val form = FormDerivation.forSelectionWithDefaultValue_usingSelectInput[Material, Double](
                     selectOptions    = materials,

@@ -133,8 +133,8 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
         vvqf: ValidateVar[QFinal]
     ): Form[QFinal] =
         new Form[QFinal]:
-            val defaultable = d
-            lazy val validateVar    = vvqf
+            val defaultable      = d
+            lazy val validateVar = vvqf
             @nowarn def render(
                 finalVar  : Var[QFinal],
                 formConfig: FormConfig
@@ -152,7 +152,8 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
                         validate          = (cov, csu) =>
                             val curr_fv = currentOValueToCurrentFValue(cov, d.default, csu)
                             val qf      = getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(curr_fv)
-                            vvqf.validate(qf),
+                            vvqf.validate(qf)
+                        ,
                         disabled          = disabled
                     )
                     .amend(binders)

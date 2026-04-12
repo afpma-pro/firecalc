@@ -350,10 +350,10 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
         )
 
     private def interpolateDecrease[S: Show](
-        shape      : S,
-        a2a1Ratio  : Double,
-        toD        : Length,
-        fromD      : Length
+        shape    : S,
+        a2a1Ratio: Double,
+        toD      : Length,
+        fromD    : Length
     ): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelperE[S]            (
             shape             = shape,
@@ -378,10 +378,10 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
             case Right(z)                                                     => z.asRight.toValidatedNel
 
     private def interpolateIncrease[S: Show](
-        shape      : S,
-        a1a2Ratio  : Double,
-        fromD      : Length,
-        toD        : Length
+        shape    : S,
+        a1a2Ratio: Double,
+        fromD    : Length,
+        toD      : Length
     ): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelperE[S]            (
             shape             = shape,
@@ -439,7 +439,7 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
             case Some(_) if isUnsafe                     =>
                 Right("30 > Ld/Dh >= 2")
             case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, sectionTyp, ratio))
-            case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp))
+            case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp)          )
         }
 
 end DynamicFrictionCoeff_13384

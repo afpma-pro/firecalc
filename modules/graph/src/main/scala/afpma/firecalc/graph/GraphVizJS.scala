@@ -22,21 +22,23 @@ object DataPointJS:
     def apply(
         x               : Double,
         y               : Double,
-        tooltipTitle    : String = "",
-        tooltipExtra    : String = "",
-        formattedValue  : String = "",
-        segmentColor    : String = "",
+        tooltipTitle    : String           = "",
+        tooltipExtra    : String           = "",
+        formattedValue  : String           = "",
+        segmentColor    : String           = "",
         highlightTargets: js.Array[String] = js.Array()
     ): DataPointJS =
-        js.Dynamic.literal(
-            x                = x,
-            y                = y,
-            tooltipTitle     = tooltipTitle,
-            tooltipExtra     = tooltipExtra,
-            formattedValue   = formattedValue,
-            segmentColor     = segmentColor,
-            highlightTargets = highlightTargets
-        ).asInstanceOf[DataPointJS]
+        js.Dynamic
+            .literal               (
+                x                = x,
+                y                = y,
+                tooltipTitle     = tooltipTitle,
+                tooltipExtra     = tooltipExtra,
+                formattedValue   = formattedValue,
+                segmentColor     = segmentColor,
+                highlightTargets = highlightTargets
+            )
+            .asInstanceOf[DataPointJS]
 
 trait ChartSeriesJS extends js.Object:
     var id       : String
@@ -57,15 +59,17 @@ object ChartSeriesJS:
         lineWidth: Double,
         dashed   : Boolean
     ): ChartSeriesJS =
-        js.Dynamic.literal(
-            id        = id,
-            name      = name,
-            color     = color,
-            points    = points,
-            yAxisId   = yAxisId,
-            lineWidth = lineWidth,
-            dashed    = dashed
-        ).asInstanceOf[ChartSeriesJS]
+        js.Dynamic
+            .literal       (
+                id        = id,
+                name      = name,
+                color     = color,
+                points    = points,
+                yAxisId   = yAxisId,
+                lineWidth = lineWidth,
+                dashed    = dashed
+            )
+            .asInstanceOf[ChartSeriesJS]
 
 trait YAxisConfigJS extends js.Object:
     var id      : String
@@ -84,14 +88,16 @@ object YAxisConfigJS:
         max     : js.UndefOr[Double] = js.undefined,
         stepSize: js.UndefOr[Double] = js.undefined
     ): YAxisConfigJS =
-        js.Dynamic.literal(
-            id       = id,
-            label    = label,
-            position = position,
-            min      = min,
-            max      = max,
-            stepSize = stepSize
-        ).asInstanceOf[YAxisConfigJS]
+        js.Dynamic
+            .literal      (
+                id       = id,
+                label    = label,
+                position = position,
+                min      = min,
+                max      = max,
+                stepSize = stepSize
+            )
+            .asInstanceOf[YAxisConfigJS]
 
 trait BackgroundBandJS extends js.Object:
     var xStart: Double
@@ -101,12 +107,14 @@ trait BackgroundBandJS extends js.Object:
 
 object BackgroundBandJS:
     def apply(xStart: Double, xEnd: Double, color: String, label: String): BackgroundBandJS =
-        js.Dynamic.literal(
-            xStart = xStart,
-            xEnd   = xEnd,
-            color  = color,
-            label  = label
-        ).asInstanceOf[BackgroundBandJS]
+        js.Dynamic
+            .literal(
+                xStart = xStart,
+                xEnd   = xEnd,
+                color  = color,
+                label  = label
+            )
+            .asInstanceOf[BackgroundBandJS]
 
 trait ChartDataJS extends js.Object:
     var series         : js.Array[ChartSeriesJS]
@@ -122,34 +130,38 @@ object ChartDataJS:
         yAxes          : js.Array[YAxisConfigJS],
         xAxisLabel     : String,
         backgroundBands: js.Array[BackgroundBandJS] = js.Array(),
-        xMin           : js.UndefOr[Double] = js.undefined,
-        xMax           : js.UndefOr[Double] = js.undefined
+        xMin           : js.UndefOr[Double]         = js.undefined,
+        xMax           : js.UndefOr[Double]         = js.undefined
     ): ChartDataJS =
-        js.Dynamic.literal(
-            series          = series,
-            yAxes           = yAxes,
-            xAxisLabel      = xAxisLabel,
-            backgroundBands = backgroundBands,
-            xMin            = xMin,
-            xMax            = xMax
-        ).asInstanceOf[ChartDataJS]
+        js.Dynamic
+            .literal         (
+                series          = series,
+                yAxes           = yAxes,
+                xAxisLabel      = xAxisLabel,
+                backgroundBands = backgroundBands,
+                xMin            = xMin,
+                xMax            = xMax
+            )
+            .asInstanceOf[ChartDataJS]
 
 trait GraphConfigJS extends js.Object:
-    var responsive          : Boolean
-    var maintainAspectRatio : Boolean
+    var responsive         : Boolean
+    var maintainAspectRatio: Boolean
 
 object GraphConfigJS:
     def apply(
-        responsive          : Boolean = true,
-        maintainAspectRatio : Boolean = false
+        responsive         : Boolean = true,
+        maintainAspectRatio: Boolean = false
     ): GraphConfigJS =
-        js.Dynamic.literal(
-            responsive          = responsive,
-            maintainAspectRatio = maintainAspectRatio
-        ).asInstanceOf[GraphConfigJS]
+        js.Dynamic
+            .literal         (
+                responsive          = responsive,
+                maintainAspectRatio = maintainAspectRatio
+            )
+            .asInstanceOf[GraphConfigJS]
 
 /** Handle returned by initGraphViz for lifecycle management */
 @js.native
 trait GraphVizHandleJS extends js.Object:
-    def dispose(): Unit = js.native
-    def update(data: ChartDataJS): Unit = js.native
+    def dispose(                 ): Unit = js.native
+    def update (data: ChartDataJS): Unit = js.native

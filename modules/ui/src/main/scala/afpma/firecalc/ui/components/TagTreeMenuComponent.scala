@@ -25,7 +25,7 @@ case class TagTreeMenuComponent[A](
     appendBus       : Observer[CollectionCommand[(Int, A)]],
     incrDescrSizeVar: Var[Int],
     externalOpenBus : EventStream[Unit] = EventStream.empty,
-    onDone          : () => Unit = () => ()
+    onDone          : () => Unit        = () => ()
 )                                 (using Locale)
     extends Component:
     import TagTreeMenuComponent.*
@@ -50,26 +50,24 @@ case class TagTreeMenuComponent[A](
         elems: List[TagTreeMenu.Elems[A]]
     ): List[(TagTreeMenu.Modal[A], HtmlElement)] =
         elems.flatMap {
-            case m: TagTreeMenu.Modal[A] =>
+            case m: TagTreeMenu.Modal[A]    =>
                 // Create an observer that appends the selected element
                 val onSelect: Observer[A] = Observer { selectedElem =>
                     val size = incrDescrSizeVar.now()
                     appendBus.onNext(CollectionCommand.Append((size, selectedElem)))
-                    onDone()
-                    treeStateVar.set(TreeState.initWith(ttm))
+                    onDone          (                                              )
+                    treeStateVar.set(TreeState.initWith(ttm)                       )
                 }
                 List((m, m.modalContent(onSelect)))
-            case g: TagTreeMenu.Group[A] =>
+            case g: TagTreeMenu.Group[A]    =>
                 collectAllModals(g.next)
-            case _: TagTreeMenu.Leaf[A] =>
+            case _: TagTreeMenu.Leaf[A]     =>
                 Nil
             case _: TagTreeMenu.Shortcut[A] =>
                 Nil
         }
 
-    /**
-     * Find the modal element for a given Modal element from the pre-computed list.
-     */
+    /** Find the modal element for a given Modal element from the pre-computed list. */
     private def findModalElement(m: TagTreeMenu.Modal[A]): Option[HtmlElement] =
         allModals.find(_._1 == m).map(_._2)
 
@@ -86,7 +84,7 @@ case class TagTreeMenuComponent[A](
         I18N_UI.buttons.cancel,
         onClick --> { _ =>
             treeStateVar.set(TreeState.initWith(resetTo))
-            onDone()
+            onDone          (                           )
         }
     )
 
@@ -211,7 +209,7 @@ case class TagTreeMenuComponent[A](
             renderWhenClosed.amend                   (display <-- displayWhenClosed          ),
             renderWhenSelectionPending(resetTo).amend(display <-- displayWhenSelectionPending),
             // Render all modals at the top level to avoid stacking context issues
-            allModals.map(_._2)
+            allModals.map                            (_._2                                   )
         )
 
     val node = render(resetTo = ttm)
@@ -298,10 +296,12 @@ object TagTreeMenu:
     case class Group[+A](txt: String, next: List[Elems[A]]) extends Elems[A]
     case class Leaf[+A](txt: String, elem: A)               extends Elems[A]
     case class Shortcut[+A](txt: String, elems: Tuple)      extends Elems[A]
-    /** A menu entry that opens a modal dialog instead of directly adding an element.
-      * The modalContent function receives an observer to call when selection is confirmed,
-      * and a modalId that should be used as the dialog element's id attribute.
-      */
+
+    /**
+     * A menu entry that opens a modal dialog instead of directly adding an element.
+     * The modalContent function receives an observer to call when selection is confirmed,
+     * and a modalId that should be used as the dialog element's id attribute.
+     */
     case class Modal[+A](txt: String, modalContent: Observer[A] => HtmlElement) extends Elems[A]
     object Leaf:
         def apply[A](txt: String)(using d: Defaultable[A]): Leaf[A] =

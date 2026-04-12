@@ -235,7 +235,7 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
                 Vector(flue("F1"), flue("F2"), flue("F3"), conn("C"), chim("CH"))
             ): @unchecked
             chain.slots.length shouldBe 5
-            chain.fluePipeRegion.length shouldBe 3           // lastFluePipeIdx == 2
+            chain.fluePipeRegion.length shouldBe 3 // lastFluePipeIdx == 2
             chain.fluePipeRegion.map(_.label) shouldBe Vector("F1", "F2", "F3")
             chain.connectorSlot.map(_.label) shouldBe Some("C")
             chain.chimneySlot.label shouldBe "CH"
