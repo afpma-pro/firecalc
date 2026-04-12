@@ -94,13 +94,13 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         override lazy val inputs = en13384_inputs
 
         override lazy val last_known_density_before_connector_pipe: WithParams_13384[Option[Density]] =
-            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
+            val pr = atParamsFor(summon[Params_13384]).conceptualFluePipeResult.toOption
             computeAt match
                 case ComputeAt.Mean   => pr.flatMap(_.last_density_mean).orElse(pr.flatMap(_.last_density_middle))
                 case ComputeAt.Middle => pr.flatMap(_.last_density_middle)
 
         override lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] =
-            val pr = atParamsFor(summon[Params_13384]).flue_PipeResult.toOption
+            val pr = atParamsFor(summon[Params_13384]).conceptualFluePipeResult.toOption
             computeAt match
                 case ComputeAt.Mean   => pr.flatMap(_.last_velocity_mean).orElse(pr.flatMap(_.last_velocity_middle))
                 case ComputeAt.Middle => pr.flatMap(_.last_velocity_middle)
@@ -306,7 +306,6 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         // Pipe results — abstract ones (defined in strict/MCE subclasses)
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
         lazy val firebox_PipeResult      : VNelMcalcErr[PipeResult]
-        lazy val flue_PipeResult         : VNelMcalcErr[PipeResult]
 
         // Pipe results — concrete
         lazy val connector_PipeResult: VNelMcalcErr[PipeResult] =
@@ -341,27 +340,17 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
 
         /**
          * All post-firebox pipe results as a tagged vector: [(PipeType, PipeResult)].
-         * Default: assembles from the fixed 3 named results. Strict overrides with N-pipe chain.
+         * Abstract — concrete implementations in Strict/MCE subclasses build from the N-pipe chain.
          */
-        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
-            (flue_PipeResult, connector_PipeResult, chimney_PipeResult).mapN((f, c, ch) =>
-                Vector((FluePipeT, f), (ConnectorPipeT, c), (ChimneyPipeT, ch))
-            )
+        lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]]
 
         /**
-         * Phase A.1 — default "conceptual" flue-region accessors (legacy 3-pipe semantics).
-         *
-         * In the 3-pipe default these simply forward to `flue_PipeResult`, preserving
-         * byte-identical behaviour with the pre-Phase-A.1 code. Strict / MCE override
-         * them to bottom out at `flueRegionPipeResults` (HA-power-free Stage 1 result)
-         * so that downstream reads (`t_fluepipe_end`, `t_F`, etc.) do not re-enter the
-         * lazy-val initialisation cycle that Phase A.1 is fixing.
+         * Phase A.1 — chain-aware "conceptual" accessors for the flue region.
+         * Abstract — Strict/MCE override to bottom out at `flueRegionPipeResults.last`
+         * (HA-power-free Stage 1), decoupling flue-region reads from Stage 2 HA resolution.
          */
-        lazy val conceptualFluePipeResult: VNelMcalcErr[PipeResult] =
-            flue_PipeResult
-
-        lazy val conceptualFlueRegionPipeResults: VNelMcalcErr[Vector[PipeResult]] =
-            flue_PipeResult.map(Vector(_))
+        lazy val conceptualFluePipeResult        : VNelMcalcErr[PipeResult]
+        lazy val conceptualFlueRegionPipeResults : VNelMcalcErr[Vector[PipeResult]]
 
         // Section "4.8.4", "Flue gas temperature in the connector pipe"
         lazy val t_connector_pipe_mean: VNelMcalcErr[t_connector_pipe_mean] =
@@ -434,8 +423,8 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
         // Phase A.1 — routed via `conceptualFluePipeResult` so that strict / MCE can bottom
         // out at `flueRegionPipeResults` (HA-power-free Stage 1), breaking the lazy-val
         // initialisation cycle described in plans/n-pipe-topology-audit-remediation.md.
-        // For legacy 3-pipe configs the default `conceptualFluePipeResult = flue_PipeResult`,
-        // so this is a pure refactor.
+        // `conceptualFluePipeResult` is overridden in Strict/MCE to bottom out at
+        // `flueRegionPipeResults.last` (Stage 1 HA-power-free result).
         private lazy val channel_pipe_last_element_temperature_end: VNelMcalcErr[TCelsius] =
             conceptualFluePipeResult.map(_.gas_temp_end)
 
@@ -825,30 +814,39 @@ abstract class EN15544_V_2023_Common_Application extends en15544.EN15544_V_2023_
     // Section "4.9", "Calculation of flow mechanics"
 
     def validateFluePipeShape(): ValidatedNel[FluePipeInvalidGeometryRatio, Unit] =
+        // Collect all PipeShape configurations from flue-region slots (FlueSlot + ThermalFlueSlot).
+        // Both SetInnerShape prop instructions and AddSectionShapeChange elements can introduce a
+        // Rectangle shape that must satisfy the 1:4 aspect-ratio constraint.
+        val flueRegionShapes: Seq[PipeShape] =
+            postFireboxPipeSlots.flatMap:
+                case PostFireboxPipeDescrSlot.FlueSlot(descr) =>
+                    descr.collect:
+                        case SetFlowOnlyPipeProp_15544_V3.SetInnerShape(shape)                 => shape
+                        case AddFlowOnlyPipeElement_15544_V3.AddSectionShapeChange(_, toShape) => toShape
+                case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
+                    descr.collect:
+                        case SetThermalPipeProp_13384_V3.SetInnerShape(shape) => shape
+                case _ => Seq.empty
         val checks =
-            inputs.pipes.flue.elems.map: namedEl =>
-                namedEl.el match
-                    case el: afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.StraightSection =>
-                        el.geometry match
-                            case rect @ PipeShape.Rectangle(_, _) =>
-                                val (rmin, rmax) = (1.0, 4.0)
-                                val ei = rect.validateRatioBetween(rmin, rmax)
-                                Validated
-                                    .fromEither(ei)
-                                    .leftMap: ratio =>
-                                        NonEmptyList.one(
-                                            FluePipeInvalidGeometryRatio(
-                                                namedEl.idx.unwrap,
-                                                namedEl.typ,
-                                                namedEl.name,
-                                                ratio,
-                                                rmin,
-                                                rmax
-                                            )
-                                        )
-                                    .map(_ => ())
-                            case _                                =>
-                                ().validNel[FluePipeInvalidGeometryRatio]
+            flueRegionShapes.zipWithIndex.map: (shape, idx) =>
+                shape match
+                    case rect @ PipeShape.Rectangle(_, _) =>
+                        val (rmin, rmax) = (1.0, 4.0)
+                        val ei = rect.validateRatioBetween(rmin, rmax)
+                        Validated
+                            .fromEither(ei)
+                            .leftMap: ratio =>
+                                NonEmptyList.one(
+                                    FluePipeInvalidGeometryRatio(
+                                        idx,
+                                        FluePipeT,
+                                        "SetInnerShape",
+                                        ratio,
+                                        rmin,
+                                        rmax
+                                    )
+                                )
+                            .map(_ => ())
                     case _ =>
                         ().validNel[FluePipeInvalidGeometryRatio]
         checks.toList.sequence[[x] =>> ValidatedNel[FluePipeInvalidGeometryRatio, x], Unit].map(_ => ())

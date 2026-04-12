@@ -237,7 +237,6 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         // Pipe results
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
         lazy val firebox_PipeResult      : VNelMcalcErr[PipeResult]
-        lazy val flue_PipeResult         : VNelMcalcErr[PipeResult]
         lazy val connector_PipeResult    : VNelMcalcErr[PipeResult]
         lazy val chimney_PipeResult      : VNelMcalcErr[PipeResult]
 
@@ -250,14 +249,9 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         /**
          * Phase A.1 — chain-aware "conceptual" accessors for the flue region.
          *
-         * These exist so that `CommonAtParams` subclasses (strict / MCE) can override
-         * them to bottom out at `flueRegionPipeResults` (the HA-power-free Stage 1
-         * result), decoupling flue-region temperature/pressure reads from Stage 2 HA
-         * resolution and breaking the lazy-val initialization cycle.
-         *
-         * Default implementations (provided in `EN15544_V_2023_Common_Application`)
-         * read from `postFireboxPipeResults`, which preserves the legacy 3-pipe
-         * semantics and is NOT used by the strict/MCE overrides.
+         * Strict/MCE override to bottom out at `flueRegionPipeResults.last`
+         * (the HA-power-free Stage 1 result), decoupling flue-region temperature/pressure
+         * reads from Stage 2 HA resolution and breaking the lazy-val initialization cycle.
          */
         lazy val conceptualFluePipeResult        : VNelMcalcErr[PipeResult]
         lazy val conceptualFlueRegionPipeResults : VNelMcalcErr[Vector[PipeResult]]

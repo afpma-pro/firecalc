@@ -370,32 +370,6 @@ abstract class EN15544_MCE_Application(
                             )
                             .toValidatedNel
 
-        lazy val flue_PipeResult: VNelMcalcErr[PipeResult] =
-            firebox_PipeResult.andThen: cc =>
-                (
-                    en13384_heatingAppliance_powers,
-                    en13384_heatingAppliance_efficiency
-                )
-                    .mapN_andThen: (ha_pow, ha_eff) =>
-                        given Params_13384 = p: Params_13384
-                        ops_en13384.ThermalMecaFlu_13384
-                            .makePipeResult                (
-                                fd                 = FluePipe_Module_13384.unwrap(inputs.pipes.flue),
-                                hafg               = en13384_heatingAppliance_fluegas,
-                                hamf               = en13384_heatingAppliance_massFlows,
-                                temp_start         = t_burnout,
-                                last_pipe_density  = en13384_application.computeAt match
-                                    case ComputeAt.Mean   => cc.last_density_mean
-                                    case ComputeAt.Middle => cc.last_density_middle
-                                ,
-                                last_pipe_velocity = en13384_application.computeAt match
-                                    case ComputeAt.Mean   => cc.last_velocity_mean
-                                    case ComputeAt.Middle => cc.last_velocity_middle
-                                ,
-                                gas                = FlueGas
-                            )
-                            .toValidatedNel
-
         /**
          * Phase B site #7 — N-pipe-aware override of `connector_PipeResult`.
          *
@@ -600,21 +574,57 @@ abstract class EN15544_MCE_Application(
                             }
 
                         slotsV.andThen { slots =>
-                            // Seed UpstreamState from 15544 burnout + firebox-outlet
-                            // density/velocity, mirroring Strict Stage 1. In MCE the
-                            // `last_known_*_before_connector_pipe` hooks read the legacy
-                            // `flue_PipeResult` (thermal), which depends on HA powers —
-                            // cycle-free in MCE.
+                            // Legacy standalone single-flue-pipe computation (MCE thermal),
+                            // used ONLY to seed UpstreamState density/velocity for the first
+                            // flue slot's en13384_pg calculation. Preserves byte-identical
+                            // golden values for single-flue-slot fixtures. Cannot route
+                            // through `last_known_density_before_connector_pipe` any more
+                            // because that hook now reads `conceptualFluePipeResult`, which
+                            // would create a lazy-val cycle through `flueRegionPipeResults`.
+                            val legacyFluePipeResult: VNelMcalcErr[PipeResult] =
+                                firebox_PipeResult.andThen: cc =>
+                                    ops_en13384.ThermalMecaFlu_13384
+                                        .makePipeResult                 (
+                                            fd                 =
+                                                FluePipe_Module_13384.unwrap(inputs.pipes.flue),
+                                            hafg               =
+                                                en15544_mce.en13384_heatingAppliance_fluegas,
+                                            hamf               =
+                                                en15544_mce.en13384_heatingAppliance_massFlows,
+                                            temp_start         = en15544_mce.t_burnout,
+                                            last_pipe_density  =
+                                                en15544_mce.en13384_application.computeAt match
+                                                    case ComputeAt.Mean   => cc.last_density_mean
+                                                    case ComputeAt.Middle => cc.last_density_middle
+                                            ,
+                                            last_pipe_velocity =
+                                                en15544_mce.en13384_application.computeAt match
+                                                    case ComputeAt.Mean   => cc.last_velocity_mean
+                                                    case ComputeAt.Middle => cc.last_velocity_middle
+                                            ,
+                                            gas                = FlueGas
+                                        )
+                                        .toValidatedNel
+                            val computeAt = en15544_mce.en13384_application.computeAt
+                            val seedDensity: Option[Density] =
+                                legacyFluePipeResult.toOption.flatMap { pr =>
+                                    computeAt match
+                                        case ComputeAt.Mean   =>
+                                            pr.last_density_mean.orElse(pr.last_density_middle)
+                                        case ComputeAt.Middle => pr.last_density_middle
+                                }
+                            val seedVelocity: Option[FlowVelocity] =
+                                legacyFluePipeResult.toOption.flatMap { pr =>
+                                    computeAt match
+                                        case ComputeAt.Mean   =>
+                                            pr.last_velocity_mean.orElse(pr.last_velocity_middle)
+                                        case ComputeAt.Middle => pr.last_velocity_middle
+                                }
                             val initialUpstream = UpstreamState(
                                 temp_start         = en15544_mce.t_burnout,
-                                last_pipe_density  =
-                                    en15544_mce.en13384_application
-                                        .last_known_density_before_connector_pipe,
-                                last_pipe_velocity =
-                                    en15544_mce.en13384_application
-                                        .last_known_velocity_before_connector_pipe
+                                last_pipe_density  = seedDensity,
+                                last_pipe_velocity = seedVelocity
                             )
-                            val computeAt = en15544_mce.en13384_application.computeAt
                             val folded    = slots.foldLeft[Either[
                                 afpma.firecalc.engine.standard.MecaFlu_Error,
                                 (UpstreamState, Vector[PipeResult])

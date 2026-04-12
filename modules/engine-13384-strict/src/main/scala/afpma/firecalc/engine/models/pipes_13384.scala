@@ -15,3 +15,13 @@ trait Pipes_13384_WithFlowOnlyAirIntake extends Pipes_13384_Alg with HasPipeModu
 trait Pipes_13384_WithThermalAirIntake extends Pipes_13384_Alg with HasPipeModules_13384_WithThermalAirIntake:
     override type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
     override type ChimneyPipe  = ChimneyPipe_Module.PipeCanBe
+
+/** Narrower variant used by EN 15544 composition to avoid inheriting `connector`/`chimney` from `Pipes_13384_Alg`.
+  * Post-firebox results come from the 15544 N-pipe tagged vector instead.
+  */
+trait Pipes_13384_WithFlowOnlyAirIntake_PreFireboxOnly extends HasPipeModules_13384_WithFlowOnlyAirIntake
+
+/** Narrower variant used by EN 15544 composition to avoid inheriting `connector`/`chimney` from `Pipes_13384_Alg`.
+  * Post-firebox results come from the 15544 N-pipe tagged vector instead.
+  */
+trait Pipes_13384_WithThermalAirIntake_PreFireboxOnly extends HasPipeModules_13384_WithThermalAirIntake

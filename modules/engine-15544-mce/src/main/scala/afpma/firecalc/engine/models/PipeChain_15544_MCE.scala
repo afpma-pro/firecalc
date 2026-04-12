@@ -68,14 +68,4 @@ object PipeChain_15544_MCE:
             ChimneySlot    (d.chimney  )
         )
 
-    /** Build from descriptor slots (validates types are in expected positions). */
-    def fromSlots(slots: Vector[PostFireboxPipeDescrSlot]): Either[String, Descriptors] =
-        slots match
-            case Vector(ThermalFlueSlot(f), ConnectorSlot(c), ChimneySlot(ch)) =>
-                Right(Descriptors(f, c, ch))
-            case _                                                             =>
-                Left(
-                    s"Expected [ThermalFlueSlot, ConnectorSlot, ChimneySlot], got ${slots.map(_.getClass.getSimpleName)}"
-                )
-
 end PipeChain_15544_MCE
