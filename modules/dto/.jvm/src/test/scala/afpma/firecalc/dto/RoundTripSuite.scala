@@ -10,6 +10,8 @@ import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
 import org.scalactic.anyvals.PosInt
 import org.scalatest.freespec.AnyFreeSpec
@@ -64,6 +66,16 @@ class RoundTripSuite extends AnyFreeSpec with Matchers with ScalaCheckPropertyCh
 
             decoded.get.shouldBe(original)
         }
+
+        "V5 schema round-trip" in forAll(AllGenerators.genFireCalcYAML_V5) { original =>
+            val encoded = FireCalcYAML_V5.encodeToYaml(original)
+            encoded.isSuccess.shouldBe(true)
+
+            val decoded = FireCalcYAML_V5.decodeFromYaml(encoded.get)
+            decoded.isSuccess.shouldBe(true)
+
+            decoded.get.shouldBe(original)
+        }
     }
 
     "Migration and Encode/Decode Integration" - {
@@ -102,6 +114,38 @@ class RoundTripSuite extends AnyFreeSpec with Matchers with ScalaCheckPropertyCh
             val result =
                 FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
             result.isSuccess.shouldBe(true)
+        }
+
+        "decode V5 YAML and migrate to current" in forAll(
+            AllGenerators.genFireCalcYAML_V5
+        ) { v5 =>
+            val yaml   = FireCalcYAML_V5.encodeToYaml(v5).get
+            val result =
+                FireCalcYAMLMigrations.decodeAndMigrateTry(yaml)
+            result.isSuccess.shouldBe(true)
+        }
+    }
+
+    "V5 to V6 Migration" - {
+
+        "preserves pipe data in PostFireboxPipeDescrSlot" in forAll(
+            AllGenerators.genFireCalcYAML_V5
+        ) { v5 =>
+            val v6 = FireCalcYAMLMigrations.migrateV5ToV6(v5)
+
+            v6.post_firebox_pipes should have size 3
+
+            v6.post_firebox_pipes(0) shouldBe a[PostFireboxPipeDescrSlot.FlueSlot]
+            v6.post_firebox_pipes(0).asInstanceOf[PostFireboxPipeDescrSlot.FlueSlot].descr shouldBe
+                v5.flue_pipe_descr
+
+            v6.post_firebox_pipes(1) shouldBe a[PostFireboxPipeDescrSlot.ConnectorSlot]
+            v6.post_firebox_pipes(1).asInstanceOf[PostFireboxPipeDescrSlot.ConnectorSlot].descr shouldBe
+                v5.connector_pipe_descr
+
+            v6.post_firebox_pipes(2) shouldBe a[PostFireboxPipeDescrSlot.ChimneySlot]
+            v6.post_firebox_pipes(2).asInstanceOf[PostFireboxPipeDescrSlot.ChimneySlot].descr shouldBe
+                v5.chimney_pipe_descr
         }
     }
 

@@ -75,14 +75,15 @@ object FireCalcProjet:
 
         val isProcessingVar = Var(false)
 
-        def saveYaml(engineState: EngineState): Unit =
+        def saveYaml(): Unit =
             import scala.concurrent.ExecutionContext.Implicits.global
-            import afpma.firecalc.dto.FireCalcYAMLMigrations
 
             isProcessingVar.set(true)
 
-            // Export as legacy engine-state-only YAML for interop with report/payment consumers
-            FireCalcYAMLMigrations.encodeToYamlTry(engineState) match
+            // Export full AppStateSchema (engine_state + sensitive_data + billing_data).
+            // Backend PDF generation uses a separate code path (OrderPDFReportModalComponent)
+            // that sends only engine_state — this file export is independent.
+            AppStateSchemaHelper.encodeToYaml(appStateSchemaVar.now()) match
                 case Failure(ex) =>
                     GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage))
                     isProcessingVar.set               (false                                                       )
@@ -108,7 +109,7 @@ object FireCalcProjet:
                         disabled <-- isProcessingVar,
                         lucide.`file-down`(stroke_width = 1),
                         onClick --> { _ =>
-                            saveYaml(engineStateVar.now())
+                            saveYaml()
                         }
                     ),
                     ttPosition = "tooltip-bottom"

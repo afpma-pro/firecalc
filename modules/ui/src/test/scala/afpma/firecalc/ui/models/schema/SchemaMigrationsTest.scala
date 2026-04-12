@@ -5,11 +5,23 @@
 
 package afpma.firecalc.ui.models.schema
 
+import afpma.firecalc.dto.FireCalcYAMLMigrations
+import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v5.FireCalcYAML_V5
+import afpma.firecalc.ui.instances.defaultable
 import afpma.firecalc.ui.models.AppStateSchemaHelper
+import afpma.firecalc.ui.models.EngineState
 import afpma.firecalc.ui.models.schema.AppStateSchema
+import afpma.firecalc.ui.models.schema.v1.ClientProjectData_V1
+import afpma.firecalc.ui.models.schema.v5.AppStateSchema_V5
 
 import scala.util.Success
 
+import io.circe.syntax.*
+import io.circe.yaml.scalayaml.printer as yamlPrinter
+import io.taig.babel.Languages
+import io.taig.babel.Locale
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -351,40 +363,207 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         decodedSchema.engine_state.project_description.reference.shouldBe("MODIFIED-TEST-001")
     }
 
+    // ─── Helper: build a minimal AppStateSchema_V5 with Traditional firebox ────
+    //
+    // We construct V5 directly rather than downgrading from V6, because there is no
+    // backward transformer V6→V5. The Traditional firebox variant is structurally
+    // identical between Firebox_V3 (V4) and Firebox_V4 (V5), so the same YAML can
+    // be decoded by both the V4 and V5 decoders — enabling the version-replacement
+    // strategy for V4→V5 tests.
+
+    private lazy val minimalV5Schema: AppStateSchema_V5 = {
+        import afpma.firecalc.ui.models.StoveParamsUI
+
+        val engineV5 = FireCalcYAML_V5(
+            locale                         = Locale(Languages.Fr),
+            display_units                  = DisplayUnits.SI,
+            standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+            project_description            = ProjectDescr.empty,
+            local_conditions               = LocalConditions.default,
+            stove_params                   = StoveParamsUI.default_StoveParams.default,
+            air_intake_descr               = Seq.empty,
+            firebox                        = defaultable.firebox_traditional_empty.default,
+            flue_pipe_descr                = Seq.empty,
+            connector_pipe_descr           = Seq.empty,
+            chimney_pipe_descr             = Seq.empty
+        )
+
+        AppStateSchema_V5(
+            engine_state   = engineV5,
+            sensitive_data = ClientProjectData_V1.empty,
+            billing_data   = defaultable.default_BillingInfo.default
+        )
+    }
+
+    private lazy val minimalV5Yaml: String = {
+        import AppStateSchema_V5.given
+        yamlPrinter.print(minimalV5Schema.asJson)
+    }
+
+    /** Engine-state-only V5 YAML (no AppStateSchema wrapper — simulates legacy .fcalc files). */
+    private lazy val engineStateOnlyV5Yaml: String = {
+        import FireCalcYAML_V5.given
+        yamlPrinter.print(minimalV5Schema.engine_state.asJson)
+    }
+
+    /** Engine-state-only V4 YAML (version downgraded from V5, Traditional firebox is identical). */
+    private lazy val engineStateOnlyV4Yaml: String =
+        engineStateOnlyV5Yaml.replaceAll("version: 5", "version: 4")
+
     behavior of "SchemaMigrations V4 to V5 migration (version bumping)"
 
     /**
-     * Reproduces the bug where V4→V5 migration does not bump version fields.
-     *
-     * Strategy: take a valid V5 schema (with Traditional firebox — identical between V4 and V5),
-     * downgrade the version markers to 4 in the YAML, then feed to migrateToLatest.
-     * The migration should produce a schema with the latest version markers.
+     * Tests V4→V5→V6 migration by constructing real V5 YAML (with a Traditional firebox
+     * that is structurally identical in V4 and V5), replacing version markers 5→4,
+     * then feeding to migrateToLatest.
      */
-    it should "bump AppStateSchema version from 4 to 5" in {
-        // Given - create a valid V5 schema, encode to YAML, downgrade version markers to 4
-        val v5Schema = AppStateSchemaHelper.createInitialSchema()
-        val v5Yaml   = AppStateSchemaHelper.encodeToYaml(v5Schema).get
-        val v4Yaml   = v5Yaml.replaceAll("version: 5", "version: 4")
+    it should "bump AppStateSchema version from 4 to latest" in {
+        // Given - downgrade both outer and inner version markers from 5 to 4
+        val v4Yaml = minimalV5Yaml.replaceAll("version: 5", "version: 4")
 
-        // When - migrate from V4 to latest
+        // Sanity: the YAML must actually contain "version: 4" (not still "version: 5")
+        v4Yaml should include("version: 4")
+        v4Yaml should not include "version: 5"
+
+        // When
         val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
 
-        // Then - schema version should be bumped to 5
+        // Then - migrated to latest (V6)
         result shouldBe defined
         result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
     }
 
     it should "bump engine_state version from 4 to latest" in {
         // Given
-        val v5Schema = AppStateSchemaHelper.createInitialSchema()
-        val v5Yaml   = AppStateSchemaHelper.encodeToYaml(v5Schema).get
-        val v4Yaml   = v5Yaml.replaceAll("version: 5", "version: 4")
+        val v4Yaml = minimalV5Yaml.replaceAll("version: 5", "version: 4")
 
         // When
         val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
 
-        // Then - engine_state version should also be bumped to latest
+        // Then
         result shouldBe defined
         result.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    behavior of "SchemaMigrations V5 to V6 migration"
+
+    it should "bump AppStateSchema version from 5 to 6" in {
+        // Given - real V5 YAML
+        val v5Yaml = minimalV5Yaml
+
+        // Sanity: the YAML must contain version: 5
+        v5Yaml should include("version: 5")
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
+
+        // Then - migrated to latest (V6)
+        result shouldBe defined
+        result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    it should "bump engine_state version from 5 to 6" in {
+        // Given
+        val v5Yaml = minimalV5Yaml
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
+
+        // Then
+        result shouldBe defined
+        result.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    it should "restructure V5 separate pipe fields into V6 PostFireboxPipeDescrSlot sequence" in {
+        // Given - V5 schema with empty pipes
+        val v5Yaml = minimalV5Yaml
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
+
+        // Then - post_firebox_pipes should contain 3 slots (flue, connector, chimney)
+        result shouldBe defined
+        val pipes = result.get.engine_state.post_firebox_pipes
+        pipes should have size 3
+        pipes(0) shouldBe a[PostFireboxPipeDescrSlot.FlueSlot]
+        pipes(1) shouldBe a[PostFireboxPipeDescrSlot.ConnectorSlot]
+        pipes(2) shouldBe a[PostFireboxPipeDescrSlot.ChimneySlot]
+    }
+
+    // ─── .fcalc file format: full AppStateSchema round-trip ─────────────────────
+
+    behavior of ".fcalc file format (AppStateSchema round-trip)"
+
+    it should "round-trip full AppStateSchema preserving sensitive_data and billing_data" in {
+        // Given - a schema with non-empty sensitive_data
+        val schema = AppStateSchemaHelper.createInitialSchema().copy(
+            sensitive_data = ClientProjectData_V1.empty.copy(
+                customer = ClientProjectData_V1.empty.customer.copy(
+                    first_name = "Jean",
+                    last_name  = "Dupont"
+                )
+            )
+        )
+
+        // When - encode and reload via the file import path
+        val yaml   = AppStateSchemaHelper.encodeToYaml(schema).get
+        val loaded = AppStateSchemaHelper.decodeFromFile(yaml)
+
+        // Then - all fields preserved
+        loaded.isSuccess shouldBe true
+        loaded.get.engine_state.version.unwrap              shouldBe AppStateSchema.LATEST_VERSION
+        loaded.get.sensitive_data.customer.first_name       shouldBe "Jean"
+        loaded.get.sensitive_data.customer.last_name        shouldBe "Dupont"
+    }
+
+    it should "load legacy engine-state-only .fcalc files via fallback" in {
+        // Given - an old-format .fcalc containing only FireCalcYAML (no sensitive_data wrapper)
+        val engineState    = EngineState.empty
+        val legacyYaml     = FireCalcYAMLMigrations.encodeToYamlTry(engineState).get
+
+        // Sanity: legacy format should NOT contain sensitive_data
+        legacyYaml should not include "sensitive_data"
+
+        // When - load via the file import path (falls back to engine-state-only decoding)
+        val loaded = AppStateSchemaHelper.decodeFromFile(legacyYaml)
+
+        // Then - loads successfully with default sensitive_data
+        loaded.isSuccess shouldBe true
+        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    it should "not include sensitive_data in engine-state-only encoding" in {
+        // Given - encode only engine_state (the format sent to backend for PDF generation)
+        val engineState = EngineState.empty
+        val engineYaml  = FireCalcYAMLMigrations.encodeToYamlTry(engineState).get
+
+        // Then - engine-only YAML must not contain sensitive_data or billing_data fields
+        engineYaml should not include "sensitive_data"
+        engineYaml should not include "billing_data"
+        engineYaml should not include "first_name"
+        engineYaml should not include "last_name"
+
+        // And - it should still be a valid FireCalcYAML
+        val decoded = FireCalcYAMLMigrations.decodeAndMigrateTry(engineYaml)
+        decoded.isSuccess shouldBe true
+    }
+
+    it should "load a V4 engine-state-only .fcalc file via decodeFromFile fallback" in {
+        // Given - a V4 engine-state-only YAML (no AppStateSchema wrapper, simulates legacy .fcalc)
+        val v4Yaml = engineStateOnlyV4Yaml
+
+        // Sanity: this is engine-state-only (no sensitive_data wrapper) with version 4
+        v4Yaml should include("version: 4")
+        v4Yaml should not include "sensitive_data"
+        v4Yaml should not include "engine_state"
+
+        // When - load via decodeFromFile (should fail AppStateSchema decode, then fallback to FireCalcYAML)
+        val loaded = AppStateSchemaHelper.decodeFromFile(v4Yaml)
+
+        // Then - should succeed via the FireCalcYAMLMigrations fallback
+        withClue(s"decodeFromFile failed: ${loaded.failed.toOption.map(_.getMessage)}\n") {
+            loaded.isSuccess shouldBe true
+        }
+        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
     }
 }

@@ -154,7 +154,7 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV5ToV6) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
-                        dom.console.error(s"Failed to migrate V1 to $V_LATEST: ${e.getMessage()}")
+                        dom.console.warn(s"Failed to migrate V1 to $V_LATEST: ${e.getMessage()}")
                         None
 
             case Some(2) =>
@@ -172,7 +172,7 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV5ToV6) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
-                        dom.console.error(s"Failed to migrate V2 to $V_LATEST: ${e.getMessage()}")
+                        dom.console.warn(s"Failed to migrate V2 to $V_LATEST: ${e.getMessage()}")
                         None
 
             case Some(3) =>
@@ -183,7 +183,7 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV5ToV6) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
-                        dom.console.error(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
+                        dom.console.warn(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
                         None
 
             case Some(4) =>
@@ -193,7 +193,7 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV5ToV6) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
-                        dom.console.error(s"Failed to migrate V4 to $V_LATEST: ${e.getMessage()}")
+                        dom.console.warn(s"Failed to migrate V4 to $V_LATEST: ${e.getMessage()}")
                         None
 
             case Some(5) =>
@@ -202,7 +202,7 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV5ToV6) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
-                        dom.console.error(s"Failed to migrate V5 to $V_LATEST: ${e.getMessage()}")
+                        dom.console.warn(s"Failed to migrate V5 to $V_LATEST: ${e.getMessage()}")
                         None
 
             case Some(6) =>
