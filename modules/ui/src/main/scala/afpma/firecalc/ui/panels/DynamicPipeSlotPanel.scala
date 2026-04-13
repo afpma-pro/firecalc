@@ -23,6 +23,7 @@ import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.utils.flatMapVNelE
 
 import cats.Show
 import cats.data.Validated
@@ -127,19 +128,38 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     // ── Validation ───────────────────────────────────────────────
 
+    private lazy val pressureSumCheck_sig: Signal[VNelMcalcErr[Any]] =
+        pipeResult_vnel_signal.map(_.andThen(_.`ph-(pR+pu)`))
+
+    private lazy val velocityCheck_sig: Signal[VNelMcalcErr[Any]] =
+        results_en15544_strict_sig.flatMapVNelE(_.primary.validateVelocitiesInFluePipe())
+
+    private lazy val shapeCheck_sig: Signal[VNelMcalcErr[Any]] =
+        results_en15544_strict_sig.flatMapVNelE(_.validateFluePipeShape())
+
+    private lazy val citedConstraintsCheck_sig: Signal[VNelMcalcErr[Any]] =
+        results_en15544_strict_sig.flatMapVNelE(_.primary.validateCitedConstraints())
+
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig
             .combineWith(pipeResult_vnel_signal)
-            .map: (results, pipeResultV) =>
+            .combineWith(pressureSumCheck_sig)
+            .combineWith(velocityCheck_sig)
+            .combineWith(shapeCheck_sig)
+            .combineWith(citedConstraintsCheck_sig)
+            .map: (results, pipeResultV, pressureV, velocityV, shapeV, citedV) =>
                 val buildV = results
                     .lift(slotIndex)
                     .map(_.pipe)
                     .getOrElse(
                         Validated.invalidNel(FluePipeNotDefinedYet)
                     )
-                // Chain build validation + pipe result validation
                 buildV
                     .andThen(_ => pipeResultV)
+                    .andThen(_ => pressureV)
+                    .andThen(_ => velocityV)
+                    .andThen(_ => shapeV)
+                    .andThen(_ => citedV)
                     .andThen(_ => buildV)
 
     // ── Quadrion subtotal ────────────────────────────────────────
@@ -634,10 +654,22 @@ final case class DynamicThermalPipeSlotPanel(
 
     // ── Validation ───────────────────────────────────────────────
 
+    private lazy val pressureSumCheck_sig: Signal[VNelMcalcErr[Any]] =
+        pipeResult_vnel_signal.map(_.andThen(_.`ph-(pR+pu)`))
+
+    private lazy val velocityCheck_sig: Signal[VNelMcalcErr[Any]] =
+        results_en15544_strict_sig.flatMapVNelE: strict =>
+            pipeTypeVal match
+                case ConnectorPipeT => strict.primary.validateVelocitiesInConnectorPipe()
+                case ChimneyPipeT   => strict.primary.validateVelocitiesInChimneyPipe()
+                case _              => strict.primary.validateVelocitiesInFluePipe()
+
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig
             .combineWith(pipeResult_vnel_signal)
-            .map: (results, pipeResultV) =>
+            .combineWith(pressureSumCheck_sig)
+            .combineWith(velocityCheck_sig)
+            .map: (results, pipeResultV, pressureV, velocityV) =>
                 val buildV = results
                     .lift(slotIndex)
                     .map(_.pipe)
@@ -646,6 +678,8 @@ final case class DynamicThermalPipeSlotPanel(
                     )
                 buildV
                     .andThen(_ => pipeResultV)
+                    .andThen(_ => pressureV)
+                    .andThen(_ => velocityV)
                     .andThen(_ => buildV)
 
     // ── Quadrion subtotal ────────────────────────────────────────

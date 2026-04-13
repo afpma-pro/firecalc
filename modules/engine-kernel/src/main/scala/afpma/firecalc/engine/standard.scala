@@ -30,6 +30,8 @@ import cats.derived.*
 import cats.syntax.all.*
 
 import io.taig.babel.Locale
+import afpma.firecalc.units.coulombutils.shows.defaults.show_Velocity_3
+import afpma.firecalc.units.coulombutils.shows.defaults.show_Velocity
 object standard {
 
     type VNelMcalcErr[+X] = ValidatedNel[MCalc_Error, X]
@@ -320,10 +322,15 @@ object standard {
     ) extends FluePipeError
     object FlueGasVelocityError        :
         given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
+            val show2or3 = 
+                if ((err.gasVelocity.show == err.minVel.show) || (err.gasVelocity.show == err.minVel.show))
+                then show_Velocity_3
+                else show_Velocity
+
             I18N.errors.flue_gas_velocity_error(
                 err.sectionId.toString,
                 err.sectionName,
-                err.gasVelocity.show,
+                show2or3.show(err.gasVelocity),
                 err.minVel.show,
                 err.maxVel.show
             )

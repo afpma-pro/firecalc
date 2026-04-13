@@ -571,6 +571,8 @@ object coulombutils:
                 mkShowPrettyForQtyD[Meter / Second, Meter / Second]("%.2f")
             val show_Velocity_1                   : Show[QtyD[Meter / Second]]             =
                 mkShowPrettyForQtyD[Meter / Second, Meter / Second]("%.1f")
+            val show_Velocity_3                   : Show[QtyD[Meter / Second]]             =
+                mkShowPrettyForQtyD[Meter / Second, Meter / Second]("%.3f")
             given show_VolumeFlow_m3_per_s        : Show[QtyD[(Meter ^ 3) / Second]]       =
                 mkShowForQtyD[(Meter ^ 3) / Second]("%.2f")
             given show_VolumeFlow_m3_per_h        : Show[QtyD[(Meter ^ 3) / Hour]]         =
