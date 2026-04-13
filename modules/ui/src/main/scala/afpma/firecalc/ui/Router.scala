@@ -27,7 +27,15 @@ object Page:
     given rwProjectId   : ReadWriter[ProjectId]    =
         readwriter[String].bimap[ProjectId](_.value, ProjectId.apply)
 
-lazy val defaultRoute = Route.static(DefaultPage, root / endOfSegments, basePath = Route.fragmentBasePath)
+/** Fragment base path including the deployment pathname prefix (e.g. `/app/#`).
+  * Waypoint's `pushState` passes `basePath + routePath` directly to `history.pushState()`,
+  * so the prefix must be included here — the Router `origin` param is NOT used for navigation.
+  */
+private lazy val fragmentBasePath: String =
+    val pathname = dom.document.location.pathname.stripSuffix("/")
+    pathname + "/#"
+
+lazy val defaultRoute = Route.static(DefaultPage, root / endOfSegments, basePath = fragmentBasePath)
 
 case object DefaultPage                                                                                    extends Page
 case class ProjectSelectorPage(lang: Language)                                                             extends Page
@@ -37,25 +45,15 @@ lazy val projectSelectorRoute = Route[ProjectSelectorPage, String](
     encode   = page => page.lang.value,
     decode   = args => ProjectSelectorPage(lang = Language(args)),
     pattern  = root / segment[String] / endOfSegments,
-    basePath = Route.fragmentBasePath
+    basePath = fragmentBasePath
 )
 
 lazy val projectRoute = Route[ProjectPage, (String, String)](
     encode   = page => (page.lang.value, page.projectId.value),
     decode   = args => ProjectPage(lang = Language(args._1), projectId = ProjectId(args._2)),
     pattern  = root / segment[String] / "project" / segment[String] / endOfSegments,
-    basePath = Route.fragmentBasePath
+    basePath = fragmentBasePath
 )
-
-/** Origin including path prefix (e.g. `/app`), so Waypoint generates correct absolute URLs.
-  * Handles: web (`/app/#/...`), dev (`localhost:5173/#/...`), Electron (`file://`).
-  */
-private val appOrigin: String =
-    if dom.document.location.protocol == "file:" then "file://"
-    else
-        val origin   = dom.document.location.origin
-        val pathname = dom.document.location.pathname.stripSuffix("/")
-        origin + pathname
 
 object router
     extends com.raquo.waypoint.Router[Page]         (
@@ -63,6 +61,5 @@ object router
         routeFallback   = _ => ProjectSelectorPage(lang = Languages.Fr),
         serializePage   = page => write(page), // serialize page data for storage in History API log
         deserializePage = pageStr => read(pageStr), // deserialize the above
-        getPageTitle    = _ => "FireCalc AFPMA", // mock page title (displayed in the browser tab next to favicon)
-        origin          = appOrigin
+        getPageTitle    = _ => "FireCalc AFPMA" // mock page title (displayed in the browser tab next to favicon)
     )
