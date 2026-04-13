@@ -128,10 +128,11 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                     .processed
                     .expiresAt
                     .createdAt
-                    .ProductMetadata
-                    .?(ProductMetadata.id)
                     .Customer
                     .customerId
+                    ._PurchaseIntent
+                    .ProductMetadata
+                    .?(ProductMetadata.id)
                     .query
                     .get
                     .map(
@@ -147,8 +148,8 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                                         processed,
                                         expiresAt,
                                         createdAt,
-                                        productMetadataIdOpt,
-                                        customerId
+                                        customerId,
+                                        productMetadataIdOpt
                                     ) =>
                                     domain.PurchaseIntent(
                                         api.PurchaseToken      (token            ),
