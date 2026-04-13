@@ -11,8 +11,9 @@ For a complete staging deployment (recommended):
 # From project root
 cd /path/to/firecalc
 
-# 1. Install UI dependencies (first time only)
+# 1. Install UI + landing page dependencies (first time only)
 make ui-setup
+make landing-setup
 
 # 2. Copy environment template
 cp docker/.env.example docker/.env
@@ -52,6 +53,10 @@ docker/
 ├── .env                      # Your actual environment variables (git-ignored)
 ├── docker-compose.yml        # Docker orchestration
 ├── Dockerfile                # Application container definition
+├── nginx.conf                # Global nginx configuration
+├── nginx-proxy-custom.conf.template  # Domain proxy config (envsubst template)
+├── nginx-ui-server.conf      # UI static file server configuration
+├── init-letsencrypt.sh       # Initial certificate provisioning script
 ├── CONFIG_SETUP.md           # Comprehensive setup guide
 ├── README.md                 # This file
 │
@@ -104,7 +109,8 @@ docker compose logs -f
 
 # View specific service logs
 docker compose logs -f backend
-docker compose logs -f nginx-ssl-proxy
+docker compose logs -f nginx
+docker compose logs -f certbot
 
 # Restart services
 docker compose restart
@@ -131,11 +137,14 @@ Before deploying:
 - [ ] GoCardless credentials obtained (sandbox for staging)
 - [ ] SMTP service configured (Mailtrap.io recommended for staging)
 - [ ] UI dependencies installed: `make ui-setup` (first time only)
-- [ ] Backend JAR built: `make staging-backend-build` (also builds UI)
+- [ ] Landing page dependencies installed: `make landing-setup` (first time only)
+- [ ] Backend JAR built: `make staging-backend-build` (also builds UI + landing)
 - [ ] JAR exists at: `../modules/payments/target/scala-*/firecalc-payments-assembly.jar`
-- [ ] UI built: `../web/dist-app/index.html` exists
+- [ ] SPA built: `../web/dist-app/app/index.html` exists
+- [ ] Landing page built: `../web/dist-app/fr/index.html` exists
 - [ ] Database directory has proper ownership: `sudo chown -R 999:999 docker/databases && sudo chmod -R 755 docker/databases`
 - [ ] UI dist-app has proper ownership: `sudo chown -R $USER:$USER web/dist-app` (if needed)
+- [ ] Initial certificates provisioned: `./init-letsencrypt.sh`
 
 ## Deployment Environments
 

@@ -27,13 +27,12 @@ import org.scalatest.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
-
 class JsonEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
 
     def roundTripJsonShouldWork[X: {Encoder, Decoder}](
         x_title: String
     )(
-        x: X,
+        x            : X,
         makeAssertion: (X, X) => Assertion = (x: X, y: X) => x `shouldEqual` y
     ) =
         s"${x_title}" - {
@@ -58,13 +57,13 @@ class JsonEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
 
     "JSON Encoding/Decoding" - {
 
-        roundTripJsonShouldWork("InputQtyD [123.meters]")(
-            x = InputQtyD.fromDisplayQty[Meter, Inch](123.meters),
+        roundTripJsonShouldWork("InputQtyD [123.meters]")            (
+            x             = InputQtyD.fromDisplayQty[Meter, Inch](123.meters),
             makeAssertion = inputQtyDAssertion
         )
 
-        roundTripJsonShouldWork("InputQtyD [10.inch]")(
-            x = InputQtyD.fromFinalQty[Meter, Inch](10.withUnit[Inch]),
+        roundTripJsonShouldWork("InputQtyD [10.inch]")            (
+            x             = InputQtyD.fromFinalQty[Meter, Inch](10.withUnit[Inch]),
             makeAssertion = inputQtyDAssertion
         )
 
@@ -72,7 +71,7 @@ class JsonEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
             x = 123.meters
         )(using
             instances.circe.encoder_QtyD_meter,
-            instances.circe.decoder_QtyD_meter,
+            instances.circe.decoder_QtyD_meter
         )
 
         roundTripJsonShouldWork("LocalConditions.default")(

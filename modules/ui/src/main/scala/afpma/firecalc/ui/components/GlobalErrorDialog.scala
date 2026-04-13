@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.ui.i18n.GlobalError
+
 import org.scalajs.dom
 
 object GlobalErrorDialog:
@@ -25,19 +26,18 @@ object GlobalErrorDialog:
             </div>
             <form method="dialog" class="modal-backdrop"><button>close</button></form>
         """
-        d.querySelector("#global-error-reload").addEventListener("click", (_: dom.Event) =>
-            dom.window.location.reload()
-        )
+        d.querySelector("#global-error-reload")
+            .addEventListener("click", (_: dom.Event) => dom.window.location.reload())
         dom.document.body.appendChild(d)
         d
 
     /** Set the i18n strings to use. Call once after locale is known. */
     def setI18n(i18n: GlobalError): Unit =
-        currentI18n = Some(i18n)
+        currentI18n                                              = Some(i18n)
         dialog.querySelector("#global-error-reload").textContent = i18n.reload_button
 
     def show(title: String, message: String): Unit =
-        dialog.querySelector("#global-error-title").textContent = title
+        dialog.querySelector("#global-error-title").textContent   = title
         dialog.querySelector("#global-error-message").textContent = message
         dialog.showModal()
 
@@ -45,7 +45,7 @@ object GlobalErrorDialog:
     def showTransactionError(): Unit =
         val i18n = currentI18n
         show(
-            i18n.map(_.title).getOrElse("Application Error"),
+            i18n.map(_.title).getOrElse          ("Application Error"            ),
             i18n.map(_.transaction_msg).getOrElse("A reactive loop was detected.")
         )
 

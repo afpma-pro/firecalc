@@ -5,13 +5,14 @@
 
 package afpma.firecalc.ui.models
 
+import afpma.firecalc.ui.models.schema.AppStateSchema
+import afpma.firecalc.ui.models.schema.AppStateSchema.given
+
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
 import io.circe.Json
 import io.circe.syntax.*
-
-import afpma.firecalc.ui.models.schema.AppStateSchema
 
 final class UndoManager(maxDepth: Int = 1000):
 
@@ -28,7 +29,7 @@ final class UndoManager(maxDepth: Int = 1000):
     // when a new (different) state arrives. This avoids the bug where the current state
     // sits on top of the stack, causing a no-op first undo.
     private var lastKnownState: Option[AppStateSchema] = None
-    private var lastKnownJson: Option[Json]            = None
+    private var lastKnownJson : Option[Json]           = None
 
     // --- Public Signals for UI binding ---
 
@@ -40,9 +41,11 @@ final class UndoManager(maxDepth: Int = 1000):
 
     // --- Public Methods ---
 
-    /** Called by the debounced observer when appStateSchemaVar changes.
-      * Pushes the PREVIOUS known state to the undo stack (not the current one).
-      * First call just records the baseline; subsequent calls push the diff. */
+    /**
+     * Called by the debounced observer when appStateSchemaVar changes.
+     * Pushes the PREVIOUS known state to the undo stack (not the current one).
+     * First call just records the baseline; subsequent calls push the diff.
+     */
     def pushSnapshot(current: AppStateSchema): Unit =
         if !isRestoring then
             val currentJson = current.asJson
@@ -51,13 +54,15 @@ final class UndoManager(maxDepth: Int = 1000):
                     val stack   = undoStack.now()
                     val trimmed = if stack.size >= maxDepth then stack.drop(1) else stack
                     undoStack.set(trimmed :+ prev)
-                    redoStack.set(Vector.empty)
+                    redoStack.set(Vector.empty   )
                 }
                 lastKnownState = Some(current)
                 lastKnownJson  = Some(currentJson)
 
-    /** Undo: pop from undo stack, push current to redo, return the state to restore.
-      * Returns None if nothing to undo. */
+    /**
+     * Undo: pop from undo stack, push current to redo, return the state to restore.
+     * Returns None if nothing to undo.
+     */
     def undo(currentState: => AppStateSchema): Option[AppStateSchema] =
         val stack = undoStack.now()
         if stack.isEmpty then None
@@ -65,22 +70,24 @@ final class UndoManager(maxDepth: Int = 1000):
             val previous     = stack.last
             val current      = currentState
             val previousJson = previous.asJson
-            undoStack.set(stack.init)
+            undoStack.set   (stack.init  )
             redoStack.update(_ :+ current)
             lastKnownState = Some(previous)
             lastKnownJson  = Some(previousJson)
             Some(previous)
 
-    /** Redo: pop from redo stack, push current to undo, return the state to restore.
-      * Returns None if nothing to redo. */
+    /**
+     * Redo: pop from redo stack, push current to undo, return the state to restore.
+     * Returns None if nothing to redo.
+     */
     def redo(currentState: => AppStateSchema): Option[AppStateSchema] =
         val stack = redoStack.now()
         if stack.isEmpty then None
         else
-            val next    = stack.last
-            val current = currentState
+            val next     = stack.last
+            val current  = currentState
             val nextJson = next.asJson
-            redoStack.set(stack.init)
+            redoStack.set   (stack.init  )
             undoStack.update(_ :+ current)
             lastKnownState = Some(next)
             lastKnownJson  = Some(nextJson)
@@ -95,6 +102,6 @@ final class UndoManager(maxDepth: Int = 1000):
 
     /** Set/unset the restoring guard. Callers bracket state restoration with this. */
     def withRestoring[A](f: => A): A =
-        isRestoring = true
+        isRestoring         = true
         try f
         finally isRestoring = false

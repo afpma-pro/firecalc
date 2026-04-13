@@ -12,15 +12,18 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
-import afpma.firecalc.ui.daisyui.DaisyUIHorizontalForm
-import afpma.firecalc.ui.daisyui.DaisyUIInputs
-import afpma.firecalc.ui.formgen.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
+import afpma.laminar.form.*
+import afpma.laminar.form.Form
+import afpma.laminar.form.Form.*
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.daisyui.DaisyUIHorizontal
+import afpma.laminar.form.daisyui.DaisyUIInputs
 import io.taig.babel.Locale
 
 final case class AppendLayersComponent(
@@ -29,6 +32,7 @@ final case class AppendLayersComponent(
     extends DaisyUIDynamicList:
 
     type Elem = AppendLayerDescr
+    given FormRenderer = DaisyUIHorizontal
 
     import hastranslations.given
 
@@ -50,7 +54,7 @@ final case class AppendLayersComponent(
     ): XtraOutputs =
         None
 
-    type DF[x] = DaisyUIHorizontalForm[x]
+    type DF[x] = Form[x]
 
     private def wrapLine(title: String, content: HtmlElement, isProperty: Boolean): HtmlElement =
         DaisyUIInputs.FieldsetLegendWithContent    (
@@ -73,7 +77,7 @@ final case class AppendLayersComponent(
         renderIdWithIncrDescr[AA](i, (i, aa), sig, with_fieldset_node, Some(summary_node))
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
-        // given DaisyUIHorizontalForm[QtyD[Meter]] = horizontal_form.horizontal_form_Length_mm_cm
+        // given Form[QtyD[Meter]] = horizontal_form.horizontal_form_Length_mm_cm
         welem_xtraoutput_sig.signal
             .splitMatchSeq(_._1)
             .handleCase[(Int, AppendLayerDescr, XtraOutputs), (Int, FromLambda, XtraOutputs), HtmlElement] {

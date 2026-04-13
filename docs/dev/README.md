@@ -41,8 +41,11 @@ Complete documentation for Electron desktop development:
 Core architectural patterns and design decisions:
 
 - **[SCHEMA_VERSIONING_ARCHITECTURE.md](SCHEMA_VERSIONING_ARCHITECTURE.md)** - ⭐ Data schema versioning architecture (AppState, BillingInfo, etc.)
+- **[ENGINE_VALIDATION_GOLDEN_TESTS.md](ENGINE_VALIDATION_GOLDEN_TESTS.md)** - ⭐ Golden fixture validation against external EN 13384 / EN 15544 reference implementations; reserved naming policy
 - **[TRANSLATION_AUTOMATION_SPEC.md](TRANSLATION_AUTOMATION_SPEC.md)** - Automated translation discovery system
 - **[guides/DIRECTION_PROPAGATION.md](guides/DIRECTION_PROPAGATION.md)** - Direction propagation in pipe panels (PipeFrame, RelativeDirectionInput, cascade sync)
+- **[BABEL_CUSTOM_VERSION_DEPENDENCY.md](BABEL_CUSTOM_VERSION_DEPENDENCY.md)** - Custom Babel 0.5.4 local dependency (temporary)
+- **[WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md](WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md)** - Windows CI workarounds for SBT/Coursier
 
 ## 🏗️ Architecture Documentation
 
@@ -74,14 +77,38 @@ make setup-all
 
 # 3. Start development with live reload
 # Terminal 1: Scala.js compilation
-make dev-ui-compile
+make dev-web-ui-compile
 
 # Terminal 2: Vite dev server
-make dev-ui
+make dev-web-ui-run
 
 # Terminal 3: Electron app
-make dev-electron-vite
+make dev-electron-app-run-vite
 ```
+
+### Worktree / Parallel Development
+
+When working with multiple git worktrees (or multiple checkouts), each instance needs its own Vite port to avoid conflicts. Use the `FIRECALC_VITE_DEV_SERVER_PORT` environment variable:
+
+```bash
+# Default (main worktree) — port 5173
+make dev-web-ui-run
+
+# Second worktree — port 5174
+export FIRECALC_VITE_DEV_SERVER_PORT=5174
+make dev-web-ui-compile   # sbt source maps will point to :5174
+make dev-web-ui-run       # Vite serves on :5174
+make dev-electron-app-run-vite  # Electron connects to :5174
+
+# Inline usage (single command)
+FIRECALC_VITE_DEV_SERVER_PORT=5174 make dev-web-ui-run
+```
+
+The env var is read by:
+- **Vite** (`modules/ui/vite.config.js`) — binds the dev server
+- **Makefile** — `kill-vite`, `dev-open-browser`, `dev-web-ui-open` targets
+- **Electron** (`web/package.json` `dev:vite` script) — connects to the Vite server
+- **sbt** (`build.sbt` source map URIs) — maps Scala sources to the right Vite port for debugging
 
 ### Git Hooks (License Compliance)
 

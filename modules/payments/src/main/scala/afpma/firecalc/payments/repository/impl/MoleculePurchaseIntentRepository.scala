@@ -68,10 +68,10 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
         for
             _   <- logger.info(s"Creating purchase intent for customer internal ID: $customerInternalId")
             now <- Async[F].delay(Instant.now())
-            expiresAt = now.plusSeconds(600) // 10 minutes
+            expiresAt = now.plusSeconds(PurchaseIntentRepository.DEFAULT_AUTH_CODE_EXPIRATION_DURATION_SECONDS)
             token     = UUID.randomUUID()
             _               <- future2AsyncF {
-                PurchaseIntent.token.productId.amount.currency.authCode.customer.processed.expiresAt.createdAt.productMetadata_?
+                PurchaseIntent.token.productId.amount.currency.authCode.failedAttempts.customer.processed.expiresAt.createdAt.productMetadata_?
                     .insert(
                         (
                             token,
@@ -79,6 +79,7 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                             amount,
                             currency.toString,
                             authCode,
+                            0,
                             customerInternalId,
                             false,
                             expiresAt,
@@ -103,6 +104,7 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                 amount,
                 currency,
                 authCode,
+                0,
                 domain.CustomerId(customerUuid),
                 false,
                 productMetadataId,
@@ -122,13 +124,15 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                     .amount
                     .currency
                     .authCode
+                    .failedAttempts
                     .processed
                     .expiresAt
                     .createdAt
-                    .ProductMetadata
-                    .?(ProductMetadata.id)
                     .Customer
                     .customerId
+                    ._PurchaseIntent
+                    .ProductMetadata
+                    .?(ProductMetadata.id)
                     .query
                     .get
                     .map(
@@ -140,11 +144,12 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                                         amount,
                                         currency,
                                         authCode,
+                                        failedAttempts,
                                         processed,
                                         expiresAt,
                                         createdAt,
-                                        productMetadataIdOpt,
-                                        customerId
+                                        customerId,
+                                        productMetadataIdOpt
                                     ) =>
                                     domain.PurchaseIntent(
                                         api.PurchaseToken      (token            ),
@@ -152,7 +157,8 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                                         amount,
                                         domain.Currency.valueOf(currency.toString),
                                         authCode,
-                                        domain.CustomerId      (customerId       ), // customerId is now UUID in DB
+                                        failedAttempts,
+                                        domain.CustomerId      (customerId       ),
                                         processed,
                                         productMetadataIdOpt,
                                         expiresAt,
@@ -174,7 +180,8 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                     .amount
                     .currency
                     .authCode(code)
-                    .processed
+                    .failedAttempts
+                    .processed(false) // Defense-in-depth: only return unprocessed intents
                     .expiresAt
                     .createdAt
                     .Customer
@@ -193,6 +200,7 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                                         amount,
                                         currency,
                                         authCode,
+                                        failedAttempts,
                                         processed,
                                         expiresAt,
                                         createdAt,
@@ -205,7 +213,8 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
                                         amount,
                                         domain.Currency.valueOf(currency.toString),
                                         authCode,
-                                        domain.CustomerId      (customerId       ), // customerId is now UUID in DB
+                                        failedAttempts,
+                                        domain.CustomerId      (customerId       ),
                                         processed,
                                         productMetadataIdOpt,
                                         expiresAt,
@@ -216,16 +225,15 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
             }
         yield result
 
-    def markAsProcessed(token: api.PurchaseToken): F[Boolean] =
+    def atomicMarkAsProcessed(token: api.PurchaseToken): F[Boolean] =
         for
-            _          <- logger.info(s"Marking purchase intent as processed: ${token}")
-            internalId <- future2AsyncF {
-                PurchaseIntent.id.token_(token.value).query.get.map(_.head)
+            _      <- logger.info(s"Atomically marking purchase intent as processed: ${token}")
+            result <- future2AsyncF {
+                rawTransact(
+                    s"UPDATE PurchaseIntent SET processed = 1 WHERE token = '${token.value}' AND processed = 0"
+                ).map(_.ids.nonEmpty)
             }
-            result     <- future2AsyncF {
-                PurchaseIntent(internalId).token(token.value).processed(true).update.transact
-            }
-        yield true
+        yield result
 
     def deleteExpired(): F[Int] =
         import scala.math.Ordered.orderingToOrdered
@@ -242,3 +250,23 @@ class MoleculePurchaseIntentRepository[F[_]: Async: Logger](using conn: Conn, ec
             _           <- future2AsyncF { PurchaseIntent(idsToDelete).delete.transact }
             _           <- logger.info(s"Deleted ${idsToDelete.length} expired purchase intents")
         yield idsToDelete.length
+
+    def incrementFailedAttempts(token: api.PurchaseToken): F[Unit] =
+        for
+            _          <- logger.debug(s"Incrementing failed attempts for token: $token")
+            internalId <- future2AsyncF {
+                PurchaseIntent.id.token_(token.value).query.get.map(_.head)
+            }
+            _          <- future2AsyncF {
+                PurchaseIntent(internalId).failedAttempts.+(1).update.transact
+            }
+        yield ()
+
+    def countRecentByEmail(email: String, since: Instant): F[Int] =
+        future2AsyncF {
+            PurchaseIntent.createdAt.Customer
+                .email_(email)
+                .query
+                .get
+                .map(_.count(_.isAfter(since)))
+        }

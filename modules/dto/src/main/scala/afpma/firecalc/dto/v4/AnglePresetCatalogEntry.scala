@@ -7,9 +7,10 @@ package afpma.firecalc.dto.v4
 
 import afpma.firecalc.units.coulombutils.*
 
-/** A catalog entry for an angle preset (specific angle with user-provided zeta).
-  * Mirrors the structure of AddAngleAdjustable so selection can populate name, angle and zeta.
-  */
+/**
+ * A catalog entry for an angle preset (specific angle with user-provided zeta).
+ * Mirrors the structure of AddAngleAdjustable so selection can populate name, angle and zeta.
+ */
 case class AnglePresetCatalogEntry(
     reference: String,
     angle    : Angle,

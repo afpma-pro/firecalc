@@ -71,7 +71,7 @@ object CommonInstances:
                 case Some("WithoutAirSpace") =>
                     // Accept both {} and null payloads for the no-field case object
                     Right(AirSpaceDetailed_V1.WithoutAirSpace)
-                case _ =>
+                case _                       =>
                     derived(cursor)
         }
 
@@ -418,10 +418,17 @@ object CommonInstances:
         for
             firebox_name                <- c.downField("firebox_name").as[String]
             accredited_or_notified_body <- c.downField("accredited_or_notified_body").as[String]
-            test_reports                <- c.downField("test_reports").as[List[TestReport]]
-                                            .orElse(Right(Nil))
+            test_reports                <- c
+                .downField("test_reports")
+                .as[List[TestReport]]
+                .orElse(Right(Nil))
             emissions_values            <- c.downField("emissions_values").as[EmissionValues_DTO]
-        yield EmissionsAndEfficiencyValues_DTO(firebox_name, accredited_or_notified_body, test_reports, emissions_values)
+        yield EmissionsAndEfficiencyValues_DTO(
+            firebox_name,
+            accredited_or_notified_body,
+            test_reports,
+            emissions_values
+        )
     }
     given Encoder[EmissionsAndEfficiencyValues_DTO] = semiauto.deriveEncoder[EmissionsAndEfficiencyValues_DTO]
 
@@ -515,10 +522,14 @@ object CommonInstances:
 
     // AirSpaceDetailed_V1.VentilDirection
 
-    given decoder_AirSpaceDetailed_V1_VentilDirection: Decoder[AirSpaceDetailed_V1.VentilDirection] = deriveDecoderForEnum[AirSpaceDetailed_V1.VentilDirection](AirSpaceDetailed_V1.VentilDirection.valueOf)
-    given encoder_AirSpaceDetailed_V1_VentilDirection: Encoder[AirSpaceDetailed_V1.VentilDirection] = deriveEncoderForEnum[AirSpaceDetailed_V1.VentilDirection]
+    given decoder_AirSpaceDetailed_V1_VentilDirection: Decoder[AirSpaceDetailed_V1.VentilDirection] =
+        deriveDecoderForEnum[AirSpaceDetailed_V1.VentilDirection](AirSpaceDetailed_V1.VentilDirection.valueOf)
+    given encoder_AirSpaceDetailed_V1_VentilDirection: Encoder[AirSpaceDetailed_V1.VentilDirection] =
+        deriveEncoderForEnum[AirSpaceDetailed_V1.VentilDirection]
 
     // AirSpaceDetailed_V1.VentilOpenings
 
-    given decoder_AirSpaceDetailed_V1_VentilOpenings: Decoder[AirSpaceDetailed_V1.VentilOpenings] = deriveDecoderForEnum[AirSpaceDetailed_V1.VentilOpenings](AirSpaceDetailed_V1.VentilOpenings.valueOf)
-    given encoder_AirSpaceDetailed_V1_VentilOpenings: Encoder[AirSpaceDetailed_V1.VentilOpenings] = deriveEncoderForEnum[AirSpaceDetailed_V1.VentilOpenings]
+    given decoder_AirSpaceDetailed_V1_VentilOpenings: Decoder[AirSpaceDetailed_V1.VentilOpenings] =
+        deriveDecoderForEnum[AirSpaceDetailed_V1.VentilOpenings](AirSpaceDetailed_V1.VentilOpenings.valueOf)
+    given encoder_AirSpaceDetailed_V1_VentilOpenings: Encoder[AirSpaceDetailed_V1.VentilOpenings] =
+        deriveEncoderForEnum[AirSpaceDetailed_V1.VentilOpenings]

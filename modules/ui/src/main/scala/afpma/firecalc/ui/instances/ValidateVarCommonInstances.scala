@@ -11,14 +11,14 @@ import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.common.DisplayUnits
 
-import afpma.firecalc.ui.formgen.ValidateVar
+import afpma.firecalc.ui.i18n.implicits.I18N_UI as I18N
+
 import afpma.firecalc.ui.models.BillableCountry
 import afpma.firecalc.ui.models.BillableCustomerType
 import afpma.firecalc.ui.models.BillingLanguage
 import afpma.firecalc.ui.models.ClientProjectData
-import afpma.firecalc.ui.i18n.implicits.I18N_UI as I18N
-import io.taig.babel.Locale
 
 import cats.Show
 import cats.syntax.all.*
@@ -27,15 +27,23 @@ import coulomb.*
 import coulomb.policy.standard.given
 import coulomb.syntax.*
 
-import afpma.firecalc.dto.common.DisplayUnits
+import afpma.laminar.form.FormMessages
+import afpma.laminar.form.ValidateVar
+import io.taig.babel.Locale
 
 class ValidateVarCommonInstances(using DisplayUnits, Locale):
     import SUnits.given
 
+    private given FormMessages with
+        def valueIsUndefined  = I18N.errors.value_is_undefined
+        def notImplementedYet = I18N.ui_messages.not_implemented_yet
+
     inline def validOption_WhenDefinedAndPositive[A: Show](isPositive: A => Boolean): ValidateVar[Option[A]] =
         ValidateVar.validOption_WhenDefinedAnd[A](isPositive)(a => I18N.errors.value_ge_0(a.showP))
-    
-    inline def validOption_WhenDefinedAndStrictlyPositive[A: Show](isStrictlyPositive: A => Boolean): ValidateVar[Option[A]] =
+
+    inline def validOption_WhenDefinedAndStrictlyPositive[A: Show](
+        isStrictlyPositive: A => Boolean
+    ): ValidateVar[Option[A]] =
         ValidateVar.validOption_WhenDefinedAnd[A](isStrictlyPositive)(a => I18N.errors.value_gt_0(a.showP))
 
     inline def validOptionQtyD_WhenDefinedAndPositive[U](using su: SUnit[U]): ValidateVar[Option[QtyD[U]]] =
@@ -76,19 +84,19 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
         given valid_whenStrictlyPositive      : ValidateVar[A]         =
             validOption_whenStrictlyPositive.flatten
 
-    object angle       
+    object angle
         extends ValidOptionQtyD_WhenPositive_Factory[Degree]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Degree]
-    
-    object area        
+
+    object area
         extends ValidOptionQtyD_WhenPositive_Factory[(Meter ^ 2)]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[(Meter ^ 2)]
-    
-    object area_in_cm2 
+
+    object area_in_cm2
         extends ValidOptionQtyD_WhenPositive_Factory[(Centimeter ^ 2)]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[(Centimeter ^ 2)]
 
-    object centimeter 
+    object centimeter
         extends ValidOptionQtyD_WhenPositive_Factory[Centimeter]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Centimeter]
 
@@ -100,7 +108,7 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
         extends ValidOptionQtyD_WhenPositive_Factory[Minute]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Minute]
 
-    object meter 
+    object meter
         extends ValidOptionQtyD_WhenPositive_Factory[Meter]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Meter]
 
@@ -138,9 +146,9 @@ class ValidateVarCommonInstances(using DisplayUnits, Locale):
         extends ValidOptionQtyD_WhenPositive_Factory[Watt / (Meter * Kelvin)]
         with ValidOptionQtyD_WhenStrictlyPositive_Factory[Watt / (Meter * Kelvin)]
 
-    object roughness 
-        extends ValidOption_WhenPositive_Factory[Roughness](_ >= 0.meters)
-        with ValidOption_WhenStrictlyPositive_Factory[Roughness](_ > 0.meters)
+    object roughness
+        extends ValidOption_WhenPositive_Factory[Roughness]     (_ >= 0.meters)
+        with ValidOption_WhenStrictlyPositive_Factory[Roughness](_ > 0.meters )
 
 object ValidateVarCommonInstances:
 

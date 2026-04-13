@@ -6,13 +6,13 @@
 package afpma.firecalc.graph
 
 case class DataPoint(
-    x             : Double,
-    y             : Double,
-    tooltipTitle  : String = "",
-    tooltipExtra  : String = "",
-    formattedValue: String = "",
-    segmentColor    : String = "",        // non-empty → override series color for this point/segment
-    highlightTargets: Vector[String] = Vector.empty  // VizElementId-compatible names for graph-click highlighting
+    x               : Double,
+    y               : Double,
+    tooltipTitle    : String         = "",
+    tooltipExtra    : String         = "",
+    formattedValue  : String         = "",
+    segmentColor    : String         = "",          // non-empty → override series color for this point/segment
+    highlightTargets: Vector[String] = Vector.empty // VizElementId-compatible names for graph-click highlighting
 )
 
 case class ChartSeries(
@@ -20,8 +20,8 @@ case class ChartSeries(
     name     : String,
     color    : String,
     points   : Vector[DataPoint],
-    yAxisId  : String = "default",
-    lineWidth: Double = 2.0,
+    yAxisId  : String  = "default",
+    lineWidth: Double  = 2.0,
     dashed   : Boolean = false
 )
 
@@ -49,6 +49,6 @@ case class ChartData(
     yAxes          : Vector[YAxisConfig],
     xAxisLabel     : String,
     backgroundBands: Vector[BackgroundBand] = Vector.empty,
-    xMin           : Option[Double] = None,
-    xMax           : Option[Double] = None
+    xMin           : Option[Double]         = None,
+    xMax           : Option[Double]         = None
 )

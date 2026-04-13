@@ -38,9 +38,16 @@ case class StoveParams(
     @Transl(I(_.technical_specifications.inner_construction_material))
     val inner_construction_material: InnerConstructionMaterial = InnerConstructionMaterial.WithinSpecs
 ) {
-    def mB_or_pn: Either[QtyD[Kilogram], QtyD[Kilo * Watt]] = sizing_method match
-        case SizingMethod.MaxLoad           => Left(maximum_load.get)
-        case SizingMethod.NominalHeatOutput => Right(nominal_heat_output.get)
+    def mB_or_pn_opt: Option[Either[QtyD[Kilogram], QtyD[Kilo * Watt]]] = sizing_method match
+        case SizingMethod.MaxLoad           => maximum_load.map(Left(_))
+        case SizingMethod.NominalHeatOutput => nominal_heat_output.map(Right(_))
+
+    def mB_or_pn: Either[QtyD[Kilogram], QtyD[Kilo * Watt]] =
+        mB_or_pn_opt.getOrElse:
+            val missing = if sizing_method == SizingMethod.MaxLoad then "maximum_load" else "nominal_heat_output"
+            throw new IllegalStateException(
+                s"StoveParams: sizing_method=$sizing_method but $missing is None"
+            )
 
     def mB: Option[Mass]  = maximum_load
     def pn: Option[Power] = nominal_heat_output

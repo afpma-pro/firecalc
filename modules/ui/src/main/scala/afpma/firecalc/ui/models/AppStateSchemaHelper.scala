@@ -7,7 +7,7 @@ package afpma.firecalc.ui.models
 
 import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.ui.models.schema.AppStateSchemaLoader
-import afpma.firecalc.ui.models.schema.v5.AppStateSchema_V5
+import afpma.firecalc.ui.models.schema.v6.AppStateSchema_V6
 
 import scala.util.Failure
 import scala.util.Success
@@ -21,7 +21,7 @@ object AppStateSchemaHelper:
 
     /** Create initial schema with default values */
     def createInitialSchema(): AppStateSchema =
-        AppStateSchema_V5  (
+        AppStateSchema_V6  (
             engine_state   = EngineState.init,
             sensitive_data = ClientProjectData.empty,
             billing_data   = afpma.firecalc.ui.instances.defaultable.default_BillingInfo.default
@@ -45,3 +45,22 @@ object AppStateSchemaHelper:
                 scala.scalajs.js.Dynamic.global.console.log(s"Failed to decode schema: ${e.getMessage()}")
                 scala.scalajs.js.Dynamic.global.console.log("Returning default schema"                   )
                 Success                                    (createInitialSchema()                        )
+
+    /** Strict schema decode — fails if YAML is not a valid AppStateSchema. */
+    def decodeFromYamlStrict(yaml: String): Try[AppStateSchema] =
+        import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
+        AppStateSchemaMigrations.migrateToLatest(yaml) match
+            case Some(schema) => Success(schema)
+            case None         => Failure(new Exception("Not a valid AppStateSchema"))
+
+    /** Decode a .fcalc file: try full schema first, fall back to legacy engine-state-only. */
+    def decodeFromFile(yamlContent: String): Try[AppStateSchema] =
+        import afpma.firecalc.dto.FireCalcYAMLMigrations
+        decodeFromYamlStrict(yamlContent).orElse {
+            FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent).map { engineState =>
+                scala.scalajs.js.Dynamic.global.console.log(
+                    "Loaded engine-state-only file (legacy .fcalc format) via FireCalcYAML fallback"
+                )
+                createInitialSchema().copy(engine_state = engineState)
+            }
+        }

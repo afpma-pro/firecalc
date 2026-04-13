@@ -24,6 +24,11 @@ web/node_modules
 web/.env.electron
 web/generated-constants.js
 
+# Landing page (Next.js)
+web/landing/node_modules/
+web/landing/.next/
+web/landing/out/
+
 # Company-specific deployment configs (sensitive information)
 deployment/
 modules/*/configs/*.yaml
@@ -37,12 +42,22 @@ modules/*/samples/*.jpg
 .env.staging.local
 .env.production.local
 
+# Docker deployment configs with credentials (use .template counterparts instead)
+docker/configs/*/payments/*.conf
+docker/configs/*/invoices/*.yaml
+!docker/configs/**/*.template
+!docker/configs/**/*.example
+
+# Docker databases (contain transactional data, never commit)
+docker/databases/
+
 
 # Company-specific overrides for i18n
 modules/*/src/main/resources/company-overlay/
 modules/*/src/main/resources/deployment/
 
 # Scalamolecule generated files
+molecule/
 modules/payments/src/main/resources/moleculeGen
 
 # Generated files with sensitive data
@@ -60,3 +75,5 @@ astformatter
 # Generated viz/graph bundles (source of truth is the .ts files, rebuilt by esbuild)
 **/filaire-viz.js
 **/graph-viz.js
+
+.worktrees/

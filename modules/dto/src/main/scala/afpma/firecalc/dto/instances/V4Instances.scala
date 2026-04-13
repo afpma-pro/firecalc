@@ -9,16 +9,16 @@ import afpma.firecalc.units.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v3.Material_13384_V2
+import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.Firebox_V3
 import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3
 import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
 import afpma.firecalc.dto.v4.FlowResistanceCatalogEntry
+import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.Firebox_V3
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.TypeOfAppliance
 
 import io.circe.Decoder
@@ -34,7 +34,6 @@ object V4Instances:
     given Decoder[Firebox_V3] = semiauto.deriveDecoder[Firebox_V3]
     given Encoder[Firebox_V3] = semiauto.deriveEncoder[Firebox_V3]
 
-
     // AirSpaceDetailed_V2
     // WithoutAirSpace_V2 is encoded as the plain string "WithoutAirSpace" so the
     // YAML printer emits a scalar — never the "TypeName: null" that semiauto would
@@ -45,11 +44,13 @@ object V4Instances:
             cursor.as[String] match
                 case Right("WithoutAirSpace") =>
                     Right(AirSpaceDetailed_V2.WithoutAirSpace_V2)
-                case _ =>
+                case _                        =>
                     // "WithAirSpace" key (no _V2 suffix) keeps the YAML clean
-                    cursor.downField("WithAirSpace").as[AirSpaceDetailed_V2.WithAirSpace_V2](
-                        using derivedWithAirSpace
-                    )
+                    cursor
+                        .downField("WithAirSpace")
+                        .as[AirSpaceDetailed_V2.WithAirSpace_V2](using
+                            derivedWithAirSpace
+                        )
         }
 
     given encoder_AirSpaceDetailed_V2: Encoder[AirSpaceDetailed_V2] = Encoder.instance {
@@ -93,7 +94,7 @@ object V4Instances:
             case Right("FrontLeft")  => Right(AzimuthDirection.FrontLeft)
             case Right("Left")       => Right(AzimuthDirection.Left)
             case Right("RearLeft")   => Right(AzimuthDirection.RearLeft)
-            case _ =>
+            case _                   =>
                 cursor.downField("Custom").as[Angle].map(AzimuthDirection.Custom(_))
     }
 
@@ -116,7 +117,7 @@ object V4Instances:
             case Right("Up")         => Right(InclinationDirection.Up)
             case Right("Down")       => Right(InclinationDirection.Down)
             case Right("Horizontal") => Right(InclinationDirection.Horizontal)
-            case _ =>
+            case _                   =>
                 cursor.downField("Custom").as[Angle].map(InclinationDirection.Custom(_))
     }
 
@@ -135,8 +136,10 @@ object V4Instances:
     // ThermalPipeDescr_13384_V3
     // NOTE: sealed trait codecs must come AFTER all leaf-type codecs they depend on
 
-    given Decoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveDecoder[SetThermalPipeProp_13384_V3.SetSingleProp]
-    given Encoder[SetThermalPipeProp_13384_V3.SetSingleProp] = semiauto.deriveEncoder[SetThermalPipeProp_13384_V3.SetSingleProp]
+    given Decoder[SetThermalPipeProp_13384_V3.SetSingleProp] =
+        semiauto.deriveDecoder[SetThermalPipeProp_13384_V3.SetSingleProp]
+    given Encoder[SetThermalPipeProp_13384_V3.SetSingleProp] =
+        semiauto.deriveEncoder[SetThermalPipeProp_13384_V3.SetSingleProp]
 
     given Decoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveDecoder
     given Encoder[SetThermalPipeProp_13384_V3.SetPropertiesInBatch] = semiauto.deriveEncoder

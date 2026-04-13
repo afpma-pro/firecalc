@@ -1,0 +1,50 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+
+package afpma.firecalc.engine.ops
+
+import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.engine.models.*
+
+import cats.data.*
+
+trait PipeWithGasFlowOps[E]:
+
+    val gasOps   : GasOps
+    val extAirOps: ExteriorAirOps
+
+    type Op[A] = ValidatedNel[E, A]
+
+    extension (pgf: PipeWithGasFlow)
+        def volumeFlow(T_u                                          : TempD[Kelvin], T_e: TempD[Kelvin], S_H: Dimensionless): Op[VolumeFlow]
+        def w_m       (Tm                                           : TKelvin                                              ): Velocity
+        def ρ_m       (Tm                                           : TKelvin                                              ): Density
+        def T_m       (T_u                                          : TempD[Kelvin], T_e: TempD[Kelvin], S_H: Dimensionless): Op[TempD[Kelvin]]
+        def R_e       (w_m_correction_if_less_than_1p5_meter_per_sec: Boolean                                              ): Dimensionless
+        def N_u: Op[Dimensionless]
+        def α_i: Op[WattsPerSquareMeterKelvin]
+        def α_a: WattsPerSquareMeterKelvin
+        def k(S_H: Dimensionless): Op[WattsPerSquareMeterKelvin]
+        def k_b: Op[WattsPerSquareMeterKelvin]
+        def k_ob(
+            _1_Λ  : SquareMeterKelvinPerWatt,
+            _1_Λ_o: SquareMeterKelvinPerWatt
+        ): Op[WattsPerSquareMeterKelvin]
+        def K   (S_H: Dimensionless): Op[Dimensionless]
+        // def K_b: Op[Dimensionless]
+        def Ψ      : Dimensionless
+        def Ψsmooth: Dimensionless
+
+end PipeWithGasFlowOps
+
+object PipeWithGasFlowOps:
+
+    /**
+     * Error type for PipeWithGasFlowOps is EN13384_FormulaError (context-free).
+     * Callers must enrich with sectionTyp using .withSectionTyp(sectionTyp)
+     * to get context-aware EN13384_Error at the ops layer boundary.
+     */
+    type Error = afpma.firecalc.engine.standard.EN13384_FormulaError

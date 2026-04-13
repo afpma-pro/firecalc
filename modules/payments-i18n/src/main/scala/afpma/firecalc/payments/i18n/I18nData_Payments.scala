@@ -29,16 +29,17 @@ object I18nData_Payments:
     )
 
     final case class AuthenticationEmail(
-        subject_new_user     : String,
-        subject_existing_user: String,
-        greeting             : String,
-        intro_new_user       : String,
-        intro_existing_user  : String,
-        code_label           : String,
-        product_info         : StringFormat1, // "Product: {0}"
-        amount_info          : StringFormat1, // "Amount: {0}"
-        footer               : String,
-        signature            : String
+        subject_new_user           : String,
+        subject_existing_user      : String,
+        greeting                   : String,
+        intro_new_user             : String,
+        intro_existing_user        : String,
+        code_label                 : String,
+        auth_code_expiration_in_min: StringFormat1,
+        product_info               : StringFormat1, // "Product: {0}"
+        amount_info                : StringFormat1, // "Amount: {0}"
+        footer                     : StringFormat1,
+        signature                  : String
     )
 
     final case class InvoiceEmail(

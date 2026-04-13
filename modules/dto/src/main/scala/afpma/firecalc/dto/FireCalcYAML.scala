@@ -6,11 +6,11 @@
 package afpma.firecalc.dto
 
 import afpma.firecalc.dto.common.FireCalc_Version
-import afpma.firecalc.dto.v5.*
+import afpma.firecalc.dto.v6.*
 
-// alias to V5
-type FireCalcYAML = FireCalcYAML_V5
+// alias to V6
+type FireCalcYAML = FireCalcYAML_V6
 
-object FireCalcYAML extends FireCalcYAML_V5_Module:
+object FireCalcYAML extends FireCalcYAML_V6_Module:
 
-    val LATEST_VERSION: FireCalc_Version = FireCalcYAML_V5.VERSION
+    val LATEST_VERSION: FireCalc_Version = FireCalcYAML_V6.VERSION

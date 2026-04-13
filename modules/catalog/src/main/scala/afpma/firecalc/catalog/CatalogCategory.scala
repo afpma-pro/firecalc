@@ -22,10 +22,13 @@ import io.circe.generic.semiauto
 trait CatalogCategory[A]:
     /** YAML section key (e.g. "door_15a_fireboxes", "pipe_presets"). Unique per category. */
     def yamlKey: String
+
     /** Extract the unique key for deduplication */
     def uniqueKey(entry: A): String
+
     /** Circe decoder for a single entry */
     given decoder: Decoder[A]
+
     /** Circe encoder for a single entry */
     given encoder: Encoder[A]
 
@@ -35,12 +38,13 @@ trait CatalogCategoryAny:
     val instance: CatalogCategory[Entry]
     def yamlKey: String = instance.yamlKey
     def uniqueKey(e: Entry): String = instance.uniqueKey(e)
-    def decodeSectionJson(json: Json): Either[DecodingFailure, Seq[Entry]] =
-        json.as[Seq[Json]].flatMap: entries =>
-            entries.foldLeft[Either[DecodingFailure, Seq[Entry]]](Right(Seq.empty)): (acc, entryJson) =>
-                acc.flatMap(seq => instance.decoder.decodeJson(entryJson).map(seq :+ _))
+    def decodeSectionJson(json: Json)                    : Either[DecodingFailure, Seq[Entry]] =
+        json.as[Seq[Json]]
+            .flatMap: entries =>
+                entries.foldLeft[Either[DecodingFailure, Seq[Entry]]](Right(Seq.empty)): (acc, entryJson) =>
+                    acc.flatMap(seq => instance.decoder.decodeJson(entryJson).map(seq :+ _))
     def encodeEntries(entries: Seq[Entry]): Json = Encoder.encodeSeq(using instance.encoder)(entries)
-    def encodeSectionIfPresent(sections: CatalogSections): Option[(String, Json)] =
+    def encodeSectionIfPresent(sections: CatalogSections): Option[(String, Json)]              =
         val entries = sections.rawData.getOrElse(yamlKey, Seq.empty).asInstanceOf[Seq[Entry]]
         if entries.isEmpty then None
         else Some(yamlKey -> encodeEntries(entries))
@@ -51,14 +55,15 @@ object CatalogCategoryAny:
             type Entry = A
             val instance: CatalogCategory[A] = cat
 
-/** Newtype wrapper to distinguish casing presets from pipe presets in the catalog.
-  * Both share the same underlying [[SetThermalPipeProp_13384.SetPropertiesInBatch]] structure,
-  * but are stored under different YAML keys (`casing_presets` vs `pipe_presets`).
-  */
+/**
+ * Newtype wrapper to distinguish casing presets from pipe presets in the catalog.
+ * Both share the same underlying [[SetThermalPipeProp_13384.SetPropertiesInBatch]] structure,
+ * but are stored under different YAML keys (`casing_presets` vs `pipe_presets`).
+ */
 opaque type CasingPreset = SetThermalPipeProp_13384.SetPropertiesInBatch
 object CasingPreset:
-    def apply(spb: SetThermalPipeProp_13384.SetPropertiesInBatch): CasingPreset = spb
-    extension (cp: CasingPreset) def unwrap: SetThermalPipeProp_13384.SetPropertiesInBatch = cp
+    def apply (spb: SetThermalPipeProp_13384.SetPropertiesInBatch)           : CasingPreset                                  = spb
+    extension (cp : CasingPreset                                 ) def unwrap: SetThermalPipeProp_13384.SetPropertiesInBatch = cp
 
 /** Registry of all known catalog categories. Adding a new category = adding one entry here + one CatalogCategory given. */
 object CatalogCategoryRegistry:
@@ -69,12 +74,12 @@ object CatalogCategoryRegistry:
         CatalogCategoryAny.from[SetThermalPipeProp_13384.SetPropertiesInBatch],
         CatalogCategoryAny.from[CasingPreset],
         CatalogCategoryAny.from[FlowResistanceCatalogEntry],
-        CatalogCategoryAny.from[AnglePresetCatalogEntry],
+        CatalogCategoryAny.from[AnglePresetCatalogEntry]
     )
 
     // Fail fast if two categories share the same yamlKey
     locally:
-        val keys = all.map(_.yamlKey)
+        val keys  = all.map(_.yamlKey)
         val dupes = keys.diff(keys.distinct)
         require(dupes.isEmpty, s"Duplicate yamlKey(s) in CatalogCategoryRegistry: ${dupes.mkString(", ")}")
 

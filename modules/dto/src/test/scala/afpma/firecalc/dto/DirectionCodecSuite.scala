@@ -31,10 +31,10 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
     "AzimuthDirection" - {
 
         "named cases encode as plain strings" in {
-            Encoder[AzimuthDirection].apply(AzimuthDirection.Rear).shouldBe(Json.fromString("Rear"))
+            Encoder[AzimuthDirection].apply(AzimuthDirection.Rear).shouldBe (Json.fromString("Rear") )
             Encoder[AzimuthDirection].apply(AzimuthDirection.Right).shouldBe(Json.fromString("Right"))
             Encoder[AzimuthDirection].apply(AzimuthDirection.Front).shouldBe(Json.fromString("Front"))
-            Encoder[AzimuthDirection].apply(AzimuthDirection.Left).shouldBe(Json.fromString("Left"))
+            Encoder[AzimuthDirection].apply(AzimuthDirection.Left).shouldBe (Json.fromString("Left") )
         }
 
         "all named cases round-trip" in {
@@ -50,8 +50,8 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
 
         "Custom encodes as {\"Custom\": <angle>}" in {
             val custom = AzimuthDirection.Custom(42.5.degrees)
-            val json = Encoder[AzimuthDirection].apply(custom)
-            json.isObject.shouldBe(true)
+            val json   = Encoder[AzimuthDirection].apply(custom)
+            json.isObject.shouldBe                                   (true)
             json.hcursor.downField("Custom").focus.isDefined.shouldBe(true)
         }
 
@@ -71,8 +71,8 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
     "InclinationDirection" - {
 
         "named cases encode as plain strings" in {
-            Encoder[InclinationDirection].apply(InclinationDirection.Up).shouldBe(Json.fromString("Up"))
-            Encoder[InclinationDirection].apply(InclinationDirection.Down).shouldBe(Json.fromString("Down"))
+            Encoder[InclinationDirection].apply(InclinationDirection.Up).shouldBe        (Json.fromString("Up")        )
+            Encoder[InclinationDirection].apply(InclinationDirection.Down).shouldBe      (Json.fromString("Down")      )
             Encoder[InclinationDirection].apply(InclinationDirection.Horizontal).shouldBe(Json.fromString("Horizontal"))
         }
 
@@ -89,8 +89,8 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
 
         "Custom encodes as {\"Custom\": <angle>}" in {
             val custom = InclinationDirection.Custom(30.0.degrees)
-            val json = Encoder[InclinationDirection].apply(custom)
-            json.isObject.shouldBe(true)
+            val json   = Encoder[InclinationDirection].apply(custom)
+            json.isObject.shouldBe                                   (true)
             json.hcursor.downField("Custom").focus.isDefined.shouldBe(true)
         }
 
@@ -111,7 +111,7 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
 
         "round-trips with custom directions" in {
             val fd = AbsoluteDirection(
-                AzimuthDirection.Custom(123.0.degrees),
+                AzimuthDirection.Custom    (123.0.degrees),
                 InclinationDirection.Custom(-15.0.degrees)
             )
             roundTrip[AbsoluteDirection](fd).shouldBe(fd)
@@ -123,9 +123,9 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
         }
 
         "encodes azimuth and inclination as top-level fields" in {
-            val fd = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+            val fd   = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
             val json = Encoder[AbsoluteDirection].apply(fd)
-            json.hcursor.downField("azimuth").as[String].shouldBe(Right("Right"))
+            json.hcursor.downField("azimuth").as[String].shouldBe    (Right("Right")     )
             json.hcursor.downField("inclination").as[String].shouldBe(Right("Horizontal"))
         }
     }
@@ -135,8 +135,9 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
     "Option[AbsoluteDirection]" - {
 
         "Some round-trips" in {
-            val opt: Option[AbsoluteDirection] = Some(AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Down))
-            roundTrip[Option[AbsoluteDirection]](opt).shouldBe(opt)
+            val opt: Option[AbsoluteDirection] =
+                Some                                          (AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Down))
+            roundTrip[Option[AbsoluteDirection]](opt).shouldBe(opt                                                                )
         }
 
         "None round-trips" in {

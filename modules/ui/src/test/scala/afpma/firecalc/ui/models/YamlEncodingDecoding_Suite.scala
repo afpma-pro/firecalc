@@ -34,7 +34,7 @@ class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
     def roundTripYamlShouldWork[X: {Encoder, Decoder}](
         x_title: String
     )(
-        x: X,
+        x            : X,
         makeAssertion: (X, X) => Assertion = (x: X, y: X) => x `shouldEqual` y
     ) =
         s"${x_title}" - {
@@ -48,7 +48,7 @@ class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
                 "should work" in {
                     val yaml = yamlPrinter.print(x.asJson)
                     yamlParser.parse(yaml) match
-                        case Left(pf) => fail(pf)
+                        case Left(pf)          => fail(pf)
                         case Right(yamlParsed) =>
                             val jString = yamlParsed.noSpaces
                             decode[X](jString) match
@@ -63,13 +63,13 @@ class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
 
     "YAML Encoding/Decoding" - {
 
-        roundTripYamlShouldWork("InputQtyD [123.meters]")(
-            x = InputQtyD.fromFinalQty[Meter, Inch](123.meters),
+        roundTripYamlShouldWork("InputQtyD [123.meters]")            (
+            x             = InputQtyD.fromFinalQty[Meter, Inch](123.meters),
             makeAssertion = inputQtyDAssertion
         )
 
-        roundTripYamlShouldWork("InputQtyD [10.inch]")(
-            x = InputQtyD.fromDisplayQty[Meter, Inch](10.withUnit[Inch]),
+        roundTripYamlShouldWork("InputQtyD [10.inch]")            (
+            x             = InputQtyD.fromDisplayQty[Meter, Inch](10.withUnit[Inch]),
             makeAssertion = inputQtyDAssertion
         )
 
@@ -77,7 +77,7 @@ class YamlEncodingDecoding_Suite extends AnyFreeSpec with Matchers:
             x = 123.meters
         )(using
             instances.circe.encoder_QtyD_meter,
-            instances.circe.decoder_QtyD_meter,
+            instances.circe.decoder_QtyD_meter
         )
 
         roundTripYamlShouldWork("LocalConditions.default")(

@@ -13,7 +13,7 @@ final case class Indicator(
     style_sig   : Signal[Option[IndicatorConfig]],
     title       : HtmlElement,
     subtitle_sig: Signal[String]
-)(child: HtmlElement)
+)                         (child: HtmlElement)
     extends Component:
 
     private lazy val style_classes: Signal[String] =

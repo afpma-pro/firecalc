@@ -10,11 +10,12 @@ import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
+import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.components.GlobalErrorDialog
-import afpma.firecalc.ui.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.models.project.ProjectManager
 import afpma.firecalc.ui.services.FileSystemService
 
 import com.raquo.laminar.api.L.*
@@ -22,6 +23,7 @@ import com.raquo.laminar.api.L.*
 import scala.util.Failure
 import scala.util.Success
 
+import afpma.laminar.form.daisyui.DaisyUITooltip
 import io.taig.babel.Locale
 import org.scalajs.dom
 
@@ -42,8 +44,9 @@ object FireCalcProjet:
                             // p( cls := "text-sm", buttonTitle),
                         ),
                         onClick --> { _ =>
-                            engineStateVar.set(nextEngineState)
-                            undoManager.reset()
+                            engineStateVar.set      (nextEngineState        )
+                            undoManager.reset       (                       )
+                            fireboxCacheStateVar.set(FireboxCacheState.empty)
                         }
                     ),
                     ttPosition = "tooltip-bottom"
@@ -60,8 +63,8 @@ object FireCalcProjet:
                         cls := "w-4 h-4 cursor-pointer",
                         lucide.`file`(stroke_width = 1),
                         onClick --> { _ =>
-                            engineStateVar.set(EngineState.init)
-                            undoManager.reset()
+                            val id = ProjectManager.createNewProject()
+                            router.pushState(ProjectPage(localeVar.now().language, id))
                         }
                     ),
                     ttPosition = "tooltip-bottom"
@@ -72,24 +75,25 @@ object FireCalcProjet:
 
         val isProcessingVar = Var(false)
 
-        def saveYaml(engineState: EngineState): Unit =
+        def saveYaml(): Unit =
             import scala.concurrent.ExecutionContext.Implicits.global
-            import afpma.firecalc.dto.FireCalcYAMLMigrations
 
             isProcessingVar.set(true)
 
-            // Convert state to YAML using dto module
-            FireCalcYAMLMigrations.encodeToYamlTry(engineState) match
+            // Export full AppStateSchema (engine_state + sensitive_data + billing_data).
+            // Backend PDF generation uses a separate code path (OrderPDFReportModalComponent)
+            // that sends only engine_state — this file export is independent.
+            AppStateSchemaHelper.encodeToYaml(appStateSchemaVar.now()) match
                 case Failure(ex) =>
                     GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage))
-                    isProcessingVar.set(false)
+                    isProcessingVar.set               (false                                                       )
 
                 case Success(yamlContent) =>
                     // Use FileSystemService which handles both browser and Electron
                     FileSystemService.saveFile(filename_var.now(), yamlContent).foreach {
                         case Left(error) =>
                             GlobalErrorDialog.showGenericError(error)
-                            isProcessingVar.set(false)
+                            isProcessingVar.set               (false)
 
                         case Right(_) =>
                             isProcessingVar.set(false)
@@ -105,12 +109,11 @@ object FireCalcProjet:
                         disabled <-- isProcessingVar,
                         lucide.`file-down`(stroke_width = 1),
                         onClick --> { _ =>
-                            saveYaml(engineStateVar.now())
+                            saveYaml()
                         }
                     ),
                     ttPosition = "tooltip-bottom"
                 )
-
             )
 
     case class UploadComponent()(using Locale) extends Component:
@@ -120,25 +123,23 @@ object FireCalcProjet:
 
         /** Load project from file content */
         def loadFromContent(yamlContent: String, fileName: String): Unit =
-            import afpma.firecalc.dto.FireCalcYAMLMigrations
-
             scala.scalajs.js.Dynamic.global.console.log(s"Loading file: $fileName")
-            fileNameVar.set (Some(fileName))
-            isLoadingVar.set(true          )
+            fileNameVar.set                            (Some(fileName)            )
+            isLoadingVar.set                           (true                      )
 
-            // Use migration-aware decoder that handles V1→V2 upgrades automatically
-            FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
+            // Auto-detect full schema vs legacy engine-state-only format
+            AppStateSchemaHelper.decodeFromFile(yamlContent) match
                 case Failure(e) =>
-                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project")
-                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                 )
-                    GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_decode_project.apply(e.getMessage))
-                    isLoadingVar.set(false)
+                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project"                            )
+                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                                             )
+                    GlobalErrorDialog.showGenericError         (I18N_UI.errors.failed_to_decode_project.apply(e.getMessage))
+                    isLoadingVar.set                           (false                                                      )
 
-                case Success(nextEngineState) =>
+                case Success(schema) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
-                    engineStateVar.set                         (nextEngineState              )
-                    undoManager.reset()
-                    isLoadingVar.set                           (false                        )
+                    val id = ProjectManager.openFromFile(schema)
+                    router.pushState(ProjectPage(localeVar.now().language, id))
+                    isLoadingVar.set(false                                    )
 
         /** Open file using Electron native dialog */
         def openFileElectron(): Unit =
@@ -146,17 +147,21 @@ object FireCalcProjet:
 
             isLoadingVar.set(true)
 
-            FileSystemService.openFile().foreach {
-                case Left(error) =>
+            FileSystemService.openFile().onComplete {
+                case Success(Left(error)) =>
                     GlobalErrorDialog.showGenericError(error)
-                    isLoadingVar.set(false)
+                    isLoadingVar.set                  (false)
 
-                case Right(None) =>
+                case Success(Right(None)) =>
                     // User cancelled
                     isLoadingVar.set(false)
 
-                case Right(Some((content, fileName))) =>
+                case Success(Right(Some((content, fileName)))) =>
                     loadFromContent(content, fileName)
+
+                case Failure(ex) =>
+                    GlobalErrorDialog.showGenericError(ex.getMessage)
+                    isLoadingVar.set                  (false        )
             }
 
         /** Read file from browser file input */
@@ -165,13 +170,17 @@ object FireCalcProjet:
 
             isLoadingVar.set(true)
 
-            FileSystemService.readFileFromInput(file).foreach {
-                case Left(error) =>
+            FileSystemService.readFileFromInput(file).onComplete {
+                case Success(Left(error)) =>
                     GlobalErrorDialog.showGenericError(error)
-                    isLoadingVar.set(false)
+                    isLoadingVar.set                  (false)
 
-                case Right((content, fileName)) =>
+                case Success(Right((content, fileName))) =>
                     loadFromContent(content, fileName)
+
+                case Failure(ex) =>
+                    GlobalErrorDialog.showGenericError(ex.getMessage)
+                    isLoadingVar.set                  (false        )
             }
 
         lazy val node =
@@ -184,6 +193,7 @@ object FireCalcProjet:
                     onChange --> { _ =>
                         val files = thisNode.ref.files
                         if files.length > 0 then readFileFromBrowser(files(0))
+                        thisNode.ref.value = "" // Reset so same file can be re-selected
                     }
                 }
             )

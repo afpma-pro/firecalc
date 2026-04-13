@@ -20,8 +20,17 @@ sealed trait Firebox_V4 extends FireboxI
 
 object Firebox_V4:
 
+    extension (fb: Firebox_V4)
+        def withDimensions(depth: Length, width: Length, height: Length): Firebox_V4 = fb match
+            case t: Traditional            => t.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case e: Ecolabeled             => e.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case a: AFPMA_PRSE             => a.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case s: SingleTested           => s.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+            case d: Door15aFirebox_Catalog =>
+                d.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+
     export Firebox_V3.TestStandard
-    
+
     @Transl(I(_.firebox_names.traditional))
     case class Traditional(
         @Transl(I(_.firebox.tested.heat_output_reduced))
@@ -33,7 +42,7 @@ object Firebox_V4:
         @Transl(I(_.firebox.firebox_height))
         firebox_height                       : Length,
         @Transl(I(_.en15544.terms_xtra.height_of_the_lowest_opening.name))
-        height_of_lowest_opening         : Length,
+        height_of_lowest_opening             : Length,
         @Transl(I(_.firebox.traditional.pressure_loss_coefficient_from_door))
         pressure_loss_coefficient_from_door  : QtyD[1],
         @Transl(I(_.firebox.traditional.total_air_intake_surface_area_on_door))
@@ -47,41 +56,41 @@ object Firebox_V4:
     @Transl(I(_.firebox_names.ecolabeled))
     case class Ecolabeled(
         @Transl(I(_.firebox.tested.heat_output_reduced))
-        heat_output_reduced                 : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
+        heat_output_reduced                    : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
         @Transl(I(_.firebox.ecolabeled.version))
-        version                             : Either["Version 1", "Version 2"],
+        version                                : Either["Version 1", "Version 2"],
         @Transl(I(_.firebox.ecolabeled.version_2_air_intake_shape))
-        air_intake_shape                    : Option[PipeShape], // defined only for V2
+        air_intake_shape                       : Option[PipeShape], // defined only for V2
         @Transl(I(_.firebox.firebox_depth))
-        firebox_depth                       : Length,
+        firebox_depth                          : Length,
         @Transl(I(_.firebox.firebox_width))
-        firebox_width                       : Length,
+        firebox_width                          : Length,
         @Transl(I(_.firebox.firebox_height))
-        firebox_height                      : Length,
+        firebox_height                         : Length,
         @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors))
-        height_of_first_row_of_air_injectors: Length,
+        height_of_first_row_of_air_injectors   : Length,
         @Transl(I(_.firebox.ecolabeled.door_opening_width))
-        door_opening_width                  : Length,
+        door_opening_width                     : Length,
         @Transl(I(_.firebox.traditional.glass_width))
-        glass_width                         : Length,
+        glass_width                            : Length,
         @Transl(I(_.firebox.traditional.glass_height))
-        glass_height                        : Length,
+        glass_height                           : Length,
         @Transl(I(_.firebox.ecolabeled.ash_pit_height_AF))
-        ash_pit_height                      : Length,
+        ash_pit_height                         : Length,
         @Transl(I(_.firebox.ecolabeled.air_manifold_height_W))
-        air_manifold_height                 : Length,
+        air_manifold_height                    : Length,
         @Transl(I(_.firebox.ecolabeled.firebox_floor_thickness))
-        firebox_floor_thickness             : Length,
+        firebox_floor_thickness                : Length,
         @Transl(I(_.firebox.ecolabeled.inner_wall_thickness_D1))
-        firebox_inner_wall_thickness        : Length,
+        firebox_inner_wall_thickness           : Length,
         @Transl(I(_.firebox.ecolabeled.outer_wall_thickness_D2))
-        firebox_outer_wall_thickness        : Length,
+        firebox_outer_wall_thickness           : Length,
         @Transl(I(_.firebox.ecolabeled.air_column_thickness_S))
-        air_column_thickness                : Length,
+        air_column_thickness                   : Length,
         @Transl(I(_.firebox.ecolabeled.width_between_two_air_columns_sides_E))
-        width_between_two_air_columns_sides : Length,
+        width_between_two_air_columns_sides    : Length,
         @Transl(I(_.firebox.ecolabeled.width_between_two_air_columns_rear_E))
-        width_between_two_air_columns_rear  : Length,
+        width_between_two_air_columns_rear     : Length,
         @Transl(I(_.firebox.ecolabeled.reinforcement_bars_offset_in_corners_R1))
         reinforcement_bars_offset_in_corners_R1: Length,
         @Transl(I(_.firebox.ecolabeled.reinforcement_bars_offset_in_corners_R2))
@@ -89,7 +98,7 @@ object Firebox_V4:
         @Transl(I(_.firebox.ecolabeled.reinforcement_bars_offset_in_corners_R3))
         reinforcement_bars_offset_in_corners_R3: Length,
         @Transl(I(_.firebox.ecolabeled.injector_height_Z))
-        injector_height                     : Length
+        injector_height                        : Length
     ) extends Firebox_V4
 
     @Transl(I(_.firebox_names.afpma_prse))
@@ -174,48 +183,48 @@ object Firebox_V4:
         pellets_load_burn_duration            : Option[QtyD[Minute]],
         @Transl(I(_.emissions_and_efficiency_values._self))
         emissions_values                      : EmissionsAndEfficiencyValues_DTO,
-        image                                 : Option[String] = None,
+        image                                 : Option[String] = None
     ) extends Firebox_V4
 
     @Transl(I(_.firebox_names.door_15a_firebox))
     case class Door15aFirebox_Catalog(
         @Transl(I(_.firebox.single_tested.reference))
-        reference                             : String,
+        reference                  : String,
         @Transl(I(_.firebox.firebox_depth))
-        firebox_depth                         : Length,
+        firebox_depth              : Length,
         @Transl(I(_.firebox.firebox_width))
-        firebox_width                         : Length,
+        firebox_width              : Length,
         @Transl(I(_.firebox.firebox_height))
-        firebox_height                        : Length,
+        firebox_height             : Length,
         @Transl(I(_.firebox.door_15a_firebox.load_size_nominal))
-        load_size_nominal                     : Option[Mass] = None,
+        load_size_nominal          : Option[Mass]             = None,
         @Transl(I(_.firebox.door_15a_firebox.sb))
-        sb                                    : QtyD[Centimeter],
+        sb                         : QtyD[Centimeter],
         @Transl(I(_.firebox.door_15a_firebox.sb_min))
-        sb_min                                : Option[QtyD[Centimeter]] = None,
+        sb_min                     : Option[QtyD[Centimeter]] = None,
         @Transl(I(_.firebox.door_15a_firebox.sb_max))
-        sb_max                                : Option[QtyD[Centimeter]] = None,
+        sb_max                     : Option[QtyD[Centimeter]] = None,
         @Transl(I(_.firebox.door_15a_firebox.mb_min))
-        mb_min                                : Option[Mass] = None,
+        mb_min                     : Option[Mass]             = None,
         @Transl(I(_.firebox.door_15a_firebox.mb_max))
-        mb_max                                : Option[Mass] = None,
+        mb_max                     : Option[Mass]             = None,
         @Transl(I(_.firebox.door_15a_firebox.pressure_loss_table))
-        pressure_loss_table_raw               : String = "",
+        pressure_loss_table_raw    : String                   = "",
         @Transl(I(_.firebox.door_15a_firebox.expected_air_intake_pipe_shapes))
-        expectedAirIntakePipeShapes           : List[PipeShape],
+        expectedAirIntakePipeShapes: List[PipeShape],
         @Transl(I(_.firebox.door_15a_firebox.actual_air_intake_pipe_shape))
-        actualAirIntakePipeShape              : PipeShape,
+        actualAirIntakePipeShape   : PipeShape,
         @Transl(I(_.firebox.single_tested.co2_dry_nominal))
-        co2_dry_nominal                       : Percentage,
+        co2_dry_nominal            : Percentage,
         @Transl(I(_.firebox.single_tested.co2_dry_lowest))
-        co2_dry_lowest                        : Option[Percentage] = None,
+        co2_dry_lowest             : Option[Percentage]       = None,
         @Transl(I(_.emissions_and_efficiency_values._self))
-        emissions_values                      : EmissionsAndEfficiencyValues_DTO,
+        emissions_values           : EmissionsAndEfficiencyValues_DTO,
         @Transl(I(_.firebox.glass_area))
-        glass_area                            : Area,
+        glass_area                 : Area,
         @Transl(I(_.en15544.terms_xtra.height_of_the_lowest_opening.name))
-        height_of_lowest_opening              : Length,
+        height_of_lowest_opening   : Length,
         @Transl(I(_.firebox.tested.heat_output_reduced))
-        heat_output_reduced                   : HeatOutputReduced = HeatOutputReduced.NotDefined,
-        image                                 : Option[String] = None,
+        heat_output_reduced        : HeatOutputReduced        = HeatOutputReduced.NotDefined,
+        image                      : Option[String]           = None
     ) extends Firebox_V4

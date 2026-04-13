@@ -32,6 +32,7 @@ Before starting configuration:
 - [ ] Ports 80 and 443 accessible from the internet (for Let's Encrypt)
 - [ ] GoCardless account (sandbox for staging, live for production)
 - [ ] SMTP service account (Mailtrap.io for staging, production SMTP for production)
+- [ ] JWT secret generated (`openssl rand -base64 32`) and added to `.env`
 - [ ] Company information and legal details ready
 
 ## Quick Start
@@ -97,8 +98,10 @@ docker/
 ├── docker-compose.yml            # Docker orchestration
 ├── Dockerfile                    # Application container definition
 ├── CONFIG_SETUP.md               # This file
+├── nginx.conf                    # Global nginx configuration
+├── nginx-proxy-custom.conf.template  # Domain proxy config (envsubst template)
 ├── nginx-ui-server.conf          # UI static file server configuration
-├── nginx-proxy-custom.conf       # SSL proxy configuration (both domains)
+├── init-letsencrypt.sh           # Initial certificate provisioning script
 │
 ├── configs/
 │   └── staging/                  # Staging environment configs (git-ignored)
@@ -112,7 +115,7 @@ docker/
 │       ├── invoices/
 │       │   ├── invoice-config.yaml.example       # Template
 │       │   ├── invoice-config.yaml               # Your config
-│       │   └── logo.jpg                          # Company logo for invoices (REQUIRED)
+│       │   └── logo.png                          # Company logo for invoices (REQUIRED)
 │       └── reports/
 │           └── logo.jpg                          # Company logo for reports (REQUIRED)
 │
@@ -121,10 +124,11 @@ docker/
         └── firecalc-payments-staging.db
 ```
 
-**Nginx Architecture:** FireCalc uses a three-container architecture:
+**Nginx Architecture:** FireCalc uses a four-container architecture:
 1. **backend** - Scala payments application (port 8181)
 2. **ui-server** - nginx:alpine serving static UI files (port 80, internal)
-3. **nginx-ssl-proxy** - Single SSL termination proxy handling both UI and API domains with automatic Let's Encrypt certificates (ports 443/80)
+3. **nginx** - Official nginx:1.27-alpine reverse proxy handling both UI and API domains with HTTPS termination (ports 443/80)
+4. **certbot** - certbot/certbot:v2.11.0 sidecar for automated Let's Encrypt certificate renewal (every 12 hours)
 
 ## Step-by-Step Setup
 
@@ -196,6 +200,7 @@ FireCalc uses TWO separate domains for better security and separation of concern
    ```
 
 3. **Key settings to update**:
+   - `jwt.secret`: Requires `JWT_SECRET` environment variable in `.env` (generate with `openssl rand -base64 32`, must be at least 32 characters)
    - `invoice.number-prefix`: Set to `"FCALC-STG-[YYYY]-"` for staging
    - `invoice-generation.config-file-path`: Verify path is correct
    - `admin.email`: Set to your admin email
@@ -311,12 +316,11 @@ FireCalc uses TWO separate domains for better security and separation of concern
    ```bash
    # Copy your company logo to BOTH directories
    # These logos will be embedded in the JAR during build and used by Typst for PDF generation
-   cp /path/to/your/logo.jpg docker/configs/staging/invoices/logo.jpg
+   # NOTE: The invoices module requires PNG format; the reports module requires JPG format
+   cp /path/to/your/logo.png docker/configs/staging/invoices/logo.png
    cp /path/to/your/logo.jpg docker/configs/staging/reports/logo.jpg
-   
-   # Note: The logo must be in JPG format
+
    # Recommended size: 200x200 pixels or similar aspect ratio
-   # Both files should be identical (invoices module and reports module both need the logo)
    ```
 
 4. **Secure the file**
@@ -334,10 +338,18 @@ mkdir -p docker/databases/staging
 
 # Set ownership to match container user (UID 999) and secure permissions
 sudo chown -R 999:999 docker/databases
-sudo chmod -R 755 docker/databases
+sudo chmod -R 700 docker/databases
 ```
 
 **Why UID 999?** The Docker container runs as non-root user `appuser` with UID 999 for security. The database directory must be owned by this user to allow write access.
+
+> **Security: Database Encryption at Rest**
+>
+> The SQLite database stores customer PII and payment data. The following hardening measures apply:
+>
+> - **Filesystem permissions**: The Dockerfile sets `chmod 700` on `/app/databases`, restricting access to the `appuser` owner only. The host-side directory should also use `chmod 700` (as shown above).
+> - **SQLCipher**: For production environments handling sensitive data, consider replacing the standard SQLite library with [SQLCipher](https://www.zetetic.net/sqlcipher/) to encrypt the database at rest. This requires a native dependency change and is not included by default.
+> - **Backups**: Database backup files contain the same sensitive data and should be encrypted (e.g., `gpg --symmetric`) and stored with restrictive permissions.
 
 ### Step 8: Build and Deploy
 
@@ -388,29 +400,36 @@ sudo chmod -R 755 docker/databases
    
    # Watch specific service
    docker compose logs -f backend
-   docker compose logs -f nginx-ssl-proxy
-   
+   docker compose logs -f nginx
+   docker compose logs -f certbot
+
    # Check service status
    docker compose ps
    ```
 
-4. **Wait for SSL certificates**
-   - First startup takes 2-5 minutes to obtain Let's Encrypt certificates for BOTH domains
-   - Monitor the nginx-ssl-proxy logs:
+4. **Provision SSL certificates (first time only)**
+   - Before the first deployment, run the certificate provisioning script:
      ```bash
-     docker compose logs -f nginx-ssl-proxy
+     cd docker
+     ./init-letsencrypt.sh
      ```
-   - Once ready, you'll see "Certificate obtained successfully"
-   - The nginx-ssl-proxy container automatically handles:
-     - SSL certificate generation for both domains (single certificate with SANs)
+   - This generates self-signed bootstrap certs, starts nginx, obtains real Let's Encrypt
+     certificates via certbot, and reloads nginx.
+   - Subsequent certificate renewals are automatic (certbot sidecar checks every 12 hours).
+   - Monitor certificate status:
+     ```bash
+     docker compose logs -f certbot
+     ```
+   - The nginx + certbot architecture handles:
+     - HTTPS termination for both domains (single certificate with SANs)
      - HTTP to HTTPS redirects
-     - Certificate renewal before expiration
-     - Routing to appropriate upstream based on domain (UI → ui-server, API → backend)
+     - Automatic certificate renewal before expiration
+     - Routing to appropriate upstream based on domain (UI -> ui-server, API -> backend)
 
 5. **Access the services**
-   - **UI**: https://staging.firecalc.example.com (port 443)
-   - **API**: https://api.staging.firecalc.example.com (port 443)
-   
+   - **UI**: https://firecalc.staging.example.com (port 443)
+   - **API**: https://api.staging.example.com (port 443)
+
    Both domains use standard HTTPS port 443, with routing handled by nginx based on the `server_name`.
 
 6. **Verify deployment**
@@ -419,7 +438,7 @@ sudo chmod -R 755 docker/databases
    curl -s https://api.staging.example.com/v1/healthcheck
    
    # Check certificate includes both domains
-   docker exec firecalc-ssl-proxy openssl x509 -in /etc/letsencrypt/fullchain-copy.pem -noout -text | grep DNS
+   docker compose exec nginx openssl x509 -in /etc/letsencrypt/live/${UI_DOMAIN}/fullchain.pem -noout -text | grep DNS
    ```
    
    Expected healthcheck output:
@@ -429,7 +448,7 @@ sudo chmod -R 755 docker/databases
    
    Expected certificate output:
    ```
-   DNS:staging.firecalc.example.com, DNS:api.staging.firecalc.example.com
+   DNS:firecalc.staging.example.com, DNS:api.staging.example.com
    ```
 
 > **⚠️ IMPORTANT - Docker Image Rebuild**:

@@ -296,7 +296,7 @@ gocardless {
 # Solution:
 # - Ensure Let's Encrypt certificate is valid
 # - Verify domain DNS is correctly configured
-# - Check nginx-ssl-proxy logs
+# - Check nginx and certbot logs
 # - Test HTTPS access manually: curl https://your-domain.com
 #
 # =============================================================================

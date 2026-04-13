@@ -21,6 +21,7 @@ import afpma.firecalc.payments.shared.api.BackendCompatibleLanguage
 import afpma.firecalc.payments.shared.api.CountryCode_ISO_3166_1_ALPHA_2
 import afpma.firecalc.payments.shared.api.CustomerInfo
 import afpma.firecalc.payments.shared.api.OrderId
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -135,9 +136,9 @@ object GoCardlessLanguage:
 // GoCardless API Models
 case class CreateCustomerRequest private (
     email       : String,
-    given_name  : Option[String], //      = None,
-    family_name : Option[String], //      = None,
-    company_name: Option[String], //      = None,
+    given_name  : Option[String],     //      = None,
+    family_name : Option[String],     //      = None,
+    company_name: Option[String],     //      = None,
     language    : String,
     metadata    : Map[String, String] // = Map.empty
 )
@@ -386,23 +387,24 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 uri     = uri,
                 headers = gcHeaders
             )
-            requestWithBody <- body.fold          (Async[F].pure(request)                                  ) { b =>
+            requestWithBody <- body.fold          (Async[F].pure(request)                                   ) { b =>
                 val jsonBody = b.asJson
-                logger.info(s"Making GoCardless request: $method $path with JSON: ${jsonBody.spaces2}") *>
+                // SEC-006: Demote to debug, no JSON body in logs
+                logger.debug(s"Making GoCardless request: $method $path") *>
                     Async[F].pure(request.withEntity(jsonBody))
             }
-            _               <- body.fold          (logger.info(s"Making GoCardless request: $method $path"))(_ => Async[F].unit)
+            _               <- body.fold          (logger.debug(s"Making GoCardless request: $method $path"))(_ => Async[F].unit)
+            // SEC-006: Do not include raw response body in error messages (may contain PII)
             response        <- httpClient
                 .expectOr[Json](requestWithBody) { resp =>
-                    resp.as[String]
-                        .map(body =>
-                            new RuntimeException(
-                                s"GoCardless API error: ${resp.status}, body: $body"
-                            )
+                    Async[F].pure(
+                        new RuntimeException(
+                            s"GoCardless API error: ${resp.status}"
                         )
+                    )
                 }
                 .handleErrorWith { error =>
-                    logger.info(s"GoCardless HTTP request failed: $method $path, error: ${error.getMessage}") *>
+                    logger.warn(s"GoCardless HTTP request failed: $method $path, error: ${error.getMessage}") *>
                         Async[F].raiseError(error)
                 }
             // _               <- response match {
@@ -410,10 +412,11 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             //         // Log API errors if they occurred (this will be caught by expectOr if status was not successful)
             //         Async[F].unit
             // }
-            _               <- logger.info(s"GoCardless response JSON: ${response.spaces2}")
+            // SEC-006: Demote response logging to debug, no full JSON
+            _               <- logger.debug(s"GoCardless response received for: $method $path")
             result          <- Async[F].fromEither(response.as[B]).handleErrorWith { error =>
-                logger.info(
-                    s"GoCardless JSON decode failed for $method $path: ${error.getMessage}, JSON was: ${response.spaces2}"
+                logger.warn(
+                    s"GoCardless JSON decode failed for $method $path: ${error.getMessage}"
                 ) *>
                     Async[F].raiseError(error)
             }
@@ -482,39 +485,22 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         ).map(_.billing_request_flows)
 
     def verifyWebhookSignature(body: String, signature: String): F[Boolean] =
-        val isSignatureValid = Try {
+        val isValid = Try {
             val mac       = Mac.getInstance("HmacSHA256")
             val secretKey = new SecretKeySpec(config.webhookSecret.getBytes("UTF-8"), "HmacSHA256")
             mac.init(secretKey)
             val computedSignature    = mac.doFinal(body.getBytes("UTF-8"))
             val computedSignatureHex = computedSignature.map("%02x".format(_)).mkString
-            computedSignatureHex == signature
+
+            // Timing-safe comparison — prevents side-channel attacks
+            java.security.MessageDigest.isEqual(
+                computedSignatureHex.getBytes("UTF-8"),
+                signature.getBytes           ("UTF-8")
+            )
         }.getOrElse(false)
 
-        config.environment match {
-            case "live"    =>
-                logger
-                    .info(s"Live environment: webhook signature verification ${
-                            if (isSignatureValid) "passed" else "failed"
-                        }")
-                    .map(_ => isSignatureValid)
-            case "sandbox" =>
-                if (isSignatureValid) {
-                    logger
-                        .info("Sandbox environment: webhook signature verification passed")
-                        .map(_ => true)
-                } else {
-                    logger
-                        .warn(
-                            "Sandbox environment: webhook signature verification failed, but allowing webhook to proceed"
-                        )
-                        .map(_ => true)
-                }
-            case other     =>
-                logger
-                    .warn(s"Unknown environment '$other', treating as live environment")
-                    .map(_ => isSignatureValid)
-        }
+        (if isValid then logger.info(s"Webhook signature verification passed (env: ${config.environment})")
+         else logger.error(s"Webhook signature verification FAILED (env: ${config.environment})")).map(_ => isValid)
 
     private def getPayment(paymentId: String): F[GoCardlessPayment] =
         makeRequest[Unit, PaymentResponseEnvelope](
@@ -808,7 +794,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
     ): F[String] =
         for {
             _ <- logger.info(
-                s"Creating GoCardless payment link for order ${orderId.value} for ${customerInfo.customerType} customer: ${customerInfo.email}"
+                s"Creating GoCardless payment link for order ${orderId.value} for ${customerInfo.customerType} customer: ${LogSanitizer.maskEmail(customerInfo.email)}"
             )
 
             gcLanguage = GoCardlessLanguage.fromBackendLanguage(customerInfo.language)

@@ -59,7 +59,7 @@ The project primarily uses permissive licenses (MIT, Apache 2.0, BSD) which are 
 | **Kittens** | 3.5.0 | Apache 2.0 | ✅ Compatible | Cats derivation |
 | **Quicklens** | 1.9.12 | Apache 2.0 | ✅ Compatible | Lens library |
 | **Magnolia** (fork) | 1.3.16 | Apache 2.0 | ✅ Compatible | Derivation macro |
-| **Babel** (i18n) | 0.5.3 | Apache 2.0 | ✅ Compatible | Internationalization |
+| **Babel** (i18n) | 0.5.3 / 0.5.4-custom | Apache 2.0 | ✅ Compatible | Internationalization (see [custom version docs](dev/BABEL_CUSTOM_VERSION_DEPENDENCY.md)) |
 | **ScalaTest** | 3.2.19 | Apache 2.0 | ✅ Compatible | Testing framework |
 | **Logback** | 1.5.18 | EPL 1.0 / LGPL 2.1 | ✅ Compatible | Logging |
 | **Log4Cats** | 2.7.1 | Apache 2.0 | ✅ Compatible | Logging facade |

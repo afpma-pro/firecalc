@@ -1,0 +1,64 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply font-sans antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary-custom {
+    @apply bg-firecalc-red hover:bg-firecalc-orange-red 
+           text-white font-semibold py-3 px-8 rounded-lg
+           transition-all duration-300 transform hover:scale-105
+           shadow-lg hover:shadow-xl;
+  }
+  
+  .btn-secondary-custom {
+    @apply bg-firecalc-orange-red hover:bg-firecalc-orange
+           text-white font-semibold py-3 px-8 rounded-lg
+           transition-all duration-300 transform hover:scale-105
+           shadow-lg hover:shadow-xl;
+  }
+  
+  .feature-card {
+    @apply bg-white border-2 border-firecalc-orange-light
+           rounded-lg p-6 transition-all duration-300
+           hover:border-firecalc-orange-red hover:shadow-lg
+           hover:-translate-y-2;
+  }
+  
+  .download-card {
+    @apply bg-white border-2 border-firecalc-red
+           rounded-lg p-8 text-center transition-all duration-300
+           hover:scale-105 hover:shadow-xl cursor-not-allowed
+           opacity-90 hover:opacity-100;
+  }
+
+  .download-card-active {
+    @apply cursor-pointer opacity-100;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .sponsor-logo {
+    @apply transition-all duration-300 grayscale hover:grayscale-0
+           border-2 border-firecalc-orange-light hover:border-firecalc-orange-red;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

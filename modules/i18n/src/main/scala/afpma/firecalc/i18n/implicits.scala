@@ -135,7 +135,7 @@ object implicits {
     given Decoder[I18nData.Units]                                                                                = deriveDecoder[I18nData.Units]
     given Decoder[I18nData.AreaHeatingStatus]                                                                    = deriveDecoder[I18nData.AreaHeatingStatus]
     given Decoder[I18nData.Warnings]                                                                             = deriveDecoder[I18nData.Warnings]
-    given Decoder[I18nData.TestReportI18n]                                                                     = deriveDecoder[I18nData.TestReportI18n]
+    given Decoder[I18nData.TestReportI18n]                                                                       = deriveDecoder[I18nData.TestReportI18n]
     given Decoder[I18nData.TestEmissionValueI18n]                                                                = deriveDecoder[I18nData.TestEmissionValueI18n]
     given Decoder[I18nData.EmissionValuesI18n]                                                                   = deriveDecoder[I18nData.EmissionValuesI18n]
 

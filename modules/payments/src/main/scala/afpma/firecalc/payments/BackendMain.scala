@@ -16,6 +16,7 @@ import afpma.firecalc.reports.YAMLDecodingException
 import afpma.firecalc.reports.YAMLFileReadException
 
 import afpma.firecalc.payments.config.ConfigLoader
+import afpma.firecalc.payments.config.LoggingConfig
 import afpma.firecalc.payments.db.Migrations
 import afpma.firecalc.payments.domain.OrderStatus
 import afpma.firecalc.payments.email.*
@@ -29,6 +30,7 @@ import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.api.ProductCatalogSelector
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.*
 import cats.effect.ExitCode
@@ -44,7 +46,9 @@ import org.http4s.*
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.CORS
+import org.http4s.server.middleware.EntityLimiter
 import org.http4s.server.middleware.Logger
+import org.typelevel.ci.CIString
 import org.typelevel.log4cats
 import org.typelevel.log4cats.Logger as Log4CatsLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -256,9 +260,9 @@ object Main extends IOApp:
     ): IO[Unit] =
         emailResult match
             case EmailSent          =>
-                IO.println(s"[EMAIL-SERVICE] Email successfully sent to ${recipient}")
+                IO.println(s"[EMAIL-SERVICE] Email successfully sent to ${LogSanitizer.maskEmail(recipient)}")
             case EmailFailed(error) =>
-                IO.println(s"[EMAIL-SERVICE] Failed to send email to ${recipient}: $error") *>
+                IO.println(s"[EMAIL-SERVICE] Failed to send email to ${LogSanitizer.maskEmail(recipient)}: $error") *>
                     IO.raiseError(
                         EmailSendingFailedException  (
                             orderId   = context.order.id.value,
@@ -267,16 +271,50 @@ object Main extends IOApp:
                         )
                     )
 
+    /** Apply logging configuration programmatically via logback's LoggerContext API. */
+    private def applyLoggingConfig(loggingConfig: LoggingConfig): Unit =
+        import ch.qos.logback.classic.{Level, LoggerContext}
+        val ctx = org.slf4j.LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+        ctx.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
+            .setLevel(Level.valueOf(loggingConfig.rootLevel.toUpperCase))
+        loggingConfig.packageOverrides.foreach((pkg, level) =>
+            ctx.getLogger(pkg).setLevel(Level.valueOf(level.toUpperCase))
+        )
+
     def run(args: List[String]): IO[ExitCode] =
+        // Fail fast if FIRECALC_ENV is not explicitly set.
+        // Prevents accidental misconfiguration (e.g. defaulting to sandbox with HMAC bypass).
+        val firecalcEnv = sys.env.get("FIRECALC_ENV").getOrElse {
+            throw new IllegalStateException(
+                "FIRECALC_ENV is not set. " +
+                    "Set to 'production', 'staging', or 'dev' explicitly. " +
+                    "Refusing to start with a default to prevent accidental misconfiguration."
+            )
+        }
+
         // Create HTTP client resource
         EmberClientBuilder.default[IO].build.use { httpClient =>
             val logger = summon[org.typelevel.log4cats.Logger[IO]]
 
             for {
+                _ <- logger.info(s"FIRECALC_ENV explicitly set to: $firecalcEnv")
+
                 // Load payments configuration first
                 paymentsConfig <- ConfigLoader.loadPaymentsConfig[IO]()
+                _              <- IO.delay(applyLoggingConfig(paymentsConfig.loggingConfig))
+                _              <- logger.info(
+                    s"Log level configured: root=${paymentsConfig.loggingConfig.rootLevel}" +
+                        (if paymentsConfig.loggingConfig.packageOverrides.nonEmpty
+                         then s", overrides=${paymentsConfig.loggingConfig.packageOverrides}"
+                         else "")
+                )
                 _              <- logger.info(s"Loaded payments config for environment: ${paymentsConfig.environment}")
                 _              <- logger.info(s"Using database: ${paymentsConfig.databaseConfig.filename}")
+                _              <- logger.info(
+                    if (paymentsConfig.corsAllowedOrigins.contains("*"))
+                    then "CORS policy: allowing all origins (default)"
+                    else s"CORS policy: allowing origins ${paymentsConfig.corsAllowedOrigins.mkString(", ")}"
+                )
 
                 // Run migrations with configured database
                 _ <- Migrations.migrate[IO](s"jdbc:sqlite:${paymentsConfig.databaseConfig.path}")
@@ -306,7 +344,7 @@ object Main extends IOApp:
                         _ <- logger.info("Initializing services...")
 
                         // Initialize services
-                        authService  <- AuthenticationService.create[IO](purchaseIntentRepo)
+                        authService  <- AuthenticationService.create[IO](purchaseIntentRepo, paymentsConfig.jwtConfig)
                         orderService <- OrderService
                             .create[IO](orderRepo, productRepo, customerRepo, productMetadataRepo)
 
@@ -351,7 +389,7 @@ object Main extends IOApp:
                                 (
                                     for
                                         _ <- logger.info(
-                                            s"[REPORT-GENERATION] Order ${context.order.id} completed for customer ${context.customer.email}"
+                                            s"[REPORT-GENERATION] Order ${context.order.id} completed for customer ${LogSanitizer.maskEmail(context.customer.email)}"
                                         )
 
                                         // Check ProductMetadata exists
@@ -386,7 +424,9 @@ object Main extends IOApp:
 
                                         // Send email to user containing PDF invoice and PDF report
                                         _ <- logger
-                                            .info(s"[EMAIL-NOTIFIER] Sending email to ${newContext.customer.email}")
+                                            .info(
+                                                s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(newContext.customer.email)}"
+                                            )
                                         _ <- logger.info(
                                             s"[EMAIL-NOTIFIER] Product: ${newContext.product.name} - Amount: ${newContext.order.amount} ${newContext.order.currency}"
                                         )
@@ -494,7 +534,9 @@ object Main extends IOApp:
                             Set(domain.OrderStatus.Failed, domain.OrderStatus.Cancelled),
                             { context =>
                                 val adminEmail = paymentsConfig.adminConfig.email
-                                IO.println(s"[EMAIL-NOTIFIER] Sending email to ${context.customer.email}") *>
+                                IO.println(
+                                    s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(context.customer.email)}"
+                                ) *>
                                     IO.println(
                                         s"[EMAIL-NOTIFIER] Product: ${context.product.name} - Amount: ${context.order.amount}"
                                     )
@@ -510,7 +552,7 @@ object Main extends IOApp:
                                     .sendAdminNotification(adminNotif)
                                     .flatMap:
                                         handleEmailResult(
-                                            s"admin notification with PDF invoice ${context.order.invoiceNumber} for customer ${context.customer.email}",
+                                            s"admin notification with PDF invoice ${context.order.invoiceNumber} for customer ${LogSanitizer.maskEmail(context.customer.email)}",
                                             context,
                                             adminEmail
                                         )
@@ -543,16 +585,32 @@ object Main extends IOApp:
                         healthRoutes   = HealthCheckRoutes.create[IO]
                         sourceRoutes   = SourceRoutes.create[IO]
 
+                        // JWT auth middleware — ready for future protected routes
+                        // Usage: val protectedRoutes = jwtMiddleware(authedRoutes)
+                        jwtMiddleware = AuthMiddleware[IO](authService)
+
+                        // SEC-010: Enforce 50 MB request body size limit on routes that accept bodies
+                        maxBodySize       = 50L * 1024 * 1024
+                        purchaseRoutes_V1 = EntityLimiter.httpRoutes(purchaseRoutes.routes_V1, maxBodySize)
+                        webhookRoutes_V1  = EntityLimiter.httpRoutes(webhookRoutes.routes_V1, maxBodySize)
+
                         // Apply selective logging middleware to each route group
+                        // SEC-006: Disable body logging on sensitive routes to prevent PII leakage
                         purchaseRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders = true,
-                            logBody    = true
-                        )(purchaseRoutes.routes_V1)
+                            logHeaders        = true,
+                            logBody           = false,
+                            redactHeadersWhen = name =>
+                                Logger.defaultRedactHeadersWhen(name) ||
+                                    name == CIString("Authorization")
+                        )(purchaseRoutes_V1)
 
                         webhookRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders = true,
-                            logBody    = true
-                        )(webhookRoutes.routes_V1)
+                            logHeaders        = true,
+                            logBody           = false,
+                            redactHeadersWhen = name =>
+                                Logger.defaultRedactHeadersWhen(name) ||
+                                    name == CIString("Webhook-Signature")
+                        )(webhookRoutes_V1)
 
                         staticRoutes_V1_WithLogging = Logger.httpRoutes(
                             logHeaders = true,
@@ -573,8 +631,17 @@ object Main extends IOApp:
                         allRoutes_V1 =
                             purchaseRoutes_V1_WithLogging <+> webhookRoutes_V1_WithLogging <+> staticRoutes_V1_WithLogging <+> healthRoutes_V1_WithLogging <+> sourceRoutes_WithLogging
 
-                        // Apply CORS middleware to allow cross-origin requests from frontend
-                        corsRoutes = CORS.policy.withAllowOriginAll.withAllowCredentials(false).apply(allRoutes_V1)
+                        // SEC-016: Apply CORS middleware with configurable origin whitelist
+                        corsPolicy = {
+                            val base = CORS.policy.withAllowCredentials(false)
+                            if (paymentsConfig.corsAllowedOrigins.contains("*"))
+                                base.withAllowOriginAll
+                            else {
+                                val allowed = paymentsConfig.corsAllowedOrigins.map(CIString(_)).toSet
+                                base.withAllowOriginHostCi(origin => allowed.contains(origin))
+                            }
+                        }
+                        corsRoutes = corsPolicy.apply(allRoutes_V1)
 
                         // Create HttpApp
                         httpApp = corsRoutes.orNotFound

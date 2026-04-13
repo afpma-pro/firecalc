@@ -142,6 +142,7 @@ object ConfigLoader:
             val retryConfig             = envConfig.getConfig("retry")
             val invoiceGenerationConfig = envConfig.getConfig("invoice-generation")
             val adminConfig             = envConfig.getConfig("admin")
+            val jwtSection              = envConfig.getConfig("jwt")
 
             PaymentsConfig                 (
                 environment                  = environment,
@@ -168,14 +169,50 @@ object ConfigLoader:
                 adminConfig                  = AdminConfig(
                     email = adminConfig.getString("email")
                 ),
-                reportAsDraft                = Try(envConfig.getBoolean("report-as-draft")).getOrElse(false)
+                reportAsDraft                = Try(envConfig.getBoolean("report-as-draft")).getOrElse(false),
+                jwtConfig                    = JwtConfig(
+                    secret            = jwtSection.getString("secret"),
+                    expirationMinutes = Try(jwtSection.getInt("expiration-minutes")).getOrElse(60),
+                    issuer            = Try(jwtSection.getString("issuer")).getOrElse("firecalc-payments")
+                ),
+                loggingConfig                = Try(envConfig.getConfig("logging"))
+                    .map { loggingSection =>
+                        import scala.jdk.CollectionConverters.*
+                        LoggingConfig       (
+                            rootLevel        = Try(loggingSection.getString("root-level")).getOrElse("INFO"),
+                            packageOverrides = Try(
+                                loggingSection
+                                    .getConfig("package-overrides")
+                                    .entrySet()
+                                    .asScala
+                                    .map(e => e.getKey -> e.getValue.unwrapped().toString)
+                                    .toMap
+                            ).getOrElse(Map.empty)
+                        )
+                    }
+                    .getOrElse(LoggingConfig()),
+                corsAllowedOrigins           = Try {
+                    import scala.jdk.CollectionConverters.*
+                    envConfig.getStringList("cors-allowed-origins").asScala.toList
+                }.getOrElse   (List("*")      )
             )
         }
 
-    private def validatePaymentsConfig[F[_]: Async](config: PaymentsConfig): F[PaymentsConfig] =
+    private[config] def validatePaymentsConfig[F[_]: Async](config: PaymentsConfig): F[PaymentsConfig] =
         InvoiceNumberValidator.validatePrefix(config.invoiceNumberPrefix) match {
-            case Right(_)    => Async[F].pure(config)
             case Left(error) => Async[F].raiseError(new IllegalArgumentException(error))
+            case Right(_)    =>
+                if (
+                        config.environment != "development" &&
+                        (config.corsAllowedOrigins.contains("*") || config.corsAllowedOrigins.isEmpty)
+                    )
+                then
+                    Async[F].raiseError(
+                        new IllegalStateException(
+                            s"SEC-016: CORS wildcard or empty origin list is not allowed in '${config.environment}' environment. Configure explicit origins in cors-allowed-origins."
+                        )
+                    )
+                else Async[F].pure     (config)
         }
 
     def loadEmailConfig[F[_]: Async](

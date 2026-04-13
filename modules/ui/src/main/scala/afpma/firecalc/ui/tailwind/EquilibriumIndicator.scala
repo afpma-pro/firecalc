@@ -28,7 +28,7 @@ import io.taig.babel.Locale
  */
 final case class EquilibriumIndicator()(using Locale, DisplayUnits) extends Component:
 
-    given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1
+    given Show[QtyD[Pascal]] = shows.defaults.show_Pascals_1_RoundedUpNearZero
 
     private lazy val pc_sig = results_en15544_pressure_requirements
 
@@ -41,7 +41,7 @@ final case class EquilibriumIndicator()(using Locale, DisplayUnits) extends Comp
             pc_sig.mapAndFoldVNelE(
                 pr =>
                     if pr.isInValidRange then Some(IndicatorConfig.green)
-                    else                      Some(IndicatorConfig.rose),
+                    else Some                     (IndicatorConfig.rose ),
                 None
             )
 

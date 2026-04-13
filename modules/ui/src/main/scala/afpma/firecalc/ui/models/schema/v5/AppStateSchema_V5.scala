@@ -26,11 +26,11 @@ import io.circe.generic.semiauto
  * - Clear migration path when reading localStorage
  * - Compile-time guarantee that AppStateSchema_V5 contains FireCalcYAML_V5
  * - No ambiguity about which component versions are contained
- * 
+ *
  * ## Changes from V4:
  * - bump to Firebox_V4
  * - T
- * 
+ *
  * ## Changes from V3:
  * - add SetPropertiesInBatch subtype for ThermalPipeDescr_13384
  * - TODO
@@ -44,7 +44,7 @@ import io.circe.generic.semiauto
  *   (FireCalcYAML_V2 adds height_of_first_row_of_air_injectors field to Traditional firebox)
  *
  * ## Components:
- * - engine_state: FireCalcYAML_V4 (sent to backend for PDF generation)
+ * - engine_state: FireCalcYAML_V5 (sent to backend for PDF generation)
  * - sensitive_data: ClientProjectData_V1 (NEVER sent to backend)
  * - billing_data: BillingInfo_V1 (stored client-side, transforms to CustomerInfo_V1 when sent to payment backend)
  *

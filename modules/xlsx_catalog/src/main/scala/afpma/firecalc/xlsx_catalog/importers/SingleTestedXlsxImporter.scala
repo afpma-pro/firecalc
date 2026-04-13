@@ -22,20 +22,20 @@ object SingleTestedXlsxImporter:
     def read(path: Path): Firebox.SingleTested =
         val wb = openWorkbook(path)
         try
-            val mainSheet = wb.getSheet("Foyer testé - Tested Firebox")
+            val mainSheet      = wb.getSheet("Foyer testé - Tested Firebox")
             val emissionsSheet = wb.getSheet("Émissions - Emissions")
 
             require(mainSheet != null, "Sheet 'Foyer testé - Tested Firebox' not found")
-            require(emissionsSheet != null, "Sheet 'Émissions - Emissions' not found")
+            require(emissionsSheet != null, "Sheet 'Émissions - Emissions' not found"  )
 
             val image = readFirstPicture(wb, wb.getSheetIndex(mainSheet))
             readMainSheet(mainSheet, emissionsSheet, image)
         finally wb.close()
 
     private def readMainSheet(
-        main: org.apache.poi.ss.usermodel.Sheet,
+        main     : org.apache.poi.ss.usermodel.Sheet,
         emissions: org.apache.poi.ss.usermodel.Sheet,
-        image: Option[String],
+        image    : Option[String]
     ): Firebox.SingleTested =
         import SingleTestedRows.*
 
@@ -49,7 +49,8 @@ object SingleTestedXlsxImporter:
         val typeOfAppliance = str(TypeOfApplianceRow).getOrElse("WoodLogs") match
             case "WoodLogs" => TypeOfAppliance.WoodLogs
             case "Pellets"  => TypeOfAppliance.Pellets
-            case other      => throw IllegalArgumentException(s"Unknown type of appliance: $other (expected: WoodLogs, Pellets)")
+            case other      =>
+                throw IllegalArgumentException(s"Unknown type of appliance: $other (expected: WoodLogs, Pellets)")
 
         val testStandard = str(TestStandardRow) match
             case Some("EN_15250") => Firebox.TestStandard.EN_15250
@@ -57,8 +58,11 @@ object SingleTestedXlsxImporter:
             case Some("National") =>
                 val name = reqStr(NationalStdName, "national standard name")
                 Firebox.TestStandard.National(name)
-            case Some(other) => throw IllegalArgumentException(s"Unknown test standard: $other (expected: EN_15250, EN_13229, National)")
-            case None        => throw IllegalArgumentException("Required field 'test standard' is empty")
+            case Some(other)      =>
+                throw IllegalArgumentException(
+                    s"Unknown test standard: $other (expected: EN_15250, EN_13229, National)"
+                )
+            case None             => throw IllegalArgumentException("Required field 'test standard' is empty")
 
         val glassRatioBelow = str(GlassRatioBelow).getOrElse("No") match
             case "Yes" => true
@@ -70,9 +74,10 @@ object SingleTestedXlsxImporter:
             case "FromTypeTest" =>
                 val power = reqDbl(HeatPower, "reduced power value")
                 HeatOutputReduced.FromTypeTest(power.withUnit[Kilo * Watt])
-            case other => throw IllegalArgumentException(s"Unknown heat output mode: $other (expected: NotDefined, FromTypeTest)")
+            case other          =>
+                throw IllegalArgumentException(s"Unknown heat output mode: $other (expected: NotDefined, FromTypeTest)")
 
-        Firebox.SingleTested(
+        Firebox.SingleTested                             (
             reference                              = reqStr(Reference, "reference"),
             type_of_appliance                      = typeOfAppliance,
             test_standard                          = testStandard,
@@ -95,5 +100,5 @@ object SingleTestedXlsxImporter:
             co2_dry_lowest                         = dbl(Co2Lowest).map(_.withUnit[Percent]),
             pellets_load_burn_duration             = dbl(PelletsBurnDur).map(_.withUnit[Minute]),
             emissions_values                       = FireboxXlsxImporter.readEmissions(emissions),
-            image                                  = image,
+            image                                  = image
         )

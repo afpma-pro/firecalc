@@ -1,0 +1,56 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# Quick-start scaffold — copy to email-config.conf and fill in values.
+# For detailed setup docs and alternatives, see the .example counterpart.
+#
+# Email Configuration - STAGING Environment
+# IMPORTANT: Staging should use test email service (e.g., Mailtrap.io) to avoid sending real emails
+
+email {
+  # Staging environment
+  environment = "staging"
+
+  # Staging Configuration
+  staging {
+    smtp {
+      # IMPORTANT: Replace with your staging SMTP server details
+      host = "YOUR_SMTP_HOST"
+      port = 587
+      username = "YOUR_SMTP_USERNAME"
+      password = "YOUR_SMTP_PASSWORD"
+      use-tls = true
+    }
+
+    from {
+      address = "YOUR_FROM_EMAIL_ADDRESS"
+      name = "FireCalc AFPMA [staging]"
+    }
+
+    support {
+      address = "YOUR_SUPPORT_EMAIL_ADDRESS"
+    }
+
+    website {
+      url = "https://staging.firecalc.afpma.pro"
+    }
+  }
+}
+
+# Alternative: Use environment variables for SMTP settings
+email-env {
+  smtp {
+    host = ${?SMTP_HOST}
+    port = ${?SMTP_PORT}
+    username = ${?SMTP_USERNAME}
+    password = ${?SMTP_PASSWORD}
+    use-tls = ${?SMTP_USE_TLS}
+  }
+
+  from {
+    address = ${?EMAIL_FROM_ADDRESS}
+    name = ${?EMAIL_FROM_NAME}
+  }
+}

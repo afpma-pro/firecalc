@@ -5,18 +5,21 @@
 
 package afpma.firecalc.graph
 
-import org.scalajs.dom
 import scala.scalajs.js
 
-/** Framework-agnostic Graph visualization API.
-  * Returns plain DOM elements that can be wrapped by any UI framework.
-  */
+import org.scalajs.dom
+
+/**
+ * Framework-agnostic Graph visualization API.
+ * Returns plain DOM elements that can be wrapped by any UI framework.
+ */
 object GraphViz:
 
-    /** Result of rendering a graph visualization.
-      * @param element The container div element containing the chart canvas
-      * @param handle Handle for lifecycle management (dispose, update)
-      */
+    /**
+     * Result of rendering a graph visualization.
+     * @param element The container div element containing the chart canvas
+     * @param handle Handle for lifecycle management (dispose, update)
+     */
     case class GraphVizResult(
         element: dom.HTMLDivElement,
         handle : GraphVizHandleJS
@@ -25,12 +28,12 @@ object GraphViz:
     /** Render a line chart from the given data. */
     def render(
         data        : ChartData,
-        config      : GraphVizConfig = GraphVizConfig(),
+        config      : GraphVizConfig                 = GraphVizConfig(),
         onPointClick: Option[Vector[String] => Unit] = None
     ): GraphVizResult =
         val container = dom.document.createElement("div").asInstanceOf[dom.HTMLDivElement]
-        container.className = "graph-viz"
-        container.style.width = "100%"
+        container.className    = "graph-viz"
+        container.style.width  = "100%"
         container.style.height = "100%"
 
         val dataJs   = chartDataToJs(data)
@@ -42,7 +45,7 @@ object GraphViz:
         val clickCb: js.UndefOr[js.Function1[js.Array[String], Unit]] = onPointClick match
             case Some(cb) =>
                 ((targets: js.Array[String]) => cb(targets.toVector)): js.Function1[js.Array[String], Unit]
-            case None => js.undefined
+            case None     => js.undefined
 
         val handle = GraphVizFacade(container, dataJs, configJs, clickCb)
         GraphVizResult(container, handle)
@@ -53,8 +56,8 @@ object GraphViz:
 
     private def chartDataToJs(data: ChartData): ChartDataJS =
         val seriesJs = js.Array(data.series.map { s =>
-            val pointsJs = js.Array(s.points.map { p =>
-                DataPointJS(
+            val pointsJs        = js.Array(s.points.map { p =>
+                DataPointJS               (
                     x                = p.x,
                     y                = p.y,
                     tooltipTitle     = p.tooltipTitle,
@@ -79,10 +82,10 @@ object GraphViz:
             val posStr = a.position match
                 case YAxisPosition.Left  => "left"
                 case YAxisPosition.Right => "right"
-            val minJs: js.UndefOr[Double]  = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val maxJs: js.UndefOr[Double]  = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val minJs: js.UndefOr[Double] = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val maxJs : js.UndefOr[Double] = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
             val stepJs: js.UndefOr[Double] = a.stepSize.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            YAxisConfigJS(
+            YAxisConfigJS      (
                 id       = a.id,
                 label    = a.label,
                 position = posStr,
@@ -99,4 +102,11 @@ object GraphViz:
         val xMinJs: js.UndefOr[Double] = data.xMin.fold[js.UndefOr[Double]](js.undefined)(v => v)
         val xMaxJs: js.UndefOr[Double] = data.xMax.fold[js.UndefOr[Double]](js.undefined)(v => v)
 
-        ChartDataJS(series = seriesJs, yAxes = yAxesJs, xAxisLabel = data.xAxisLabel, backgroundBands = bandsJs, xMin = xMinJs, xMax = xMaxJs)
+        ChartDataJS         (
+            series          = seriesJs,
+            yAxes           = yAxesJs,
+            xAxisLabel      = data.xAxisLabel,
+            backgroundBands = bandsJs,
+            xMin            = xMinJs,
+            xMax            = xMaxJs
+        )

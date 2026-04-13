@@ -5,15 +5,21 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.dto.all.{AzimuthDirection, AbsoluteDirection, InclinationDirection}
+import afpma.firecalc.dto.all.AbsoluteDirection
+import afpma.firecalc.dto.all.AzimuthDirection
+import afpma.firecalc.dto.all.InclinationDirection
+
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipeFrame.RelativeSide
 import afpma.firecalc.engine.models.geometry.Vec3
-import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import com.raquo.airstream.core.{Observer, Signal}
+import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
+
+import com.raquo.airstream.core.Observer
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
@@ -33,8 +39,9 @@ import io.taig.babel.Locale
 case class RelativeDirectionInput(
     frameBefore    : Signal[Option[PipeFrame]],
     deflectionAngle: Signal[Option[Double]],
-    absDirVar    : Var[Option[AbsoluteDirection]]
-)(using Locale) extends Component:
+    absDirVar      : Var[Option[AbsoluteDirection]]
+)                                (using Locale)
+    extends Component:
 
     // Internal state: quadrant side and theta in degrees [0, 90]
     private val sideVar  = Var[RelativeSide](RelativeSide.Right)
@@ -59,15 +66,20 @@ case class RelativeDirectionInput(
         incl match
             case InclinationDirection.Up | InclinationDirection.Down =>
                 new AbsoluteDirection(None, incl)
-            case _ =>
+            case _                                                   =>
                 AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
 
-    private def computeFinalDir(side: RelativeSide, theta: Double, frame: PipeFrame, deflDeg: Double): Option[AbsoluteDirection] =
+    private def computeFinalDir(
+        side   : RelativeSide,
+        theta  : Double,
+        frame  : PipeFrame,
+        deflDeg: Double
+    ): Option[AbsoluteDirection] =
         Some(vec3ToAbsoluteDirection(frame.relativeTarget(side, theta, deflDeg)))
 
     private def recoverSideTheta(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): (RelativeSide, Double) =
         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-        val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
+        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
         frame.recoverRelative(targetVec, deflDeg)
 
     private def clampTheta(v: Double): Double =
@@ -76,12 +88,14 @@ case class RelativeDirectionInput(
     /** True when fd is geometrically reachable from frame at the given deflection angle (tolerance 1°). */
     private def isReachable(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): Boolean =
         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-        val targetVec      = Vec3.fromAzimuthElevation(azDeg, elDeg)
+        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
         frame.rollAngleForOutputDirection(targetVec, deflDeg).isDefined
 
-    /** Compare AbsoluteDirections by Vec3 geometry, not enum representation.
-      * Prevents lossy write-backs where e.g. (Left, Up) and (Rear, Up)
-      * produce the same Vec3(0,0,1) but differ as enums. */
+    /**
+     * Compare AbsoluteDirections by Vec3 geometry, not enum representation.
+     * Prevents lossy write-backs where e.g. (Left, Up) and (Rear, Up)
+     * produce the same Vec3(0,0,1) but differ as enums.
+     */
     private def fdGeometryEqual(a: Option[AbsoluteDirection], b: Option[AbsoluteDirection]): Boolean =
         (a, b) match
             case (Some(fa), Some(fb)) =>
@@ -90,8 +104,8 @@ case class RelativeDirectionInput(
                 val va = Vec3.fromAzimuthElevation(azA, elA)
                 val vb = Vec3.fromAzimuthElevation(azB, elB)
                 (va - vb).norm < 1e-6
-            case (None, None) => true
-            case _            => false
+            case (None, None        ) => true
+            case _ => false
 
     lazy val node: HtmlElement =
         val i18n = I18N_UI.direction_badge
@@ -134,17 +148,16 @@ case class RelativeDirectionInput(
 
         // Reverse sync: absDirVar → (side, theta)
         val reverseSync =
-            externalStSig
-                .distinct
-                .changes
+            externalStSig.distinct.changes
                 .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
                 .withCurrentValueOf(sideVar.signal, thetaVar.signal)
-                .collect { case (Some((newSide, newTheta)), curSide, curTheta)
-                    if newSide != curSide || math.abs(newTheta - curTheta) > 0.5 =>
-                    (newSide, newTheta)
+                .collect {
+                    case (Some((newSide, newTheta)), curSide, curTheta)
+                        if newSide != curSide || math.abs(newTheta - curTheta) > 0.5 =>
+                        (newSide, newTheta)
                 }
                 --> Observer[((RelativeSide, Double))] { st =>
-                    sideVar.set(st._1)
+                    sideVar.set (st._1)
                     thetaVar.set(st._2)
                 }
 
@@ -155,7 +168,7 @@ case class RelativeDirectionInput(
                 .combineWith(frameBefore, deflectionAngle)
                 .map { case (fdOpt, frameOpt, deflOpt) =>
                     (for fd <- fdOpt; frame <- frameOpt; defl <- deflOpt
-                     yield !isReachable(fd, frame, defl)).getOrElse(false)
+                    yield !isReachable(fd, frame, defl)).getOrElse(false)
                 }
 
         // Signal: what absDir we would cascade to (from current side/theta + new frame).
@@ -202,9 +215,9 @@ case class RelativeDirectionInput(
                 .composeChanges(_.take(1))
                 --> Observer[Option[(RelativeSide, Double)]] {
                     case Some((side, theta)) =>
-                        sideVar.set(side)
+                        sideVar.set (side )
                         thetaVar.set(theta)
-                    case None => ()
+                    case None                => ()
                 }
 
         div(
@@ -213,7 +226,7 @@ case class RelativeDirectionInput(
             // Relative dir. label above quadrant select
             div(
                 cls := "flex flex-col",
-                label(cls := "fieldset-label", i18n.relative_dir_label),
+                label (cls := "fieldset-label", i18n.relative_dir_label),
                 select(
                     cls := "select select-xs",
                     value <-- sideVar.signal.map(_.toString),
@@ -229,7 +242,7 @@ case class RelativeDirectionInput(
                 label(cls := "fieldset-label", i18n.relative_theta),
                 label(
                     cls := "input input-xs",
-                    input(
+                    input     (
                         tpe      := "number",
                         cls      := "field-sizing-content w-fit min-w-[4ch]",
                         stepAttr := "5",
@@ -242,7 +255,7 @@ case class RelativeDirectionInput(
                             } --> thetaVar.writer
                         )
                     ),
-                    span(cls := "label", "\u00b0")
+                    span      (cls := "label", "\u00b0")
                 )
             ),
 

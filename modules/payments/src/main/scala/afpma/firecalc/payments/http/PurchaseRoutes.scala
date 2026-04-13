@@ -9,6 +9,7 @@ import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.shared.api
 import afpma.firecalc.payments.shared.api.ErrorResponseEnvelope
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -33,7 +34,7 @@ class PurchaseRoutes[F[_]: Async](
                 for
                     createRequest <- req.asJsonDecode[api.v1.CreatePurchaseIntentRequest]
                     _             <- logger.info(
-                        s"Received create purchase intent request for: ${createRequest.customer.email}"
+                        s"Received create purchase intent request for: ${LogSanitizer.maskEmail(createRequest.customer.email)}"
                     )
                     token         <- purchaseService.createPurchaseIntent(createRequest)
                     response      <- Ok(api.v1.CreatePurchaseIntentResponse(token.value.toString).asJson)
@@ -56,6 +57,19 @@ class PurchaseRoutes[F[_]: Async](
     // Structured error handling for typed purchase service exceptions
     private def handlePurchaseServiceError(error: Throwable): F[Response[F]] =
         error match
+            // Rate limiting errors - 429 Too Many Requests
+            case ex: TooManyAttemptsException =>
+                for
+                    _        <- logger.warn(s"Too many attempts: ${ex.getMessage}")
+                    response <- TooManyRequests(createErrorResponse(ex))
+                yield response
+
+            case ex: TooManyIntentsForEmailException =>
+                for
+                    _        <- logger.warn(s"Too many intents for email: ${ex.getMessage}")
+                    response <- TooManyRequests(createErrorResponse(ex))
+                yield response
+
             // Authentication errors - 401 Unauthorized
             case ex: InvalidOrExpiredCodeException =>
                 for
@@ -92,6 +106,13 @@ class PurchaseRoutes[F[_]: Async](
                 for
                     _        <- logger.error(s"Product not found: ${ex.getMessage}")
                     response <- NotFound(createErrorResponse(ex))
+                yield response
+
+            // Idempotency errors - 409 Conflict
+            case ex: AlreadyProcessedException =>
+                for
+                    _        <- logger.warn(s"Purchase already processed: ${ex.getMessage}")
+                    response <- Conflict(createErrorResponse(ex))
                 yield response
 
             // Business logic errors - 422 Unprocessable Entity

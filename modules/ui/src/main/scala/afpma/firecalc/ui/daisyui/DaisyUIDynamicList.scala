@@ -71,9 +71,11 @@ trait DaisyUIDynamicList extends Component:
             // we only update the element at index of current signal, do not try to account for moving, replacing, inserting, deleting:
             // it should be handled by the command & control pattern
             // scalajs.js.Dynamic.global.console.log(s"element -> seq (update) : $idx")
-            val (oldidx, _) = xs(idx)
-            val newEl = (oldidx, x)
-            xs.updated(idx, newEl)
+            if idx < xs.size then
+                val (oldidx, _) = xs(idx)
+                val newEl = (oldidx, x)
+                xs.updated(idx, newEl)
+            else xs // stale binder — sequence was replaced (e.g. project switch); ignore
 
         val seqToElementBinder =
             welems_var.signal

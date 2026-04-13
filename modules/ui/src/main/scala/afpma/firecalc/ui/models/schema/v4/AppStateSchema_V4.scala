@@ -26,7 +26,7 @@ import io.circe.generic.semiauto
  * - Clear migration path when reading localStorage
  * - Compile-time guarantee that AppStateSchema_V4 contains FireCalcYAML_V4
  * - No ambiguity about which component versions are contained
- * 
+ *
  * ## Changes from V3:
  * - add SetPropertiesInBatch subtype for ThermalPipeDescr_13384
  * - TODO

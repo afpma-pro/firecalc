@@ -7,6 +7,8 @@ package afpma.firecalc.payments.exceptions
 
 import java.util.UUID
 
+import afpma.firecalc.payments.util.LogSanitizer
+
 /**
  * Base sealed trait for all purchase service errors.
  * Following cats-effect best practices for typed error handling.
@@ -25,16 +27,36 @@ sealed abstract class PurchaseServiceError(
     def context: Map[String, String] = Map.empty
 }
 
+// Rate limiting errors
+final case class TooManyAttemptsException(
+    token: String
+) extends PurchaseServiceError(
+        "Too many failed verification attempts for this purchase token"
+    ) {
+    override def context: Map[String, String] = Map(
+        "purchaseToken" -> token
+    )
+}
+
+final case class TooManyIntentsForEmailException(
+    email: String
+) extends PurchaseServiceError(
+        "Too many purchase intents created for this email in the last hour"
+    ) {
+    override def context: Map[String, String] = Map(
+        "email" -> LogSanitizer.maskEmail(email)
+    )
+}
+
 // Authentication related errors
+// SEC-006: Removed `code` field — auth codes must never be stored in exception objects
 final case class InvalidOrExpiredCodeException(
-    token: String,
-    code : String
+    token: String
 ) extends PurchaseServiceError(
         "Invalid or expired authentication code for purchase token"
     ) {
     override def context: Map[String, String] = Map(
-        "purchaseToken" -> token,
-        "codeLength"    -> code.length.toString
+        "purchaseToken" -> token
     )
 }
 
@@ -51,15 +73,14 @@ final case class AuthenticationFailedException(
 }
 
 // Resource not found errors
+// SEC-006: Removed `code` field — auth codes must never be stored in exception objects
 final case class PurchaseIntentNotFoundException(
-    token: String,
-    code : String
+    token: String
 ) extends PurchaseServiceError(
-        "Purchase intent not found for the provided token and code"
+        "Purchase intent not found for the provided token"
     ) {
     override def context: Map[String, String] = Map(
-        "purchaseToken" -> token,
-        "codeLength"    -> code.length.toString
+        "purchaseToken" -> token
     )
 }
 
@@ -308,7 +329,7 @@ final case class InvoiceEmailFailedException(
     ) {
     override def context: Map[String, String] = Map(
         "orderId"       -> orderId.toString,
-        "customerEmail" -> customerEmail,
+        "customerEmail" -> LogSanitizer.maskEmail(customerEmail),
         "reason"        -> reason
     )
 }
@@ -324,7 +345,7 @@ final case class EmailSendingFailedException(
     ) {
     override def context: Map[String, String] = Map(
         "orderId"   -> orderId.toString,
-        "recipient" -> recipient,
+        "recipient" -> LogSanitizer.maskEmail(recipient),
         "reason"    -> reason
     )
 }
@@ -351,6 +372,17 @@ final case class WebhookProcessingException(
     ) {
     override def context: Map[String, String] = Map(
         "reason" -> reason
+    )
+}
+
+// Idempotency errors
+final case class AlreadyProcessedException(
+    token: String
+) extends PurchaseServiceError(
+        "This purchase has already been processed"
+    ) {
+    override def context: Map[String, String] = Map(
+        "purchaseToken" -> token
     )
 }
 

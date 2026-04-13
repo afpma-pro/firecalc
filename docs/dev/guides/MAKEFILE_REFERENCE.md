@@ -30,7 +30,7 @@ Display project version information and repository details.
 make check
 ```
 
-**Output:** UI_BASE_VERSION, ENGINE_VERSION, GITTAG, REPO_DIR
+**Output:** UI_BASE_VERSION, ENGINE_VERSION, GIT_COMMIT_HASH, REPO_DIR, GITHUB_REPO_OWNER, GITHUB_REPO_NAME
 
 ---
 
@@ -63,7 +63,7 @@ Install all project dependencies (UI + Electron).
 make setup-all
 ```
 
-**What it does:** Runs `ui-setup` and `electron-setup` in sequence
+**What it does:** Runs `ui-setup`, `electron-setup`, `landing-setup`, `sync-build-config`, `build-viz`, and `build-graph`
 **Use case:** First-time setup or after pulling dependencies updates
 
 ---
@@ -87,6 +87,79 @@ make electron-setup
 ```
 
 **Equivalent to:** `cd web && npm install`
+
+---
+
+### `make landing-setup`
+Install landing page dependencies.
+
+```bash
+make landing-setup
+```
+
+**Equivalent to:** `cd web/landing && npm install`
+
+---
+
+### `make landing-build`
+Build landing page (Next.js static export).
+
+```bash
+make landing-build
+```
+
+**Equivalent to:** `cd web/landing && npm run build`
+
+---
+
+### `make sync-build-config`
+Sync build configuration from build.sbt to generated files.
+
+```bash
+make sync-build-config
+```
+
+**What it does:** Runs `sbt ui/syncBuildConfig` to generate:
+- `web/package.json` (version synced)
+- `web/.env.electron` (GitHub repo env vars)
+- `web/generated-constants.js` (GitHub repo constants)
+
+**Use case:** After changing version or repository info in `build.sbt`
+
+---
+
+### `make build-viz`
+Build the viz bundle (Three.js 3D visualization).
+
+```bash
+make build-viz
+```
+
+**Equivalent to:** `cd modules/ui && npm run build:viz`
+**Output:** `filaire-viz.js` bundle
+
+---
+
+### `make build-graph`
+Build the graph bundle (Chart.js 2D charts).
+
+```bash
+make build-graph
+```
+
+**Equivalent to:** `cd modules/ui && npm run build:graph`
+**Output:** `graph-viz.js` bundle
+
+---
+
+### `make update-deps`
+Update sbt dependencies.
+
+```bash
+make update-deps
+```
+
+**Equivalent to:** `sbt update`
 
 ---
 
@@ -120,13 +193,13 @@ make ui-status
 ## Utility Targets
 
 ### `make kill-vite`
-Kill processes running on port 5173.
+Kill processes running on the Vite dev server port (default 5173, configurable via `FIRECALC_VITE_DEV_SERVER_PORT`).
 
 ```bash
 make kill-vite
 ```
 
-**Use case:** Solve "Port 5173 already in use" errors
+**Use case:** Solve "Port already in use" errors
 
 ---
 
@@ -137,7 +210,7 @@ Open browser to Vite dev server.
 make dev-open-browser
 ```
 
-**URL:** http://localhost:5173
+**URL:** http://localhost:5173 (configurable via `FIRECALC_VITE_DEV_SERVER_PORT`)
 **Platform support:** Linux (xdg-open), macOS (open), fallback message for others
 
 ---
@@ -163,7 +236,7 @@ Start Vite dev server for web UI.
 make dev-web-ui-run
 ```
 
-**URL:** http://localhost:5173  
+**URL:** http://localhost:5173 (configurable via `FIRECALC_VITE_DEV_SERVER_PORT`)  
 **Use case:** Terminal 2 of live reload setup  
 **Keep running:** Yes, serves the application
 
@@ -188,7 +261,7 @@ Start Vite dev server and open browser.
 make dev-web-ui-open
 ```
 
-**Note:** Opens browser to http://localhost:5173 (macOS only with `open` command)
+**Note:** Opens browser to http://localhost:5173 (configurable via `FIRECALC_VITE_DEV_SERVER_PORT`; macOS only with `open` command)
 
 ---
 
@@ -314,8 +387,9 @@ make staging-backend-build
 ```
 
 **Builds:**
-1. Backend JAR (`sbt payments/assembly`)
-2. UI staging build (`make staging-web-ui-build`)
+1. Copies staging logos (invoices: `logo.png`, reports: `logo.jpg`)
+2. Backend JAR (`sbt payments/assembly`)
+3. UI staging build (`make staging-web-ui-build`)
 
 ---
 
@@ -393,8 +467,9 @@ make prod-backend-build
 ```
 
 **Builds:**
-1. Backend JAR (`sbt payments/assembly`)
-2. UI production build (`make prod-web-ui-build`)
+1. Copies production logos (invoices: `logo.png`, reports: `logo.jpg`), with staging fallback
+2. Backend JAR (`sbt payments/assembly`)
+3. UI production build (`make prod-web-ui-build`)
 
 ---
 
@@ -428,9 +503,9 @@ make dev-electron-ui-build
 ```
 
 **What it does:**
-1. Syncs version numbers (`sbt ui/syncElectronVersion`)
-2. Compiles UI with `sbt ui/fastLinkJS` (fast)
-3. Runs Vite build to process JSImport and copy assets
+1. Generates version file
+2. Runs combined sbt: `update`, `ui/syncBuildConfig`, `ui/fastLinkJS`
+3. Runs Vite build (`npm run build`)
 
 **Use case:** Called internally by `dev-electron-package-*` targets
 
@@ -444,8 +519,8 @@ make staging-electron-ui-build
 ```
 
 **What it does:**
-1. Syncs version numbers (`sbt ui/syncElectronVersion`)
-2. Compiles UI with `sbt ui/fullLinkJS` (optimized)
+1. Generates version file, builds viz + graph bundles
+2. Runs combined sbt: `update`, `ui/syncBuildConfig`, `ui/fullLinkJS`
 3. Runs Vite build in staging mode (`npm run build:staging`)
 
 **Use case:** Called internally by `staging-electron-package-*` targets
@@ -460,8 +535,8 @@ make prod-electron-ui-build
 ```
 
 **What it does:**
-1. Syncs version numbers (`sbt ui/syncElectronVersion`)
-2. Compiles UI with `sbt ui/fullLinkJS` (optimized)
+1. Generates version file, builds viz + graph bundles
+2. Runs combined sbt: `update`, `ui/syncBuildConfig`, `ui/fullLinkJS`
 3. Runs Vite build in production mode (`npm run build:production`)
 
 **Use case:** Called internally by `prod-electron-package-*` targets
@@ -658,6 +733,98 @@ make prod-electron-package-linux
 **Compilation:** `fullLinkJS` (optimized)
 
 
+
+## Docker Deployment
+
+### `make prod-docker-deploy-up`
+Build and deploy to Docker in production mode.
+
+```bash
+make prod-docker-deploy-up
+```
+
+**What it does:**
+1. Runs `prod-backend-build` (logos + JAR + UI)
+2. Stops existing containers (`docker compose down`)
+3. Rebuilds and starts containers (`docker compose up -d --build`)
+
+---
+
+### `make staging-docker-deploy-up`
+Build and deploy to Docker in staging mode.
+
+```bash
+make staging-docker-deploy-up
+```
+
+**What it does:** Same as prod but uses `staging-backend-build`
+
+---
+
+### `make dev-docker-deploy-up`
+Build and deploy to Docker in development mode.
+
+```bash
+make dev-docker-deploy-up
+```
+
+**What it does:** Builds UI with `dev-web-ui-build`, then deploys to Docker
+
+---
+
+### `make docker-deploy-down`
+Stop Docker containers.
+
+```bash
+make docker-deploy-down
+```
+
+---
+
+### `make docker-deploy-restart`
+Restart Docker containers without rebuilding.
+
+```bash
+make docker-deploy-restart
+```
+
+---
+
+### `make docker-deploy-logs`
+View Docker container logs (follows).
+
+```bash
+make docker-deploy-logs
+```
+
+---
+
+## Validation
+
+### `make run-validation`
+Run engine golden-file validation tests.
+
+```bash
+make run-validation
+```
+
+**Equivalent to:** `sbt --client "engineValidation/test"`
+**Use case:** Verify engine output matches golden reference files
+
+---
+
+### `make update-validation`
+Update golden reference files from current engine output.
+
+```bash
+make update-validation
+```
+
+**What it does:** Copies current engine output files to test resources as new golden references
+**Use case:** After intentional engine changes, update expected outputs
+**Review:** Always run `git diff` after updating to verify changes are intentional
+
+---
 
 ## Common Workflows
 
@@ -928,35 +1095,17 @@ Check what's running:
 ```bash
 make ui-status
 lsof -ti:5173  # Check port 5173
+# If using a custom port, replace 5173 with your FIRECALC_VITE_DEV_SERVER_PORT value
 ```
 
 ---
 
 ## Related Documentation
 
-- [ELECTRON_LIVE_RELOAD.md](ELECTRON_LIVE_RELOAD.md) - Detailed live reload setup
+- [LIVE_RELOAD.md](electron/LIVE_RELOAD.md) - Detailed live reload setup
 - [README.md](../README.md) - Project overview and quick start
 
 ---
-
-## Troubleshooting
-
-### "Cannot find module 'vite'"
-Run setup commands:
-```bash
-make setup-all
-```
-
-### Port already in use
-Kill processes on port 5173:
-```bash
-make kill-vite
-```
-
-Or check what's running:
-```bash
-make status-all
-```
 
 ### Open browser automatically
 ```bash

@@ -5,11 +5,23 @@
 
 package afpma.firecalc.ui.models.schema
 
+import afpma.firecalc.dto.FireCalcYAMLMigrations
+import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v5.FireCalcYAML_V5
+import afpma.firecalc.ui.instances.defaultable
 import afpma.firecalc.ui.models.AppStateSchemaHelper
+import afpma.firecalc.ui.models.EngineState
 import afpma.firecalc.ui.models.schema.AppStateSchema
+import afpma.firecalc.ui.models.schema.v1.ClientProjectData_V1
+import afpma.firecalc.ui.models.schema.v5.AppStateSchema_V5
 
 import scala.util.Success
 
+import io.circe.syntax.*
+import io.circe.yaml.scalayaml.printer as yamlPrinter
+import io.taig.babel.Languages
+import io.taig.babel.Locale
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -25,47 +37,47 @@ import org.scalatest.matchers.should.Matchers
  */
 class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
-  behavior of "SchemaMigrations.migrateToLatest"
+    behavior of "SchemaMigrations.migrateToLatest"
 
-  it should "return None for empty localStorage data" in {
-    // Given - empty string simulating fresh localStorage
-    val rawData = ""
+    it should "return None for empty localStorage data" in {
+        // Given - empty string simulating fresh localStorage
+        val rawData = ""
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(rawData)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(rawData)
 
-    // Then
-    result shouldBe None
-  }
+        // Then
+        result shouldBe None
+    }
 
-  it should "return None for whitespace-only data" in {
-    // Given - only whitespace
-    val rawData = "   \n  \t  \n   "
+    it should "return None for whitespace-only data" in {
+        // Given - only whitespace
+        val rawData = "   \n  \t  \n   "
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(rawData)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(rawData)
 
-    // Then
-    result.shouldBe(None)
-  }
+        // Then
+        result.shouldBe(None)
+    }
 
-  it should "decode V1 data directly without migration" in {
-    // Given - create a valid V1 schema and encode it
-    val originalSchema = AppStateSchemaHelper.createInitialSchema()
-    val yaml = AppStateSchemaHelper.encodeToYaml(originalSchema).get
+    it should "decode V1 data directly without migration" in {
+        // Given - create a valid V1 schema and encode it
+        val originalSchema = AppStateSchemaHelper.createInitialSchema()
+        val yaml           = AppStateSchemaHelper.encodeToYaml(originalSchema).get
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(yaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(yaml)
 
-    // Then
-    result.shouldBe(defined)
-    result.get.version.unwrap.shouldBe(AppStateSchema.LATEST_VERSION)
-  }
+        // Then
+        result.shouldBe                   (defined                      )
+        result.get.version.unwrap.shouldBe(AppStateSchema.LATEST_VERSION)
+    }
 
-  it should "return None for data without version field (legacy data)" in {
-    // Given - legacy data format without version field
-    val legacyYaml =
-      """engine_state:
+    it should "return None for data without version field (legacy data)" in {
+        // Given - legacy data format without version field
+        val legacyYaml =
+            """engine_state:
         |  locale: fr
         |  display_units: SI
         |sensitive_data:
@@ -73,318 +85,485 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         |    name: "Test Customer"
         |""".stripMargin
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(legacyYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(legacyYaml)
 
-    // Then
-    // Should return None because detectVersion returns None for missing version
-    result.shouldBe(None)
-  }
+        // Then
+        // Should return None because detectVersion returns None for missing version
+        result.shouldBe(None)
+    }
 
-  it should "return None for future schema version" in {
-    // Given - data claiming to be from a future version
-    val futureYaml =
-      """version: 999
+    it should "return None for future schema version" in {
+        // Given - data claiming to be from a future version
+        val futureYaml =
+            """version: 999
         |engine_state:
         |  locale: fr
         |""".stripMargin
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(futureYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(futureYaml)
 
-    // Then
-    // Should return None as version 999 is not supported
-    result.shouldBe(None)
-  }
+        // Then
+        // Should return None as version 999 is not supported
+        result.shouldBe(None)
+    }
 
-  it should "handle malformed YAML gracefully" in {
-    // Given - completely invalid YAML
-    val malformedYaml = "{ invalid: yaml: structure: [[[[ }}"
+    it should "handle malformed YAML gracefully" in {
+        // Given - completely invalid YAML
+        val malformedYaml = "{ invalid: yaml: structure: [[[[ }}"
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(malformedYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(malformedYaml)
 
-    // Then
-    result.shouldBe(None)
-  }
+        // Then
+        result.shouldBe(None)
+    }
 
-  it should "return None for YAML with missing required fields" in {
-    // Given - YAML with version but missing required schema fields
-    val incompleteYaml =
-      """version: 1
+    it should "return None for YAML with missing required fields" in {
+        // Given - YAML with version but missing required schema fields
+        val incompleteYaml =
+            """version: 1
         |engine_state:
         |  locale: fr
         |""".stripMargin
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(incompleteYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(incompleteYaml)
 
-    // Then - decoding as V1 fails because required fields are missing,
-    // so migrateToLatest returns None
-    result.shouldBe(None)
-  }
+        // Then - decoding as V1 fails because required fields are missing,
+        // so migrateToLatest returns None
+        result.shouldBe(None)
+    }
 
-  behavior of "SchemaMigrations.validateSchema"
+    behavior of "SchemaMigrations.validateSchema"
 
-  it should "validate a correctly formed schema" in {
-    // Given - create a valid initial schema
-    val schema = AppStateSchemaHelper.createInitialSchema()
+    it should "validate a correctly formed schema" in {
+        // Given - create a valid initial schema
+        val schema = AppStateSchemaHelper.createInitialSchema()
 
-    // When
-    val isValid = AppStateSchemaMigrations.validateSchema(schema)
+        // When
+        val isValid = AppStateSchemaMigrations.validateSchema(schema)
 
-    // Then
-    isValid.shouldBe(true)
-  }
+        // Then
+        isValid.shouldBe(true)
+    }
 
-  it should "perform successful round-trip encode/decode" in {
-    // Given - create initial schema
-    val originalSchema = AppStateSchemaHelper.createInitialSchema()
+    it should "perform successful round-trip encode/decode" in {
+        // Given - create initial schema
+        val originalSchema = AppStateSchemaHelper.createInitialSchema()
 
-    // When - encode to YAML
-    val encodeTry = AppStateSchemaHelper.encodeToYaml(originalSchema)
+        // When - encode to YAML
+        val encodeTry = AppStateSchemaHelper.encodeToYaml(originalSchema)
 
-    // Then - encoding should succeed
-    encodeTry.shouldBe(a[Success[?]])
-    
-    // When - decode back to schema
-    val decodeTry = AppStateSchemaHelper.decodeFromYaml(encodeTry.get)
+        // Then - encoding should succeed
+        encodeTry.shouldBe(a[Success[?]])
 
-    // Then - decoding should succeed
-    decodeTry.shouldBe(a[Success[?]])
-    
-    // And - decoded schema should match original
-    val decodedSchema = decodeTry.get
-    decodedSchema.version.unwrap.shouldBe(originalSchema.version.unwrap)
-    decodedSchema.engine_state.locale.shouldBe(originalSchema.engine_state.locale)
-  }
+        // When - decode back to schema
+        val decodeTry = AppStateSchemaHelper.decodeFromYaml(encodeTry.get)
 
-  behavior of "SchemaMigrations edge cases"
+        // Then - decoding should succeed
+        decodeTry.shouldBe(a[Success[?]])
 
-  it should "handle empty string input" in {
-    // Given
-    val emptyString = ""
+        // And - decoded schema should match original
+        val decodedSchema = decodeTry.get
+        decodedSchema.version.unwrap.shouldBe     (originalSchema.version.unwrap     )
+        decodedSchema.engine_state.locale.shouldBe(originalSchema.engine_state.locale)
+    }
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(emptyString)
+    behavior of "SchemaMigrations edge cases"
 
-    // Then
-    result.shouldBe(None)
-  }
+    it should "handle empty string input" in {
+        // Given
+        val emptyString = ""
 
-  it should "handle YAML with only whitespace" in {
-    // Given
-    val whitespaceYaml = "    \n    \n    "
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(emptyString)
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(whitespaceYaml)
+        // Then
+        result.shouldBe(None)
+    }
 
-    // Then
-    result.shouldBe(None)
-  }
+    it should "handle YAML with only whitespace" in {
+        // Given
+        val whitespaceYaml = "    \n    \n    "
 
-  it should "handle YAML with null values" in {
-    // Given - YAML with explicit null
-    val nullYaml =
-      """version: null
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(whitespaceYaml)
+
+        // Then
+        result.shouldBe(None)
+    }
+
+    it should "handle YAML with null values" in {
+        // Given - YAML with explicit null
+        val nullYaml =
+            """version: null
         |engine_state: null
         |""".stripMargin
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(nullYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(nullYaml)
 
-    // Then
-    result.shouldBe(None)
-  }
+        // Then
+        result.shouldBe(None)
+    }
 
-  it should "return None for YAML with version as string" in {
-    // Given
-    val stringVersionYaml =
-      """version: "1"
+    it should "return None for YAML with version as string" in {
+        // Given
+        val stringVersionYaml =
+            """version: "1"
         |engine_state:
         |  locale: fr
         |""".stripMargin
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(stringVersionYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(stringVersionYaml)
 
-    // Then - detectVersion fails to decode string as Int, returns None
-    result.shouldBe(None)
-  }
+        // Then - detectVersion fails to decode string as Int, returns None
+        result.shouldBe(None)
+    }
 
-  it should "handle YAML with version as float" in {
-    // Given
-    val floatVersionYaml =
-      """version: 1.5
+    it should "handle YAML with version as float" in {
+        // Given
+        val floatVersionYaml =
+            """version: 1.5
         |engine_state:
         |  locale: fr
         |""".stripMargin
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(floatVersionYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(floatVersionYaml)
 
-    // Then
-    // Should return None as version must be an integer, not a float
-    result.shouldBe(None)
-  }
+        // Then
+        // Should return None as version must be an integer, not a float
+        result.shouldBe(None)
+    }
 
-  it should "handle YAML with negative version number" in {
-    // Given
-    val negativeVersionYaml =
-      """version: -1
+    it should "handle YAML with negative version number" in {
+        // Given
+        val negativeVersionYaml =
+            """version: -1
         |engine_state:
         |  locale: fr
         |""".stripMargin
 
-    // When
-    val migrationResult = AppStateSchemaMigrations.migrateToLatest(negativeVersionYaml)
+        // When
+        val migrationResult = AppStateSchemaMigrations.migrateToLatest(negativeVersionYaml)
 
-    // Then
-    // migrateToLatest will return None as -1 is not a valid version
-    migrationResult.shouldBe(None)
-  }
+        // Then
+        // migrateToLatest will return None as -1 is not a valid version
+        migrationResult.shouldBe(None)
+    }
 
-  it should "handle YAML with version zero" in {
-    // Given
-    val zeroVersionYaml =
-      """version: 0
+    it should "handle YAML with version zero" in {
+        // Given
+        val zeroVersionYaml =
+            """version: 0
         |engine_state:
         |  locale: fr
         |""".stripMargin
 
-    // When
-    val migrationResult = AppStateSchemaMigrations.migrateToLatest(zeroVersionYaml)
+        // When
+        val migrationResult = AppStateSchemaMigrations.migrateToLatest(zeroVersionYaml)
 
-    // Then
-    // migrateToLatest will return None as 0 is not a supported version
-    migrationResult.shouldBe(None)
-  }
+        // Then
+        // migrateToLatest will return None as 0 is not a supported version
+        migrationResult.shouldBe(None)
+    }
 
-  it should "handle very large YAML documents" in {
-    // Given - create a valid schema (which is reasonably large)
-    val schema = AppStateSchemaHelper.createInitialSchema()
-    val largeYaml = AppStateSchemaHelper.encodeToYaml(schema).get
+    it should "handle very large YAML documents" in {
+        // Given - create a valid schema (which is reasonably large)
+        val schema    = AppStateSchemaHelper.createInitialSchema()
+        val largeYaml = AppStateSchemaHelper.encodeToYaml(schema).get
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(largeYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(largeYaml)
 
-    // Then
-    result.shouldBe(defined)
-    result.get.version.unwrap.shouldBe(AppStateSchema.LATEST_VERSION)
-  }
+        // Then
+        result.shouldBe                   (defined                      )
+        result.get.version.unwrap.shouldBe(AppStateSchema.LATEST_VERSION)
+    }
 
-  it should "handle YAML with special characters in strings" in {
-    // Given - create a valid schema with special characters
-    val schema = AppStateSchemaHelper.createInitialSchema()
-    val modifiedSchema = schema.copy(
-      engine_state = schema.engine_state.copy(
-        project_description = schema.engine_state.project_description.copy(
-          reference = "Test with special: chars & symbols!"
+    it should "handle YAML with special characters in strings" in {
+        // Given - create a valid schema with special characters
+        val schema           = AppStateSchemaHelper.createInitialSchema()
+        val modifiedSchema   = schema.copy(
+            engine_state = schema.engine_state.copy(
+                project_description = schema.engine_state.project_description.copy(
+                    reference = "Test with special: chars & symbols!"
+                )
+            )
         )
-      )
-    )
-    val specialCharsYaml = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
+        val specialCharsYaml = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(specialCharsYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(specialCharsYaml)
 
-    // Then - migration should work with special characters
-    result.shouldBe(defined)
-    result.get.engine_state.project_description.reference.shouldBe("Test with special: chars & symbols!")
-  }
+        // Then - migration should work with special characters
+        result.shouldBe                                               (defined                              )
+        result.get.engine_state.project_description.reference.shouldBe("Test with special: chars & symbols!")
+    }
 
-  it should "handle YAML with Unicode characters" in {
-    // Given - create a valid schema with Unicode characters
-    val schema = AppStateSchemaHelper.createInitialSchema()
-    val modifiedSchema = schema.copy(
-      engine_state = schema.engine_state.copy(
-        project_description = schema.engine_state.project_description.copy(
-          reference = "Projet français avec accents éèêà"
+    it should "handle YAML with Unicode characters" in {
+        // Given - create a valid schema with Unicode characters
+        val schema         = AppStateSchemaHelper.createInitialSchema()
+        val modifiedSchema = schema.copy(
+            engine_state = schema.engine_state.copy(
+                project_description = schema.engine_state.project_description.copy(
+                    reference = "Projet français avec accents éèêà"
+                )
+            )
         )
-      )
-    )
-    val unicodeYaml = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
+        val unicodeYaml    = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(unicodeYaml)
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(unicodeYaml)
 
-    // Then - migration should work with Unicode
-    result.shouldBe(defined)
-    result.get.engine_state.project_description.reference.shouldBe("Projet français avec accents éèêà")
-  }
+        // Then - migration should work with Unicode
+        result.shouldBe                                               (defined                            )
+        result.get.engine_state.project_description.reference.shouldBe("Projet français avec accents éèêà")
+    }
 
-  behavior of "SchemaMigrations.validateSchema with encoded data"
+    behavior of "SchemaMigrations.validateSchema with encoded data"
 
-  it should "validate schema after encoding to YAML" in {
-    // Given
-    val schema = AppStateSchemaHelper.createInitialSchema()
+    it should "validate schema after encoding to YAML" in {
+        // Given
+        val schema = AppStateSchemaHelper.createInitialSchema()
 
-    // When - encode to YAML
-    val yamlTry = AppStateSchemaHelper.encodeToYaml(schema)
+        // When - encode to YAML
+        val yamlTry = AppStateSchemaHelper.encodeToYaml(schema)
 
-    // Then - encoding should succeed
-    yamlTry.shouldBe(a[Success[?]])
+        // Then - encoding should succeed
+        yamlTry.shouldBe(a[Success[?]])
 
-    // When - validate the schema
-    val isValid = AppStateSchemaMigrations.validateSchema(schema)
+        // When - validate the schema
+        val isValid = AppStateSchemaMigrations.validateSchema(schema)
 
-    // Then
-    isValid.shouldBe(true)
-  }
+        // Then
+        isValid.shouldBe(true)
+    }
 
-  it should "successfully round-trip a modified schema" in {
-    // Given - create and modify a schema
-    val schema = AppStateSchemaHelper.createInitialSchema()
-    val modifiedSchema = schema.copy(
-      engine_state = schema.engine_state.copy(
-        project_description = schema.engine_state.project_description.copy(
-          reference = "MODIFIED-TEST-001"
+    it should "successfully round-trip a modified schema" in {
+        // Given - create and modify a schema
+        val schema         = AppStateSchemaHelper.createInitialSchema()
+        val modifiedSchema = schema.copy(
+            engine_state = schema.engine_state.copy(
+                project_description = schema.engine_state.project_description.copy(
+                    reference = "MODIFIED-TEST-001"
+                )
+            )
         )
-      )
-    )
 
-    // When - perform round-trip
-    val yaml = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
-    val decodedSchema = AppStateSchemaHelper.decodeFromYaml(yaml).get
+        // When - perform round-trip
+        val yaml          = AppStateSchemaHelper.encodeToYaml(modifiedSchema).get
+        val decodedSchema = AppStateSchemaHelper.decodeFromYaml(yaml).get
 
-    // Then - modification should be preserved
-    decodedSchema.engine_state.project_description.reference.shouldBe("MODIFIED-TEST-001")
-  }
+        // Then - modification should be preserved
+        decodedSchema.engine_state.project_description.reference.shouldBe("MODIFIED-TEST-001")
+    }
 
-  behavior of "SchemaMigrations V4 to V5 migration (version bumping)"
+    // ─── Helper: build a minimal AppStateSchema_V5 with Traditional firebox ────
+    //
+    // We construct V5 directly rather than downgrading from V6, because there is no
+    // backward transformer V6→V5. The Traditional firebox variant is structurally
+    // identical between Firebox_V3 (V4) and Firebox_V4 (V5), so the same YAML can
+    // be decoded by both the V4 and V5 decoders — enabling the version-replacement
+    // strategy for V4→V5 tests.
 
-  /**
-   * Reproduces the bug where V4→V5 migration does not bump version fields.
-   *
-   * Strategy: take a valid V5 schema (with Traditional firebox — identical between V4 and V5),
-   * downgrade the version markers to 4 in the YAML, then feed to migrateToLatest.
-   * The migration should produce a schema with version=5 and engine_state.version=5.
-   */
-  it should "bump AppStateSchema version from 4 to 5" in {
-    // Given - create a valid V5 schema, encode to YAML, downgrade version markers to 4
-    val v5Schema = AppStateSchemaHelper.createInitialSchema()
-    val v5Yaml   = AppStateSchemaHelper.encodeToYaml(v5Schema).get
-    val v4Yaml   = v5Yaml.replaceAll("version: 5", "version: 4")
+    private lazy val minimalV5Schema: AppStateSchema_V5 = {
+        import afpma.firecalc.ui.models.StoveParamsUI
 
-    // When - migrate from V4 to latest
-    val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
+        val engineV5 = FireCalcYAML_V5(
+            locale                         = Locale(Languages.Fr),
+            display_units                  = DisplayUnits.SI,
+            standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+            project_description            = ProjectDescr.empty,
+            local_conditions               = LocalConditions.default,
+            stove_params                   = StoveParamsUI.default_StoveParams.default,
+            air_intake_descr               = Seq.empty,
+            firebox                        = defaultable.firebox_traditional_empty.default,
+            flue_pipe_descr                = Seq.empty,
+            connector_pipe_descr           = Seq.empty,
+            chimney_pipe_descr             = Seq.empty
+        )
 
-    // Then - schema version should be bumped to 5
-    result shouldBe defined
-    result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
-  }
+        AppStateSchema_V5(
+            engine_state   = engineV5,
+            sensitive_data = ClientProjectData_V1.empty,
+            billing_data   = defaultable.default_BillingInfo.default
+        )
+    }
 
-  it should "bump engine_state version from 4 to 5" in {
-    // Given
-    val v5Schema = AppStateSchemaHelper.createInitialSchema()
-    val v5Yaml   = AppStateSchemaHelper.encodeToYaml(v5Schema).get
-    val v4Yaml   = v5Yaml.replaceAll("version: 5", "version: 4")
+    private lazy val minimalV5Yaml: String = {
+        import AppStateSchema_V5.given
+        yamlPrinter.print(minimalV5Schema.asJson)
+    }
 
-    // When
-    val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
+    /** Engine-state-only V5 YAML (no AppStateSchema wrapper — simulates legacy .fcalc files). */
+    private lazy val engineStateOnlyV5Yaml: String = {
+        import FireCalcYAML_V5.given
+        yamlPrinter.print(minimalV5Schema.engine_state.asJson)
+    }
 
-    // Then - engine_state version should also be bumped to 5
-    result shouldBe defined
-    result.get.engine_state.version.unwrap shouldBe 5
-  }
+    /** Engine-state-only V4 YAML (version downgraded from V5, Traditional firebox is identical). */
+    private lazy val engineStateOnlyV4Yaml: String =
+        engineStateOnlyV5Yaml.replaceAll("version: 5", "version: 4")
+
+    behavior of "SchemaMigrations V4 to V5 migration (version bumping)"
+
+    /**
+     * Tests V4→V5→V6 migration by constructing real V5 YAML (with a Traditional firebox
+     * that is structurally identical in V4 and V5), replacing version markers 5→4,
+     * then feeding to migrateToLatest.
+     */
+    it should "bump AppStateSchema version from 4 to latest" in {
+        // Given - downgrade both outer and inner version markers from 5 to 4
+        val v4Yaml = minimalV5Yaml.replaceAll("version: 5", "version: 4")
+
+        // Sanity: the YAML must actually contain "version: 4" (not still "version: 5")
+        v4Yaml should include("version: 4")
+        v4Yaml should not include "version: 5"
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
+
+        // Then - migrated to latest (V6)
+        result shouldBe defined
+        result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    it should "bump engine_state version from 4 to latest" in {
+        // Given
+        val v4Yaml = minimalV5Yaml.replaceAll("version: 5", "version: 4")
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
+
+        // Then
+        result shouldBe defined
+        result.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    behavior of "SchemaMigrations V5 to V6 migration"
+
+    it should "bump AppStateSchema version from 5 to 6" in {
+        // Given - real V5 YAML
+        val v5Yaml = minimalV5Yaml
+
+        // Sanity: the YAML must contain version: 5
+        v5Yaml should include("version: 5")
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
+
+        // Then - migrated to latest (V6)
+        result shouldBe defined
+        result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    it should "bump engine_state version from 5 to 6" in {
+        // Given
+        val v5Yaml = minimalV5Yaml
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
+
+        // Then
+        result shouldBe defined
+        result.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    it should "restructure V5 separate pipe fields into V6 PostFireboxPipeDescrSlot sequence" in {
+        // Given - V5 schema with empty pipes
+        val v5Yaml = minimalV5Yaml
+
+        // When
+        val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
+
+        // Then - post_firebox_pipes should contain 3 slots (flue, connector, chimney)
+        result shouldBe defined
+        val pipes = result.get.engine_state.post_firebox_pipes
+        pipes should have size 3
+        pipes(0) shouldBe a[PostFireboxPipeDescrSlot.FlueSlot]
+        pipes(1) shouldBe a[PostFireboxPipeDescrSlot.ConnectorSlot]
+        pipes(2) shouldBe a[PostFireboxPipeDescrSlot.ChimneySlot]
+    }
+
+    // ─── .fcalc file format: full AppStateSchema round-trip ─────────────────────
+
+    behavior of ".fcalc file format (AppStateSchema round-trip)"
+
+    it should "round-trip full AppStateSchema preserving sensitive_data and billing_data" in {
+        // Given - a schema with non-empty sensitive_data
+        val schema = AppStateSchemaHelper.createInitialSchema().copy(
+            sensitive_data = ClientProjectData_V1.empty.copy(
+                customer = ClientProjectData_V1.empty.customer.copy(
+                    first_name = "Jean",
+                    last_name  = "Dupont"
+                )
+            )
+        )
+
+        // When - encode and reload via the file import path
+        val yaml   = AppStateSchemaHelper.encodeToYaml(schema).get
+        val loaded = AppStateSchemaHelper.decodeFromFile(yaml)
+
+        // Then - all fields preserved
+        loaded.isSuccess shouldBe true
+        loaded.get.engine_state.version.unwrap              shouldBe AppStateSchema.LATEST_VERSION
+        loaded.get.sensitive_data.customer.first_name       shouldBe "Jean"
+        loaded.get.sensitive_data.customer.last_name        shouldBe "Dupont"
+    }
+
+    it should "load legacy engine-state-only .fcalc files via fallback" in {
+        // Given - an old-format .fcalc containing only FireCalcYAML (no sensitive_data wrapper)
+        val engineState    = EngineState.empty
+        val legacyYaml     = FireCalcYAMLMigrations.encodeToYamlTry(engineState).get
+
+        // Sanity: legacy format should NOT contain sensitive_data
+        legacyYaml should not include "sensitive_data"
+
+        // When - load via the file import path (falls back to engine-state-only decoding)
+        val loaded = AppStateSchemaHelper.decodeFromFile(legacyYaml)
+
+        // Then - loads successfully with default sensitive_data
+        loaded.isSuccess shouldBe true
+        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
+
+    it should "not include sensitive_data in engine-state-only encoding" in {
+        // Given - encode only engine_state (the format sent to backend for PDF generation)
+        val engineState = EngineState.empty
+        val engineYaml  = FireCalcYAMLMigrations.encodeToYamlTry(engineState).get
+
+        // Then - engine-only YAML must not contain sensitive_data or billing_data fields
+        engineYaml should not include "sensitive_data"
+        engineYaml should not include "billing_data"
+        engineYaml should not include "first_name"
+        engineYaml should not include "last_name"
+
+        // And - it should still be a valid FireCalcYAML
+        val decoded = FireCalcYAMLMigrations.decodeAndMigrateTry(engineYaml)
+        decoded.isSuccess shouldBe true
+    }
+
+    it should "load a V4 engine-state-only .fcalc file via decodeFromFile fallback" in {
+        // Given - a V4 engine-state-only YAML (no AppStateSchema wrapper, simulates legacy .fcalc)
+        val v4Yaml = engineStateOnlyV4Yaml
+
+        // Sanity: this is engine-state-only (no sensitive_data wrapper) with version 4
+        v4Yaml should include("version: 4")
+        v4Yaml should not include "sensitive_data"
+        v4Yaml should not include "engine_state"
+
+        // When - load via decodeFromFile (should fail AppStateSchema decode, then fallback to FireCalcYAML)
+        val loaded = AppStateSchemaHelper.decodeFromFile(v4Yaml)
+
+        // Then - should succeed via the FireCalcYAMLMigrations fallback
+        withClue(s"decodeFromFile failed: ${loaded.failed.toOption.map(_.getMessage)}\n") {
+            loaded.isSuccess shouldBe true
+        }
+        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+    }
 }

@@ -6,9 +6,10 @@
 package afpma.firecalc.ui.tailwind
 
 import afpma.firecalc.ui.Component
-import afpma.firecalc.ui.daisyui.DaisyUITooltip
 
 import com.raquo.laminar.api.L.*
+
+import afpma.laminar.form.daisyui.DaisyUITooltip
 
 /**
  * Wraps an Indicator component with an error tooltip that appears on hover

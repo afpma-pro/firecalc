@@ -119,12 +119,53 @@ payments {
     }
     
     # ---------------------------------------------------------------------
+    # JWT Authentication
+    # ---------------------------------------------------------------------
+    # Cryptographic signing for JWT tokens.
+    # IMPORTANT: Set the JWT_SECRET environment variable before deploying.
+    # Generate a secret: openssl rand -base64 32
+    jwt {
+      secret = ${JWT_SECRET}
+      expiration-minutes = 60
+      issuer = "firecalc-payments"
+    }
+
+    # ---------------------------------------------------------------------
     # Report Configuration
     # ---------------------------------------------------------------------
     # Generate reports in draft mode (adds watermark/draft indicator)
     # Staging: true (clearly marks reports as non-production)
     # Production: false (final reports)
     report-as-draft = true
+
+    # ---------------------------------------------------------------------
+    # Logging Configuration
+    # ---------------------------------------------------------------------
+    # Controls log verbosity at startup. Optional — defaults to INFO.
+    # Levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
+    #
+    # Recommended per environment:
+    #   Development: DEBUG (maximum visibility)
+    #   Staging:     INFO  (balanced)
+    #   Production:  WARN  (quiet, errors only)
+    logging {
+      root-level = "INFO"
+
+      # Per-package overrides (optional)
+      # Useful for debugging specific libraries without drowning in noise
+      # package-overrides {
+      #   "afpma.firecalc.payments.service.impl" = "DEBUG"
+      #   "org.http4s"                            = "DEBUG"
+      # }
+    }
+
+    # ---------------------------------------------------------------------
+    # CORS Configuration (SEC-016)
+    # ---------------------------------------------------------------------
+    # List of origins allowed to make cross-origin requests.
+    # Use ["*"] to allow all origins (NOT recommended for staging/production).
+    # UPDATE THIS with your actual staging frontend URL.
+    cors-allowed-origins = ["https://staging.firecalc.afpma.pro"]
   }
 }
 

@@ -156,7 +156,12 @@ jobs:
         
       - name: Install Electron dependencies
         run: make electron-setup
-      
+
+      - name: Audit npm dependencies
+        run: |
+          cd modules/ui && npm audit --audit-level=high
+          cd ../../web && npm audit --audit-level=high
+
       - name: Sync build configuration
         run: make sync-build-config
       

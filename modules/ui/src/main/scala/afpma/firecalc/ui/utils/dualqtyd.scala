@@ -8,8 +8,7 @@ package afpma.firecalc.ui.utils
 import afpma.firecalc.units.all.*
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.ui.daisyui.*
-import afpma.firecalc.ui.formgen.*
+import afpma.firecalc.ui.daisyui.UnitAwareInputs
 
 import cats.Functor
 import cats.Id
@@ -18,10 +17,13 @@ import cats.syntax.all.*
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
-import LaminarFormFactory.DISABLED_SIG
-import coulomb.conversion.UnitConversion
 
 import scala.annotation.nowarn
+
+import _root_.coulomb.conversion.UnitConversion
+import afpma.laminar.form.*
+import afpma.laminar.form.FormRenderer
+import afpma.laminar.form.derivation.FormDerivation.DISABLED_SIG
 
 /**
  * Dual[A] helps build Form, Encoder and Decoder instances for a type A
@@ -93,7 +95,7 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
 
         // create an async var with bidirectional link to hold current value "ofv" (double with 'current' unit)
         val (curr_ofvalue_var, bidir_async_binders) =
-            LaminarForm.makeOptionVarFromVar_BiDirAsync_Tuple1[QFinal, F[Double]]    (
+            VarSync.makeOptionVarFromVar_BiDirAsync_Tuple1[QFinal, F[Double]]    (
                 finalVar,
                 f     = (fq: QFinal) =>
                     val csu = curr_sunit_var.now()
@@ -109,7 +111,8 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
         val curr_sunit_to_qfinal_binder =
             curr_sunit_var.signal.distinct
                 .withCurrentValueOf(curr_ovalue_var)
-                .map: (csu, cov) =>
+                .map: t =>
+                    val (csu, cov) = t
                     val cfv = currentOValueToCurrentFValue(cov, d.default, csu)
                     getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(cfv)
                 .changes --> finalVar.writer
@@ -123,76 +126,41 @@ trait DualQtyDF[F[_], UF: SUnit, UI: SUnit](using
 
         (curr_ovalue_var, curr_sunit_var, sunits, binders)
 
-    def form_DaisyUIVerticalForm(
+    def form(
         disabled: Signal[Boolean] = DISABLED_SIG
     )(using
         d   : Defaultable[QFinal],
         vvqf: ValidateVar[QFinal]
-    ): DaisyUIVerticalForm[QFinal] =
-        new DaisyUIVerticalForm[QFinal]:
-            val defaultable_instance = d
-            lazy val validate_var    = vvqf
+    ): Form[QFinal] =
+        new Form[QFinal]:
+            val defaultable      = d
+            lazy val validateVar = vvqf
             @nowarn def render(
                 finalVar  : Var[QFinal],
                 formConfig: FormConfig
-            )(using ValidateVar[QFinal]): L.HtmlElement =
+            )(using renderer: FormRenderer): L.HtmlElement =
+                // Floating labels are a renderer concern — ask the renderer directly.
+                val withFloatingLabel = renderer.usesFloatingLabels && formConfig.showFieldName
                 val (curr_ovalue_var, curr_sunit_var, sunits, binders) = splitAndMakeVarsFor(finalVar)
-                DaisyUIInputs
+                UnitAwareInputs
                     .NumberInputWithUnitsAndFloatingLabelAndTooltipValidation     (
                         curr_ovalue_var,
                         fieldNameOpt      = formConfig.shownFieldName,
-                        withFloatingLabel = false,
+                        withFloatingLabel = withFloatingLabel,
                         sunitsVar         = Var(sunits), // should be dynamic if config changes (SI or imperial)
                         sunitCurrentVar   = curr_sunit_var,
                         validate          = (cov, csu) =>
                             val curr_fv = currentOValueToCurrentFValue(cov, d.default, csu)
                             val qf      = getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(curr_fv)
-                            vvqf.validate(qf),
+                            vvqf.validate(qf)
+                        ,
                         disabled          = disabled
                     )
                     .amend(binders)
             end render
-    end form_DaisyUIVerticalForm
-
-    def form_DaisyUIHorizontalForm(
-        disabled: Signal[Boolean] = DISABLED_SIG
-    )(using
-        d   : Defaultable[QFinal],
-        vvqf: ValidateVar[QFinal]
-    ): DaisyUIHorizontalForm[QFinal] =
-        new DaisyUIHorizontalForm[QFinal]:
-            val defaultable_instance = d
-            lazy val validate_var    = vvqf
-            @nowarn def render(
-                finalVar  : Var[QFinal],
-                formConfig: FormConfig
-            )(using ValidateVar[QFinal]): L.HtmlElement =
-                val (curr_ovalue_var, curr_sunit_var, sunits, binders) = splitAndMakeVarsFor(finalVar)
-                DaisyUIInputs
-                    .NumberInputWithUnitsAndFloatingLabelAndTooltipValidation     (
-                        curr_ovalue_var,
-                        fieldNameOpt      = formConfig.shownFieldName, // None ???
-                        withFloatingLabel = formConfig.showFieldName,
-                        sunitsVar         = Var(sunits), // should be dynamic if config changes (SI or imperial)
-                        sunitCurrentVar   = curr_sunit_var,
-                        validate          = (cov, csu) =>
-                            val curr_fv = currentOValueToCurrentFValue(cov, d.default, csu)
-                            val qf      = getAllowedSUnit(csu).makeQFinal_FromCurrentFValue(curr_fv)
-                            vvqf.validate(qf),
-                        disabled          = disabled
-                    )
-                    .amend(binders)
-            end render
-    end form_DaisyUIHorizontalForm
-
-    // given encoderId: Encoder[QtyD[UF]] = encoder_QtyD[UF]
-    // given decoderId: Decoder[QtyD[UF]] = decoder_QtyD[UF]
-
-    // given Encoder[QFinal] = scala.compiletime.deferred
-    // given Decoder[QFinal] = scala.compiletime.deferred
+    end form
 
 object DualQtyDF:
-    // type Aux[F0[_], UF0, UI0] =
 
     def makeForId[UF: SUnit, UI: SUnit](using
         ucfi: UnitConversion[Double, UF, UI],
@@ -233,11 +201,6 @@ object DualQtyDF:
             val cv   = casu.makeCurrentValue_FromFinalQty(cfq)
             Some(cv)
 
-        // def renderValueAsString(fv: Double) = fv.toString
-
-        // override given Encoder[QFinal] = encoderId
-        // override given Decoder[QFinal] = decoderId
-
     def makeForOption[UF: SUnit, UI: SUnit](using
         ucfi: UnitConversion[Double, UF, UI],
         ucif: UnitConversion[Double, UI, UF]
@@ -264,37 +227,5 @@ object DualQtyDF:
             val casu = getAllowedSUnit(cu)
             cfq.map(casu.makeCurrentValue_FromFinalQty)
 
-        // def renderValueAsString(fv: Option[Double]) = fv.fold("")(_.toString)
-
-        // override given Encoder[QFinal] = io.circe.Encoder.encodeOption(encoderId)
-        // override given Decoder[QFinal] = io.circe.Decoder.decodeOption(decoderId)
-
-    // given optionAutoDecoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Decoder[Option[QtyD[UF]]] =
-    //     val instance = makeForOption[UF, UI]
-    //     instance.given_Decoder_QFinal
-
-    // given optionAutoEncoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Encoder[Option[QtyD[UF]]] =
-    //     val instance = makeForOption[UF, UI]
-    //     instance.given_Encoder_QFinal
-
-    // given idAutoDecoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Decoder[QtyD[UF]] =
-    //     val instance = makeForId[UF, UI]
-    //     instance.given_Decoder_QFinal
-
-    // given idAutoEncoder: [UF: SUnit, UI: SUnit] => UnitConversion[Double, UF, UI] => UnitConversion[Double, UI, UF] => Encoder[QtyD[UF]] =
-    //     val instance = makeForId[UF, UI]
-    //     instance.given_Encoder_QFinal
-
 type DualQtyD[UF, UI]       = DualQtyDF[cats.Id, UF, UI]
 type DualOptionQtyD[UF, UI] = DualQtyDF[Option, UF, UI]
-
-// class DualQtyD[UF: SUnit, UI: SUnit](using
-//     ucfi: UnitConversion[Double, UF, UI],
-//     ucif: UnitConversion[Double, UI, UF]
-// ) extends DualQtyDF[cats.Id, UF, UI]:
-
-//     given functorF: Functor[cats.Id] = Functor[cats.Id]
-//     def optionDoubleToFValue(od: Option[Double]): Double = od.get
-
-//     given encoderF: Encoder[QFinal] = encoderId
-//     given decoderF: Decoder[QFinal] = decoderId

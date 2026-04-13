@@ -28,4 +28,12 @@ object LocalStorageKeys {
 
     val UI_STATE: String = "ui_state"
 
+    val FIREBOX_CACHE: String = "firebox_cache"
+
+    val PROJECTS_INDEX: String = "projects_index"
+
+    def projectAppState(projectId: String): String = s"project_${projectId}_app_state"
+
+    def projectFireboxCache(projectId: String): String = s"project_${projectId}_firebox_cache"
+
 }

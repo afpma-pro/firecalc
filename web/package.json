@@ -1,6 +1,6 @@
 {
   "name": "firecalc-desktop",
-  "version": "0.9.0-b18+engine-0.3.0-b18",
+  "version": "0.9.0-b19+engine-0.3.0-b19",
   "description": "FireCalc AFPMA - Dimensioning software for one-off masonry heaters (EN 15544, EN 13384).",
   "main": "electron-app/src/main.js",
   "type": "module",
@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "dev": "electron ./electron-app/src/main.js",
-    "dev:vite": "VITE_DEV_SERVER=true VITE_DEV_SERVER_URL=http://localhost:5173 electron ./electron-app/src/main.js",
+    "dev:vite": "VITE_DEV_SERVER=true VITE_DEV_SERVER_URL=http://localhost:${FIRECALC_VITE_DEV_SERVER_PORT:-5173} electron ./electron-app/src/main.js",
     "build:electron": "npx dotenv-cli -e .env.electron -- sh -c 'npx electron-builder \"$@\"' sh",
     "build:electron:dev": "npx dotenv-cli -e .env.electron -v BUILD_ENV=dev -v ARTIFACT_SUFFIX=-dev -- sh -c 'npx electron-builder \"$@\"' sh",
     "build:electron:staging": "npx dotenv-cli -e .env.electron -v BUILD_ENV=staging -v ARTIFACT_SUFFIX=-staging -- sh -c 'npx electron-builder \"$@\"' sh",
@@ -24,7 +24,7 @@
   "devDependencies": {
     "dotenv-cli": "^10.0.0",
     "electron": "^38.2.1",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^26.8.1"
   },
   "author": "AFPMA",
   "license": "AGPL-3.0-or-later"

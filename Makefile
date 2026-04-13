@@ -6,6 +6,8 @@
 export SHELL := /bin/bash
 
 ## VARS AND ENVS
+FIRECALC_VITE_DEV_SERVER_PORT ?= 5173
+export FIRECALC_VITE_DEV_SERVER_PORT
 REPO_DIR ?= $(shell pwd | xargs echo -n)
 GIT_COMMIT_HASH ?= $(shell git rev-parse --short=8 HEAD)
 UI_BASE_VERSION ?= $(shell grep 'lazy val ui_base_version' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
@@ -14,7 +16,7 @@ GITHUB_REPO_OWNER ?= $(shell grep 'lazy val githubOwner' build.sbt | sed 's/.*= 
 GITHUB_REPO_NAME ?= $(shell grep 'lazy val githubRepo' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 
 ## MAIN ##############################
-.PHONY: check clean fmt ui-setup electron-setup ui-status
+.PHONY: check clean fmt ui-setup electron-setup landing-setup landing-build ui-status run-validation update-validation
 
 ## ================================
 ## UTILITY TARGETS
@@ -32,41 +34,65 @@ clean:
 	@echo "Cleaning all build artifacts..."
 	@sbt clean
 	@rm -rf .bloop .bsp .metals \
-		modules/dto/.js \
-		modules/dto/.jvm \
-		modules/engine/.js \
-		modules/engine/.jvm \
+		modules/catalog/.js/target \
+		modules/catalog/.jvm/target \
+		modules/domain/.js/target \
+		modules/domain/.jvm/target \
+		modules/dto/.js/target \
+		modules/dto/.jvm/target \
+		modules/engine/.js/target \
+		modules/engine/.jvm/target \
+		modules/engine-13384-common/.js/target \
+		modules/engine-13384-common/.jvm/target \
+		modules/engine-13384-strict/.js/target \
+		modules/engine-13384-strict/.jvm/target \
+		modules/engine-15544-common/.js/target \
+		modules/engine-15544-common/.jvm/target \
+		modules/engine-15544-labo/.js/target \
+		modules/engine-15544-labo/.jvm/target \
+		modules/engine-15544-mce/.js/target \
+		modules/engine-15544-mce/.jvm/target \
+		modules/engine-15544-strict/.js/target \
+		modules/engine-15544-strict/.jvm/target \
+		modules/engine-kernel/.js/target \
+		modules/engine-kernel/.jvm/target \
+		modules/engine-validation/target \
 		modules/fdim/target \
-		modules/i18n/.js \
-		modules/i18n/.jvm \
-		modules/i18n-utils/.js \
-		modules/i18n-utils/.jvm \
+		modules/graph/target \
+		modules/i18n/.js/target \
+		modules/i18n/.jvm/target \
+		modules/i18n-utils/.js/target \
+		modules/i18n-utils/.jvm/target \
 		modules/invoices/target \
-		modules/invoices-i18n/target \
 		modules/invoices/.bsp \
 		modules/invoices/.scala-build \
+		modules/invoices-i18n/target \
 		modules/labo/target \
-		modules/payments/src/main/resources/moleculeGen \
+		modules/laminar-form-core/target \
+		modules/laminar-form-coulomb/target \
+		modules/laminar-form-daisyui/target \
+		modules/laminar-form-derivation/target \
+		modules/laminar-form-i18n/target \
 		modules/payments/target \
-		modules/payments-i18n/.js \
-		modules/payments-i18n/.jvm \
+		modules/payments/src/main/resources/moleculeGen \
 		modules/payments-i18n/target \
-		modules/payments-shared/.js \
-		modules/payments-shared/.jvm \
-		modules/payments-shared-i18n/.js \
-		modules/payments-shared-i18n/.jvm \
+		modules/payments-shared/.js/target \
+		modules/payments-shared/.jvm/target \
+		modules/payments-shared-i18n/.js/target \
+		modules/payments-shared-i18n/.jvm/target \
 		modules/reports/target \
 		modules/ui/target \
 		modules/ui/dist \
 		modules/ui/.vite \
 		modules/ui/node_modules \
 		modules/ui/firecalc-ui.js \
-		modules/ui-i18n/.js \
-		modules/ui-i18n/.jvm \
-		modules/units/.js \
-		modules/units/.jvm \
-		modules/utils/.js \
-		modules/utils/.jvm \
+		modules/ui-i18n/.js/target \
+		modules/units/.js/target \
+		modules/units/.jvm/target \
+		modules/utils/.js/target \
+		modules/utils/.jvm/target \
+		modules/viz/target \
+		modules/xlsx_catalog/target \
 		web/dist \
 		web/dist-app \
 		web/dist-static \
@@ -107,7 +133,7 @@ sync-build-config:
 ## SETUP TARGETS (run these first)
 ## ================================
 
-setup-all: ui-setup electron-setup sync-build-config build-viz build-graph
+setup-all: ui-setup electron-setup landing-setup sync-build-config build-viz build-graph
 	@echo "All dependencies installed successfully!"
 	@echo "Run 'make dev-env-setup' to verify configuration files"
 
@@ -126,6 +152,14 @@ build-graph:
 electron-setup:
 	@echo "Installing Electron dependencies..."
 	@cd web && npm install
+
+landing-setup:
+	@echo "Installing landing page dependencies..."
+	@cd web/landing && npm install
+
+landing-build:
+	@echo "Building landing page (Next.js static export)..."
+	@cd web/landing && npm run build
 
 ## ================================
 ## STATUS TARGETS
@@ -161,13 +195,21 @@ define generate_ui_version
 	fi
 endef
 
+define copy_landing_page
+	@echo "Building and copying landing page to dist-app..."
+	@cd web/landing && npm run build
+	@cp -r web/landing/out/en web/landing/out/fr web/landing/out/_next web/dist-app/ 2>/dev/null || true
+	@cp -r web/landing/out/assets web/dist-app/ 2>/dev/null || true
+	@cp web/landing/out/404.html web/dist-app/ 2>/dev/null || true
+endef
+
 kill-vite:
-	@echo "Killing processes on port 5173..."
-	@lsof -ti:5173 | xargs kill -9 2>/dev/null || echo "No processes found on port 5173"
+	@echo "Killing processes on port $(FIRECALC_VITE_DEV_SERVER_PORT)..."
+	@lsof -ti:$(FIRECALC_VITE_DEV_SERVER_PORT) | xargs kill -9 2>/dev/null || echo "No processes found on port $(FIRECALC_VITE_DEV_SERVER_PORT)"
 
 dev-open-browser:
 	@echo "Opening browser to Vite dev server..."
-	@xdg-open http://localhost:5173 2>/dev/null || open http://localhost:5173 2>/dev/null || echo "Please open http://localhost:5173 in your browser"
+	@xdg-open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT) 2>/dev/null || open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT) 2>/dev/null || echo "Please open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT) in your browser"
 
 ## ================================
 ## DEVELOPMENT - UI
@@ -186,10 +228,11 @@ dev-web-ui-build:
 	@echo "Building UI for development..."
 	$(call generate_ui_version,dev)
 	@cd modules/ui && npm run build
+	$(call copy_landing_page)
 
 dev-web-ui-open:
-	@echo "Opening browser and starting UI dev server..."
-	@open http://localhost:5173
+	@echo "Opening browser and starting UI dev server on port $(FIRECALC_VITE_DEV_SERVER_PORT)..."
+	@open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT)
 	@cd modules/ui && npm run dev
 
 ## ================================
@@ -197,7 +240,7 @@ dev-web-ui-open:
 ## ================================
 
 dev-electron-app-run-vite:
-	@echo "Starting Electron desktop app with Vite dev server (live reload)..."
+	@echo "Starting Electron desktop app with Vite dev server (live reload) on port $(FIRECALC_VITE_DEV_SERVER_PORT)..."
 	@echo "Make sure Vite dev server is running: make dev-web-ui-run"
 	@echo "And Scala.js is compiling: make dev-web-ui-compile"
 	@cd web && npm run dev:vite
@@ -241,6 +284,7 @@ staging-web-ui-build: build-viz build-graph
 	@echo "Building UI for staging environment..."
 	$(call generate_ui_version,staging)
 	@cd modules/ui && npm run build:staging
+	$(call copy_landing_page)
 
 staging-web-ui-run:
 	@echo "Starting UI dev server in staging mode..."
@@ -300,6 +344,7 @@ prod-web-ui-build: build-viz build-graph
 	@echo "Building UI for production..."
 	$(call generate_ui_version,)
 	@cd modules/ui && npm run build:production
+	$(call copy_landing_page)
 
 prod-web-ui-run:
 	@echo "Starting UI dev server in production mode (for testing)..."
@@ -360,18 +405,21 @@ dev-electron-ui-build:
 	$(call generate_ui_version,dev)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fastLinkJS"
 	@cd modules/ui && npm run build
+	$(call copy_landing_page)
 
 # Shared target for optimized staging builds
 staging-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,staging)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:staging
+	$(call copy_landing_page)
 
 # Shared target for optimized production builds
 prod-electron-ui-build: build-viz build-graph
 	$(call generate_ui_version,)
 	@sbt -Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false "update; ui/update; ui/syncBuildConfig; ui/fullLinkJS"
 	@cd modules/ui && npm run build:production
+	$(call copy_landing_page)
 
 ## ================================
 ## DEVELOPMENT - ELECTRON PACKAGING
@@ -523,3 +571,26 @@ docker-deploy-restart:
 docker-deploy-logs:
 	@cd docker && docker compose logs -f
 
+
+## ================================
+## ENGINE VALIDATION
+## ================================
+
+# Run engine golden-file validation tests
+run-validation:
+	sbt --client "engineValidation/test"
+
+# Update golden reference files from current output.
+# Review changes with 'git diff' before committing.
+update-validation:
+	@cp "modules/engine/validation/cas_types_13384/current/C2.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_13384/C2.afpma.txt"
+	@cp "modules/engine/validation/cas_types_13384/current/C16.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_13384/C16.afpma.txt"
+	@cp "modules/engine/validation/cas_types_15544/current/01 - Colonne ascendante.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_15544/01 - Colonne ascendante.afpma.txt"
+	@cp "modules/engine/validation/cas_types_15544/current/02 - Kachelofen.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_15544/02 - Kachelofen.afpma.txt"
+	@cp "modules/engine/validation/cas_types_15544/current/03 - Cas pratique.afpma.txt" \
+		"modules/engine-validation/src/test/resources/validation/cas_types_15544/03 - Cas pratique.afpma.txt"
+	@echo "Golden files updated. Review with 'git diff' before committing."

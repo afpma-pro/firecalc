@@ -30,15 +30,18 @@ class MoleculeInvoiceCounterRepository[F[_]](using
 
     def getNextInvoiceNumber(): F[Long] =
         A.blocking {
-            // First try to get the counter ID
-            InvoiceCounter.id.currentNumber_.query.get.headOption match {
-                case Some(counterId) =>
-                    // Atomically increment the counter using Molecule's +(1) operation
-                    InvoiceCounter(counterId).currentNumber.+(1).updatedAt(Instant.now()).update.transact
-                    // Get the updated value
-                    InvoiceCounter(counterId).currentNumber.query.get.head
-                case None            =>
-                    // No counter exists, throw error - should be initialized first
+            // Atomically increment and return the new value in a single SQL statement.
+            // This prevents race conditions where concurrent callers could read the same
+            // counter value after separate UPDATE + SELECT operations.
+            val now    = Instant.now().toString
+            val result = rawQuery(
+                s"UPDATE InvoiceCounter SET currentNumber = currentNumber + 1, updatedAt = '$now' RETURNING currentNumber"
+            )
+            result.headOption.flatMap(_.headOption) match {
+                case Some(value: Long) => value
+                case Some(value: Int)  => value.toLong
+                case Some(other)       => other.toString.toLong
+                case None              =>
                     throw new IllegalStateException("Invoice counter not initialized")
             }
         }.handleErrorWith { error =>

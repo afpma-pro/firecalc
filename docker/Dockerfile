@@ -79,8 +79,11 @@ COPY modules/reports/src/main/resources/logo.jpg /app/modules/reports/src/main/r
 # These directories are intended to be mounted as volumes at runtime:
 # - /app/configs: Application configuration files (YAML, CONF)
 # - /app/databases: SQLite database files
+# SEC: Database directory gets restrictive permissions (owner-only access)
+# to protect PII and payment data at the filesystem level.
 RUN mkdir -p /app/configs /app/databases && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /app && \
+    chmod 700 /app/databases
 
 # Switch to non-root user
 USER appuser
@@ -89,15 +92,14 @@ USER appuser
 # The payments backend service listens on port 8181
 EXPOSE 8181
 
-# Set default environment variable
-# FIRECALC_ENV determines which configuration to load
-# Can be overridden at runtime: docker run -e FIRECALC_ENV=production ...
-ENV FIRECALC_ENV=staging
+# FIRECALC_ENV must be explicitly set at runtime:
+#   docker run -e FIRECALC_ENV=production ...
+# No default — application will fail fast if not provided
 
 # Health check to verify the application is running
 # Adjust the endpoint based on your application's health check endpoint
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8181/health || exit 1
+    CMD curl -f http://localhost:8181/v1/healthcheck || exit 1
 
 # Application entry point
 # Runs the assembled JAR file with the JVM

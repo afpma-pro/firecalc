@@ -5,6 +5,7 @@
 
 package afpma.firecalc.payments.service.impl
 
+import java.time.Instant
 import java.util.UUID
 
 import afpma.firecalc.payments.domain.*
@@ -13,6 +14,7 @@ import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -33,7 +35,7 @@ class PurchaseServiceImpl[F[_]: Async](
 
     def createPurchaseIntent(request: CreatePurchaseIntentRequest): F[PurchaseToken] =
         for
-            _ <- logger.info(s"Creating purchase intent for email: ${request.customer.email}")
+            _ <- logger.info(s"Creating purchase intent for email: ${LogSanitizer.maskEmail(request.customer.email)}")
 
             // Validate email address at API entry point
             validatedEmail <- EmailAddress.fromString(request.customer.email) match {
@@ -63,6 +65,14 @@ class PurchaseServiceImpl[F[_]: Async](
             productOpt <- productRepo.findById(request.productId)
             product    <- productOpt.liftTo[F](ProductNotFoundException(request.productId.value.toString))
 
+            now <- Async[F].delay(Instant.now())
+
+            // Check per-email cooldown: max 10 intents per hour
+            recentCount <- purchaseIntentRepo.countRecentByEmail(validatedEmail, since = now.minusSeconds(3600))
+            _           <- Async[F]
+                .raiseError(TooManyIntentsForEmailException(validatedEmail))
+                .whenA     (recentCount >= 10                              )
+
             authCode <- authService.generateAuthCode()
 
             // Create or findAndUpdate existing customer (using validated email)
@@ -72,7 +82,7 @@ class PurchaseServiceImpl[F[_]: Async](
                     logger.info(s"Using existing customer: ${existingCustomer.id}") *>
                         Async[F].pure(existingCustomer)
                 case None                   =>
-                    logger.info(s"Creating new customer for email: ${validatedEmail}") *>
+                    logger.info(s"Creating new customer for email: ${LogSanitizer.maskEmail(validatedEmail)}") *>
                         customerRepo.create(request.customer)
 
             // Store productMetadata if present and get productMetadataId
@@ -131,11 +141,20 @@ class PurchaseServiceImpl[F[_]: Async](
                     Async[F].raiseError(CustomerValidationException(List(s"Invalid email address: $errorMsg")))
             }
 
-            // Step 1: Validate authentication code with typed error
-            _ <- validateAuthenticationCode(request.purchaseToken, request.code)
+            // Step 1: Validate authentication code and retrieve intent
+            intent <- validateAuthenticationCode(request.purchaseToken, request.code)
 
-            // Step 2: Find purchase intent with typed error
-            intent <- findPurchaseIntent(request.purchaseToken, request.code)
+            // Step 2: Atomically mark as processed — concurrency gate (SEC-004)
+            // Only the first request through wins; duplicates get 409.
+            // DESIGN DECISION: if this succeeds but subsequent steps (order creation,
+            // payment link) fail, the intent stays permanently locked. The user must
+            // create a new purchase intent to retry. This is intentional — it prevents
+            // retry abuse where an attacker replays the same token to create duplicate
+            // orders or payment links.
+            wasMarked <- purchaseIntentRepo.atomicMarkAsProcessed(request.purchaseToken)
+            _         <- Async[F]
+                .raiseError(AlreadyProcessedException(request.purchaseToken.value.toString))
+                .whenA     (!wasMarked                                                     )
 
             // Step 3: Find customer with typed error
             customer <- findCustomer(intent.customerId)
@@ -148,19 +167,35 @@ class PurchaseServiceImpl[F[_]: Async](
         yield response)
             .handleErrorWith(logAndRethrowError(request.purchaseToken.value.toString, _))
 
-    private def validateAuthenticationCode(token: PurchaseToken, code: String): F[Unit] =
-        authService.validateCode(token, code).flatMap { isValid =>
-            if (!isValid)
-                Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString, code))
-            else
-                Async[F].unit
-        }
+    private val MAX_ATTEMPTS = 10
 
-    private def findPurchaseIntent(token: PurchaseToken, code: String): F[PurchaseIntent] =
-        purchaseIntentRepo.findByTokenAndCode(token, code).flatMap {
-            case Some(intent) => Async[F].pure(intent)
-            case None         => Async[F].raiseError(PurchaseIntentNotFoundException(token.value.toString, code))
-        }
+    private def validateAuthenticationCode(token: PurchaseToken, code: String): F[PurchaseIntent] =
+        for
+            intent <- purchaseIntentRepo
+                .findByToken(token)
+                .flatMap(_.liftTo[F](PurchaseIntentNotFoundException(token.value.toString)))
+
+            // Check lockout before doing anything else
+            _ <- Async[F]
+                .raiseError(TooManyAttemptsException(token.value.toString))
+                .whenA     (intent.failedAttempts >= MAX_ATTEMPTS         )
+
+            // Check expiry
+            now <- Async[F].delay(Instant.now())
+            _   <- Async[F]
+                .raiseError(InvalidOrExpiredCodeException(token.value.toString))
+                .whenA     (now.isAfter(intent.expiresAt)                      )
+
+            // Constant-time comparison to prevent timing attacks
+            isValid = java.security.MessageDigest.isEqual(
+                intent.authCode.getBytes,
+                code.getBytes
+            )
+
+            _ <- (purchaseIntentRepo.incrementFailedAttempts(token) *>
+                Async[F].raiseError(InvalidOrExpiredCodeException(token.value.toString)))
+                .whenA             (!isValid                                           )
+        yield intent
 
     private def findCustomer(customerId: CustomerId): F[Customer] =
         customerRepo.findById(customerId).flatMap {
@@ -182,14 +217,6 @@ class PurchaseServiceImpl[F[_]: Async](
             jwtToken   <- generateJWTToken(customer.id)
             order      <- createOrderSafely(customer.id, intent, customer.language)
             paymentUrl <- createPaymentLinkSafely(order.id, order.amount, customer.toCustomerInfo)
-
-            _ <- purchaseIntentRepo
-                .markAsProcessed(request.purchaseToken)
-                .handleErrorWith(error =>
-                    logger.warn(s"Failed to mark purchase intent as processed: ${error.getMessage}") *>
-                        Async[F].pure(false) // Continue even if this fails, return false
-                )
-                .void
         } yield VerifyAndProcessResponse    (
             success     = true,
             jwtToken    = jwtToken,

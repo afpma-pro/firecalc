@@ -1,0 +1,45 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# Quick-start scaffold — copy to gocardless-config.conf and fill in values.
+# For detailed setup docs and alternatives, see the .example counterpart.
+#
+# GoCardless Configuration - STAGING Environment
+# IMPORTANT: Staging MUST use GoCardless SANDBOX environment only
+# Obtain credentials from: GoCardless Dashboard → Developer → Sandbox
+
+gocardless {
+  # For staging deployment, use "sandbox" (not "live")
+  environment = "sandbox"
+
+  # Sandbox configuration - for staging/testing
+  sandbox {
+    # IMPORTANT: Replace with your actual GoCardless sandbox access token
+    access-token = "YOUR_GOCARDLESS_SANDBOX_ACCESS_TOKEN"
+    base-url = "https://api-sandbox.gocardless.com"
+    environment = "sandbox"
+
+    # IMPORTANT: Replace with your actual GoCardless sandbox webhook secret
+    webhook-secret = "YOUR_GOCARDLESS_WEBHOOK_SECRET"
+
+    # IMPORTANT: Replace with actual staging admin email
+    admin-email = "YOUR_ADMIN_EMAIL"
+
+    # Staging redirect URIs - update with your actual staging domain
+    redirect-uri = "https://api.staging.firecalc.afpma.pro/v1/payment_complete"
+    exit-uri = "https://api.staging.firecalc.afpma.pro/v1/payment_cancelled"
+  }
+}
+
+# Alternative: Use environment variables for all settings
+gocardless-env {
+  access-token = ${?GOCARDLESS_ACCESS_TOKEN}
+  base-url = ${?GOCARDLESS_BASE_URL}
+  environment = ${?GOCARDLESS_ENVIRONMENT}
+  webhook-secret = ${?GOCARDLESS_WEBHOOK_SECRET}
+  redirect-uri = ${?GOCARDLESS_REDIRECT_URI}
+  exit-uri = ${?GOCARDLESS_EXIT_URI}
+  admin-email = ${?GOCARDLESS_ADMIN_EMAIL}
+}

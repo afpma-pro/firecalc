@@ -5,10 +5,14 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.dto.all.{AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.all.AzimuthDirection
+import afpma.firecalc.dto.all.InclinationDirection
+
 import afpma.firecalc.i18n.implicits.I18N
-import afpma.firecalc.ui.*
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
+import afpma.firecalc.ui.*
 
 import com.raquo.airstream.core.Observer
 import com.raquo.airstream.state.Var
@@ -17,26 +21,27 @@ import com.raquo.laminar.api.L.*
 import io.taig.babel.Locale
 import org.scalajs.dom.HTMLDialogElement
 
-/** Dialog for choosing a custom azimuth/inclination direction.
-  *
-  * Shows preset buttons for common directions and text inputs
-  * for entering arbitrary angles in degrees.
-  *
-  * Call [[open]] with current values; fires `onApply` when the user confirms.
-  */
+/**
+ * Dialog for choosing a custom azimuth/inclination direction.
+ *
+ * Shows preset buttons for common directions and text inputs
+ * for entering arbitrary angles in degrees.
+ *
+ * Call [[open]] with current values; fires `onApply` when the user confirms.
+ */
 case class CustomDirectionDialog(
     onApply: Observer[(AzimuthDirection, InclinationDirection)]
-)(using Locale)
+)                               (using Locale)
     extends Component:
 
     // Internal state — degrees as strings for text input binding
-    private val azimuthDegreesVar: Var[String]     = Var("0")
-    private val inclinationDegreesVar: Var[String]  = Var("90")
+    private val azimuthDegreesVar    : Var[String] = Var("0")
+    private val inclinationDegreesVar: Var[String] = Var("90")
 
     def open(currentAz: AzimuthDirection, currentIncl: InclinationDirection): Unit =
-        azimuthDegreesVar.set(formatDeg(AzimuthDirection.toDegrees(currentAz)))
-        inclinationDegreesVar.set(formatDeg(InclinationDirection.toDegrees(currentIncl)))
-        dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
+        azimuthDegreesVar.set                                   (formatDeg(AzimuthDirection.toDegrees(currentAz)      ))
+        inclinationDegreesVar.set                               (formatDeg(InclinationDirection.toDegrees(currentIncl)))
+        dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(                                                      )
 
     private def close(): Unit =
         dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
@@ -58,9 +63,9 @@ case class CustomDirectionDialog(
 
     // Preset button helper
     private def presetBtn(
-        label: String,
-        azDeg: Option[Double],
-        inclDeg: Option[Double],
+        label       : String,
+        azDeg       : Option[Double],
+        inclDeg     : Option[Double],
         activeSignal: Signal[Boolean]
     ): HtmlElement =
         button(
@@ -69,26 +74,26 @@ case class CustomDirectionDialog(
             tpe := "button",
             label,
             onClick --> { _ =>
-                azDeg.foreach(d => azimuthDegreesVar.set(formatDeg(d)))
+                azDeg.foreach  (d => azimuthDegreesVar.set(formatDeg(d))    )
                 inclDeg.foreach(d => inclinationDegreesVar.set(formatDeg(d)))
             }
         )
 
     private def azimuthPresetBtn(label: String, dir: AzimuthDirection): HtmlElement =
         val deg = AzimuthDirection.toDegrees(dir)
-        presetBtn(
+        presetBtn       (
             label,
-            azDeg = Some(deg),
-            inclDeg = None,
+            azDeg        = Some(deg),
+            inclDeg      = None,
             activeSignal = azimuthDegreesVar.signal.map(s => parseDeg(s).exists(d => math.abs(d - deg) < 0.5))
         )
 
     private def inclinationPresetBtn(label: String, dir: InclinationDirection): HtmlElement =
         val deg = InclinationDirection.toDegrees(dir)
-        presetBtn(
+        presetBtn       (
             label,
-            azDeg = None,
-            inclDeg = Some(deg),
+            azDeg        = None,
+            inclDeg      = Some(deg),
             activeSignal = inclinationDegreesVar.signal.map(s => parseDeg(s).exists(d => math.abs(d - deg) < 0.5))
         )
 
@@ -101,12 +106,12 @@ case class CustomDirectionDialog(
             // Inclination presets
             div(
                 cls := "mb-3",
-                p(cls := "text-sm font-semibold mb-1", I18N.terms.inclination),
+                p  (cls := "text-sm font-semibold mb-1", I18N.terms.inclination),
                 div(
                     cls := "flex flex-wrap gap-1",
-                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_up, InclinationDirection.Up),
-                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_down, InclinationDirection.Down),
-                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_horizontal, InclinationDirection.Horizontal),
+                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_up, InclinationDirection.Up                ),
+                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_down, InclinationDirection.Down            ),
+                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_horizontal, InclinationDirection.Horizontal)
                 )
             ),
 
@@ -114,17 +119,29 @@ case class CustomDirectionDialog(
             div(
                 cls := "mb-3",
                 cls <-- isVerticalSignal.map(if _ then "opacity-40" else ""),
-                p(cls := "text-sm font-semibold mb-1", I18N.terms.azimuth),
+                p  (cls := "text-sm font-semibold mb-1", I18N.terms.azimuth),
                 div(
                     cls := "flex flex-wrap gap-1",
-                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_rear, AzimuthDirection.Rear),
-                    azimuthPresetBtn(s"${I18N_UI.direction_badge.cardinal_rear}+${I18N_UI.direction_badge.cardinal_right}", AzimuthDirection.RearRight),
+                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_rear, AzimuthDirection.Rear  ),
+                    azimuthPresetBtn(
+                        s"${I18N_UI.direction_badge.cardinal_rear}+${I18N_UI.direction_badge.cardinal_right}",
+                        AzimuthDirection.RearRight
+                    ),
                     azimuthPresetBtn(I18N_UI.direction_badge.cardinal_right, AzimuthDirection.Right),
-                    azimuthPresetBtn(s"${I18N_UI.direction_badge.cardinal_front}+${I18N_UI.direction_badge.cardinal_right}", AzimuthDirection.FrontRight),
+                    azimuthPresetBtn(
+                        s"${I18N_UI.direction_badge.cardinal_front}+${I18N_UI.direction_badge.cardinal_right}",
+                        AzimuthDirection.FrontRight
+                    ),
                     azimuthPresetBtn(I18N_UI.direction_badge.cardinal_front, AzimuthDirection.Front),
-                    azimuthPresetBtn(s"${I18N_UI.direction_badge.cardinal_front}+${I18N_UI.direction_badge.cardinal_left}", AzimuthDirection.FrontLeft),
-                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_left, AzimuthDirection.Left),
-                    azimuthPresetBtn(s"${I18N_UI.direction_badge.cardinal_rear}+${I18N_UI.direction_badge.cardinal_left}", AzimuthDirection.RearLeft),
+                    azimuthPresetBtn(
+                        s"${I18N_UI.direction_badge.cardinal_front}+${I18N_UI.direction_badge.cardinal_left}",
+                        AzimuthDirection.FrontLeft
+                    ),
+                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_left, AzimuthDirection.Left  ),
+                    azimuthPresetBtn(
+                        s"${I18N_UI.direction_badge.cardinal_rear}+${I18N_UI.direction_badge.cardinal_left}",
+                        AzimuthDirection.RearLeft
+                    )
                 )
             ),
 
@@ -139,42 +156,42 @@ case class CustomDirectionDialog(
                 label(
                     cls := "input input-bordered input-sm flex items-center gap-2",
                     cls <-- isVerticalSignal.map(if _ then "input-disabled opacity-40" else ""),
-                    span(cls := "text-sm whitespace-nowrap", s"${I18N.terms.azimuth} (\u00b0)"),
-                    input(
-                        cls         := "grow w-20 text-right",
-                        tpe         := "number",
-                        stepAttr    := "1",
-                        minAttr     := "-180",
-                        maxAttr     := "180",
+                    span      (cls := "text-sm whitespace-nowrap", s"${I18N.terms.azimuth} (\u00b0)"),
+                    input     (
+                        cls      := "grow w-20 text-right",
+                        tpe      := "number",
+                        stepAttr := "1",
+                        minAttr  := "-180",
+                        maxAttr  := "180",
                         disabled <-- isVerticalSignal,
                         controlled(
                             value <-- azimuthDegreesVar.signal,
                             onInput.mapToValue --> azimuthDegreesVar.writer
                         )
                     ),
-                    span(cls := "text-sm", "\u00b0")
+                    span      (cls := "text-sm", "\u00b0"                                           )
                 ),
 
                 // Inclination input
                 label(
                     cls := "input input-bordered input-sm flex items-center gap-2",
-                    span(cls := "text-sm whitespace-nowrap", s"${I18N.terms.inclination} (\u00b0)"),
-                    input(
-                        cls         := "grow w-20 text-right",
-                        tpe         := "number",
-                        stepAttr    := "1",
-                        minAttr     := "-90",
-                        maxAttr     := "90",
+                    span      (cls := "text-sm whitespace-nowrap", s"${I18N.terms.inclination} (\u00b0)"),
+                    input     (
+                        cls      := "grow w-20 text-right",
+                        tpe      := "number",
+                        stepAttr := "1",
+                        minAttr  := "-90",
+                        maxAttr  := "90",
                         controlled(
                             value <-- inclinationDegreesVar.signal,
                             onInput.mapToValue --> inclinationDegreesVar.writer
                         )
                     ),
-                    span(cls := "text-sm", "\u00b0")
+                    span      (cls := "text-sm", "\u00b0"                                               )
                 ),
 
                 // Note about vertical directions
-                p(
+                p    (
                     cls := "text-xs text-base-content/60 italic",
                     display <-- isVerticalSignal.map(if _ then "" else "none"),
                     "Azimuth is ignored for vertical directions (Up/Down)"
@@ -188,12 +205,12 @@ case class CustomDirectionDialog(
                     cls := "btn btn-sm btn-secondary",
                     I18N_UI.buttons.select,
                     onClick --> { _ =>
-                        val azDeg   = parseDeg(azimuthDegreesVar.now()).getOrElse(0.0)
+                        val azDeg   = parseDeg(azimuthDegreesVar.now()    ).getOrElse(0.0)
                         val inclDeg = parseDeg(inclinationDegreesVar.now()).getOrElse(90.0)
                         val az      = AzimuthDirection.fromDegrees(azDeg)
                         val incl    = InclinationDirection.fromDegrees(inclDeg)
                         onApply.onNext((az, incl))
-                        close()
+                        close         (          )
                     }
                 ),
                 button(

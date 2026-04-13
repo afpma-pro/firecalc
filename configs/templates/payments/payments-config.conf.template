@@ -60,10 +60,36 @@ payments {
       email = "admin-dev@example.com"
     }
     
+    jwt {
+      # Required: set JWT_SECRET environment variable, or replace with a hardcoded string (32+ chars).
+      # Generate with: openssl rand -base64 32
+      secret = ${JWT_SECRET}
+      expiration-minutes = 60
+      issuer = "firecalc-payments"
+    }
+
     # Report configuration
     # Development/Staging: true (draft mode for testing)
     # Production: false (final reports)
     report-as-draft = true
+
+    # Logging configuration (optional — defaults to root-level = INFO)
+    # Levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
+    logging {
+      # Development: DEBUG for maximum visibility
+      root-level = "DEBUG"
+
+      # Per-package overrides (optional)
+      # package-overrides {
+      #   "afpma.firecalc.payments.service.impl" = "DEBUG"
+      # }
+    }
+
+    # SEC-016: CORS allowed origins (optional — defaults to ["*"])
+    # List of origins allowed to make cross-origin requests.
+    # Use ["*"] to allow all origins (development only, not recommended for production).
+    # Example: ["https://firecalc.afpma.pro", "https://staging.firecalc.afpma.pro"]
+    # cors-allowed-origins = ["*"]
   }
 }
 

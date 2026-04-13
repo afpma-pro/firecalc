@@ -18,7 +18,10 @@ case class PaymentsConfig(
     databaseConfig              : DatabaseConfig,
     invoiceConfig               : InvoiceConfig,
     adminConfig                 : AdminConfig,
-    reportAsDraft               : Boolean
+    reportAsDraft               : Boolean,
+    jwtConfig                   : JwtConfig,
+    loggingConfig               : LoggingConfig = LoggingConfig(),
+    corsAllowedOrigins          : List[String]  = List("*") // SEC-016: validated fail-closed in ConfigLoader for non-dev
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
     require(
@@ -63,3 +66,30 @@ case class AdminConfig(
     require(email.nonEmpty, "Admin email cannot be empty"                   )
     require(email.contains("@"), "Admin email must be a valid email address")
 }
+
+case class JwtConfig(
+    secret           : String,
+    expirationMinutes: Int    = 60,
+    issuer           : String = "firecalc-payments"
+) {
+    require(secret.length >= 32, "JWT secret must be at least 32 characters (256 bits)")
+    require(expirationMinutes > 0, "JWT expiration minutes must be positive"           )
+    require(issuer.nonEmpty, "JWT issuer cannot be empty"                              )
+}
+
+case class LoggingConfig(
+    rootLevel       : String              = "INFO",
+    packageOverrides: Map[String, String] = Map.empty
+) {
+    LoggingConfig.requireValidLevel(rootLevel, "root-level"                                                  )
+    packageOverrides.foreach       ((pkg, level) => LoggingConfig.requireValidLevel(level, s"package '$pkg'"))
+}
+
+object LoggingConfig:
+    val ValidLevels: Set[String] = Set("TRACE", "DEBUG", "INFO", "WARN", "ERROR", "OFF")
+
+    private[config] def requireValidLevel(level: String, context: String): Unit =
+        require(
+            ValidLevels.contains(level.toUpperCase),
+            s"Invalid log level '$level' for $context. Must be one of ${ValidLevels.mkString(", ")}"
+        )

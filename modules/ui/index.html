@@ -13,9 +13,11 @@
 	<!-- Content Security Policy for web browser mode -->
 	<meta http-equiv="Content-Security-Policy"
 	      content="default-src 'self'; connect-src 'self' http://localhost:8181 https://raw.githubusercontent.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;">
+	<!-- NOTE: The above CSP is for local dev (unsafe-inline/eval needed for Vite HMR).
+	     The Vite inject-csp plugin replaces it at build time with a hardened production policy. -->
 	
 	<meta name="author" content="">
-	<link rel="shortcut icon" href="/favicon.ico">
+
 
 	<meta name="description" content="" />
 	<meta name="keywords" content="" />
@@ -93,7 +95,7 @@
   <div id="loader" role="status" aria-live="polite">
     <svg viewBox="0 0 488 679" width="140" height="195" overflow="visible" aria-hidden="true">
       <!-- Logo (flames + text, bricks removed) -->
-      <image href="/assets/img/AFPMA_LogoMenu_no_bricks.png" width="488" height="679"/>
+      <image href="./assets/img/AFPMA_LogoMenu_no_bricks.png" width="488" height="679"/>
       <!-- Bricks: 3+2 running bond, bounce wave left→right zigzag -->
       <!-- Top row (3 bricks) -->
       <rect class="br-1" x="124" y="486" width="68" height="35" rx="4" fill="#EF662F"/>

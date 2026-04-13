@@ -10,8 +10,7 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.NbOfFlows
 
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Labo_Alg
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_Alg
+import afpma.firecalc.engine.api.v0_2024_10_labo.StoveProjectDescr_15544_Labo_Alg
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.gtypedefs.ζ
@@ -21,6 +20,10 @@ import cats.data.*
 import cats.syntax.all.*
 
 import coulomb.*
+
+import java.io.{File, FileOutputStream, PrintStream}
+
+import scala.util.Using
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale
@@ -32,28 +35,28 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
     given Locale = Locale(Languages.Fr)
 
     case class SimplePreview(
-        ref: String,
-        sectionType: String,
-        sectionId: String,
-        sectionName: String,
-        qtyName: String,
-        qtyValue: String,
-        qtyUnit: String,
-        dhi: Option[Length],
-        dhe: Option[Length],
-        asd: Option[AirSpaceDetailed],
-        tamb: Option[TCelsius],
-        lambda: Option[WattsPerMeterKelvin],
+        ref              : String,
+        sectionType      : String,
+        sectionId        : String,
+        sectionName      : String,
+        qtyName          : String,
+        qtyValue         : String,
+        qtyUnit          : String,
+        dhi              : Option[Length],
+        dhe              : Option[Length],
+        asd              : Option[AirSpaceDetailed],
+        tamb             : Option[TCelsius],
+        lambda           : Option[WattsPerMeterKelvin],
         thermalResistance: Option[SquareMeterKelvinPerWatt],
-        n_flows: Option[NbOfFlows],
-        dynamicPressure: Option[Pressure],
-        zeta: Option[ζ],
-        roughness: Option[Roughness],
-        length: Option[Length],
-        elev_gain: Option[Length],
-        angle: Option[Angle],
-        innerShape: Option[PipeShape],
-        pipeLoc: Option[PipeLocation],
+        n_flows          : Option[NbOfFlows],
+        dynamicPressure  : Option[Pressure],
+        zeta             : Option[ζ],
+        roughness        : Option[Roughness],
+        length           : Option[Length],
+        elev_gain        : Option[Length],
+        angle            : Option[Angle],
+        innerShape       : Option[PipeShape],
+        pipeLoc          : Option[PipeLocation]
     ) {
         val showHeaders = List(
             "ref",
@@ -73,10 +76,10 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
             "area",
             "t amb.",
             "ζ",
-            "kf",
+            "kf"
         )
 
-        val showValues: List[String] = 
+        val showValues: List[String] =
             List(
                 ref,
                 sectionType,
@@ -85,17 +88,17 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
                 qtyName,
                 qtyValue,
                 qtyUnit,
-                length              .fold("-")(l => if (l == 0.cm) "-" else l.showP),
-                innerShape          .map(_.show).getOrElse("-"),
-                elev_gain           .map(h => if (h == 0.cm) "-" else h.showP).getOrElse("-"),
-                angle               .map(a => if (a == 0.degrees) "-" else a.showP).getOrElse("-"),
-                n_flows             .map(_.show).getOrElse("-"),
-                thermalResistance   .map(_.showP).getOrElse("-"),
-                asd                 .map(_.show).getOrElse("-"),
-                pipeLoc             .map(_.show).getOrElse("-"),
-                tamb                .map(_.show).getOrElse("-"),
-                zeta                .map(_.showP).getOrElse("-"),
-                roughness           .map(_.show).getOrElse("-"),
+                length.fold("-")                                              (l => if (l == 0.cm) "-" else l.showP),
+                innerShape.map(_.show).getOrElse                              ("-"                                 ),
+                elev_gain.map(h => if (h == 0.cm) "-" else h.showP).getOrElse ("-"                                 ),
+                angle.map(a => if (a == 0.degrees) "-" else a.showP).getOrElse("-"                                 ),
+                n_flows.map(_.show).getOrElse                                 ("-"                                 ),
+                thermalResistance.map(_.showP).getOrElse                      ("-"                                 ),
+                asd.map(_.show).getOrElse                                     ("-"                                 ),
+                pipeLoc.map(_.show).getOrElse                                 ("-"                                 ),
+                tamb.map(_.show).getOrElse                                    ("-"                                 ),
+                zeta.map(_.showP).getOrElse                                   ("-"                                 ),
+                roughness.map(_.show).getOrElse                               ("-"                                 )
             )
 
         def showHeaderAsQuotedCSVRow(separator: String): String = showHeaders.mkString("\"", s"\"$separator\"", "\"")
@@ -105,16 +108,17 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
 
     object SimplePreview:
 
-        def forQtyWhenEmpty(ref: String, qtyName: String, qtyUnit: String): SimplePreview = forQty(ref, qtyName, "", qtyUnit)
+        def forQtyWhenEmpty(ref: String, qtyName: String, qtyUnit: String): SimplePreview =
+            forQty(ref, qtyName, "", qtyUnit)
 
         def forQty(ref: String, qtyName: String, qtyValue: String, qtyUnit: String): SimplePreview = SimplePreview(
-            ref = ref,
+            ref         = ref,
             sectionType = "",
-            sectionId = "",
+            sectionId   = "",
             sectionName = "",
-            qtyName = qtyName,
-            qtyValue = qtyValue,
-            qtyUnit = qtyUnit,
+            qtyName     = qtyName,
+            qtyValue    = qtyValue,
+            qtyUnit     = qtyUnit,
             None,
             None,
             None,
@@ -127,14 +131,13 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
             None,
             None,
             None,
-
             None,
             None,
-            None,
+            None
         )
 
         def fromPreview(ref: String, p: Preview)(selectQty: Preview => (String, String, String)): SimplePreview =
-            val qtyTuple = selectQty(p) 
+            val qtyTuple = selectQty(p)
             val (qtyName, qtyValue, qtyUnit) = qtyTuple
             SimplePreview(
                 ref,
@@ -158,71 +161,71 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
                 p.elev_gain,
                 p.angle,
                 p.innerShape,
-                p.pipeLoc,
+                p.pipeLoc
             )
 
     extension (pipeResults: Vector[PipeResult])
 
-        def asSectionResultsMerged: Vector[PipeSectionResult[?]] = 
+        def asSectionResultsMerged: Vector[PipeSectionResult[?]] =
             pipeResults
-            .map:
-                case pres: PipeResult.WithSections    => pres.elements
-                case pres: PipeResult.WithoutSections => Vector.empty
-            .flatten
+                .map:
+                    case pres: PipeResult.WithSections    => pres.elements
+                    case pres: PipeResult.WithoutSections => Vector.empty
+                .flatten
 
     extension (psResult: PipeSectionResult[?])
         def toPreview = Preview.fromPipeSectionResult(psResult)
-        def toSimplePreview(ref: String, selectQty: Preview => (String, String, String)): SimplePreview = 
+        def toSimplePreview(ref: String, selectQty: Preview => (String, String, String)): SimplePreview =
             SimplePreview.fromPreview(ref, psResult.toPreview)(selectQty)
 
     extension (vecsec: Vector[PipeSectionResult[?]])
-        
-        private def getSectionNameIndex(searchFor: String): Option[(PipeSectionResult[?], Int)] = 
+
+        private def getSectionNameIndex(searchFor: String): Option[(PipeSectionResult[?], Int)] =
             val sectionsFound = vecsec
                 .mapWithIndex((x, i) => (x, i))
                 .filter(_._1.section_name.contains(searchFor))
-            val indices = sectionsFound.map(_._2)
+            val indices       = sectionsFound.map(_._2)
             indices.length match
                 case 0 => None // throw new Exception(s"could not find any section name containing '$searchFor'")
                 case 1 => Some(sectionsFound.head)
-                case n => None // throw new Exception(s"found more than one section name containing '$searchFor' = [ ${sectionsFound.map(_._1).mkString("'", "', '", "'")} ]")
+                case n =>
+                    None // throw new Exception(s"found more than one section name containing '$searchFor' = [ ${sectionsFound.map(_._1).mkString("'", "', '", "'")} ]")
 
-        private def findBySectionName(searchFor: String): Option[PipeSectionResult[?]] = 
+        private def findBySectionName(searchFor: String): Option[PipeSectionResult[?]] =
             vecsec.find(_.section_name.contains(searchFor))
 
-        def pressureDiffAtStartOf(searchFor: String): SimplePreview = 
+        def pressureDiffAtStartOf(searchFor: String): SimplePreview =
             getSectionNameIndex(searchFor) match
-                case None => SimplePreview.forQtyWhenEmpty(ref = searchFor, qtyName = "pressure_diff", qtyUnit = "Pa")
+                case None             => SimplePreview.forQtyWhenEmpty(ref = searchFor, qtyName = "pressure_diff", qtyUnit = "Pa")
                 case Some((sec, idx)) =>
                     val press = vecsec
                         .slice(0, idx)
                         .flatMap(_.`ph-(pR+pu)`.toOption)
                         .sum
                     sec.toSimplePreview(ref = searchFor, p => ("pressure_diff", "%.2f".format(press), "Pa"))
-        
-        def gasTemperatureAtStartOf(searchFor: String): SimplePreview = 
+
+        def gasTemperatureAtStartOf(searchFor: String): SimplePreview =
             findBySectionName(searchFor)
-            .map: x => 
-                x.toSimplePreview(ref = searchFor, p => ("gas_temp", "%.2f".format(p.gas_temp_start.value), "°C"))
-            .getOrElse:
-                SimplePreview.forQtyWhenEmpty(ref = searchFor, qtyName = "gas_temp", qtyUnit = "°C")
+                .map: x =>
+                    x.toSimplePreview(ref = searchFor, p => ("gas_temp", "%.2f".format(p.gas_temp_start.value), "°C"))
+                .getOrElse:
+                    SimplePreview.forQtyWhenEmpty(ref = searchFor, qtyName = "gas_temp", qtyUnit = "°C")
 
     private def showForMCEComparisonWithLabData(
-        ex: StoveProjectDescr_Alg,
+        ex      : StoveProjectDescr_15544_Labo_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap: _en15544.AtParams
+        ap      : _en15544.AtParams
     ) =
 
         import ex.given_Locale
         given _en15544.Params_15544 = ap.params
-        given Option[LoadQty] = Some(ap.params._2)
+        given Option[LoadQty]       = Some(ap.params._2)
 
         // given LocalRegulations = ex.localRegulations
 
         // val showAsTableInstances = new afpma.firecalc.engine.ops.ShowAsTableInstances
         // val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
         // val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
-
 
         // println(_en15544.inputs.showAsCliTable)
         // println(_en15544.citedConstraints.showAsCliTable)
@@ -233,20 +236,17 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         _en15544.airIntake_PipeResult.toValidatedNel.getOrThrow
         ap.combustionAir_PipeResult.getOrThrow
         ap.firebox_PipeResult.getOrThrow
-        ap.flue_PipeResult.getOrThrow
-        ap.connector_PipeResult.getOrThrow
-        ap.chimney_PipeResult.getOrThrow
+        ap.postFireboxPipeResults.getOrThrow
 
         val pipesResult_15544 = ap.outputs.pipesResult_15544.getOrThrow
         // println(pipesResult_15544.showAsCliTable)
 
-        val vecsec: Vector[PipeSectionResult[?]] = Vector(
-            pipesResult_15544.airIntake             ,
-            pipesResult_15544.combustionAir,
-            pipesResult_15544.firebox           ,
-            pipesResult_15544.flue                  ,
-            pipesResult_15544.connector            ,
-            pipesResult_15544.chimney               ,
+        val vecsec: Vector[PipeSectionResult[?]] = (
+            Vector(
+                pipesResult_15544.airIntake,
+                pipesResult_15544.combustionAir,
+                pipesResult_15544.firebox
+            ) ++ pipesResult_15544.postFirebox.map(_._2)
         ).asSectionResultsMerged
 
         println("""|
@@ -254,24 +254,42 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
                     |""".stripMargin)
 
         // en tête du fichier CSV
-        println(vecsec.pressureDiffAtStartOf("P09").showHeaderAsQuotedCSVRow(";"))
+        println(vecsec.pressureDiffAtStartOf("P09").showHeaderAsQuotedCSVRow(";")   )
         // valeurs :
         // débits massiques
-        println(SimplePreview.forQty("input_air_mass_rate", "input_air_mass_rate", _en15544.m_L.map(d => "%.5f".format(d.getOrThrow.value)).getOrElse(""), "kg/s").showValuesAsQuotedCSVRow(";"))
-        println(SimplePreview.forQty("flue_gas_mass_rate" , "flue_gas_mass_rate" , _en15544.m_G.map(d => "%.5f".format(d.getOrThrow.value)).getOrElse(""), "kg/s").showValuesAsQuotedCSVRow(";"))
+        println(
+            SimplePreview
+                .forQty(
+                    "input_air_mass_rate",
+                    "input_air_mass_rate",
+                    _en15544.m_L.map(d => "%.5f".format(d.getOrThrow.value)).getOrElse(""),
+                    "kg/s"
+                )
+                .showValuesAsQuotedCSVRow(";")
+        )
+        println(
+            SimplePreview
+                .forQty(
+                    "flue_gas_mass_rate",
+                    "flue_gas_mass_rate",
+                    _en15544.m_G.map(d => "%.5f".format(d.getOrThrow.value)).getOrElse(""),
+                    "kg/s"
+                )
+                .showValuesAsQuotedCSVRow(";")
+        )
         // différences de pression
-        println(vecsec.pressureDiffAtStartOf("P01").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P02").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P03").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P04").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P05").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P06").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P07").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P08").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P09").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P10").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P11").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.pressureDiffAtStartOf("P12").showValuesAsQuotedCSVRow(";"))
+        println(vecsec.pressureDiffAtStartOf("P01").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P02").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P03").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P04").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P05").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P06").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P07").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P08").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P09").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P10").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P11").showValuesAsQuotedCSVRow(";")   )
+        println(vecsec.pressureDiffAtStartOf("P12").showValuesAsQuotedCSVRow(";")   )
         // températures
         println(vecsec.gasTemperatureAtStartOf("TC01").showValuesAsQuotedCSVRow(";"))
         println(vecsec.gasTemperatureAtStartOf("TC02").showValuesAsQuotedCSVRow(";"))
@@ -308,7 +326,7 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         println("""|
                     |
                     |""".stripMargin)
-        
+
         // vecsec.foreach: x =>
         //     println(s"""${x.section_name} | ${x.gas_temp_start.showP}""")
 
@@ -319,26 +337,29 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         // println(_en15544.flue_gas_triple_of_variates.toOption.map(_.showAsCliTable).getOrElse("ERROR (flue gas triple of variates)"))
         // println(_en15544.estimated_output_temperatures.showAsCliTable)
 
-        // _en15544.pressureRequirements_EN13384 match 
-        //     case Validated.Valid(a) => 
+        // _en15544.pressureRequirements_EN13384 match
+        //     case Validated.Valid(a) =>
         //         println(a.showAsCliTable)
-        //     case Validated.Invalid(nel) => 
+        //     case Validated.Invalid(nel) =>
         //         println("ERROR (pressure requirements EN13384)")
         //         nel.toList.map(_.show).foreach(println)
         //         fail()
 
-    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg) =
+    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg, outputFile: String) =
         import scala.language.adhocExtensions
 
         val config = ex_15544_labo
-
-        val out = config.en15544_Alg.map: mce_labo =>
-            showForMCEComparisonWithLabData(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
-        out.fold(
-            nel => nel.toList.foreach(e => fail(e.show)),
-            _ => ()
-        )
+        val dir    = new File("modules/labo/src/test/resources/test-output")
+        dir.mkdirs()
+        Using.resource(new FileOutputStream(new File(dir, outputFile))): fos =>
+            Using.resource(new PrintStream(fos)): ps =>
+                Console.withOut(ps):
+                    val out = config.en15544_Alg.map: mce_labo =>
+                        showForMCEComparisonWithLabData(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
+                    out.fold(
+                        nel => nel.toList.foreach(e => fail(e.show)),
+                        _ => ()
+                    )
     end run_15544_mce_for_lab_comparison
-
 
 }

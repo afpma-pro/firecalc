@@ -25,6 +25,8 @@ class OrderServiceImpl[F[_]: Async](
 )                                  (implicit logger: Logger[F])
     extends OrderService[F]:
 
+    import OrderServiceImpl.validTransitions
+
     // Thread-safe storage for transition-based completion callbacks
     private val transitionCallbacksRef: Ref[F, List[TransitionCallback[F]]] =
         Ref.unsafe(List.empty[TransitionCallback[F]])
@@ -66,17 +68,34 @@ class OrderServiceImpl[F[_]: Async](
     def updateOrderStatus(orderId: OrderId, status: OrderStatus): F[Boolean] =
         for
             oldOrderOpt <- findOrder(orderId)
-            result      <- orderRepo.updateStatus(orderId, status)
-            _           <- (oldOrderOpt, result) match
-                case (Some(oldOrder), true) if oldOrder.status != status =>
+            transition  <- oldOrderOpt match
+                case Some(oldOrder) =>
+                    val currentStatus = oldOrder.status
+                    if currentStatus == status then
+                        // No-op: already in the requested status
+                        logger.debug(s"Order ${orderId} is already in status $status, skipping update").as(None                                             )
+                    else if validTransitions.getOrElse(currentStatus, Set.empty).contains(status) then
+                        Async[F].pure                                                                     (Some(OrderStateTransition(currentStatus, status)))
+                    else
+                        logger
+                            .warn(
+                                s"Rejecting invalid order status transition for order ${orderId}: $currentStatus -> $status"
+                            )
+                            .as                                                          (None  )
+                case None           =>
+                    Async[F].pure(Some(OrderStateTransition(status, status))) // Sentinel; let repo handle missing order
+            result      <- transition match
+                case Some(_) => orderRepo.updateStatus(orderId, status)
+                case None    => Async[F].pure(false)
+            _           <- (transition, oldOrderOpt, result) match
+                case (Some(t), Some(_), true) if t.from != t.to =>
                     // Order status changed, trigger both transition and final state callbacks
-                    val transition = OrderStateTransition(oldOrder.status, status)
                     for
                         updatedOrderOpt <- findOrder(orderId)
                         _               <- updatedOrderOpt match
                             case Some(updatedOrder) =>
                                 for
-                                    _ <- executeTransitionCallbacks(transition, updatedOrder)
+                                    _ <- executeTransitionCallbacks(t, updatedOrder)
                                     _ <- executeFinalStateCallbacks(updatedOrder)
                                 yield ()
                             case None               => logger.warn(s"Could not find order ${orderId} after status update")
@@ -248,3 +267,20 @@ class OrderServiceImpl[F[_]: Async](
                 .flatMap(_.liftTo[F](ProductNotFoundException(order.productId.value.toString)))
             productMetadata <- order.productMetadataId.traverse(id => productMetadataRepo.findById(id)).map(_.flatten)
         yield OrderCompletionContext(order, customer, product, productMetadata)
+
+object OrderServiceImpl:
+
+    /** Valid order status transitions. Terminal states (PaidOut, Failed, Cancelled) have no outgoing transitions. */
+    val validTransitions: Map[OrderStatus, Set[OrderStatus]] = Map(
+        OrderStatus.Pending    -> Set(
+            OrderStatus.Processing,
+            OrderStatus.Confirmed,
+            OrderStatus.Failed,
+            OrderStatus.Cancelled
+        ),
+        OrderStatus.Processing -> Set(OrderStatus.Confirmed, OrderStatus.Failed, OrderStatus.Cancelled),
+        OrderStatus.Confirmed  -> Set(OrderStatus.PaidOut, OrderStatus.Failed),
+        OrderStatus.PaidOut    -> Set.empty,
+        OrderStatus.Failed     -> Set.empty,
+        OrderStatus.Cancelled  -> Set.empty
+    )

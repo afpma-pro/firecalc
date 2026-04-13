@@ -7,20 +7,24 @@ package afpma.firecalc.reports
 
 // import afpma.firecalc.engine.models // scalafix:ok
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.file.Files
 
-import FireCalcReportFactory_15544_Strict.Op
+import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr
+import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+
+import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict.Op
+import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
+
+import cats.data.Validated.Invalid
+import cats.data.Validated.Valid
+
 import scala.util.Failure
 import scala.util.Success
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr
-import cats.data.Validated.Valid
-import cats.data.Validated.Invalid
-import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
-import afpma.firecalc.engine.api.v0_2024_10.StoveProjectDescr_15544_Strict_Alg
-import io.taig.babel.Locale
+
 import io.github.fatihcatalkaya.javatypst.JavaTypst
-import java.nio.file.Files
-import java.io.FileOutputStream
+import io.taig.babel.Locale
 
 trait FireCalcReportFactory_15544_Strict:
 
@@ -108,7 +112,7 @@ object FireCalcReportFactory_15544_Strict:
                     val typstReportFactory = new TypstReportFactory_15544_Strict(isDraft) {
                         override val en15544_app: EN15544_Application = strict_appl
                         override val stove_proj_15544_strict = fcProj
-                        override val atParams = en15544_app.primary
+                        override val atParams                = en15544_app.primary
                     }
                     // update local state
                     typString = Some(typstReportFactory.build())

@@ -67,11 +67,14 @@ export interface VizConfig {
   labelAxisRear?: string // label for the rear axis in the orientation gizmo (default 'rear')
   labelAxisUp?: string // label for the up axis in the orientation gizmo (default 'up')
   labelAxisRight?: string // label for the right axis in the orientation gizmo (default 'right')
+  _annotationsOverride?: boolean // when set, overrides computed annotationsVisible (used to persist toggle state)
 }
 
 export interface FilaireVizHandle {
   dispose(): void
   getCameraState(): VizConfig['_cameraState']
+  getDisplayType(): VizConfig['displayType']
+  getAnnotationsVisible(): boolean
 }
 
 // =============================================================================
@@ -1123,14 +1126,14 @@ export function initFilaireViz(
       up: [camera.up.x, camera.up.y, camera.up.z],
       target: [controls.target.x, controls.target.y, controls.target.z]
     }
-    const newConfig = { ...config, displayType: newDisplayType, _cameraState: cameraState }
+    const newConfig = { ...config, displayType: newDisplayType, _cameraState: cameraState, _annotationsOverride: annotationsVisible }
     // Stop current animation loop and clear container
     disposed = true
     resizeObserver.disconnect()
     renderer.dispose()
     viewHelper.dispose()
     container.innerHTML = ''
-    initFilaireViz(container, pipeGroups, newConfig, onPipeClick, onPipeHover)
+    innerHandle = initFilaireViz(container, pipeGroups, newConfig, onPipeClick, onPipeHover)
   })
 
   resetBtn.addEventListener('click', () => {
@@ -1220,7 +1223,7 @@ export function initFilaireViz(
   const nameLabels: Array<{ element: HTMLDivElement; worldPos: THREE.Vector3 }> = []
   const displayNameInModes = config.displayNameInModes ?? ['CenterLine']
   // Default visibility: on if displayName is true AND current mode is in displayNameInModes
-  let annotationsVisible = (config.displayName ?? false) && displayNameInModes.includes(config.displayType)
+  let annotationsVisible = config._annotationsOverride ?? ((config.displayName ?? false) && displayNameInModes.includes(config.displayType))
 
   // Always create labels (so the toggle button can show them in any mode)
   {
@@ -1409,21 +1412,37 @@ export function initFilaireViz(
   })
   resizeObserver.observe(container)
 
-  // Return handle for lifecycle management
+  // Return handle for lifecycle management (delegates to innerHandle when view mode re-inits)
+  let innerHandle: FilaireVizHandle | null = null
+
   return {
     dispose() {
-      disposed = true
-      resizeObserver.disconnect()
-      renderer.dispose()
-      viewHelper.dispose()
-      container.innerHTML = ''
+      if (innerHandle) {
+        innerHandle.dispose()
+        innerHandle = null
+      } else {
+        disposed = true
+        resizeObserver.disconnect()
+        renderer.dispose()
+        viewHelper.dispose()
+        container.innerHTML = ''
+      }
     },
     getCameraState() {
+      if (innerHandle) return innerHandle.getCameraState()
       return {
-        position: [camera.position.x, camera.position.y, camera.position.z],
-        up: [camera.up.x, camera.up.y, camera.up.z],
-        target: [controls.target.x, controls.target.y, controls.target.z]
+        position: [camera.position.x, camera.position.y, camera.position.z] as [number, number, number],
+        up: [camera.up.x, camera.up.y, camera.up.z] as [number, number, number],
+        target: [controls.target.x, controls.target.y, controls.target.z] as [number, number, number]
       }
+    },
+    getDisplayType() {
+      if (innerHandle) return innerHandle.getDisplayType()
+      return config.displayType
+    },
+    getAnnotationsVisible() {
+      if (innerHandle) return innerHandle.getAnnotationsVisible()
+      return annotationsVisible
     }
   }
 }

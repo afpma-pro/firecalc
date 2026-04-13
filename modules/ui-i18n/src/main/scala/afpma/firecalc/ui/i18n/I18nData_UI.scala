@@ -31,6 +31,7 @@ final case class I18nData_UI(
     local_conditions     : LocalConditions,
     pdf_ordering         : PDFOrdering,
     placeholders         : Placeholders,
+    project_selector     : ProjectSelector,
     tooltips             : Tooltips,
     ui_messages          : UiMessages,
     viz                  : Viz,
@@ -55,24 +56,24 @@ object I18nData_UI:
     )
 
     case class Catalog(
-        _self                   : String,
-        select_from_catalog     : String,
-        manager_title           : String,
-        download_section        : String,
-        afpma_catalog_page      : String,
-        loaded_entries          : String,
-        no_catalog_loaded       : String,
-        import_catalog_button   : String,
-        clear_all_button        : String,
-        door_15a_fireboxes      : String,
-        single_tested_fireboxes : String,
-        pipe_presets            : String,
-        casing_presets          : String,
-        flow_resistance_presets : String,
-        angle_presets           : String,
-        simple_pipe             : String,
-        lined_flue              : String,
-        errors                  : Catalog.Errors,
+        _self                  : String,
+        select_from_catalog    : String,
+        manager_title          : String,
+        download_section       : String,
+        afpma_catalog_page     : String,
+        loaded_entries         : String,
+        no_catalog_loaded      : String,
+        import_catalog_button  : String,
+        clear_all_button       : String,
+        door_15a_fireboxes     : String,
+        single_tested_fireboxes: String,
+        pipe_presets           : String,
+        casing_presets         : String,
+        flow_resistance_presets: String,
+        angle_presets          : String,
+        simple_pipe            : String,
+        lined_flue             : String,
+        errors                 : Catalog.Errors
     )
 
     object Catalog:
@@ -83,7 +84,7 @@ object I18nData_UI:
             migration_failed: String,
             decode_error    : String,
             storage_full    : String,
-            cache_reset     : String,
+            cache_reset     : String
         )
 
     case class ClientProjectData(
@@ -229,36 +230,49 @@ object I18nData_UI:
         }
     }
 
+    case class ProjectSelector(
+        title           : String,
+        new_project     : String,
+        open_file       : String,
+        open            : String,
+        delete          : String,
+        confirm_delete  : StringFormat1,
+        no_name         : String,
+        modified        : String,
+        no_projects     : String,
+        back_to_projects: String
+    )
+
     case class DirectionBadge(
-        label                        : String,
-        tooltip_direction            : String,
-        tooltip_azimuth              : StringFormat1,
-        tooltip_elevation            : StringFormat1,
-        tooltip_roll                 : StringFormat1,
-        tooltip_convention_up        : String,
-        tooltip_convention_horizontal: String,
-        tooltip_convention_down      : String,
-        cardinal_up                  : String,
-        cardinal_down                : String,
-        cardinal_rear                : String,
-        cardinal_front               : String,
-        cardinal_right               : String,
-        cardinal_left                : String,
-        cardinal_rear_right          : String,
-        cardinal_front_right         : String,
-        cardinal_front_left          : String,
-        cardinal_rear_left           : String,
-        relative_left                : String,
-        relative_right               : String,
-        relative_up                  : String,
-        relative_down                : String,
-        relative_theta                  : String,
-        relative_dir_label              : String,
+        label                         : String,
+        tooltip_direction             : String,
+        tooltip_azimuth               : StringFormat1,
+        tooltip_elevation             : StringFormat1,
+        tooltip_roll                  : StringFormat1,
+        tooltip_convention_up         : String,
+        tooltip_convention_horizontal : String,
+        tooltip_convention_down       : String,
+        cardinal_up                   : String,
+        cardinal_down                 : String,
+        cardinal_rear                 : String,
+        cardinal_front                : String,
+        cardinal_right                : String,
+        cardinal_left                 : String,
+        cardinal_rear_right           : String,
+        cardinal_front_right          : String,
+        cardinal_front_left           : String,
+        cardinal_rear_left            : String,
+        relative_left                 : String,
+        relative_right                : String,
+        relative_up                   : String,
+        relative_down                 : String,
+        relative_theta                : String,
+        relative_dir_label            : String,
         abs_dir_label                 : String,
-        direction_incompatible_warning  : String,
-        cardinal_horizontal             : String,
-        custom_btn                      : String,
-        custom_dialog_title             : String,
+        direction_incompatible_warning: String,
+        cardinal_horizontal           : String,
+        custom_btn                    : String,
+        custom_dialog_title           : String
     )
 
     case class Tooltips(

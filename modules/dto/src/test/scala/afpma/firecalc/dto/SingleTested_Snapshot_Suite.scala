@@ -40,7 +40,7 @@ class SingleTested_Snapshot_Suite extends AnyFlatSpec with Matchers:
     // --------------------------------------------------------------------- //
 
     private val singleTestedFirebox: Firebox_V3.SingleTested =
-        Firebox_V3.SingleTested(
+        Firebox_V3.SingleTested                         (
             test_standard                          = Firebox_V3.TestStandard.EN_15250,
             reference                              = "REF-2024-TEST-001",
             type_of_appliance                      = TypeOfAppliance.WoodLogs,
@@ -67,10 +67,10 @@ class SingleTested_Snapshot_Suite extends AnyFlatSpec with Matchers:
                 accredited_or_notified_body = "Lab XYZ",
                 test_reports                = Nil,
                 emissions_values            = EmissionValues_DTO(
-                    co   = TestEmissionValue_DTO(PolluantName.CO,   Some(1200.0.mg_per_Nm3), "", 13.0.percent),
-                    dust = TestEmissionValue_DTO(PolluantName.Dust, Some(40.0.mg_per_Nm3),   "", 13.0.percent),
-                    ogc  = TestEmissionValue_DTO(PolluantName.OGC,  Some(120.0.mg_per_Nm3),  "", 13.0.percent),
-                    nox  = TestEmissionValue_DTO(PolluantName.NOx,  Some(80.0.mg_per_Nm3),   "", 13.0.percent)
+                    co   = TestEmissionValue_DTO(PolluantName.CO, Some(1200.0.mg_per_Nm3), "", 13.0.percent),
+                    dust = TestEmissionValue_DTO(PolluantName.Dust, Some(40.0.mg_per_Nm3), "", 13.0.percent),
+                    ogc  = TestEmissionValue_DTO(PolluantName.OGC, Some(120.0.mg_per_Nm3), "", 13.0.percent),
+                    nox  = TestEmissionValue_DTO(PolluantName.NOx, Some(80.0.mg_per_Nm3), "", 13.0.percent)
                 )
             )
         )

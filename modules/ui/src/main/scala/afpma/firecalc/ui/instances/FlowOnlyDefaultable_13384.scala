@@ -15,8 +15,7 @@ import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
-import afpma.firecalc.ui.formgen.Defaultable
-
+import afpma.laminar.form.Defaultable
 import io.taig.babel.Locale
 
 object FlowOnlyDefaultable_13384:
@@ -38,9 +37,9 @@ object FlowOnlyDefaultable_13384:
             azimuth     = AzimuthDirection.Rear,
             inclination = InclinationDirection.Up
         )
-    given Defaultable[SetInitialPosition]                    :
+    given Defaultable[SetInitialPosition]                     :
         def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
-    given Defaultable[SetFinalPosition]                      :
+    given Defaultable[SetFinalPosition]                       :
         def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
     given Locale => Defaultable[AddSectionSlopped]            :
         def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
@@ -89,7 +88,7 @@ object FlowOnlyDefaultable_13384:
     // val appendLayerDescr =
     //     import defaultable.pipeShapeOuter // scalafix:ok
     //     import defaultable.qty_d.meter.zero
-    //     Defaultable.autoDerived[AppendLayerDescr]
+    //     Defaultable.derived[AppendLayerDescr]
 
     // given given_AppendLayerDescr: Defaultable[AppendLayerDescr] = appendLayerDescr
 

@@ -24,50 +24,50 @@ class DirectionProductElementSuite extends AnyFreeSpec with Matchers:
 
     "AddSharpeAngle_0_to_90 productElement order" in {
         val dc = AddSharpeAngle_0_to_90("test", 45.0.degrees, fd)
-        dc.productArity.shouldBe(3)
-        dc.productElement(0).shouldBe("test")
+        dc.productArity.shouldBe     (3           )
+        dc.productElement(0).shouldBe("test"      )
         dc.productElement(1).shouldBe(45.0.degrees)
-        dc.productElement(2).shouldBe(fd)
+        dc.productElement(2).shouldBe(fd          )
     }
 
     "AddAngleAdjustable productElement order" in {
         val dc = AddAngleAdjustable("test", 90.0.degrees, 0.5.unitless, fd)
-        dc.productArity.shouldBe(4)
-        dc.productElement(0).shouldBe("test")
+        dc.productArity.shouldBe     (4           )
+        dc.productElement(0).shouldBe("test"      )
         dc.productElement(1).shouldBe(90.0.degrees)
         dc.productElement(2).shouldBe(0.5.unitless)
-        dc.productElement(3).shouldBe(fd)
+        dc.productElement(3).shouldBe(fd          )
     }
 
     "AddSmoothCurve_90 productElement order" in {
         val dc = AddSmoothCurve_90("test", 15.0.cm, fd)
-        dc.productArity.shouldBe(3)
-        dc.productElement(0).shouldBe("test")
+        dc.productArity.shouldBe     (3      )
+        dc.productElement(0).shouldBe("test" )
         dc.productElement(1).shouldBe(15.0.cm)
-        dc.productElement(2).shouldBe(fd)
+        dc.productElement(2).shouldBe(fd     )
     }
 
     "AddElbows_2x45 productElement order" in {
         val dc = AddElbows_2x45("test", 15.0.cm, fd)
-        dc.productArity.shouldBe(3)
-        dc.productElement(0).shouldBe("test")
+        dc.productArity.shouldBe     (3      )
+        dc.productElement(0).shouldBe("test" )
         dc.productElement(1).shouldBe(15.0.cm)
-        dc.productElement(2).shouldBe(fd)
+        dc.productElement(2).shouldBe(fd     )
     }
 
     "productElement returns correct types (not cast-breaking)" in {
         val dc = AddSharpeAngle_0_to_90("test", 45.0.degrees, fd)
         // The angle field should be a Double (Angle = QtyD[Degree] = Double at runtime)
-        dc.productElement(1).isInstanceOf[Double].shouldBe(true)
+        dc.productElement(1).isInstanceOf[Double].shouldBe   (true)
         // The absDir field should NOT be a Double
         dc.productElement(2).isInstanceOf[Option[?]].shouldBe(true)
     }
 
     "productElement with None absDir" in {
         val dc = AddSharpeAngle_0_to_90("test", 45.0.degrees, None)
-        dc.productElement(0).shouldBe("test")
+        dc.productElement(0).shouldBe("test"      )
         dc.productElement(1).shouldBe(45.0.degrees)
-        dc.productElement(2).shouldBe(None)
+        dc.productElement(2).shouldBe(None        )
     }
 
 end DirectionProductElementSuite

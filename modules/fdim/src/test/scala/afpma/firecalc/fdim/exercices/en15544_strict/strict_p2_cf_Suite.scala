@@ -9,11 +9,10 @@ import org.scalatest.freespec.AnyFreeSpec
 import afpma.firecalc.engine.ConfigurationRunners
 import afpma.firecalc.fdim.exercices.p2_cf.strict_ex02_kachelofen
 
-
 class strict_p2_cf_Suite extends ConfigurationRunners {
 
     "EN_15544 (STRICT)" - {
-        
+
         "p2_cf" - {
 
             "strict_ex02_kachelofen" in {
@@ -22,6 +21,5 @@ class strict_p2_cf_Suite extends ConfigurationRunners {
 
         }
     }
-            
-}
 
+}

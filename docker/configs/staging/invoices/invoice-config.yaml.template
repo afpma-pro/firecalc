@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+# Quick-start scaffold — copy to invoice-config.yaml and fill in values.
+# For detailed setup docs and alternatives, see the .example counterpart.
+#
+# Invoice Configuration - STAGING Environment
+
+invoice:
+  invoiceNumber: "FCALC-STG-001"
+  invoiceDate: "2025-09-05"
+  dueDate: "2025-10-05"
+  reference: "-"
+  sender:
+    name: "YOUR_ORGANIZATION_NAME"
+    displayName: "YOUR_ORGANIZATION_DISPLAY_NAME"
+    address:
+      street: "YOUR_STREET_ADDRESS"
+      streetLine2: "YOUR_STREET_LINE_2"
+      city: "YOUR_CITY"
+      postalCode: "YOUR_POSTAL_CODE"
+      region: "YOUR_REGION"
+      country: "France"
+    vatNumber: "YOUR_VAT_NUMBER"
+    registrationNumber: "YOUR_REGISTRATION_NUMBER"
+    email: "YOUR_CONTACT_EMAIL"
+    phone: "YOUR_PHONE"
+    website: "YOUR_WEBSITE"
+    logo: !!null
+  recipient:
+    name: "ACME France"
+    displayName: !!null
+    address:
+      street: "${CLIENT_STREET:-123 Boulevard}"
+      streetLine2: !!null
+      city: "Paris"
+      postalCode: "75000"
+      region: "Ile-de-France"
+      country: "France"
+    vatNumber: "TVA FR XXXXXXXX"
+    registrationNumber: "-"
+    email: "client@domaine.fr"
+    phone: "+33 1 23 45 67 89"
+    website: "www.domaine.fr"
+    logo: !!null
+  billTo: !!null
+  lineItems:
+    -
+      description: "Génération rapport PDF conforme à EN 15544"
+      quantity: 1
+      unitPrice: 89.00
+      taxRate: 20.0
+      discountPercentage: !!null
+      unit: "u"
+      productCode: !!null
+  paymentTerms:
+    dueDays: ${PAYMENT_DUE_DAYS:-30}
+    description: "Payment due within ${PAYMENT_DUE_DAYS:-30} days of invoice date"
+    lateFeePercentage: ${LATE_FEE_PERCENTAGE:-1.5}
+    discountPercentage: ${EARLY_DISCOUNT_PERCENTAGE:-0.0}
+    discountDays: ${EARLY_DISCOUNT_DAYS:-10}
+    methods:
+      -
+        BankTransfer:
+          iban: "YOUR_IBAN"
+          bic: "YOUR_BIC"
+    notes: ""
+  currency: "${COMPANY_CURRENCY:-EUR}"
+  notes: "YOUR_INVOICE_NOTES [STAGING]"
+  discountPercentage: !!null
+  status: "Draft"
+template:
+  logoPosition: "${TEMPLATE_LOGO_POSITION:-top-left}"
+  primaryColor: "${TEMPLATE_PRIMARY_COLOR:-#2563eb}"
+  fontFamily: "${TEMPLATE_FONT_FAMILY:-Liberation Sans}"

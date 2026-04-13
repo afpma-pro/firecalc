@@ -21,10 +21,10 @@ class CatalogStateOrderingTest extends AnyFreeSpec with Matchers:
 
     private def makeFlowResEntries: Seq[FlowResistanceCatalogEntry] =
         orderedNames.zipWithIndex.map: (name, i) =>
-            FlowResistanceCatalogEntry(
-                name = name,
-                zeta = (0.5 + i * 0.5).withUnit[1],
-                cross_section = NoneOfEither,
+            FlowResistanceCatalogEntry         (
+                name          = name,
+                zeta          = (0.5 + i * 0.5).withUnit[1],
+                cross_section = NoneOfEither
             )
 
     private def makeCatalogFile(entries: Seq[FlowResistanceCatalogEntry]): CatalogFile =
@@ -33,20 +33,20 @@ class CatalogStateOrderingTest extends AnyFreeSpec with Matchers:
         builder.add(entries)
         CatalogFile(
             catalog_version = CatalogMigrations.CURRENT_VERSION,
-            catalog_name = Map("en" -> "Test"),
-            sections = builder.build,
+            catalog_name    = Map("en" -> "Test"),
+            sections        = builder.build
         )
 
     "CatalogState.merge preserves insertion order of flow resistance entries" in {
         val entries = makeFlowResEntries
-        val file = makeCatalogFile(entries)
-        val state = CatalogState.merge(CatalogState.empty, file)
+        val file    = makeCatalogFile(entries)
+        val state   = CatalogState.merge(CatalogState.empty, file)
 
         state.flow_resistance_presets.values.toSeq.map(_.name) shouldBe orderedNames
     }
 
     "CatalogState.merge preserves order across multiple merges" in {
-        val firstBatch = makeFlowResEntries.take(3)
+        val firstBatch  = makeFlowResEntries.take(3)
         val secondBatch = makeFlowResEntries.drop(3)
 
         val file1 = makeCatalogFile(firstBatch)
@@ -54,7 +54,7 @@ class CatalogStateOrderingTest extends AnyFreeSpec with Matchers:
 
         val state = CatalogState.merge(
             CatalogState.merge(CatalogState.empty, file1),
-            file2,
+            file2
         )
 
         state.flow_resistance_presets.values.toSeq.map(_.name) shouldBe orderedNames
@@ -66,10 +66,10 @@ class CatalogStateOrderingTest extends AnyFreeSpec with Matchers:
         import io.circe.parser.*
 
         val entries = makeFlowResEntries
-        val file = makeCatalogFile(entries)
-        val state = CatalogState.merge(CatalogState.empty, file)
+        val file    = makeCatalogFile(entries)
+        val state   = CatalogState.merge(CatalogState.empty, file)
 
-        val json = state.asJson.noSpaces
+        val json    = state.asJson.noSpaces
         val decoded = decode[CatalogState](json)
 
         decoded.isRight shouldBe true

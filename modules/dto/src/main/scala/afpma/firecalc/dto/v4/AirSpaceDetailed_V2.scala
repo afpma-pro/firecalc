@@ -35,10 +35,10 @@ import magnolia1.Transl
 sealed trait AirSpaceDetailed_V2
 
 object AirSpaceDetailed_V2:
-    
+
     export AirSpaceDetailed_V1.VentilOpenings
     export AirSpaceDetailed_V1.VentilDirection
-    
+
     import VentilDirection.SameDirAsFlueGas
     import VentilDirection.given
 
@@ -59,17 +59,17 @@ object AirSpaceDetailed_V2:
 
         def isFullyOpened: Boolean = asd match
             case WithAirSpace_V2(_, _, VentilOpenings.AnnularAreaFullyOpened) => true
-            case _                                                         => false
+            case _                                                            => false
 
         def isConsideredDeadOrStatic: Boolean = !isFullyOpened
 
         def isNone: Boolean = asd match
             case WithoutAirSpace_V2 => true
-            case _               => false
+            case _                  => false
 
         def hasWidthFrom1to5cm: Boolean = asd match
             case WithAirSpace_V2(w, _, _) if w >= 1.cm && w <= 5.cm => true
-            case _                                               => false
+            case _                                                  => false
 
     @Transl(I(_.en13384._air_space_detailed.without_air_space))
     case object WithoutAirSpace_V2 extends AirSpaceDetailed_V2

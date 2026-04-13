@@ -42,7 +42,7 @@ trait FireCalcYAML_V3_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V3]:
 
     type Version = FireCalc_Version.V[3]
     final val VERSION: FireCalc_Version.V[3] = FireCalc_Version.v[3]
-    
+
     import CommonInstances.given
     import V3Instances.given
 
