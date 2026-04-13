@@ -115,7 +115,7 @@ docker compose run --rm --entrypoint "" certbot sh -c "
     rm -rf /etc/letsencrypt/renewal/${UI_DOMAIN}.conf
 "
 
-docker compose run --rm certbot certonly \
+docker compose run --rm --entrypoint certbot certbot certonly \
     --webroot \
     -w /var/www/certbot \
     -d "${UI_DOMAIN}" \
@@ -149,4 +149,4 @@ echo "  curl -I https://${UI_DOMAIN}/"
 echo "  curl -I https://${API_DOMAIN}/v1/healthcheck"
 echo ""
 echo "Test renewal:"
-echo "  docker compose run --rm certbot renew --dry-run"
+echo "  docker compose run --rm --entrypoint certbot certbot renew --dry-run"

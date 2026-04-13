@@ -282,7 +282,7 @@ volumes:
 #    - The certbot sidecar automatically renews certificates every 12 hours
 #    - Monitor logs: docker compose logs -f certbot
 #    - Volume letsencrypt-certs persists certificates
-#    - Test renewal: docker compose run --rm certbot renew --dry-run
+#    - Test renewal: docker compose run --rm --entrypoint certbot certbot renew --dry-run
 #
 # 6. Monitoring and Maintenance:
 #    - Check service health: docker compose ps
