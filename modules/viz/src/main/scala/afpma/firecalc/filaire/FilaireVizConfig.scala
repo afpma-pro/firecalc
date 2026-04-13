@@ -27,6 +27,7 @@ case class FilaireVizConfig(
     nameVerticalOffset    : Double                = 3.0,
     watermark             : Option[String]        = Some("FireCalc AFPMA ©"),
     _cameraState          : Option[CameraStateJS] = None,
+    _annotationsOverride  : Option[Boolean]       = None,
     labelResetView        : Option[String]        = None,
     labelViewMode         : Option[String]        = None,
     labelAnnotations      : Option[String]        = None,

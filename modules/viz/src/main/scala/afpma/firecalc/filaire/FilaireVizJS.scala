@@ -146,6 +146,7 @@ trait VizConfigJS extends js.Object:
     var nameVerticalOffset    : js.UndefOr[Double]
     var watermark             : js.UndefOr[String]
     var _cameraState          : js.UndefOr[CameraStateJS]
+    var _annotationsOverride  : js.UndefOr[Boolean]
     var labelResetView        : js.UndefOr[String]
     var labelViewMode         : js.UndefOr[String]
     var labelAnnotations      : js.UndefOr[String]
@@ -170,6 +171,7 @@ object VizConfigJS:
         nameVerticalOffset    : js.UndefOr[Double]           = js.undefined,
         watermark             : js.UndefOr[String]           = js.undefined,
         _cameraState          : js.UndefOr[CameraStateJS]    = js.undefined,
+        _annotationsOverride  : js.UndefOr[Boolean]          = js.undefined,
         labelResetView        : js.UndefOr[String]           = js.undefined,
         labelViewMode         : js.UndefOr[String]           = js.undefined,
         labelAnnotations      : js.UndefOr[String]           = js.undefined,
@@ -194,6 +196,7 @@ object VizConfigJS:
                 nameVerticalOffset     = nameVerticalOffset,
                 watermark              = watermark,
                 _cameraState           = _cameraState,
+                _annotationsOverride   = _annotationsOverride,
                 labelResetView         = labelResetView,
                 labelViewMode          = labelViewMode,
                 labelAnnotations       = labelAnnotations,
@@ -213,5 +216,7 @@ trait CameraStateJS extends js.Object:
 /** Handle returned by initFilaireViz for lifecycle management */
 @js.native
 trait FilaireVizHandleJS extends js.Object:
-    def dispose       (): Unit                      = js.native
-    def getCameraState(): js.UndefOr[CameraStateJS] = js.native
+    def dispose              (): Unit                      = js.native
+    def getCameraState       (): js.UndefOr[CameraStateJS] = js.native
+    def getDisplayType       (): String                    = js.native
+    def getAnnotationsVisible(): Boolean                   = js.native

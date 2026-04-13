@@ -185,6 +185,10 @@ object FilaireLinesViz:
             case Some(cs) => cs
             case None     => js.undefined
 
+        val annotationsOverrideJs: js.UndefOr[Boolean] = config._annotationsOverride match
+            case Some(b) => b
+            case None    => js.undefined
+
         VizConfigJS           (
             canvasWidth            = optIntToJs(config.canvasWidth),
             canvasHeight           = optIntToJs(config.canvasHeight),
@@ -201,6 +205,7 @@ object FilaireLinesViz:
             nameVerticalOffset     = config.nameVerticalOffset,
             watermark              = optStrToJs(config.watermark),
             _cameraState           = cameraStateJs,
+            _annotationsOverride   = annotationsOverrideJs,
             labelResetView         = optStrToJs(config.labelResetView),
             labelViewMode          = optStrToJs(config.labelViewMode),
             labelAnnotations       = optStrToJs(config.labelAnnotations),

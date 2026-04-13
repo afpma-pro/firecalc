@@ -35,27 +35,40 @@ final case class Viz3DPanel()(using Locale) extends Component:
 
     private val M_TO_CM = 100.0
 
-    private var currentHandle    : Option[FilaireVizHandleJS] = None
-    private var lastCameraStateJS: Option[CameraStateJS]      = None
+    private var currentHandle         : Option[FilaireVizHandleJS] = None
+    private var lastCameraStateJS     : Option[CameraStateJS]      = None
+    private var lastDisplayType       : Option[String]              = None
+    private var lastAnnotationsVisible: Option[Boolean]             = None
 
     private val beforeUnloadHandler: js.Function1[dom.Event, Unit] =
         (_: dom.Event) =>
-            saveCameraState         (                )
+            saveVizState            (                )
             // Flush to localStorage immediately — debounced sync won't run in time
             uiStateWebStorageVar.set(uiStateVar.now())
 
-    private def saveCameraState(): Unit =
+    private def saveVizState(): Unit =
         for handle <- currentHandle do
-            handle.getCameraState().toOption.foreach { cs =>
-                lastCameraStateJS = Some(cs)
-                try
-                    val scalaState = CameraState(
-                        position = cs.position.toList,
-                        up       = cs.up.toList,
-                        target   = cs.target.toList
-                    )
-                    uiStateVar.update(_.copy(cameraState = Some(scalaState)))
-                catch case _: Throwable => ()
+            val cameraOpt = handle.getCameraState().toOption
+            val dtOpt     = try Some(handle.getDisplayType()) catch case _: Throwable => None
+            val avOpt     = try Some(handle.getAnnotationsVisible()) catch case _: Throwable => None
+
+            cameraOpt.foreach(cs => lastCameraStateJS = Some(cs))
+            dtOpt.foreach(dt => lastDisplayType = Some(dt))
+            avOpt.foreach(av => lastAnnotationsVisible = Some(av))
+
+            uiStateVar.update { state =>
+                val withCamera = cameraOpt.fold(state) { cs =>
+                    try
+                        val scalaCS = CameraState(
+                            position = cs.position.toList,
+                            up       = cs.up.toList,
+                            target   = cs.target.toList
+                        )
+                        state.copy(cameraState = Some(scalaCS))
+                    catch case _: Throwable => state
+                }
+                val withDt = dtOpt.fold(withCamera)(dt => withCamera.copy(vizDisplayType = Some(dt)))
+                avOpt.fold(withDt)(av => withDt.copy(vizAnnotationsVisible = Some(av)))
             }
 
     private def loadCameraState(): Option[CameraStateJS] =
@@ -72,9 +85,18 @@ final case class Viz3DPanel()(using Locale) extends Component:
         )
 
     private def disposeCurrentViz(): Unit =
-        saveCameraState      (           )
+        saveVizState         (           )
         currentHandle.foreach(_.dispose())
         currentHandle = None
+
+    private def loadDisplayType(): DisplayType =
+        lastDisplayType.orElse(uiStateVar.now().vizDisplayType) match
+            case Some("CenterLine") => DisplayType.CenterLine
+            case Some("Mixed")      => DisplayType.Mixed
+            case _                  => DisplayType.FullShape
+
+    private def loadAnnotationsVisible(): Boolean =
+        lastAnnotationsVisible.orElse(uiStateVar.now().vizAnnotationsVisible).getOrElse(false)
 
     private lazy val allPositionsSig =
         slotPositions_sig
@@ -158,22 +180,24 @@ final case class Viz3DPanel()(using Locale) extends Component:
                             I18N_UI.viz.no_pipe_data
                         )
                     else
-                        val vizResult = FilaireLinesViz.render(
+                        val restoredAnnotations = loadAnnotationsVisible()
+                        val vizResult          = FilaireLinesViz.render(
                             groups,
-                            FilaireVizConfig     (
-                                viewPadding      = 1.5,
-                                displayName      = false,
-                                backgroundColor  = "#F5F5F5",
-                                hoverColor       = "#3B2416",
-                                _cameraState     = loadCameraState(),
-                                labelResetView   = Some(I18N_UI.viz.reset_view),
-                                labelViewMode    = Some(I18N_UI.viz.view_mode),
-                                labelAnnotations = Some(I18N_UI.viz.annotations),
-                                labelAxisRear    = Some(I18N_UI.direction_badge.cardinal_rear),
-                                labelAxisUp      = Some(I18N_UI.direction_badge.cardinal_up),
-                                labelAxisRight   = Some(I18N_UI.direction_badge.cardinal_right)
+                            FilaireVizConfig          (
+                                viewPadding            = 1.5,
+                                displayName            = restoredAnnotations,
+                                backgroundColor        = "#F5F5F5",
+                                hoverColor             = "#3B2416",
+                                _cameraState           = loadCameraState(),
+                                _annotationsOverride   = Some(restoredAnnotations),
+                                labelResetView         = Some(I18N_UI.viz.reset_view),
+                                labelViewMode          = Some(I18N_UI.viz.view_mode),
+                                labelAnnotations       = Some(I18N_UI.viz.annotations),
+                                labelAxisRear          = Some(I18N_UI.direction_badge.cardinal_rear),
+                                labelAxisUp            = Some(I18N_UI.direction_badge.cardinal_up),
+                                labelAxisRight         = Some(I18N_UI.direction_badge.cardinal_right)
                             ),
-                            DisplayType.FullShape,
+                            loadDisplayType(),
                             Some[Option[FireCalcFilaireLine] => Unit] {
                                 case Some(line) => toggleVizSelection(line.name.flatMap(VizElementId.fromName).toSet)
                                 case None       => vizSelectedElement.set(Set.empty)
