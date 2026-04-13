@@ -36,8 +36,18 @@ Every developer (and CI agent) must publish the custom Babel fork locally before
 
 2. Publish all cross-compiled artefacts to the local cache:
 
+Add one line to build.sbt (after line 52, with the other ThisBuild settings):
+
+ThisBuild / version ~= (v => sys.env.getOrElse("VERSION", v))
+
+This transforms the version after dynver computes it. If VERSION is set, use it; otherwise keep dynver's value.
+
+File: build.sbt:52 — add after the versionScheme line.
+
+Usage
+
    ```bash
-   sbt +publishLocal
+    VERSION=0.5.4 sbt publishLocal
    ```
 
 3. Verify that `~/.ivy2/local/io.taig/babel-core_3/0.5.4/` (and sibling artefacts) exist.
