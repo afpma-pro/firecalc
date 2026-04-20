@@ -178,6 +178,65 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     import afpma.firecalc.engine.models.geometry.Vec3
 
+    // ── Auto-calc: firebox exit position (first flue slot only) ──
+
+    private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544] = AutoCalcHelper.ElemExtractors(
+        asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
+        asDirectionChange  = { case dc: AddDirectionChange         => (dc.angle, dc.absDir) },
+        asInnerShape       = { case sis: SetInnerShape             => sis.shape }
+    )
+
+    /**
+     * Reactive check: is this slot the first `FlueSlot` in `postFireboxSlots_var`?
+     *
+     * The auto-calc button auto-aligns the pipe's start to the firebox boundary —
+     * only the first flue section actually touches the firebox. Subsequent flue
+     * sections inherit their start from the previous slot's endpoint.
+     *
+     * Using a signal (not `slotIndex == 0`) keeps this robust to slot reordering:
+     * if the user ever moves a `ConnectorSlot` above the flue region, the button
+     * migrates to whichever `FlueSlot` is now topologically first.
+     */
+    private lazy val isFirstFlueSlotSig: Signal[Boolean] =
+        postFireboxSlots_var.signal.map: slots =>
+            val firstFlueIdx = slots.indexWhere:
+                case _: PostFireboxPipeDescrSlot.FlueSlot => true
+                case _                                    => false
+            firstFlueIdx == slotIndex
+
+    private def autoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
+        AutoCalcHelper.mkStatusSig(
+            hasFrameSig = frameBeforeByIdx.map(_.contains(posIdx)),
+            hasShapeSig = welems_var.signal.map(_.filter(_._1 < posIdx).exists: (_, e) =>
+                summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544]].asInnerShape.isDefinedAt(e))
+        )
+
+    private def computeAutoPosition(posIdx: Int): Option[SetInitialPosition] =
+        val elems    = welems_var.now()
+        val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
+        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
+        for
+            frame <- frameOpt
+            shape <- shapeOpt
+        yield
+            val fb  = firebox_var.now()
+            val box = AutoCalcHelper.TargetBox(
+                centerX   = 0.0,
+                centerY   = 0.0,
+                halfWidth = fb.firebox_width.value / 2.0,
+                halfDepth = fb.firebox_depth.value / 2.0,
+                bottomZ   = 0.0,
+                height    = fb.firebox_height.value
+            )
+            val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
+            SetInitialPosition(x.m, y.m, z.m)
+
+    private def autoCalcExtra(posIdx: Int): Var[SetInitialPosition] => HtmlElement =
+        AutoCalcHelper.autoCalcButton(
+            autoCalcStatusSig(posIdx),
+            () => computeAutoPosition(posIdx)
+        )
+
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal.map: elems =>
             var frame: Option[PipeFrame] = None
@@ -346,13 +405,23 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             ] { case (i, incr: SetInitialPosition, x) =>
                 (i, incr, x)
             } { (iix, sig) =>
+                // Auto-calc button only on the first FlueSlot — subsequent flue slots
+                // inherit their start position from the previous slot's endpoint.
+                // Reactive over slot order so the button migrates correctly if slots are reordered.
+                val extraFn: Var[SetInitialPosition] => HtmlElement = ev =>
+                    div(
+                        child <-- isFirstFlueSlotSig.map:
+                            case true  => autoCalcExtra(iix._1)(ev)
+                            case false => span()
+                    )
                 renderElemTyped[SetInitialPosition]  (
                     iix._1,
                     I18N.set_prop.SetInitialPosition,
                     iix._2,
                     sig,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]])
+                    propertyShow = Some(summon[Show[SetInitialPosition]]),
+                    extra        = extraFn
                 )
             }
             .handleCase[

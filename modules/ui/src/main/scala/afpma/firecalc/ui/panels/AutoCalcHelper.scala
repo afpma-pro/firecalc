@@ -25,7 +25,14 @@ import io.taig.babel.Locale
 /**
  * Shared helper for auto-calculating pipe positions on rectangular box boundaries.
  *
- * Used by FluePipePanel (firebox) and PipePanel_13384_FlowOnly (air distribution box).
+ * Used by:
+ *   - DynamicFlowOnlyPipeSlotPanel — firebox boundary, rendered only on the
+ *     first `PostFireboxPipeDescrSlot.FlueSlot`. The "first flue slot" check is
+ *     reactive over `postFireboxSlots_var`, so if the user reorders slots
+ *     (e.g. moves a ConnectorSlot above the flue region), the button migrates
+ *     to whichever FlueSlot is now topologically first.
+ *   - PipePanel_13384_FlowOnly — air distribution box boundary, rendered on
+ *     both `SetInitialPosition` and `SetFinalPosition` of the air intake pipe.
  * Abstracts over the different DTO hierarchies (EN 15544 vs EN 13384) using
  * partial-function extractors bundled in `ElemExtractors[E]`.
  */
