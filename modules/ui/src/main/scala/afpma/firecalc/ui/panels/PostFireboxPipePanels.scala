@@ -153,16 +153,17 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
      */
     private lazy val headRegionLengthLabelSig: Signal[HtmlElement] =
         postFireboxSlots_var.signal
-            .combineWith(postFireboxPipeResults_sig)
-            .map: (slots, resultsV) =>
+            .combineWith(postFireboxPipeResults_sig, lZMinSig)
+            .map: (slots, resultsV, lZMinOpt) =>
                 val normalized         = normalizeSlots(slots)
-                val fixedZoneStart     = (normalized.size - 2   ).max(0)
-                val headIndices        = (0 until fixedZoneStart).toVector
+                val headIndices        = DynamicPipeSlotPanel.computeHeadRegionIndices(normalized)
                 val hasConnectorInHead = headIndices.exists: i =>
                     normalized.lift(i) match
                         case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => true
                         case _                                               => false
                 resultsV match
+                    case Validated.Valid(_) if headIndices.isEmpty =>
+                        span()
                     case Validated.Valid(results) =>
                         val totalMeters = headIndices
                             .flatMap(i => results.lift(i).map(_._2.lengthSum.value))
@@ -171,11 +172,53 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                         val formatted   = f"$prefix$totalMeters%.2f m"
                         // Label: "calculated flue pipe length" (L_N / L_CFLfp).
                         val label       = I18N.en15544.terms.L_N.name
+                        // When L_Z_min (EN 15544) is available, append the min suffix so
+                        // users see both cumulative and minimum lengths together — mirrors
+                        // the per-slot `(cum. Y, min. Z)` display on the last head slot.
+                        val minSuffix   = lZMinOpt match
+                            case Some(lZMin) =>
+                                val zStr = f"$prefix$lZMin%.2f m"
+                                I18N.panels.channel_pipe_length_min_suffix.apply(zStr)
+                            case None        => ""
                         span(
                             cls := "text-xs text-base-content/70 px-2",
-                            s"$label: $formatted"
+                            s"$label: $formatted$minSuffix"
                         )
                     case Validated.Invalid(_)     => span()
+
+    // ── Container-level head-region signals (hoisted once, passed to each slot panel) ──
+
+    /**
+     * Per-head-slot `lengthSum.value`s in head-region order.
+     *
+     * `None` if **any** head-region slot's pipe result is Invalid (fail-closed per D5). The
+     * vector has exactly `headRegionSize` elements when `Some`.
+     *
+     * Reactive: changes when pipe lengths change without structural mutations.
+     */
+    private lazy val headRegionLengthsSig: Signal[Option[Vector[Double]]] =
+        postFireboxSlots_var.signal
+            .combineWith(postFireboxPipeResults_sig)
+            .map: (slots, resultsV) =>
+                val normalized  = normalizeSlots(slots)
+                val headIndices = DynamicPipeSlotPanel.computeHeadRegionIndices(normalized)
+                resultsV match
+                    case Validated.Valid(results) =>
+                        val lens: Vector[Option[Double]] = headIndices.map: i =>
+                            results.lift(i).map(_._2.lengthSum.value)
+                        if lens.forall(_.isDefined) then Some(lens.flatten) else None
+                    case Validated.Invalid(_)     => None
+
+    /**
+     * EN 15544 minimum flue-pipe length (`L_Z_min`), or `None` if the strict result is Invalid or
+     * `L_Z_min` itself cannot be computed.
+     *
+     * Reactive: changes with material / geometry input changes.
+     */
+    private lazy val lZMinSig: Signal[Option[Double]] =
+        results_en15544_strict_sig.map: vnelStrict =>
+            vnelStrict.toOption.flatMap: strict =>
+                strict.L_Z_min.toOption.map(_.unwrap.value)
 
     // ── Topology validation warning ──────────────────────────────
 
@@ -258,14 +301,33 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
      * Layout: [flue region panels] [toolbar] [trailing connector panel] [chimney panel]
      */
     private def buildPanels(slots: Seq[PostFireboxPipeDescrSlot]): HtmlElement =
-        val normalized     = normalizeSlots(slots)
-        val fixedZoneStart = (normalized.size - 2).max(0)
+        val normalized        = normalizeSlots(slots)
+        val fixedZoneStart    = (normalized.size - 2).max(0)
+        val headRegionIdxs    = DynamicPipeSlotPanel.computeHeadRegionIndices(normalized)
+        val lastHeadGlobalIdx = headRegionIdxs.lastOption
         div(
             normalized.zipWithIndex.flatMap: (slot, idx) =>
                 val controls =
                     if idx >= fixedZoneStart then None // no controls for trailing connector + chimney
                     else Some(slotControls(idx, normalized.size, slot))
-                val panel = DynamicPipeSlotPanel.forSlot(idx, slot, controls)
+                val hi = headRegionIdxs.indexOf(idx) match { case -1 => None; case n => Some(n) }
+                val isLast = lastHeadGlobalIdx.contains(idx)
+                // `hi` and `isLast` are captured as plain constants (not signals) on the
+                // panel. That is safe because *any* structural change to the slot vector
+                // (add/remove/reorder, including flips of head-region membership) triggers
+                // a rebuild of this entire panel list via `structureVersion` — see the
+                // `postFireboxSlots_var.signal.map(_.ordinal).distinct.changes` binder in
+                // `node` below. Reactive length/min values (which *do* change without a
+                // rebuild) are instead passed through `headRegionLengthsSig` / `lZMinSig`.
+                val panel  = DynamicPipeSlotPanel.forSlot(
+                    slotIndex            = idx,
+                    slot                 = slot,
+                    slotControlsNode     = controls,
+                    headIdx              = hi,
+                    isLastInHeadRegion   = isLast,
+                    headRegionLengthsSig = headRegionLengthsSig,
+                    lZMinSig             = lZMinSig
+                )
                 // Insert toolbar between flue region and fixed zone
                 if idx == fixedZoneStart then Seq(toolbar, panel.node)
                 else Seq                         (panel.node         )

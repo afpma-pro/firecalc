@@ -418,6 +418,12 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     /** Optional prefix element rendered before the title in the accordion header. */
     protected def accordionTitlePrefix: Option[HtmlElement] = None
 
+    /**
+     * Optional rich title node. When present, overrides the plain [[titleString]] rendering
+     * in the accordion header. [[titleString]] is still used for debug/ARIA/data attrs.
+     */
+    protected def titleNodeOpt: Option[HtmlElement] = None
+
     override def renderContent: HtmlElement =
         DaisyUIVerticalAccordionAndJoin.Element    (
             idx     = 0,
@@ -428,7 +434,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 bottomContent_sig    = expertModeOn
                     .combineWith(panelOpened.signal)
                     .map((expert, open) => Option.when(expert && open)(detailed_headers_title)),
-                titlePrefix          = accordionTitlePrefix
+                titlePrefix          = accordionTitlePrefix,
+                titleNode            = titleNodeOpt
             ),
             content = content,
             opened  = panelOpened

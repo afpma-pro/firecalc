@@ -36,6 +36,24 @@ object PostFireboxPipeDescrSlot:
     import afpma.firecalc.dto.instances.CommonInstances.given
     import afpma.firecalc.dto.instances.V4Instances.given
 
+    /**
+     * Indices (within the given slot vector) that belong to the HEAD_REGION.
+     *
+     * Mirrors the engine-side authoritative definition in
+     * `PostFireboxPipeChain.headRegion`: the head region extends from index 0
+     * up to and including the last flue slot (either `FlueSlot` or
+     * `ThermalFlueSlot`). A chain with no flue slot has an empty head region.
+     *
+     * Kept here (and not in engine) so UI and tests can compute head-region
+     * membership directly from the DTO, without loading engine code paths.
+     */
+    def headRegionIndices(slots: Seq[PostFireboxPipeDescrSlot]): Vector[Int] =
+        val lastFlueIdx = slots.lastIndexWhere:
+            case _: FlueSlot | _: ThermalFlueSlot => true
+            case _                                => false
+        if lastFlueIdx < 0 then Vector.empty
+        else (0 to lastFlueIdx).toVector
+
     given Encoder[PostFireboxPipeDescrSlot] = Encoder.instance {
         case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
             Json.obj("FlueSlot" -> Encoder[Seq[FlowOnlyPipeDescr_15544_V3]].apply(d))

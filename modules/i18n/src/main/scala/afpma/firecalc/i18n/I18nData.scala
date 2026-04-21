@@ -717,7 +717,10 @@ object I18nData:
         output_and_other_parameters               : String,
         total                                     : String,
         channel_pipe_length_with_min              : StringFormat2,
-        channel_pipe_length                       : StringFormat1
+        channel_pipe_length                       : StringFormat1,
+        channel_pipe_length_with_cum              : StringFormat2,
+        channel_pipe_length_with_cum_and_min      : StringFormat3,
+        channel_pipe_length_min_suffix            : StringFormat1
     )
 
     case class PipeShape(
