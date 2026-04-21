@@ -485,6 +485,11 @@ case class PipesResult_15544(
     // ── aggregate lists ──
     private val postFireboxResults: List[PipeResult] = postFirebox.map(_._2).toList
 
+    // When `lastFluePipeIdx < 0` (no FluePipe in the post-firebox chain — legal under
+    // EN 13384 standalone grammar where HEAD_REGION is empty), the "until flue pipe
+    // end" aggregations (`Σ_pRs_until_fluepipe_end`, `Σ_pRg_until_fluepipe_end`, …)
+    // reduce to the combustion-air + firebox contribution only. `List.map.sum` on an
+    // empty tail yields zero, so the cumulative sums render cleanly. Plan issue E3.
     val orderedPipesUntilFluePipe = /* airIntake :: */ combustionAir :: firebox ::
         (if lastFluePipeIdx < 0 then Nil
          else postFirebox.take(lastFluePipeIdx + 1).map(_._2).toList)

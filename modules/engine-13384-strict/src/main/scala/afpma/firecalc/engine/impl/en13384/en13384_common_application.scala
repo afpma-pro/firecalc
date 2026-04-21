@@ -136,7 +136,12 @@ abstract class EN13384_1_A1_2019_Common_Application(
             )
             val chimSlot = tc.mkSlot(ChimneyPipeT, "Chimney", FlueGas, ChimneyPipe_Module.unwrap(chimney))
 
-            val chain = PostFireboxPipeChain.validated(Vector(connSlot, chimSlot)) match
+            // EN 13384 standalone: thermal-only pipeline with NO head region
+            // (firebox → terminal connector → chimney). Empty HEAD_REGION is legal
+            // under the validator so `[conn, chim]` passes as-is.
+            val chain = PostFireboxPipeChain.validated(
+                Vector(connSlot, chimSlot)
+            ) match
                 case Validated.Valid(c)   => c
                 case Validated.Invalid(e) => throw new IllegalStateException(s"Invalid post-firebox topology: $e")
 

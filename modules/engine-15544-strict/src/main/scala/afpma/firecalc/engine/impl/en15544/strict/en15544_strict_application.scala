@@ -47,10 +47,10 @@ object EN15544_Strict_Application:
         f: EN15544_V_2023_Formulas_Alg
     )(
         i       : Inputs_15544_Strict,
-        pfbSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] = Seq.empty
+        pfbSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty
     ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
         override lazy val inputs              : Inputs_15544                                        = i
-        override lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] = pfbSlots
+        override lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = pfbSlots
     }
 
 sealed abstract class EN15544_Strict_Application(
@@ -282,7 +282,7 @@ sealed abstract class EN15544_Strict_Application(
          * Interleaved `ConnectorSlot` in the flue region is computed using Thermal 13384.
          */
         override protected lazy val flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], Option[PipeFrame])] =
-            import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
             val pfbSlots            = en15544.postFireboxPipeSlots
             // Locate the last FluePipeT slot; the flue region is slots up to and including it.
             val lastFluePipeSlotIdx = pfbSlots.lastIndexWhere {
@@ -408,50 +408,80 @@ sealed abstract class EN15544_Strict_Application(
                     }
 
                 slotsV.andThen { case (slots, lastFrame) =>
-                    // Legacy standalone single-flue-pipe computation, used ONLY to seed
-                    // UpstreamState density/velocity for the first flue slot's en13384_pg
-                    // (pressure-gain) calculation. Preserves byte-identical golden values
-                    // for single-flue-slot fixtures. Cannot route through
+                    // Seed UpstreamState density/velocity for the first head slot's
+                    // en13384_pg (pressure-gain) calculation.
+                    //
+                    // Two seed paths (plan issue E1 — npipe-topology-connector-first):
+                    //
+                    //   (a) HEAD_REGION begins with FluePipe — legacy behaviour, preserved
+                    //       byte-identically for the 6 golden `CasType_*` fixtures.
+                    //       Rebuild the first FluePipe via the standalone single-flue-pipe
+                    //       computation (`FlowOnlyMecaFlu_15544.makePipeResult` on the first
+                    //       `FlueSlot` descriptor, no predecessor frame) and take its outlet
+                    //       density/velocity.
+                    //
+                    //   (b) HEAD_REGION begins with a Connector (new grammar allows
+                    //       Connector-first chains) — seed UpstreamState directly from
+                    //       firebox exit conditions. `en15544.t_burnout` is already the
+                    //       firebox exit gas temperature; `firebox_PipeResult` carries the
+                    //       firebox outlet density/velocity at the requested computeAt
+                    //       sampling point.
+                    //
+                    // The legacy seed cannot route through
                     // `last_known_density_before_connector_pipe` because that hook reads
                     // `conceptualFluePipeResult` (the N-pipe chain terminal), which would
                     // create a lazy-val cycle through `flueRegionPipeResults`.
-                    //
-                    // Rebuilds the single-pipe descriptor from the FIRST `FlueSlot(descr)`
-                    // in `postFireboxPipeSlots` — preserves the byte-identical seed for
-                    // 3-slot fixtures, where slot 0 IS the whole flue pipe.
-                    import FluePipe_Module_15544.FullDescrResult.given
-                    import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
-                    val firstFlueSlotDescrOpt = pfbSlots.collectFirst { case FlueSlot(descr) => descr }
-                    val legacyFluePipeResult: VNelMcalcErr[PipeResult] = firstFlueSlotDescrOpt match
-                        case None        =>
-                            Validated.invalidNel(
-                                UnexpectedDevError("No FlueSlot descriptor available to seed stage 1")
-                            )
-                        case Some(descr) =>
-                            val flueResult = FluePipe_Module_15544.incremental
-                                .define(descr*)
-                                .toFullDescrWithExternalInitialFrame(None)
-                            val fdResult: FluePipe_Module_15544.FullDescrResult =
-                                flueResult.map((ids, fd, _) => (ids, fd))
-                            FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult) match
-                                case Validated.Valid(pipe)  =>
-                                    ops_en15544.FlowOnlyMecaFlu_15544
-                                        .makePipeResult                 (
-                                            fd                  = FluePipe_Module_15544.unwrap(pipe),
-                                            gas                 = FlueGas,
-                                            loadQty             = p._2,
-                                            z_geodetical_height = z_geodetical_height,
-                                            params              = p._1
-                                        )(using en15544)
-                                        .toValidatedNel
-                                case Validated.Invalid(nel) => Validated.Invalid(nel)
                     val computeAt = en15544.en13384_application.computeAt
-                    val seedDensity         : Option[Density]          = legacyFluePipeResult.toOption.flatMap { pr =>
+
+                    val headStartsWithConnector: Boolean =
+                        pfbSlots.headOption.exists {
+                            case ConnectorSlot(_)                 => true
+                            case FlueSlot(_) | ThermalFlueSlot(_) => false
+                            case ChimneySlot(_)                   => false
+                        }
+
+                    // Source `PipeResult` whose outlet density/velocity seeds the
+                    // N-pipe chain's UpstreamState:
+                    //   - Connector-first head → firebox outlet (path (b)).
+                    //   - Flue-first head      → legacy single-flue-pipe recomputation
+                    //                            on the first `FlueSlot` (path (a)).
+                    val seedPipeResult: VNelMcalcErr[PipeResult] =
+                        if headStartsWithConnector then
+                            firebox_PipeResult
+                        else
+                            import FluePipe_Module_15544.FullDescrResult.given
+                            import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
+                            val firstFlueSlotDescrOpt = pfbSlots.collectFirst { case FlueSlot(descr) => descr }
+                            firstFlueSlotDescrOpt match
+                                case None        =>
+                                    Validated.invalidNel(
+                                        UnexpectedDevError("No FlueSlot descriptor available to seed stage 1")
+                                    )
+                                case Some(descr) =>
+                                    val flueResult = FluePipe_Module_15544.incremental
+                                        .define(descr*)
+                                        .toFullDescrWithExternalInitialFrame(None)
+                                    val fdResult: FluePipe_Module_15544.FullDescrResult =
+                                        flueResult.map((ids, fd, _) => (ids, fd))
+                                    FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult) match
+                                        case Validated.Valid(pipe)  =>
+                                            ops_en15544.FlowOnlyMecaFlu_15544
+                                                .makePipeResult                 (
+                                                    fd                  = FluePipe_Module_15544.unwrap(pipe),
+                                                    gas                 = FlueGas,
+                                                    loadQty             = p._2,
+                                                    z_geodetical_height = z_geodetical_height,
+                                                    params              = p._1
+                                                )(using en15544)
+                                                .toValidatedNel
+                                        case Validated.Invalid(nel) => Validated.Invalid(nel)
+
+                    val seedDensity: Option[Density]      = seedPipeResult.toOption.flatMap { pr =>
                         computeAt match
                             case ComputeAt.Mean   => pr.last_density_mean.orElse(pr.last_density_middle)
                             case ComputeAt.Middle => pr.last_density_middle
                     }
-                    val seedVelocity        : Option[FlowVelocity]     = legacyFluePipeResult.toOption.flatMap { pr =>
+                    val seedVelocity: Option[FlowVelocity] = seedPipeResult.toOption.flatMap { pr =>
                         computeAt match
                             case ComputeAt.Mean   => pr.last_velocity_mean.orElse(pr.last_velocity_middle)
                             case ComputeAt.Middle => pr.last_velocity_middle

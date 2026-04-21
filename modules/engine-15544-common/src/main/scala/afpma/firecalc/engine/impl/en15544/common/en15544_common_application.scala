@@ -359,7 +359,7 @@ abstract class EN15544_V_2023_Common_Application
          * the LAST `PipeResult` of Stage 1 into the Stage 2 chain, and concatenates results.
          */
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
-            import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
             val pfbSlots = en15544.postFireboxPipeSlots
             // Resolve Stage 1 first, then resolve HA givens for Stage 2.
             flueRegionPipeResults.andThen { case (stage1Results, stage1LastFrame) =>

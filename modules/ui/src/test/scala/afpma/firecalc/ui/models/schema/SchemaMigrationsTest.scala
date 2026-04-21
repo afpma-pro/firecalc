@@ -7,7 +7,7 @@ package afpma.firecalc.ui.models.schema
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.ui.instances.defaultable
 import afpma.firecalc.ui.models.AppStateSchemaHelper

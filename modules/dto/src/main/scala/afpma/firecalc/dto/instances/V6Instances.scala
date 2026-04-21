@@ -8,5 +8,5 @@ package afpma.firecalc.dto.instances
 object V6Instances:
 
     export V5Instances.given
-    // PostFireboxPipeDescrSlot codecs are given in its companion object (v4 package)
+    // PostFireboxPipeDescrSlot codecs are given in its companion object (v6 package)
     // Scala 3 implicit search finds them automatically via the type's companion

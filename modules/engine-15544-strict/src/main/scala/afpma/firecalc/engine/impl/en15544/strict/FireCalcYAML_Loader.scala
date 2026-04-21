@@ -51,38 +51,61 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     val slotBuildResults: Vector[SlotBuildResult] =
         PipeChainGeneric.build(fcProj.post_firebox_pipes)
 
-    import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+    import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
 
     /**
-     * Normalize: if the chain has a flue region followed directly by chimney
-     * (no connector slot), insert an explicit ConnectorSlot(Seq.empty) so
-     * downstream code always sees the mandatory three-region shape.
+     * Normalize post-firebox slots for the new grammar (plan issue Y1).
+     *
+     * Behaviour:
+     *   - Empty head region is LEGAL under the grammar-level validator
+     *     across all pipelines. This normaliser NEVER inserts a flue to
+     *     plug an empty head.
+     *   - If the YAML omits the terminal connector slot but the last
+     *     pre-chimney slot is a Flue/ThermalFlue (i.e. the only issue is
+     *     the missing terminal), insert an empty `ConnectorSlot(Seq.empty)`
+     *     between it and the chimney. This preserves the backward-compat
+     *     behaviour for V6 YAML files emitted before Phase 3.
+     *   - Never insert or rearrange otherwise. Grammar violations
+     *     (consecutive same-type in head, head ending with Connector,
+     *     missing chimney, etc.) must surface through the topology
+     *     validator — not be silently rewritten.
      */
     private def normalizePostFireboxSlots(
-        slots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot]
-    ): Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+        slots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]
+    ): Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] =
         if slots.isEmpty then slots
+        else if slots.last match { case ChimneySlot(_) => false; case _ => true } then
+            // No chimney as the last slot — leave the grammar validator to report
+            // `MissingChimney`. Any insertion here would paper over the error.
+            slots
         else
-            val lastFlueIdx = slots.lastIndexWhere:
-                case FlueSlot(_) | ThermalFlueSlot(_) => true
-                case _                                => false
-            if lastFlueIdx < 0 then slots // no flue region → nothing to normalize
-            else
-                val lastIdx                = slots.size - 1
-                val afterFlueBeforeChimney = slots.slice(lastFlueIdx + 1, lastIdx)
-                val hasConnector           = afterFlueBeforeChimney.exists:
-                    case ConnectorSlot(_) => true
-                    case _                => false
-                if hasConnector then slots
-                else
-                    // Insert ConnectorSlot(Seq.empty) after last flue, before chimney
-                    val (before, after) = slots.splitAt(lastFlueIdx + 1)
-                    before ++ Seq(ConnectorSlot(Seq.empty)) ++ after
+            val lastIdx   = slots.size - 1
+            val preChimney = slots.take(lastIdx) // everything before the chimney
+            preChimney.lastOption match
+                case Some(FlueSlot(_)) | Some(ThermalFlueSlot(_)) =>
+                    // Head ends with a Flue and chimney follows directly → the
+                    // YAML simply omitted the terminal connector. Insert empty.
+                    preChimney ++ Seq(ConnectorSlot(Seq.empty)) ++ Seq(slots.last)
+                case _                                           =>
+                    // Either the terminal slot is already a ConnectorSlot
+                    // (correctly shaped), or the pre-chimney is something else
+                    // (e.g. empty, ends with connector, etc.) — surface via the
+                    // topology validator.
+                    slots
 
     private lazy val normalizedPostFireboxSlots = normalizePostFireboxSlots(fcProj.post_firebox_pipes)
 
-    // Topology grammar validation (permissive — errors are exposed, not thrown)
+    // TODO(Phase4/Phase5): Surface a `PostFireboxChain_V3` projection alongside
+    // the flat `normalizedPostFireboxSlots` once downstream engine consumers
+    // (15544 common/strict/mce application seed) and UI panels have migrated.
+    // For now, builders `PipeChain_15544_{Strict,MCE}.toChain` exist for
+    // engine-internal consumption; YAML → domain conversion continues to
+    // publish the flat seq via `postFireboxPipeSlots` to avoid a Phase-5-scoped
+    // UI rewrite leaking into Phase 3.
+
+    // Topology grammar validation (permissive — errors are exposed, not thrown).
+    // HEAD_REGION may be empty (legal across all pipelines).
     val topologyValidation
         : Validated[NonEmptyList[afpma.firecalc.engine.ops.generic.TopologyError], PostFireboxPipeChain] =
         PostFireboxPipeChain.validated(

@@ -13,7 +13,7 @@ import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.TypeOfAppliance
 import afpma.firecalc.dto.v6.FireCalcYAML_V6

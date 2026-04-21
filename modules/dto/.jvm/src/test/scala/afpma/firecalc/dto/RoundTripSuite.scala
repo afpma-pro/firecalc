@@ -10,7 +10,7 @@ import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
 import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 
 import org.scalactic.anyvals.PosInt

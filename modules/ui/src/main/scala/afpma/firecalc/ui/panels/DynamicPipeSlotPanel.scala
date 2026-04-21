@@ -10,7 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -703,6 +703,89 @@ final case class DynamicThermalPipeSlotPanel(
 
     override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] =
         slotInitialFrameSig(slotIndex)
+
+    // ── Auto-calc: firebox-boundary for Connector-first head chains (plan U2) ──
+
+    import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
+    import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
+
+    private given thermalElemExtractors_13384: AutoCalcHelper.ElemExtractors[ThermalPipeDescr_13384] =
+        AutoCalcHelper.ElemExtractors(
+            asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
+            asDirectionChange  = { case dc: AddDirectionChange         => (dc.angle, dc.absDir) },
+            asInnerShape       = { case sis: SetInnerShape             => sis.shape }
+        )
+
+    /**
+     * Reactive: is this slot the first head-region slot AND the head region has
+     * no FluePipe? In that case the auto-calc button (normally attached to the
+     * first FlueSlot) must migrate to this ConnectorSlot so Connector-first
+     * chains still get firebox-boundary alignment.
+     *
+     * Physical applicability check (plan U2): the auto-calc algorithm is
+     * `AutoCalcHelper.computeTopAlignedPosition`, which is purely geometric
+     * (projects the pipe direction + cross-section onto a firebox-box face).
+     * It has no dependency on EN 15544 flow-only vs EN 13384 thermal physics,
+     * so wiring it to a ConnectorPipe is physically meaningful — we re-wire.
+     */
+    private lazy val isFirstHeadConnectorWithoutFlueSig: Signal[Boolean] =
+        if pipeTypeVal != ConnectorPipeT then Signal.fromValue(false)
+        else
+            postFireboxSlots_var.signal.map: slots =>
+                // HEAD_REGION is slots.take(size - 2) (last 2 are terminal
+                // connector + chimney, which are the "fixed zone").
+                val fixedZoneStart = (slots.size - 2).max(0)
+                val head           = slots.take(fixedZoneStart)
+                val hasFlue        = head.exists:
+                    case _: PostFireboxPipeDescrSlot.FlueSlot => true
+                    case _                                    => false
+                val firstConnectorIdx = head.indexWhere:
+                    case _: PostFireboxPipeDescrSlot.ConnectorSlot => true
+                    case _                                         => false
+                !hasFlue && firstConnectorIdx == slotIndex
+
+    private def connectorAutoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
+        AutoCalcHelper.mkStatusSig(
+            hasFrameSig = frameBeforeForInitialPos(posIdx).map(_.isDefined),
+            hasShapeSig = welems_var.signal.map(_.filter(_._1 < posIdx).exists: (_, e) =>
+                summon[AutoCalcHelper.ElemExtractors[ThermalPipeDescr_13384]].asInnerShape.isDefinedAt(e))
+        )
+
+    private def frameBeforeForInitialPos(posIdx: Int): Signal[Option[PipeFrame]] =
+        welems_var.signal.map: elems =>
+            AutoCalcHelper.replayFrame(elems, posIdx)
+
+    private def computeConnectorAutoPosition(posIdx: Int): Option[SetInitialPosition] =
+        val elems    = welems_var.now()
+        val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
+        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
+        for
+            frame <- frameOpt
+            shape <- shapeOpt
+        yield
+            val fb  = firebox_var.now()
+            val box = AutoCalcHelper.TargetBox(
+                centerX   = 0.0,
+                centerY   = 0.0,
+                halfWidth = fb.firebox_width.value / 2.0,
+                halfDepth = fb.firebox_depth.value / 2.0,
+                bottomZ   = 0.0,
+                height    = fb.firebox_height.value
+            )
+            val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
+            SetInitialPosition(x.m, y.m, z.m)
+
+    override protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
+        ev =>
+            div(
+                child <-- isFirstHeadConnectorWithoutFlueSig.map:
+                    case true  =>
+                        AutoCalcHelper.autoCalcButton[SetInitialPosition](
+                            connectorAutoCalcStatusSig(idx),
+                            () => computeConnectorAutoPosition(idx)
+                        )(ev)
+                    case false => span()
+            )
 
     // ── IdsMapping: erased Int → Option[Int] ─────────────────────
 

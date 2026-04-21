@@ -175,6 +175,19 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             elems.collectFirst:
                 case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
 
+    /**
+     * Hook for concrete panels to inject extra UI (e.g. an auto-calc button)
+     * next to the `SetInitialPosition` property editor.
+     *
+     * Used by `DynamicThermalPipeSlotPanel` to render a firebox-boundary
+     * auto-calc button on the first head-region ConnectorSlot when the head
+     * region has no FluePipe (plan issue U2 — Connector-first chains).
+     *
+     * Default: no-op (returns an empty span).
+     */
+    protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
+        (_: Var[SetInitialPosition]) => span()
+
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
             .splitMatchSeq(_._1)
@@ -347,13 +360,18 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInitialPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
+                // Auto-calc hook — overridable by concrete panels (see
+                // `DynamicThermalPipeSlotPanel` which supplies a firebox-boundary
+                // auto-calc button when this ConnectorSlot is the first head-region
+                // slot in a Connector-first chain — plan issue U2).
                 renderElemTyped[SetInitialPosition]  (
                     iaax._1,
                     I18N.set_prop.SetInitialPosition,
                     iaax._2,
                     sig,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]])
+                    propertyShow = Some(summon[Show[SetInitialPosition]]),
+                    extra        = initialPositionExtraFn(iaax._1)
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {

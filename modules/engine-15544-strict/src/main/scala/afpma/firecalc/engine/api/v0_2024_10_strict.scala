@@ -89,7 +89,7 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
         def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
         def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
-        override def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
+        override def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] =
             PipeChain_15544_Strict.toSlots(
                 PipeChain_15544_Strict.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
             )

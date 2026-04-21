@@ -46,6 +46,18 @@ trait FlowOnlyAirIntakePipe_Module extends AirIntakePipe_Common_Module:
     export FullDescrResult.*
 
 type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+/**
+ * EN 13384 connector pipe module.
+ *
+ * Plan issue E4 (npipe-topology-connector-first): verified that a ConnectorPipe
+ * with no upstream pipe composes correctly when driven via `PostFireboxPipeChain`.
+ * The EN 13384 standalone entry point (`en13384_common_application.postFireboxChainResults`)
+ * seeds the initial `UpstreamState` with `temp_start = T_WN / T_Wmin` (firebox exit)
+ * and `last_pipe_density = last_pipe_velocity = None` — the thermal pipe calculation
+ * only requires the start temperature; it does not read the last_pipe_* fields when
+ * computing its own density/velocity. No "seed" alternative is needed here: the
+ * existing path already feeds firebox exit directly as the connector inlet.
+ */
 object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.IncrementalPipeDefModule[ConnectorPipeT]:
 
     val incremental = afpma.firecalc.engine.impl.en13384.ThermalIncrementalBuilder_13384.makeFor[ConnectorPipeT]

@@ -414,7 +414,9 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
             case FluePipeT          =>
                 tempStartOverride match
                     case Some(tStart) =>
-                        // Non-first flue pipe: use upstream temperature as reference for exponential decay
+                        // Non-first flue pipe (or first flue whose upstream was updated
+                        // by a preceding head connector): use upstream temperature as
+                        // reference for exponential decay
                         // t(L) = tStart * exp(-0.83 * L / L_Z_calculated)
                         val lzCalc = en15544.L_Z_calculated
                         QtyDAtPosition
@@ -431,6 +433,14 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                             )
                             .atPos
                     case None         =>
+                        // First flue pipe of the chain (no upstream override): use the
+                        // firebox-referenced decay `t_fluepipe(L)`. If the chain has NO
+                        // flue pipes at all (head starts with Connector and never
+                        // alternates back — invalid under current 15544 grammar, but
+                        // guarded against future relaxations), this branch is unreachable
+                        // because `gasTemperature` is only invoked with `elem.typ ==
+                        // FluePipeT` for flue pipe elements. Nothing to return as
+                        // "identity" in that case — plan issue E2.
                         en15544.t_fluepipe(totalLengthUntil(elem))
             case _                  =>
                 throw new Exception(s"${elem.fullRef}: could not determine 'temperature' for gas '$gas'")

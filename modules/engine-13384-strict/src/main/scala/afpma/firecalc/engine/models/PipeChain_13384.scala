@@ -6,8 +6,8 @@
 package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -55,5 +55,13 @@ object PipeChain_13384:
             ConnectorSlot(d.connector),
             ChimneySlot  (d.chimney  )
         )
+
+    // TODO(Phase4): EN 13384 strict has NO flue pipe (grammar: Connector + Chimney).
+    // Under the `PostFireboxChain_V3` grammar this is an empty HEAD_REGION, which the
+    // topology validator accepts (empty HEAD_REGION is legal everywhere). Phase 4
+    // (physics seed — plan issue E4) must still decide whether to (a) promote the
+    // connector to the head region, or (b) keep this builder strictly on the legacy
+    // flat `toSlots` path while 15544 migrates to `toChain`. No `toChain` method is
+    // emitted here intentionally.
 
 end PipeChain_13384

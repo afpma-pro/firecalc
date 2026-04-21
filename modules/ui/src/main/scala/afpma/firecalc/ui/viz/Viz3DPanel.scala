@@ -5,7 +5,7 @@
 
 package afpma.firecalc.ui.viz
 
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.i18n.implicits.I18N
 

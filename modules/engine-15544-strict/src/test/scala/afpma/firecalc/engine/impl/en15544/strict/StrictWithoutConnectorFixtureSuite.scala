@@ -35,7 +35,7 @@ class StrictWithoutConnectorFixtureSuite extends AnyFreeSpec with Matchers:
 
         "overrides postFireboxPipeSlots with a 3-slot vector (FlueSlot, ConnectorSlot-empty, ChimneySlot)" in {
             val slots = StrictWithoutConnectorFixture_15544.postFireboxPipeSlots
-            import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
             slots.size shouldBe 3
             slots(0) shouldBe a[FlueSlot]
             slots(1) shouldBe a[ConnectorSlot]

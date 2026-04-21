@@ -5,8 +5,8 @@
 
 package afpma.firecalc.engine.models
 
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 

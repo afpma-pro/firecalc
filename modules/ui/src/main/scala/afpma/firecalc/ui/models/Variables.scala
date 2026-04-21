@@ -197,7 +197,7 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
 // ── Post-firebox generic topology ─────────────────────────────────
 // Slot-indexed reactive state for dynamic N-pipe UI.
 
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
 

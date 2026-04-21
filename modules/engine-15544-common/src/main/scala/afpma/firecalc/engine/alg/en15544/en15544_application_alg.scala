@@ -42,8 +42,8 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
      * compatibility.  Override with the actual `post_firebox_pipes` from FireCalcYAML V6
      * to support arbitrary N-pipe topologies.
      */
-    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot] =
-        import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] =
+        import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
         Seq(
             FlueSlot     (Seq.empty),
             ConnectorSlot(Seq.empty),

@@ -9,7 +9,6 @@ import afpma.firecalc.dto.CustomYAMLEncoderDecoder
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.instances.CommonInstances
 import afpma.firecalc.dto.instances.V6Instances
-import afpma.firecalc.dto.v4.*
 import afpma.firecalc.dto.v5.*
 
 import io.circe.Decoder
