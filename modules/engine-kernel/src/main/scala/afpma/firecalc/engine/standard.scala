@@ -322,7 +322,7 @@ object standard {
     ) extends FluePipeError
     object FlueGasVelocityError        :
         given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
-            val show2or3 = 
+            val show2or3 =
                 if ((err.gasVelocity.show == err.minVel.show) || (err.gasVelocity.show == err.minVel.show))
                 then show_Velocity_3
                 else show_Velocity

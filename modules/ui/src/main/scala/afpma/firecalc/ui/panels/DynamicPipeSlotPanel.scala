@@ -71,15 +71,13 @@ object DynamicPipeSlotPanel:
     def isFirstHeadSlotAndIsFlue(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
         slotIndex == 0 && (slots.lift(0) match
             case Some(_: PostFireboxPipeDescrSlot.FlueSlot) => true
-            case _                                          => false
-        )
+            case _ => false)
 
     /** True iff `slotIndex == 0` AND the slot at index 0 is a `ConnectorSlot`. */
     def isFirstHeadSlotAndIsConnector(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
         slotIndex == 0 && (slots.lift(0) match
             case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => true
-            case _                                               => false
-        )
+            case _ => false)
 
 end DynamicPipeSlotPanel
 
@@ -208,8 +206,8 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544] = AutoCalcHelper.ElemExtractors(
         asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
-        asDirectionChange  = { case dc: AddDirectionChange         => (dc.angle, dc.absDir) },
-        asInnerShape       = { case sis: SetInnerShape             => sis.shape }
+        asDirectionChange  = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+        asInnerShape       = { case sis: SetInnerShape => sis.shape }
     )
 
     /**
@@ -227,9 +225,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
      * Delegates to the pure predicate in the companion object for testability.
      */
     private lazy val isFirstHeadSlotAndIsFlueSig: Signal[Boolean] =
-        postFireboxSlots_var.signal.map(slots =>
-            DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, slotIndex)
-        )
+        postFireboxSlots_var.signal.map(slots => DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, slotIndex))
 
     private def autoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
         AutoCalcHelper.mkStatusSig(
@@ -436,13 +432,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
                 // subsequent slots inherit their start position from the previous slot's endpoint.
                 // If the head chain starts with a Connector instead, the sibling predicate
                 // `isFirstHeadSlotAndIsConnectorSig` in the thermal panel takes over.
-                val extraFn: Var[SetInitialPosition] => HtmlElement = ev =>
+                val extraFn  : Var[SetInitialPosition] => HtmlElement = ev =>
                     div(
                         child <-- isFirstHeadSlotAndIsFlueSig.map:
                             case true  => autoCalcExtra(iix._1)(ev)
                             case false => span()
                     )
-                renderElemTyped[SetInitialPosition]  (
+                renderElemTyped[SetInitialPosition](
                     iix._1,
                     I18N.set_prop.SetInitialPosition,
                     iix._2,
@@ -740,8 +736,8 @@ final case class DynamicThermalPipeSlotPanel(
     private given thermalElemExtractors_13384: AutoCalcHelper.ElemExtractors[ThermalPipeDescr_13384] =
         AutoCalcHelper.ElemExtractors(
             asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
-            asDirectionChange  = { case dc: AddDirectionChange         => (dc.angle, dc.absDir) },
-            asInnerShape       = { case sis: SetInnerShape             => sis.shape }
+            asDirectionChange  = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asInnerShape       = { case sis: SetInnerShape => sis.shape }
         )
 
     /**
@@ -765,7 +761,7 @@ final case class DynamicThermalPipeSlotPanel(
     private lazy val isFirstHeadSlotAndIsConnectorSig: Signal[Boolean] =
         if pipeTypeVal != ConnectorPipeT then Signal.fromValue(false)
         else
-            postFireboxSlots_var.signal.map(slots =>
+            postFireboxSlots_var.signal.map                   (slots =>
                 DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, slotIndex)
             )
 

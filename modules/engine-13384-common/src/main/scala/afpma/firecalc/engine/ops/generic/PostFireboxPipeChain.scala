@@ -20,7 +20,7 @@ import cats.data.ValidatedNel
  * The topology grammar:
  * {{{
  *   PostFireboxChain   := HEAD_REGION  TERMINAL_CONNECTOR  CHIMNEY
- *   HEAD_REGION        := alternating Flue/Connector (MAY BE EMPTY; if non-empty, must end with FluePipe)
+ *   HEAD_REGION        := empty  OR  arbitrary sequence of Flue/Connector ending with FluePipe
  *   TERMINAL_CONNECTOR := ConnectorPipeT   (mandatory slot; descriptor may be empty)
  *   CHIMNEY            := ChimneyPipeT     (mandatory, exactly one, last)
  * }}}
@@ -28,7 +28,7 @@ import cats.data.ValidatedNel
  * Derived rules:
  *   - HEAD_REGION may be empty (EN 13384-only pipelines + legacy V6 YAML).
  *   - HEAD_REGION may start with either FluePipe or ConnectorPipe.
- *   - No two consecutive pipes of the same type inside HEAD_REGION.
+ *   - HEAD_REGION may contain any arrangement of FluePipe/ConnectorPipe (no alternation constraint).
  *   - HEAD_REGION, if non-empty, must end with a FluePipe.
  *
  * Construct via `PostFireboxPipeChain.validated`.
@@ -136,7 +136,7 @@ object PostFireboxPipeChain:
      * HEAD_REGION may be empty (EN 13384-only pipelines + legacy V6 YAML).
      */
     def validated(
-        slots: Vector[PipeSlot],
+        slots: Vector[PipeSlot]
     ): ValidatedNel[TopologyError, PostFireboxPipeChain] =
         import TopologyError.*
 
@@ -145,11 +145,11 @@ object PostFireboxPipeChain:
         //   C2: no ChimneyPipeT except the last slot
         val chimneyLastRule =
             if slots.isEmpty || slots.last.pipeType != ChimneyPipeT then Validated.invalidNel(MissingChimney)
-            else Validated.validNel(())
+            else Validated.validNel                                                          (()            )
 
         val chimneyOnlyLastRule =
             if slots.dropRight(1).exists(_.pipeType == ChimneyPipeT) then Validated.invalidNel(ChimneyNotLast)
-            else Validated.validNel(())
+            else Validated.validNel     (()                        )
 
         // Everything before the chimney slot (drop the last element if
         // it's the chimney; otherwise drop it anyway so we don't analyse
@@ -179,30 +179,25 @@ object PostFireboxPipeChain:
         val terminalConnectorRule =
             if slots.isEmpty then Validated.validNel(())
             else if !terminalPresent then Validated.invalidNel(MissingTerminalConnector)
-            else Validated.validNel(())
+            else Validated.validNel                           (()                      )
 
         // ── HEAD_REGION rules ────────────────────────────────────────────
         //   H1: may be empty (empty head is legal)
         //   H2: contains only FluePipeT or ConnectorPipeT (chimney already
         //       handled by chimneyOnlyLastRule; anything else is a type
         //       error outside this validator's remit)
-        //   H3: no two consecutive pipes of the same type
-        //   H4: when non-empty, must end with FluePipeT (cannot end with
-        //       ConnectorPipeT)
+        //   H3: when non-empty, must end with FluePipeT (cannot end with
+        //       ConnectorPipeT — preserves the fixed terminal-connector
+        //       distinction)
         //
         // H-rules are only meaningful when the outer shape is plausible:
         // if the chain is empty we skip them (MissingChimney already fires).
         val headRulesRelevant: Boolean = slots.nonEmpty
 
-        val alternationRule =
-            if headRulesRelevant && head.nonEmpty && hasConsecutiveSameType(head) then
-                Validated.invalidNel(ConsecutiveSamePipeTypeInHead)
-            else Validated.validNel(())
-
         val headEndsWithFlueRule =
             if headRulesRelevant && head.nonEmpty && head.last.pipeType == ConnectorPipeT then
                 Validated.invalidNel(HeadRegionEndsWithConnector)
-            else Validated.validNel(())
+            else Validated.validNel (()                         )
 
         import cats.syntax.all.*
 
@@ -210,19 +205,7 @@ object PostFireboxPipeChain:
             chimneyLastRule,
             chimneyOnlyLastRule,
             terminalConnectorRule,
-            alternationRule,
             headEndsWithFlueRule
-        ).mapN { (_, _, _, _, _) =>
+        ).mapN { (_, _, _, _) =>
             PostFireboxPipeChain(slots)
-        }
-
-    /**
-     * Detects whether the given sequence contains two adjacent pipes with
-     * the same `pipeType`. Intended for HEAD_REGION validation; the caller
-     * is responsible for ensuring the sequence is the head only.
-     */
-    private def hasConsecutiveSameType(region: Vector[PipeSlot]): Boolean =
-        region.sliding(2).exists {
-            case Vector(a, b) => a.pipeType == b.pipeType
-            case _            => false
         }

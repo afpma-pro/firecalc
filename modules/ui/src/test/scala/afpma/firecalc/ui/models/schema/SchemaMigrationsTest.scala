@@ -388,7 +388,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
             chimney_pipe_descr             = Seq.empty
         )
 
-        AppStateSchema_V5(
+        AppStateSchema_V5  (
             engine_state   = engineV5,
             sensitive_data = ClientProjectData_V1.empty,
             billing_data   = defaultable.default_BillingInfo.default
@@ -496,14 +496,16 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
     it should "round-trip full AppStateSchema preserving sensitive_data and billing_data" in {
         // Given - a schema with non-empty sensitive_data
-        val schema = AppStateSchemaHelper.createInitialSchema().copy(
-            sensitive_data = ClientProjectData_V1.empty.copy(
-                customer = ClientProjectData_V1.empty.customer.copy(
-                    first_name = "Jean",
-                    last_name  = "Dupont"
+        val schema = AppStateSchemaHelper
+            .createInitialSchema()
+            .copy(
+                sensitive_data = ClientProjectData_V1.empty.copy(
+                    customer = ClientProjectData_V1.empty.customer.copy(
+                        first_name = "Jean",
+                        last_name  = "Dupont"
+                    )
                 )
             )
-        )
 
         // When - encode and reload via the file import path
         val yaml   = AppStateSchemaHelper.encodeToYaml(schema).get
@@ -511,15 +513,15 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
         // Then - all fields preserved
         loaded.isSuccess shouldBe true
-        loaded.get.engine_state.version.unwrap              shouldBe AppStateSchema.LATEST_VERSION
-        loaded.get.sensitive_data.customer.first_name       shouldBe "Jean"
-        loaded.get.sensitive_data.customer.last_name        shouldBe "Dupont"
+        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+        loaded.get.sensitive_data.customer.first_name shouldBe "Jean"
+        loaded.get.sensitive_data.customer.last_name shouldBe "Dupont"
     }
 
     it should "load legacy engine-state-only .fcalc files via fallback" in {
         // Given - an old-format .fcalc containing only FireCalcYAML (no sensitive_data wrapper)
-        val engineState    = EngineState.empty
-        val legacyYaml     = FireCalcYAMLMigrations.encodeToYamlTry(engineState).get
+        val engineState = EngineState.empty
+        val legacyYaml  = FireCalcYAMLMigrations.encodeToYamlTry(engineState).get
 
         // Sanity: legacy format should NOT contain sensitive_data
         legacyYaml should not include "sensitive_data"

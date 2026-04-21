@@ -27,10 +27,11 @@ object Page:
     given rwProjectId   : ReadWriter[ProjectId]    =
         readwriter[String].bimap[ProjectId](_.value, ProjectId.apply)
 
-/** Fragment base path including the deployment pathname prefix (e.g. `/app/#`).
-  * Waypoint's `pushState` passes `basePath + routePath` directly to `history.pushState()`,
-  * so the prefix must be included here — the Router `origin` param is NOT used for navigation.
-  */
+/**
+ * Fragment base path including the deployment pathname prefix (e.g. `/app/#`).
+ * Waypoint's `pushState` passes `basePath + routePath` directly to `history.pushState()`,
+ * so the prefix must be included here — the Router `origin` param is NOT used for navigation.
+ */
 private lazy val fragmentBasePath: String =
     val pathname = dom.document.location.pathname.stripSuffix("/")
     pathname + "/#"

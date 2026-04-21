@@ -1061,9 +1061,8 @@ object I18nData:
     )
 
     case class TopologyErrors(
-        missing_chimney                    : String,
-        chimney_not_last                   : String,
-        missing_terminal_connector_slot    : String,
-        consecutive_same_pipe_type_in_head : String,
-        head_region_ends_with_connector    : String
+        missing_chimney                : String,
+        chimney_not_last               : String,
+        missing_terminal_connector_slot: String,
+        head_region_ends_with_connector: String
     )

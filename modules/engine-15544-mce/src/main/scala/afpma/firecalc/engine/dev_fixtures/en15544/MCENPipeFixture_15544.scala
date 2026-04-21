@@ -396,38 +396,38 @@ object MCENPipeFixture_15544_CFCF
         import FluePipe_Module_13384.*
         import ConnectorPipe_Module as CPM
         import ChimneyPipe_Module as CHPM
-        Seq(
+        Seq  (
             // Slot 0 — ConnectorSlot #1: head connector (first slot, Connector-first)
-            PostFireboxPipeDescrSlot.ConnectorSlot(
-                Seq(
-                    CPM.setInitialDirection(
+            PostFireboxPipeDescrSlot.ConnectorSlot  (
+                Seq (
+                    CPM.setInitialDirection    (
                         azimuth     = AzimuthDirection.Right,
                         inclination = InclinationDirection.Horizontal
                     ),
                     CPM.roughness (Material_13384.WeldedSteel()),
                     CPM.innerShape(circle(130.mm)              ),
-                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
-                    CPM.pipeLocation      (PipeLocation.HeatedArea                       ),
-                    CPM.addSectionHorizontal("C1-head-connector", 20.cm                  )
+                    CPM.layer                  (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
+                    CPM.pipeLocation           (PipeLocation.HeatedArea                       ),
+                    CPM.addSectionHorizontal   ("C1-head-connector", 20.cm                    )
                 )
             ),
             // Slot 1 — ThermalFlueSlot #1: horizontal flue + 90° turn upward
             PostFireboxPipeDescrSlot.ThermalFlueSlot(
                 Seq(
-                    pipeLocation           (PipeLocation.HeatedArea    ),
-                    roughness              (3.mm                       ),
+                    pipeLocation        (PipeLocation.HeatedArea    ),
+                    roughness           (3.mm                       ),
                     innerShape(rectangle(11.1.cm, 15.3.cm)),
-                    layer                  (e = 1.cm, λ = 0.89.W_per_mK),
-                    addSectionHorizontal   ("F1-sortie foyer", 28.1.cm ),
-                    addSharpAngle_90deg    (
+                    layer               (e = 1.cm, λ = 0.89.W_per_mK),
+                    addSectionHorizontal("F1-sortie foyer", 28.1.cm ),
+                    addSharpAngle_90deg (
                         "F1-virage 90 deg (-> Haut)",
                         AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
                     )
                 )
             ),
             // Slot 2 — ConnectorSlot #2: interleaved head connector
-            PostFireboxPipeDescrSlot.ConnectorSlot(
-                Seq(
+            PostFireboxPipeDescrSlot.ConnectorSlot  (
+                Seq (
                     CPM.roughness (Material_13384.WeldedSteel()),
                     CPM.innerShape(circle(130.mm)              ),
                     CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),

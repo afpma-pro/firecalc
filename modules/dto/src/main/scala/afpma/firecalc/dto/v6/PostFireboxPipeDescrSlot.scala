@@ -145,5 +145,5 @@ final case class ChimneySlot_V3(descr: Seq[ThermalPipeDescr_13384_V3])
 final case class PostFireboxChain_V3(
     head    : Seq[HeadSlot_V3],
     terminal: ConnectorSlot_V3,
-    chimney : ChimneySlot_V3,
+    chimney : ChimneySlot_V3
 )

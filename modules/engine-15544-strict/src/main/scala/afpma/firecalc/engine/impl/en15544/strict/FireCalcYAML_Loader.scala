@@ -80,14 +80,14 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             // `MissingChimney`. Any insertion here would paper over the error.
             slots
         else
-            val lastIdx   = slots.size - 1
+            val lastIdx    = slots.size - 1
             val preChimney = slots.take(lastIdx) // everything before the chimney
             preChimney.lastOption match
                 case Some(FlueSlot(_)) | Some(ThermalFlueSlot(_)) =>
                     // Head ends with a Flue and chimney follows directly → the
                     // YAML simply omitted the terminal connector. Insert empty.
                     preChimney ++ Seq(ConnectorSlot(Seq.empty)) ++ Seq(slots.last)
-                case _                                           =>
+                case _                                            =>
                     // Either the terminal slot is already a ConnectorSlot
                     // (correctly shaped), or the pre-chimney is something else
                     // (e.g. empty, ends with connector, etc.) — surface via the

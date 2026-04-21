@@ -446,8 +446,7 @@ sealed abstract class EN15544_Strict_Application(
                     //   - Flue-first head      → legacy single-flue-pipe recomputation
                     //                            on the first `FlueSlot` (path (a)).
                     val seedPipeResult: VNelMcalcErr[PipeResult] =
-                        if headStartsWithConnector then
-                            firebox_PipeResult
+                        if headStartsWithConnector then firebox_PipeResult
                         else
                             import FluePipe_Module_15544.FullDescrResult.given
                             import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
@@ -476,7 +475,7 @@ sealed abstract class EN15544_Strict_Application(
                                                 .toValidatedNel
                                         case Validated.Invalid(nel) => Validated.Invalid(nel)
 
-                    val seedDensity: Option[Density]      = seedPipeResult.toOption.flatMap { pr =>
+                    val seedDensity : Option[Density]      = seedPipeResult.toOption.flatMap { pr =>
                         computeAt match
                             case ComputeAt.Mean   => pr.last_density_mean.orElse(pr.last_density_middle)
                             case ComputeAt.Middle => pr.last_density_middle

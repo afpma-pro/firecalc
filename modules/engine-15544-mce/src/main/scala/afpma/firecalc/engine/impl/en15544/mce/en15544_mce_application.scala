@@ -562,15 +562,13 @@ abstract class EN15544_MCE_Application(
                                                                 hafg               = en15544_mce.en13384_heatingAppliance_fluegas,
                                                                 hamf               = en15544_mce.en13384_heatingAppliance_massFlows,
                                                                 temp_start         = en15544_mce.t_burnout,
-                                                                last_pipe_density  =
-                                                                    computeAt match
-                                                                        case ComputeAt.Mean   => cc.last_density_mean
-                                                                        case ComputeAt.Middle => cc.last_density_middle
+                                                                last_pipe_density  = computeAt match
+                                                                    case ComputeAt.Mean   => cc.last_density_mean
+                                                                    case ComputeAt.Middle => cc.last_density_middle
                                                                 ,
-                                                                last_pipe_velocity =
-                                                                    computeAt match
-                                                                        case ComputeAt.Mean   => cc.last_velocity_mean
-                                                                        case ComputeAt.Middle => cc.last_velocity_middle
+                                                                last_pipe_velocity = computeAt match
+                                                                    case ComputeAt.Mean   => cc.last_velocity_mean
+                                                                    case ComputeAt.Middle => cc.last_velocity_middle
                                                                 ,
                                                                 gas                = FlueGas
                                                             )

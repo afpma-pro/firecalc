@@ -90,7 +90,7 @@ object PipeChain_15544_Strict:
      * single-Flue head.
      */
     def toChain(d: Descriptors): PostFireboxChain_V3 =
-        PostFireboxChain_V3(
+        PostFireboxChain_V3    (
             head     = Vector[HeadSlot_V3](FlueSlot_V3(d.flue)),
             terminal = ConnectorSlot_V3(d.connector),
             chimney  = ChimneySlot_V3(d.chimney)

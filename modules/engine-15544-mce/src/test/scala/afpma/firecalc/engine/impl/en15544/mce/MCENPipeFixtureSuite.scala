@@ -126,8 +126,12 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
                         case Validated.Valid(vec)   =>
                             vec.size shouldBe 6
                             vec.map(_._1) shouldBe Vector(
-                                ConnectorPipeT, FluePipeT, ConnectorPipeT, FluePipeT,
-                                ConnectorPipeT, ChimneyPipeT
+                                ConnectorPipeT,
+                                FluePipeT,
+                                ConnectorPipeT,
+                                FluePipeT,
+                                ConnectorPipeT,
+                                ChimneyPipeT
                             )
 
                             val results = vec.map(_._2)
@@ -137,10 +141,10 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
                                 val tStart = pr.gas_temp_start.value
                                 val tEnd   = pr.gas_temp_end.value
                                 withClue(s"temperatures finite (typ=${pr.typ})") {
-                                    tStart.isNaN      .shouldBe(false)
-                                    tStart.isInfinite .shouldBe(false)
-                                    tEnd.isNaN        .shouldBe(false)
-                                    tEnd.isInfinite   .shouldBe(false)
+                                    tStart.isNaN.shouldBe     (false)
+                                    tStart.isInfinite.shouldBe(false)
+                                    tEnd.isNaN.shouldBe       (false)
+                                    tEnd.isInfinite.shouldBe  (false)
                                 }
                             }
 
@@ -151,7 +155,9 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
                             results.foreach { pr =>
                                 val tStart = pr.gas_temp_start.value
                                 val tEnd   = pr.gas_temp_end.value
-                                withClue(s"gas_temp non-increasing within slot (typ=${pr.typ}): start=$tStart end=$tEnd") {
+                                withClue(
+                                    s"gas_temp non-increasing within slot (typ=${pr.typ}): start=$tStart end=$tEnd"
+                                ) {
                                     tEnd.should(be <= (tStart + 1e-6))
                                 }
                             }
@@ -159,7 +165,9 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
                                 case Vector(prev, next) =>
                                     val prevEnd   = prev.gas_temp_end.value
                                     val nextStart = next.gas_temp_start.value
-                                    withClue(s"temperature continuity across slot boundary (prevEnd=$prevEnd nextStart=$nextStart)") {
+                                    withClue(
+                                        s"temperature continuity across slot boundary (prevEnd=$prevEnd nextStart=$nextStart)"
+                                    ) {
                                         // Allow tolerance for numerical drift
                                         math.abs(nextStart - prevEnd).should(be < 1e-3)
                                     }
@@ -170,16 +178,16 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
                             // gravitational pressures pRg finite (sign depends on
                             // direction; we just require finiteness here).
                             results.foreach { pr =>
-                                val pRs  = pr.pRs.value
-                                val pRg  = pr.pRg.value
+                                val pRs = pr.pRs.value
+                                val pRg = pr.pRg.value
                                 withClue(s"pRs non-negative (typ=${pr.typ}): pRs=$pRs") {
-                                    pRs.isNaN      .shouldBe(false)
-                                    pRs.isInfinite .shouldBe(false)
-                                    pRs.should(be >= 0.0)
+                                    pRs.isNaN.shouldBe     (false    )
+                                    pRs.isInfinite.shouldBe(false    )
+                                    pRs.should             (be >= 0.0)
                                 }
                                 withClue(s"pRg finite (typ=${pr.typ}): pRg=$pRg") {
-                                    pRg.isNaN      .shouldBe(false)
-                                    pRg.isInfinite .shouldBe(false)
+                                    pRg.isNaN.shouldBe     (false)
+                                    pRg.isInfinite.shouldBe(false)
                                 }
                             }
                         case Validated.Invalid(nel) =>

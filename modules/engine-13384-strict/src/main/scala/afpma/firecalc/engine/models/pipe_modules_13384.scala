@@ -46,6 +46,7 @@ trait FlowOnlyAirIntakePipe_Module extends AirIntakePipe_Common_Module:
     export FullDescrResult.*
 
 type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+
 /**
  * EN 13384 connector pipe module.
  *

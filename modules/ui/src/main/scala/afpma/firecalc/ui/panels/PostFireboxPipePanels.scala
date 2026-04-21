@@ -112,62 +112,26 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Toolbar ──────────────────────────────────────────────────
 
-    // Alternation-aware affordance — plan issue U1. The toolbar inserts at the
-    // end of HEAD_REGION, i.e. just before the fixed terminal-connector +
-    // chimney. Since TERMINAL_CONNECTOR is always a connector, inserting
-    // another Connector here would violate the alternation rule across the
-    // HEAD↔TERMINAL boundary (HEAD_REGION cannot end with a ConnectorPipe).
-    // Likewise, inserting a Flue after another Flue creates two consecutive
-    // FluePipes inside HEAD_REGION. Both cases are disabled reactively so the
-    // user cannot produce a `ConsecutiveSamePipeTypeInHead` /
-    // `HeadRegionEndsWithConnector` error through the toolbar.
-    private lazy val lastHeadSlotSig: Signal[Option[PostFireboxPipeDescrSlot]] =
-        postFireboxSlots_var.signal.map: slots =>
-            val normalized     = normalizeSlots(slots)
-            val fixedZoneStart = (normalized.size - 2).max(0)
-            val head           = normalized.take(fixedZoneStart)
-            head.lastOption
-
-    /** Inserting a FluePipe after another FluePipe would break alternation. */
-    private lazy val canAddFlueSig: Signal[Boolean] =
-        lastHeadSlotSig.map:
-            case Some(_: PostFireboxPipeDescrSlot.FlueSlot) => false
-            case _                                          => true
-
-    /**
-     * Inserting a ConnectorPipe at the end of HEAD_REGION would make the head
-     * end with a Connector — which duplicates the terminal connector across
-     * the HEAD↔TERMINAL boundary. Always disabled (grammar rule
-     * `HeadRegionEndsWithConnector`).
-     *
-     * Exception: if HEAD_REGION is currently empty, the toolbar still allows
-     * a Connector as the first head slot — but only if the user then adds a
-     * Flue after it; the validator will surface the error until they do.
-     */
-    private lazy val canAddConnectorSig: Signal[Boolean] =
-        lastHeadSlotSig.map:
-            case None                                          => true  // empty head — connector-first is legal
-            case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => false
-            case Some(_: PostFireboxPipeDescrSlot.FlueSlot)    => true
-            case _                                              => true // defensive
-
+    // Both add-slot buttons are always enabled. The grammar permits arbitrary
+    // sequences of Flue/Connector in HEAD_REGION (no alternation constraint);
+    // the only remaining invariant is "non-empty head ends with Flue", which
+    // the validator surfaces via `topologyWarning` when the user produces a
+    // transient invalid state. No toolbar pre-blocking.
     private lazy val toolbar: HtmlElement = div(
         cls := "flex items-center gap-2 px-4 py-2",
         button(
             cls := "btn btn-xs btn-outline btn-primary",
-            disabled <-- canAddFlueSig.map(!_),
             lucide.plus,
             span(cls := "ml-1", I18N.panels.channel_pipe),
             onClick --> { _ => addSlotToFlueRegion(PostFireboxPipeDescrSlot.FlueSlot(defaultFlueContent)) }
         ),
         button(
             cls := "btn btn-xs btn-outline btn-secondary",
-            disabled <-- canAddConnectorSig.map(!_),
             lucide.plus,
             span(cls := "ml-1", I18N.panels.connector_pipe),
             onClick --> { _ => addSlotToFlueRegion(PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty)) }
         ),
-        div(cls := "flex-1"),
+        div   (cls := "flex-1"),
         // Head-region length display — plan issue U3. Shows Σ(head pipe lengths).
         // When the head mixes Flue and Connector pipes, the value is prefixed with `~`
         // because the thermal behaviour of ConnectorPipe differs from FluePipe, so
@@ -191,9 +155,9 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         postFireboxSlots_var.signal
             .combineWith(postFireboxPipeResults_sig)
             .map: (slots, resultsV) =>
-                val normalized     = normalizeSlots(slots)
-                val fixedZoneStart = (normalized.size - 2).max(0)
-                val headIndices    = (0 until fixedZoneStart).toVector
+                val normalized         = normalizeSlots(slots)
+                val fixedZoneStart     = (normalized.size - 2   ).max(0)
+                val headIndices        = (0 until fixedZoneStart).toVector
                 val hasConnectorInHead = headIndices.exists: i =>
                     normalized.lift(i) match
                         case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => true
@@ -206,7 +170,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                         val prefix      = if hasConnectorInHead then "~" else ""
                         val formatted   = f"$prefix$totalMeters%.2f m"
                         // Label: "calculated flue pipe length" (L_N / L_CFLfp).
-                        val label = I18N.en15544.terms.L_N.name
+                        val label       = I18N.en15544.terms.L_N.name
                         span(
                             cls := "text-xs text-base-content/70 px-2",
                             s"$label: $formatted"
@@ -215,19 +179,14 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Topology validation warning ──────────────────────────────
 
-    // Phase 5 wiring: maps each TopologyError case to the i18n key set introduced
-    // alongside the alternating-grammar validator. The keys
-    // `consecutive_same_pipe_type_in_head`, `head_region_ends_with_connector` and
-    // `missing_terminal_connector_slot` replace the retired
-    // `missing_connector_after_flue` / `flue_pipe_after_connector` /
-    // `multiple_connectors_after_flue` entries. Empty HEAD_REGION is legal and has
-    // no associated error.
+    // Maps each TopologyError case to its i18n key. Empty HEAD_REGION is legal
+    // and has no associated error. Consecutive same-type pipes in HEAD_REGION
+    // are also legal — no alternation rule — so no entry here.
     private def topologyErrorLabel(e: TopologyError): String = e match
-        case TopologyError.MissingChimney                => I18N.topology_errors.missing_chimney
-        case TopologyError.ChimneyNotLast                => I18N.topology_errors.chimney_not_last
-        case TopologyError.MissingTerminalConnector      => I18N.topology_errors.missing_terminal_connector_slot
-        case TopologyError.ConsecutiveSamePipeTypeInHead => I18N.topology_errors.consecutive_same_pipe_type_in_head
-        case TopologyError.HeadRegionEndsWithConnector   => I18N.topology_errors.head_region_ends_with_connector
+        case TopologyError.MissingChimney              => I18N.topology_errors.missing_chimney
+        case TopologyError.ChimneyNotLast              => I18N.topology_errors.chimney_not_last
+        case TopologyError.MissingTerminalConnector    => I18N.topology_errors.missing_terminal_connector_slot
+        case TopologyError.HeadRegionEndsWithConnector => I18N.topology_errors.head_region_ends_with_connector
 
     private lazy val topologyWarning: Signal[Option[HtmlElement]] =
         topologyValidation_sig.map:

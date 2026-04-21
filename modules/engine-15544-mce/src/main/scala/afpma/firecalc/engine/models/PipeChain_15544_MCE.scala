@@ -83,7 +83,7 @@ object PipeChain_15544_MCE:
      * fixtures already widen to multi-slot head via their own `toSlots` overrides.
      */
     def toChain(d: Descriptors): PostFireboxChain_V3 =
-        PostFireboxChain_V3(
+        PostFireboxChain_V3    (
             head     = Vector[HeadSlot_V3](ThermalFlueSlot_V3(d.flue)),
             terminal = ConnectorSlot_V3(d.connector),
             chimney  = ChimneySlot_V3(d.chimney)
