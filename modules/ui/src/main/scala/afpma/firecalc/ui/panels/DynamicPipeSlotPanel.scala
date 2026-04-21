@@ -55,6 +55,32 @@ object DynamicPipeSlotPanel:
             case PostFireboxPipeDescrSlot.ChimneySlot(_)     =>
                 DynamicThermalPipeSlotPanel(slotIndex, ChimneyPipeT, I18N.panels.chimney_pipe, slotControlsNode)
 
+    // ── Auto-calc visibility predicates (pure, testable) ─────────────────
+    //
+    // Unified rule: the auto-calc button is visible on whichever slot is
+    // topologically first in HEAD_REGION (index 0), regardless of pipe type.
+    // The button aligns a pipe's start to the firebox boundary; only the
+    // very first slot touches the firebox. Subsequent slots inherit their
+    // start from the previous slot's endpoint.
+    //
+    // These predicates are pure functions of the slot vector + the panel's
+    // own slotIndex — extracted here so they can be unit-tested without
+    // spinning up Laminar owners or reactive wiring.
+
+    /** True iff `slotIndex == 0` AND the slot at index 0 is a `FlueSlot`. */
+    def isFirstHeadSlotAndIsFlue(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
+        slotIndex == 0 && (slots.lift(0) match
+            case Some(_: PostFireboxPipeDescrSlot.FlueSlot) => true
+            case _                                          => false
+        )
+
+    /** True iff `slotIndex == 0` AND the slot at index 0 is a `ConnectorSlot`. */
+    def isFirstHeadSlotAndIsConnector(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
+        slotIndex == 0 && (slots.lift(0) match
+            case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => true
+            case _                                               => false
+        )
+
 end DynamicPipeSlotPanel
 
 // ═══════════════════════════════════════════════════════════════════
@@ -187,22 +213,23 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
     )
 
     /**
-     * Reactive check: is this slot the first `FlueSlot` in `postFireboxSlots_var`?
+     * Reactive check: is this slot the first HEAD_REGION slot (index 0) AND is it
+     * a `FlueSlot`?
      *
      * The auto-calc button auto-aligns the pipe's start to the firebox boundary —
-     * only the first flue section actually touches the firebox. Subsequent flue
-     * sections inherit their start from the previous slot's endpoint.
+     * only the very first slot (index 0) actually touches the firebox, regardless
+     * of pipe type. Subsequent slots inherit their start from the previous slot's
+     * endpoint.
      *
-     * Using a signal (not `slotIndex == 0`) keeps this robust to slot reordering:
-     * if the user ever moves a `ConnectorSlot` above the flue region, the button
-     * migrates to whichever `FlueSlot` is now topologically first.
+     * The unified rule is: "auto-calc button is visible iff this slot is the first
+     * HEAD_REGION slot" — implemented here for `FlueSlot` and in
+     * `isFirstHeadSlotAndIsConnectorSig` (thermal panel) for `ConnectorSlot`.
+     * Delegates to the pure predicate in the companion object for testability.
      */
-    private lazy val isFirstFlueSlotSig: Signal[Boolean] =
-        postFireboxSlots_var.signal.map: slots =>
-            val firstFlueIdx = slots.indexWhere:
-                case _: PostFireboxPipeDescrSlot.FlueSlot => true
-                case _                                    => false
-            firstFlueIdx == slotIndex
+    private lazy val isFirstHeadSlotAndIsFlueSig: Signal[Boolean] =
+        postFireboxSlots_var.signal.map(slots =>
+            DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, slotIndex)
+        )
 
     private def autoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
         AutoCalcHelper.mkStatusSig(
@@ -405,12 +432,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             ] { case (i, incr: SetInitialPosition, x) =>
                 (i, incr, x)
             } { (iix, sig) =>
-                // Auto-calc button only on the first FlueSlot — subsequent flue slots
-                // inherit their start position from the previous slot's endpoint.
-                // Reactive over slot order so the button migrates correctly if slots are reordered.
+                // Auto-calc button only on the first HEAD_REGION slot (index 0) when it's a Flue —
+                // subsequent slots inherit their start position from the previous slot's endpoint.
+                // If the head chain starts with a Connector instead, the sibling predicate
+                // `isFirstHeadSlotAndIsConnectorSig` in the thermal panel takes over.
                 val extraFn: Var[SetInitialPosition] => HtmlElement = ev =>
                     div(
-                        child <-- isFirstFlueSlotSig.map:
+                        child <-- isFirstHeadSlotAndIsFlueSig.map:
                             case true  => autoCalcExtra(iix._1)(ev)
                             case false => span()
                     )
@@ -717,32 +745,29 @@ final case class DynamicThermalPipeSlotPanel(
         )
 
     /**
-     * Reactive: is this slot the first head-region slot AND the head region has
-     * no FluePipe? In that case the auto-calc button (normally attached to the
-     * first FlueSlot) must migrate to this ConnectorSlot so Connector-first
+     * Reactive: is this slot the first HEAD_REGION slot (index 0) AND is it a
+     * `ConnectorSlot`? In that case the auto-calc button (normally attached to
+     * the first FlueSlot) must migrate to this ConnectorSlot so Connector-first
      * chains still get firebox-boundary alignment.
      *
      * Physical applicability check (plan U2): the auto-calc algorithm is
      * `AutoCalcHelper.computeTopAlignedPosition`, which is purely geometric
      * (projects the pipe direction + cross-section onto a firebox-box face).
      * It has no dependency on EN 15544 flow-only vs EN 13384 thermal physics,
-     * so wiring it to a ConnectorPipe is physically meaningful — we re-wire.
+     * so wiring it to a ConnectorPipe is physically meaningful.
+     *
+     * Unified rule: "auto-calc visible iff this slot is the first HEAD_REGION
+     * slot (index 0)" — type-agnostic. The sibling
+     * `isFirstHeadSlotAndIsFlueSig` in the flow-only panel handles the Flue-first
+     * case; this handles the Connector-first case. Delegates to the pure
+     * predicate in the companion object for testability.
      */
-    private lazy val isFirstHeadConnectorWithoutFlueSig: Signal[Boolean] =
+    private lazy val isFirstHeadSlotAndIsConnectorSig: Signal[Boolean] =
         if pipeTypeVal != ConnectorPipeT then Signal.fromValue(false)
         else
-            postFireboxSlots_var.signal.map: slots =>
-                // HEAD_REGION is slots.take(size - 2) (last 2 are terminal
-                // connector + chimney, which are the "fixed zone").
-                val fixedZoneStart = (slots.size - 2).max(0)
-                val head           = slots.take(fixedZoneStart)
-                val hasFlue        = head.exists:
-                    case _: PostFireboxPipeDescrSlot.FlueSlot => true
-                    case _                                    => false
-                val firstConnectorIdx = head.indexWhere:
-                    case _: PostFireboxPipeDescrSlot.ConnectorSlot => true
-                    case _                                         => false
-                !hasFlue && firstConnectorIdx == slotIndex
+            postFireboxSlots_var.signal.map(slots =>
+                DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, slotIndex)
+            )
 
     private def connectorAutoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
         AutoCalcHelper.mkStatusSig(
@@ -778,7 +803,7 @@ final case class DynamicThermalPipeSlotPanel(
     override protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
         ev =>
             div(
-                child <-- isFirstHeadConnectorWithoutFlueSig.map:
+                child <-- isFirstHeadSlotAndIsConnectorSig.map:
                     case true  =>
                         AutoCalcHelper.autoCalcButton[SetInitialPosition](
                             connectorAutoCalcStatusSig(idx),
