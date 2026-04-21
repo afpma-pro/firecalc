@@ -7,7 +7,10 @@ package afpma.firecalc.ui.models.schema
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3
+import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.units.coulombutils.meters
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.ui.instances.defaultable
 import afpma.firecalc.ui.models.AppStateSchemaHelper
@@ -383,9 +386,9 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
             stove_params                   = StoveParamsUI.default_StoveParams.default,
             air_intake_descr               = Seq.empty,
             firebox                        = defaultable.firebox_traditional_empty.default,
-            flue_pipe_descr                = Seq.empty,
-            connector_pipe_descr           = Seq.empty,
-            chimney_pipe_descr             = Seq.empty
+            flue_pipe_descr                = Seq(AddFlowOnlyPipeElement_15544_V3.AddSectionSlopped("flue-s1", 1.0.meters)),
+            connector_pipe_descr           = Seq(AddThermalPipeElement_13384_V3.AddSectionSlopped("conn-s1", 2.5.meters)),
+            chimney_pipe_descr             = Seq(AddThermalPipeElement_13384_V3.AddSectionSlopped("chim-s1", 5.0.meters))
         )
 
         AppStateSchema_V5  (
@@ -475,7 +478,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
     }
 
     it should "restructure V5 separate pipe fields into V6 PostFireboxPipeDescrSlot sequence" in {
-        // Given - V5 schema with empty pipes
+        // Given - V5 schema with distinguishable pipe sections (length 1m / 2.5m / 5m)
         val v5Yaml = minimalV5Yaml
 
         // When
@@ -485,9 +488,34 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         result shouldBe defined
         val pipes = result.get.engine_state.post_firebox_pipes
         pipes should have size 3
-        pipes(0) shouldBe a[PostFireboxPipeDescrSlot.FlueSlot]
-        pipes(1) shouldBe a[PostFireboxPipeDescrSlot.ConnectorSlot]
-        pipes(2) shouldBe a[PostFireboxPipeDescrSlot.ChimneySlot]
+
+        // Verify each slot carries the correct payload (catches cross-wiring bugs)
+        pipes(0) match
+            case PostFireboxPipeDescrSlot.FlueSlot(descrs) =>
+                descrs should have size 1
+                descrs.head match
+                    case AddFlowOnlyPipeElement_15544_V3.AddSectionSlopped(_, length) =>
+                        length shouldBe 1.0.meters
+                    case other                                                        => fail(s"unexpected flue descriptor: $other")
+            case other                                     => fail(s"expected FlueSlot at index 0, got: $other")
+
+        pipes(1) match
+            case PostFireboxPipeDescrSlot.ConnectorSlot(descrs) =>
+                descrs should have size 1
+                descrs.head match
+                    case AddThermalPipeElement_13384_V3.AddSectionSlopped(_, length) =>
+                        length shouldBe 2.5.meters
+                    case other                                                       => fail(s"unexpected connector descriptor: $other")
+            case other                                          => fail(s"expected ConnectorSlot at index 1, got: $other")
+
+        pipes(2) match
+            case PostFireboxPipeDescrSlot.ChimneySlot(descrs) =>
+                descrs should have size 1
+                descrs.head match
+                    case AddThermalPipeElement_13384_V3.AddSectionSlopped(_, length) =>
+                        length shouldBe 5.0.meters
+                    case other                                                       => fail(s"unexpected chimney descriptor: $other")
+            case other                                        => fail(s"expected ChimneySlot at index 2, got: $other")
     }
 
     // ─── .fcalc file format: full AppStateSchema round-trip ─────────────────────
