@@ -272,7 +272,8 @@ object I18nData_UI:
         direction_incompatible_warning: String,
         cardinal_horizontal           : String,
         custom_btn                    : String,
-        custom_dialog_title           : String
+        custom_dialog_title           : String,
+        custom_option                 : StringFormat1
     )
 
     case class Tooltips(

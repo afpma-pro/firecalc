@@ -12,6 +12,7 @@ import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_13384.*
 
 import afpma.firecalc.ui.displayUnits
 import afpma.firecalc.ui.instances.DirectionShowInstances.given
+import afpma.firecalc.ui.instances.DirectionFormat
 
 import cats.Show
 import cats.syntax.show.*
@@ -35,7 +36,7 @@ class FlowOnlyPropertyShow_13384(using DisplayUnits, Locale):
     given Show[SetRoughness]        = Show.show(s => s.roughness.showP)
     given Show[SetMaterial]         = Show.show(s => s.material.show)
     given Show[SetNumberOfFlows]    = Show.show(s => s.n_flows.show)
-    given Show[SetInitialDirection] = Show.show(s => s"${s.azimuth.show}, ${s.inclination.show}")
+    given Show[SetInitialDirection] = Show.show(s => DirectionFormat.compact(s.azimuth, s.inclination))
     given Show[SetInitialPosition]  = Show.show(s => showXYZ(s.x, s.y, s.z))
     given Show[SetFinalPosition]    = Show.show(s => showXYZ(s.x, s.y, s.z))
 

@@ -16,6 +16,7 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.ui.displayUnits
 import afpma.firecalc.ui.instances.DirectionShowInstances.given
+import afpma.firecalc.ui.instances.DirectionFormat
 
 import cats.Show
 import cats.syntax.show.*
@@ -51,7 +52,7 @@ class ThermalPropertyShow_13384(using DisplayUnits, Locale):
     given Show[SetPipeLocation]        = Show.show(s => s.pipe_location.show)
     given Show[SetDuctType]            = Show.show(s => s.duct.show)
     given Show[SetNumberOfFlows]       = Show.show(s => s.n_flows.show)
-    given Show[SetInitialDirection]    = Show.show(s => s"${s.azimuth.show}, ${s.inclination.show}")
+    given Show[SetInitialDirection]    = Show.show(s => DirectionFormat.compact(s.azimuth, s.inclination))
     given Show[SetInitialPosition]     = Show.show(s => showXYZ(s.x, s.y, s.z))
     given Show[SetFinalPosition]       = Show.show(s => showXYZ(s.x, s.y, s.z))
 

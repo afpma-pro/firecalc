@@ -28,10 +28,11 @@ import org.scalajs.dom
 /**
  * Reusable badge showing the final pipe direction for a pipe element.
  *
- * Displays the direction using a 3-tier format:
- *  - Tier 1 (cardinal): "Right"
- *  - Tier 2 (cardinal + elevation): "Right ^30deg"
- *  - Tier 3 (custom): "az45.0deg el30.0deg" (arrow notation)
+ * Displays the direction using an inclination-first single-chip format:
+ *  - Vertical: "Up" / "Down"
+ *  - Horizontal + cardinal: "Horizontal · Rear"
+ *  - Angled + cardinal: "↑30.0° · Right"
+ *  - Custom azimuth: "↑30.0° · ↻45.0°"
  *
  * Includes a tooltip on hover with azimuth/elevation details and a convention
  * explanation line based on the frame direction.
@@ -95,40 +96,10 @@ case class DirectionBadgeComponent(
             case "Rear+Left"   => i18n.cardinal_rear_left
             case other         => other
 
-    /** Translate a full display string: translates cardinal names in T1 and T2 formats. */
-    private def translateDisplayString(s: String): String =
-        // Compound cardinals first (longer match), then simple cardinals
-        val cardinals = List(
-            "Rear+Right",
-            "Front+Right",
-            "Front+Left",
-            "Rear+Left",
-            "Up",
-            "Down",
-            "Rear",
-            "Front",
-            "Right",
-            "Left"
-        )
-        cardinals.find(c => s == c || s.startsWith(s"$c ")) match
-            case Some(c) => s.replaceFirst(java.util.regex.Pattern.quote(c), translateCardinal(c))
-            case None    => s
-
-    /** Convert a Vec3 to compact arrow notation: az deg el deg or just el for vertical. */
-    private def toArrowString(dir: Vec3): String =
-        val (az, el) = dir.toAzimuthElevation
-        val isVertical = math.abs(math.abs(el) - 90.0) < 1e-6
-        val elSign     = if el >= 0 then "\u2191" else "\u2193"
-        val elStr      = String.format(java.util.Locale.ROOT, "%.1f", math.abs(el))
-        if isVertical then s"${elSign}${elStr}\u00b0"
-        else
-            val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
-            s"\u21bb${azStr}\u00b0 ${elSign}${elStr}\u00b0"
-
-    /** Display string for the badge: translates T1/T2 cardinal names, arrow notation for T3. */
+    /** Display string for the badge: inclination-first, single chip. */
     private def badgeText(dir: Vec3): String =
-        val s = dir.toDisplayString
-        if s.startsWith("az:") then toArrowString(dir) else translateDisplayString(s)
+        val (azDeg, elDeg) = dir.toAzimuthElevation
+        afpma.firecalc.ui.instances.DirectionFormat.compact(azDeg, elDeg)
 
     /** Convert a Vec3 direction to a AbsoluteDirection by snapping to named enum cases. */
     private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
@@ -156,7 +127,7 @@ case class DirectionBadgeComponent(
                             if isVertical then i18n.tooltip_elevation(if el > 0 then elStr else s"-$elStr")
                             else
                                 val azStr = String.format(java.util.Locale.ROOT, "%.1f", az)
-                                s"${i18n.tooltip_azimuth(azStr)} \u00b7 ${i18n.tooltip_elevation(elStr)}"
+                                s"${i18n.tooltip_azimuth(azStr)} · ${i18n.tooltip_elevation(elStr)}"
                         div(
                             p(azElLine),
                             if compat.contains(false                                                          ) then
@@ -225,9 +196,7 @@ case class DirectionBadgeComponent(
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
                 when(compact)(span(cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label)),
-                child.text <-- presetsSig.map: presets =>
-                    if presets.isEmpty then toArrowString(dir)
-                    else badgeText                       (dir)
+                badgeText(dir)
             ),
             child <-- presetsSig.map:
                 case Nil     => emptyNode

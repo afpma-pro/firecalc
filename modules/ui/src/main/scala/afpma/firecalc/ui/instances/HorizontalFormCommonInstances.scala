@@ -345,9 +345,78 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         // given ValidateVar[InclinationDirection] =
         //     ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[InclinationDirection]
 
-        val azForm   = horizontal_form_AzimuthDirection.render(azVar, FormConfig(fieldName = Some(I18N.terms.azimuth)))
-        val inclForm =
-            horizontal_form_InclinationDirection.render(inclVar, FormConfig(fieldName = Some(I18N.terms.inclination)))
+        import afpma.firecalc.ui.instances.DirectionFormat
+        import afpma.firecalc.ui.instances.DirectionShowInstances.given
+        import cats.Show
+        import cats.syntax.show.*
+
+        // Local Show instances for <option> display text (resolved via DirectionShowInstances givens)
+        val showAz   = summon[Show[AzimuthDirection]]
+        val showIncl = summon[Show[InclinationDirection]]
+
+        // Hand-rolled inclination <select> — supports Custom sentinel option
+        def inclSelect(v: Var[InclinationDirection]): HtmlElement =
+            label(
+                cls := "floating-label",
+                span(I18N.terms.inclination),
+                select(
+                    cls := "select select-bordered w-full",
+                    child <-- v.signal.map:
+                        case InclinationDirection.Custom(a) =>
+                            option(
+                                value    := "__custom__",
+                                selected := true,
+                                I18N_UI.direction_badge.custom_option(s"${a.value}°")
+                            )
+                        case _ => emptyNode
+                    ,
+                    InclinationDirection.namedCases.map: c =>
+                        option(
+                            value    := c.toString,
+                            selected <-- v.signal.map(_ == c),
+                            showIncl.show(c)
+                        )
+                    ,
+                    onChange.mapToValue --> { s =>
+                        if s != "__custom__" then
+                            InclinationDirection.namedCases.find(_.toString == s).foreach(v.set)
+                    }
+                )
+            )
+
+        // Hand-rolled azimuth <select> — supports Custom sentinel option
+        def azSelect(v: Var[AzimuthDirection]): HtmlElement =
+            label(
+                cls := "floating-label",
+                span(I18N.terms.azimuth),
+                select(
+                    cls := "select select-bordered w-full",
+                    child <-- v.signal.map:
+                        case AzimuthDirection.Custom(a) =>
+                            option(
+                                value    := "__custom__",
+                                selected := true,
+                                I18N_UI.direction_badge.custom_option(s"${a.value}°")
+                            )
+                        case _ => emptyNode
+                    ,
+                    AzimuthDirection.namedCases.map: c =>
+                        option(
+                            value    := c.toString,
+                            selected <-- v.signal.map(_ == c),
+                            showAz.show(c)
+                        )
+                    ,
+                    onChange.mapToValue --> { s =>
+                        if s != "__custom__" then
+                            AzimuthDirection.namedCases.find(_.toString == s).foreach(v.set)
+                    }
+                )
+            )
+
+        val showAzimuth: Signal[Boolean] = inclVar.signal.map:
+            case InclinationDirection.Up | InclinationDirection.Down => false
+            case _                                                   => true
 
         val dialog = CustomDirectionDialog(
             onApply = Observer[(AzimuthDirection, InclinationDirection)]: (az, incl) =>
@@ -367,9 +436,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
             child.text <-- azVar.signal
                 .combineWith(inclVar.signal)
                 .map: (az, incl) =>
-                    val azDeg   = AzimuthDirection.toDegrees(az)
-                    val inclDeg = InclinationDirection.toDegrees(incl)
-                    s"${azDeg}\u00b0 / ${inclDeg}\u00b0"
+                    DirectionFormat.compact(az, incl)
         )
 
         val customBtn = button(
@@ -381,8 +448,8 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
         div(
             cls := "flex flex-row gap-1 items-center",
-            div(cls := "flex-auto", azForm  ),
-            div(cls := "flex-auto", inclForm),
+            div(cls := "flex-auto", inclSelect(inclVar)),
+            child <-- showAzimuth.map(if _ then div(cls := "flex-auto", azSelect(azVar)) else emptyNode),
             customBadge,
             customBtn,
             dialog.node

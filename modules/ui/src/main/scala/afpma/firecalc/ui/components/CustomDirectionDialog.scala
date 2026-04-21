@@ -152,6 +152,24 @@ case class CustomDirectionDialog(
             div(
                 cls := "flex flex-col gap-2 mb-4",
 
+                // Inclination input
+                label(
+                    cls := "input input-bordered input-sm flex items-center gap-2",
+                    span      (cls := "text-sm whitespace-nowrap", s"${I18N.terms.inclination} (\u00b0)"),
+                    input     (
+                        cls      := "grow w-20 text-right",
+                        tpe      := "number",
+                        stepAttr := "1",
+                        minAttr  := "-90",
+                        maxAttr  := "90",
+                        controlled(
+                            value <-- inclinationDegreesVar.signal,
+                            onInput.mapToValue --> inclinationDegreesVar.writer
+                        )
+                    ),
+                    span      (cls := "text-sm", "\u00b0"                                               )
+                ),
+
                 // Azimuth input
                 label(
                     cls := "input input-bordered input-sm flex items-center gap-2",
@@ -170,24 +188,6 @@ case class CustomDirectionDialog(
                         )
                     ),
                     span      (cls := "text-sm", "\u00b0"                                           )
-                ),
-
-                // Inclination input
-                label(
-                    cls := "input input-bordered input-sm flex items-center gap-2",
-                    span      (cls := "text-sm whitespace-nowrap", s"${I18N.terms.inclination} (\u00b0)"),
-                    input     (
-                        cls      := "grow w-20 text-right",
-                        tpe      := "number",
-                        stepAttr := "1",
-                        minAttr  := "-90",
-                        maxAttr  := "90",
-                        controlled(
-                            value <-- inclinationDegreesVar.signal,
-                            onInput.mapToValue --> inclinationDegreesVar.writer
-                        )
-                    ),
-                    span      (cls := "text-sm", "\u00b0"                                               )
                 ),
 
                 // Note about vertical directions
