@@ -85,13 +85,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             val fixedZoneStart = (normalized.size - 2).max(0)
             // Guard: cannot remove slots in fixed zone (trailing connector + chimney)
             if idx >= fixedZoneStart then normalized
-            else
-                // Guard: must keep at least 1 FlueSlot in the flue region
-                val flueRegion    = normalized.take(fixedZoneStart)
-                val flueSlotCount = flueRegion.count(_.isInstanceOf[PostFireboxPipeDescrSlot.FlueSlot])
-                val isFlueSlot    = normalized(idx).isInstanceOf[PostFireboxPipeDescrSlot.FlueSlot]
-                if isFlueSlot && flueSlotCount <= 1 then normalized
-                else normalized.zipWithIndex.collect { case (s, i) if i != idx => s }
+            else normalized.zipWithIndex.collect { case (s, i) if i != idx => s }
         structureVersion.update(_ + 1)
 
     private def moveSlot(fromIdx: Int, toIdx: Int): Unit =

@@ -457,14 +457,14 @@ abstract class EN15544_V_2023_Common_Application
                             }
 
                         // Seed Stage 2 with the UpstreamState derived from the LAST Stage 1 result.
-                        if stage1Results.isEmpty then
-                            Validated.invalidNel(
-                                UnexpectedDevError("Stage 1 flue region is empty — cannot seed Stage 2")
-                            )
-                        else
+                        // When stage1Results is empty (no flue region), fall back to firebox_PipeResult.
+                        val sourcePipeResult: VNelMcalcErr[PipeResult] =
+                            if stage1Results.isEmpty then firebox_PipeResult
+                            else Validated.validNel(stage1Results.last)
+                        sourcePipeResult.andThen { seedPr =>
                             val computeAt             = en15544.en13384_application.computeAt
                             val stage2InitialUpstream =
-                                UpstreamState.fromPipeResult(stage1Results.last, computeAt)
+                                UpstreamState.fromPipeResult(seedPr, computeAt)
                             val folded                =
                                 stage2PipeSlots.foldLeft[Either[
                                     afpma.firecalc.engine.standard.MecaFlu_Error,
@@ -494,6 +494,7 @@ abstract class EN15544_V_2023_Common_Application
                                         }
                                     Validated.validNel(stage1Tagged ++ stage2Tagged)
                                 case Left(err)                 => Validated.invalidNel(err)
+                        }
             }
 
         // Pipe results — concrete (N-pipe-chain-aware, shared by strict and MCE)
@@ -541,7 +542,7 @@ abstract class EN15544_V_2023_Common_Application
          */
         lazy val conceptualFluePipeResult: VNelMcalcErr[PipeResult] =
             flueRegionPipeResults.andThen { case (rs, _) =>
-                if rs.isEmpty then Validated.invalidNel(UnexpectedDevError("empty flue region"))
+                if rs.isEmpty then firebox_PipeResult
                 else Validated.validNel(rs.last)
             }
 
@@ -599,9 +600,8 @@ abstract class EN15544_V_2023_Common_Application
         lazy val t_F: VNelMcalcErr[t_F] =
             postFireboxPipeResults.andThen { pfb =>
                 val lastFluePipeIdx = pfb.lastIndexWhere(_._1 == FluePipeT)
-                if lastFluePipeIdx < 0 then
-                    Validated.invalidNel(UnexpectedDevError("No flue pipe found in post-firebox vector"))
-                else Validated.validNel(pfb(lastFluePipeIdx)._2.gas_temp_end: t_F)
+                if lastFluePipeIdx < 0 then firebox_PipeResult.map(_.gas_temp_end                      : t_F)
+                else Validated.validNel                           (pfb(lastFluePipeIdx)._2.gas_temp_end: t_F)
             }
 
         lazy val η_s: VNelMcalcErr[Percentage] =

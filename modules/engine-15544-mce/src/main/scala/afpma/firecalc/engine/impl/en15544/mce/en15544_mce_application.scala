@@ -369,10 +369,7 @@ abstract class EN15544_MCE_Application(
                 case FlueSlot(_) | ThermalFlueSlot(_) => true
                 case _                                => false
             }
-            if lastFluePipeSlotIdx < 0 then
-                Validated.invalidNel(
-                    UnexpectedDevError("No FluePipeT slot found in post-firebox slots")
-                )
+            if lastFluePipeSlotIdx < 0 then Validated.validNel((Vector.empty[PipeResult], None))
             else
                 val flueRegionSlots = pfbSlots.take(lastFluePipeSlotIdx + 1)
                 given Params_13384  = p

@@ -30,10 +30,10 @@ class PostFireboxPipeDescrSlotHeadRegionSuite extends AnyFreeSpec with Matchers 
     // ── Generators ──────────────────────────────────────────────────
 
     // Descriptor payload is irrelevant for head-region membership — use empty Seq everywhere.
-    private val genFlue:      Gen[PostFireboxPipeDescrSlot] = Gen.const(FlueSlot(Seq.empty))
-    private val genThermal:   Gen[PostFireboxPipeDescrSlot] = Gen.const(ThermalFlueSlot(Seq.empty))
-    private val genConnector: Gen[PostFireboxPipeDescrSlot] = Gen.const(ConnectorSlot(Seq.empty))
-    private val genChimney:   Gen[PostFireboxPipeDescrSlot] = Gen.const(ChimneySlot(Seq.empty))
+    private val genFlue     : Gen[PostFireboxPipeDescrSlot] = Gen.const(FlueSlot(Seq.empty)       )
+    private val genThermal  : Gen[PostFireboxPipeDescrSlot] = Gen.const(ThermalFlueSlot(Seq.empty))
+    private val genConnector: Gen[PostFireboxPipeDescrSlot] = Gen.const(ConnectorSlot(Seq.empty)  )
+    private val genChimney  : Gen[PostFireboxPipeDescrSlot] = Gen.const(ChimneySlot(Seq.empty)    )
 
     private val genAnySlot: Gen[PostFireboxPipeDescrSlot] =
         Gen.oneOf(genFlue, genThermal, genConnector, genChimney)
@@ -52,13 +52,12 @@ class PostFireboxPipeDescrSlotHeadRegionSuite extends AnyFreeSpec with Matchers 
         "result is always a contiguous prefix 0..k-1 (or empty)" in
             forAll(genSlotSeq) { slots =>
                 val idxs = headRegionIndices(slots)
-                if idxs.nonEmpty then
-                    idxs.shouldBe((0 to idxs.last).toVector)
+                if idxs.nonEmpty then idxs.shouldBe((0 to idxs.last).toVector)
             }
 
         "result is empty iff there is no flue-like slot anywhere" in
             forAll(genSlotSeq) { slots =>
-                val idxs = headRegionIndices(slots)
+                val idxs    = headRegionIndices(slots)
                 val hasFlue = slots.exists(isFlueLike)
                 idxs.isEmpty.shouldBe(!hasFlue)
             }
@@ -104,33 +103,41 @@ class PostFireboxPipeDescrSlotHeadRegionSuite extends AnyFreeSpec with Matchers 
             headRegionIndices(Seq(ChimneySlot(Seq.empty))).shouldBe(Vector.empty)
 
         "[Flue, Connector, Chimney] → [0]" in
-            headRegionIndices(Seq(
-                FlueSlot(Seq.empty),
-                ConnectorSlot(Seq.empty),
-                ChimneySlot(Seq.empty)
-            )).shouldBe(Vector(0))
+            headRegionIndices(
+                Seq(
+                    FlueSlot     (Seq.empty),
+                    ConnectorSlot(Seq.empty),
+                    ChimneySlot  (Seq.empty)
+                )
+            ).shouldBe       (Vector(0))
 
         "[Connector, Flue, Connector, Chimney] → [0, 1] (connector-first head)" in
-            headRegionIndices(Seq(
-                ConnectorSlot(Seq.empty),
-                FlueSlot(Seq.empty),
-                ConnectorSlot(Seq.empty),
-                ChimneySlot(Seq.empty)
-            )).shouldBe(Vector(0, 1))
+            headRegionIndices(
+                Seq(
+                    ConnectorSlot(Seq.empty),
+                    FlueSlot     (Seq.empty),
+                    ConnectorSlot(Seq.empty),
+                    ChimneySlot  (Seq.empty)
+                )
+            ).shouldBe       (Vector(0, 1))
 
         "[Flue, Connector, Flue, Connector, Chimney] → [0, 1, 2]" in
-            headRegionIndices(Seq(
-                FlueSlot(Seq.empty),
-                ConnectorSlot(Seq.empty),
-                FlueSlot(Seq.empty),
-                ConnectorSlot(Seq.empty),
-                ChimneySlot(Seq.empty)
-            )).shouldBe(Vector(0, 1, 2))
+            headRegionIndices(
+                Seq(
+                    FlueSlot     (Seq.empty),
+                    ConnectorSlot(Seq.empty),
+                    FlueSlot     (Seq.empty),
+                    ConnectorSlot(Seq.empty),
+                    ChimneySlot  (Seq.empty)
+                )
+            ).shouldBe       (Vector(0, 1, 2))
 
         "[ThermalFlue, Connector, Chimney] → [0] (thermal flue counts as flue-like)" in
-            headRegionIndices(Seq(
-                ThermalFlueSlot(Seq.empty),
-                ConnectorSlot(Seq.empty),
-                ChimneySlot(Seq.empty)
-            )).shouldBe(Vector(0))
+            headRegionIndices(
+                Seq(
+                    ThermalFlueSlot(Seq.empty),
+                    ConnectorSlot  (Seq.empty),
+                    ChimneySlot    (Seq.empty)
+                )
+            ).shouldBe       (Vector(0))
     }
