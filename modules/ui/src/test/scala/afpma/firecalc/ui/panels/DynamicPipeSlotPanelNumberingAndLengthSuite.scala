@@ -25,18 +25,18 @@ import org.scalatest.matchers.should.*
 class DynamicPipeSlotPanelNumberingAndLengthSuite extends AnyFreeSpec with Matchers:
 
     // ── Minimal empty descriptors ──────────────────────────────────
-    private val emptyFlue    : FlueSlot        = FlueSlot(Seq.empty)
-    private val emptyThFlue  : ThermalFlueSlot = ThermalFlueSlot(Seq.empty)
-    private val emptyConn    : ConnectorSlot   = ConnectorSlot(Seq.empty)
-    private val emptyChim    : ChimneySlot     = ChimneySlot(Seq.empty)
+    private val emptyFlue  : FlueSlot        = FlueSlot(Seq.empty)
+    private val emptyThFlue: ThermalFlueSlot = ThermalFlueSlot(Seq.empty)
+    private val emptyConn  : ConnectorSlot   = ConnectorSlot(Seq.empty)
+    private val emptyChim  : ChimneySlot     = ChimneySlot(Seq.empty)
 
     // ── Format stubs ───────────────────────────────────────────────
     // Simple stubs that produce recognisable output without requiring i18n
     // infrastructure. Mirror the format used by the real panels (%.2f m).
-    private def fmtLen(v: Double): String = f"$v%.2f m"
-    private def fmtChanLength(x: String): String                    = s"Length: $x"
-    private def fmtChanLengthWithMin(x: String, z: String): String  = s"Length: $x (min. $z)"
-    private def fmtChanLengthWithCum(x: String, y: String): String  = s"Length: $x (cum. $y)"
+    private def fmtLen              (v: Double           ): String = f"$v%.2f m"
+    private def fmtChanLength       (x: String           ): String = s"Length: $x"
+    private def fmtChanLengthWithMin(x: String, z: String): String = s"Length: $x (min. $z)"
+    private def fmtChanLengthWithCum(x: String, y: String): String = s"Length: $x (cum. $y)"
     private def fmtChanLengthWithCumAndMin(x: String, y: String, z: String): String =
         s"Length: $x (cum. $y, min. $z)"
 
@@ -45,20 +45,20 @@ class DynamicPipeSlotPanelNumberingAndLengthSuite extends AnyFreeSpec with Match
         DynamicPipeSlotPanel.numberedTitle(slots, idx, "Channel", "Connector")
 
     private def lengthSummary(
-        slots   : Seq[PostFireboxPipeDescrSlot],
-        idx     : Int,
-        lengths : Option[Vector[Double]],
-        lZMin   : Option[Double]
+        slots                       : Seq[PostFireboxPipeDescrSlot],
+        idx                         : Int,
+        lengths                     : Option[Vector[Double]],
+        lZMin                       : Option[Double]
     ): Option[String] =
         DynamicPipeSlotPanel.lengthSummary(
-            slots                    = slots,
-            slotIndex                = idx,
-            lengths                  = lengths,
-            lZMin                    = lZMin,
-            fmtLength                = fmtLen,
-            fmtChanLength            = fmtChanLength,
-            fmtChanLengthWithMin     = fmtChanLengthWithMin,
-            fmtChanLengthWithCum     = fmtChanLengthWithCum,
+            slots                      = slots,
+            slotIndex                  = idx,
+            lengths                    = lengths,
+            lZMin                      = lZMin,
+            fmtLength                  = fmtLen,
+            fmtChanLength              = fmtChanLength,
+            fmtChanLengthWithMin       = fmtChanLengthWithMin,
+            fmtChanLengthWithCum       = fmtChanLengthWithCum,
             fmtChanLengthWithCumAndMin = fmtChanLengthWithCumAndMin
         )
 
@@ -212,9 +212,9 @@ class DynamicPipeSlotPanelNumberingAndLengthSuite extends AnyFreeSpec with Match
     // ════════════════════════════════════════════════════════════════
 
     "lengthSummary — head region size 2 [Flue, Flue, Connector, Chimney]" - {
-        val slots   = Seq(emptyFlue, emptyFlue, emptyConn, emptyChim)
-        val lens    = Some(Vector(1.0, 2.0))
-        val lzMin   = Some(4.0)
+        val slots = Seq(emptyFlue, emptyFlue, emptyConn, emptyChim)
+        val lens  = Some(Vector(1.0, 2.0))
+        val lzMin = Some(4.0)
 
         "S₀: all valid — shows 'Length: X' (no cum for headIdx=0)" in {
             lengthSummary(slots, 0, lens, lzMin) shouldBe Some("Length: 1.00 m")
@@ -352,7 +352,7 @@ class DynamicPipeSlotPanelNumberingAndLengthSuite extends AnyFreeSpec with Match
     // ════════════════════════════════════════════════════════════════
 
     "D8 — single-slot: 'Length: X (min. Z)' not 'Length: X (cum. X, min. Z)'" in {
-        val slots = Seq(emptyFlue, emptyConn, emptyChim)
+        val slots  = Seq(emptyFlue, emptyConn, emptyChim)
         val result = lengthSummary(slots, 0, Some(Vector(2.5)), Some(3.0))
         result shouldBe Some("Length: 2.50 m (min. 3.00 m)")
         // Verify cum is NOT present

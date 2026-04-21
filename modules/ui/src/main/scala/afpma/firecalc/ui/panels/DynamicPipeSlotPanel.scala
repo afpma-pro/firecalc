@@ -112,10 +112,11 @@ object DynamicPipeSlotPanel:
     // own slotIndex — extracted here so they can be unit-tested without
     // spinning up Laminar owners or reactive wiring.
 
-    /** True iff `slotIndex == 0` AND the slot at index 0 is a `FlueSlot`. */
+    /** True iff `slotIndex == 0` AND the slot at index 0 is a `FlueSlot` or `ThermalFlueSlot`. */
     def isFirstHeadSlotAndIsFlue(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
         slotIndex == 0 && (slots.lift(0) match
-            case Some(_: PostFireboxPipeDescrSlot.FlueSlot) => true
+            case Some(_: PostFireboxPipeDescrSlot.FlueSlot)        => true
+            case Some(_: PostFireboxPipeDescrSlot.ThermalFlueSlot) => true
             case _ => false)
 
     /** True iff `slotIndex == 0` AND the slot at index 0 is a `ConnectorSlot`. */
@@ -1081,6 +1082,17 @@ final case class DynamicThermalPipeSlotPanel(
                 DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, slotIndex)
             )
 
+    /**
+     * Reactive: is this slot the first HEAD_REGION slot (index 0) AND is it a
+     * `ThermalFlueSlot`? Mirrors the flow-only panel's
+     * `isFirstHeadSlotAndIsFlueSig` for MCE / thermal-flue-first chains.
+     * Delegates to the shared pure predicate (which now covers both `FlueSlot`
+     * and `ThermalFlueSlot`) for testability.
+     */
+    private lazy val isFirstHeadSlotAndIsFlueSig: Signal[Boolean] =
+        if pipeTypeVal != FluePipeT then Signal.fromValue(false                                                                   )
+        else postFireboxSlots_var.signal.map             (slots => DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, slotIndex))
+
     private def connectorAutoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
         AutoCalcHelper.mkStatusSig(
             hasFrameSig = frameBeforeForInitialPos(posIdx).map(_.isDefined),
@@ -1116,6 +1128,13 @@ final case class DynamicThermalPipeSlotPanel(
         ev =>
             div(
                 child <-- isFirstHeadSlotAndIsConnectorSig.map:
+                    case true  =>
+                        AutoCalcHelper.autoCalcButton[SetInitialPosition](
+                            connectorAutoCalcStatusSig(idx),
+                            () => computeConnectorAutoPosition(idx)
+                        )(ev)
+                    case false => span(),
+                child <-- isFirstHeadSlotAndIsFlueSig.map:
                     case true  =>
                         AutoCalcHelper.autoCalcButton[SetInitialPosition](
                             connectorAutoCalcStatusSig(idx),

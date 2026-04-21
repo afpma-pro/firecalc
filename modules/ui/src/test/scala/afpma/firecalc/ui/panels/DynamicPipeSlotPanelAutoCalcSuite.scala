@@ -24,9 +24,10 @@ import org.scalatest.matchers.should.*
 class DynamicPipeSlotPanelAutoCalcSuite extends AnyFreeSpec with Matchers:
 
     // Minimal empty descriptors — the predicate only looks at slot types.
-    private val emptyFlue: FlueSlot      = FlueSlot(Seq.empty)
-    private val emptyConn: ConnectorSlot = ConnectorSlot(Seq.empty)
-    private val emptyChim: ChimneySlot   = ChimneySlot(Seq.empty)
+    private val emptyFlue       : FlueSlot        = FlueSlot(Seq.empty)
+    private val emptyConn       : ConnectorSlot   = ConnectorSlot(Seq.empty)
+    private val emptyChim       : ChimneySlot     = ChimneySlot(Seq.empty)
+    private val emptyThermalFlue: ThermalFlueSlot = ThermalFlueSlot(Seq.empty)
 
     "[Flue, Connector, Chimney] — button on Flue (index 0) only" - {
         val slots = Seq(emptyFlue, emptyConn, emptyChim)
@@ -82,6 +83,23 @@ class DynamicPipeSlotPanelAutoCalcSuite extends AnyFreeSpec with Matchers:
         "mid-chain Connector at index 3 does NOT get the button" in {
             DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, 3) shouldBe false
             DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, 3) shouldBe false
+        }
+    }
+
+    "[ThermalFlue, Connector, Chimney] — button on ThermalFlue (index 0) only (MCE / thermal-flue-first regression)" - {
+        val slots = Seq(emptyThermalFlue, emptyConn, emptyChim)
+
+        "isFirstHeadSlotAndIsFlue is true at index 0" in {
+            DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, 0) shouldBe true
+        }
+        "isFirstHeadSlotAndIsConnector is false at index 0" in {
+            DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, 0) shouldBe false
+        }
+        "no other slot gets the auto-calc button" in {
+            DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, 1) shouldBe false
+            DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, 1) shouldBe false
+            DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, 2) shouldBe false
+            DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, 2) shouldBe false
         }
     }
 
