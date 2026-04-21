@@ -279,8 +279,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]]),
-                    extra        = airIntakeAutoCalcExtra(SetInitialPosition.apply)
+                    propertyShow = Some(summon[Show[SetInitialPosition]])
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
