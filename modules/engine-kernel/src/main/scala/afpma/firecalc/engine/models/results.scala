@@ -320,8 +320,26 @@ object PipeResult:
     ) extends WithoutSections {
         val gas_temp_mean = utils.mean_temp_using_inverse_alg(gas_temp_start, gas_temp_end)
 
+        /**
+         * Fallback `temperature_iob` for a values-only (noop / useless) `PipeResult`.
+         *
+         * A `PipeResultFromValues` is produced by `PipeResult.useless` (via
+         * `PipeSlot.noop`) — used for absent optional pipes or when a pipe's
+         * full description could not be extracted. There is no thermal
+         * section to compute heat-transfer from, so no principled value
+         * exists. We return `gas_temp_end` (which for `useless` equals the
+         * incoming gas temperature) as a best-effort pass-through: if no
+         * heat is removed, the inner-of-bore wall temperature approaches
+         * the gas temperature.
+         *
+         * Historically this threw, which crashed the UI when downstream
+         * chimney validations (e.g. `validateChimneyWallTempIsAboveCondensationTemp`)
+         * were invoked on a chain whose chimney slot fell back to noop
+         * (e.g. chimney descriptor failed extraction under the new
+         * connector-first HEAD_REGION grammar introduced in f416e7db).
+         */
         def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt): TCelsius =
-            throw new Exception("unexpected call to 'temperature_iob'")
+            gas_temp_end
     }
 
     private[firecalc] abstract class PipeResultFromSections(val elements: Vector[PipeSectionResult[?]])
