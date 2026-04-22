@@ -1203,6 +1203,9 @@ lazy val ui_i18n = crossProject(JSPlatform /*, JVMPlatform*/ )
         libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
         libraryDependencies += "io.taig"       %%% "babel-generic" % babel_version_custom,
 
+        // DirectionBadge has 30 fields — bump inline limit to prevent deriveDecoder overflow
+        scalacOptions += "-Xmax-inlines:48",
+
         // Make Bloop/Metals watch the i18n conf files for changes
         Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
             file(s"modules/ui-i18n/src/main/resources/i18n/$lang.conf")
