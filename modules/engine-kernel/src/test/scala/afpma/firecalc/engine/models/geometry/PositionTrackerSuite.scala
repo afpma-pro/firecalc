@@ -90,11 +90,15 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         assertApprox(result.finalPoint.z, 0.0, "z")
     }
 
-    // ── Test 5: Multiple sections — cumulative position ──────────────────────────
+    // ── Test 5: Multiple sections — both follow frame (straight-section semantics) ─
 
-    it should "accumulate positions: vertical (0,0,1) then horizontal (0,2,1)" in {
+    it should "accumulate straight sections: both Vertical and Horizontal follow frame" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
+        // Both AddSectionVertical and AddSectionHorizontal are legacy names treated as
+        // straight sections that follow the current frame. With Rear horizontal frame:
+        //   vertical(1m) goes Rear 1m → (0,1,0)
+        //   horizontal(2m) goes Rear another 2m → (0,3,0)
         val elems  = Seq(
             SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal),
             AddSectionVertical  ("v", 1.0.meters                                       ),
@@ -102,8 +106,8 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
         assertApprox(result.finalPoint.x, 0.0, "x")
-        assertApprox(result.finalPoint.y, 2.0, "y")
-        assertApprox(result.finalPoint.z, 1.0, "z")
+        assertApprox(result.finalPoint.y, 3.0, "y")
+        assertApprox(result.finalPoint.z, 0.0, "z")
         result.segments.size shouldBe 2
     }
 
@@ -124,20 +128,21 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         assertApprox(result.finalPoint.z, 0.0, "z")
     }
 
-    // ── Test 7: Vertical direction + horizontal section falls back to Rear ────────
+    // ── Test 7: AddSectionHorizontal under Up frame follows frame (goes up) ───────
 
-    it should "fall back to Rear for horizontal section when frame direction is Up" in {
+    it should "follow Up frame for AddSectionHorizontal (straight-section semantics)" in {
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
+        // AddSectionHorizontal is a legacy name treated as a straight section that follows
+        // the current frame. With a vertical (Up) frame, the section goes up too.
         val elems  = Seq(
-            SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Up), // Up direction (el=90°)
+            SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Up),
             AddSectionHorizontal("h", 1.0.meters                               )
         )
         val result = PositionTracker.computeFlowOnly15544(elems, None, Vec3(0, 0, 0))
-        // Frame direction is Up (+Z), horizontal projection is zero → falls back to Rear
         assertApprox(result.finalPoint.x, 0.0, "x")
-        assertApprox(result.finalPoint.y, 1.0, "y")
-        assertApprox(result.finalPoint.z, 0.0, "z")
+        assertApprox(result.finalPoint.y, 0.0, "y")
+        assertApprox(result.finalPoint.z, 1.0, "z")
     }
 
     // ── Test 8: Empty pipe ───────────────────────────────────────────────────────
@@ -164,7 +169,40 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         assertApprox(result.segments.head.length, 2.0, "length")
     }
 
-    // ── Test 10: Chained computation ─────────────────────────────────────────────
+    // ── Test 10: AddSectionVertical follows post-bend frame direction ───────────
+
+    it should "follow post-bend frame for AddSectionVertical (treated as straight section)" in {
+        import AddFlowOnlyPipeElement_15544_V3.*
+        // Repro: vertical Up + 30° bend toward Rear/60° elevation + vertical (eg=3m).
+        // Old behavior snapped the second vertical to +Z. New (straight-section) behavior:
+        //   dir = (0, cos60°, sin60°) = (0, 0.5, 0.866)     — Rear-tilted-up
+        //   length = 3m (interpreted as 3D length, not vertical projection)
+        //   disp = dir * 3 = (0, 1.5, 2.598); starts from (0,0,6)
+        val elems  = Seq(
+            AddSectionVertical     ("up1", 6.0.meters),
+            AddSharpeAngle_0_to_180(
+                "bend",
+                30.0.degrees,
+                Some(AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.fromDegrees(60.0)))
+            ),
+            AddSectionVertical     ("up2", 3.0.meters)
+        )
+        val externalFrame = Some(PipeFrame.initial(Vec3.Up)) // ChimneySlot starts vertical
+        val result = PositionTracker.computeFlowOnly15544(elems, externalFrame, Vec3(0, 0, 0))
+        // Two visible segments (bend produces no segment, just frame update)
+        result.segments.size shouldBe 2
+        // Second segment should follow the bent direction with vertical projection = 3m
+        val seg2 = result.segments(1)
+        assertApprox(seg2.direction.x, 0.0,                            "seg2.dir.x")
+        assertApprox(seg2.direction.y, math.cos(math.toRadians(60.0)), "seg2.dir.y") // 0.5
+        assertApprox(seg2.direction.z, math.sin(math.toRadians(60.0)), "seg2.dir.z") // 0.866
+        assertApprox(seg2.length,      3.0,                            "seg2.length") // parameter is 3D length
+        // Endpoint gains Rear (y) and Up (z) proportionally to the bent direction
+        assertApprox(seg2.endPoint.y, 3.0 * math.cos(math.toRadians(60.0)),       "seg2.endPoint.y") // 1.5
+        assertApprox(seg2.endPoint.z, 6.0 + 3.0 * math.sin(math.toRadians(60.0)), "seg2.endPoint.z") // 8.598
+    }
+
+    // ── Test 11: Chained computation ─────────────────────────────────────────────
 
     it should "chain flue and connector computations correctly" in {
         import AddFlowOnlyPipeElement_15544_V3.*
