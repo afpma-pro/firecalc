@@ -859,11 +859,17 @@ abstract class EN15544_V_2023_Common_Application
             case pr: PipeResult.WithSections    =>
                 pr.elements
                     .flatMap: psr =>
-                        // check flow velocity at the start and at the end of section
-                        List(
-                            validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_start),
-                            validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_end  )
-                        )
+                        // Skip zero-length cross-section-change elements: their v_start and v_end
+                        // duplicate the boundary velocities of the adjacent straight sections
+                        // (already validated), and under multi-flow (n_flows > 1) the redundant
+                        // check can flag spurious violations.
+                        if psr.isSectionGeometryChange then
+                            List.empty[ValidatedNel[FlueGasVelocityError, Unit]]
+                        else
+                            List(
+                                validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_start),
+                                validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_end  )
+                            )
                     .sequence[[x] =>> ValidatedNel[FlueGasVelocityError, x], Unit]
                     .map(_ => ())
                     // remove duplicates (if start and end of section are both outside flow velocity admissible range)
