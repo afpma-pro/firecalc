@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.PipeIdx
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeResult.PipeResultFromSections
 import afpma.firecalc.engine.models.PipeSectionResult
+import afpma.firecalc.engine.models.isDirectionChange
 import afpma.firecalc.engine.models.isSectionGeometryChange
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
@@ -76,7 +77,7 @@ object GraphDataConverter:
                 case _                                         => None // "Registre d'air", "Combustion Air" — not highlightable
 
     private def isDirectionChange(ps: PlottableSection): Boolean =
-        ps.section.section_length.value == 0.0
+        ps.section.isDirectionChange
 
     /**
      * Find the nearest highlightable neighbor in the given direction.

@@ -13,6 +13,7 @@ import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.models.IsDirectionChange
 import afpma.firecalc.engine.models.IsSectionGeometryChange
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.AngleVifDe0A180
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
@@ -116,7 +117,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     sealed abstract class DirectionChange(
         val angleN1: QtyD[Degree],
         val angleN2: Option[QtyD[Degree]]
-    ) extends PipeElDescr derives Show
+    ) extends PipeElDescr with IsDirectionChange derives Show
 
     object DirectionChange:
         val angleVifZero = AngleVifDe0A180(0.0.degrees, None)

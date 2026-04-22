@@ -189,7 +189,7 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
     sealed abstract class DirectionChange(
         val angleN1: QtyD[Degree],
         val angleN2: Option[QtyD[Degree]] = None // TOFIX ?
-    ) extends PipeElDescr derives Show
+    ) extends PipeElDescr with IsDirectionChange derives Show
 
     object DirectionChange:
         given Show[
