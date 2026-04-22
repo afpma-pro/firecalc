@@ -60,6 +60,44 @@ case class RelativeDirectionInput(
             case RelativeSide.Up    => i18n.relative_up
             case RelativeSide.Down  => i18n.relative_down
 
+    /**
+     * Dropdown options for the quadrant select.
+     *
+     * When the incoming frame is strictly vertical (direction = ±Z), the four
+     * `RelativeSide` quadrants map to well-defined world cardinals, so we show
+     * absolute labels (Rear/Right/Front/Left) in canonical order — relative
+     * labels ("Up"/"Down"/etc.) are confusing when there's no intuitive "up"
+     * for a vertical flow.
+     *
+     * Otherwise, fall back to the static relative-label list.
+     */
+    private def optionsFor(frameOpt: Option[PipeFrame]): List[(String, RelativeSide)] =
+        val i18n = I18N_UI.direction_badge
+        frameOpt match
+            case Some(f)
+                if math.abs(math.abs(f.direction.z) - 1.0) < 1e-6
+                    && math.abs(f.direction.x) < 1e-6
+                    && math.abs(f.direction.y) < 1e-6 =>
+                // localRight = +X for both Up and Down vertical pipes (PipeFrame convention).
+                // Only localUp flips sign (localUp = -Y for Up, +Y for Down), so only the
+                // Up/Down RelativeSide pair swaps between the two lists.
+                if f.direction.z > 0 then
+                    List(
+                        i18n.cardinal_rear  -> RelativeSide.Down,
+                        i18n.cardinal_right -> RelativeSide.Right,
+                        i18n.cardinal_front -> RelativeSide.Up,
+                        i18n.cardinal_left  -> RelativeSide.Left
+                    )
+                else
+                    List(
+                        i18n.cardinal_rear  -> RelativeSide.Up,
+                        i18n.cardinal_right -> RelativeSide.Right,
+                        i18n.cardinal_front -> RelativeSide.Down,
+                        i18n.cardinal_left  -> RelativeSide.Left
+                    )
+            case _ =>
+                allSides.map(s => sideLabel(s) -> s)
+
     private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
         val (az, el) = v.toAzimuthElevation
         val incl = InclinationDirection.fromDegrees(el)
@@ -229,10 +267,20 @@ case class RelativeDirectionInput(
                 label (cls := "fieldset-label", i18n.relative_dir_label),
                 select(
                     cls := "select select-xs",
-                    value <-- sideVar.signal.map(_.toString),
-                    onChange.mapToValue.map(v => RelativeSide.valueOf(v)) --> sideVar.writer,
-                    allSides.map: side =>
-                        option(sideLabel(side), value := side.toString)
+                    // children first — so options exist when `value <--` fires on mount.
+                    // .distinct on frameBefore prevents needless rebuilds when upstream
+                    // re-emits the same frame (which would otherwise reset DOM selectedIndex).
+                    children <-- frameBefore.distinct.map { frameOpt =>
+                        optionsFor(frameOpt).map { case (lbl, side) =>
+                            option(lbl, value := side.toString)
+                        }
+                    },
+                    // controlled() keeps DOM <select>.value in sync with sideVar even when
+                    // children are rebuilt (browser resets selectedIndex on full replacement).
+                    controlled(
+                        value <-- sideVar.signal.map(_.toString),
+                        onChange.mapToValue.map(v => RelativeSide.valueOf(v)) --> sideVar.writer
+                    )
                 )
             ),
 
