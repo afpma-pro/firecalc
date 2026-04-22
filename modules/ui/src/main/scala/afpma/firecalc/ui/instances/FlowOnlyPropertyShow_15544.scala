@@ -11,7 +11,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 
 import afpma.firecalc.ui.displayUnits
-import afpma.firecalc.ui.instances.DirectionShowInstances.given
 import afpma.firecalc.ui.instances.DirectionFormat
 
 import cats.Show

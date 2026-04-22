@@ -348,7 +348,6 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         import afpma.firecalc.ui.instances.DirectionFormat
         import afpma.firecalc.ui.instances.DirectionShowInstances.given
         import cats.Show
-        import cats.syntax.show.*
 
         // Local Show instances for <option> display text (resolved via DirectionShowInstances givens)
         val showAz   = summon[Show[AzimuthDirection]]
