@@ -157,7 +157,7 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
                     .filter:
                         case sec: en13384.ThermalPipeDescr_13384.StraightSection                                    =>
                             sec.pipeLoc.areaHeatingStatus == AreaHeatingStatus.NotHeated
-                        case _  : (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) =>
+                        case _  : IsZeroLengthPipeElement                                                         =>
                             false
                     .map:
                         case sec: en13384.ThermalPipeDescr_13384.StraightSection => sec.elevation_gain

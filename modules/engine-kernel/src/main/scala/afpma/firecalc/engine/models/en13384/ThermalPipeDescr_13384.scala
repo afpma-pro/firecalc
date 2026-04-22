@@ -34,14 +34,14 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
     override given hasLength: HasLength[PipeElDescr]:
         extension (p: PipeElDescr)
             def length = p match
-                case s: StraightSection                                                                   => s.length
-                case _: (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) => 0.meters
+                case s: StraightSection         => s.length
+                case _: IsZeroLengthPipeElement => 0.meters
 
     override given hasVerticalElev: HasVerticalElev[PipeElDescr]:
         extension (p: PipeElDescr)
             def verticalElev = p match
-                case s: StraightSection                                                                   => s.elevation_gain
-                case _: (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) => 0.meters
+                case s: StraightSection         => s.elevation_gain
+                case _: IsZeroLengthPipeElement => 0.meters
 
     given HasUnheatedHeightInsideAndOutside[PipeElDescr]:
         extension (el: PipeElDescr)
@@ -65,11 +65,11 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
                 inLoc: PLoc
             ): QtyD[(Meter ^ 2)] =
                 el match
-                    case sec: StraightSection                                                                   =>
+                    case sec: StraightSection         =>
                         if (sec.pipeLoc == inLoc)
                             sec.outer_shape.area
                         else 0.m2
-                    case _  : (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) =>
+                    case _  : IsZeroLengthPipeElement =>
                         0.m2
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr]:
@@ -111,7 +111,7 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
                     case PressureDiff(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
-                    case _: (SingularFlowResistance | PressureDiff | DirectionChange) =>
+                    case _: IsZeroLengthPipeElement                                   =>
                         oPrevGeom.map(prevGeom => QtyDAtPosition.constant(prevGeom).atPos)
 
     enum Error  :
@@ -349,5 +349,5 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
     //             ).withUnit[Radian]
     //         SectionDecreaseProgressive(fromD1, toD2, ɣ_radian.toUnit[Degree])
 
-    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr derives Show
-    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr derives Show
+    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr with IsSingularFlowResistance derives Show
+    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr with IsPressureDiff derives Show

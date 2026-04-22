@@ -62,7 +62,7 @@ object FluePipe_Module_15544
                 .map:
                     case s: StraightSection                                                                   =>
                         s.length
-                    case _: (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) =>
+                    case _: IsZeroLengthPipeElement                                                         =>
                         0.meters
                 .map(_.toUnit[Meter].value)
                 .sum

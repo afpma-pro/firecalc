@@ -14,7 +14,10 @@ import afpma.firecalc.units.coulombutils.given
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.models.IsDirectionChange
+import afpma.firecalc.engine.models.IsPressureDiff
 import afpma.firecalc.engine.models.IsSectionGeometryChange
+import afpma.firecalc.engine.models.IsSingularFlowResistance
+import afpma.firecalc.engine.models.IsZeroLengthPipeElement
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.AngleVifDe0A180
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -36,11 +39,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                 val ZERO = 0.0.meters
                 a match
                     case StraightSection(length, _, _, _) => length
-                    case AngleVifDe0A180(_, _)            => ZERO
-                    case CircularArc60                    => ZERO
-                    case SectionGeometryChange(_, _)      => ZERO
-                    case SingularFlowResistance(_, _)     => ZERO
-                    case PressureDiff(_, _)               => ZERO
+                    case _: IsZeroLengthPipeElement       => ZERO
     }
 
     override given hasVerticalElev: HasVerticalElev[PipeElDescr]:
@@ -48,12 +47,8 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
             def verticalElev =
                 val ZERO = 0.0.meters
                 p match
-                    case x: StraightSection        => x.elevation_gain
-                    case _: AngleVifDe0A180        => ZERO
-                    case _: CircularArc60          => ZERO
-                    case _: SectionGeometryChange  => ZERO
-                    case _: SingularFlowResistance => ZERO
-                    case _: PressureDiff           => ZERO
+                    case x: StraightSection         => x.elevation_gain
+                    case _: IsZeroLengthPipeElement => ZERO
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr]:
         extension (el: PipeElDescr)
@@ -94,11 +89,10 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                     case PressureDiff(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
-                    case _: (SingularFlowResistance | PressureDiff | DirectionChange) =>
+                    case _: IsZeroLengthPipeElement                                   =>
                         oPrevGeom.map(prevGeom => QtyDAtPosition.constant(prevGeom).atPos)
 
-    type NotStraightSection = DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff
-    type NotPressureDiff    = StraightSection | DirectionChange | SectionGeometryChange | SingularFlowResistance
+    type NotPressureDiff = StraightSection | DirectionChange | SectionGeometryChange | SingularFlowResistance
 
     sealed trait PipeElDescr extends Matchable
 
@@ -132,5 +126,5 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
         to  : PipeShape
     ) extends PipeElDescr with IsSectionGeometryChange derives Show
 
-    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr derives Show
-    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr derives Show
+    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr with IsSingularFlowResistance derives Show
+    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr with IsPressureDiff derives Show

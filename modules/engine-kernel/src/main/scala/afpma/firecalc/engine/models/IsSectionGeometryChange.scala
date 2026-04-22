@@ -14,7 +14,7 @@ package afpma.firecalc.engine.models
  * own SectionGeometryChange variant should extend this trait to remain correctly
  * handled by existing consumers (velocity validation, graph rendering, etc.).
  */
-trait IsSectionGeometryChange
+trait IsSectionGeometryChange extends IsZeroLengthPipeElement
 
 extension (psr: PipeSectionResult[?])
     def isSectionGeometryChange: Boolean = psr.descr match

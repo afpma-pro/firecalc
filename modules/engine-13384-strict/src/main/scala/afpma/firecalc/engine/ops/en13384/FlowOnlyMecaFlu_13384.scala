@@ -227,7 +227,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     val elevation_gain = curr.el match
         case el: StraightSection                                                                   =>
             el.elevation_gain
-        case _ : (SingularFlowResistance | PressureDiff | DirectionChange | SectionGeometryChange) =>
+        case _ : IsZeroLengthPipeElement                                                         =>
             0.0.meters
 
     override val density_mean   = en13384_density_mean(temp_mean, gp.pipeEl.typ, pReq).some
@@ -253,7 +253,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     val roughness = curr.el match
         case el: StraightSection                                                                   =>
             el.roughness.some
-        case _ : (DirectionChange | PressureDiff | SectionGeometryChange | SingularFlowResistance) =>
+        case _ : IsZeroLengthPipeElement                                                         =>
             None
 
     val staticFriction: Pressure = curr.el match
@@ -276,7 +276,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                     temperature_for_pr_pu_pd
                 )
             )
-        case _ : (DirectionChange | PressureDiff | SectionGeometryChange | SingularFlowResistance) =>
+        case _ : IsZeroLengthPipeElement                                                         =>
             0.0.pascals
 
     val en13384_pg: Pressure =

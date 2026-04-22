@@ -15,7 +15,7 @@ package afpma.firecalc.engine.models
  * (which over-match other zero-length elements like SingularFlowResistance
  * or PressureDiff).
  */
-trait IsDirectionChange
+trait IsDirectionChange extends IsZeroLengthPipeElement
 
 extension (psr: PipeSectionResult[?])
     def isDirectionChange: Boolean = psr.descr match

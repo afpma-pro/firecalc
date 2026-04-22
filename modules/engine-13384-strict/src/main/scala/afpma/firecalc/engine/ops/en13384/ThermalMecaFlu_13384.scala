@@ -40,7 +40,7 @@ trait ThermalMecaFlu_Helpers:
         el match
             case el: StraightSection                                                                   =>
                 el.airSpaceDetailed.some
-            case _ : (SingularFlowResistance | PressureDiff | DirectionChange | SectionGeometryChange) =>
+            case _ : IsZeroLengthPipeElement                                                         =>
                 orLast
 
 object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_WithThermalAirIntake:
@@ -176,7 +176,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
 
         val pipeLocOpt: Option[PipeLocation] = el match
             case el: StraightSection                                                                   => Some(el.pipeLoc)
-            case _ : (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) => None
+            case _ : IsZeroLengthPipeElement                                                         => None
 
         val custAreaAmbAirTempSet = pipeLocOpt.flatMap:
             case cust: CustomArea => Some(cust.ambiant_air_temperature_set)
@@ -462,7 +462,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     val elevation_gain = curr.el match
         case el: StraightSection                                                                   =>
             el.elevation_gain
-        case _ : (SingularFlowResistance | PressureDiff | DirectionChange | SectionGeometryChange) =>
+        case _ : IsZeroLengthPipeElement                                                         =>
             0.0.meters
 
     override val density_mean   = en13384_density_mean(temp_mean, gp.pipeEl.typ, pReq).some
@@ -488,7 +488,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     val roughness = curr.el match
         case el: StraightSection                                                                   =>
             el.roughness.some
-        case _ : (DirectionChange | PressureDiff | SectionGeometryChange | SingularFlowResistance) =>
+        case _ : IsZeroLengthPipeElement                                                         =>
             None
 
     val staticFriction: Pressure = curr.el match
@@ -511,7 +511,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                     temperature_for_pr_pu_pd
                 )
             )
-        case _ : (DirectionChange | PressureDiff | SectionGeometryChange | SingularFlowResistance) =>
+        case _ : IsZeroLengthPipeElement                                                         =>
             0.0.pascals
 
     val en13384_pg: Pressure =
