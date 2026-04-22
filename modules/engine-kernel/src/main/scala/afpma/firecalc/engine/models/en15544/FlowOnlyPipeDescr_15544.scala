@@ -13,6 +13,7 @@ import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.models.IsSectionGeometryChange
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.AngleVifDe0A180
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -128,7 +129,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     case class SectionGeometryChange(
         from: PipeShape,
         to  : PipeShape
-    ) extends PipeElDescr derives Show
+    ) extends PipeElDescr with IsSectionGeometryChange derives Show
 
     case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr derives Show
     case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr derives Show

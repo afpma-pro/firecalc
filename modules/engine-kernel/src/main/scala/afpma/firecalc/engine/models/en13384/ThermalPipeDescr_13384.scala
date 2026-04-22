@@ -278,7 +278,7 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
     sealed abstract class SectionGeometryChange(
         val from: PipeShape.Circle,
         val to  : PipeShape.Circle
-    ) extends PipeElDescr derives Show {
+    ) extends PipeElDescr with IsSectionGeometryChange derives Show {
         def fromA1: QtyD[(Meter ^ 2)] = from.area
         def toA2  : QtyD[(Meter ^ 2)] = to.area
     }

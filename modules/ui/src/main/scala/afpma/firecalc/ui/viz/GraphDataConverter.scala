@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.PipeIdx
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeResult.PipeResultFromSections
 import afpma.firecalc.engine.models.PipeSectionResult
+import afpma.firecalc.engine.models.isSectionGeometryChange
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
 
@@ -423,7 +424,11 @@ object GraphDataConverter:
                 highlightTargets = endTargets
             )
 
-            Vector(startPoint, endPoint)
+            // Suppress the two co-located points of zero-length SectionGeometryChange entries.
+            // Accumulators above have already absorbed its singular pressure loss (pu), so the
+            // next section's start point carries the correct cumulative pressure.
+            if section.isSectionGeometryChange then Vector.empty
+            else Vector(startPoint, endPoint)
         }
 
         originPoint +: sectionPoints
