@@ -883,6 +883,10 @@ export function initFilaireViz(
   const camera = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 10000)
 
   const controls = new OrbitControls(camera, renderer.domElement)
+  // Zoom toward the cursor so the orbit pivot tracks the area of interest.
+  // Without this, deep zoom leaves the pivot at the original scene center,
+  // making orbit/pan feel unresponsive far from it.
+  controls.zoomToCursor = true
 
   // ---------------------------------------------------------------------------
   // Lighting
@@ -1005,6 +1009,14 @@ export function initFilaireViz(
     controls.target.copy(defaultTarget)
     controls.update()
   }
+
+  // Clamp dolly range so pan sensitivity remains usable at deep zoom.
+  // Pan speed scales with camera-to-target distance; setting the floor at
+  // 3% of the dominant scene extent (rather than 1%) gives noticeably more
+  // world-space pan per drag-pixel at maximum zoom, without altering
+  // mid-range pan behavior.
+  controls.minDistance = Math.max(maxDim * 0.03, 0.1)
+  controls.maxDistance = distance * 20
 
   // ---------------------------------------------------------------------------
   // ViewHelper (CAD-style orientation gizmo with labels)
