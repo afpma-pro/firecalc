@@ -869,7 +869,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     lazy val shortcut_quick_flue_section =
         import afpma.laminar.form.{Defaultable as D}
         import afpma.firecalc.engine.models.FluePipe_Module_15544.innerShapeAtPrefix
-        TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_15544](
+        TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_15544]    (
             txt     = I18N_UI.shortcuts.quick_flue_section,
             compute = (insertIdx: Int) => {
                 val prevShape: PipeShape = FluePipe_Module_15544.incremental

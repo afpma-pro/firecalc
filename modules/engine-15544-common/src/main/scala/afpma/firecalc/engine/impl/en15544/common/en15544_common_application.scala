@@ -862,9 +862,9 @@ abstract class EN15544_V_2023_Common_Application
                     .filterNot(_.isSectionGeometryChange)
                     .flatMap: psr =>
                         val startBad = outOfFlueGasVelocityRange(psr.v_start)
-                        val endBad   = outOfFlueGasVelocityRange(psr.v_end  )
+                        val endBad   = outOfFlueGasVelocityRange(psr.v_end)
                         def mkErr(pos: VelocityPosition, vs: Option[v], ve: Option[v]): FlueGasVelocityError =
-                            FlueGasVelocityError(
+                            FlueGasVelocityError    (
                                 sectionId     = psr.section_id.unwrap,
                                 sectionTyp    = psr.section_typ,
                                 sectionName   = psr.section_name,
@@ -876,9 +876,9 @@ abstract class EN15544_V_2023_Common_Application
                             )
                         (startBad, endBad) match
                             case (false, false) => None
-                            case (true , false) => Some(mkErr(VelocityPosition.Start, Some(psr.v_start), None))
-                            case (false, true ) => Some(mkErr(VelocityPosition.End  , None, Some(psr.v_end)))
-                            case (true , true ) => Some(mkErr(VelocityPosition.Both , Some(psr.v_start), Some(psr.v_end)))
+                            case (true, false ) => Some(mkErr(VelocityPosition.Start, Some(psr.v_start), None)          )
+                            case (false, true ) => Some(mkErr(VelocityPosition.End, None, Some(psr.v_end))              )
+                            case (true, true  ) => Some(mkErr(VelocityPosition.Both, Some(psr.v_start), Some(psr.v_end)))
                     .map(_.invalidNel[Unit])
                     .toList
                     .sequence[[x] =>> ValidatedNel[FlueGasVelocityError, x], Unit]

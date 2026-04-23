@@ -325,7 +325,7 @@ object standard {
         minVel       : v,
         maxVel       : v
     ) extends FluePipeError
-    object FlueGasVelocityError:
+    object FlueGasVelocityError        :
         given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
             def showV(vv: v): String =
                 val useHighPrecision = (vv.show == err.minVel.show) || (vv.show == err.maxVel.show)
@@ -333,7 +333,7 @@ object standard {
                 shw.show(vv)
 
             (err.position, err.startVelocity, err.endVelocity) match
-                case (VelocityPosition.Start, Some(vS), _) =>
+                case (VelocityPosition.Start, Some(vS), _      ) =>
                     I18N.errors.flue_gas_velocity_error_single_boundary(
                         err.sectionId.toString,
                         err.sectionName,
@@ -342,7 +342,7 @@ object standard {
                         err.minVel.show,
                         err.maxVel.show
                     )
-                case (VelocityPosition.End  , _, Some(vE)) =>
+                case (VelocityPosition.End, _, Some(vE)        ) =>
                     I18N.errors.flue_gas_velocity_error_single_boundary(
                         err.sectionId.toString,
                         err.sectionName,
@@ -351,7 +351,7 @@ object standard {
                         err.minVel.show,
                         err.maxVel.show
                     )
-                case (VelocityPosition.Both , Some(vS), Some(vE)) =>
+                case (VelocityPosition.Both, Some(vS), Some(vE)) =>
                     I18N.errors.flue_gas_velocity_error_both_boundaries(
                         err.sectionId.toString,
                         err.sectionName,

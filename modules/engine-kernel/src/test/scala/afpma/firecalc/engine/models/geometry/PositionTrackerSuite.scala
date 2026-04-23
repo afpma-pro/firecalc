@@ -178,7 +178,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         //   dir = (0, cos60°, sin60°) = (0, 0.5, 0.866)     — Rear-tilted-up
         //   length = 3m (interpreted as 3D length, not vertical projection)
         //   disp = dir * 3 = (0, 1.5, 2.598); starts from (0,0,6)
-        val elems  = Seq(
+        val elems         = Seq(
             AddSectionVertical     ("up1", 6.0.meters),
             AddSharpeAngle_0_to_180(
                 "bend",
@@ -188,17 +188,17 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
             AddSectionVertical     ("up2", 3.0.meters)
         )
         val externalFrame = Some(PipeFrame.initial(Vec3.Up)) // ChimneySlot starts vertical
-        val result = PositionTracker.computeFlowOnly15544(elems, externalFrame, Vec3(0, 0, 0))
+        val result        = PositionTracker.computeFlowOnly15544(elems, externalFrame, Vec3(0, 0, 0))
         // Two visible segments (bend produces no segment, just frame update)
         result.segments.size shouldBe 2
         // Second segment should follow the bent direction with vertical projection = 3m
-        val seg2 = result.segments(1)
-        assertApprox(seg2.direction.x, 0.0,                            "seg2.dir.x")
-        assertApprox(seg2.direction.y, math.cos(math.toRadians(60.0)), "seg2.dir.y") // 0.5
-        assertApprox(seg2.direction.z, math.sin(math.toRadians(60.0)), "seg2.dir.z") // 0.866
-        assertApprox(seg2.length,      3.0,                            "seg2.length") // parameter is 3D length
+        val seg2          = result.segments(1)
+        assertApprox(seg2.direction.x, 0.0, "seg2.dir.x"                                           )
+        assertApprox(seg2.direction.y, math.cos           (math.toRadians(60.0)), "seg2.dir.y"     ) // 0.5
+        assertApprox(seg2.direction.z, math.sin           (math.toRadians(60.0)), "seg2.dir.z"     ) // 0.866
+        assertApprox(seg2.length, 3.0, "seg2.length"                                               ) // parameter is 3D length
         // Endpoint gains Rear (y) and Up (z) proportionally to the bent direction
-        assertApprox(seg2.endPoint.y, 3.0 * math.cos(math.toRadians(60.0)),       "seg2.endPoint.y") // 1.5
+        assertApprox(seg2.endPoint.y, 3.0 * math.cos      (math.toRadians(60.0)), "seg2.endPoint.y") // 1.5
         assertApprox(seg2.endPoint.z, 6.0 + 3.0 * math.sin(math.toRadians(60.0)), "seg2.endPoint.z") // 8.598
     }
 

@@ -473,7 +473,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         // Plain var (not Var): we need *synchronous* increment between successive Appends
         // within a single batch-shortcut click. An Airstream Var's `.update` is transaction-scoped
         // and `.now()` can read stale data for the next immediate emission.
-        private var insertIdx: Option[Int] = None
+        private var insertIdx  : Option[Int]    = None
         private val openMenuBus: EventBus[Unit] = new EventBus[Unit]
 
         private val insertObserver: Observer[CollectionCommand[(Int, Elem)]] = Observer { cmd =>
@@ -500,8 +500,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
         def open(atIndex: Int): Unit =
             insertIdx = Some(atIndex)
-            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
-            openMenuBus.emit(())
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(  )
+            openMenuBus.emit                                        (())
 
         private def close(): Unit =
             dialogNode.ref.asInstanceOf[HTMLDialogElement].close()

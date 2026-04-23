@@ -158,7 +158,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 resultsV match
                     case Validated.Valid(_) if headIndices.isEmpty =>
                         span()
-                    case Validated.Valid(results) =>
+                    case Validated.Valid(results)                  =>
                         val totalMeters = headIndices
                             .flatMap(i => results.lift(i).map(_._2.lengthSum.value))
                             .sum
@@ -178,7 +178,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                             cls := "text-xs text-base-content/70 px-2",
                             s"$label: $formatted$minSuffix"
                         )
-                    case Validated.Invalid(_)     => span()
+                    case Validated.Invalid(_)                      => span()
 
     // ── Container-level head-region signals (hoisted once, passed to each slot panel) ──
 

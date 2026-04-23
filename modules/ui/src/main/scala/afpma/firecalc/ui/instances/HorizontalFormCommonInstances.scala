@@ -357,28 +357,26 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         def inclSelect(v: Var[InclinationDirection]): HtmlElement =
             label(
                 cls := "floating-label",
-                span(I18N.terms.inclination),
+                span  (I18N.terms.inclination),
                 select(
                     cls := "select select-bordered w-full",
                     child <-- v.signal.map:
                         case InclinationDirection.Custom(a) =>
-                            option(
+                            option   (
                                 value    := "__custom__",
                                 selected := true,
                                 I18N_UI.direction_badge.custom_option(s"${a.value}°")
                             )
-                        case _ => emptyNode
+                        case _                              => emptyNode
                     ,
                     InclinationDirection.namedCases.map: c =>
                         option(
-                            value    := c.toString,
+                            value := c.toString,
                             selected <-- v.signal.map(_ == c),
                             showIncl.show(c)
-                        )
-                    ,
+                        ),
                     onChange.mapToValue --> { s =>
-                        if s != "__custom__" then
-                            InclinationDirection.namedCases.find(_.toString == s).foreach(v.set)
+                        if s != "__custom__" then InclinationDirection.namedCases.find(_.toString == s).foreach(v.set)
                     }
                 )
             )
@@ -387,28 +385,26 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         def azSelect(v: Var[AzimuthDirection]): HtmlElement =
             label(
                 cls := "floating-label",
-                span(I18N.terms.azimuth),
+                span  (I18N.terms.azimuth),
                 select(
                     cls := "select select-bordered w-full",
                     child <-- v.signal.map:
                         case AzimuthDirection.Custom(a) =>
-                            option(
+                            option   (
                                 value    := "__custom__",
                                 selected := true,
                                 I18N_UI.direction_badge.custom_option(s"${a.value}°")
                             )
-                        case _ => emptyNode
+                        case _                          => emptyNode
                     ,
                     AzimuthDirection.namedCases.map: c =>
                         option(
-                            value    := c.toString,
+                            value := c.toString,
                             selected <-- v.signal.map(_ == c),
                             showAz.show(c)
-                        )
-                    ,
+                        ),
                     onChange.mapToValue --> { s =>
-                        if s != "__custom__" then
-                            AzimuthDirection.namedCases.find(_.toString == s).foreach(v.set)
+                        if s != "__custom__" then AzimuthDirection.namedCases.find(_.toString == s).foreach(v.set)
                     }
                 )
             )

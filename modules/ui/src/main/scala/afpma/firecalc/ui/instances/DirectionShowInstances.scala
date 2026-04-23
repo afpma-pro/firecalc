@@ -52,7 +52,7 @@ object DirectionFormat:
         val i18n         = I18N_UI.direction_badge
         val isVertical   = math.abs(math.abs(elDeg) - 90.0) < 1e-6
         val isHorizontal = math.abs(elDeg) < 1.0
-        val inclStr =
+        val inclStr      =
             if isVertical then if elDeg > 0 then i18n.cardinal_up else i18n.cardinal_down
             else if isHorizontal then i18n.cardinal_horizontal
             else
@@ -67,7 +67,7 @@ object DirectionFormat:
     private def azimuthLabelForDeg(deg: Double)(using Locale): String =
         import afpma.firecalc.dto.all.AzimuthDirection.*
         AzimuthDirection.fromDegrees(deg, 1.0) match
-            case Custom(a) =>
+            case Custom(a)  =>
                 val mag = String.format(java.util.Locale.ROOT, "%.1f", a.value)
                 s"↻${mag}°"
             case Rear       => I18N_UI.direction_badge.cardinal_rear

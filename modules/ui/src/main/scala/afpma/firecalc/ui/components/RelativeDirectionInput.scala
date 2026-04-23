@@ -82,14 +82,14 @@ case class RelativeDirectionInput(
                 // Only localUp flips sign (localUp = -Y for Up, +Y for Down), so only the
                 // Up/Down RelativeSide pair swaps between the two lists.
                 if f.direction.z > 0 then
-                    List(
+                    List (
                         i18n.cardinal_rear  -> RelativeSide.Down,
                         i18n.cardinal_right -> RelativeSide.Right,
                         i18n.cardinal_front -> RelativeSide.Up,
                         i18n.cardinal_left  -> RelativeSide.Left
                     )
                 else
-                    List(
+                    List (
                         i18n.cardinal_rear  -> RelativeSide.Up,
                         i18n.cardinal_right -> RelativeSide.Right,
                         i18n.cardinal_front -> RelativeSide.Down,

@@ -94,7 +94,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         override def isValid: Boolean   = stateOps.isValid(propsState)
         def nf              : NbOfFlows = stateOps.getNFlows(propsState)
 
-    extension (piDescr: PipeIncrDescr) 
+    extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
 
         /** Inner geometry in effect after folding the first n descriptors — used by UI prefill. */

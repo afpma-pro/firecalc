@@ -55,7 +55,7 @@ case class TagTreeMenuComponent[A](
         elems: List[TagTreeMenu.Elems[A]]
     ): List[(TagTreeMenu.Modal[A], HtmlElement)] =
         elems.flatMap {
-            case m: TagTreeMenu.Modal[A]    =>
+            case m: TagTreeMenu.Modal[A]      =>
                 // Create an observer that appends the selected element
                 val onSelect: Observer[A] = Observer { selectedElem =>
                     val size = incrDescrSizeVar.now()
@@ -64,7 +64,7 @@ case class TagTreeMenuComponent[A](
                     treeStateVar.set(TreeState.initWith(ttm)                       )
                 }
                 List((m, m.modalContent(onSelect)))
-            case g: TagTreeMenu.Group[A]    =>
+            case g: TagTreeMenu.Group[A]      =>
                 collectAllModals(g.next)
             case _: TagTreeMenu.Leaf[A]       =>
                 Nil
