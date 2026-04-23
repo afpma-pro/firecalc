@@ -107,10 +107,12 @@ object GraphDataConverter:
         else (currentName ++ neighborName).toVector
 
     // Series colors
-    private val TemperatureColor         = "#E63946"
-    private val VelocityColor            = "#2A9D8F"
-    private val ElevationColor           = "#E9C46A"
-    private val PressureColor            = "#6C757D"
+    private object GraphSeriesColors:
+        val Pressure   : String = "#1E40AF" // Tailwind blue-800
+        val Velocity   : String = "#0F766E" // Tailwind teal-700
+        val Temperature: String = "#DC2626" // Tailwind red-600
+        val Elevation  : String = "#7E22CE" // Tailwind purple-700
+
     private val RegistreAirPressureColor = "#FAAF4C"
 
     // Background band colors (matching 3D viz pipe group palette, ~12% opacity)
@@ -165,11 +167,13 @@ object GraphDataConverter:
      * and carry labels for display.
      */
     def convertGeneric(
-        airIntake        : VNelMcalcErr[PipeResult],
-        combustionAir    : VNelMcalcErr[PipeResult],
-        firebox          : VNelMcalcErr[PipeResult],
-        postFireboxPipes : Vector[(String, VNelMcalcErr[PipeResult])],
-        pipeIdxToDescrIdx: Map[String, Map[Int, Int]] = Map.empty
+        airIntake         : VNelMcalcErr[PipeResult],
+        combustionAir     : VNelMcalcErr[PipeResult],
+        firebox           : VNelMcalcErr[PipeResult],
+        postFireboxPipes  : Vector[(String, VNelMcalcErr[PipeResult])],
+        pipeIdxToDescrIdx : Map[String, Map[Int, Int]] = Map.empty,
+        flueGasVelocityMin: Double                     = 1.2, // EN 15544 §4.9.3 fallback
+        flueGasVelocityMax: Double                     = 6.0  // EN 15544 §4.9.3 fallback
     )(using Locale, DisplayUnits): ChartData =
 
         // All pipe results in order, for delta_pressure accumulation
@@ -261,54 +265,122 @@ object GraphDataConverter:
                 ChartSeries     (
                     id      = "pressure",
                     name    = I18N_UI.graph.pressure,
-                    color   = PressureColor,
+                    color   = GraphSeriesColors.Pressure,
                     points  = pressPoints,
-                    yAxisId = "right"
+                    yAxisId = "left"
                 ),
                 ChartSeries     (
                     id      = "velocity",
                     name    = I18N_UI.graph.velocity,
-                    color   = VelocityColor,
+                    color   = GraphSeriesColors.Velocity,
                     points  = velocityPoints,
-                    yAxisId = "right"
+                    yAxisId = "left"
                 ),
                 ChartSeries     (
                     id      = "temperature",
                     name    = I18N_UI.graph.temperature,
-                    color   = TemperatureColor,
+                    color   = GraphSeriesColors.Temperature,
                     points  = tempPoints,
-                    yAxisId = "temp"
+                    yAxisId = "right"
                 ),
                 ChartSeries     (
                     id      = "elevation",
                     name    = I18N_UI.graph.elevation,
-                    color   = ElevationColor,
+                    color   = GraphSeriesColors.Elevation,
                     points  = elevPoints,
-                    yAxisId = "right",
+                    yAxisId = "left",
                     dashed  = true
                 )
             )
 
-            val yAxes = Vector(
-                YAxisConfig(id = "temp", label  = tempLabel, position  = YAxisPosition.Left                       ),
-                YAxisConfig(id = "right", label = rightLabel, position = YAxisPosition.Right, stepSize = Some(5.0))
-            )
+            // Edit 3: Compute left-axis range from pressure + velocity + elevation
+            val leftAllY      : Vector[Double] = (pressPoints ++ velocityPoints ++ elevPoints).map(_.y)
+            val leftDataMin   : Double         = leftAllY.minOption.getOrElse(0.0)
+            val leftDataMax   : Double         = leftAllY.maxOption.getOrElse(0.0)
+            val leftMin       : Double         = math.floor(leftDataMin / 5.0) * 5.0
+            val leftMax       : Double         = math.ceil(leftDataMax / 5.0) * 5.0
+            val leftRange     : Double         = leftMax - leftMin
+            val primaryTickCount: Int          = (leftRange / 5.0).toInt + 1
 
-            // Build background bands from pipe group boundaries
-            val bands     = Vector.newBuilder[BackgroundBand]
-            var bandStart = 0.0
+            // Edit 4: Compute right-axis (temperature) range aligned to left tick count
+            val tempYs      : Vector[Double] = tempPoints.map(_.y)
+            val tempDataMin : Double         = tempYs.minOption.getOrElse(0.0)
+            val tempDataMax : Double         = tempYs.maxOption.getOrElse(0.0)
+            val tempMin     : Double         = math.floor(tempDataMin / 25.0) * 25.0
+            val tempMax     : Double         = math.ceil(tempDataMax / 25.0) * 25.0
+            val tempStepSize: Double         =
+                if primaryTickCount <= 1 then tempMax - tempMin
+                else (tempMax - tempMin) / (primaryTickCount - 1).toDouble
+
+            // Edit 5: Rewritten YAxisConfig list — left holds pressure/velocity/elevation, right holds temperature
+            val leftAxisConfig = YAxisConfig(
+                id                = "left",
+                label             = rightLabel,
+                position          = YAxisPosition.Left,
+                min               = Some(leftMin),
+                max               = Some(leftMax),
+                stepSize          = Some(5.0),
+                primaryGridStep   = Some(5.0),
+                secondaryGridStep = Some(1.0)
+            )
+            val rightAxisConfig = YAxisConfig(
+                id       = "right",
+                label    = tempLabel,
+                position = YAxisPosition.Right,
+                min      = Some(tempMin),
+                max      = Some(tempMax),
+                stepSize = Some(tempStepSize)
+            )
+            val yAxes = Vector(leftAxisConfig, rightAxisConfig)
+
+            // Build background bands from pipe group boundaries and, in the same pass,
+            // collect the x-segments where velocity operating-window reference lines apply
+            // (flue region, terminal connector, chimney — identified by raw pipe type,
+            // BEFORE i18n translation via `displayLabel`).
+            val bands                    = Vector.newBuilder[BackgroundBand]
+            val velocityLineSegsBuilder  = Vector.newBuilder[XSegment]
+            val velocityLinePipeTypes    = Set("Flue", "Connector", "Chimney")
+            var bandStart                = 0.0
             pipes.foreach { (pipeName, _) =>
                 val pipeEnd = allSections.filter(_.pipeName == pipeName).lastOption.map(_.xEnd).getOrElse(bandStart)
                 if pipeEnd > bandStart then
                     bands += BackgroundBand(bandStart, pipeEnd, bandColorFor(pipeName), displayLabel(pipeName))
+                    val rawPipeType = pipeName match
+                        case SlotPipePattern(_, t) => t
+                        case other                 => other
+                    if velocityLinePipeTypes.contains(rawPipeType) then
+                        velocityLineSegsBuilder += XSegment(bandStart, pipeEnd)
                 bandStart = pipeEnd
             }
+            val velocityLineSegments: Vector[XSegment] = velocityLineSegsBuilder.result()
+
+            val velocityRefLines: Vector[HorizontalReferenceLine] =
+                if velocityLineSegments.isEmpty then Vector.empty
+                else Vector(
+                    HorizontalReferenceLine(
+                        yAxisId              = "left",
+                        y                    = flueGasVelocityMin,
+                        color                = "#FFB74D",
+                        label                = "v_min",
+                        visibleWhenSeriesIds = Vector("velocity"),
+                        segments             = velocityLineSegments
+                    ),
+                    HorizontalReferenceLine(
+                        yAxisId              = "left",
+                        y                    = flueGasVelocityMax,
+                        color                = "#FFB74D",
+                        label                = "v_max",
+                        visibleWhenSeriesIds = Vector("velocity"),
+                        segments             = velocityLineSegments
+                    )
+                )
 
             ChartData         (
                 series          = series,
                 yAxes           = yAxes,
                 xAxisLabel      = xLabel,
                 backgroundBands = bands.result(),
+                horizontalLines = velocityRefLines,
                 xMin            = Some(-0.5),
                 xMax            = Some(runningLength + 0.5)
             )

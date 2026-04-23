@@ -72,32 +72,79 @@ object ChartSeriesJS:
             .asInstanceOf[ChartSeriesJS]
 
 trait YAxisConfigJS extends js.Object:
-    var id      : String
-    var label   : String
-    var position: String
-    var min     : js.UndefOr[Double]
-    var max     : js.UndefOr[Double]
-    var stepSize: js.UndefOr[Double]
+    var id               : String
+    var label            : String
+    var position         : String
+    var min              : js.UndefOr[Double]
+    var max              : js.UndefOr[Double]
+    var stepSize         : js.UndefOr[Double]
+    var primaryGridStep  : js.UndefOr[Double]
+    var secondaryGridStep: js.UndefOr[Double]
 
 object YAxisConfigJS:
     def apply(
-        id      : String,
-        label   : String,
-        position: String,
-        min     : js.UndefOr[Double] = js.undefined,
-        max     : js.UndefOr[Double] = js.undefined,
-        stepSize: js.UndefOr[Double] = js.undefined
+        id               : String,
+        label            : String,
+        position         : String,
+        min              : js.UndefOr[Double] = js.undefined,
+        max              : js.UndefOr[Double] = js.undefined,
+        stepSize         : js.UndefOr[Double] = js.undefined,
+        primaryGridStep  : js.UndefOr[Double] = js.undefined,
+        secondaryGridStep: js.UndefOr[Double] = js.undefined
     ): YAxisConfigJS =
         js.Dynamic
-            .literal      (
-                id       = id,
-                label    = label,
-                position = position,
-                min      = min,
-                max      = max,
-                stepSize = stepSize
+            .literal            (
+                id               = id,
+                label            = label,
+                position         = position,
+                min              = min,
+                max              = max,
+                stepSize         = stepSize,
+                primaryGridStep  = primaryGridStep,
+                secondaryGridStep = secondaryGridStep
             )
             .asInstanceOf[YAxisConfigJS]
+
+trait XSegmentJS extends js.Object:
+    var xStart: Double
+    var xEnd  : Double
+
+object XSegmentJS:
+    def apply(xStart: Double, xEnd: Double): XSegmentJS =
+        js.Dynamic
+            .literal(
+                xStart = xStart,
+                xEnd   = xEnd
+            )
+            .asInstanceOf[XSegmentJS]
+
+trait HorizontalReferenceLineJS extends js.Object:
+    var yAxisId             : String
+    var y                   : Double
+    var color               : String
+    var label               : String
+    var visibleWhenSeriesIds: js.Array[String]
+    var segments            : js.Array[XSegmentJS]
+
+object HorizontalReferenceLineJS:
+    def apply(
+        yAxisId             : String,
+        y                   : Double,
+        color               : String,
+        label               : String,
+        visibleWhenSeriesIds: js.Array[String],
+        segments            : js.Array[XSegmentJS]
+    ): HorizontalReferenceLineJS =
+        js.Dynamic
+            .literal                (
+                yAxisId              = yAxisId,
+                y                    = y,
+                color                = color,
+                label                = label,
+                visibleWhenSeriesIds = visibleWhenSeriesIds,
+                segments             = segments
+            )
+            .asInstanceOf[HorizontalReferenceLineJS]
 
 trait BackgroundBandJS extends js.Object:
     var xStart: Double
@@ -117,28 +164,31 @@ object BackgroundBandJS:
             .asInstanceOf[BackgroundBandJS]
 
 trait ChartDataJS extends js.Object:
-    var series         : js.Array[ChartSeriesJS]
-    var yAxes          : js.Array[YAxisConfigJS]
-    var xAxisLabel     : String
-    var backgroundBands: js.Array[BackgroundBandJS]
-    var xMin           : js.UndefOr[Double]
-    var xMax           : js.UndefOr[Double]
+    var series          : js.Array[ChartSeriesJS]
+    var yAxes           : js.Array[YAxisConfigJS]
+    var xAxisLabel      : String
+    var backgroundBands : js.Array[BackgroundBandJS]
+    var horizontalLines : js.Array[HorizontalReferenceLineJS]
+    var xMin            : js.UndefOr[Double]
+    var xMax            : js.UndefOr[Double]
 
 object ChartDataJS:
     def apply(
         series         : js.Array[ChartSeriesJS],
         yAxes          : js.Array[YAxisConfigJS],
         xAxisLabel     : String,
-        backgroundBands: js.Array[BackgroundBandJS] = js.Array(),
-        xMin           : js.UndefOr[Double]         = js.undefined,
-        xMax           : js.UndefOr[Double]         = js.undefined
+        backgroundBands: js.Array[BackgroundBandJS]          = js.Array(),
+        horizontalLines: js.Array[HorizontalReferenceLineJS] = js.Array(),
+        xMin           : js.UndefOr[Double]                  = js.undefined,
+        xMax           : js.UndefOr[Double]                  = js.undefined
     ): ChartDataJS =
         js.Dynamic
-            .literal         (
+            .literal          (
                 series          = series,
                 yAxes           = yAxes,
                 xAxisLabel      = xAxisLabel,
                 backgroundBands = backgroundBands,
+                horizontalLines = horizontalLines,
                 xMin            = xMin,
                 xMax            = xMax
             )

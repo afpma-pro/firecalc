@@ -839,11 +839,8 @@ abstract class EN15544_V_2023_Common_Application
                         ().validNel[FluePipeInvalidGeometryRatio]
         checks.toList.sequence[[x] =>> ValidatedNel[FluePipeInvalidGeometryRatio, x], Unit].map(_ => ())
 
-    private val flueGasVelocityMin: v = 1.2.m_per_s
-    private val flueGasVelocityMax: v = 6.m_per_s
-
     private def outOfFlueGasVelocityRange(fvelocity: v): Boolean =
-        (fvelocity < flueGasVelocityMin) | (fvelocity > flueGasVelocityMax)
+        (fvelocity < formulas.flueGasVelocityMin) | (fvelocity > formulas.flueGasVelocityMax)
 
     protected def validateVelocitiesIn(
         pipeResult: PipeResult
@@ -871,8 +868,8 @@ abstract class EN15544_V_2023_Common_Application
                                 position      = pos,
                                 startVelocity = vs,
                                 endVelocity   = ve,
-                                minVel        = flueGasVelocityMin,
-                                maxVel        = flueGasVelocityMax
+                                minVel        = formulas.flueGasVelocityMin,
+                                maxVel        = formulas.flueGasVelocityMax
                             )
                         (startBad, endBad) match
                             case (false, false) => None

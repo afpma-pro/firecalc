@@ -413,6 +413,16 @@ lazy val results_en15544_t_chimney_wall_top: Signal[VNelMcalcErr[t_chimney_wall_
 lazy val results_en15544_t_chimney_wall_top_min: Signal[VNelMcalcErr[t_chimney_wall_top_min]] =
     results_en15544_strict_sig.mapVNelE(_.formulas.t_chimney_wall_top_min)
 
+/** Flue-gas velocity bounds (EN 15544 §4.9.3) as plain doubles, with standard fallbacks
+  * when the 15544 application is not yet resolved. Consumed by the graph layer to draw
+  * horizontal operating-window reference lines. */
+lazy val results_en15544_flue_gas_velocity_bounds: Signal[(Double, Double)] =
+    results_en15544_strict_sig.map:
+        case cats.data.Validated.Valid(strict) =>
+            (strict.formulas.flueGasVelocityMin.value, strict.formulas.flueGasVelocityMax.value)
+        case _                                 =>
+            (1.2, 6.0)
+
 lazy val results_en15544_efficiency: Signal[VNelMcalcErr[η]] =
     results_en15544_strict_sig.flatMapVNelE(strict => strict.primary.η)
 
