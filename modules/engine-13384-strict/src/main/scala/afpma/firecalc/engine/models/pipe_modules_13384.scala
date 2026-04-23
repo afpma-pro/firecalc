@@ -150,7 +150,6 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
     given HasUnheatedHeightInsideAndOutside[ChimneyPipe]:
         extension (ch: ChimneyPipe)
             def unheatedHeightInsideAndOutside: UnheatedHeightInsideAndOutside =
-                import en13384.ThermalPipeDescr_13384.{elems as _, *}
                 ch.elems
                     .map(_.el)
                     // keep only unheated locations

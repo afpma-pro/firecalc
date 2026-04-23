@@ -56,7 +56,6 @@ object FluePipe_Module_15544
 
     extension (fp: FluePipe_15544)
         def totalLengthOfSections: QtyD[Meter] =
-            import en15544.FlowOnlyPipeDescr_15544.{elems as _, *}
             fp.elems
                 .map(_.el)
                 .map:

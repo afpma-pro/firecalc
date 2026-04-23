@@ -63,7 +63,6 @@ object FluePipe_Module_13384
 
     extension (fp: FluePipe_13384)
         def totalLengthOfSections: QtyD[Meter] =
-            import en13384.ThermalPipeDescr_13384.{elems as _, *}
             fp.elems
                 .map(_.el)
                 .map:
