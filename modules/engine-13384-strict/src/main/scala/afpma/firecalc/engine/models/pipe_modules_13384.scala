@@ -11,6 +11,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.IsZeroLengthPipeElement
+
 import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
@@ -129,6 +131,15 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
             .toFullDescrWithExternalInitialFrame(externalInitialFrame)
             .map((ids, fd, _) => (ids, fd))
 
+    /**
+     * Inner cross-section at the end of the chimney, given the DTO descriptor sequence.
+     * Folds element-by-element through `PipeFullDescr.lastInnerGeom`, so any
+     * `SectionGeometryChange` along the way is honoured. Returns None when the
+     * descriptor list does not yield a valid pipe (e.g. empty, or fails validation).
+     */
+    def lastInnerShape(incrSeq: Seq[ThermalPipeDescr_13384]): Option[PipeShape] =
+        mkPipeFromIncrDescr(incrSeq).extractPipe.toOption.flatMap(_.lastInnerGeom)
+
     type PipeCanBe = FullDescr
 
     given HasOutsideSurfaceInLocation[ChimneyPipe]      :
@@ -154,9 +165,9 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
                     .map(_.el)
                     // keep only unheated locations
                     .filter:
-                        case sec: en13384.ThermalPipeDescr_13384.StraightSection                                    =>
+                        case sec: en13384.ThermalPipeDescr_13384.StraightSection =>
                             sec.pipeLoc.areaHeatingStatus == AreaHeatingStatus.NotHeated
-                        case _  : IsZeroLengthPipeElement                                                         =>
+                        case _  : IsZeroLengthPipeElement                        =>
                             false
                     .map:
                         case sec: en13384.ThermalPipeDescr_13384.StraightSection => sec.elevation_gain

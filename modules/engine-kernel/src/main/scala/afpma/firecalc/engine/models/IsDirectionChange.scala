@@ -5,19 +5,17 @@
 
 package afpma.firecalc.engine.models
 
-/**
- * Marker trait for direction-change (bend / angle) pipe elements across all
- * descriptor hierarchies (EN 15544 flow-only, EN 13384 flow-only, EN 13384 thermal).
- *
- * Tag concrete `DirectionChange` sealed abstract parents with this trait so
- * consumers can detect the kind structurally without importing per-standard
- * concrete types and without resorting to length-based heuristics
- * (which over-match other zero-length elements like SingularFlowResistance
- * or PressureDiff).
- */
-trait IsDirectionChange extends IsZeroLengthPipeElement
+import afpma.firecalc.domain.IsDirectionChange
 
+/**
+ * Engine-side predicate on `PipeSectionResult`.
+ *
+ * The `IsDirectionChange` trait itself lives in `domain` (with
+ * `IsZeroLengthPipeElement` as its parent) so it can be mixed into both engine
+ * concrete classes and DTO concrete classes. This file keeps only the
+ * engine-specific dispatcher on `PipeSectionResult`.
+ */
 extension (psr: PipeSectionResult[?])
     def isDirectionChange: Boolean = psr.descr match
         case _: IsDirectionChange => true
-        case _                    => false
+        case _ => false

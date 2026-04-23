@@ -16,6 +16,12 @@ import afpma.firecalc.units.coulombutils.show_SquareMeters
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.IsDirectionChange
+import afpma.firecalc.domain.IsPressureDiff
+import afpma.firecalc.domain.IsSectionGeometryChange
+import afpma.firecalc.domain.IsSingularFlowResistance
+import afpma.firecalc.domain.IsZeroLengthPipeElement
+
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -90,11 +96,11 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
                         .some
                         .map(_.atPos)
                 el match
-                    case s: StraightSection                                           =>
+                    case s: StraightSection         =>
                         QtyDAtPosition.constant(s.innerShape).some.map(_.atPos)
-                    case s: SectionDecrease                                           =>
+                    case s: SectionDecrease         =>
                         makeQtyAtPositionForGeometryTransition(s.from, s.to)
-                    case s: SectionIncrease                                           =>
+                    case s: SectionIncrease         =>
                         makeQtyAtPositionForGeometryTransition(s.from, s.to)
                     case SingularFlowResistance(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
@@ -102,7 +108,7 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
                     case PressureDiff(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
-                    case _: IsZeroLengthPipeElement                                   =>
+                    case _: IsZeroLengthPipeElement =>
                         oPrevGeom.map(prevGeom => QtyDAtPosition.constant(prevGeom).atPos)
 
     enum Error  :
@@ -131,7 +137,8 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
     sealed abstract class DirectionChange(
         val angleN1: QtyD[Degree],
         val angleN2: Option[QtyD[Degree]] = None // TOFIX ?
-    ) extends PipeElDescr with IsDirectionChange derives Show
+    ) extends PipeElDescr
+        with IsDirectionChange derives Show
 
     object DirectionChange:
         given Show[
@@ -220,7 +227,8 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
     sealed abstract class SectionGeometryChange(
         val from: PipeShape.Circle,
         val to  : PipeShape.Circle
-    ) extends PipeElDescr with IsSectionGeometryChange derives Show {
+    ) extends PipeElDescr
+        with IsSectionGeometryChange derives Show {
         def fromA1: QtyD[(Meter ^ 2)] = from.area
         def toA2  : QtyD[(Meter ^ 2)] = to.area
     }
@@ -258,5 +266,8 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
             to   = PipeShape.Circle.fromArea(toA2)
         )
 
-    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr with IsSingularFlowResistance derives Show
-    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr with IsPressureDiff derives Show
+    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area])
+        extends PipeElDescr
+        with IsSingularFlowResistance derives Show
+    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area]) extends PipeElDescr with IsPressureDiff
+        derives Show

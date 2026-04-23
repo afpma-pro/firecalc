@@ -5,16 +5,17 @@
 
 package afpma.firecalc.engine.models
 
-/**
- * Marker trait for singular flow-resistance pipe elements (fittings, constrictions
- * with known ζ coefficient) across all descriptor hierarchies.
- *
- * Extends `IsZeroLengthPipeElement` — singular resistances carry a ζ coefficient
- * but no physical length.
- */
-trait IsSingularFlowResistance extends IsZeroLengthPipeElement
+import afpma.firecalc.domain.IsSingularFlowResistance
 
+/**
+ * Engine-side predicate on `PipeSectionResult`.
+ *
+ * The `IsSingularFlowResistance` trait itself lives in `domain` (with
+ * `IsZeroLengthPipeElement` as its parent) so it can be mixed into both engine
+ * concrete classes and DTO concrete classes. This file keeps only the
+ * engine-specific dispatcher on `PipeSectionResult`.
+ */
 extension (psr: PipeSectionResult[?])
     def isSingularFlowResistance: Boolean = psr.descr match
         case _: IsSingularFlowResistance => true
-        case _                           => false
+        case _ => false

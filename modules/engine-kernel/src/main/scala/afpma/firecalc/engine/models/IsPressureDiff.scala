@@ -5,16 +5,17 @@
 
 package afpma.firecalc.engine.models
 
-/**
- * Marker trait for idealized pressure-difference pipe elements (fan, pump, or
- * user-imposed Δp) across all descriptor hierarchies.
- *
- * Extends `IsZeroLengthPipeElement` — pressure-diff elements inject a Δp at a
- * point but have no physical length.
- */
-trait IsPressureDiff extends IsZeroLengthPipeElement
+import afpma.firecalc.domain.IsPressureDiff
 
+/**
+ * Engine-side predicate on `PipeSectionResult`.
+ *
+ * The `IsPressureDiff` trait itself lives in `domain` (with
+ * `IsZeroLengthPipeElement` as its parent) so it can be mixed into both engine
+ * concrete classes and DTO concrete classes. This file keeps only the
+ * engine-specific dispatcher on `PipeSectionResult`.
+ */
 extension (psr: PipeSectionResult[?])
     def isPressureDiff: Boolean = psr.descr match
         case _: IsPressureDiff => true
-        case _                 => false
+        case _ => false

@@ -13,11 +13,11 @@ import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.models.IsDirectionChange
-import afpma.firecalc.engine.models.IsPressureDiff
-import afpma.firecalc.engine.models.IsSectionGeometryChange
-import afpma.firecalc.engine.models.IsSingularFlowResistance
-import afpma.firecalc.engine.models.IsZeroLengthPipeElement
+import afpma.firecalc.domain.IsDirectionChange
+import afpma.firecalc.domain.IsPressureDiff
+import afpma.firecalc.domain.IsSectionGeometryChange
+import afpma.firecalc.domain.IsSingularFlowResistance
+import afpma.firecalc.domain.IsZeroLengthPipeElement
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.AngleVifDe0A180
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -39,7 +39,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                 val ZERO = 0.0.meters
                 a match
                     case StraightSection(length, _, _, _) => length
-                    case _: IsZeroLengthPipeElement       => ZERO
+                    case _: IsZeroLengthPipeElement => ZERO
     }
 
     override given hasVerticalElev: HasVerticalElev[PipeElDescr]:
@@ -79,9 +79,9 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                         .map(_.atPos)
 
                 el match
-                    case s: StraightSection                                           =>
+                    case s: StraightSection         =>
                         QtyDAtPosition.constant(s.geometry).some.map(_.atPos)
-                    case s: SectionGeometryChange                                     =>
+                    case s: SectionGeometryChange   =>
                         makeQtyAtPositionForGeometryTransition(s.from, s.to)
                     case SingularFlowResistance(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
@@ -89,7 +89,7 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                     case PressureDiff(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
-                    case _: IsZeroLengthPipeElement                                   =>
+                    case _: IsZeroLengthPipeElement =>
                         oPrevGeom.map(prevGeom => QtyDAtPosition.constant(prevGeom).atPos)
 
     type NotPressureDiff = StraightSection | DirectionChange | SectionGeometryChange | SingularFlowResistance
@@ -111,7 +111,8 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     sealed abstract class DirectionChange(
         val angleN1: QtyD[Degree],
         val angleN2: Option[QtyD[Degree]]
-    ) extends PipeElDescr with IsDirectionChange derives Show
+    ) extends PipeElDescr
+        with IsDirectionChange derives Show
 
     object DirectionChange:
         val angleVifZero = AngleVifDe0A180(0.0.degrees, None)
@@ -124,7 +125,11 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     case class SectionGeometryChange(
         from: PipeShape,
         to  : PipeShape
-    ) extends PipeElDescr with IsSectionGeometryChange derives Show
+    ) extends PipeElDescr
+        with IsSectionGeometryChange derives Show
 
-    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area]) extends PipeElDescr with IsSingularFlowResistance derives Show
-    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area])  extends PipeElDescr with IsPressureDiff derives Show
+    case class SingularFlowResistance(zeta: ζ, crossSectionO: Option[Area])
+        extends PipeElDescr
+        with IsSingularFlowResistance derives Show
+    case class PressureDiff(pa: QtyD[Pascal], crossSectionO: Option[Area]) extends PipeElDescr with IsPressureDiff
+        derives Show

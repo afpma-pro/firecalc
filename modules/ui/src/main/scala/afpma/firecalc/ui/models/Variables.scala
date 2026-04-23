@@ -197,7 +197,10 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
 // ── Post-firebox generic topology ─────────────────────────────────
 // Slot-indexed reactive state for dynamic N-pipe UI.
 
+import afpma.firecalc.dto.common.PipeShape
+import afpma.firecalc.dto.v4.endsWithSingularFlowResistance
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.engine.models.ChimneyPipe_Module
 import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
 
@@ -271,6 +274,36 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                         (results :+ pos, pos.finalPoint)
                 ._1
         .distinct
+
+// ── Chimney end-cap (symbolic disc) inputs ───────────────────────
+
+/**
+ * Inputs needed to render the symbolic end-cap disc at the chimney's end:
+ * the chimney's `PipePositionResult` and its terminal inner cross-section.
+ *
+ * `Some((pos, shape))` only when:
+ *   - There is a last `ChimneySlot`, AND
+ *   - Its descr `endsWithSingularFlowResistance` (per the DTO marker trait), AND
+ *   - The chimney has a known terminal shape via `ChimneyPipe_Module.lastInnerShape`
+ *     (folds through `PipeFullDescr.lastInnerGeom`, honouring any
+ *     `SectionGeometryChange` along the way).
+ *
+ * Otherwise `None` and no disc is rendered.
+ */
+lazy val chimneyEndCapInputs_sig: Signal[Option[(PipePositionResult, PipeShape)]] =
+    postFireboxSlots_var.signal
+        .combineWith(slotPositions_sig)
+        .map: (slots, positions) =>
+            val lastChimneyIdxOpt = slots.zipWithIndex
+                .collect:
+                    case (s: PostFireboxPipeDescrSlot.ChimneySlot, i) => (s, i)
+                .lastOption
+            for
+                (slot, idx) <- lastChimneyIdxOpt
+                if slot.descr.endsWithSingularFlowResistance
+                shape <- ChimneyPipe_Module.lastInnerShape(slot.descr)
+                pos   <- positions.lift(idx)
+            yield (pos, shape)
 
 // ── Per-slot accessor helpers ────────────────────────────────────
 

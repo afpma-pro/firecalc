@@ -104,7 +104,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
 
     private lazy val allPositionsSig =
         slotPositions_sig
-            .combineWith(airintake_positions_sig, firebox_var.signal)
+            .combineWith(airintake_positions_sig, firebox_var.signal, chimneyEndCapInputs_sig)
             .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
     lazy val node: HtmlElement =
@@ -132,7 +132,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
                     .collect { case s if s.nonEmpty => () }
                     .flatMapSwitch(_ => EventStream.fromValue(()).delay(15000))
                     --> Observer[Unit](_ => vizSelectedElement.set(Set.empty)),
-                child <-- allPositionsSig.map { (slotPositions, airIntake, firebox) =>
+                child <-- allPositionsSig.map { (slotPositions, airIntake, firebox, chimneyEndCapInputs) =>
                     disposeCurrentViz    (         )
                     vizHoveredElement.set(Set.empty)
                     val fbWidthCm                                                                           = firebox.firebox_width.value * M_TO_CM
@@ -172,11 +172,20 @@ final case class Viz3DPanel()(using Locale) extends Component:
                                 val pos               = slotPositions.lift(idx).getOrElse(emptyPos)
                                 (pt: PipeType, s"Slot$idx", displayName, pos)
                             .toVector
+                    // Symbolic end-cap disc at the chimney's end. Detection (last element is a
+                    // singular flow resistance) and the chimney's terminal inner shape are computed
+                    // upstream by `chimneyEndCapInputs_sig` (Variables.scala) using the DTO marker
+                    // trait `IsSingularFlowResistance` and the engine helper
+                    // `ChimneyPipe_Module.lastInnerShape`.
+                    val chimneyEndCapO: Option[FireCalcFilaireLine] =
+                        chimneyEndCapInputs.flatMap: (chimneyPos, endCapShape) =>
+                            VizConverter.chimneyEndCapLineO(chimneyPos, endCapShape)
                     val groups                                                                              = VizConverter.allPipesToGroupsGeneric(
                         postFireboxSlotDescs,
                         airIntake,
                         fireboxLine,
-                        airDistribLine
+                        airDistribLine,
+                        chimneyEndCapO = chimneyEndCapO
                     )
                     if groups.forall(_.lines.isEmpty) then
                         div         (

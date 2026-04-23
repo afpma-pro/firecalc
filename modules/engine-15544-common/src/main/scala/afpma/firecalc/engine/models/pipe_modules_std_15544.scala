@@ -9,6 +9,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.IsZeroLengthPipeElement
+
 import afpma.firecalc.engine.models.en13384.typedefs.*
 
 import coulomb.*
@@ -59,9 +61,9 @@ object FluePipe_Module_15544
             fp.elems
                 .map(_.el)
                 .map:
-                    case s: StraightSection                                                                   =>
+                    case s: StraightSection         =>
                         s.length
-                    case _: IsZeroLengthPipeElement                                                         =>
+                    case _: IsZeroLengthPipeElement =>
                         0.meters
                 .map(_.toUnit[Meter].value)
                 .sum

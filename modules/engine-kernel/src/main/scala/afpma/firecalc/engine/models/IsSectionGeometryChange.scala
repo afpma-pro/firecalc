@@ -5,18 +5,17 @@
 
 package afpma.firecalc.engine.models
 
-/**
- * Marker trait for zero-length cross-section-change pipe elements across all
- * descriptor hierarchies (EN 15544 flow-only, EN 13384 flow-only, EN 13384 thermal).
- *
- * Used by validators and UI code to detect this kind of element structurally,
- * without importing each concrete variant. Any future engine that introduces its
- * own SectionGeometryChange variant should extend this trait to remain correctly
- * handled by existing consumers (velocity validation, graph rendering, etc.).
- */
-trait IsSectionGeometryChange extends IsZeroLengthPipeElement
+import afpma.firecalc.domain.IsSectionGeometryChange
 
+/**
+ * Engine-side predicate on `PipeSectionResult`.
+ *
+ * The `IsSectionGeometryChange` trait itself lives in `domain` (with
+ * `IsZeroLengthPipeElement` as its parent) so it can be mixed into both engine
+ * concrete classes and DTO concrete classes. This file keeps only the
+ * engine-specific dispatcher on `PipeSectionResult`.
+ */
 extension (psr: PipeSectionResult[?])
     def isSectionGeometryChange: Boolean = psr.descr match
         case _: IsSectionGeometryChange => true
-        case _                          => false
+        case _ => false

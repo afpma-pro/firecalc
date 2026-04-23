@@ -11,6 +11,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.IsZeroLengthPipeElement
+
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
@@ -286,13 +288,13 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
         yield en15544.formulas.p_d_calc(nd, nv)
 
     val roughness = curr.el match
-        case el: StraightSection                                                                   =>
+        case el: StraightSection         =>
             el.roughness.some
-        case _ : IsZeroLengthPipeElement                                                         =>
+        case _ : IsZeroLengthPipeElement =>
             None
 
     val staticFriction: Pressure = curr.el match
-        case el: StraightSection                                                                   =>
+        case el: StraightSection         =>
             val dh = el.geometry.dh
             // 4.10.1
             // For the calculation the conditions (temperature. velocity) in the middle of
@@ -300,7 +302,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
             val pd = dynamicPressure(using Position.Middle) // middle velocity of current section
             val λf = en15544.formulas.λ_f_calc(dh, el.roughness)
             en15544.formulas.p_R_calc(λf, pd, el.length, dh)
-        case _ : IsZeroLengthPipeElement                                                         =>
+        case _ : IsZeroLengthPipeElement =>
             0.0.pascals
 
     val vChangeFriction: Pressure = 0.pascals // not considered in EN15544
@@ -455,7 +457,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
         // step1: run minimalist calculation, just to get all velocities at middle
         val dv_middle_results = fd.elements.map: elem =>
             elem.el match
-                case s: StraightSection                                                                   =>
+                case s: StraightSection         =>
                     val named = elem.copy(el = s)
                     val gip   = GasInPipeEl(gas, named, params)
                     FlowOnlyMecaFlu_15544
@@ -466,7 +468,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                             z_geodetical_height
                         )
                         .some
-                case _: IsZeroLengthPipeElement                                                            => None
+                case _: IsZeroLengthPipeElement => None
 
         // step2: zip elements with computed velocity of next element
         val curr_and_next_dvo_list =

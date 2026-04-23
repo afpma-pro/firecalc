@@ -5,23 +5,16 @@
 
 package afpma.firecalc.engine.models
 
-/**
- * Parent marker for all zero-length pipe elements across descriptor hierarchies
- * (EN 15544 flow-only, EN 13384 flow-only, EN 13384 thermal).
- *
- * Subtraits: `IsDirectionChange`, `IsSectionGeometryChange`, `IsSingularFlowResistance`,
- * `IsPressureDiff`. Tagging the four concrete element families with the per-kind marker
- * (which itself extends this parent) allows consumers to dispatch at either granularity:
- *
- *   - Specific kind:    `case _: IsDirectionChange => ...`
- *   - Any zero-length:  `case _: IsZeroLengthPipeElement => ...`
- *
- * Replaces the old ad-hoc union pattern
- * `case _: (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) => ...`
- * with a nameable abstraction at zero runtime cost.
- */
-trait IsZeroLengthPipeElement
+import afpma.firecalc.domain.IsZeroLengthPipeElement
 
+/**
+ * Engine-side predicate on `PipeSectionResult`.
+ *
+ * The `IsZeroLengthPipeElement` trait itself lives in `domain` so it can be
+ * mixed into both engine concrete classes and DTO concrete classes. This file
+ * keeps only the engine-specific dispatcher on `PipeSectionResult` (which is
+ * an engine-kernel type and cannot move).
+ */
 extension (psr: PipeSectionResult[?])
     def isZeroLengthPipeElement: Boolean = psr.descr match
         case _: IsZeroLengthPipeElement => true
