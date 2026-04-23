@@ -470,16 +470,19 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     // -------------------------------------------------------------------------
 
     private class InsertElementDialog:
-        private val insertIdxVar: Var[Option[Int]] = Var(None)
-        private val openMenuBus : EventBus[Unit]   = new EventBus[Unit]
+        // Plain var (not Var): we need *synchronous* increment between successive Appends
+        // within a single batch-shortcut click. An Airstream Var's `.update` is transaction-scoped
+        // and `.now()` can read stale data for the next immediate emission.
+        private var insertIdx: Option[Int] = None
+        private val openMenuBus: EventBus[Unit] = new EventBus[Unit]
 
         private val insertObserver: Observer[CollectionCommand[(Int, Elem)]] = Observer { cmd =>
-            insertIdxVar.now() match
+            insertIdx match
                 case Some(atIdx) =>
                     cmd match
                         case CollectionCommand.Append(item) =>
-                            command_bus.emit   (CollectionCommand.Insert(item, atIndex = atIdx))
-                            insertIdxVar.update(_.map(_ + 1)                                   )
+                            command_bus.emit(CollectionCommand.Insert(item, atIndex = atIdx))
+                            insertIdx = Some(atIdx + 1)
                         case other                          =>
                             command_bus.emit(other)
                 case None        =>
@@ -491,17 +494,18 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             insertObserver,
             elems_size_v,
             externalOpenBus = openMenuBus.events,
-            onDone          = () => close()
+            onDone          = () => close(),
+            insertIdxFn     = Some(() => insertIdx.getOrElse(elems_size_v.now()))
         )
 
         def open(atIndex: Int): Unit =
-            insertIdxVar.set                                        (Some(atIndex))
-            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(             )
-            openMenuBus.emit                                        (()           )
+            insertIdx = Some(atIndex)
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
+            openMenuBus.emit(())
 
         private def close(): Unit =
-            dialogNode.ref.asInstanceOf[HTMLDialogElement].close(    )
-            insertIdxVar.set                                    (None)
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
+            insertIdx = None
 
         private lazy val dialogNode: HtmlElement = dialogTag(
             cls := "modal",

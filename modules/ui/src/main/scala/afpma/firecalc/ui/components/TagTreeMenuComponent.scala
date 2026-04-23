@@ -25,10 +25,15 @@ case class TagTreeMenuComponent[A](
     appendBus       : Observer[CollectionCommand[(Int, A)]],
     incrDescrSizeVar: Var[Int],
     externalOpenBus : EventStream[Unit] = EventStream.empty,
-    onDone          : () => Unit        = () => ()
+    onDone          : () => Unit        = () => (),
+    insertIdxFn     : Option[() => Int] = None
 )                                 (using Locale)
     extends Component:
     import TagTreeMenuComponent.*
+
+    /** Resolves to the caller-supplied position reader, or falls back to end-of-list. */
+    private val resolvedInsertIdxFn: () => Int =
+        insertIdxFn.getOrElse(() => incrDescrSizeVar.now())
 
     // lazy val appendObs = appendBus.toObserver
 
@@ -61,9 +66,11 @@ case class TagTreeMenuComponent[A](
                 List((m, m.modalContent(onSelect)))
             case g: TagTreeMenu.Group[A]    =>
                 collectAllModals(g.next)
-            case _: TagTreeMenu.Leaf[A]     =>
+            case _: TagTreeMenu.Leaf[A]       =>
                 Nil
-            case _: TagTreeMenu.Shortcut[A] =>
+            case _: TagTreeMenu.Shortcut[A]   =>
+                Nil
+            case _: TagTreeMenu.ShortcutFn[A] =>
                 Nil
         }
 
@@ -99,10 +106,11 @@ case class TagTreeMenuComponent[A](
 
         // Determine icon and button style based on element type
         val (icon, btnClass) = nl match
-            case _: TagTreeMenu.Shortcut[A] => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
-            case _: TagTreeMenu.Group[A]    => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
-            case _: TagTreeMenu.Leaf[A]     => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
-            case _: TagTreeMenu.Modal[A]    => (lucide.`book-open-text`, "bg-base-200 hover:bg-secondary"       )
+            case _: TagTreeMenu.Shortcut[A]   => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
+            case _: TagTreeMenu.ShortcutFn[A] => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
+            case _: TagTreeMenu.Group[A]      => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+            case _: TagTreeMenu.Leaf[A]       => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+            case _: TagTreeMenu.Modal[A]      => (lucide.`book-open-text`, "bg-base-200 hover:bg-secondary"       )
 
         // For Modal case, find the pre-computed modal element
         val modalElementOpt = nl match
@@ -135,6 +143,20 @@ case class TagTreeMenuComponent[A](
                                 sc.elems.productIterator.foreach { elem =>
                                     appendBus.onNext:
                                         CollectionCommand.Append((currentSize, elem.asInstanceOf[A]))
+                                    currentSize += 1
+                                }
+                                onDone()
+                                TreeState.initWith(resetTo)
+
+                            case sc: TagTreeMenu.ShortcutFn[A] =>
+                                // Compute elements at click time based on current insert position,
+                                // then emit one Append per element — the host's observer may
+                                // rewrite Append into Insert(atIndex).
+                                val atIdx       = resolvedInsertIdxFn()
+                                var currentSize = incrDescrSizeVar.now()
+                                sc.compute(atIdx).foreach { elem =>
+                                    appendBus.onNext:
+                                        CollectionCommand.Append((currentSize, elem))
                                     currentSize += 1
                                 }
                                 onDone()
@@ -252,10 +274,11 @@ object TagTreeMenuComponent:
             this.copy(
                 selectedNodes = nextSel,
                 choices       = x match
-                    case n: TagTreeMenu.Group[A]    => n.next
-                    case _: TagTreeMenu.Leaf[A]     => Nil
-                    case _: TagTreeMenu.Shortcut[A] => Nil
-                    case _: TagTreeMenu.Modal[A]    => Nil
+                    case n: TagTreeMenu.Group[A]      => n.next
+                    case _: TagTreeMenu.Leaf[A]       => Nil
+                    case _: TagTreeMenu.Shortcut[A]   => Nil
+                    case _: TagTreeMenu.ShortcutFn[A] => Nil
+                    case _: TagTreeMenu.Modal[A]      => Nil
             )
 
         def selectNode(n: TagTreeMenu.Group[A]): TreeState[A] =
@@ -296,6 +319,9 @@ object TagTreeMenu:
     case class Group[+A](txt: String, next: List[Elems[A]]) extends Elems[A]
     case class Leaf[+A](txt: String, elem: A)               extends Elems[A]
     case class Shortcut[+A](txt: String, elems: Tuple)      extends Elems[A]
+
+    /** Dynamic shortcut: compute(insertIdx) is called at click time so the element list can depend on where we insert. */
+    case class ShortcutFn[+A](txt: String, compute: Int => Seq[A]) extends Elems[A]
 
     /**
      * A menu entry that opens a modal dialog instead of directly adding an element.

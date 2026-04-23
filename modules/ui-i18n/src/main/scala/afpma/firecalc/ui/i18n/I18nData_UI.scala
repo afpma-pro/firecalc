@@ -32,6 +32,7 @@ final case class I18nData_UI(
     pdf_ordering         : PDFOrdering,
     placeholders         : Placeholders,
     project_selector     : ProjectSelector,
+    shortcuts            : Shortcuts,
     tooltips             : Tooltips,
     ui_messages          : UiMessages,
     viz                  : Viz,
@@ -336,6 +337,10 @@ case class Placeholders(
 
 case class UiMessages(
     not_implemented_yet: String
+)
+
+case class Shortcuts(
+    quick_flue_section: String
 )
 
 case class Viz(

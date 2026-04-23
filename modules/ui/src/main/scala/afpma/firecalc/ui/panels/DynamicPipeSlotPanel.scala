@@ -14,6 +14,8 @@ import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
+
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.*
@@ -857,11 +859,30 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     import defaultable_15544.incr_descr_en15544.given
 
     lazy val tagTreeMenu = TagTreeMenu(
+        shortcut_quick_flue_section,
         shortcut_start_new_pipe,
         shortcut_add_new_connector,
         prop_elements,
         geom_elements
     )
+
+    lazy val shortcut_quick_flue_section =
+        import afpma.laminar.form.{Defaultable as D}
+        import afpma.firecalc.engine.models.FluePipe_Module_15544.innerShapeAtPrefix
+        TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_15544](
+            txt     = I18N_UI.shortcuts.quick_flue_section,
+            compute = (insertIdx: Int) => {
+                val prevShape: PipeShape = FluePipe_Module_15544.incremental
+                    .define(elems_v.now()*)
+                    .innerShapeAtPrefix(insertIdx)
+                    .getOrElse(summon[D[SetInnerShape]].default.shape)
+                Seq(
+                    SetInnerShape(prevShape),
+                    summon[D[AddSectionSlopped]].default,
+                    summon[D[AddSharpeAngle_0_to_180]].default
+                )
+            }
+        )
 
     lazy val shortcut_start_new_pipe =
         import afpma.laminar.form.{Defaultable as D}
