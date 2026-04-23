@@ -129,7 +129,7 @@ export function initGraphViz(
     if (onPointClick) {
         chartConfig.options!.onClick = (_event: any, _elements: any[], chart: any) => {
             const nearest = chart.getElementsAtEventForMode(
-                _event, 'nearest', { intersect: false }, false
+                _event, 'nearest', { intersect: true }, false
             );
             if (nearest.length > 0) {
                 const el = nearest[0];
@@ -234,7 +234,7 @@ function seriesToDataset(s: ChartSeriesJS): ChartDataset<'line'> {
         yAxisID: s.yAxisId,
         pointRadius: 2,
         pointHoverRadius: 4,
-        pointHitRadius: 15,
+        pointHitRadius: 6,
         tension: 0.0, // no curve smoothing
         fill: false,
         // Per-segment color override (driven by segmentColor metadata from Scala)
