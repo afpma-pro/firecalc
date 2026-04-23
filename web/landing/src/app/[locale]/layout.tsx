@@ -2,12 +2,26 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
+import type {Metadata} from 'next';
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {setRequestLocale} from 'next-intl/server';
 
 const locales = ['en', 'fr'];
+
+export const metadata: Metadata = {
+  icons: {
+    icon: [
+      {url: '/favicon.ico', sizes: 'any'},
+      {url: '/icon-192.png', type: 'image/png', sizes: '192x192'},
+      {url: '/icon-512.png', type: 'image/png', sizes: '512x512'},
+    ],
+    apple: [{url: '/apple-touch-icon.png', sizes: '180x180'}],
+  },
+  manifest: '/manifest.webmanifest',
+  themeColor: '#EF662F',
+};
 
 export function generateStaticParams() {
   return locales.map((locale) => ({locale}));
