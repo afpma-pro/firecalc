@@ -312,28 +312,57 @@ object standard {
         case err: FluePipeErrorCustom          => err.reason
         case err: FluePipeLengthBelowMinimum   => err.show
 
-    case class FlueGasVelocityError(
-        sectionId  : Int,
-        sectionTyp : PipeType,
-        sectionName: String,
-        gasVelocity: v,
-        minVel     : v,
-        maxVel     : v
-    ) extends FluePipeError
-    object FlueGasVelocityError        :
-        given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
-            val show2or3 =
-                if ((err.gasVelocity.show == err.minVel.show) || (err.gasVelocity.show == err.minVel.show))
-                then show_Velocity_3
-                else show_Velocity
+    enum VelocityPosition:
+        case Start, End, Both
 
-            I18N.errors.flue_gas_velocity_error(
-                err.sectionId.toString,
-                err.sectionName,
-                show2or3.show(err.gasVelocity),
-                err.minVel.show,
-                err.maxVel.show
-            )
+    case class FlueGasVelocityError(
+        sectionId    : Int,
+        sectionTyp   : PipeType,
+        sectionName  : String,
+        position     : VelocityPosition,
+        startVelocity: Option[v],
+        endVelocity  : Option[v],
+        minVel       : v,
+        maxVel       : v
+    ) extends FluePipeError
+    object FlueGasVelocityError:
+        given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
+            def showV(vv: v): String =
+                val useHighPrecision = (vv.show == err.minVel.show) || (vv.show == err.maxVel.show)
+                val shw              = if useHighPrecision then show_Velocity_3 else show_Velocity
+                shw.show(vv)
+
+            (err.position, err.startVelocity, err.endVelocity) match
+                case (VelocityPosition.Start, Some(vS), _) =>
+                    I18N.errors.flue_gas_velocity_error_single_boundary(
+                        err.sectionId.toString,
+                        err.sectionName,
+                        I18N.errors.velocity_position_at_start,
+                        showV(vS),
+                        err.minVel.show,
+                        err.maxVel.show
+                    )
+                case (VelocityPosition.End  , _, Some(vE)) =>
+                    I18N.errors.flue_gas_velocity_error_single_boundary(
+                        err.sectionId.toString,
+                        err.sectionName,
+                        I18N.errors.velocity_position_at_end,
+                        showV(vE),
+                        err.minVel.show,
+                        err.maxVel.show
+                    )
+                case (VelocityPosition.Both , Some(vS), Some(vE)) =>
+                    I18N.errors.flue_gas_velocity_error_both_boundaries(
+                        err.sectionId.toString,
+                        err.sectionName,
+                        showV(vS),
+                        showV(vE),
+                        err.minVel.show,
+                        err.maxVel.show
+                    )
+                case _ =>
+                    // Defensive: validator invariant guarantees one of the above matches.
+                    s"FlueGasVelocityError(section=${err.sectionName}, pos=${err.position})"
     case class FluePipeInvalidGeometryRatio(
         sectionId  : Int,
         sectionTyp : PipeType,

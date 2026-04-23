@@ -839,46 +839,50 @@ abstract class EN15544_V_2023_Common_Application
                         ().validNel[FluePipeInvalidGeometryRatio]
         checks.toList.sequence[[x] =>> ValidatedNel[FluePipeInvalidGeometryRatio, x], Unit].map(_ => ())
 
-    private def validateFlueGasVelocity(
-        pipeIdx  : PipeIdx,
-        pipeTyp  : PipeType,
-        pipeName : PipeName,
-        fvelocity: v
-    ): ValidatedNel[FlueGasVelocityError, Unit] =
-        val (minVel, maxVel) = (1.2.m_per_s, 6.m_per_s)
-        if ((fvelocity < minVel) | (fvelocity > maxVel))
-            FlueGasVelocityError(pipeIdx.unwrap, pipeTyp, pipeName, fvelocity, minVel, maxVel)
-                .invalidNel[Unit]
-        else
-            ().validNel[FlueGasVelocityError]
+    private val flueGasVelocityMin: v = 1.2.m_per_s
+    private val flueGasVelocityMax: v = 6.m_per_s
+
+    private def outOfFlueGasVelocityRange(fvelocity: v): Boolean =
+        (fvelocity < flueGasVelocityMin) | (fvelocity > flueGasVelocityMax)
 
     protected def validateVelocitiesIn(
         pipeResult: PipeResult
     ): ValidatedNel[FlueGasVelocityError, Unit] =
         pipeResult match
             case pr: PipeResult.WithSections    =>
+                // Per-section aggregation: at most one error per section.
+                // Start-only, end-only, and both-ends failures collapse into a single
+                // FlueGasVelocityError whose `position` field tells the user which
+                // boundary(ies) fell outside the admissible range.
+                // Zero-length cross-section-change elements are skipped: their boundary
+                // velocities duplicate the adjacent straight sections (already validated),
+                // and under multi-flow (n_flows > 1) the redundant check can flag
+                // spurious violations.
                 pr.elements
+                    .filterNot(_.isSectionGeometryChange)
                     .flatMap: psr =>
-                        // Skip zero-length cross-section-change elements: their v_start and v_end
-                        // duplicate the boundary velocities of the adjacent straight sections
-                        // (already validated), and under multi-flow (n_flows > 1) the redundant
-                        // check can flag spurious violations.
-                        if psr.isSectionGeometryChange then
-                            List.empty[ValidatedNel[FlueGasVelocityError, Unit]]
-                        else
-                            List(
-                                validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_start),
-                                validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_end  )
+                        val startBad = outOfFlueGasVelocityRange(psr.v_start)
+                        val endBad   = outOfFlueGasVelocityRange(psr.v_end  )
+                        def mkErr(pos: VelocityPosition, vs: Option[v], ve: Option[v]): FlueGasVelocityError =
+                            FlueGasVelocityError(
+                                sectionId     = psr.section_id.unwrap,
+                                sectionTyp    = psr.section_typ,
+                                sectionName   = psr.section_name,
+                                position      = pos,
+                                startVelocity = vs,
+                                endVelocity   = ve,
+                                minVel        = flueGasVelocityMin,
+                                maxVel        = flueGasVelocityMax
                             )
+                        (startBad, endBad) match
+                            case (false, false) => None
+                            case (true , false) => Some(mkErr(VelocityPosition.Start, Some(psr.v_start), None))
+                            case (false, true ) => Some(mkErr(VelocityPosition.End  , None, Some(psr.v_end)))
+                            case (true , true ) => Some(mkErr(VelocityPosition.Both , Some(psr.v_start), Some(psr.v_end)))
+                    .map(_.invalidNel[Unit])
+                    .toList
                     .sequence[[x] =>> ValidatedNel[FlueGasVelocityError, x], Unit]
                     .map(_ => ())
-                    // remove duplicates (if start and end of section are both outside flow velocity admissible range)
-                    .leftMap(errs =>
-                        // errs.toList.foreach(e => scala.scalajs.js.Dynamic.global.console.log(e.toString))
-                        NonEmptyList
-                            .fromList(errs.toList.distinctBy(e => (e.sectionId, e.sectionTyp, e.sectionName)))
-                            .get
-                    )
             case _ : PipeResult.WithoutSections => ().validNel
 
     // Heating appliance — see EN15544_Common_HeatingAppliance

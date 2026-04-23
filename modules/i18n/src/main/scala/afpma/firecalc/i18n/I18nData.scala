@@ -13,6 +13,7 @@ import io.taig.babel.StringFormat2
 import io.taig.babel.StringFormat3
 import io.taig.babel.StringFormat4
 import io.taig.babel.StringFormat5
+import io.taig.babel.StringFormat6
 
 trait LocalizedAlg:
     val language: Language
@@ -521,7 +522,10 @@ object I18nData:
         co2_calculation_only_for_wood_boilers: String,
         injector_velocity_below_minimum      : StringFormat2,
         injector_velocity_above_maximum      : StringFormat2,
-        flue_gas_velocity_error              : StringFormat5,
+        flue_gas_velocity_error_single_boundary  : StringFormat6,
+        flue_gas_velocity_error_both_boundaries  : StringFormat6,
+        velocity_position_at_start               : String,
+        velocity_position_at_end                 : String,
         missing_flow_rate                    : String,
         air_intake_pipe_shape_mismatch       : StringFormat2,
         value_out_of_bound                   : StringFormat5,
