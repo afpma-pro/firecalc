@@ -181,6 +181,15 @@ const graphVizPlugin = {
 
             const yScale = scales[line.yAxisId];
             if (!yScale || !xScale) continue;
+
+            // Suppress the line entirely when its y falls outside the axis's primary range —
+            // e.g., a v_max of 6 m/s should not render when the left axis only reaches 4.
+            // `getPixelForValue` would still return a pixel (Chart.js extrapolates off-range),
+            // which visually "floats" the line at the chart edge and confuses the reader.
+            const yMin = (yScale as any).min as number;
+            const yMax = (yScale as any).max as number;
+            if (line.y < yMin || line.y > yMax) continue;
+
             const yPx = yScale.getPixelForValue(line.y);
 
             ctx.save();
@@ -188,7 +197,7 @@ const graphVizPlugin = {
             ctx.lineWidth = 1.5;
             ctx.setLineDash([]);
 
-            let lastX2: number | null = null;
+            let drewAny = false;
             for (const seg of line.segments) {
                 const x1 = Math.max(chartArea.left, xScale.getPixelForValue(seg.xStart));
                 const x2 = Math.min(chartArea.right, xScale.getPixelForValue(seg.xEnd));
@@ -197,14 +206,20 @@ const graphVizPlugin = {
                 ctx.moveTo(x1, yPx);
                 ctx.lineTo(x2, yPx);
                 ctx.stroke();
-                lastX2 = x2;
+                drewAny = true;
             }
 
-            // Draw label near the right edge of the last drawn segment
-            if (line.label && lastX2 !== null) {
+            // Render label on the LEFT axis side (the axis the line's quantity belongs to),
+            // so the reader reads e.g. "1.2 m/s" next to the m/s gridline labels — not
+            // stranded over on the temperature axis on the right edge.
+            if (line.label && drewAny) {
                 ctx.fillStyle = line.color;
                 ctx.font = '10px sans-serif';
-                ctx.fillText(line.label, lastX2 + 4, yPx - 3);
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(line.label, chartArea.left + 4, yPx - 6);
+                ctx.textAlign = 'start';
+                ctx.textBaseline = 'alphabetic';
             }
 
             ctx.restore();

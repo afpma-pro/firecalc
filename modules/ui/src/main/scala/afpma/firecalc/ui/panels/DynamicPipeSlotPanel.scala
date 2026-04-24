@@ -61,11 +61,11 @@ object DynamicPipeSlotPanel:
     def forSlot(
         slotIndex           : Int,
         slot                : PostFireboxPipeDescrSlot,
-        slotControlsNode    : Option[HtmlElement]            = None,
-        headIdx             : Option[Int]                    = None,
-        isLastInHeadRegion  : Boolean                        = false,
-        headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
-        lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
+        slotControlsNode    : Option[HtmlElement]                    = None,
+        headIdx             : Option[Int]                            = None,
+        isLastInHeadRegion  : Boolean                                = false,
+        headRegionLengthsSig: Signal[Option[Vector[Double]]]          = Signal.fromValue(None),
+        lZMinSig            : Signal[Option[Double]]                  = Signal.fromValue(None)
     )(using Locale, DisplayUnits): PipePanel =
         slot match
             case PostFireboxPipeDescrSlot.FlueSlot(_)        =>
@@ -304,12 +304,12 @@ end DynamicPipeSlotPanel
 
 final case class DynamicFlowOnlyPipeSlotPanel(
     slotIndex           : Int,
-    slotControlsNode    : Option[HtmlElement]            = None,
-    headIdx             : Option[Int]                    = None,
-    isLastInHeadRegion  : Boolean                        = false,
-    headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
-    lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
-)                                            (using Locale, DisplayUnits)
+    slotControlsNode    : Option[HtmlElement]                    = None,
+    headIdx             : Option[Int]                            = None,
+    isLastInHeadRegion  : Boolean                                = false,
+    headRegionLengthsSig: Signal[Option[Vector[Double]]]          = Signal.fromValue(None),
+    lZMinSig            : Signal[Option[Double]]                  = Signal.fromValue(None)
+)(using Locale, DisplayUnits)
     extends PipePanel:
 
     override protected def vizFieldsetIdPrefix : String              = s"slot-$slotIndex"
@@ -474,9 +474,16 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     // ── Auto-calc: firebox exit position (first flue slot only) ──
 
     private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544] = AutoCalcHelper.ElemExtractors(
-        asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
-        asDirectionChange  = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
-        asInnerShape       = { case sis: SetInnerShape => sis.shape }
+        asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
+        asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+        asInnerShape         = { case sis: SetInnerShape => sis.shape },
+        withDirChangeAbsDir  = (e, newAbsDir) => e match
+            case x: AddSharpeAngle_0_to_180 => x.copy(absDir = newAbsDir)
+            case x: AddCircularArc_60       => x.copy(absDir = newAbsDir)
+            case _                          => e,
+        withInitialDirection = (e, az, incl) => e match
+            case x: SetInitialDirection => x.copy(azimuth = az, inclination = incl)
+            case _                      => e
     )
 
     /**
@@ -564,12 +571,17 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                             .flatMap: frameBefore =>
                                 elem match
                                     case dc: AddDirectionChange           =>
+                                        // For pinned direction changes, show the STORED pin as-is.
+                                        // Previously this called `applyBendForFinalDir(...)` which
+                                        // silently projects to the closest reachable direction when
+                                        // the pin is unreachable at the current (frame, angle) — that
+                                        // projection then overwrites the badge display and hides what
+                                        // the user actually pinned. The badge's isCompatibleSig already
+                                        // marks unreachable pins with a warning; let users see their
+                                        // pin instead of the projection.
                                         dc.absDir.map: fd =>
                                             val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                            idx -> frameBefore
-                                                .applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec)
-                                                .direction
+                                            idx -> Vec3.fromAzimuthElevation(azDeg, elDeg)
                                     case _ : AddFlowOnlyPipeElement_15544 =>
                                         Some(idx -> frameBefore.direction)
                                     case _ => None
@@ -598,6 +610,28 @@ final case class DynamicFlowOnlyPipeSlotPanel(
         setter: (A, Option[AbsoluteDirection]) => A
     ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
         ev => Some(ev.zoomLazy(getter)(setter))
+
+    /**
+     * Build the `onBadgeDirectionCommit` callback for direction-change elements at `elemIdx`.
+     *
+     * Direction edits are now detected by the PostFireboxPipePanels observer via
+     * ChainEditDispatcher.detectEdit — no explicit offer construction is needed here.
+     * Returns None so the badge commit becomes a no-op at the panel level; the observer
+     * fires when the Var is written and handles the offer.
+     */
+    private def mkOnDirectionCommit(elemIdx: Int)
+        : Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] =
+        None
+
+    /**
+     * Build a callback for SetInitialDirection elements at `elemIdx`.
+     *
+     * Direction edits are now detected by the PostFireboxPipePanels observer via
+     * ChainEditDispatcher.detectEdit. Returns None; the observer handles the offer.
+     */
+    private def mkOnInitialDirectionCommit(elemIdx: Int)
+        : Option[(AzimuthDirection, InclinationDirection, AzimuthDirection, InclinationDirection) => Unit] =
+        None
 
     private def relativeDirectionExtra[A <: AddDirectionChange](
         idx   : Int,
@@ -681,12 +715,30 @@ final case class DynamicFlowOnlyPipeSlotPanel(
             ] { case (i, incr: SetInitialDirection, x) =>
                 (i, incr, x)
             } { (iix, sig) =>
+                val elemIdx = iix._1
+                val extraFn: Var[SetInitialDirection] => HtmlElement = ev =>
+                    import com.raquo.laminar.api.L.*
+                    mkOnInitialDirectionCommit(elemIdx) match
+                        case None         => span()
+                        case Some(onCommit) =>
+                            var prevAz   = ev.now().azimuth
+                            var prevIncl = ev.now().inclination
+                            span(
+                                ev.signal.changes --> { sid =>
+                                    val oldAz   = prevAz
+                                    val oldIncl = prevIncl
+                                    prevAz   = sid.azimuth
+                                    prevIncl = sid.inclination
+                                    onCommit(oldAz, oldIncl, sid.azimuth, sid.inclination)
+                                }
+                            )
                 renderElemTyped[SetInitialDirection]  (
-                    iix._1,
+                    elemIdx,
                     I18N.set_prop.SetInitialDirection,
                     iix._2,
                     sig,
                     isProperty   = true,
+                    extra        = extraFn,
                     propertyShow = Some(summon[Show[SetInitialDirection]])
                 )
             }
@@ -797,9 +849,10 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     I18N.add_element.AddSharpeAngle_0_to_180,
                     iix._2,
                     sig,
-                    isProperty       = false,
-                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
-                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
+                    isProperty             = false,
+                    extra                  = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar       = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd)),
+                    onBadgeDirectionCommit = mkOnDirectionCommit(iix._1)
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddCircularArc_60, XtraOutputs), HtmlElement] {
@@ -810,9 +863,10 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     I18N.add_element.AddCircularArc_60,
                     iix._2,
                     sig,
-                    isProperty       = false,
-                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
-                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
+                    isProperty             = false,
+                    extra                  = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar       = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd)),
+                    onBadgeDirectionCommit = mkOnDirectionCommit(iix._1)
                 )
             }
             .handleCase[
@@ -960,12 +1014,12 @@ final case class DynamicThermalPipeSlotPanel(
     slotIndex           : Int,
     pipeTypeVal         : PipeType,
     title               : String,
-    slotControlsNode    : Option[HtmlElement]            = None,
-    headIdx             : Option[Int]                    = None,
-    isLastInHeadRegion  : Boolean                        = false,
-    headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
-    lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
-)                                           (using Locale, DisplayUnits)
+    slotControlsNode    : Option[HtmlElement]                    = None,
+    headIdx             : Option[Int]                            = None,
+    isLastInHeadRegion  : Boolean                                = false,
+    headRegionLengthsSig: Signal[Option[Vector[Double]]]          = Signal.fromValue(None),
+    lZMinSig            : Signal[Option[Double]]                  = Signal.fromValue(None)
+)(using Locale, DisplayUnits)
     extends PipePanel_13384_Thermal:
 
     override protected def vizFieldsetIdPrefix : String              = s"slot-$slotIndex"
@@ -1073,10 +1127,49 @@ final case class DynamicThermalPipeSlotPanel(
 
     private given thermalElemExtractors_13384: AutoCalcHelper.ElemExtractors[ThermalPipeDescr_13384] =
         AutoCalcHelper.ElemExtractors(
-            asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
-            asDirectionChange  = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
-            asInnerShape       = { case sis: SetInnerShape => sis.shape }
+            asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
+            asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asInnerShape         = { case sis: SetInnerShape => sis.shape },
+            withDirChangeAbsDir  = (e, newAbsDir) => e match
+                case x: AddAngleAdjustable        => x.copy(absDir = newAbsDir)
+                case x: AddSharpeAngle_0_to_90    => x.copy(absDir = newAbsDir)
+                case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_90         => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_90_Unsafe  => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_60         => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_60_Unsafe  => x.copy(absDir = newAbsDir)
+                case x: AddElbows_2x45            => x.copy(absDir = newAbsDir)
+                case x: AddElbows_3x30            => x.copy(absDir = newAbsDir)
+                case x: AddElbows_4x22p5          => x.copy(absDir = newAbsDir)
+                case _                            => e,
+            withInitialDirection = (e, az, incl) => e match
+                case x: SetInitialDirection => x.copy(azimuth = az, inclination = incl)
+                case _                      => e
         )
+
+    private def mkOnInitialDirectionCommit_thermal(elemIdx: Int)
+        : Option[(AzimuthDirection, InclinationDirection, AzimuthDirection, InclinationDirection) => Unit] =
+        // Direction edits are detected by the PostFireboxPipePanels observer via
+        // ChainEditDispatcher.detectEdit. No explicit offer construction needed here.
+        None
+
+    override protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement =
+        ev =>
+            import com.raquo.laminar.api.L.*
+            mkOnInitialDirectionCommit_thermal(idx) match
+                case None           => span()
+                case Some(onCommit) =>
+                    var prevAz   = ev.now().azimuth
+                    var prevIncl = ev.now().inclination
+                    span(
+                        ev.signal.changes --> { sid =>
+                            val oldAz   = prevAz
+                            val oldIncl = prevIncl
+                            prevAz   = sid.azimuth
+                            prevIncl = sid.inclination
+                            onCommit(oldAz, oldIncl, sid.azimuth, sid.inclination)
+                        }
+                    )
 
     /**
      * Reactive: is this slot the first HEAD_REGION slot (index 0) AND is it a

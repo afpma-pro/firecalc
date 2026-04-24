@@ -40,19 +40,22 @@ import org.scalajs.dom
  * When `absDirVar` is provided, the badge is editable: a chevron is shown
  * and clicking opens a dropdown listing reachable cardinal directions.
  *
- * @param absDirection    The computed direction after the element
+ * @param absDirection      The computed direction after the element
  * @param previousDirection Direction before the element; None for straight sections (read-only)
  * @param frameBefore       PipeFrame before the element (for reachable cardinals and tooltip convention)
- * @param absDirVar       When provided, enables click-to-set; bidirectional binding to AbsoluteDirection
+ * @param absDirVar         When provided, enables click-to-set; bidirectional binding to AbsoluteDirection
  * @param deflectionAngle   Deflection angle in degrees for computing reachable directions
+ * @param onDirectionCommit Optional callback invoked after a direction selection is committed.
+ *                          Receives `(oldValue, newValue)` where both are `Option[AbsoluteDirection]`.
  */
 case class DirectionBadgeComponent(
-    absDirection     : Signal[Option[Vec3]],
-    previousDirection: Signal[Option[Vec3]],
-    frameBefore      : Signal[Option[PipeFrame]],
-    absDirVar        : Option[Var[Option[AbsoluteDirection]]],
-    deflectionAngle  : Signal[Option[Double]] = Signal.fromValue(None),
-    compact          : Boolean                = false
+    absDirection      : Signal[Option[Vec3]],
+    previousDirection : Signal[Option[Vec3]],
+    frameBefore       : Signal[Option[PipeFrame]],
+    absDirVar         : Option[Var[Option[AbsoluteDirection]]],
+    deflectionAngle   : Signal[Option[Double]] = Signal.fromValue(None),
+    compact           : Boolean                = false,
+    onDirectionCommit : Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None
 )                                 (using Locale)
     extends Component:
 
@@ -214,10 +217,13 @@ case class DirectionBadgeComponent(
                                     ,
                                     lbl,
                                     onClick --> { _ =>
-                                        fdVar.set   (Some(fd)                        )
+                                        val oldValue = fdVar.now()
+                                        val newValue = Some(fd)
+                                        fdVar.set(newValue)
                                         org.scalajs.dom.document
                                             .querySelectorAll("details[open]")
                                             .foreach(el => el.removeAttribute("open"))
+                                        onDirectionCommit.foreach(_(oldValue, newValue))
                                     }
                                 )
                             )

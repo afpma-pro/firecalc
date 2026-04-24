@@ -110,13 +110,14 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                             .flatMap: frameBefore =>
                                 elem match
                                     case dc: AddDirectionChange          =>
+                                        // Pinned: show the STORED pin as-is, not the engine's reachable
+                                        // projection. See DynamicPipeSlotPanel.directionAfterByIdx for
+                                        // rationale. The badge's isCompatibleSig renders the warning
+                                        // indicator when the pin is unreachable at (frame, angle).
                                         val dir = dc.absDir match
                                             case Some(fd) =>
                                                 val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                                frameBefore
-                                                    .applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec)
-                                                    .direction
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
                                             case None     =>
                                                 frameBefore.direction
                                         Some(idx -> dir)
@@ -187,6 +188,16 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      */
     protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
         (_: Var[SetInitialPosition]) => span()
+
+    /**
+     * Extension hook for SetInitialDirection: returns an `extra` node factory for the element
+     * at `idx`. Called once per element lifetime (stable split key). Concrete panels may
+     * override to fire rotation-offer callbacks when the initial direction changes.
+     *
+     * Default: no-op (returns an empty span).
+     */
+    protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement =
+        (_: Var[SetInitialDirection]) => span()
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -354,6 +365,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty   = true,
+                    extra        = initialDirectionExtraFn(iaax._1),
                     propertyShow = Some(summon[Show[SetInitialDirection]])
                 )
             }

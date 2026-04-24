@@ -354,6 +354,11 @@ object GraphDataConverter:
             }
             val velocityLineSegments: Vector[XSegment] = velocityLineSegsBuilder.result()
 
+            // Format the bound as "1.2 m/s" / "6 m/s" — integer values drop the decimal zero.
+            def formatVelocityBound(v: Double): String =
+                val s = if v == v.toLong.toDouble then v.toLong.toString else f"$v%.1f"
+                s"$s m/s"
+
             val velocityRefLines: Vector[HorizontalReferenceLine] =
                 if velocityLineSegments.isEmpty then Vector.empty
                 else Vector(
@@ -361,7 +366,7 @@ object GraphDataConverter:
                         yAxisId              = "left",
                         y                    = flueGasVelocityMin,
                         color                = "#FFB74D",
-                        label                = "v_min",
+                        label                = formatVelocityBound(flueGasVelocityMin),
                         visibleWhenSeriesIds = Vector("velocity"),
                         segments             = velocityLineSegments
                     ),
@@ -369,7 +374,7 @@ object GraphDataConverter:
                         yAxisId              = "left",
                         y                    = flueGasVelocityMax,
                         color                = "#FFB74D",
-                        label                = "v_max",
+                        label                = formatVelocityBound(flueGasVelocityMax),
                         visibleWhenSeriesIds = Vector("velocity"),
                         segments             = velocityLineSegments
                     )

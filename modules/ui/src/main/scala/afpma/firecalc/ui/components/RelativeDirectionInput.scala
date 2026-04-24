@@ -175,12 +175,29 @@ case class RelativeDirectionInput(
                 .collect { case (newFd, curFd) if !fdGeometryEqual(newFd, curFd) => newFd }
                 --> absDirVar.writer
 
-        // Derived signal combining absDirVar + context into an Option[(side, theta)]
+        // Derived signal combining absDirVar + context into an Option[(side, theta)].
+        //
+        // Guarded by `isReachable`: when the current absDir is not reachable at the new
+        // (frame, deflection) combo — e.g. user drops a bend from 90° to 45° while keeping
+        // a pinned absDir that only a 90° cone can reach — we emit None rather than
+        // projecting to the closest reachable (side, theta) via `recoverSideTheta`.
+        //
+        // Why the guard matters: without it, the projection was the actual cascadeSync in
+        // disguise. `reverseSync` would write the projected (side, theta) back, and
+        // `forwardSync` would then compute a NEW absDir from that projection + the new
+        // (frame, defl) — producing the "closest reachable" direction instead of the user's
+        // requested one. The snapshot observer in PostFireboxPipePanels saw this as a
+        // spurious DirectionEdit, opened a 3-button offer (no "Pose only"), and cycling
+        // couldn't restore the true prior state because `offer.newSlots` had been mutated.
         val externalStSig: Signal[Option[(RelativeSide, Double)]] =
             absDirVar.signal
                 .combineWith(frameBefore, deflectionAngle)
                 .map { case (fdOpt, frameOpt, deflOpt) =>
-                    for fd <- fdOpt; frame <- frameOpt; deflDeg <- deflOpt
+                    for
+                        fd      <- fdOpt
+                        frame   <- frameOpt
+                        deflDeg <- deflOpt
+                        if isReachable(fd, frame, deflDeg)
                     yield recoverSideTheta(fd, frame, deflDeg)
                 }
 
@@ -198,48 +215,6 @@ case class RelativeDirectionInput(
                     sideVar.set (st._1)
                     thetaVar.set(st._2)
                 }
-
-        // Signal: true when current absDir is geometrically unreachable from frameBefore.
-        // Uses the proven 2-arg combineWith → 3-tuple pattern to avoid type erasure.
-        val isIncompatibleSig: Signal[Boolean] =
-            absDirVar.signal
-                .combineWith(frameBefore, deflectionAngle)
-                .map { case (fdOpt, frameOpt, deflOpt) =>
-                    (for fd <- fdOpt; frame <- frameOpt; defl <- deflOpt
-                    yield !isReachable(fd, frame, defl)).getOrElse(false)
-                }
-
-        // Signal: what absDir we would cascade to (from current side/theta + new frame).
-        // Uses the same proven 3-arg combineWith → 4-tuple pattern as localFdSig.
-        val cascadedFdSig: Signal[Option[AbsoluteDirection]] =
-            sideVar.signal
-                .combineWith(thetaVar.signal, frameBefore, deflectionAngle)
-                .map { case (side, theta, frameOpt, deflOpt) =>
-                    for frame <- frameOpt; defl <- deflOpt
-                    yield computeFinalDir(side, theta, frame, defl)
-                }
-                .map(_.flatten)
-
-        // Combined: Some(newFd) when cascade is needed, None otherwise.
-        val cascadeNeededSig: Signal[Option[Option[AbsoluteDirection]]] =
-            isIncompatibleSig
-                .combineWith(cascadedFdSig)
-                .map { case (incompatible, newFd) =>
-                    if incompatible then Some(newFd) else None
-                }
-
-        // Cascade sync: fires on frameBefore/deflectionAngle changes, samples cascadeNeededSig.
-        // Only writes when isReachable is false — no-op when absDir is still compatible.
-        val cascadeSync =
-            frameBefore
-                .combineWith(deflectionAngle)
-                .distinct
-                .changes
-                .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
-                .mapTo(())
-                .withCurrentValueOf(cascadeNeededSig)
-                .collect { case Some(newFd) => newFd }
-                --> absDirVar.writer
 
         // One-time initial sync: populate sideVar/thetaVar from absDirVar
         // when context (frameBefore, deflectionAngle) becomes available.
@@ -310,6 +285,5 @@ case class RelativeDirectionInput(
             // Sync binders
             initialSync,
             forwardSync,
-            reverseSync,
-            cascadeSync
+            reverseSync
         )

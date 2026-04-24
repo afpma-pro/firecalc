@@ -215,6 +215,32 @@ lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot]] =
     engineStateVar.zoomLazy(_.post_firebox_pipes): (g, x) =>
         g.copy(post_firebox_pipes = x)
 
+/**
+ * App-wide Var for the post-firebox rotation offer toast.
+ *
+ * Set by PostFireboxPipePanels' angle-edit observer when a pinned direction-change
+ * element's bend angle is edited AND downstream rotation would preserve chain shape.
+ * Read by the AppToasts component in the navbar.
+ *
+ * Living outside the panel so the toast persists at the app level (fixed top-right
+ * position), independent of accordion scroll/collapse, and can be cleared by any flow
+ * (user action, project reload, etc.).
+ */
+lazy val rotateOffer_var: Var[Option[afpma.firecalc.engine.models.geometry.ChainEditDispatcher.Offer]] = Var(None)
+
+/**
+ * Last dispatcher-written slot snapshot. Set by auto-dispatch (PostFireboxPipePanels'
+ * snapshot observer) and by toast strategy clicks (AppToasts). Any snapshot emission
+ * whose value equals this is treated as a pure echo and ignored by the observer — so
+ * binder roundtrips (bidirectional `RelativeDirectionInput` syncs, normalization passes)
+ * cannot corrupt `prevSnapshot` / `rotateOffer_var` with spurious edits.
+ *
+ * Value-based rather than count-based suppression: one dispatcher write can fan out
+ * into an arbitrary number of echoes (300ms debounced snapshot + ~200ms bidirsync
+ * roundtrip + possible normalize pass). A single boolean would only absorb the first.
+ */
+lazy val lastDispatcherWrite_var: Var[Option[Seq[PostFireboxPipeDescrSlot]]] = Var(None)
+
 // ── Slot-indexed build results ───────────────────────────────────
 
 /**

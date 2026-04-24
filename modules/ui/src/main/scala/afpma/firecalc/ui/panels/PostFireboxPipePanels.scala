@@ -15,6 +15,8 @@ import afpma.firecalc.engine.ops.generic.TopologyError
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
+import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.*
 
 import cats.data.Validated
 
@@ -327,6 +329,47 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 else Seq                         (panel.node         )
         )
 
+    // ── Angle-edit detection (observer on slot snapshots) ────────────────
+    //
+    // Angle fields on direction-change elements are auto-derived form inputs with no
+    // explicit commit callback. We detect angle changes structurally by comparing
+    // successive snapshots. When detected on a pinned element, we apply pose
+    // preservation (so the new angle + computed absDir remain geometrically consistent)
+    // and then trigger the downstream rotation offer via the standard flow.
+
+    // `prevSnapshot` is Option so the FIRST emit (browser reload, project load, initial mount)
+    // primes the baseline without triggering any offer. Only subsequent edits with a real prior
+    // baseline can produce an Offer. Suppresses false positives on non-user-driven changes.
+    // `lastDispatcherWrite_var` is shared with AppToasts so strategy re-dispatches from the
+    // toast can suppress EVERY echo (debounced + binder roundtrip + normalization) until a
+    // genuinely different snapshot arrives.
+    private var prevSnapshot: Option[Seq[PostFireboxPipeDescrSlot]] = None
+
+    private def handleSlotSnapshot(newSnapshot: Seq[PostFireboxPipeDescrSlot]): Unit =
+        // Value-based suppression: ANY echo of the last dispatcher-written state (first debounced
+        // emit, subsequent bidirsync roundtrips, normalize passes) is absorbed. Only a snapshot
+        // that truly differs from the last dispatcher write can produce a new offer.
+        if lastDispatcherWrite_var.now().contains(newSnapshot) then
+            prevSnapshot = Some(newSnapshot)
+        else prevSnapshot match
+            case None =>
+                // First emit after mount — prime the baseline, no offer.
+                prevSnapshot = Some(newSnapshot)
+            case Some(prev) =>
+                ChainEditDispatcher.detectEdit(prev, newSnapshot) match
+                    case Some(edit) =>
+                        // Only one strategy exists today; apply it silently. The toast offer signal
+                        // (`rotateOffer_var`) is left alone intentionally — the scaffolding stays
+                        // wired so a future multi-strategy landing just re-enables a `set(Some(Offer))`
+                        // here without re-plumbing `AppToasts`.
+                        val strategy  = ChainEditDispatcher.defaultStrategy(edit)
+                        val rewritten = ChainEditDispatcher(prev, newSnapshot, edit, strategy)
+                        lastDispatcherWrite_var.set(Some(rewritten))
+                        postFireboxSlots_var.set(rewritten)
+                        prevSnapshot = Some(rewritten)
+                    case None =>
+                        prevSnapshot = Some(newSnapshot)
+
     // ── Main node ────────────────────────────────────────────────
 
     override lazy val node: HtmlElement = div(
@@ -341,6 +384,9 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             if normalized != current then postFireboxSlots_var.set(normalized)
             structureVersion.update(_ + 1)
         ,
+        // Angle-edit detection: debounced observer on slot snapshots.
+        // Debounce collapses rapid keystroke updates into a single committed value.
+        postFireboxSlots_var.signal.changes.debounce(300) --> Observer[Seq[PostFireboxPipeDescrSlot]](handleSlotSnapshot),
         child.maybe <-- topologyWarning,
         child <-- structureVersion.signal.map: _ =>
             buildPanels(postFireboxSlots_var.now())

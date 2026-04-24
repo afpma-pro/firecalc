@@ -182,15 +182,16 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             }
 
     protected def renderElemTyped[AA <: Elem](
-        i               : Int,
-        title           : String,
-        aa              : AA,
-        sig             : Signal[(Int, AA, XtraOutputs)],
-        isProperty      : Boolean,
-        extra           : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
-        badgeFinalDirVar: Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None,
-        afterBadge      : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
-        propertyShow    : Option[Show[AA]]                                  = None
+        i                     : Int,
+        title                 : String,
+        aa                    : AA,
+        sig                   : Signal[(Int, AA, XtraOutputs)],
+        isProperty            : Boolean,
+        extra                 : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
+        badgeFinalDirVar      : Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None,
+        afterBadge            : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
+        propertyShow          : Option[Show[AA]]                                  = None,
+        onBadgeDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode      = extra(elem_v)
@@ -203,7 +204,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             frameBefore       = frameBeforeSig_badge(i),
             absDirVar         = badgeFinalDirVar(elem_v),
             deflectionAngle   = deflectionAngleSig(i),
-            compact           = compact
+            compact           = compact,
+            onDirectionCommit = onBadgeDirectionCommit
         ).node
 
         // Full form node (used inline for non-property, or inside dialog for property)
