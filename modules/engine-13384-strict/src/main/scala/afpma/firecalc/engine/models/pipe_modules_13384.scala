@@ -132,13 +132,24 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
             .map((ids, fd, _) => (ids, fd))
 
     /**
-     * Inner cross-section at the end of the chimney, given the DTO descriptor sequence.
-     * Folds element-by-element through `PipeFullDescr.lastInnerGeom`, so any
-     * `SectionGeometryChange` along the way is honoured. Returns None when the
-     * descriptor list does not yield a valid pipe (e.g. empty, or fails validation).
+     * Inner cross-section at the chimney's terminal end.
+     *
+     * Builds via the shared incremental builder, so every shape-affecting
+     * element type is folded exhaustively through `HasInnerShapeAtPos[PipeElDescr]`
+     * (declared `compiletime.deferred` in `PipeDescrAlg` — new element types must
+     * opt in or fail to compile). Honours `SetInnerShape`, nested batches, and
+     * mid-pipe `SectionGeometryChange` elements.
+     *
+     * `externalInitialFrame` is the upstream slot's exit frame (typically the
+     * connector's `finalFrame`). Chimneys do not declare their own initial
+     * direction, so this argument is required for validation to succeed.
      */
-    def lastInnerShape(incrSeq: Seq[ThermalPipeDescr_13384]): Option[PipeShape] =
-        mkPipeFromIncrDescr(incrSeq).extractPipe.toOption.flatMap(_.lastInnerGeom)
+    def lastInnerShape(
+        incrSeq             : Seq[ThermalPipeDescr_13384],
+        externalInitialFrame: Option[PipeFrame]
+    ): Option[PipeShape] =
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame)
+            .extractPipe.toOption.flatMap(_.lastInnerGeom)
 
     type PipeCanBe = FullDescr
 

@@ -325,10 +325,11 @@ lazy val chimneyEndCapInputs_sig: Signal[Option[(PipePositionResult, PipeShape)]
                     case (s: PostFireboxPipeDescrSlot.ChimneySlot, i) => (s, i)
                 .lastOption
             for
-                (slot, idx) <- lastChimneyIdxOpt
+                (slot, idx)  <- lastChimneyIdxOpt
                 if slot.descr.endsWithSingularFlowResistance
-                shape <- ChimneyPipe_Module.lastInnerShape(slot.descr)
-                pos   <- positions.lift(idx)
+                upstreamFrame = positions.lift(idx - 1).flatMap(_.finalFrame)
+                shape        <- ChimneyPipe_Module.lastInnerShape(slot.descr, upstreamFrame)
+                pos          <- positions.lift(idx)
             yield (pos, shape)
 
 // ── Per-slot accessor helpers ────────────────────────────────────

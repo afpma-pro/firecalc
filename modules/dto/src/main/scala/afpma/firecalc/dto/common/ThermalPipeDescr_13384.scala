@@ -9,6 +9,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.IsSingularFlowResistance
+
 import afpma.firecalc.i18n.*
 
 import magnolia1.Transl
@@ -253,7 +255,7 @@ object AddThermalPipeElement_13384_V1:
         zeta         : QtyD[1],
         @Transl(I(_.add_element.cross_section))
         cross_section: OptionOfEither[AreaInCm2, PipeShape] // Option[Either[L, R]] has issues when serializing via circe, so custom type with custom encoder/decoder as a workaround
-    ) extends AddThermalPipeElement_13384_V1
+    ) extends AddThermalPipeElement_13384_V1 with IsSingularFlowResistance
 
     case class AddPressureDiff(
         @Transl(I(_.terms.name))

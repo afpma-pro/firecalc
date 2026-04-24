@@ -20,8 +20,8 @@ object ChimneyEndCapDefaults:
     /** End-cap diameter expressed as a multiple of the chimney's last (hydraulic) diameter. */
     final val DiameterMultiplier: Double = 2.0
 
-    /** End-cap thickness along the chimney axis, in centimeters. (2 mm) */
-    final val ThicknessCm: Double = 0.2
+    /** End-cap thickness along the chimney axis, in centimeters. */
+    final val ThicknessCm: Double = 2.0
 
     /** Gap between the chimney's end and the end-cap's near face, in centimeters. */
     final val GapCm: Double = 10.0
