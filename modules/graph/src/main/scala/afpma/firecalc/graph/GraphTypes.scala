@@ -16,13 +16,17 @@ case class DataPoint(
 )
 
 case class ChartSeries(
-    id       : String,
-    name     : String,
-    color    : String,
-    points   : Vector[DataPoint],
-    yAxisId  : String  = "default",
-    lineWidth: Double  = 2.0,
-    dashed   : Boolean = false
+    id           : String,
+    name         : String,
+    color        : String,
+    points       : Vector[DataPoint],
+    yAxisId      : String  = "default",
+    lineWidth    : Double  = 2.0,
+    dashed       : Boolean = false,
+    // Axis label to use when this series is the only visible one (focus mode).
+    // Example: "Velocity (m/s)" — the graph swaps from the combined multi-quantity
+    // label to this single-quantity label on legend-solo.
+    soloAxisLabel: String  = ""
 )
 
 case class YAxisConfig(

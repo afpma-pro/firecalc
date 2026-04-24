@@ -68,13 +68,14 @@ object GraphViz:
                 )
             }*)
             ChartSeriesJS(
-                id        = s.id,
-                name      = s.name,
-                color     = s.color,
-                points    = pointsJs,
-                yAxisId   = s.yAxisId,
-                lineWidth = s.lineWidth,
-                dashed    = s.dashed
+                id            = s.id,
+                name          = s.name,
+                color         = s.color,
+                points        = pointsJs,
+                yAxisId       = s.yAxisId,
+                lineWidth     = s.lineWidth,
+                dashed        = s.dashed,
+                soloAxisLabel = s.soloAxisLabel
             )
         }*)
 

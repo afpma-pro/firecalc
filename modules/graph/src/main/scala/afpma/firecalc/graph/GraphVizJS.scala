@@ -41,33 +41,36 @@ object DataPointJS:
             .asInstanceOf[DataPointJS]
 
 trait ChartSeriesJS extends js.Object:
-    var id       : String
-    var name     : String
-    var color    : String
-    var points   : js.Array[DataPointJS]
-    var yAxisId  : String
-    var lineWidth: Double
-    var dashed   : Boolean
+    var id           : String
+    var name         : String
+    var color        : String
+    var points       : js.Array[DataPointJS]
+    var yAxisId      : String
+    var lineWidth    : Double
+    var dashed       : Boolean
+    var soloAxisLabel: String
 
 object ChartSeriesJS:
     def apply(
-        id       : String,
-        name     : String,
-        color    : String,
-        points   : js.Array[DataPointJS],
-        yAxisId  : String,
-        lineWidth: Double,
-        dashed   : Boolean
+        id           : String,
+        name         : String,
+        color        : String,
+        points       : js.Array[DataPointJS],
+        yAxisId      : String,
+        lineWidth    : Double,
+        dashed       : Boolean,
+        soloAxisLabel: String
     ): ChartSeriesJS =
         js.Dynamic
-            .literal       (
-                id        = id,
-                name      = name,
-                color     = color,
-                points    = points,
-                yAxisId   = yAxisId,
-                lineWidth = lineWidth,
-                dashed    = dashed
+            .literal           (
+                id            = id,
+                name          = name,
+                color         = color,
+                points        = points,
+                yAxisId       = yAxisId,
+                lineWidth     = lineWidth,
+                dashed        = dashed,
+                soloAxisLabel = soloAxisLabel
             )
             .asInstanceOf[ChartSeriesJS]
 
