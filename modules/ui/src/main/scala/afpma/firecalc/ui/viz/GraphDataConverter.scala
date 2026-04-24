@@ -255,10 +255,17 @@ object GraphDataConverter:
 
         if allSections.isEmpty then ChartData(series = Vector.empty, yAxes = Vector.empty, xAxisLabel = "")
         else
-            val tempPoints     = buildSeriesPoints(allSections, "temperature")
-            val velocityPoints = buildSeriesPoints(allSections, "velocity")
-            val elevPoints     = buildSeriesPoints(allSections, "elevation")
-            val pressPoints    = buildSeriesPoints(allSections, "pressure")
+            // Zero-length sections (synthetic "Registre d'air" pressure-delta anchor,
+            // SingularFlowResistance singular-loss elements, etc.) render as two stacked
+            // duplicate velocity markers at the same x — visual noise with no physical
+            // information. Strip them from velocity; pressure / temperature / elevation
+            // keep them because their y-jump at the section boundary IS the information.
+            val velocitySections = allSections.filter(ps => ps.xEnd - ps.xStart > 1e-9)
+
+            val tempPoints     = buildSeriesPoints(allSections,      "temperature")
+            val velocityPoints = buildSeriesPoints(velocitySections, "velocity")
+            val elevPoints     = buildSeriesPoints(allSections,      "elevation")
+            val pressPoints    = buildSeriesPoints(allSections,      "pressure")
 
             val tempLabel      = displayUnits(s"${I18N_UI.graph.temperature} (°C)", s"${I18N_UI.graph.temperature} (°F)")
             val pressureLabel  = s"${I18N_UI.graph.pressure} (Pa)"
