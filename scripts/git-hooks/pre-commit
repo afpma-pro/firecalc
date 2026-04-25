@@ -196,6 +196,29 @@ if [ $SECRETS_FOUND -eq 1 ]; then
     exit 1
 fi
 
+# ── scalafmt --check on staged Scala/SBT files ────────────
+SCALA_STAGED=0
+while IFS= read -r file; do
+    case "$file" in
+        *.scala|*.sbt) SCALA_STAGED=1; break ;;
+    esac
+done <<< "$STAGED_FILES"
+
+if [ $SCALA_STAGED -eq 1 ]; then
+    if ! make fmt-check >/dev/null 2>&1; then
+        echo -e "${RED}✗ ERROR: Scala files are not formatted (scalafmt --check failed).${NC}"
+        echo ""
+        echo -e "${YELLOW}Fix it:${NC}"
+        echo "  make fmt           # rewrites files in place"
+        echo "  git add -u         # re-stage formatted files"
+        echo "  git commit ...     # try again"
+        echo ""
+        echo "To bypass this check (not recommended):"
+        echo "  git commit --no-verify"
+        exit 1
+    fi
+fi
+
 # Report results
 if [ ${#MISSING_HEADERS[@]} -gt 0 ]; then
     echo -e "${RED}✗ ERROR: Missing license headers in ${#MISSING_HEADERS[@]} file(s):${NC}"

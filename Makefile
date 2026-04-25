@@ -112,6 +112,9 @@ clean:
 fmt:
 	@scalafmt
 
+fmt-check:
+	@scalafmt --check
+
 update-deps:
 	@echo "Updating sbt dependencies..."
 	@sbt update
