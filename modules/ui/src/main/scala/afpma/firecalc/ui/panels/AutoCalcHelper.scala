@@ -5,8 +5,6 @@
 
 package afpma.firecalc.ui.panels
 
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.models.geometry.FrameReplay
@@ -18,8 +16,6 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
-
-import coulomb.policy.standard.given
 
 import io.taig.babel.Locale
 

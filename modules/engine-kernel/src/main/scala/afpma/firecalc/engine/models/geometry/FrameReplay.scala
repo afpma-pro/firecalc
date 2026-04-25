@@ -7,7 +7,6 @@ package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection

@@ -5,13 +5,9 @@
 
 package afpma.firecalc.engine.models.geometry
 
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
-
-import coulomb.policy.standard.given
 
 /**
  * Pure algorithm for rewriting downstream `absDir` pins after an upstream direction edit.

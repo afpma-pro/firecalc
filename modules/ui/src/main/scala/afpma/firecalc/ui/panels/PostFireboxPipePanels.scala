@@ -10,13 +10,12 @@ import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
 import afpma.firecalc.engine.ops.generic.TopologyError
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
-import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.*
 
 import cats.data.Validated
 

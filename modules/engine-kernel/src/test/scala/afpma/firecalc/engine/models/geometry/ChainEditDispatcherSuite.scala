@@ -7,29 +7,22 @@ package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.AzimuthDirection.*
-import afpma.firecalc.domain.InclinationDirection
-import afpma.firecalc.domain.InclinationDirection.*
-
-import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
-import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3 as FD15
-import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3
-import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3 as FDProp15
-import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3
 import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3 as FDElem15
-import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
 import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3 as TDElem13
-
+import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
+import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3 as FDProp15
+import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.*
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.PropagationStrategy.*
 
-import afpma.firecalc.engine.models.geometry.PipeDescrExtractors.given
-
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.AzimuthDirection.*
+import afpma.firecalc.domain.InclinationDirection
+import afpma.firecalc.domain.InclinationDirection.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 
@@ -135,7 +128,6 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
     }
 
     it should "return AngleEdit (not DirectionEdit) when both angle and absDir change on same element" in {
-        val coord = ChainCoord(slotIdx = 0, elemIdx = 1)
         val old = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))
         val upd = simpleFlue(initDir(Rear, Horizontal), bend(45.0, Some(adFront)))
         ChainEditDispatcher.detectEdit(old, upd) match
