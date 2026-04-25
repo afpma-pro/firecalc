@@ -255,7 +255,8 @@ object AddThermalPipeElement_13384_V2:
         zeta         : QtyD[1],
         @Transl(I(_.add_element.cross_section))
         cross_section: OptionOfEither[AreaInCm2, PipeShape] // Option[Either[L, R]] has issues when serializing via circe, so custom type with custom encoder/decoder as a workaround
-    ) extends AddThermalPipeElement_13384_V2 with IsSingularFlowResistance
+    ) extends AddThermalPipeElement_13384_V2
+        with IsSingularFlowResistance
 
     case class AddPressureDiff(
         @Transl(I(_.terms.name))

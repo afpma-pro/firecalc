@@ -38,11 +38,11 @@ object PipeChainRotation:
      * @return updated sequence with downstream absDir pins rewritten
      */
     def rewriteDownstreamPins[E](
-        oldElems     : Seq[(Int, E)],
-        newElems     : Seq[(Int, E)],
-        editedIdx    : Int,
-        scopeEndIdx  : Int,
-        initialFrame : Option[PipeFrame] = None
+        oldElems    : Seq[(Int, E)],
+        newElems    : Seq[(Int, E)],
+        editedIdx   : Int,
+        scopeEndIdx : Int,
+        initialFrame: Option[PipeFrame] = None
     )(using ext: FrameReplay.ElemExtractors[E]): Seq[(Int, E)] =
         if editedIdx >= scopeEndIdx then newElems
         else
@@ -66,11 +66,11 @@ object PipeChainRotation:
      * If `angleRad ≈ 0`, returns input unchanged.
      */
     def rewriteWithRotation[E](
-        elems      : Seq[(Int, E)],
-        lowerBound : Int,
-        upperBound : Int,
-        axis       : Vec3,
-        angleRad   : Double
+        elems     : Seq[(Int, E)],
+        lowerBound: Int,
+        upperBound: Int,
+        axis      : Vec3,
+        angleRad  : Double
     )(using ext: FrameReplay.ElemExtractors[E]): Seq[(Int, E)] =
         if math.abs(angleRad) < 1e-9 then elems
         else
@@ -80,11 +80,11 @@ object PipeChainRotation:
                     ext.asDirectionChange.lift(elem) match
                         case Some((_, Some(absDir))) =>
                             val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(absDir)
-                            val oldTargetVec   = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                            val newTargetVec   = PipeFrame.rodriguesRotate(oldTargetVec, axis, angleRad)
-                            val newAbsDir      = snapToAbsoluteDirection(newTargetVec)
+                            val oldTargetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            val newTargetVec = PipeFrame.rodriguesRotate(oldTargetVec, axis, angleRad)
+                            val newAbsDir    = snapToAbsoluteDirection(newTargetVec)
                             (idx, ext.withDirChangeAbsDir(elem, Some(newAbsDir)))
-                        case _ => (idx, elem)
+                        case _                       => (idx, elem)
             }
 
     /**
@@ -103,8 +103,7 @@ object PipeChainRotation:
             // Antiparallel: pick any axis perpendicular to 'from'
             val helper = if math.abs(fromN.x) < 0.9 then Vec3(1.0, 0.0, 0.0) else Vec3(0.0, 1.0, 0.0)
             (fromN.cross(helper).normalized, math.Pi)
-        else
-            (fromN.cross(toN).normalized, math.acos(dot))
+        else (fromN.cross(toN).normalized, math.acos(dot))
 
     /**
      * Count downstream elements in scope that have absDir = Some(_).
@@ -116,13 +115,13 @@ object PipeChainRotation:
      * @return number of pinned direction-change elements in the downstream scope
      */
     def downstreamPinCount[E](
-        elems       : Seq[(Int, E)],
-        editedIdx   : Int,
-        scopeEndIdx : Int
+        elems      : Seq[(Int, E)],
+        editedIdx  : Int,
+        scopeEndIdx: Int
     )(using ext: FrameReplay.ElemExtractors[E]): Int =
         elems.count: (idx, elem) =>
             idx > editedIdx && idx < scopeEndIdx &&
-            ext.asDirectionChange.lift(elem).exists(_._2.isDefined)
+                ext.asDirectionChange.lift(elem).exists(_._2.isDefined)
 
     /**
      * When a direction-change element's bend angle is edited, compute a new absDir
@@ -139,17 +138,16 @@ object PipeChainRotation:
      * @return  snapped AbsoluteDirection that preserves (side, θ) at the new angle.
      */
     def preserveRelativePoseOnAngleChange(
-        frame       : PipeFrame,
-        oldAbsDir   : AbsoluteDirection,
-        oldAngleDeg : Double,
-        newAngleDeg : Double
+        frame      : PipeFrame,
+        oldAbsDir  : AbsoluteDirection,
+        oldAngleDeg: Double,
+        newAngleDeg: Double
     ): AbsoluteDirection =
         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(oldAbsDir)
-        val oldTargetVec   = Vec3.fromAzimuthElevation(azDeg, elDeg)
-        val (side, theta)  = frame.recoverRelative(oldTargetVec, oldAngleDeg)
-        val newTargetVec   = frame.relativeTarget(side, theta, newAngleDeg)
+        val oldTargetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+        val (side, theta) = frame.recoverRelative(oldTargetVec, oldAngleDeg)
+        val newTargetVec = frame.relativeTarget(side, theta, newAngleDeg)
         snapToAbsoluteDirection(newTargetVec)
-
 
     /**
      * Convert a world-space direction vector to an AbsoluteDirection.

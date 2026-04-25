@@ -96,14 +96,14 @@ object YAxisConfigJS:
         secondaryGridStep: js.UndefOr[Double] = js.undefined
     ): YAxisConfigJS =
         js.Dynamic
-            .literal            (
-                id               = id,
-                label            = label,
-                position         = position,
-                min              = min,
-                max              = max,
-                stepSize         = stepSize,
-                primaryGridStep  = primaryGridStep,
+            .literal               (
+                id                = id,
+                label             = label,
+                position          = position,
+                min               = min,
+                max               = max,
+                stepSize          = stepSize,
+                primaryGridStep   = primaryGridStep,
                 secondaryGridStep = secondaryGridStep
             )
             .asInstanceOf[YAxisConfigJS]
@@ -139,7 +139,7 @@ object HorizontalReferenceLineJS:
         segments            : js.Array[XSegmentJS]
     ): HorizontalReferenceLineJS =
         js.Dynamic
-            .literal                (
+            .literal             (
                 yAxisId              = yAxisId,
                 y                    = y,
                 color                = color,
@@ -167,13 +167,13 @@ object BackgroundBandJS:
             .asInstanceOf[BackgroundBandJS]
 
 trait ChartDataJS extends js.Object:
-    var series          : js.Array[ChartSeriesJS]
-    var yAxes           : js.Array[YAxisConfigJS]
-    var xAxisLabel      : String
-    var backgroundBands : js.Array[BackgroundBandJS]
-    var horizontalLines : js.Array[HorizontalReferenceLineJS]
-    var xMin            : js.UndefOr[Double]
-    var xMax            : js.UndefOr[Double]
+    var series         : js.Array[ChartSeriesJS]
+    var yAxes          : js.Array[YAxisConfigJS]
+    var xAxisLabel     : String
+    var backgroundBands: js.Array[BackgroundBandJS]
+    var horizontalLines: js.Array[HorizontalReferenceLineJS]
+    var xMin           : js.UndefOr[Double]
+    var xMax           : js.UndefOr[Double]
 
 object ChartDataJS:
     def apply(
@@ -186,7 +186,7 @@ object ChartDataJS:
         xMax           : js.UndefOr[Double]                  = js.undefined
     ): ChartDataJS =
         js.Dynamic
-            .literal          (
+            .literal         (
                 series          = series,
                 yAxes           = yAxes,
                 xAxisLabel      = xAxisLabel,

@@ -43,9 +43,9 @@ final case class AppToasts() extends Component:
             onClick --> { _ =>
                 if !isActive then
                     val rewritten = ChainEditDispatcher(offer.preEditSlots, offer.newSlots, offer.edit, strategy)
-                    lastDispatcherWrite_var.set(Some(rewritten))
-                    postFireboxSlots_var.set(rewritten)
-                    rotateOffer_var.set(Some(offer.copy(appliedStrategy = strategy)))
+                    lastDispatcherWrite_var.set(Some(rewritten)                             )
+                    postFireboxSlots_var.set   (rewritten                                   )
+                    rotateOffer_var.set        (Some(offer.copy(appliedStrategy = strategy)))
             }
         )
 
@@ -56,8 +56,8 @@ final case class AppToasts() extends Component:
                 Some(
                     div(
                         cls := "alert alert-info shadow-lg text-xs py-1 px-2 flex-row items-center gap-2",
-                        span("Propagation strategy:"),
-                        div(
+                        span  ("Propagation strategy:"),
+                        div   (
                             cls := "flex flex-row gap-1",
                             offer.alternatives.map(s => strategyButton(offer, s))
                         ),

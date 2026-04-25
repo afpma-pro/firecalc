@@ -37,21 +37,22 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     import SetFlowOnlyPipeProp_13384.*
 
     private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384] = AutoCalcHelper.ElemExtractors(
-        asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
-        asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
-        asInnerShape         = { case sis: SetInnerShape => sis.shape },
-        withDirChangeAbsDir  = (e, newAbsDir) => e match
-            case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
-            case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
-            case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
-            case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
-            case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
-            case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
-            case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
-            case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
-            case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
-            case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
-            case _                                => e
+        asInitialDirection  = { case SetInitialDirection(az, incl) => (az, incl) },
+        asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+        asInnerShape        = { case sis: SetInnerShape => sis.shape },
+        withDirChangeAbsDir = (e, newAbsDir) =>
+            e match
+                case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
+                case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
+                case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
+                case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
+                case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
+                case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
+                case _ => e
     )
 
     type In = FlowOnlyPipeDescr_13384

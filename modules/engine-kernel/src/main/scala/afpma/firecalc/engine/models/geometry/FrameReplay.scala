@@ -36,8 +36,9 @@ object FrameReplay:
         asInitialDirection  : PartialFunction[E, (AzimuthDirection, InclinationDirection)],
         asDirectionChange   : PartialFunction[E, (Angle, Option[AbsoluteDirection])],
         asInnerShape        : PartialFunction[E, PipeShape],
-        withDirChangeAbsDir : (E, Option[AbsoluteDirection]) => E = (e: E, _: Option[AbsoluteDirection]) => e,
-        withInitialDirection: (E, AzimuthDirection, InclinationDirection) => E = (e: E, _: AzimuthDirection, _: InclinationDirection) => e
+        withDirChangeAbsDir : (E, Option[AbsoluteDirection]) => E              = (e: E, _: Option[AbsoluteDirection]) => e,
+        withInitialDirection: (E, AzimuthDirection, InclinationDirection) => E =
+            (e: E, _: AzimuthDirection, _: InclinationDirection) => e
     )
 
     // ── Pure algorithms ──────────────────────────────────────────────────
@@ -52,7 +53,9 @@ object FrameReplay:
      * @param elems    indexed element list from welems_var.now()
      * @param upToIdx  inclusive upper bound on element index (use Int.MaxValue for all)
      */
-    def replayFrame[E](elems: Seq[(Int, E)], upToIdx: Int, initialFrame: Option[PipeFrame] = None)(using ext: ElemExtractors[E]): Option[PipeFrame] =
+    def replayFrame[E](elems: Seq[(Int, E)], upToIdx: Int, initialFrame: Option[PipeFrame] = None)(using
+        ext: ElemExtractors[E]
+    ): Option[PipeFrame] =
         var frame: Option[PipeFrame] = initialFrame
         for (idx, elem) <- elems if idx <= upToIdx do
             ext.asInitialDirection

@@ -56,7 +56,7 @@ object GraphViz:
 
     private def chartDataToJs(data: ChartData): ChartDataJS =
         val seriesJs = js.Array(data.series.map { s =>
-            val pointsJs        = js.Array(s.points.map { p =>
+            val pointsJs            = js.Array(s.points.map { p =>
                 DataPointJS               (
                     x                = p.x,
                     y                = p.y,
@@ -83,19 +83,20 @@ object GraphViz:
             val posStr = a.position match
                 case YAxisPosition.Left  => "left"
                 case YAxisPosition.Right => "right"
-            val minJs            : js.UndefOr[Double] = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val maxJs            : js.UndefOr[Double] = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val stepJs           : js.UndefOr[Double] = a.stepSize.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val primaryGridStepJs: js.UndefOr[Double] = a.primaryGridStep.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val secondaryGridStepJs: js.UndefOr[Double] = a.secondaryGridStep.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            YAxisConfigJS             (
-                id               = a.id,
-                label            = a.label,
-                position         = posStr,
-                min              = minJs,
-                max              = maxJs,
-                stepSize         = stepJs,
-                primaryGridStep  = primaryGridStepJs,
+            val minJs: js.UndefOr[Double] = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val maxJs                             : js.UndefOr[Double] = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val stepJs                            : js.UndefOr[Double] = a.stepSize.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val primaryGridStepJs                 : js.UndefOr[Double] = a.primaryGridStep.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val secondaryGridStepJs               : js.UndefOr[Double] =
+                a.secondaryGridStep.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            YAxisConfigJS(
+                id                = a.id,
+                label             = a.label,
+                position          = posStr,
+                min               = minJs,
+                max               = maxJs,
+                stepSize          = stepJs,
+                primaryGridStep   = primaryGridStepJs,
                 secondaryGridStep = secondaryGridStepJs
             )
         }*)
@@ -109,7 +110,7 @@ object GraphViz:
         val xMinJs: js.UndefOr[Double] = data.xMin.fold[js.UndefOr[Double]](js.undefined)(v => v)
         val xMaxJs: js.UndefOr[Double] = data.xMax.fold[js.UndefOr[Double]](js.undefined)(v => v)
 
-        ChartDataJS          (
+        ChartDataJS         (
             series          = seriesJs,
             yAxes           = yAxesJs,
             xAxisLabel      = data.xAxisLabel,
@@ -123,11 +124,11 @@ object GraphViz:
         XSegmentJS(xStart = seg.xStart, xEnd = seg.xEnd)
 
     private def horizontalReferenceLineToJs(line: HorizontalReferenceLine): HorizontalReferenceLineJS =
-        HorizontalReferenceLineJS(
-            yAxisId             = line.yAxisId,
-            y                   = line.y,
-            color               = line.color,
-            label               = line.label,
+        HorizontalReferenceLineJS             (
+            yAxisId              = line.yAxisId,
+            y                    = line.y,
+            color                = line.color,
+            label                = line.label,
             visibleWhenSeriesIds = js.Array(line.visibleWhenSeriesIds*),
-            segments            = js.Array(line.segments.map(xSegmentToJs)*)
+            segments             = js.Array(line.segments.map(xSegmentToJs)*)
         )

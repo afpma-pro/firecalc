@@ -148,8 +148,7 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
     ): Option[PipeShape] =
-        mkPipeFromIncrDescr(incrSeq, externalInitialFrame)
-            .extractPipe.toOption.flatMap(_.lastInnerGeom)
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame).extractPipe.toOption.flatMap(_.lastInnerGeom)
 
     type PipeCanBe = FullDescr
 

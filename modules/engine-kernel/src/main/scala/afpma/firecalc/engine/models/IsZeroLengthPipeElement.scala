@@ -18,4 +18,4 @@ import afpma.firecalc.domain.IsZeroLengthPipeElement
 extension (psr: PipeSectionResult[?])
     def isZeroLengthPipeElement: Boolean = psr.descr match
         case _: IsZeroLengthPipeElement => true
-        case _                          => false
+        case _ => false

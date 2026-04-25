@@ -45,10 +45,11 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
      *  2. `ChainEditDispatcher(oldSlots, rawNewSlots, edit, RigidRotation)` — apply strategy.
      */
     private def simulateAngleEditAndRotate(
-        oldSlots    : Seq[PostFireboxPipeDescrSlot],
-        rawNewSlots : Seq[PostFireboxPipeDescrSlot]
+        oldSlots   : Seq[PostFireboxPipeDescrSlot],
+        rawNewSlots: Seq[PostFireboxPipeDescrSlot]
     ): Seq[PostFireboxPipeDescrSlot] =
-        val edit = ChainEditDispatcher.detectEdit(oldSlots, rawNewSlots)
+        val edit = ChainEditDispatcher
+            .detectEdit(oldSlots, rawNewSlots)
             .getOrElse(fail("detectEdit failed to spot the angle change"))
         ChainEditDispatcher(oldSlots, rawNewSlots, edit, RigidRotation)
 
@@ -56,18 +57,20 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
     private def findFlueBend(slot: PostFireboxPipeDescrSlot, name: String): AddSharpeAngle_0_to_180 =
         slot match
             case FlueSlot(descr) =>
-                descr.collectFirst {
-                    case a: AddSharpeAngle_0_to_180 if a.name == name => a
-                }.getOrElse(fail(s"'$name' not found in FlueSlot"))
-            case other =>
+                descr
+                    .collectFirst {
+                        case a: AddSharpeAngle_0_to_180 if a.name == name => a
+                    }
+                    .getOrElse(fail(s"'$name' not found in FlueSlot"))
+            case other           =>
                 fail(s"expected FlueSlot, got ${other.getClass.getSimpleName}")
 
     /** Extract the inclination angle in degrees — regardless of discrete vs Custom case. */
     private def inclinationDeg(incl: InclinationDirection): Double = incl match
-        case InclinationDirection.Up           => 90.0
-        case InclinationDirection.Down         => -90.0
-        case InclinationDirection.Horizontal   => 0.0
-        case InclinationDirection.Custom(a)    => a.toUnit[Degree].value
+        case InclinationDirection.Up         => 90.0
+        case InclinationDirection.Down       => -90.0
+        case InclinationDirection.Horizontal => 0.0
+        case InclinationDirection.Custom(a)  => a.toUnit[Degree].value
 
     // ── Scenario 1: angle edit on "virage avant descente" (90° → 45°) ──
 
@@ -75,19 +78,23 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
 
-        val (flueSlotIdx, flueDescr) = oldSlots.zipWithIndex.collectFirst {
-            case (FlueSlot(d), i) => (i, d)
-        }.getOrElse(fail("no FlueSlot in example project"))
+        val (flueSlotIdx, flueDescr) = oldSlots.zipWithIndex
+            .collectFirst { case (FlueSlot(d), i) =>
+                (i, d)
+            }
+            .getOrElse(fail("no FlueSlot in example project"))
 
         val elemIdx = flueDescr.indexWhere {
             case a: AddSharpeAngle_0_to_180 if a.name == "virage avant descente" => true
-            case _                                                               => false
+            case _ => false
         }
         require(elemIdx >= 0, "'virage avant descente' not found in FlueSlot")
 
-        val editedDescr = flueDescr.updated(elemIdx, flueDescr(elemIdx) match
-            case a: AddSharpeAngle_0_to_180 => a.copy(angle = 45.degrees)
-            case other                      => other
+        val editedDescr = flueDescr.updated(
+            elemIdx,
+            flueDescr(elemIdx) match
+                case a: AddSharpeAngle_0_to_180 => a.copy(angle = 45.degrees)
+                case other => other
         )
         val rawNewSlots = oldSlots.updated(flueSlotIdx, FlueSlot(editedDescr))
 
@@ -111,8 +118,8 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
             val bend = findFlueBend(finalSlots(flueSlotIdx), "virage avant banc arrière")
             val abs  = bend.absDir.getOrElse(fail("absDir missing"))
             withClue(s"full absDir = $abs:"):
-                abs.azimuth.shouldBe(Some(AzimuthDirection.Right))
-                inclinationDeg(abs.inclination).shouldBe(-45.0 +- 0.5)
+                abs.azimuth.shouldBe                    (Some(AzimuthDirection.Right))
+                inclinationDeg(abs.inclination).shouldBe(-45.0 +- 0.5                )
         }
 
         "'remontée' direction should be (Right, inclination ≈ +45°)" in {
@@ -121,10 +128,9 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
             val bend = findFlueBend(finalSlots(flueSlotIdx), "virage avant remontée")
             val abs  = bend.absDir.getOrElse(fail("absDir missing"))
             withClue(s"full absDir = $abs:"):
-                abs.azimuth.shouldBe(Some(AzimuthDirection.Right))
-                inclinationDeg(abs.inclination).shouldBe(45.0 +- 0.5)
+                abs.azimuth.shouldBe                    (Some(AzimuthDirection.Right))
+                inclinationDeg(abs.inclination).shouldBe(45.0 +- 0.5                 )
         }
     }
-
 
 end ChainEditDispatcherScenarioSuite

@@ -62,11 +62,11 @@ final case class HorizontalReferenceLine(
 )
 
 case class ChartData(
-    series          : Vector[ChartSeries],
-    yAxes           : Vector[YAxisConfig],
-    xAxisLabel      : String,
-    backgroundBands : Vector[BackgroundBand]          = Vector.empty,
-    horizontalLines : Vector[HorizontalReferenceLine] = Vector.empty,
-    xMin            : Option[Double]                  = None,
-    xMax            : Option[Double]                  = None
+    series         : Vector[ChartSeries],
+    yAxes          : Vector[YAxisConfig],
+    xAxisLabel     : String,
+    backgroundBands: Vector[BackgroundBand]          = Vector.empty,
+    horizontalLines: Vector[HorizontalReferenceLine] = Vector.empty,
+    xMin           : Option[Double]                  = None,
+    xMax           : Option[Double]                  = None
 )

@@ -187,10 +187,10 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         aa                    : AA,
         sig                   : Signal[(Int, AA, XtraOutputs)],
         isProperty            : Boolean,
-        extra                 : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
-        badgeFinalDirVar      : Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None,
-        afterBadge            : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
-        propertyShow          : Option[Show[AA]]                                  = None,
+        extra                 : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
+        badgeFinalDirVar      : Var[AA] => Option[Var[Option[AbsoluteDirection]]]                      = (_: Var[AA]) => None,
+        afterBadge            : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
+        propertyShow          : Option[Show[AA]]                                                       = None,
         onBadgeDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)

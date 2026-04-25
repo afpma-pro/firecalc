@@ -46,7 +46,8 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
     private val slots = EmptyHeadRegionFixture_15544.postFireboxPipeSlots
 
     private val chimneyDescr: Seq[ThermalPipeDescr_13384_V3] =
-        slots.collectFirst { case ChimneySlot(d) => d }
+        slots
+            .collectFirst { case ChimneySlot(d) => d }
             .getOrElse(fail("EmptyHeadRegionFixture_15544 has no ChimneySlot"))
 
     "endsWithSingularFlowResistance" should
@@ -55,7 +56,8 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
         }
 
     it should "return false for the EmptyHeadRegionFixture_15544 connector slot (terminates in addSectionVertical)" in {
-        val connectorDescr = slots.collectFirst { case ConnectorSlot(d) => d }
+        val connectorDescr = slots
+            .collectFirst { case ConnectorSlot(d) => d }
             .getOrElse(fail("EmptyHeadRegionFixture_15544 has no ConnectorSlot"))
         connectorDescr.endsWithSingularFlowResistance.shouldBe(false)
     }
@@ -78,16 +80,17 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
             import ChimneyPipe_Module as CHPM
             val syntheticChimney: Seq[ThermalPipeDescr_13384_V3] = Seq(
                 CHPM.roughness         (1.mm                                           ),
-                CHPM.innerShape        (circle(200.mm)                                 ),
+                CHPM.innerShape(circle(200.mm)),
                 CHPM.layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.260)),
                 CHPM.pipeLocation      (PipeLocation.HeatedArea                        ),
-                CHPM.addSectionVertical("wide_section",     1.m                        ),
-                CHPM.addSectionDecrease("narrowing",      150.mm                       ),
-                CHPM.addSectionVertical("narrow_section",   1.m                        ),
-                CHPM.addFlowResistance ("end",        0.5.unitless                     )
+                CHPM.addSectionVertical("wide_section", 1.m                            ),
+                CHPM.addSectionDecrease("narrowing", 150.mm                            ),
+                CHPM.addSectionVertical("narrow_section", 1.m                          ),
+                CHPM.addFlowResistance ("end", 0.5.unitless                            )
             )
 
-            val resultShape = CHPM.lastInnerShape(syntheticChimney, sentinelFrame)
+            val resultShape = CHPM
+                .lastInnerShape(syntheticChimney, sentinelFrame)
                 .getOrElse(fail("synthetic chimney with section change failed to resolve a terminal shape"))
 
             resultShape match

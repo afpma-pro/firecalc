@@ -348,26 +348,26 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         // Value-based suppression: ANY echo of the last dispatcher-written state (first debounced
         // emit, subsequent bidirsync roundtrips, normalize passes) is absorbed. Only a snapshot
         // that truly differs from the last dispatcher write can produce a new offer.
-        if lastDispatcherWrite_var.now().contains(newSnapshot) then
-            prevSnapshot = Some(newSnapshot)
-        else prevSnapshot match
-            case None =>
-                // First emit after mount — prime the baseline, no offer.
-                prevSnapshot = Some(newSnapshot)
-            case Some(prev) =>
-                ChainEditDispatcher.detectEdit(prev, newSnapshot) match
-                    case Some(edit) =>
-                        // Only one strategy exists today; apply it silently. The toast offer signal
-                        // (`rotateOffer_var`) is left alone intentionally — the scaffolding stays
-                        // wired so a future multi-strategy landing just re-enables a `set(Some(Offer))`
-                        // here without re-plumbing `AppToasts`.
-                        val strategy  = ChainEditDispatcher.defaultStrategy(edit)
-                        val rewritten = ChainEditDispatcher(prev, newSnapshot, edit, strategy)
-                        lastDispatcherWrite_var.set(Some(rewritten))
-                        postFireboxSlots_var.set(rewritten)
-                        prevSnapshot = Some(rewritten)
-                    case None =>
-                        prevSnapshot = Some(newSnapshot)
+        if lastDispatcherWrite_var.now().contains(newSnapshot) then prevSnapshot = Some(newSnapshot)
+        else
+            prevSnapshot match
+                case None       =>
+                    // First emit after mount — prime the baseline, no offer.
+                    prevSnapshot = Some(newSnapshot)
+                case Some(prev) =>
+                    ChainEditDispatcher.detectEdit(prev, newSnapshot) match
+                        case Some(edit) =>
+                            // Only one strategy exists today; apply it silently. The toast offer signal
+                            // (`rotateOffer_var`) is left alone intentionally — the scaffolding stays
+                            // wired so a future multi-strategy landing just re-enables a `set(Some(Offer))`
+                            // here without re-plumbing `AppToasts`.
+                            val strategy  = ChainEditDispatcher.defaultStrategy(edit)
+                            val rewritten = ChainEditDispatcher(prev, newSnapshot, edit, strategy)
+                            lastDispatcherWrite_var.set(Some(rewritten))
+                            postFireboxSlots_var.set   (rewritten      )
+                            prevSnapshot = Some(rewritten)
+                        case None       =>
+                            prevSnapshot = Some(newSnapshot)
 
     // ── Main node ────────────────────────────────────────────────
 
@@ -385,7 +385,9 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         ,
         // Angle-edit detection: debounced observer on slot snapshots.
         // Debounce collapses rapid keystroke updates into a single committed value.
-        postFireboxSlots_var.signal.changes.debounce(300) --> Observer[Seq[PostFireboxPipeDescrSlot]](handleSlotSnapshot),
+        postFireboxSlots_var.signal.changes.debounce(300) --> Observer[Seq[PostFireboxPipeDescrSlot]](
+            handleSlotSnapshot
+        ),
         child.maybe <-- topologyWarning,
         child <-- structureVersion.signal.map: _ =>
             buildPanels(postFireboxSlots_var.now())

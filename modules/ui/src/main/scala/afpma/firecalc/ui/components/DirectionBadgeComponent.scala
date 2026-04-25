@@ -49,13 +49,13 @@ import org.scalajs.dom
  *                          Receives `(oldValue, newValue)` where both are `Option[AbsoluteDirection]`.
  */
 case class DirectionBadgeComponent(
-    absDirection      : Signal[Option[Vec3]],
-    previousDirection : Signal[Option[Vec3]],
-    frameBefore       : Signal[Option[PipeFrame]],
-    absDirVar         : Option[Var[Option[AbsoluteDirection]]],
-    deflectionAngle   : Signal[Option[Double]] = Signal.fromValue(None),
-    compact           : Boolean                = false,
-    onDirectionCommit : Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None
+    absDirection     : Signal[Option[Vec3]],
+    previousDirection: Signal[Option[Vec3]],
+    frameBefore      : Signal[Option[PipeFrame]],
+    absDirVar        : Option[Var[Option[AbsoluteDirection]]],
+    deflectionAngle  : Signal[Option[Double]]                                                 = Signal.fromValue(None),
+    compact          : Boolean                                                                = false,
+    onDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None
 )                                 (using Locale)
     extends Component:
 
@@ -219,11 +219,11 @@ case class DirectionBadgeComponent(
                                     onClick --> { _ =>
                                         val oldValue = fdVar.now()
                                         val newValue = Some(fd)
-                                        fdVar.set(newValue)
+                                        fdVar.set                (newValue                        )
                                         org.scalajs.dom.document
                                             .querySelectorAll("details[open]")
-                                            .foreach(el => el.removeAttribute("open"))
-                                        onDirectionCommit.foreach(_(oldValue, newValue))
+                                            .foreach             (el => el.removeAttribute("open"))
+                                        onDirectionCommit.foreach(_(oldValue, newValue)           )
                                     }
                                 )
                             )
