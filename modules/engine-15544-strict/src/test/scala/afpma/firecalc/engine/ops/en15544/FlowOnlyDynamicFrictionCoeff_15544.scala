@@ -90,8 +90,6 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val v1 = accu.getByNameWithType[DirectionChange]("virage 90° 4-5")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 90° 5-6")
 
-            accu.elems.foreach(println)
-
             val cv1 = inst.dynamicFrictionCoeff(v1.get)
             val cv2 = inst.dynamicFrictionCoeff(v2.get)
 
@@ -100,9 +98,6 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
 
             val c1 = cv1.toOption.get
             val c2 = cv2.toOption.get
-
-            println(c1)
-            println(c2)
 
             c1.unwrap.value.shouldEqual(0.44 +- 0.001)
             c2.unwrap.value.shouldEqual(0.44 +- 0.001)
@@ -143,8 +138,6 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
 
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
-
-            accu.elems.foreach(println)
 
             val cv1 = inst.dynamicFrictionCoeff(v1.get)
             cv1.should(beValid)
@@ -195,8 +188,6 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
 
-            accu.elems.foreach(println)
-
             val cv1 = inst.dynamicFrictionCoeff(v1.get)
             cv1.should(beValid)
 
@@ -245,8 +236,6 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
 
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
-
-            accu.elems.foreach(println)
 
             val cv1 = inst.dynamicFrictionCoeff(v1.get)
             cv1.should(beValid)
@@ -304,8 +293,6 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val v1 = accu.getByNameWithType[DirectionChange]("virage 1")
             val v2 = accu.getByNameWithType[DirectionChange]("virage 2")
             val v3 = accu.getByNameWithType[DirectionChange]("virage 3")
-
-            accu.elems.foreach(println)
 
             val cv1 = inst.dynamicFrictionCoeff(v1.get)
             cv1.should(beValid)

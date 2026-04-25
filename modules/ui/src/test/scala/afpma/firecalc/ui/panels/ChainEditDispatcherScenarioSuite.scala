@@ -100,18 +100,6 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         val finalSlots = simulateAngleEditAndRotate(oldSlots, rawNewSlots)
 
-        // Diagnostic: dump the full post-rotation chain so test failures show the actual state.
-        val finalFlueDescr = finalSlots(flueSlotIdx) match
-            case FlueSlot(d) => d
-            case _           => fail("FlueSlot type changed")
-
-        info("Post-rotation FlueSlot direction changes:")
-        finalFlueDescr.zipWithIndex.foreach {
-            case (a: AddSharpeAngle_0_to_180, i) =>
-                info(f"  idx $i%2d  ${a.name}%-35s angle=${a.angle.toUnit[Degree].value}%5.1f° absDir=${a.absDir}")
-            case _ => ()
-        }
-
         "'arrière banc' direction should be (Right, inclination ≈ -45°)" in {
             // 'arrière banc' is a section — its direction is the outgoing direction of the
             // preceding bend, 'virage avant banc arrière'. We check that bend's absDir.

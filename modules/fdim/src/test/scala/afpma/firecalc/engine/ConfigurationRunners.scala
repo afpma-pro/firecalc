@@ -33,10 +33,6 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         ap              : _en15544.AtParams
     ) =
 
-        println("-------------------------------------------------")
-        println(s"CONFIGURATION = ${projectReference}"             )
-        println("-------------------------------------------------")
-
         given Locale                      = givenLocale
         given _en15544.Params_15544       = ap.params
         given LocalRegulations            = localRegs

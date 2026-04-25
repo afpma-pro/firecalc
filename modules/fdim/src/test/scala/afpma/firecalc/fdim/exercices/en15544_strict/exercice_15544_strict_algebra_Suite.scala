@@ -54,13 +54,11 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
                     "firebox pipe" in {
                         val ccPipe = strict_ex01_colonne_ascendante.fireboxPipe
                         ccPipe shouldBe a[Valid[FireboxPipe_15544]]
-                        // println(ccPipe.toOption.get.show)
                     }
 
                     "combustion air pipe" in {
                         val combustionAirPipe = strict_ex01_colonne_ascendante.combustionAirPipe
                         combustionAirPipe shouldBe a[Valid[CombustionAirPipe_15544]]
-                        // println(combustionAirPipe.toOption.get.show)
                     }
                 }
 
@@ -72,7 +70,6 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
 
                     val fluePipe = pipeChain.fluePipe
                     fluePipe shouldBe a[Valid[FluePipe_15544]]
-                    // println(fluePipe.toOption.get.showAsCliTable)
                 }
 
             }
@@ -83,7 +80,6 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
 
                     val connetingPipe = pipeChain.connectorPipe
                     connetingPipe shouldBe a[Valid[ConnectorPipe]]
-                    // println(connetingPipe.toOption.get.showAsCliTable)
                 }
 
             }
@@ -94,7 +90,6 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
 
                     val chimneyPipe = pipeChain.chimneyPipe
                     chimneyPipe shouldBe a[Valid[ChimneyPipe]]
-                    // println(chimneyPipe.toOption.get.showAsCliTable)
                 }
 
             }

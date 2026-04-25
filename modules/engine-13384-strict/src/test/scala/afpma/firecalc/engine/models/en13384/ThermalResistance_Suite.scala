@@ -102,10 +102,6 @@ class ThermalResistance_Suite extends AnyFreeSpec with Matchers:
                     layers        = layers
                 )
 
-                // println(s"""|dhi = ${dhi.showP}
-                //             |dho = ${layers.xs.last.dho.showP}
-                //             |R = ${tr.showP}
-                //             |"""".stripMargin)
                 tr.isRight `shouldBe` true
                 tr.toOption.get.value `shouldEqual` (0.5755 +- 0.01)
             }
