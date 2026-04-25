@@ -39,9 +39,11 @@ object EN15544_Labo_Application:
         wComb        : WoodCombustionAlg,
         labConditions: LabConditions
     )(
-        i: Inputs_15544_MCE
+        i       : Inputs_15544_MCE,
+        pfbSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty
     ): EN15544_Labo_Application = new EN15544_Labo_Application(f, bs845, wComb)(labConditions) {
-        override lazy val inputs = i
+        override lazy val inputs              : Inputs_15544_MCE                                    = i
+        override lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = pfbSlots
     }
 
     case class AmbiantAir_Temperatures(

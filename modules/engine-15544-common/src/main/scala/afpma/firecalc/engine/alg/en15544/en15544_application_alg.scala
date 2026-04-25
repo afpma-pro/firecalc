@@ -38,17 +38,18 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     /**
      * The ordered post-firebox pipe descriptor slots from the DTO.
-     * Defaults to the classic 3-pipe vector (flue, connector, chimney) for backward
-     * compatibility.  Override with the actual `post_firebox_pipes` from FireCalcYAML V6
-     * to support arbitrary N-pipe topologies.
+     *
+     * Abstract — every concrete `Application` MUST provide this. Typical wiring is via
+     * the `WithPipeChain_15544_*` trait family (e.g. `WithPipeChain_15544_MCE` produces
+     * `[ThermalFlueSlot, ConnectorSlot, ChimneySlot]`); the `*_Application.make` factory
+     * then forwards the trait's value into the Application instance.
+     *
+     * Previously had a default `[FlueSlot, ConnectorSlot, ChimneySlot]` which silently
+     * masked wiring bugs (an Application that forgot to forward `pfbSlots` would inherit
+     * the flow-only default and fail at runtime in MCE mode with "FlueSlot in flue
+     * region"). Made abstract to force explicit wiring.
      */
-    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] =
-        import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
-        Seq(
-            FlueSlot     (Seq.empty),
-            ConnectorSlot(Seq.empty),
-            ChimneySlot  (Seq.empty)
-        )
+    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]
 
     export EN15544_V_2023_Application_Alg.{ErrorGen}
 

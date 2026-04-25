@@ -195,11 +195,12 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
     val fireboxPipe =
         import FireboxPipe_Module_13384.*
         define(
-            pipeLocation      (Area.Foyer                ),
-            roughness         (Refractory_Bricks         ),
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // Up
+            pipeLocation       (Area.Foyer                                                            ),
+            roughness          (Refractory_Bricks                                                     ),
             innerShape(rectangle(39.cm, 55.cm)),
-            layer             (e = 1.cm, λ = 1.3.W_per_mK),
-            addSectionVertical("foyer P05", 58.3.cm      )
+            layer              (e       = 1.cm, λ                            = 1.3.W_per_mK           ),
+            addSectionVertical ("foyer P05", 58.3.cm                                                  )
         )
             .toFullDescr()
             .extractPipe

@@ -502,7 +502,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
     )
     .jvmConfigure(
         _.settings(
-            Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala",
+            Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala",
             libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
         )
     )
