@@ -171,14 +171,49 @@ object InvoiceTypstInstances:
                 s"${i18n.payment.early_discount_label} ${discount}% ${i18n.payment.if_paid_within} $days ${i18n.payment.days}".sanitized
             }
         ).flatten
+
+        // Single-pass split: SEPA variants on the left (type-narrowed), other methods on the right.
+        // Makes the "at most one SEPA mandate per invoice" convention explicit and avoids two passes.
+        val (sepaMandates, methodsForList) = terms.methods.partitionMap {
+            case sm: PaymentMethod.SepaMandate => Left(sm)
+            case other => Right(other)
+        }
+        val sepaMandate: Option[PaymentMethod.SepaMandate] = sepaMandates.headOption
+
+        val sepaBlock: Option[String] = sepaMandate.map { sm =>
+            val title = s"*${i18n.payment.sepa_mandate.sanitized}*"
+            val bodyLines: List[String] =
+                (sm.mandateReference, sm.mandateDate, sm.nextPossibleChargeDate) match
+                    case (Some(ref), Some(date), Some(next)) =>
+                        List(
+                            s"${i18n.payment.mandate_reference} $ref".sanitized,
+                            s"${i18n.payment.mandate_date} ${date.toTypst}".sanitized,
+                            s"${i18n.payment.next_possible_charge_date} ${next.toTypst}".sanitized
+                        )
+                    case _ =>
+                        List(i18n.payment.sepa_mandate_pending.sanitized)
+            s"#block[${(title :: bodyLines).mkString(" \\ \n")}]"
+        }
+
+        val fallbackBlock: Option[String] = sepaMandate.map { _ =>
+            s"#block[${i18n.payment.sepa_mandate_failure_fallback.sanitized}]"
+        }
+
         val lines_B =
-            if (terms.methods.nonEmpty)
+            if (methodsForList.nonEmpty)
                 Some(s"${i18n.payment.payment_methods_label}")
-                    :: terms.methods.map(method => Some(s"- ${TypstShow[PaymentMethod].showAsTypst(method)}"))
+                    :: methodsForList.map(method => Some(s"- ${TypstShow[PaymentMethod].showAsTypst(method)}"))
             else
                 Seq(None)
-        s"""#block[${lines_A.mkString(" \\ \n")}]
-       |#block[${lines_B.flatten.mkString(" \\ \n")}]""".stripMargin
+
+        val parts = List(
+            Some(s"#block[${lines_A.mkString(" \\ \n")}]"        ),
+            sepaBlock,
+            fallbackBlock,
+            Some(s"#block[${lines_B.flatten.mkString(" \\ \n")}]")
+        ).flatten
+
+        parts.mkString("\n")
     }
 
     given TypstShow[InvoiceStatus] = TypstShow.make(_.displayName)

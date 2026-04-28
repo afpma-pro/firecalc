@@ -196,14 +196,15 @@ object ExampleInvoiceGeneration:
             description        = "Payment due within 30 days",
             dueDays            = 30,
             methods            = List(
-                PaymentMethod.BankTransfer            (
-                    iban             = Some("FR14 2004 1010 0505 0001 3M02 606"),
-                    bic              = Some("PSST FR PP XXX")
+                PaymentMethod.BankTransfer                  (
+                    iban                   = Some("FR14 2004 1010 0505 0001 3M02 606"),
+                    bic                    = Some("PSST FR PP XXX")
                 ),
-                PaymentMethod.SepaMandate             (
-                    mandateReference = Some("MANDATE-ASSO-001"),
-                    mandateDate      = Some(LocalDate.of(2025, 1, 10)),
-                    iban             = Some("FR14 2004 1010 0505 0001 3M02 606")
+                PaymentMethod.SepaMandate                   (
+                    mandateReference       = Some("MANDATE-ASSO-001"),
+                    mandateDate            = Some(LocalDate.of(2025, 1, 10)),
+                    iban                   = Some("FR14 2004 1010 0505 0001 3M02 606"),
+                    nextPossibleChargeDate = Some(LocalDate.of(2025, 2, 1))
                 ),
                 PaymentMethod.Check
             ),
@@ -313,16 +314,17 @@ object ExampleInvoiceGeneration:
             description        = "Payment due within 30 days",
             dueDays            = 30,
             methods            = List(
-                PaymentMethod.BankTransfer            (
-                    iban             = Some("FR14 2004 1010 0505 0001 3M02 606"),
-                    bic              = Some("PSST FR PP XXX")
+                PaymentMethod.BankTransfer                  (
+                    iban                   = Some("FR14 2004 1010 0505 0001 3M02 606"),
+                    bic                    = Some("PSST FR PP XXX")
                 ),
-                PaymentMethod.SepaMandate             (
-                    mandateReference = Some("MANDATE-2025-001"),
-                    mandateDate      = Some(LocalDate.of(2025, 1, 15)),
-                    iban             = Some("FR14 2004 1010 0505 0001 3M02 606")
+                PaymentMethod.SepaMandate                   (
+                    mandateReference       = Some("MANDATE-2025-001"),
+                    mandateDate            = Some(LocalDate.of(2025, 1, 15)),
+                    iban                   = Some("FR14 2004 1010 0505 0001 3M02 606"),
+                    nextPossibleChargeDate = Some(LocalDate.of(2025, 2, 5))
                 ),
-                PaymentMethod.PayPal                  (email = Some("payments@acme-corp.com"))
+                PaymentMethod.PayPal                        (email = Some("payments@acme-corp.com"))
             ),
             lateFeePercentage  = Some(BigDecimal("1.5")),
             discountPercentage = Some(BigDecimal("2.0")),
@@ -561,10 +563,32 @@ object ExampleInvoiceGeneration:
             logo               = None
         )
 
+        // Vary SEPA setup by client to illustrate all branches of the SEPA mandate
+        // rendering (no SEPA, fully-populated mandate, partial / pending placeholder).
+        val sepaMethod: Option[PaymentMethod.SepaMandate] = clientName match
+            case "Client A" =>
+                Some(
+                    PaymentMethod.SepaMandate      (
+                        mandateReference       = Some(s"MANDATE-${invoiceNumber}"),
+                        mandateDate            = Some(LocalDate.of(2026, 1, 20)),
+                        iban                   = Some("FR14 2004 1010 0505 0001 3M02 606"),
+                        nextPossibleChargeDate = Some(LocalDate.of(2026, 2, 5))
+                    )
+                )
+            case "Client C" =>
+                // Mandate present but next-charge date not yet known → pending placeholder
+                Some(
+                    PaymentMethod.SepaMandate(
+                        mandateReference = Some(s"MANDATE-${invoiceNumber}"),
+                        mandateDate      = Some(LocalDate.of(2026, 1, 22))
+                    )
+                )
+            case _          => None
+
         val paymentTerms = PaymentTerms(
             description        = "Payment due within 30 days",
             dueDays            = 30,
-            methods            = List(
+            methods            = sepaMethod.toList ::: List(
                 PaymentMethod.BankTransfer(
                     iban = Some("FR14 2004 1010 0505 0001 3M02 606"),
                     bic  = Some("PSST FR PP XXX")
