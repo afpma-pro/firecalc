@@ -1384,12 +1384,13 @@ lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
 
 lazy val payments = (project in file("modules/payments"))
     .enablePlugins(MoleculePlugin)
-    .settings   (
-        name    := "firecalc-payments",
-        version := payments_version,
+    .settings                     (
+        name                      := "firecalc-payments",
+        version                   := payments_version,
         commonSettings,
         scalacOptions ++= Seq(
         ),
+        Compile / run / mainClass := Some("afpma.firecalc.payments.Main"),
 
         // Ensure moleculeGen runs before compile and copy SQL files to classpath.
         // moleculeGen is guarded: it only runs when generated sources are missing

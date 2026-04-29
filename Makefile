@@ -259,7 +259,7 @@ dev-electron-app-run:
 
 dev-backend-run:
 	@echo "Starting payments backend in development mode..."
-	@sbt "payments/run"
+	@FIRECALC_ENV=dev sbt "payments/run"
 
 ## ================================
 ## DEVELOPMENT - SETUP/VERIFICATION
