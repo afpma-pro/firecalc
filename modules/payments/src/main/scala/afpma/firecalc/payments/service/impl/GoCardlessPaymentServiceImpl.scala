@@ -524,18 +524,23 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         for
             payment <- getPayment(paymentId)
             mandateId = payment.links.flatMap(_.get("mandate"))
-            snapshotOpt <- mandateId.traverse { id =>
-                makeRequest[Unit, MandateResponseEnvelope](Method.GET, s"/mandates/$id")
-                    .map(_.mandates)
-                    .map(m =>
-                        MandateSnapshot             (
-                            reference              = m.reference,
-                            createdDate            = m.created_at.flatMap(parseIsoDate),
-                            nextPossibleChargeDate = m.next_possible_charge_date.flatMap(parseLocalDate)
-                        )
-                    )
-            }
+            snapshotOpt <- mandateId.traverse(getMandateById)
         yield snapshotOpt
+
+    def getMandateById(mandateId: String): F[MandateSnapshot] =
+        makeRequest[Unit, MandateResponseEnvelope](Method.GET, s"/mandates/$mandateId")
+            .map(extractMandateFromEnvelope)
+            .map(_.getOrElse(MandateSnapshot(reference = None, createdDate = None, nextPossibleChargeDate = None)))
+
+    def extractMandateFromEnvelope(mre: MandateResponseEnvelope): Option[MandateSnapshot] =
+        val m = mre.mandates
+        Some(
+            MandateSnapshot             (
+                reference              = m.reference,
+                createdDate            = m.created_at.flatMap(parseIsoDate),
+                nextPossibleChargeDate = m.next_possible_charge_date.flatMap(parseLocalDate)
+            )
+        )
 
     private def parseIsoDate(s: String): Option[java.time.LocalDate] =
         Try(java.time.OffsetDateTime.parse(s).toLocalDate).toOption
