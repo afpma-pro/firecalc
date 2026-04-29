@@ -70,6 +70,9 @@ object UIConfig {
         lazy val verifyAndProcess: String = s"$backendBaseUrl/purchase/verify-and-process"
     }
 
+    /** URL to Conditions Générales de Vente (CGUV / Terms and Conditions of Sale) */
+    lazy val cguvUrl: String = ViteEnv.cguvUrl
+
     /**
      * Returns debug information about the current configuration
      * Useful for troubleshooting connectivity issues
@@ -78,7 +81,8 @@ object UIConfig {
         s"""UIConfig:
        |  Environment: ${ViteEnv.modeString}
        |  Base URL: $backendBaseUrl
-       |  
+       |  Terms and Conditions URL: $cguvUrl
+       |
        |Endpoints:
        |  Healthcheck: ${Endpoints.healthcheck}
        |  Create Purchase Intent: ${Endpoints.createPurchaseIntent}

@@ -28,6 +28,7 @@ private object ImportMetaEnv extends js.Any {
     val VITE_BACKEND_HOST     : String = js.native
     val VITE_BACKEND_PORT     : String = js.native
     val VITE_BACKEND_BASE_PATH: String = js.native
+    val VITE_CGUV_URL         : String = js.native
     val MODE                  : String = js.native
 }
 
@@ -66,6 +67,9 @@ object ViteEnv {
     /** Backend base path: e.g., "/v1" */
     def backendBasePath: String = ImportMetaEnv.VITE_BACKEND_BASE_PATH
 
+    /** URL to Conditions Générales de Vente (CGUV / Terms and Conditions of Sale) */
+    def cguvUrl: String = ImportMetaEnv.VITE_CGUV_URL
+
     /**
      * Current build mode as a type-safe enum.
      *
@@ -102,5 +106,6 @@ object ViteEnv {
        |  Backend Host: $backendHost
        |  Backend Port: $backendPort
        |  Backend Base Path: $backendBasePath
+       |  Terms and Conditions URL: $cguvUrl
        |""".stripMargin
 }

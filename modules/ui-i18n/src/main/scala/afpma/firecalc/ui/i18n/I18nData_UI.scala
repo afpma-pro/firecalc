@@ -159,6 +159,7 @@ object I18nData_UI:
             report                     : Modal.Report,
             order_steps                : Modal.OrderSteps,
             accept_terms_and_conditions: String,
+            link                       : String,
             connection                 : Modal.Connection,
             validation                 : Modal.Validation,
             payment                    : Modal.Payment,

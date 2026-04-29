@@ -54,7 +54,7 @@ export default function Footer() {
                 {t('contact')}
               </a>
               <a
-                href="/assets/cgv-dummy.pdf"
+                href="/assets/cguv_terms_and_conditions_firecalc_afpma.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-firecalc-orange-red hover:text-firecalc-red transition-colors duration-300"

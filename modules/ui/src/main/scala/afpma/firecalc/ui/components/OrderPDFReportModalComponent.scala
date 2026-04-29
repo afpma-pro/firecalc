@@ -485,7 +485,15 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                             ),
                             div(
                                 cls := "flex flex-initial",
-                                p(cls := "text-xl", I18N_UI.pdf_ordering.modal.accept_terms_and_conditions)
+                                p(
+                                    cls := "text-xl",
+                                    I18N_UI.pdf_ordering.modal.accept_terms_and_conditions,
+                                    a  (
+                                        href   := UIConfig.cguvUrl,
+                                        target := "_blank",
+                                        s"(${I18N_UI.pdf_ordering.modal.link})"
+                                    )
+                                )
                             ),
                             div(cls := "flex-1", ""        )
                         )
