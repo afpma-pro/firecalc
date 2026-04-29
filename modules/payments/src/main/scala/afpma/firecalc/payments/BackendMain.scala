@@ -368,11 +368,6 @@ object Main extends IOApp:
                             orderRepo
                         )
 
-                        // Initialize invoice pdf generation service
-                        invoicePdfGenerationService <- InvoicePdfGenerationService.create[IO](
-                            paymentsConfig.invoiceConfig.configFilePath
-                        )
-
                         // Register invoice generation callback
                         // _ <- orderService.registerInvoiceNumberGenerationCallback(invoiceNumberService)
                         // _ <- logger.info("Registered invoice number generation callback")
@@ -380,6 +375,18 @@ object Main extends IOApp:
                         // Generate invoice numbers retroactively for existing confirmed orders
                         retroactiveCount <- invoiceNumberService.generateInvoiceNumbersRetroactively()
                         _                <- logger.info(s"Generated $retroactiveCount invoice numbers retroactively during startup")
+
+                        // GoCardless configuration - load from config file
+                        goCardlessConfig <- ConfigLoader.loadGoCardlessConfig[IO]()
+
+                        paymentService <- PaymentService
+                            .create[IO](httpClient, goCardlessConfig, emailService, orderService, customerRepo)
+
+                        // Initialize invoice pdf generation service (requires paymentService for SEPA mandate lookup)
+                        invoicePdfGenerationService <- InvoicePdfGenerationService.create[IO](
+                            paymentsConfig.invoiceConfig.configFilePath,
+                            paymentService
+                        )
 
                         // Register order completion callbacks for 'Processing' state
                         _ <- orderService.registerCallbackForFinalStatus(
@@ -558,12 +565,6 @@ object Main extends IOApp:
                                         )
                             }
                         )
-
-                        // GoCardless configuration - load from config file
-                        goCardlessConfig <- ConfigLoader.loadGoCardlessConfig[IO]()
-
-                        paymentService <- PaymentService
-                            .create[IO](httpClient, goCardlessConfig, emailService, orderService, customerRepo)
 
                         purchaseService <- PurchaseService.create[IO](
                             productRepo,

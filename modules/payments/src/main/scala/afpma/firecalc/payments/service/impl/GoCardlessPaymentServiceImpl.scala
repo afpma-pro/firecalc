@@ -273,8 +273,18 @@ case class BillingRequest(
 
 case class GoCardlessPayment(
     id      : String,
-    metadata: Map[String, String]
+    metadata: Map[String, String],
+    links   : Option[Map[String, String]] = None
 )
+
+case class GoCardlessMandate(
+    id                       : String,
+    reference                : Option[String],
+    created_at               : Option[String],
+    next_possible_charge_date: Option[String]
+)
+
+case class MandateResponseEnvelope(mandates: GoCardlessMandate)
 
 // Webhook models
 case class WebhookEvent(
@@ -354,6 +364,8 @@ given Decoder[BillingRequestResponseEnvelope]     = deriveDecoder
 given Decoder[PaymentResponseEnvelope]            = deriveDecoder
 given Encoder[BillingRequestFlowEnvelope]         = deriveEncoder_andDeepDropNullValues
 given Decoder[BillingRequestFlowResponseEnvelope] = deriveDecoder
+given Decoder[GoCardlessMandate]                  = deriveDecoder
+given Decoder[MandateResponseEnvelope]            = deriveDecoder
 
 class GoCardlessPaymentServiceImpl[F[_]: Async](
     httpClient  : Client[F],
@@ -502,11 +514,34 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         (if isValid then logger.info(s"Webhook signature verification passed (env: ${config.environment})")
          else logger.error(s"Webhook signature verification FAILED (env: ${config.environment})")).map(_ => isValid)
 
-    private def getPayment(paymentId: String): F[GoCardlessPayment] =
+    def getPayment(paymentId: String): F[GoCardlessPayment] =
         makeRequest[Unit, PaymentResponseEnvelope](
             Method.GET,
             s"/payments/$paymentId"
         ).map(_.payments)
+
+    def getMandateForPayment(paymentId: String): F[Option[MandateSnapshot]] =
+        for
+            payment <- getPayment(paymentId)
+            mandateId = payment.links.flatMap(_.get("mandate"))
+            snapshotOpt <- mandateId.traverse { id =>
+                makeRequest[Unit, MandateResponseEnvelope](Method.GET, s"/mandates/$id")
+                    .map(_.mandates)
+                    .map(m =>
+                        MandateSnapshot             (
+                            reference              = m.reference,
+                            createdDate            = m.created_at.flatMap(parseIsoDate),
+                            nextPossibleChargeDate = m.next_possible_charge_date.flatMap(parseLocalDate)
+                        )
+                    )
+            }
+        yield snapshotOpt
+
+    private def parseIsoDate(s: String): Option[java.time.LocalDate] =
+        Try(java.time.OffsetDateTime.parse(s).toLocalDate).toOption
+
+    private def parseLocalDate(s: String): Option[java.time.LocalDate] =
+        Try(java.time.LocalDate.parse(s)).toOption
 
     // Helper method to extract OrderId from webhook event resource_metadata
     private def extractOrderId(event: WebhookEvent): F[Option[OrderId]] =

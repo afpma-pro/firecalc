@@ -22,7 +22,8 @@ import io.taig.babel.Locale
 import org.typelevel.log4cats.Logger
 
 class InvoicePdfGenerationServiceImpl[F[_]: Async](
-    invoiceFactory: FireCalcInvoiceFactory
+    invoiceFactory: FireCalcInvoiceFactory,
+    paymentService: PaymentService[F]
 )                                                 (implicit logger: Logger[F])
     extends InvoicePdfGenerationService[F] {
 
@@ -50,8 +51,9 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
             // Create line item from Product and Order
             lineItem = productToLineItem(context.product, context.order)
 
-            // Get payment terms (default 30 days)
-            paymentTerms = PaymentTerms.Presets.Net30
+            // Resolve payment terms — prepends a SEPA mandate line when the order's payment
+            // provider surfaces one (provider-agnostic; PaymentService decides).
+            paymentTerms <- resolvePaymentTerms(context)
 
             // Build invoice parameters
             invoiceParams = InvoiceParams(
@@ -76,6 +78,42 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
             _ <- logger.debug(s"Built invoice parameters for ${invoiceParams.invoiceNumber}")
         } yield invoiceParams
     }
+
+    private def resolvePaymentTerms(context: OrderCompletionContext): F[PaymentTerms] =
+        val baseTerms = invoiceFactory.loadedPaymentTerms
+        context.order.paymentId match
+            case Some(paymentId) =>
+                paymentService.getMandateForPayment(paymentId).attempt.flatMap {
+                    case Right(Some(snap))
+                        if snap.reference.isDefined
+                            && snap.createdDate.isDefined
+                            && snap.nextPossibleChargeDate.isDefined =>
+                        val sepa = PaymentMethod.SepaMandate(
+                            mandateReference       = snap.reference,
+                            mandateDate            = snap.createdDate,
+                            iban                   = None,
+                            nextPossibleChargeDate = snap.nextPossibleChargeDate
+                        )
+                        Async[F].pure(baseTerms.copy(methods = sepa :: baseTerms.methods))
+                    case Right(Some(partial)) =>
+                        logger.warn(
+                            s"Mandate snapshot incomplete for payment $paymentId (snapshot=$partial); rendering pending placeholder"
+                        ) *> Async[F].pure(
+                            baseTerms.copy(methods = PaymentMethod.SepaMandate() :: baseTerms.methods)
+                        )
+                    case Right(None)          =>
+                        // Provider has no mandate to surface for this payment (e.g. card-only flow).
+                        // Keep base terms unchanged — no SEPA line, no placeholder.
+                        Async[F].pure(baseTerms)
+                    case Left(err)            =>
+                        logger.warn(
+                            s"Mandate fetch failed for payment $paymentId: ${err.getMessage}; rendering pending placeholder"
+                        ) *> Async[F].pure(
+                            baseTerms.copy(methods = PaymentMethod.SepaMandate() :: baseTerms.methods)
+                        )
+                }
+            case None            =>
+                Async[F].pure(baseTerms)
 
     private def customerToCompany(customer: Customer): Company = {
         Company              (
@@ -114,7 +152,8 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
 
 object InvoicePdfGenerationServiceImpl {
     def create[F[_]: Async](
-        invoiceConfigPath: String
+        invoiceConfigPath: String,
+        paymentService   : PaymentService[F]
     )(implicit logger: Logger[F]): F[InvoicePdfGenerationService[F]] = {
         val configFile    = new java.io.File(invoiceConfigPath)
         val factoryEither = FireCalcInvoiceFactory.fromConfigFile(configFile)
@@ -125,6 +164,6 @@ object InvoicePdfGenerationServiceImpl {
                 factoryEither.left.map(error => ConfigurationLoadException(invoiceConfigPath, error))
             )
             _              <- logger.info("Invoice factory loaded successfully")
-        } yield new InvoicePdfGenerationServiceImpl[F](invoiceFactory)
+        } yield new InvoicePdfGenerationServiceImpl[F](invoiceFactory, paymentService)
     }
 }

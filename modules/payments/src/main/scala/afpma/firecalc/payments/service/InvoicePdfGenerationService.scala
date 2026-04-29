@@ -11,6 +11,8 @@ import cats.effect.Async
 
 import io.taig.babel.Locale
 
+import afpma.firecalc.payments.service.PaymentService
+
 trait InvoicePdfGenerationService[F[_]]:
     /** Generates a PDF invoice for the given order context and returns the PDF bytes */
     def generateInvoicePdf(context: OrderCompletionContext, locale: Locale): F[Array[Byte]]
@@ -20,7 +22,8 @@ trait InvoicePdfGenerationService[F[_]]:
 
 object InvoicePdfGenerationService:
     def create[F[_]: Async](
-        invoiceConfigPath: String
+        invoiceConfigPath: String,
+        paymentService   : PaymentService[F]
     )(implicit logger: org.typelevel.log4cats.Logger[F]): F[InvoicePdfGenerationService[F]] =
         import afpma.firecalc.payments.service.impl.InvoicePdfGenerationServiceImpl
-        InvoicePdfGenerationServiceImpl.create[F](invoiceConfigPath)
+        InvoicePdfGenerationServiceImpl.create[F](invoiceConfigPath, paymentService)

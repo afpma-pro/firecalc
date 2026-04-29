@@ -223,6 +223,8 @@ object PaymentLinkCreationTest extends TestSuite {
                 body     : String,
                 signature: String
             ): IO[Either[String, afpma.firecalc.payments.service.impl.WebhookEventStatus]] = ???
+            def getMandateForPayment(paymentId: String): IO[Option[afpma.firecalc.payments.domain.MandateSnapshot]] =
+                ???
         }
 
         (orderService, customerRepo, emailService, paymentService)

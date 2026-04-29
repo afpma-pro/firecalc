@@ -4,6 +4,7 @@
  */
 
 package afpma.firecalc.payments.service
+import afpma.firecalc.payments.domain.MandateSnapshot
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
@@ -19,6 +20,9 @@ trait PaymentService[F[_]]:
     def createPaymentLink(orderId: OrderId, amount: BigDecimal, customerInfo: CustomerInfo): F[String]
 
     def processWebhook(body: String, signature: String): F[Either[String, WebhookEventStatus]]
+
+    /** Fetch the active mandate associated with a completed payment, if any. */
+    def getMandateForPayment(paymentId: String): F[Option[MandateSnapshot]]
 
 object PaymentService:
     def create[F[_]: Async](

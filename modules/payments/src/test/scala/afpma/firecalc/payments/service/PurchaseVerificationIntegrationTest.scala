@@ -316,6 +316,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 body     : String,
                 signature: String
             ): IO[Either[String, afpma.firecalc.payments.service.impl.WebhookEventStatus]] = ???
+            def getMandateForPayment(paymentId: String): IO[Option[afpma.firecalc.payments.domain.MandateSnapshot]] =
+                ???
         }
 
         val emailService = new EmailService[IO] {
