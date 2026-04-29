@@ -333,9 +333,11 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
             ): IO[email.EmailResult] =
                 IO.pure(EmailSent)
 
-            def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-                language: BackendCompatibleLanguage
-            ): IO[email.EmailResult] =
+            def sendUserInvoiceWithReport(
+                invoice  : InvoiceEmail,
+                pdfReport: PdfReportEmail,
+                bcc      : List[EmailAddress] = List.empty
+            )(using language: BackendCompatibleLanguage): IO[email.EmailResult] =
                 IO.pure(EmailSent)
 
             def sendAdminInvoice(invoice: InvoiceEmail)(using

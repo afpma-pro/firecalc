@@ -22,10 +22,12 @@ trait EmailService[F[_]] {
     /** Send invoice only to user */
     def sendUserInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult]
 
-    /** Send invoice with PDF report attachment to user */
-    def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-        language: BackendCompatibleLanguage
-    ): F[EmailResult]
+    /** Send invoice with PDF report attachment to user, optionally BCC'd to additional addresses */
+    def sendUserInvoiceWithReport(
+        invoice  : InvoiceEmail,
+        pdfReport: PdfReportEmail,
+        bcc      : List[EmailAddress] = List.empty
+    )                            (using language: BackendCompatibleLanguage): F[EmailResult]
 
     /** Send invoice only to admin (no PDF report) */
     def sendAdminInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): F[EmailResult]

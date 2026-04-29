@@ -187,7 +187,8 @@ object Main extends IOApp:
         fileDesc         : FileDescriptionWithContent,
         pdfReportFile    : File,
         pdfInvoiceAsBytes: Array[Byte],
-        emailService     : EmailService[IO]
+        emailService     : EmailService[IO],
+        adminEmail       : String
     ): IO[Unit] = {
         for {
             invoiceNumber <- IO.fromOption(context.order.invoiceNumber)(
@@ -214,17 +215,23 @@ object Main extends IOApp:
 
             _ <- {
                 given BackendCompatibleLanguage = context.customer.language
-                emailService.sendUserInvoiceWithReport(invoiceEmail, pdfReportEmail).flatMap {
-                    case EmailFailed(error) =>
-                        IO.raiseError(
-                            EmailSendingFailedException  (
-                                orderId   = context.order.id.value,
-                                recipient = context.customer.email,
-                                reason    = error
+                emailService
+                    .sendUserInvoiceWithReport(
+                        invoiceEmail,
+                        pdfReportEmail,
+                        bcc = List(EmailAddress.unsafeFromString(adminEmail))
+                    )
+                    .flatMap {
+                        case EmailFailed(error) =>
+                            IO.raiseError(
+                                EmailSendingFailedException  (
+                                    orderId   = context.order.id.value,
+                                    recipient = context.customer.email,
+                                    reason    = error
+                                )
                             )
-                        )
-                    case EmailSent          => IO.unit
-                }
+                        case EmailSent          => IO.unit
+                    }
             }
         } yield ()
     }
@@ -442,7 +449,8 @@ object Main extends IOApp:
                                             fileDesc,
                                             pdfReportFile,
                                             pdfInvoiceAsBytes,
-                                            emailService
+                                            emailService,
+                                            paymentsConfig.adminConfig.email
                                         )
 
                                         // Send notification email to admin containing PDF invoice only

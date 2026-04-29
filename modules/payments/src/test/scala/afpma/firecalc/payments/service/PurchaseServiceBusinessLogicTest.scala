@@ -346,9 +346,11 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
             def sendUserInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): IO[EmailResult] =
                 IO.pure(EmailSent)
 
-            def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-                language: BackendCompatibleLanguage
-            ): IO[EmailResult] =
+            def sendUserInvoiceWithReport(
+                invoice  : InvoiceEmail,
+                pdfReport: PdfReportEmail,
+                bcc      : List[EmailAddress] = List.empty
+            )(using language: BackendCompatibleLanguage): IO[EmailResult] =
                 IO.pure(EmailSent)
 
             def sendAdminInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): IO[EmailResult] =

@@ -18,6 +18,7 @@ import cats.syntax.all.*
 import emil.*
 import emil.builder.Attach
 import emil.builder.AttachStream
+import emil.builder.Bcc
 import emil.builder.From
 import emil.builder.HtmlBody
 import emil.builder.MailBuilder
@@ -93,9 +94,11 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         )
     }
 
-    override def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-        language: BackendCompatibleLanguage
-    ): F[EmailResult] = {
+    override def sendUserInvoiceWithReport(
+        invoice  : InvoiceEmail,
+        pdfReport: PdfReportEmail,
+        bcc      : List[EmailAddress] = List.empty
+    )(using language: BackendCompatibleLanguage): F[EmailResult] = {
         val translations = I18N_Payments
         val attachments  = List(
             createInvoiceAttachment(invoice  ),
@@ -106,7 +109,8 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
             to          = invoice.email,
             subject     = translations.emails.invoice.subject(invoice.invoiceNumber),
             htmlContent = buildInvoiceWithReportContent(invoice, pdfReport),
-            attachments = attachments
+            attachments = attachments,
+            bcc         = bcc
         )
 
         sendMailWithLogging                (
@@ -242,7 +246,8 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
         to         : EmailAddress,
         subject    : String,
         htmlContent: String,
-        attachments: List[Attach[F]] = List.empty
+        attachments: List[Attach[F]]    = List.empty,
+        bcc        : List[EmailAddress] = List.empty
     ): Mail[F] = {
 
         val parts = Seq[Trans[F]](
@@ -250,7 +255,7 @@ class EmailServiceImpl[F[_]: Async: Logger](config: EmailConfig) extends EmailSe
             To      (to.value                ),
             Subject (subject                 ),
             HtmlBody(htmlContent             )
-        ) ++ attachments.toSeq
+        ) ++ attachments.toSeq ++ bcc.map(addr => Bcc(addr.value))
 
         MailBuilder.build(parts*)
     }

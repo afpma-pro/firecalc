@@ -53,9 +53,11 @@ class EmailServiceMocked[F[_]: Async: Logger] extends EmailService[F] {
         } yield EmailSent
     }
 
-    override def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-        language: BackendCompatibleLanguage
-    ): F[EmailResult] = {
+    override def sendUserInvoiceWithReport(
+        invoice  : InvoiceEmail,
+        pdfReport: PdfReportEmail,
+        bcc      : List[EmailAddress] = List.empty
+    )(using language: BackendCompatibleLanguage): F[EmailResult] = {
         for {
             _ <- logger.info("[MOCK] Sending user invoice with report email")
             _ <- logger.info(s"  To: ${LogSanitizer.maskEmail(invoice.email.value)}")
