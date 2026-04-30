@@ -910,7 +910,9 @@ object I18nData:
         )
 
         case class Document(
-            title                                  : String,
+            standard_description_15544             : String,
+            in_application_of_standard_x           : StringFormat1,
+            dimensioning_document_title            : String,
             software_label                         : String,
             software_name                          : String,
             versions_label                         : String,

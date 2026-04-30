@@ -199,8 +199,11 @@ abstract class TypstReportFactory_15544(
                     |    )
                     |  ],
                     |  align(center + horizon)[
-                    |    #set text(size: 1.5em)
-                    |    #smallcaps[*${I18N.reports.document.title}*]
+                    |    #text(1.5em)[${I18N.reports.document.standard_description_15544}] \\
+                    |    #text(1.5em)[#smallcaps[*${I18N.reports.document.dimensioning_document_title}*]] \\
+                    |    #text(1.0em)[#smallcaps[${I18N.reports.document.in_application_of_standard_x(
+                       "EN 15544:2023"
+                   )}]]
                     |  ]
                     |)
                     |""".stripMargin
@@ -209,7 +212,11 @@ abstract class TypstReportFactory_15544(
                     |  columns: (1fr),
                     |  align(center + horizon)[
                     |    #set text(size: 1.5em)
-                    |    #smallcaps[*${I18N.reports.document.title}*]
+                    |    #text(1.5em)[${I18N.reports.document.standard_description_15544}] \\
+                    |    #text(1.5em)[#smallcaps[*${I18N.reports.document.dimensioning_document_title}*]] \\
+                    |    #text(1.0em)[#smallcaps[${I18N.reports.document.in_application_of_standard_x(
+                       "EN 15544:2023"
+                   )}]]
                     |  ]
                     |)
                     |""".stripMargin

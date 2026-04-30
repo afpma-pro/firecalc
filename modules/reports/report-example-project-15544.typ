@@ -1,8 +1,3 @@
-//
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
-//
-
 #import "@preview/fancy-units:0.1.1": num, unit, qty, fancy-units-configure, add-macros
 #import "@preview/based:0.1.0": base64
 
@@ -49,7 +44,7 @@
 
       align(top + left)[
         *Logiciel : FireCalc AFPMA* \
-        Versions : reports-v0.9.0-b3-SNAPSHOT engine-v0.3.0-b3-SNAPSHOT \
+        Versions : reports-v0.9.0-b20-SNAPSHOT engine-v0.3.0-b20-SNAPSHOT \
         ATTENTION: DOCUMENT NON CERTIFIÉ \
         \
       ],
@@ -86,8 +81,9 @@
     )
   ],
   align(center + horizon)[
-    #set text(size: 1.5em)
-    #smallcaps[*calcul de dimensionnement de poêle de masse*]
+    #text(1.5em)[Poêles en faïence, poêles en maçonnerie fabriqués in situ] \
+    #text(1.5em)[#smallcaps[*note de calcul de dimensionnement*]] \
+    #text(1.0em)[#smallcaps[APPLICATION DE LA NORME EN 15544:2023]]
   ]
 )
 
@@ -107,7 +103,7 @@
     #text(1.2em)[*DESCRIPTION DU PROJET*]
   ],
   
-  [Référence], [PROJET EXEMPLE 15544],
+  [Référence & Nom de fichier], [PROJET EXEMPLE 15544],
   [Date], [01\/01\/2025],
   [Pays], [France],  
 )
@@ -120,10 +116,10 @@
     #text(1.2em)[*SPÉCIFICATIONS TECHNIQUES*]
   ],
   [*name*], [*symbol*], [*value*],
-  [Puissance utile nominale], [P_n], [6,49 kW],
+  [Puissance utile nominale], [P_n], [4,99 kW],
   [Période d'accumulation \/ temps de chauffage nominal], [t_n], [12,00 h],
-  [Charge maximale], [m_B], [24,00 kg],
-  [Charge minimale], [m_B_min], [12,00 kg],
+  [Charge maximale], [m_B], [18,46 kg],
+  [Charge minimale], [m_B_min], [9,23 kg],
   [Rendement minimal requis], [n_min], [78,00 %],
   [Type de construction], [], [Sans lame d'air],
   [Matériau de construction], [], [Brique réfractaire (densité = 1 750 kg\/m³ à 2 300 kg\/m³, degré de porosité = 17% à 33% en volume, conductivité thermique: de 0,90 W\/m.K à 1,35 W\/mK (plage de température de 20 °C à 400 °C)],  
@@ -137,23 +133,16 @@
     #text(1.2em)[*DESCRIPTION DU FOYER*]
   ],
   
-  [type de foyer ou gamme], [], [Foyer Ecolabellisé V1],
-  [version], [], [V1 (avec chambre de détente)],
-  [largeur], [h11 \/ A], [54,0 cm],
-  [profondeur], [h11 \/ B], [54,0 cm],
-  [hauteur], [h11 \/ H], [75,0 cm],
-  [largeur de la porte dans la maçonnerie], [h70], [52,0 cm],
-  [largeur vitre], [h71], [50,0 cm],
-  [hauteur vitre], [h72], [40,0 cm],
-  [hauteur du cendrier (AF)], [h74 \/ AF], [8,0 cm],
-  [hauteur de la chambre de détente (W)], [h75 \/ W], [11,0 cm],
-  [épaisseur de la sole], [h76], [8,0 cm],
-  [épaisseur paroi interne du foyer (D1)], [h77 \/ D1], [6,0 cm],
-  [distance entre les parois intérieures et extérieures (S)], [h78 \/ S], [3,5 cm],
-  [largeur des renforts median latéraux (E)], [h79 \/ E], [4,5 cm],
-  [largeur des renforts median arrières (E)], [h80 \/ E], [4,5 cm],
-  [débord des renforts dans les angles (R2)], [h81], [4,5 cm],
-  [hauteur des injecteurs d'air (Z)], [h82 \/ Z], [6,0 mm],  
+  [type de foyer ou gamme], [], [Foyer traditionnel],
+  [type d'appareil], [], [poêle utilisant du bois-bûches],
+  [Profondeur du foyer], [h11], [44,0 cm],
+  [Largeur du foyer], [h12], [42,0 cm],
+  [Hauteur du foyer], [h13], [78,0 cm],
+  [hauteur du cendrier (AF)], [AF], [5,0 cm],
+  [perte de charge de la porte (ζ)], [h66], [0,300 ],
+  [section cumulée des entrées d'air de la porte], [h67], [170,0 cm²],
+  [largeur vitre], [h71], [15,0 cm],
+  [hauteur vitre], [h72], [20,0 cm],  
 )
 
 #pagebreak()
@@ -162,7 +151,7 @@
   width: 100%,
   height: 2em,
   fill: rgb("eee"),
-  align(center + horizon)[= CONFORMITÉ AVEC EN15544:2023]
+  align(center + horizon)[= CONFORMITÉ AVEC EN 15544:2023]
 )
 
 #table(
@@ -174,13 +163,14 @@
   ],
   [*name*], [*symbol*], [*value*], [*?*], [*details*],
   [Période d'accumulation \/ temps de chauffage nominal], [t_n], [12,00 h], [OK], [],
-  [Charge maximale], [m_B], [24,00 kg], [OK], [],
-  [Charge minimale], [m_B_min], [12,00 kg], [OK], [],
-  [Surface vitrée], [glass_area], [2000 cm²], [OK], [],
-  [Base du foyer], [A_BR], [□ 54,0 cm x 54,0 cm], [OK], [],
-  [Hauteur du foyer], [H_BR], [75,00 cm], [OK], [],
+  [Charge maximale], [m_B], [18,46 kg], [OK], [],
+  [Charge minimale], [m_B_min], [9,23 kg], [OK], [],
+  [Surface vitrée], [glass_area], [300 cm²], [OK], [],
+  [Base du foyer], [A_BR], [□ 42,0 cm x 44,0 cm], [OK], [],
+  [Hauteur du foyer], [H_BR], [78,00 cm], [OK], [],
   [air-fuel ratio], [λ], [2,95 ], [OK], [],
-  [Rendement de la combustion (en %)], [η], [87,1 %], [OK], [],  
+  [Hauteur du cendrier], [height_of_the_lowest_opening], [5,00 cm], [OK], [],
+  [], [], [()], [OK], [],  
 )
 
 #table(
@@ -191,10 +181,10 @@
     #text(1.2em)[*EXIGENCES DE PRESSION (EN 15544)*]
   ],
   
-  [somme des pertes de charges (Σ pr + Σ pu)], [31,62 Pa], [],
-  [somme des forces ascensionnelles (Σ ph)], [31,91 Pa], [],
-  [différence de pression (Σ ph - (Σ pr + Σ pu) >= 0,00 Pa)], [0,30 Pa], [OK],
-  [différence de pression (Σ ph - (Σ pr + Σ pu) <= 1,58 Pa)], [0,30 Pa], [OK],  
+  [somme des pertes de charges (Σ pr + Σ pu)], [23,45 Pa], [],
+  [somme des forces ascensionnelles (Σ ph)], [24,32 Pa], [],
+  [différence de pression (Σ ph - (Σ pr + Σ pu) >= 0,00 Pa)], [0,86 Pa], [OK],
+  [différence de pression (Σ ph - (Σ pr + Σ pu) <= 1,17 Pa)], [0,86 Pa], [OK],  
 )
 
 #table(
@@ -205,7 +195,7 @@
     #text(1.2em)[*EXIGENCES RELATIVES À LA TEMPÉRATURE (EN 15544)*]
   ],
   
-  [Température de la paroi du conduit de fumée à son sommet], [96,9 °C], [OK (>= 45°C)],  
+  [Température de la paroi du conduit de fumée à son sommet], [148,2 °C], [OK (>= 45,0 °C   )],  
 )
 
 #table(
@@ -216,17 +206,17 @@
     #text(1.2em)[*VALEURS DES ÉMISSIONS ET DU RENDEMENT*]
   ],
   [**], [**], [*regulation*], [*?*],
-  [désignation du foyer], [eco+ firebox], [], [],
-  [rendement minimum à puissance nominale (foyer couplé avec accumulateur)], [>= 87,1 %], [], [],
-  [rendement minimum à puissance réduite (foyer couplé avec accumulateur)], [>= 87,1 %], [], [],
-  [rendement saisonnier], [>= 77,1 %], [>= 65,0 %], [n.a.],
-  [Monoxyde de carbone (CO) à 13 % O2], [557 mg\/Nm³], [<= 1500 mg\/Nm³], [OK],
-  [Poussières à 13 % O2], [30 mg\/Nm³], [<= 40 mg\/Nm³], [OK],
-  [Composés organiques gazeux (COG) à 13 % O2], [39 mg\/Nm³], [<= 120 mg\/Nm³], [OK],
-  [Oxydes d'azote (NOx) à 13 % O2], [133 mg\/Nm³], [<= 200 mg\/Nm³], [OK],
-  [Poussières + COG à 13 % O2], [69 mg\/Nm³], [<= 150 mg\/Nm³], [OK],
+  [désignation du foyer], [standing standard burning chamber], [], [],
+  [rendement minimum à puissance nominale (foyer couplé avec accumulateur)], [>= 82,1 %], [], [],
+  [rendement minimum à puissance réduite (foyer couplé avec accumulateur)], [>= 82,1 %], [], [],
+  [rendement saisonnier], [72,1 %], [≥ 65,0 %], [OK],
+  [Monoxyde de carbone (CO) à 13 % O2], [1137 mg\/Nm³], [≤ 1500 mg\/Nm³], [OK],
+  [Poussières à 13 % O2], [26 mg\/Nm³], [≤ 40 mg\/Nm³], [OK],
+  [Composés organiques gazeux (COG) à 13 % O2], [87 mg\/Nm³], [≤ 120 mg\/Nm³], [OK],
+  [Oxydes d'azote (NOx) à 13 % O2], [113 mg\/Nm³], [≤ 200 mg\/Nm³], [OK],
+  [Poussières + COG à 13 % O2], [113 mg\/Nm³], [≤ 150 mg\/Nm³], [OK],
   [organisme accredité ou notifié], [Test Laboratory for Combustion Systems - Technical University of Vienna], [], [],
-  [réglementation applicable], [Label Flamme Verte], [], [],
+  [réglementation applicable], [Label Flamme Verte], [OK], [],
   [pays d'application], [France], [], [],
   [type d'appareil], [poêle utilisant du bois-bûches], [], [],  
 )
@@ -241,9 +231,9 @@
     #text(1.2em)[*TROIS VARIABLES ALÉATOIRES DES FUMÉES*]
   ],
   
-  [Température en sortie d'accumulateur], [146,9 °C],
-  [Tirage nécessaire], [18,9 Pa],
-  [Débit massique des fumées], [84,0 g\/s],  
+  [Température en sortie d'accumulateur], [198,7 °C],
+  [Tirage nécessaire], [8,7 Pa],
+  [Débit massique des fumées], [64,6 g\/s],  
 )
 
 #table(
@@ -256,9 +246,9 @@
   
   [Température moyenne du foyer (en °C)], [700,0 °C],
   [Température moyenne des fumées à la sortie du foyer], [550,0 °C],
-  [Température en sortie d'accumulateur], [146,9 °C],
-  [Température à la sortie du conduit de fumée], [118,1 °C],
-  [Température de la paroi du conduit de fumée à son sommet], [96,9 °C],  
+  [Température en sortie d'accumulateur], [198,7 °C],
+  [Température à la sortie du conduit de fumée], [168,8 °C],
+  [Température de la paroi du conduit de fumée à son sommet], [148,2 °C],  
 )
 
 #[
@@ -273,64 +263,53 @@
   ],
   
   [type], [id], [name], [length], [geom], [h], [α], [\/\/], [R th.], [air space], [loc.], [t amb.], [t], [ρ], [v], [ζ], [pu], [kf], [pRs], [pRg], [pH],
-  [Amenée d'air], [0], [1. grille], [-], [◯ 20,0 cm], [-], [-], [1], [-], [-], [-], [-], [0,0 °C], [1,072 kg\/m³], [2,36 m\/s], [0,61 ], [2,18 Pa], [-], [-], [-], [-],
-  [Amenée d'air], [1], [Car. 2], [2,530 m], [◯ 20,0 cm], [-], [-], [1], [0,000 m²K\/W], [-], [ext.], [0,0 °C], [0,0 °C], [1,072 kg\/m³], [2,36 m\/s], [-], [-], [2 mm], [1,79 Pa], [-], [-],
-  [Amenée d'air], [2], [3. angle 90° (ζ=0.9)], [-], [◯ 20,0 cm], [-], [90,0 °], [1], [-], [-], [-], [-], [0,0 °C], [1,072 kg\/m³], [2,36 m\/s], [0,90 ], [3,22 Pa], [-], [-], [-], [-],
-  [Amenée d'air], [3], [Car. 4], [0,400 m], [◯ 20,0 cm], [-], [-], [1], [0,000 m²K\/W], [-], [ext.], [0,0 °C], [0,0 °C], [1,072 kg\/m³], [2,36 m\/s], [-], [-], [2 mm], [0,28 Pa], [-], [-],
-  [Amenée d'air], [4], [5. clapet], [-], [◯ 20,0 cm], [-], [-], [1], [-], [-], [-], [-], [0,0 °C], [1,072 kg\/m³], [2,36 m\/s], [0,25 ], [0,89 Pa], [-], [-], [-], [-],
-  [-> SOUS-TOTAL], [], [], [2,930 m], [], [0,000 m], [], [], [], [], [], [], [], [], [], [1,76 ], [6,30 Pa], [], [2,08 Pa], [-], [-],
+  [Amenée d'air], [-], [-], [-], [-], [-], [-], [-], [-], [-], [-], [-], [0,0 °C], [-], [-], [-], [4,00 Pa], [-], [-], [-], [-],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  [Air du foyer], [0], [-], [-], [□ 48,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,32 m\/s], [-], [-], [3 mm], [-], [-], [-],
-  [Air du foyer], [1], [angle vif 90°], [-], [□ 48,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,32 m\/s], [1,20 ], [0,07 Pa], [-], [-], [-], [-],
-  [Air du foyer], [2], [chambre de détente (L = 0,150 m)], [0,150 m], [□ 48,0 cm], [0,150 m], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,32 m\/s], [-], [-], [3 mm], [0,00 Pa], [-], [0,01 Pa],
-  [Air du foyer], [3], [virage 90° vers colonnes d'air], [-], [□ 48,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,32 m\/s], [1,20 ], [0,17 Pa], [-], [-], [-], [-],
-  [Air du foyer], [4], [sect° geom change], [-], [▭ 89,3 cm x 29,5 cm], [-], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,40 m\/s], [0,24 ], [0,03 Pa], [-], [-], [-], [-],
-  [Air du foyer], [5], [vers colonnes d'air], [0,348 m], [▭ 130,5 cm x 11,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,52 m\/s], [-], [-], [3 mm], [0,01 Pa], [-], [-],
-  [Air du foyer], [6], [virage au pied des colonnes d'air], [-], [▭ 130,5 cm x 11,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,52 m\/s], [1,20 ], [1,69 Pa], [-], [-], [-], [-],
-  [Air du foyer], [7], [sect° geom change], [-], [▯ 130,5 cm x 7,3 cm], [-], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [0,78 m\/s], [0,29 ], [0,40 Pa], [-], [-], [-], [-],
-  [Air du foyer], [8], [remontée dans les colonnes d'air], [0,306 m], [▯ 130,5 cm x 3,5 cm], [0,306 m], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [1,62 m\/s], [-], [-], [3 mm], [0,43 Pa], [-], [0,03 Pa],
-  [Air du foyer], [9], [virage 90° avant injecteur], [-], [▯ 130,5 cm x 3,5 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [1,62 m\/s], [1,20 ], [3,47 Pa], [-], [-], [-], [-],
-  [Air du foyer], [10], [sect° geom change], [-], [▭ 331,3 cm x 2,1 cm], [-], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [1,91 m\/s], [0,20 ], [0,58 Pa], [-], [-], [-], [-],
-  [Air du foyer], [11], [injecteurs], [0,078 m], [▭ 532,0 cm x 0,6 cm], [-], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,072 kg\/m³], [2,32 m\/s], [-], [-], [3 mm], [3,40 Pa], [-], [-],
-  [-> SOUS-TOTAL], [], [], [0,881 m], [], [0,456 m], [], [], [], [], [], [], [], [], [], [5,53 ], [6,41 Pa], [], [3,84 Pa], [-], [0,04 Pa],
+  [Air du foyer], [0], [porte], [-], [◯ 14,7 cm], [-], [-], [1], [-], [-], [poêle], [-], [0,0 °C], [1,273 kg\/m³], [2,82 m\/s], [0,30 ], [1,52 Pa], [-], [-], [-], [-],
+  [-> SOUS-TOTAL], [], [], [0,000 m], [], [0,000 m], [], [], [], [], [], [], [], [], [], [0,30 ], [1,52 Pa], [], [-], [-], [-],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  [Foyer], [0], [ascension dans foyer], [0,750 m], [□ 54,0 cm], [0,750 m], [-], [1], [-], [-], [poêle], [-], [700,0 °C], [0,298 kg\/m³], [0,97 m\/s], [-], [-], [2 mm], [0,01 Pa], [-], [5,69 Pa],
-  [-> SOUS-TOTAL], [], [], [0,750 m], [], [0,750 m], [], [], [], [], [], [], [], [], [], [0,00 ], [-], [], [0,01 Pa], [-], [5,69 Pa],
+  [Foyer], [0], [ascension dans foyer], [0,780 m], [▯ 42,0 cm x 44,0 cm], [0,780 m], [-], [1], [-], [-], [poêle], [-], [700,0 °C], [0,354 kg\/m³], [0,99 m\/s], [-], [-], [2 mm], [0,01 Pa], [-], [7,03 Pa],
+  [-> SOUS-TOTAL], [], [], [0,780 m], [], [0,780 m], [], [], [], [], [], [], [], [], [], [0,00 ], [-], [], [0,01 Pa], [-], [7,03 Pa],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  [Carneau], [0], [Car. 1], [0,348 m], [▯ 36,0 cm x 40,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [537,7 °C], [0,358 kg\/m³], [1,63 m\/s], [-], [-], [3 mm], [0,02 Pa], [-], [-],
-  [Carneau], [1], [virage 90° 1-2], [-], [▯ 36,0 cm x 40,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [525,6 °C], [0,363 kg\/m³], [1,60 m\/s], [1,20 ], [0,54 Pa], [-], [-], [-], [-],
-  [Carneau], [2], [Car. 2], [1,090 m], [▯ 36,0 cm x 40,0 cm], [-1,090 m], [-], [1], [-], [-], [poêle], [-], [489,6 °C], [0,381 kg\/m³], [1,53 m\/s], [-], [-], [3 mm], [0,05 Pa], [-], [-7,40 Pa],
-  [Carneau], [3], [Car. 3], [2,440 m], [▯ 36,0 cm x 40,0 cm], [-2,440 m], [-], [1], [-], [-], [poêle], [-], [389,0 °C], [0,438 kg\/m³], [1,33 m\/s], [-], [-], [3 mm], [0,09 Pa], [-], [-15,17 Pa],
-  [Carneau], [4], [virage 90° 3-4], [-], [▯ 36,0 cm x 40,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [331,8 °C], [0,480 kg\/m³], [1,22 m\/s], [1,20 ], [0,74 Pa], [-], [-], [-], [-],
-  [Carneau], [5], [sect° geom change], [-], [▯ 31,5 cm x 40,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [331,8 °C], [0,480 kg\/m³], [1,39 m\/s], [0,17 ], [0,11 Pa], [-], [-], [-], [-],
-  [Carneau], [6], [Car. 4], [0,500 m], [▯ 27,0 cm x 40,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [321,2 °C], [0,489 kg\/m³], [1,59 m\/s], [-], [-], [3 mm], [0,04 Pa], [-], [-],
-  [Carneau], [7], [virage 90° 4-5], [-], [▯ 27,0 cm x 40,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [310,9 °C], [0,497 kg\/m³], [1,56 m\/s], [0,22 ], [0,30 Pa], [-], [-], [-], [-],
-  [Carneau], [8], [sect° geom change], [-], [▯ 27,0 cm x 33,5 cm], [-], [-], [1], [-], [-], [poêle], [-], [310,9 °C], [0,497 kg\/m³], [1,87 m\/s], [0,21 ], [0,28 Pa], [-], [-], [-], [-],
-  [Carneau], [9], [Car. 5], [0,050 m], [□ 27,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [309,9 °C], [0,498 kg\/m³], [2,31 m\/s], [-], [-], [3 mm], [0,01 Pa], [-], [-],
-  [Carneau], [10], [virage 90° 5-6], [-], [□ 27,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [308,8 °C], [0,499 kg\/m³], [2,31 m\/s], [0,22 ], [0,29 Pa], [-], [-], [-], [-],
-  [Carneau], [11], [Car. 6], [0,500 m], [□ 27,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [298,9 °C], [0,507 kg\/m³], [2,27 m\/s], [-], [-], [3 mm], [0,10 Pa], [-], [-],
-  [Carneau], [12], [virage 90° 6-7], [-], [□ 27,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [289,4 °C], [0,516 kg\/m³], [2,23 m\/s], [1,20 ], [1,53 Pa], [-], [-], [-], [-],
-  [Carneau], [13], [Car. 7], [0,340 m], [□ 27,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [283,0 °C], [0,522 kg\/m³], [2,21 m\/s], [-], [-], [3 mm], [0,06 Pa], [-], [-],
-  [Carneau], [14], [virage 45° 7-8], [-], [□ 27,0 cm], [-], [45,0 °], [1], [-], [-], [poêle], [-], [276,8 °C], [0,528 kg\/m³], [2,18 m\/s], [0,50 ], [0,62 Pa], [-], [-], [-], [-],
-  [Carneau], [15], [Car. 8], [0,141 m], [□ 27,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [274,3 °C], [0,530 kg\/m³], [2,17 m\/s], [-], [-], [3 mm], [0,03 Pa], [-], [-],
-  [Carneau], [16], [virage 45° 8-9], [-], [□ 27,0 cm], [-], [45,0 °], [1], [-], [-], [poêle], [-], [271,8 °C], [0,533 kg\/m³], [2,16 m\/s], [0,50 ], [0,60 Pa], [-], [-], [-], [-],
-  [Carneau], [17], [Car. 9], [1,000 m], [□ 27,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [254,6 °C], [0,550 kg\/m³], [2,09 m\/s], [-], [-], [3 mm], [0,18 Pa], [-], [-],
-  [Carneau], [18], [virage 90° 9-10], [-], [□ 27,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [238,6 °C], [0,567 kg\/m³], [2,03 m\/s], [1,20 ], [1,54 Pa], [-], [-], [-], [-],
-  [Carneau], [19], [sect° geom change], [-], [▯ 24,0 cm x 29,5 cm], [-], [-], [1], [-], [-], [poêle], [-], [238,6 °C], [0,567 kg\/m³], [2,11 m\/s], [0,06 ], [0,08 Pa], [-], [-], [-], [-],
-  [Carneau], [20], [Car. 10], [2,440 m], [▯ 21,0 cm x 32,0 cm], [2,440 m], [-], [1], [-], [-], [poêle], [-], [203,5 °C], [0,609 kg\/m³], [2,05 m\/s], [-], [-], [3 mm], [0,49 Pa], [-], [11,09 Pa],
-  [Carneau], [21], [Car. 11], [1,280 m], [▯ 21,0 cm x 32,0 cm], [1,280 m], [-], [1], [-], [-], [poêle], [-], [159,7 °C], [0,671 kg\/m³], [1,86 m\/s], [-], [-], [3 mm], [0,24 Pa], [-], [5,04 Pa],
-  [-> SOUS-TOTAL], [], [], [10,129 m], [], [0,190 m], [], [], [], [], [], [], [], [], [], [6,68 ], [6,62 Pa], [], [1,28 Pa], [-], [-6,44 Pa],
+  [[Carneau #1]], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+  [Carneau], [0], [sortie foyer], [0,317 m], [▭ 25,1 cm x 23,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [537,2 °C], [0,425 kg\/m³], [2,63 m\/s], [-], [-], [3 mm], [0,08 Pa], [-], [-],
+  [Carneau], [1], [virage avant descente], [-], [▭ 25,1 cm x 23,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [524,7 °C], [0,432 kg\/m³], [2,59 m\/s], [1,20 ], [1,83 Pa], [-], [-], [-], [-],
+  [Carneau], [2], [sect° geom change], [-], [▭ 25,1 cm x 22,5 cm], [-], [-], [1], [-], [-], [poêle], [-], [524,7 °C], [0,432 kg\/m³], [2,65 m\/s], [0,03 ], [0,05 Pa], [-], [-], [-], [-],
+  [Carneau], [3], [descente], [0,815 m], [▭ 25,1 cm x 22,0 cm], [-0,815 m], [-], [1], [-], [-], [poêle], [-], [493,9 °C], [0,449 kg\/m³], [2,60 m\/s], [-], [-], [3 mm], [0,22 Pa], [-], [-6,58 Pa],
+  [Carneau], [4], [virage avant banc avant], [-], [▭ 25,1 cm x 22,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [464,8 °C], [0,467 kg\/m³], [2,51 m\/s], [1,20 ], [1,77 Pa], [-], [-], [-], [-],
+  [Carneau], [5], [sect° geom change], [-], [▭ 23,5 cm x 23,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [464,8 °C], [0,467 kg\/m³], [2,56 m\/s], [0,03 ], [0,05 Pa], [-], [-], [-], [-],
+  [Carneau], [6], [banc avant], [1,792 m], [▯ 22,0 cm x 24,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [406,9 °C], [0,507 kg\/m³], [2,42 m\/s], [-], [-], [3 mm], [0,48 Pa], [-], [-],
+  [Carneau], [7], [virage avant bout du banc], [-], [▯ 22,0 cm x 24,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [356,2 °C], [0,547 kg\/m³], [2,24 m\/s], [1,20 ], [1,95 Pa], [-], [-], [-], [-],
+  [Carneau], [8], [sect° geom change], [-], [▯ 21,0 cm x 24,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [356,2 °C], [0,547 kg\/m³], [2,34 m\/s], [0,07 ], [0,11 Pa], [-], [-], [-], [-],
+  [Carneau], [9], [bout du banc], [0,437 m], [▯ 20,0 cm x 24,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [344,8 °C], [0,558 kg\/m³], [2,41 m\/s], [-], [-], [3 mm], [0,14 Pa], [-], [-],
+  [Carneau], [10], [virage avant banc arrière], [-], [▯ 20,0 cm x 24,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [333,8 °C], [0,568 kg\/m³], [2,37 m\/s], [1,20 ], [1,96 Pa], [-], [-], [-], [-],
+  [Carneau], [11], [sect° geom change], [-], [▯ 19,5 cm x 24,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [333,8 °C], [0,568 kg\/m³], [2,43 m\/s], [0,04 ], [0,06 Pa], [-], [-], [-], [-],
+  [Carneau], [12], [arrière banc], [2,073 m], [▯ 19,0 cm x 24,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [286,1 °C], [0,616 kg\/m³], [2,30 m\/s], [-], [-], [3 mm], [0,68 Pa], [-], [-],
+  [Carneau], [13], [virage avant vers remontée], [-], [▯ 19,0 cm x 24,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [245,3 °C], [0,665 kg\/m³], [2,13 m\/s], [1,20 ], [1,46 Pa], [-], [-], [-], [-],
+  [Carneau], [14], [sect° geom change], [-], [▯ 20,0 cm x 24,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [245,3 °C], [0,665 kg\/m³], [2,03 m\/s], [0,05 ], [0,06 Pa], [-], [-], [-], [-],
+  [Carneau], [15], [vers remontée], [0,437 m], [▯ 21,0 cm x 24,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [237,4 °C], [0,675 kg\/m³], [1,90 m\/s], [-], [-], [3 mm], [0,10 Pa], [-], [-],
+  [Carneau], [16], [virage avant remontée], [-], [▯ 21,0 cm x 24,0 cm], [-], [90,0 °], [1], [-], [-], [poêle], [-], [229,9 °C], [0,685 kg\/m³], [1,87 m\/s], [1,20 ], [1,66 Pa], [-], [-], [-], [-],
+  [Carneau], [17], [sect° geom change], [-], [▯ 21,0 cm x 23,0 cm], [-], [-], [1], [-], [-], [poêle], [-], [229,9 °C], [0,685 kg\/m³], [1,95 m\/s], [0,06 ], [0,09 Pa], [-], [-], [-], [-],
+  [Carneau], [18], [remontée], [0,980 m], [▯ 21,0 cm x 22,0 cm], [0,980 m], [-], [1], [-], [-], [poêle], [-], [213,7 °C], [0,708 kg\/m³], [1,98 m\/s], [-], [-], [3 mm], [0,27 Pa], [-], [5,43 Pa],
+  [-> SOUS-TOTAL], [], [], [6,851 m], [], [0,165 m], [], [], [], [], [], [], [], [], [], [7,48 ], [11,04 Pa], [], [1,96 Pa], [-], [-1,15 Pa],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  [Conduit de raccordement], [0], [Car. 12], [0,050 m], [◯ 25,0 cm], [0,050 m], [-], [1], [0,000 m²K\/W], [-], [chauff.], [0,0 °C], [146,5 °C], [0,692 kg\/m³], [2,47 m\/s], [-], [-], [1 mm], [0,01 Pa], [-], [0,19 Pa],
-  [-> SOUS-TOTAL], [], [], [0,050 m], [], [0,050 m], [], [], [], [], [], [], [], [], [], [0,00 ], [-], [], [0,01 Pa], [-], [0,19 Pa],
+  [[Conduit de raccordement #2]], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+  [Conduit de raccordement], [0], [conduit simple peau 1 ], [0,409 m], [◯ 20,0 cm], [0,409 m], [-], [1], [0,001 m²K\/W], [-], [chauff.], [0,0 °C], [195,6 °C], [0,735 kg\/m³], [2,80 m\/s], [-], [-], [1 mm], [0,18 Pa], [-], [2,16 Pa],
+  [Conduit de raccordement], [1], [coude angle vif 30°], [-], [◯ 20,0 cm], [-], [30,0 °], [1], [-], [-], [-], [-], [193,0 °C], [0,739 kg\/m³], [2,78 m\/s], [0,30 ], [0,86 Pa], [-], [-], [-], [-],
+  [Conduit de raccordement], [2], [conduit simple peau 2], [0,707 m], [◯ 20,0 cm], [0,612 m], [-], [1], [0,001 m²K\/W], [-], [chauff.], [0,0 °C], [188,2 °C], [0,747 kg\/m³], [2,75 m\/s], [-], [-], [1 mm], [0,30 Pa], [-], [3,16 Pa],
+  [Conduit de raccordement], [3], [coude angle vif 30°], [-], [◯ 20,0 cm], [-], [30,0 °], [1], [-], [-], [-], [-], [184,2 °C], [0,753 kg\/m³], [2,73 m\/s], [0,30 ], [0,84 Pa], [-], [-], [-], [-],
+  [Conduit de raccordement], [4], [conduit simple peau 2], [0,241 m], [◯ 20,0 cm], [0,241 m], [-], [1], [0,001 m²K\/W], [-], [chauff.], [0,0 °C], [182,3 °C], [0,756 kg\/m³], [2,72 m\/s], [-], [-], [1 mm], [0,10 Pa], [-], [1,22 Pa],
+  [-> SOUS-TOTAL], [], [], [1,357 m], [], [1,262 m], [], [], [], [], [], [], [], [], [], [0,60 ], [1,70 Pa], [], [0,58 Pa], [-], [6,54 Pa],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  [Conduit de fumées], [0], [chauff.], [7,500 m], [◯ 25,0 cm], [7,500 m], [-], [1], [0,440 m²K\/W], [-], [chauff.], [0,0 °C], [134,3 °C], [0,713 kg\/m³], [2,40 m\/s], [-], [-], [1 mm], [1,75 Pa], [-], [26,51 Pa],
-  [Conduit de fumées], [1], [non-chauff], [0,300 m], [◯ 25,0 cm], [0,300 m], [-], [1], [0,440 m²K\/W], [-], [non chauff.], [0,0 °C], [123,2 °C], [0,733 kg\/m³], [2,34 m\/s], [-], [-], [1 mm], [0,07 Pa], [-], [1,00 Pa],
-  [Conduit de fumées], [2], [ext.], [1,500 m], [◯ 25,0 cm], [1,500 m], [-], [1], [0,440 m²K\/W], [-], [ext.], [0,0 °C], [120,3 °C], [0,738 kg\/m³], [2,32 m\/s], [-], [-], [1 mm], [0,34 Pa], [-], [4,92 Pa],
-  [Conduit de fumées], [3], [element terminal], [-], [◯ 25,0 cm], [-], [-], [1], [-], [-], [-], [-], [118,1 °C], [0,742 kg\/m³], [2,31 m\/s], [1,48 ], [2,92 Pa], [-], [-], [-], [-],
-  [-> SOUS-TOTAL], [], [], [9,300 m], [], [9,300 m], [], [], [], [], [], [], [], [], [], [1,48 ], [2,92 Pa], [], [2,16 Pa], [-], [32,43 Pa],
+  [[Conduit de fumées #3]], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+  [Conduit de fumées], [0], [intérieur], [0,550 m], [◯ 20,0 cm], [0,550 m], [-], [1], [0,440 m²K\/W], [-], [chauff.], [0,0 °C], [179,5 °C], [0,761 kg\/m³], [2,70 m\/s], [-], [-], [1 mm], [0,23 Pa], [-], [2,76 Pa],
+  [Conduit de fumées], [1], [combles], [0,560 m], [◯ 20,0 cm], [0,560 m], [-], [1], [0,440 m²K\/W], [-], [ext.], [0,0 °C], [176,7 °C], [0,766 kg\/m³], [2,69 m\/s], [-], [-], [1 mm], [0,23 Pa], [-], [2,78 Pa],
+  [Conduit de fumées], [2], [extérieur], [0,900 m], [◯ 20,0 cm], [0,900 m], [-], [1], [0,440 m²K\/W], [-], [ext.], [0,0 °C], [173,0 °C], [0,772 kg\/m³], [2,66 m\/s], [-], [-], [1 mm], [0,37 Pa], [-], [4,42 Pa],
+  [Conduit de fumées], [3], [extérieur (ajout)], [0,400 m], [◯ 20,0 cm], [0,400 m], [-], [1], [0,440 m²K\/W], [-], [ext.], [0,0 °C], [169,8 °C], [0,778 kg\/m³], [2,64 m\/s], [-], [-], [1 mm], [0,16 Pa], [-], [1,94 Pa],
+  [Conduit de fumées], [4], [element terminal], [-], [◯ 20,0 cm], [-], [-], [1], [-], [-], [-], [-], [168,8 °C], [0,780 kg\/m³], [2,64 m\/s], [0,60 ], [1,63 Pa], [-], [-], [-], [-],
+  [-> SOUS-TOTAL], [], [], [2,410 m], [], [2,410 m], [], [], [], [], [], [], [], [], [], [0,60 ], [1,63 Pa], [], [1,00 Pa], [-], [11,90 Pa],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  [=> TOTAL], [], [], [24,040 m], [], [10,746 m], [], [], [], [], [], [], [], [], [], [15,45 ], [22,25 Pa], [], [9,37 Pa], [0,00 Pa], [31,91 Pa],  
+  [=> TOTAL], [], [], [11,398 m], [], [4,617 m], [], [], [], [], [], [], [], [], [], [8,98 ], [19,89 Pa], [], [3,56 Pa], [0,00 Pa], [24,32 Pa],  
 )
 ]
 
@@ -341,7 +320,7 @@
   width: 100%,
   height: 2em,
   fill: rgb("eee"),
-  align(center + horizon)[= CONFORMITÉ AVEC EN13384-1:XXX]
+  align(center + horizon)[= CONFORMITÉ AVEC EN 13384-1+A1:2019]
 )
 
 #table(
@@ -352,29 +331,29 @@
     #text(1.2em)[*APPAREIL À COMBUSTION (DONNÉES UTILES POUR EN 13384-1)*]
   ],
   
-  [référence ou désignation], [], [Foyer Ecolabellisé V1 + EN 15544],
+  [référence ou désignation], [], [Foyer traditionnel + EN 15544],
   [type d'appareil], [], [poêle utilisant du bois-bûches],
-  [rendement de l'appareil (à puissance utile nominale)], [ηWN], [87,1 %],
-  [rendement de l'appareil (à puissance utile réduite)], [ηWmin], [87,1 %],
+  [rendement de l'appareil (à puissance utile nominale)], [ηWN], [82,1 %],
+  [rendement de l'appareil (à puissance utile réduite)], [ηWmin], [82,1 %],
   [concentration de CO2 à puissance nominale (% en volume sur fumées sèches)], [σ_CO2], [7,1 %],
   [concentration de CO2 à puissance réduite (% en volume sur fumées sèches)], [σ_CO2], [7,1 %],
   [teneur en vapeur d'eau des fumées à puissance nominale (% en volume)], [σ_H2O], [8,4 %],
   [teneur en vapeur d'eau des fumées à puissance réduite (% en volume)], [σ_H2O], [8,4 %],
-  [puissance utile (nominale)], [QN], [67,84 kW],
-  [puissance utile (réduite)], [Q min], [33,92 kW],
-  [température des fumées (nominale)], [TWN], [146,9 °C],
-  [température des fumées (réduite)], [TW min], [97,9 °C],
-  [débit massique des fumées (nominale)], [ṁ], [84,0 g\/s],
-  [débit massique des fumées (réduite)], [ṁ min], [42,0 g\/s],
-  [débit massique d'air comburant (nominale)], [ṁB], [79,4 g\/s],
-  [débit massique d'air comburant (réduite)], [ṁB min], [39,7 g\/s],
-  [débit volumique des fumées (nominale)], [], [437,50 m³\/h],
-  [débit volumique des fumées (réduite)], [], [193,24 m³\/h],
-  [débit volumique de l'air comburant (nominale)], [], [266,71 m³\/h],
-  [débit volumique de l'air comburant (réduite)], [], [133,35 m³\/h],
+  [puissance utile (nominale)], [QN], [49,19 kW],
+  [puissance utile (réduite)], [Q min], [24,59 kW],
+  [température des fumées (nominale)], [TWN], [198,7 °C],
+  [température des fumées (réduite)], [TW min], [132,5 °C],
+  [débit massique des fumées (nominale)], [ṁ], [64,6 g\/s],
+  [débit massique des fumées (réduite)], [ṁ min], [32,3 g\/s],
+  [débit massique d'air comburant (nominale)], [ṁB], [61,1 g\/s],
+  [débit massique d'air comburant (réduite)], [ṁB min], [30,6 g\/s],
+  [débit volumique des fumées (nominale)], [], [318,54 m³\/h],
+  [débit volumique des fumées (réduite)], [], [136,91 m³\/h],
+  [débit volumique de l'air comburant (nominale)], [], [172,87 m³\/h],
+  [débit volumique de l'air comburant (réduite)], [], [86,43 m³\/h],
   [fonctionnement en pression], [], [sous pression négative],
-  [tirage minimal requis], [PW], [18,86 Pa],
-  [tirage maximal requis], [PWmax], [20,44 Pa],  
+  [tirage minimal requis], [PW], [8,66 Pa],
+  [tirage maximal requis], [PWmax], [9,83 Pa],  
 )
 
 #table(
@@ -385,7 +364,7 @@
     #text(1.2em)[*SITUATION GÉOGRAPHIQUE*]
   ],
   
-  [altitude géodésique], [1500 m],
+  [altitude géodésique], [128 m],
   [région côtière (< 20km de la côte)], [Non],
   [SITUATION DE LA SORTIE DU CONDUIT DE FUMÉES (EN TOITURE)], [],
   [hauteur au dessus du faîtage], [> 40cm],
@@ -415,11 +394,11 @@
   ],
   
   [régime ou allure], [], [NOMINALE], [],
-  [température de condensation des fumées], [T_sp], [38,3 °C], [],
-  [température limite], [T_ig], [38,3 °C], [],
-  [température à la sortie du conduit], [T_ob], [131,0 °C], [],
-  [température de la paroi à la sortie du conduit], [T_iob], [107,6 °C], [OK (>= 38,3 °C)],
-  [absence de condensation (T_iob - Tig >= 0)], [T_iob - Tig], [69,3 °C], [OK],  
+  [température de condensation des fumées], [T_sp], [41,5 °C], [],
+  [température limite], [T_ig], [41,5 °C], [],
+  [température à la sortie du conduit], [T_ob], [180,7 °C], [],
+  [température de la paroi à la sortie du conduit], [T_iob], [158,7 °C], [OK (>= 41,5 °C)],
+  [absence de condensation (T_iob - Tig >= 0)], [T_iob - Tig], [117,2 °C], [OK],  
 )
 
 #table(
@@ -433,16 +412,16 @@
   [fonctionnement en pression], [sous pression négative], [],
   [régime ou allure], [NOMINALE], [],
   [-----------------------------], [], [],
-  [résultante de pression à l'alimentation en air (P_B) - tirage min], [8,37 Pa], [],
-  [résultante de pression à l'alimentation en air (P_B) - tirage max], [8,37 Pa], [],
-  [tirage minimal (P_Z)], [27,35 Pa], [],
-  [tirage minimal requis (P_Ze)], [27,06 Pa], [],
-  [tirage maximal (P_Zmax)], [28,34 Pa], [],
-  [tirage maximal admis (P_Zemax)], [28,64 Pa], [],
+  [résultante de pression à l'alimentation en air (P_B) - tirage min], [4,00 Pa], [],
+  [résultante de pression à l'alimentation en air (P_B) - tirage max], [4,00 Pa], [],
+  [tirage minimal (P_Z)], [9,27 Pa], [],
+  [tirage minimal requis (P_Ze)], [8,40 Pa], [],
+  [tirage maximal (P_Zmax)], [9,58 Pa], [],
+  [tirage maximal admis (P_Zemax)], [9,53 Pa], [],
   [-----------------------------], [], [],
-  [P_Z - P_Ze >= 0], [0,30 Pa], [OK],
-  [P_Z - P_B >= 0], [18,98 Pa], [OK],
-  [P_Zemax - P_Zmax >= 0], [0,29 Pa], [OK],  
+  [P_Z - P_Ze >= 0], [0,86 Pa], [OK],
+  [P_Z - P_B >= 0], [5,27 Pa], [OK],
+  [P_Zemax - P_Zmax >= 0], [-0,05 Pa], [NOT OK],  
 )
 
 #pagebreak()
