@@ -65,7 +65,7 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
                 paymentTerms       = paymentTerms,
                 invoiceDate        = LocalDate.now(),
                 dueDate            = None,              // Will be calculated from payment terms
-                reference          = Some(s"Order ${context.order.id.value}"),
+                reference          = Some(context.order.id.value.toString),
                 billTo             = None,              // Same as recipient for now
                 currency           = "EUR",
                 notes              = context.productMetadata.flatMap { case FileDescriptionWithContent(filename, _, _) =>

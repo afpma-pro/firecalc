@@ -109,7 +109,7 @@ class DefaultInvoiceTemplate(val config: TemplateConfig = TemplateConfig()) exte
     |  [*${i18n.fields.invoice_number}*], [${invoice.invoiceNumber}],
     |  [*${i18n.fields.invoice_date}*], [${invoice.invoiceDate.format(formatter)}],
     |  [*${i18n.fields.due_date}*], [${invoice.effectiveDueDate.format(formatter)}],
-    |  ${invoice.reference.map(ref => s"[*${i18n.fields.reference}*], [$ref],").getOrElse("")}
+    |  ${invoice.reference.map(ref => s"[*${i18n.fields.reference}*], [${i18n.fields.order} $ref],").getOrElse("")}
     |  [*${i18n.fields.currency}*], [${invoice.currency}],
     |  [*${i18n.fields.status}*], [${invoice.status.displayName}],
     |)

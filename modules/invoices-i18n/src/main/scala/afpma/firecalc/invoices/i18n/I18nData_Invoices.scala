@@ -38,6 +38,7 @@ object I18nData_Invoices:
         invoice_date  : String,
         due_date      : String,
         reference     : String,
+        order         : String,
         currency      : String,
         status        : String
     )
