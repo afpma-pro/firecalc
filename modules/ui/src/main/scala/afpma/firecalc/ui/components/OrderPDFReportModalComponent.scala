@@ -488,8 +488,10 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                                 p(
                                     cls := "text-xl",
                                     I18N_UI.pdf_ordering.modal.accept_terms_and_conditions,
+                                    " ",
                                     a  (
                                         href   := UIConfig.cguvUrl,
+                                        cls    := "text-secondary underline underline-offset-2 decoration-dotted hover:decoration-solid",
                                         target := "_blank",
                                         s"(${I18N_UI.pdf_ordering.modal.link})"
                                     )
