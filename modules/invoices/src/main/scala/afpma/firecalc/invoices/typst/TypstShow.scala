@@ -218,7 +218,7 @@ object InvoiceTypstInstances:
         parts.mkString("\n")
     }
 
-    given TypstShow[InvoiceStatus] = TypstShow.make(_.displayName)
+    given I18nData_Invoices => TypstShow[InvoiceStatus] = TypstShow.make(_.displayName)
 
     given TypstShow[InvoiceLineItem] = TypstShow.make { item =>
         // This is typically used in tables, so we format it as table cells

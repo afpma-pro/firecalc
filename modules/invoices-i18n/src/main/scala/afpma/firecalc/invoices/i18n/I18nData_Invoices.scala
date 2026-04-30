@@ -19,6 +19,7 @@ final case class I18nData_Invoices(
     formatting: Formatting,
     company   : Company,
     payment   : Payment,
+    status    : Status,
     tax       : Tax
 )
 
@@ -95,6 +96,15 @@ object I18nData_Invoices:
         if_paid_within               : String,
         days                         : String,
         payment_methods_label        : String
+    )
+
+    final case class Status(
+        draft        : String,
+        sent         : String,
+        paid         : String,
+        overdue      : String,
+        cancelled    : String,
+        partiallyPaid: String
     )
 
     final case class Tax(
