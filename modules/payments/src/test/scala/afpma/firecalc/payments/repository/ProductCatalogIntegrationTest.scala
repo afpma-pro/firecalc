@@ -24,7 +24,7 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import utest.*
 
-object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
+class ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
 
     override implicit val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
@@ -68,7 +68,9 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
                 descriptionKey = "products.original.description",
                 price          = BigDecimal(50.00),
                 currency       = "EUR",
-                active         = true
+                active         = true,
+                taxRate        = BigDecimal("20.0"),
+                taxExempt      = false
             )
 
             val updatedProduct = ProductInfo(
@@ -77,7 +79,9 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
                 descriptionKey = "products.updated.description",
                 price          = BigDecimal(75.00),
                 currency       = "EUR",
-                active         = false
+                active         = false,
+                taxRate        = BigDecimal("10.0"),
+                taxExempt      = false
             )
 
             (for {

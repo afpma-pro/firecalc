@@ -20,17 +20,19 @@ import io.circe.generic.semiauto.*
  * @param phone Optional phone number
  * @param website Optional website URL
  * @param logo Optional path to company logo
+ * @param taxExemptNotice Optional locale-keyed tax exemption notice map (e.g. Map("fr" -> "...", "en" -> "...", "default" -> "..."))
  */
 case class Company(
     name              : String,
-    displayName       : Option[String] = None,
+    displayName       : Option[String]              = None,
     address           : Address,
-    vatNumber         : Option[String] = None,
-    registrationNumber: Option[String] = None,
+    vatNumber         : Option[String]              = None,
+    registrationNumber: Option[String]              = None,
     email             : String,
-    phone             : Option[String] = None,
-    website           : Option[String] = None,
-    logo              : Option[String] = None
+    phone             : Option[String]              = None,
+    website           : Option[String]              = None,
+    logo              : Option[String]              = None,
+    taxExemptNotice   : Option[Map[String, String]] = None
 ):
     /** Returns the display name if available, otherwise the legal name. */
     def effectiveName: String = displayName.getOrElse(name)

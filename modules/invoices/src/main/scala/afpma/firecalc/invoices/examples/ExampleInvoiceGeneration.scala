@@ -205,13 +205,12 @@ object ExampleInvoiceGeneration:
                     mandateDate            = Some(LocalDate.of(2025, 1, 10)),
                     iban                   = Some("FR14 2004 1010 0505 0001 3M02 606"),
                     nextPossibleChargeDate = Some(LocalDate.of(2025, 2, 1))
-                ),
-                PaymentMethod.Check
+                )
             ),
-            lateFeePercentage  = None,                    // Often no late fees for non-profits
-            discountPercentage = Some(BigDecimal("5.0")), // Special non-profit discount
-            discountDays       = Some(15),
-            notes              = Some("Special conditions for registered non-profit organizations")
+            lateFeePercentage  = None, // Often no late fees for non-profits
+            discountPercentage = None,
+            discountDays       = None,
+            notes              = None
         )
 
         // Create tax-exempt line items using the new convenience methods
@@ -238,9 +237,7 @@ object ExampleInvoiceGeneration:
             dueDate            = Some(LocalDate.now().plusDays(30)),
             reference          = Some("FORMATION-BENEVOLES-2025"),
             currency           = "EUR",
-            notes              = Some(
-                "Facture avec exonération de TVA conformément au statut d'association Loi 1901. Certains services restent soumis à la TVA selon la réglementation en vigueur."
-            ),
+            notes              = None,
             discountPercentage = None,
             status             = InvoiceStatus.Draft
         )

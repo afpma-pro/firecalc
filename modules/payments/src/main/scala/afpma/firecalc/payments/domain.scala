@@ -33,7 +33,9 @@ case class Product(
     description: String,
     price      : BigDecimal,
     currency   : Currency,
-    active     : Boolean
+    active     : Boolean,
+    taxRate    : BigDecimal,
+    taxExempt  : Boolean
 )
 
 case class Customer(

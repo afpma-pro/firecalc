@@ -31,6 +31,8 @@ object MoleculeDomain extends DomainStructure:
         val price       = oneBigDecimal
         val currency    = oneEnum[Currency]
         val active      = oneBoolean
+        val taxRate     = oneBigDecimal
+        val taxExempt   = oneBoolean
     }
 
     trait ProductOrder {

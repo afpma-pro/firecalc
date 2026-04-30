@@ -37,19 +37,23 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                     .price
                     .currency
                     .active
+                    .taxRate
+                    .taxExempt
                     .query
                     .get
                     .map(
                         _.headOption
                             .map:
-                                case (id, name, description, price, currency, active) =>
+                                case (id, name, description, price, currency, active, taxRate, taxExempt) =>
                                     domain.Product(
                                         api.ProductId          (id               ),
                                         name,
                                         description,
                                         price,
                                         domain.Currency.valueOf(currency.toString),
-                                        active
+                                        active,
+                                        taxRate,
+                                        taxExempt
                                     )
                     )
             }
@@ -60,7 +64,9 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
         name       : String,
         description: String,
         price      : BigDecimal,
-        currency   : domain.Currency
+        currency   : domain.Currency,
+        taxRate    : BigDecimal,
+        taxExempt  : Boolean
     ): F[domain.Product] =
         for
             _ <- logger.info(s"Finding or Creating new product: $name")
@@ -72,13 +78,24 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                     .price_(price)
                     .currency_(Currency.valueOf(currency.toString))
                     .active_(true)
+                    .taxRate_(taxRate)
+                    .taxExempt_(taxExempt)
                     .query
                     .get
                     .map      (_.headOption                       )
             }
 
             productId = UUID.randomUUID()
-            product   = domain.Product(api.ProductId(productId), name, description, price, currency, active = true)
+            product   = domain.Product(
+                api.ProductId(productId),
+                name,
+                description,
+                price,
+                currency,
+                active    = true,
+                taxRate   = taxRate,
+                taxExempt = taxExempt
+            )
 
             _ <- internalId match
                 case Some(internalId) =>
@@ -89,8 +106,8 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                     }
                 case None             =>
                     future2AsyncF {
-                        Product.productId.name.description.price.currency.active
-                            .insert((productId, name, description, price, currency.toString, true))
+                        Product.productId.name.description.price.currency.active.taxRate.taxExempt
+                            .insert((productId, name, description, price, currency.toString, true, taxRate, taxExempt))
                             .transact
                     } flatMap { _ =>
                         logger.info(s"Created product: ${product.id.value}")
@@ -103,16 +120,18 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
         description: String,
         price      : BigDecimal,
         currency   : domain.Currency,
-        active     : Boolean
+        active     : Boolean,
+        taxRate    : BigDecimal,
+        taxExempt  : Boolean
     ): F[domain.Product] =
         for
             _ <- logger.info(s"Creating product: $name (id: ${id.value})")
             _ <- future2AsyncF {
-                Product.productId.name.description.price.currency.active
-                    .insert((id.value, name, description, price, currency.toString, active))
+                Product.productId.name.description.price.currency.active.taxRate.taxExempt
+                    .insert((id.value, name, description, price, currency.toString, active, taxRate, taxExempt))
                     .transact
             }
-            product = domain.Product(id, name, description, price, currency, active)
+            product = domain.Product(id, name, description, price, currency, active, taxRate, taxExempt)
             _ <- logger.info(s"Created product: ${id.value}")
         yield product
 
@@ -122,7 +141,9 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
         description: String,
         price      : BigDecimal,
         currency   : domain.Currency,
-        active     : Boolean
+        active     : Boolean,
+        taxRate    : BigDecimal,
+        taxExempt  : Boolean
     ): F[domain.Product] =
         for
             _ <- logger.info(s"Updating product: ${id.value}")
@@ -143,11 +164,13 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                     .price(price)
                     .currency(Currency.valueOf(currency.toString))
                     .active(active)
+                    .taxRate(taxRate)
+                    .taxExempt(taxExempt)
                     .update
                     .transact
             }
 
-            product = domain.Product(id, name, description, price, currency, active)
+            product = domain.Product(id, name, description, price, currency, active, taxRate, taxExempt)
             _ <- logger.info(s"Updated product: ${id.value}")
         yield product
 
@@ -173,7 +196,9 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                         productInfo.descriptionKey,
                         productInfo.price,
                         currency,
-                        productInfo.active
+                        productInfo.active,
+                        productInfo.taxRate,
+                        productInfo.taxExempt
                     )
                 case None    =>
                     create(
@@ -182,7 +207,9 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                         productInfo.descriptionKey,
                         productInfo.price,
                         currency,
-                        productInfo.active
+                        productInfo.active,
+                        productInfo.taxRate,
+                        productInfo.taxExempt
                     )
 
             _ <- logger.info(s"Upserted product: ${productInfo.id.value}")

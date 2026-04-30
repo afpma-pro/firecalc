@@ -42,7 +42,9 @@ object v1:
         descriptionKey: String, // i18n key: "products.note_de_calcul.description"
         price         : BigDecimal,
         currency      : String, // "EUR", "USD"
-        active        : Boolean
+        active        : Boolean,
+        taxRate       : BigDecimal,
+        taxExempt     : Boolean
     )
 
     object ProductInfo:
@@ -280,7 +282,9 @@ object v1:
             descriptionKey = "products.pdf_report_EN_15544_2023.description",
             price          = BigDecimal(89.00),
             currency       = "EUR",
-            active         = true
+            active         = true,
+            taxRate        = BigDecimal("0.0"),
+            taxExempt      = true
         )
 
         val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
@@ -293,7 +297,9 @@ object v1:
             descriptionKey = "products.pdf_report_EN_15544_2023.description",
             price          = BigDecimal(89.00),
             currency       = "EUR",
-            active         = true
+            active         = true,
+            taxRate        = BigDecimal("0.0"),
+            taxExempt      = true
         )
 
         val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
@@ -306,7 +312,9 @@ object v1:
             descriptionKey = "products.pdf_report_EN_15544_2023.description",
             price          = BigDecimal(89.00),
             currency       = "EUR",
-            active         = true
+            active         = true,
+            taxRate        = BigDecimal("0.0"),
+            taxExempt      = true
         )
 
         val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)

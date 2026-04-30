@@ -17,9 +17,26 @@ import io.circe.syntax.*
 import io.circe.yaml.scalayaml.parser as yamlParser
 import io.circe.yaml.scalayaml.printer as yamlPrinter
 
+/**
+ * Invoice configuration — defines static org-level defaults only.
+ * Per-invoice runtime data (lineItems, recipient, invoiceNumber, etc.) is
+ * provided at generation time via InvoiceParams / InvoiceData and is not
+ * part of this config.
+ *
+ * @param invoice  org-level sender config (sender identity, currency, payment terms, notes)
+ * @param template template styling
+ */
 final case class InvoiceConfig(
-    invoice : InvoiceData,
+    invoice : InvoiceSenderConfig,
     template: TemplateConfig = TemplateConfig()
+)
+
+/** Org-level static config fields that appear on every invoice from this sender. */
+final case class InvoiceSenderConfig(
+    sender      : Company,
+    currency    : String         = "EUR",
+    paymentTerms: PaymentTerms,
+    notes       : Option[String] = None
 )
 
 final case class TemplateConfig(
@@ -48,6 +65,10 @@ object LogoPosition:
 object TemplateConfig:
     given Decoder[TemplateConfig] = semiauto.deriveDecoder[TemplateConfig]
     given Encoder[TemplateConfig] = semiauto.deriveEncoder[TemplateConfig]
+
+object InvoiceSenderConfig:
+    given Decoder[InvoiceSenderConfig] = semiauto.deriveDecoder[InvoiceSenderConfig]
+    given Encoder[InvoiceSenderConfig] = semiauto.deriveEncoder[InvoiceSenderConfig]
 
 object InvoiceConfig:
     given decoder: Decoder[InvoiceConfig] = semiauto.deriveDecoder[InvoiceConfig]

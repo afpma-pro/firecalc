@@ -17,8 +17,15 @@ import molecule.db.common.spi.Conn
 import org.typelevel.log4cats.Logger
 
 trait ProductRepository[F[_]]:
-    def findById    (id  : ProductId                                                         ): F[Option[Product]]
-    def findOrCreate(name: String, description: String, price: BigDecimal, currency: Currency): F[Product]
+    def findById    (id: ProductId): F[Option[Product]]
+    def findOrCreate(
+        name       : String,
+        description: String,
+        price      : BigDecimal,
+        currency   : Currency,
+        taxRate    : BigDecimal,
+        taxExempt  : Boolean
+    ): F[Product]
 
     def create(
         id         : ProductId,
@@ -26,7 +33,9 @@ trait ProductRepository[F[_]]:
         description: String,
         price      : BigDecimal,
         currency   : Currency,
-        active     : Boolean
+        active     : Boolean,
+        taxRate    : BigDecimal,
+        taxExempt  : Boolean
     ): F[Product]
 
     def update(
@@ -35,7 +44,9 @@ trait ProductRepository[F[_]]:
         description: String,
         price      : BigDecimal,
         currency   : Currency,
-        active     : Boolean
+        active     : Boolean,
+        taxRate    : BigDecimal,
+        taxExempt  : Boolean
     ): F[Product]
 
     def upsert(productInfo: afpma.firecalc.payments.shared.api.v1.ProductInfo): F[Product]

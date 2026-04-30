@@ -147,8 +147,9 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
             description        = s"${product.name} - ${product.description}",
             quantity           = BigDecimal(1), // Assuming quantity of 1 for now
             unitPrice          = order.amount,
-            taxRate            = BigDecimal(0), // No tax for now
+            taxRate            = product.taxRate,
             discountPercentage = None,
+            taxExempt          = product.taxExempt,
             unit               = Some("service"),
             productCode        = Some(product.id.value.toString)
         )

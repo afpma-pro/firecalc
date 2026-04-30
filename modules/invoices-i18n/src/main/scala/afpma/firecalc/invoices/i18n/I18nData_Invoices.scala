@@ -111,5 +111,6 @@ object I18nData_Invoices:
     final case class Tax(
         exempt              : String,
         exempt_label        : String,
+        exempt_rate_display : String,
         non_profit_exemption: String
     )

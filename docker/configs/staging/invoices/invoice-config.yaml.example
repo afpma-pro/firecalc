@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 #
-# This file contains invoice generation configuration for the staging
-# environment. It defines company information, invoice templates, and
-# styling that will be used when generating PDF invoices.
+# Config = what the org is (sender identity, currency, payment terms, notes).
+# Runtime data (lineItems, recipient, invoiceNumber, etc.) lives elsewhere
+# and is provided at generation time via InvoiceParams / InvoiceData.
 #
 # IMPORTANT:
 # - This is a YAML configuration file (indentation matters!)
@@ -17,14 +17,6 @@
 # =============================================================================
 
 invoice:
-  # Invoice identification
-  # These fields are typically set dynamically by the application
-  # but can be overridden here for testing
-  invoiceNumber: "${INVOICE_NUMBER:-FCALC-STG-2025-0001}"
-  invoiceDate: "${INVOICE_DATE:-2025-09-05}"
-  dueDate: "${DUE_DATE:-2025-10-05}"
-  reference: "${INVOICE_REFERENCE:-Staging Invoice}"
-  
   # ---------------------------------------------------------------------------
   # Sender Information (Your Company)
   # ---------------------------------------------------------------------------
@@ -60,56 +52,16 @@ invoice:
     # Path relative to this config file or null to omit
     # Place logo file at: configs/staging/invoices/logo.png
     logo: null
-  
-  # ---------------------------------------------------------------------------
-  # Recipient Information (Customer)
-  # ---------------------------------------------------------------------------
-  # This section is typically populated dynamically from customer data
-  # but can be set here for testing invoice generation
-  recipient:
-    name: "${CLIENT_COMPANY_NAME:-Test Client Company Ltd}"
-    displayName: null
     
-    address:
-      street: "${CLIENT_STREET:-456 Client Boulevard}"
-      streetLine2: null
-      city: "${CLIENT_CITY:-Client City}"
-      postalCode: "${CLIENT_POSTAL_CODE:-67890}"
-      region: "${CLIENT_REGION:-Client Region}"
-      country: "${CLIENT_COUNTRY:-Client Country}"
-    
-    vatNumber: "${CLIENT_VAT_NUMBER:-CLIENT_VAT_NUMBER_HERE}"
-    registrationNumber: "${CLIENT_REGISTRATION:-CLIENT_REGISTRATION_HERE}"
-    email: "${CLIENT_EMAIL:-accounts@clientcompany.com}"
-    phone: "${CLIENT_PHONE:-+1 555 987 6543}"
-    website: "${CLIENT_WEBSITE:-https://www.clientcompany.com}"
-    logo: null
-  
-  # Bill-to address (if different from recipient)
-  # Set to null to use recipient address
-  billTo: null
-  
-  # ---------------------------------------------------------------------------
-  # Line Items (Products/Services)
-  # ---------------------------------------------------------------------------
-  # This section is typically populated dynamically from order data
-  # Example items shown here for testing
-  lineItems:
-    - description: "FireCalc Professional License - Annual Subscription"
-      quantity: 1
-      unitPrice: 89.00
-      taxRate: 20.0
-      discountPercentage: null
-      unit: "license"
-      productCode: "FCALC-PRO-ANNUAL"
-    
-    - description: "PDF Report Generation Service"
-      quantity: 1
-      unitPrice: 29.00
-      taxRate: 20.0
-      discountPercentage: null
-      unit: "service"
-      productCode: "FCALC-PDF-GEN"
+    # Tax exemption notice (optional)
+    # Per-locale legal copy explaining why this org is tax-exempt.
+    # Keys: language tags ("fr", "en", etc.) and "default" fallback.
+    # If present and a line item on the invoice is tax-exempt, this notice
+    # overrides the generic i18n fallback in the invoice footer.
+    taxExemptNotice:
+      fr: "${COMPANY_TAX_EXEMPT_FR:-TVA non applicable, art. 293 B du CGI}"
+      en: "${COMPANY_TAX_EXEMPT_EN:-Non-profit organization - Tax exempt}"
+      default: "${COMPANY_TAX_EXEMPT_DEFAULT:-Tax exempt}"
   
   # ---------------------------------------------------------------------------
   # Payment Terms
@@ -145,14 +97,6 @@ invoice:
   
   # Additional notes/terms to display on invoice
   notes: "Thank you for your business! This is a STAGING invoice for testing purposes only."
-  
-  # Invoice-level discount (optional)
-  # Set to null for no discount
-  discountPercentage: null
-  
-  # Invoice status
-  # Options: Draft, Sent, Paid, Overdue, Cancelled
-  status: "Draft"
 
 # =============================================================================
 # Template Styling
@@ -200,6 +144,12 @@ template:
 # COMPANY_WEBSITE           - Company website URL
 # COMPANY_CURRENCY          - Currency code (EUR, USD, GBP, etc.)
 #
+# Tax Exemption Notices:
+# ----------------------
+# COMPANY_TAX_EXEMPT_FR     - French tax exemption notice
+# COMPANY_TAX_EXEMPT_EN     - English tax exemption notice
+# COMPANY_TAX_EXEMPT_DEFAULT - Fallback notice
+#
 # Payment Terms:
 # --------------
 # PAYMENT_DUE_DAYS          - Days until payment due (default: 30)
@@ -212,27 +162,6 @@ template:
 # TEMPLATE_LOGO_POSITION    - Logo position (default: top-left)
 # TEMPLATE_PRIMARY_COLOR    - Brand color hex (default: #2563eb)
 # TEMPLATE_FONT_FAMILY      - Font name (default: Liberation Sans)
-#
-# Dynamic Variables (set by application):
-# ----------------------------------------
-# INVOICE_NUMBER            - Invoice number (auto-generated)
-# INVOICE_DATE              - Invoice date (current date)
-# DUE_DATE                  - Payment due date (calculated)
-# INVOICE_REFERENCE         - Invoice reference/description
-#
-# Client Variables (from order data):
-# ------------------------------------
-# CLIENT_COMPANY_NAME       - Client company name
-# CLIENT_STREET             - Client street address
-# CLIENT_CITY               - Client city
-# CLIENT_POSTAL_CODE        - Client postal code
-# CLIENT_REGION             - Client region
-# CLIENT_COUNTRY            - Client country
-# CLIENT_VAT_NUMBER         - Client VAT number
-# CLIENT_REGISTRATION       - Client registration number
-# CLIENT_EMAIL              - Client email
-# CLIENT_PHONE              - Client phone
-# CLIENT_WEBSITE            - Client website
 #
 # =============================================================================
 # CONFIGURATION NOTES

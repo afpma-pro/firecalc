@@ -5,12 +5,10 @@
 # For detailed setup docs and alternatives, see the .example counterpart.
 #
 # Invoice Configuration - STAGING Environment
+# Config = what the org is; runtime data (lineItems, recipient, invoiceNumber, etc.)
+# lives elsewhere and is provided at generation time.
 
 invoice:
-  invoiceNumber: "FCALC-STG-001"
-  invoiceDate: "2025-09-05"
-  dueDate: "2025-10-05"
-  reference: "-"
   sender:
     name: "YOUR_ORGANIZATION_NAME"
     displayName: "YOUR_ORGANIZATION_DISPLAY_NAME"
@@ -27,32 +25,10 @@ invoice:
     phone: "YOUR_PHONE"
     website: "YOUR_WEBSITE"
     logo: !!null
-  recipient:
-    name: "ACME France"
-    displayName: !!null
-    address:
-      street: "${CLIENT_STREET:-123 Boulevard}"
-      streetLine2: !!null
-      city: "Paris"
-      postalCode: "75000"
-      region: "Ile-de-France"
-      country: "France"
-    vatNumber: "TVA FR XXXXXXXX"
-    registrationNumber: "-"
-    email: "client@domaine.fr"
-    phone: "+33 1 23 45 67 89"
-    website: "www.domaine.fr"
-    logo: !!null
-  billTo: !!null
-  lineItems:
-    -
-      description: "Génération rapport PDF conforme à EN 15544"
-      quantity: 1
-      unitPrice: 89.00
-      taxRate: 20.0
-      discountPercentage: !!null
-      unit: "u"
-      productCode: !!null
+    taxExemptNotice:
+      fr: "TVA non applicable, art. 293 B du CGI"
+      en: "Non-profit organization - Tax exempt"
+      default: "Tax exempt"
   paymentTerms:
     dueDays: ${PAYMENT_DUE_DAYS:-30}
     description: "Payment due within ${PAYMENT_DUE_DAYS:-30} days of invoice date"
@@ -67,8 +43,6 @@ invoice:
     notes: ""
   currency: "${COMPANY_CURRENCY:-EUR}"
   notes: "YOUR_INVOICE_NOTES [STAGING]"
-  discountPercentage: !!null
-  status: "Draft"
 template:
   logoPosition: "${TEMPLATE_LOGO_POSITION:-top-left}"
   primaryColor: "${TEMPLATE_PRIMARY_COLOR:-#2563eb}"

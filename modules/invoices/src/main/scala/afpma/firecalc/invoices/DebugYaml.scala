@@ -72,9 +72,10 @@ object DebugYaml:
                     // Now try automatic decoding
                     jsonValue.as[InvoiceConfig] match {
                         case Right(config) =>
-                            println("✅ Successfully decoded to InvoiceConfig"             )
-                            println("  - Config loaded successfully"                      )
-                            println(s"  - Invoice number: ${config.invoice.invoiceNumber}")
+                            println("✅ Successfully decoded to InvoiceConfig"   )
+                            println("  - Config loaded successfully"            )
+                            println(s"  - Sender: ${config.invoice.sender.name}")
+                            println(s"  - Currency: ${config.invoice.currency}" )
                         case Left(error)   =>
                             println(s"❌ Failed to decode to InvoiceConfig: $error")
 

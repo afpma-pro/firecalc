@@ -33,7 +33,9 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
         description = "A product for integration testing",
         price       = BigDecimal("49.99"),
         currency    = Currency.EUR,
-        active      = true
+        active      = true,
+        taxRate     = BigDecimal("20.0"),
+        taxExempt   = false
     )
 
     val testCustomerInfo = CustomerInfo(
@@ -71,7 +73,14 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
     def createMockTupleServices(repos: TestTupleHandlingRepositories) = {
         val productRepo = new ProductRepository[IO] {
             def findById(id: ProductId): IO[Option[Product]] = IO.pure(repos.products.get(id))
-            def findOrCreate(name: String, description: String, price: BigDecimal, currency: Currency): IO[Product] =
+            def findOrCreate(
+                name       : String,
+                description: String,
+                price      : BigDecimal,
+                currency   : Currency,
+                taxRate    : BigDecimal,
+                taxExempt  : Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("findOrCreate not needed in this test"))
             def create(
                 id         : ProductId,
@@ -79,8 +88,10 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 description: String,
                 price      : BigDecimal,
                 currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                active     : Boolean,
+                taxRate    : BigDecimal,
+                taxExempt  : Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("create not needed in this test"))
             def update(
                 id         : ProductId,
@@ -88,10 +99,12 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 description: String,
                 price      : BigDecimal,
                 currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                active     : Boolean,
+                taxRate    : BigDecimal,
+                taxExempt  : Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("update not needed in this test"))
-            def upsert(productInfo: v1.ProductInfo)                                                   : IO[Product] =
+            def upsert(productInfo: v1.ProductInfo): IO[Product] =
                 IO.raiseError(new NotImplementedError("upsert not needed in this test"))
         }
 
