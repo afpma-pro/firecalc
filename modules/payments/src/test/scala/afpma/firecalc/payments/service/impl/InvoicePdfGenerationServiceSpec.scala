@@ -143,7 +143,9 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
                 description = "PDF report",
                 price       = BigDecimal("89.00"),
                 currency    = Currency.EUR,
-                active      = true
+                active      = true,
+                taxRate     = BigDecimal("20.0"),
+                taxExempt   = false
             ),
             productMetadata = None
         )
@@ -237,6 +239,9 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
 
         assert(params.paymentTerms.methods.size == 2)
         params.paymentTerms.methods.head match
-            case PaymentMethod.SepaMandate(None, None, None, None) => // expected (pending placeholder)
-            case other                                             => fail(s"Expected pending SepaMandate(all None) at head, got: $other")
+            case PaymentMethod.SepaMandate(refO, dateO, None, None) =>
+                assert(refO == Some("MD000XYZ")                )
+                assert(dateO == Some(LocalDate.of(2026, 4, 15)))
+            case other                                              =>
+                fail(s"Expected pending SepaMandate(all None) at head, got: $other")
     }
