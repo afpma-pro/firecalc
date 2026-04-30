@@ -85,7 +85,7 @@ class PaymentTermsTypstShowSuite extends AnyFunSuite:
         assert(!out.contains("- SEPA Direct Debit")                        )
     }
 
-    test("SEPA mandate with partial fields - one None triggers placeholder path") {
+    test("SEPA mandate with mandate reference only - renders other available fields") {
         given I18nData_Invoices = i18nEn
         val sepa                = PaymentMethod.SepaMandate(
             mandateReference       = Some("MD000XYZ"),
@@ -95,8 +95,11 @@ class PaymentTermsTypstShowSuite extends AnyFunSuite:
         val terms               = baseTerms.copy(methods = List(sepa))
         val out                 = render(terms)
 
-        assert(out.contains("SEPA mandate setup pending")  )
-        assert(!out.contains("Mandate reference: MD000XYZ"))
+        assert(out.contains("SEPA Direct Debit")          )
+        assert(!out.contains("SEPA mandate setup pending"))
+        assert(out.contains("Mandate reference: MD000XYZ"))
+        assert(out.contains("Mandate date: 15/04/2026")   )
+        assert(!out.contains("Next debit possible from")  )
     }
 
     test("SEPA mandate fully populated - French rendering uses FR locale strings") {

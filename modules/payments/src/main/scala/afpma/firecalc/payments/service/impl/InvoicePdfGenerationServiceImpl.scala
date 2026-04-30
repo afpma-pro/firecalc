@@ -96,10 +96,16 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
                         )
                         Async[F].pure(baseTerms.copy(methods = sepa :: baseTerms.methods))
                     case Right(Some(partial)) =>
+                        val sepa = PaymentMethod.SepaMandate(
+                            mandateReference       = partial.reference,
+                            mandateDate            = partial.createdDate,
+                            iban                   = None,
+                            nextPossibleChargeDate = partial.nextPossibleChargeDate
+                        )
                         logger.warn(
                             s"Mandate snapshot incomplete for payment $paymentId (snapshot=$partial); rendering pending placeholder"
                         ) *> Async[F].pure(
-                            baseTerms.copy(methods = PaymentMethod.SepaMandate() :: baseTerms.methods)
+                            baseTerms.copy(methods = sepa :: baseTerms.methods)
                         )
                     case Right(None)          =>
                         // Provider has no mandate to surface for this payment (e.g. card-only flow).

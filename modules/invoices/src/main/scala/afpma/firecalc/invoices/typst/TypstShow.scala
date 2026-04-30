@@ -184,11 +184,13 @@ object InvoiceTypstInstances:
             val title = s"*${i18n.payment.sepa_mandate.sanitized}*"
             val bodyLines: List[String] =
                 (sm.mandateReference, sm.mandateDate, sm.nextPossibleChargeDate) match
-                    case (Some(ref), Some(date), Some(next)) =>
+                    case (Some(ref), dateO, nextO) =>
                         List(
-                            s"${i18n.payment.mandate_reference} $ref".sanitized,
-                            s"${i18n.payment.mandate_date} ${date.toTypst}".sanitized,
-                            s"${i18n.payment.next_possible_charge_date} ${next.toTypst}".sanitized
+                            s"${i18n.payment.mandate_reference} ${ref}".sanitized,
+                            s"${i18n.payment.mandate_date} ${dateO.map(_.toTypst).getOrElse("-")}".sanitized,
+                            if (nextO.isDefined) then
+                                s"${i18n.payment.next_possible_charge_date} ${nextO.get.toTypst}".sanitized
+                            else ""
                         )
                     case _ =>
                         List(i18n.payment.sepa_mandate_pending.sanitized)
