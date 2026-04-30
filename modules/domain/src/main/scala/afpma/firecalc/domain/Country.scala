@@ -5,9 +5,19 @@
 
 package afpma.firecalc.domain
 
+import afpma.firecalc.i18n.implicits.I18N
+
 import cats.Show
-import cats.derived.*
+
+import io.taig.babel.Locale
 
 // TODO: AvailableCountries ?
-enum Country derives Show:
+// TODO: I18N translations
+enum Country:
     case France, Belgique, Autriche
+
+object Country:
+    given Locale => Show[Country] = Show.show:
+        case Country.France   => I18N.country_names.france
+        case Country.Belgique => I18N.country_names.belgique
+        case Country.Autriche => I18N.country_names.autriche

@@ -84,7 +84,8 @@ final case class I18nData(
     missing_data                   : String,
     test_report                    : TestReportI18n,
     test_emission_value            : TestEmissionValueI18n,
-    emission_values                : EmissionValuesI18n
+    emission_values                : EmissionValuesI18n,
+    country_names                  : CountryNames
 )
 
 object I18nData:
@@ -1061,6 +1062,12 @@ object I18nData:
         dust : String,
         ogc  : String,
         nox  : String
+    )
+
+    case class CountryNames(
+        france  : String,
+        belgique: String,
+        autriche: String
     )
 
     case class BuilderErrors(

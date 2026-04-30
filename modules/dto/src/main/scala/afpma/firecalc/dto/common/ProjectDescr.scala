@@ -11,6 +11,7 @@ import cats.Show
 import cats.implicits.toShow
 
 import afpma.firecalc.domain.Country
+import io.taig.babel.Locale
 import magnolia1.Transl
 
 @Transl(I(_.headers.project_description))
@@ -68,7 +69,7 @@ case class Address(
 )
 
 object Address:
-    val empty_butInFrance = Address(
+    val empty_butInFrance         = Address(
         header       = "",
         num          = "",
         street       = "",
@@ -77,7 +78,7 @@ object Address:
         region_state = "",
         country      = Country.France
     )
-    given Show[Address]   = Show.show: a =>
+    given Locale => Show[Address] = Show.show: a =>
         List(
             a.header,
             List(a.num, a.street).filter(_.nonEmpty).mkString               (" "),
