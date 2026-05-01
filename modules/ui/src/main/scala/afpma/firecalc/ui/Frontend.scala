@@ -118,16 +118,24 @@ object Frontend {
             given loc: Locale       = Locale(language = lang)
             given du : DisplayUnits = displayUnitsOpt.getOrElse(DisplayUnits.SI)
 
-            if !models.project.ProjectManager.switchToProject(projectId) then
-                // Project not found — redirect to selector (replaceState to fix URL)
+            // Do NOT mutate appStateSchemaVar here: renderPage runs inside
+            // `child <-- router.currentPageSignal.map(renderPage)`, so the previous
+            // page's Div is still mounted when we execute. Its reactive subtree
+            // (DaisyUIDynamicList / splitMatchSeq caches keyed by list index) would
+            // observe the incoming schema at stale indices and throw ClassCastException
+            // before Laminar gets a chance to unmount it. Instead, verify the project
+            // exists here, then install it in onMountCallback — by then the previous
+            // subtree is detached and its observers are dead.
+            if !models.project.ProjectManager.projectExists(projectId) then
                 dom.window.setTimeout(() => router.replaceState(ProjectSelectorPage(lang)), 0)
                 div                  (p("Projet introuvable...")                             )
             else
                 HomeView().node
-                    .amend(onMountCallback(_ =>
-                        localeVar.set      (loc)
-                        displayUnitsVar.set(du )
-                    ))
+                    .amend(onMountCallback { _ =>
+                        models.project.ProjectManager.switchToProject(projectId)
+                        localeVar.set                                (loc      )
+                        displayUnitsVar.set                          (du       )
+                    })
 
         case DefaultPage =>
             val lang = localeVar.now().language

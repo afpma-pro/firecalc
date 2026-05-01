@@ -35,6 +35,17 @@ object ProjectManager:
         restoreProjectState(id)
 
     /**
+     * Check whether a project exists in storage without loading it.
+     *
+     * Used by Frontend.renderPage to decide whether to render HomeView or redirect to
+     * the selector, without actually installing the project into appStateSchemaVar —
+     * that installation is deferred to onMountCallback to avoid clobbering the still-
+     * mounted previous page's reactive subtree.
+     */
+    def projectExists(id: ProjectId): Boolean =
+        ProjectStorage.load(id).isDefined
+
+    /**
      * Install the given project's persisted state into the in-memory vars
      * (appStateSchemaVar, fireboxCacheStateVar, activeProjectIdVar), reset the undo
      * manager, and return true iff the project was found.
