@@ -191,6 +191,14 @@ object Frontend {
             // Fire-and-forget: populate imagesVar from IndexedDB for catalog picker dialogs
             CatalogImageStore.loadAll()
 
+            // Preload project state from the URL BEFORE render, so the reactive graph
+            // sees the restored schema on first access. Without this, appStateSchemaVar
+            // starts at EngineState.init (createInitialSchema), and the init→restored
+            // transition that happens when the router's renderPage later calls
+            // switchToProject corrupts derived panel-level Vars that captured init
+            // values at construction time. See plan: the-dev-environment-memoized-steele.
+            preloadProjectFromUrl()
+
             val appContainer = dom.document.querySelector("#app")
             appContainer.innerHTML = ""
             unmount()
@@ -205,6 +213,49 @@ object Frontend {
 
             //   JSpreadsheetTable.init("jspreadsheet-carneaux")
         }
+
+    /**
+     * Preload project state before the reactive graph is built.
+     *
+     * On a full page reload, `appStateSchemaVar` is a lazy `Var` whose default
+     * initializer produces `createInitialSchema()` (= `EngineState.init`). If we let the
+     * normal render flow handle project restoration, the reactive graph is constructed
+     * on top of that init state and only later transitions to the restored schema via
+     * `ProjectManager.switchToProject`. That init→restored transition corrupts derived
+     * panel-level Vars that captured init values at construction time (visible on reload
+     * as a head/tail blend of init and restored pipe elements).
+     *
+     * This helper resolves the target project id by asking the router what page the
+     * current URL maps to (`router.currentPageSignal.now()` — safe here because Waypoint
+     * eagerly initializes `currentPageSignal` at `Router` object construction, well
+     * before `main()` runs) and installs the restored schema via
+     * `ProjectManager.restoreProjectState` BEFORE `render(appContainer, app)`. When the
+     * router subsequently resolves the same `ProjectPage`, `switchToProject`
+     * short-circuits via its `if activeProjectIdVar.now().contains(id) then return true`
+     * guard — so no extra `appStateSchemaVar.set` fires and the reactive graph never
+     * sees the init value.
+     *
+     * For `DefaultPage` URLs (root `/`), we mirror `renderPage(DefaultPage)`'s fallback
+     * decisions synchronously: run legacy-layout migration, then preload the last-opened
+     * project if any. The URL stays at `DefaultPage` for the first render tick; the
+     * router's `setTimeout(replaceState(ProjectPage(...)))` then triggers a second
+     * resolution to `ProjectPage(lang, id)` whose `switchToProject(id)` short-circuits
+     * because the preload already set `activeProjectIdVar`.
+     */
+    private def preloadProjectFromUrl(): Unit =
+        import models.project.{ProjectManager, ProjectMigration, ProjectIndex}
+
+        val targetId: Option[models.project.ProjectId] =
+            router.currentPageSignal.now() match
+                case ProjectPage(_, id, _) => Some(id)
+                case DefaultPage           =>
+                    // Mirror DefaultPage's fallback chain: migration result, then last-opened.
+                    ProjectMigration
+                        .migrateIfNeeded()
+                        .orElse(ProjectIndex.load().sortBy(-_.lastModified).headOption.map(_.id))
+                case _: ProjectSelectorPage => None
+
+        targetId.foreach(ProjectManager.restoreProjectState)
 
     def waitForLoad(f: => Any): Unit =
         if (dom.window.asInstanceOf[js.Dynamic].documentLoaded == null)
