@@ -22,9 +22,13 @@ import afpma.firecalc.engine.utils.getOrThrow
 import afpma.firecalc.reports.typst.TypShow.sanitized
 
 import io.taig.babel.Locale
+import afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+import afpma.firecalc.engine.utils.ShowAsTable
+import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 
 abstract class TypstReportFactory_15544(
-    val isDraft: Boolean
+    val isDraft              : Boolean,
+    val checkPressureReq13384: Boolean
 )                                      (using Locale)
     extends HasTypeMembers_15544_Alg:
     self =>
@@ -62,8 +66,8 @@ abstract class TypstReportFactory_15544(
 
     def imports: String =
         """|#import "@preview/fancy-units:0.1.1": num, unit, qty, fancy-units-configure, add-macros
-            |#import "@preview/based:0.1.0": base64
-            |""".stripMargin
+           |#import "@preview/based:0.1.0": base64
+           |""".stripMargin
 
     // Language as an ISO 639-1/2/3 language code (Typst requirement)
     // See: https://typst.app/docs/reference/text/text/#parameters-lang
@@ -289,6 +293,8 @@ abstract class TypstReportFactory_15544(
         en15544_app.temperatureRequirements_EN13384.getOrThrow.typ
 
     def en13384_pressureRequirements: String =
+        given ShowAsTable[PressureRequirements_13384] =
+            ShowAsTableInstances_13384().mkShowAsTable_PressureRequirements_EN13384(checkPressureReq13384)
         en15544_app.pressureRequirements_EN13384.getOrThrow.typ
 
     def en13384_reference_temperatures: String =

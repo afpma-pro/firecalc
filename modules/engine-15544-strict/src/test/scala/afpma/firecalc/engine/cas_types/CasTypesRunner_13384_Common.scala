@@ -142,6 +142,9 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
                 import showAsTableInstances.given
                 import _showAsTableInstances_EN13384.given
 
+                given showAsTable_pressReq13384: ShowAsTable[PressureRequirements_13384] =
+                    _showAsTableInstances_EN13384.mkShowAsTable_PressureRequirements_EN13384(checkAndShowReq = true)
+
                 given HeatingAppliance = en13384_appl.heatingAppliance_final(using
                     _heatingAppliance
                 )

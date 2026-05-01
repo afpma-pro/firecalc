@@ -234,11 +234,15 @@ class ShowAsTableInstances_13384(using locale: Locale):
                     Nil
         )
 
-    given showAsTable_PressureRequirements_EN13384: ShowAsTable[PressureRequirements_13384] =
-        val _I = I18N.en13384.terms
-        val P0 = 0.pascals
-        def status_ok_or_not(cond: Boolean  ) = if (cond) "OK" else "NOT OK"
-        extension [A]       (oa  : Option[A]) def mapOrNil(f: A => Seq[String]): Seq[String] = oa.map(f).getOrElse(Nil)
+    def mkShowAsTable_PressureRequirements_EN13384(checkAndShowReq: Boolean)(using
+        Locale
+    ): ShowAsTable[PressureRequirements_13384] =
+        val _I                                             = I18N.en13384.terms
+        val P0                                             = 0.pascals
+        def check_and_show_status_ok_or_not(cond: Boolean) =
+            if (checkAndShowReq) then if (cond) "OK" else "NOT OK"
+            else I18N.not_applicable_short
+        extension [A](oa: Option[A]) def mapOrNil(f: A => Seq[String]): Seq[String] = oa.map(f).getOrElse(Nil)
 
         ShowAsTable.mkLightFor(I18N.headers.pressure_requirements_13384):
             case pall: PressureRequirements_13384.UnderNegPress =>
@@ -246,7 +250,7 @@ class ShowAsTableInstances_13384(using locale: Locale):
                 val I_draft_min = I18N.draft_min
                 val I_draft_max = I18N.draft_max
                 (I18N.heating_appliance.pressures.underPressure :: I18N.heating_appliance.pressures.underPressure_negative :: "" :: Nil) ::
-                    (I18N.type_of_load.descr                    :: pall.atLoadQty.show.toUpperCase() :: "" :: Nil) ::
+                    (I18N.type_of_load.descr                    :: pall.atLoadQty.show.toUpperCase()                       :: "" :: Nil) ::
                     // ("-----------------------------"       :: ""                   :: "" :: Nil) ::
                     // ("P_B"                                 :: P_B.show             :: "" :: Nil) ::
                     // ("P_FV"                                :: P_FV.show            :: "" :: Nil) ::
@@ -257,19 +261,21 @@ class ShowAsTableInstances_13384(using locale: Locale):
                     // ("P_R"                                 :: P_R.show             :: "" :: Nil) ::
                     // ("P_W"                                 :: P_W.show             :: "" :: Nil) ::
                     // ("P_Wmax"                              :: P_Wmax.show          :: "" :: Nil) ::
-                    ("-----------------------------"            :: "" :: "" :: Nil) ::
-                    (s"${_I.P_B} (P_B) - $I_draft_min"          :: P_B_min_draught.show :: "" :: Nil) ::
-                    (s"${_I.P_B} (P_B) - $I_draft_max"          :: P_B_max_draught.show :: "" :: Nil) ::
-                    (s"${_I.P_Z} (P_Z)"                         :: P_Z.show :: "" :: Nil) ::
-                    (s"${_I.P_Ze} (P_Ze)"                       :: P_Ze.show :: "" :: Nil) ::
-                    (s"${_I.P_Zmax} (P_Zmax)"                   :: P_Zmax.show :: "" :: Nil) ::
-                    (s"${_I.P_Zemax} (P_Zemax)"                 :: P_Zemax.show :: "" :: Nil) ::
-                    ("-----------------------------"            :: "" :: "" :: Nil) ::
-                    ("P_Z - P_Ze >= 0"                          :: (P_Z - P_Ze           ).show :: status_ok_or_not(P_Z - P_Ze >= P0) :: Nil) ::
-                    ("P_Z - P_B >= 0"                           :: (P_Z - P_B_min_draught).show :: status_ok_or_not(
+                    ("-----------------------------"            :: ""                                                      :: "" :: Nil) ::
+                    (s"${_I.P_B} (P_B) - $I_draft_min"          :: P_B_min_draught.show                                    :: "" :: Nil) ::
+                    (s"${_I.P_B} (P_B) - $I_draft_max"          :: P_B_max_draught.show                                    :: "" :: Nil) ::
+                    (s"${_I.P_Z} (P_Z)"                         :: P_Z.show                                                :: "" :: Nil) ::
+                    (s"${_I.P_Ze} (P_Ze)"                       :: P_Ze.show                                               :: "" :: Nil) ::
+                    (s"${_I.P_Zmax} (P_Zmax)"                   :: P_Zmax.show                                             :: "" :: Nil) ::
+                    (s"${_I.P_Zemax} (P_Zemax)"                 :: P_Zemax.show                                            :: "" :: Nil) ::
+                    ("-----------------------------"            :: ""                                                      :: "" :: Nil) ::
+                    ("P_Z - P_Ze >= 0"                          :: (P_Z - P_Ze).show :: check_and_show_status_ok_or_not(
+                        P_Z - P_Ze >= P0
+                    )                                           :: Nil) ::
+                    ("P_Z - P_B >= 0"                           :: (P_Z - P_B_min_draught).show :: check_and_show_status_ok_or_not(
                         P_Z - P_B_min_draught >= P0
                     )                                           :: Nil) ::
-                    ("P_Zemax - P_Zmax >= 0"                    :: (P_Zemax - P_Zmax     ).show :: status_ok_or_not(
+                    ("P_Zemax - P_Zmax >= 0"                    :: (P_Zemax - P_Zmax).show :: check_and_show_status_ok_or_not(
                         P_Zemax - P_Zmax >= P0
                     )                                           :: Nil) ::
                     Nil
@@ -277,7 +283,7 @@ class ShowAsTableInstances_13384(using locale: Locale):
                 import pall.*
                 val out =
                     (I18N.heating_appliance.pressures.underPressure :: I18N.heating_appliance.pressures.underPressure_positive :: "" :: Nil) ::
-                        (I18N.type_of_load.descr                    :: pall.atLoadQty.show.toUpperCase() :: "" :: Nil) ::
+                        (I18N.type_of_load.descr                    :: pall.atLoadQty.show.toUpperCase()                       :: "" :: Nil) ::
                         // ("-----------------------------"    :: ""                                           :: "" :: Nil) ::
                         // ("P_B"                              :: P_B.show                                     :: "" :: Nil) ::
                         // ("P_FV"                             :: P_FV.show                                    :: "" :: Nil) ::
@@ -288,10 +294,10 @@ class ShowAsTableInstances_13384(using locale: Locale):
                         // ("P_WO"                             :: P_WO.show                                    :: "" :: Nil) ::
                         // ("P_WOmin"                          :: P_WOmin.show                                 :: "" :: Nil) ::
                         // ("-----------------------------"    :: ""                                           :: "" :: Nil) ::
-                        (s"${_I.P_ZO} (P_ZO)"                       :: P_ZO.show :: "" :: Nil) ::
-                        (s"${_I.P_ZOmin} (P_ZOmin)"                 :: P_ZOmin.show :: "" :: Nil) ::
-                        (s"${_I.P_ZOe} (P_ZOe)"                     :: P_ZOe.show :: "" :: Nil) ::
-                        (s"${_I.P_ZOemin} (P_ZOemin)"               :: P_ZOemin.show :: "" :: Nil) ::
+                        (s"${_I.P_ZO} (P_ZO)"                       :: P_ZO.show                                               :: "" :: Nil) ::
+                        (s"${_I.P_ZOmin} (P_ZOmin)"                 :: P_ZOmin.show                                            :: "" :: Nil) ::
+                        (s"${_I.P_ZOe} (P_ZOe)"                     :: P_ZOe.show                                              :: "" :: Nil) ::
+                        (s"${_I.P_ZOemin} (P_ZOemin)"               :: P_ZOemin.show                                           :: "" :: Nil) ::
                         P_Zexcess.mapOrNil(P_Zexcess =>
                             s"${_I.P_Zexcess} (P_Zexcess)" :: P_Zexcess.show :: "" :: Nil
                         )                                           ::
@@ -299,21 +305,23 @@ class ShowAsTableInstances_13384(using locale: Locale):
                             s"${_I.P_ZVexcess} (P_ZVexcess)" :: P_ZVexcess.show :: "" :: Nil
                         )                                           ::
                         // ("-----------------------------"    :: ""                                           :: "" :: Nil) ::
-                        ("P_ZOe - P_ZO >= 0"                        :: (P_ZOe - P_ZO      ).show :: status_ok_or_not(P_ZOe - P_ZO >= P0) :: Nil) ::
+                        ("P_ZOe - P_ZO >= 0"                        :: (P_ZOe - P_ZO).show :: check_and_show_status_ok_or_not(
+                            P_ZOe - P_ZO >= P0
+                        )                                           :: Nil) ::
                         P_Zexcess.mapOrNil(P_Zexcess =>
-                            "P_Zexcess - P_ZO >= 0" :: (P_Zexcess - P_ZO).show :: status_ok_or_not(
+                            "P_Zexcess - P_ZO >= 0" :: (P_Zexcess - P_ZO).show :: check_and_show_status_ok_or_not(
                                 P_Zexcess - P_ZO >= P0
                             )                       :: Nil
                         )                                           ::
                         P_ZVexcess.mapOrNil(P_ZVexcess =>
-                            "P_ZVexcess - (P_ZO + P_FV) >= 0" :: (P_ZVexcess - (P_ZO + P_FV_min_draught)).show :: status_ok_or_not(
+                            "P_ZVexcess - (P_ZO + P_FV) >= 0" :: (P_ZVexcess - (P_ZO + P_FV_min_draught)).show :: check_and_show_status_ok_or_not(
                                 P_ZVexcess - (P_ZO + P_FV_min_draught) >= P0
                             )                                 :: Nil
                         )                                           ::
-                        ("P_ZOemin - P_ZOmin >= 0"                  :: (P_ZOemin - P_ZOmin).show :: status_ok_or_not(
+                        ("P_ZOemin - P_ZOmin >= 0"                  :: (P_ZOemin - P_ZOmin).show :: check_and_show_status_ok_or_not(
                             P_ZOemin - P_ZOmin >= P0
                         )                                           :: Nil) ::
                         Nil
                 out.filter(_.nonEmpty)
 
-    end showAsTable_PressureRequirements_EN13384
+    end mkShowAsTable_PressureRequirements_EN13384

@@ -79,6 +79,7 @@ final case class I18nData(
     area_heating_status            : AreaHeatingStatus,
     reports                        : Reports,
     warnings                       : Warnings,
+    not_applicable_short           : String,
     not_defined                    : String,
     not_respected                  : String,
     missing_data                   : String,

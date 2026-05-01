@@ -20,15 +20,17 @@ import io.taig.babel.Locale
 import io.taig.babel.Locales
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 
 trait ConfigurationRunners extends AnyFreeSpec with Matchers {
 
-    given Locale = Locales.en // acceptable to force Locale in tests
+    given loc: Locale = Locales.en // acceptable to force Locale in tests
 
     private def showDetailedNoteAsText(
-        ex      : StoveProjectDescr_Alg,
-        _en15544: EN15544_V_2023_Common_Application,
-        ap      : _en15544.AtParams
+        ex                   : StoveProjectDescr_Alg,
+        _en15544             : EN15544_V_2023_Common_Application,
+        ap                   : _en15544.AtParams,
+        checkPressureReq13384: Boolean
     ) =
 
         import ex.given_Locale
@@ -37,13 +39,16 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         given LocalRegulations            = ex.localRegulations
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
 
-        val showAsTableInstances         = new afpma.firecalc.engine.ops.ShowAsTableInstances
-        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
-        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+        val showAsTableInstances         = new afpma.firecalc.engine.ops.ShowAsTableInstances(using loc)
+        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544(using loc)
+        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384(using loc)
 
         import showAsTableInstances.given
         import showAsTableInstances_EN15544.given
         import showAsTableInstances_EN13384.given
+
+        given showAsTable_pressReq13384: ShowAsTable[PressureRequirements_13384] =
+            showAsTableInstances_EN13384.mkShowAsTable_PressureRequirements_EN13384(checkPressureReq13384)
 
         println(_en15544.inputs.en13384NationalAcceptedData.showAsCliTable)
         println("\n"                                                      )
@@ -85,7 +90,12 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
 
     def run_exercice_15544_strict(ex_15544_strict: StoveProjectDescr_15544_Alg) =
         val out = ex_15544_strict.en15544_Alg.map: _strict =>
-            showDetailedNoteAsText(ex_15544_strict, _strict, _strict.atDraftMin_LoadNominal)
+            showDetailedNoteAsText(
+                ex_15544_strict,
+                _strict,
+                _strict.atDraftMin_LoadNominal,
+                checkPressureReq13384 = false
+            )
         out.fold(
             nel => nel.toList.foreach(e => fail(e.show)),
             _ => ()
@@ -94,7 +104,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
 
     def run_exercice_15544_mce(ex_15544_mce: StoveProjectDescr_15544_Alg) =
         val out = ex_15544_mce.en15544_Alg.map: _mce =>
-            showDetailedNoteAsText(ex_15544_mce, _mce, _mce.atDraftMax_LoadNominal)
+            showDetailedNoteAsText(ex_15544_mce, _mce, _mce.atDraftMax_LoadNominal, checkPressureReq13384 = false)
         out.fold(
             nel => nel.toList.foreach(println),
             _ => ()
