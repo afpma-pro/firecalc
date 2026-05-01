@@ -433,7 +433,7 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                 }
             ),
             div                                                                          (
-                cls := "modal-box w-8/12 max-w-5xl max-h-10/12",
+                cls    := "modal-box w-8/12 max-w-5xl max-h-10/12",
                 h3 (
                     cls := "text-lg font-bold",
                     I18N_UI.pdf_ordering.modal.title
@@ -694,14 +694,19 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                 ),
                 div(
                     cls := "modal-action",
-                    form(
-                        method := "dialog",
-                        button(
-                            cls := "btn btn-outline btn-error",
-                            I18N_UI.pdf_ordering.modal.button_cancel
-                        )
+                    button(
+                        cls := "btn btn-outline btn-error",
+                        I18N_UI.pdf_ordering.modal.button_cancel,
+                        onClick --> { _ =>
+                            mainModal.ref.asInstanceOf[HTMLDialogElement].close()
+                        }
                     )
                 )
+            ),
+            form   (
+                method := "dialog",
+                cls    := "modal-backdrop",
+                button("close")
             )
         )
 
