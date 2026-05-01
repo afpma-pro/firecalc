@@ -25,6 +25,8 @@ import io.taig.babel.Locale
 import afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
 import afpma.firecalc.engine.utils.ShowAsTable
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 abstract class TypstReportFactory_15544(
     val isDraft              : Boolean,
@@ -59,6 +61,8 @@ abstract class TypstReportFactory_15544(
     val atParams: en15544_app.AtParams
     // Derive given for WithParams_13384 methods (pressureRequirements_EN13384, temperatureRequirements_EN13384)
     given en15544_app.Params_15544 = atParams.params
+
+    val CURRENT_DATE_TIME = LocalDateTime.now(ZoneId.of("Europe/Paris"))
 
     import TypShow.given
 
@@ -147,8 +151,16 @@ abstract class TypstReportFactory_15544(
             |
             |      align(top + right)[
             |        *${stove_proj_15544_strict.project.reference.sanitized}* \\
-            |        CALC_ID : (none) \\
-            |        Date : #datetime.today().display("[day]/[month]/[year]") \\
+            |        #let dt = datetime(
+            |          year: ${CURRENT_DATE_TIME.getYear()},
+            |          month: ${CURRENT_DATE_TIME.getMonthValue()},
+            |          day: ${CURRENT_DATE_TIME.getDayOfMonth()},
+            |          hour: ${CURRENT_DATE_TIME.getHour()},
+            |          minute: ${CURRENT_DATE_TIME.getMinute()},
+            |          second: ${CURRENT_DATE_TIME.getSecond()},
+            |        )
+            |        CALC_ID : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \\
+            |        Date : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \\
             |        \\
             |      ],
             |    )

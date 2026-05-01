@@ -55,8 +55,16 @@
 
       align(top + right)[
         *PROJET EXEMPLE 15544* \
-        CALC_ID : (none) \
-        Date : #datetime.today().display("[day]/[month]/[year]") \
+        #let dt = datetime(
+          year: 2026,
+          month: 5,
+          day: 1,
+          hour: 13,
+          minute: 14,
+          second: 56,
+        )
+        CALC_ID : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \
+        Date : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \
         \
       ],
     )
@@ -419,9 +427,9 @@
   [tirage maximal (P_Zmax)], [9,58 Pa], [],
   [tirage maximal admis (P_Zemax)], [9,53 Pa], [],
   [-----------------------------], [], [],
-  [P_Z - P_Ze >= 0], [0,86 Pa], [OK],
-  [P_Z - P_B >= 0], [5,27 Pa], [OK],
-  [P_Zemax - P_Zmax >= 0], [-0,05 Pa], [NOT OK],  
+  [P_Z - P_Ze >= 0], [0,86 Pa], [NA],
+  [P_Z - P_B >= 0], [5,27 Pa], [NA],
+  [P_Zemax - P_Zmax >= 0], [-0,05 Pa], [NA],  
 )
 
 #pagebreak()

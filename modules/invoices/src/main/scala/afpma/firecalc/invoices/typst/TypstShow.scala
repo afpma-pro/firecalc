@@ -97,7 +97,10 @@ object TypstShow:
 
     given TypstShow[BigDecimal] = make(_.toString)
 
-    given TypstShow[LocalDate] = make(_.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+    given typstShow_LocalDate_DateOnly   : TypstShow[LocalDate] = make(_.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+    given typstShow_LocalDate_DateAndTime: TypstShow[LocalDate] = make(
+        _.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))
+    )
 
     given TypstShow[Int] = make(_.toString)
 
@@ -185,11 +188,12 @@ object InvoiceTypstInstances:
             val bodyLines: List[String] =
                 (sm.mandateReference, sm.mandateDate, sm.nextPossibleChargeDate) match
                     case (Some(ref), dateO, nextO) =>
+                        import TypstShow.typstShow_LocalDate_DateOnly
                         List(
                             s"${i18n.payment.mandate_reference} ${ref}".sanitized,
-                            s"${i18n.payment.mandate_date} ${dateO.map(_.toTypst).getOrElse("-")}".sanitized,
+                            s"${i18n.payment.mandate_date} ${dateO.map(typstShow_LocalDate_DateOnly.showAsTypst).getOrElse("-")}".sanitized,
                             if (nextO.isDefined) then
-                                s"${i18n.payment.next_possible_charge_date} ${nextO.get.toTypst}".sanitized
+                                s"${i18n.payment.next_possible_charge_date} ${typstShow_LocalDate_DateOnly.showAsTypst(nextO.get)}".sanitized
                             else ""
                         )
                     case _ =>
