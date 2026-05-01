@@ -112,10 +112,10 @@ object InvoiceTypstInstances:
 
     given TypstShow[Address] = TypstShow.makeRaw { addr =>
         val lines = Seq(
-            Some                (addr.street.sanitized                       ),
-            addr.streetLine2.map(_.sanitized                                 ),
-            Some                (s"${addr.postalCode} ${addr.city}".sanitized),
-            Some                (s"${addr.region}, ${addr.country}".sanitized)
+            Some                (addr.street.sanitized                                                                  ),
+            addr.streetLine2.map(_.sanitized                                                                            ),
+            Some                (s"${addr.postalCode} ${addr.city}".sanitized                                           ),
+            Some                (s"${addr.region}${if (addr.region.isEmpty) then "" else ", "}${addr.country}".sanitized)
         ).flatten
         s"#block[${lines.mkString(" \\ \n")}]"
     }
