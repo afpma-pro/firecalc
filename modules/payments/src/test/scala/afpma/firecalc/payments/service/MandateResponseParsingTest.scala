@@ -10,6 +10,7 @@ import afpma.firecalc.payments.service.impl.GoCardlessConfig
 import afpma.firecalc.payments.service.impl.GoCardlessPaymentServiceImpl
 import afpma.firecalc.payments.service.impl.MandateResponseEnvelope
 import afpma.firecalc.payments.service.impl.given
+import afpma.firecalc.payments.shared.api.ProductCopyConfig
 
 import cats.effect.IO
 
@@ -32,12 +33,13 @@ object MandateResponseParsingTest extends TestSuite {
     private def mkService(): GoCardlessPaymentServiceImpl[IO] =
         val config = GoCardlessConfig
             .sandbox("unused", "unused.local", "https", "admin@test.com")
-        new GoCardlessPaymentServiceImpl[IO]  (
-            httpClient   = null,
-            config       = config,
-            emailService = null,
-            orderService = null,
-            customerRepo = null
+        new GoCardlessPaymentServiceImpl[IO]       (
+            httpClient        = null,
+            config            = config,
+            emailService      = null,
+            orderService      = null,
+            customerRepo      = null,
+            productCopyConfig = ProductCopyConfig.empty
         )
 
     val tests = Tests {

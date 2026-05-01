@@ -25,14 +25,13 @@ object MoleculeDomain extends DomainStructure:
         case EUR, USD
 
     trait Product {
-        val productId   = oneUUID
-        val name        = oneString
-        val description = oneString
-        val price       = oneBigDecimal
-        val currency    = oneEnum[Currency]
-        val active      = oneBoolean
-        val taxRate     = oneBigDecimal
-        val taxExempt   = oneBoolean
+        val productId = oneUUID
+        val sku       = oneString
+        val price     = oneBigDecimal
+        val currency  = oneEnum[Currency]
+        val active    = oneBoolean
+        val taxRate   = oneBigDecimal
+        val taxExempt = oneBoolean
     }
 
     trait ProductOrder {

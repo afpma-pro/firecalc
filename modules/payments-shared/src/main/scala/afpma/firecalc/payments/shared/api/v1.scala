@@ -37,19 +37,19 @@ object v1:
 
     /** Product information for catalog display and purchase */
     case class ProductInfo(
-        id            : ProductId,
-        nameKey       : String, // i18n key: "products.note_de_calcul.name"
-        descriptionKey: String, // i18n key: "products.note_de_calcul.description"
-        price         : BigDecimal,
-        currency      : String, // "EUR", "USD"
-        active        : Boolean,
-        taxRate       : BigDecimal,
-        taxExempt     : Boolean
+        id         : ProductId,
+        sku        : String,
+        exampleCopy: YamlTemplateSeed,
+        price      : BigDecimal,
+        currency   : String, // "EUR", "USD"
+        active     : Boolean,
+        taxRate    : BigDecimal,
+        taxExempt  : Boolean
     )
 
-    object ProductInfo:
-        given Encoder[ProductInfo] = deriveEncoder
-        given Decoder[ProductInfo] = deriveDecoder
+    // ProductInfo intentionally has no Circe codec: it carries `exampleCopy: YamlTemplateSeed`,
+    // a build-time seed for the YAML template that must never be serialized. Call sites that
+    // need a wire representation should project to a dedicated DTO.
 
     case class CreatePurchaseIntentResponse(
         purchase_token: String
@@ -277,14 +277,29 @@ object v1:
     /** Production product catalog - use in production environment */
     object ProductionProductCatalog:
         val PDF_REPORT_EN_15544_2023 = ProductInfo(
-            id             = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")),
-            nameKey        = "products.pdf_report_EN_15544_2023.name",
-            descriptionKey = "products.pdf_report_EN_15544_2023.description",
-            price          = BigDecimal(89.00),
-            currency       = "EUR",
-            active         = true,
-            taxRate        = BigDecimal("0.0"),
-            taxExempt      = true
+            id          = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")),
+            sku         = "pdf_report_EN_15544_2023",
+            exampleCopy = YamlTemplateSeed(
+                Map     (
+                    "fr"      -> ProductCopy(
+                        "Note de calcul NF EN 15544:2023",
+                        "Note de calcul professionnelle conforme aux normes NF EN 15544:2023"
+                    ),
+                    "en"      -> ProductCopy(
+                        "Calculation Report NF EN 15544:2023",
+                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                    ),
+                    "default" -> ProductCopy(
+                        "Calculation Report NF EN 15544:2023",
+                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                    )
+                )
+            ),
+            price       = BigDecimal(89.00),
+            currency    = "EUR",
+            active      = true,
+            taxRate     = BigDecimal("0.0"),
+            taxExempt   = true
         )
 
         val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
@@ -292,14 +307,29 @@ object v1:
     /** Development product catalog - use in development/testing */
     object DevelopmentProductCatalog:
         val PDF_REPORT_EN_15544_2023 = ProductInfo(
-            id             = ProductId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000002")),
-            nameKey        = "products.pdf_report_EN_15544_2023.name",
-            descriptionKey = "products.pdf_report_EN_15544_2023.description",
-            price          = BigDecimal(89.00),
-            currency       = "EUR",
-            active         = true,
-            taxRate        = BigDecimal("0.0"),
-            taxExempt      = true
+            id          = ProductId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000002")),
+            sku         = "pdf_report_EN_15544_2023",
+            exampleCopy = YamlTemplateSeed(
+                Map     (
+                    "fr"      -> ProductCopy(
+                        "Note de calcul NF EN 15544:2023",
+                        "Note de calcul professionnelle conforme aux normes NF EN 15544:2023"
+                    ),
+                    "en"      -> ProductCopy(
+                        "Calculation Report NF EN 15544:2023",
+                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                    ),
+                    "default" -> ProductCopy(
+                        "Calculation Report NF EN 15544:2023",
+                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                    )
+                )
+            ),
+            price       = BigDecimal(89.00),
+            currency    = "EUR",
+            active      = true,
+            taxRate     = BigDecimal("0.0"),
+            taxExempt   = true
         )
 
         val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
@@ -307,14 +337,29 @@ object v1:
     /** Staging product catalog - use in staging environment for testing production-like products */
     object StagingProductCatalog:
         val PDF_REPORT_EN_15544_2023 = ProductInfo(
-            id             = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")), // Same ID as production
-            nameKey        = "products.pdf_report_EN_15544_2023.name",
-            descriptionKey = "products.pdf_report_EN_15544_2023.description",
-            price          = BigDecimal(89.00),
-            currency       = "EUR",
-            active         = true,
-            taxRate        = BigDecimal("0.0"),
-            taxExempt      = true
+            id          = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")), // Same ID as production
+            sku         = "pdf_report_EN_15544_2023",
+            exampleCopy = YamlTemplateSeed(
+                Map     (
+                    "fr"      -> ProductCopy(
+                        "Note de calcul NF EN 15544:2023",
+                        "Note de calcul professionnelle conforme aux normes NF EN 15544:2023"
+                    ),
+                    "en"      -> ProductCopy(
+                        "Calculation Report NF EN 15544:2023",
+                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                    ),
+                    "default" -> ProductCopy(
+                        "Calculation Report NF EN 15544:2023",
+                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                    )
+                )
+            ),
+            price       = BigDecimal(89.00),
+            currency    = "EUR",
+            active      = true,
+            taxRate     = BigDecimal("0.0"),
+            taxExempt   = true
         )
 
         val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)

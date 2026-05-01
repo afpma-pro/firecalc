@@ -7,6 +7,15 @@ import scala.io.Source
 import org.scalajs.linker.interface.ModuleSplitStyle
 import sbtassembly.MergeStrategy
 
+// Custom task keys for product copy YAML management
+lazy val genYamlTemplate = taskKey[Unit](
+    "Regenerate invoice-config.yaml.example files from the current Scala catalog's exampleCopy."
+)
+
+lazy val verifyYamlAgainstCatalog = taskKey[Unit](
+    "Verify committed invoice-config.yaml files match the current Scala catalog."
+)
+
 ThisBuild / semanticdbEnabled := true
 ThisBuild / scalafixOnCompile := false
 ThisBuild / scalafmtOnCompile := false
@@ -1482,7 +1491,16 @@ lazy val payments = (project in file("modules/payments"))
             "org.scalatest" %% "scalatest"                     % "3.2.19" % "test",
             "org.typelevel" %% "cats-effect-testing-scalatest" % "1.6.0"  % "test"
         ),
-        testFrameworks += new TestFramework("utest.runner.Framework")
+        testFrameworks += new TestFramework("utest.runner.Framework"),
+
+        // Product-copy YAML sync tasks — implemented as main-class shims
+        // because sbt task bodies cannot import project-source types.
+        genYamlTemplate          := (Compile / runMain)
+            .toTask(" afpma.firecalc.payments.dev.GenYamlTemplate")
+            .value,
+        verifyYamlAgainstCatalog := (Compile / runMain)
+            .toTask(" afpma.firecalc.payments.dev.VerifyYamlAgainstCatalog")
+            .value
     )
     .settings(watchI18nSources("payments-i18n", "invoices-i18n"))
     .dependsOn(
@@ -1532,4 +1550,4 @@ lazy val invoices = (project in file("modules/invoices"))
         )
     )
     .settings(watchI18nSources("invoices-i18n"))
-    .dependsOn(invoices_i18n)
+    .dependsOn(invoices_i18n, payments_shared.jvm)

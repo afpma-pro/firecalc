@@ -5,6 +5,8 @@
 
 package afpma.firecalc.invoices.models
 
+import afpma.firecalc.payments.shared.api.ProductCopyConfig
+
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -33,11 +35,29 @@ final case class InvoiceConfig(
 
 /** Org-level static config fields that appear on every invoice from this sender. */
 final case class InvoiceSenderConfig(
-    sender      : Company,
-    currency    : String         = "EUR",
-    paymentTerms: PaymentTerms,
-    notes       : Option[String] = None
-)
+    sender        : Company,
+    currency      : String                    = "EUR",
+    paymentTerms  : PaymentTerms,
+    notes         : Option[String]            = None,
+    productCatalog: Option[ProductCopyConfig] = None
+):
+    /** Extract the product copy map, defaulting to empty when the YAML omits it. */
+    def productCopyConfig: ProductCopyConfig = productCatalog.getOrElse(ProductCopyConfig.empty)
+
+    /**
+     * Ensure every active SKU has at least a `"default"` locale entry in productCatalog.
+     * Returns Left with a descriptive message listing the missing SKUs on failure.
+     */
+    def validateProductCopyForSkus(activeSkus: Iterable[String]): Either[String, ProductCopyConfig] =
+        val copy    = productCopyConfig
+        val missing = activeSkus.filterNot(sku => copy.entries.get(sku).exists(_.contains("default"))).toList
+        if missing.isEmpty then Right(copy)
+        else
+            Left                     (
+                s"Missing product copy in invoice-config.yaml for SKU(s): " +
+                    s"${missing.mkString(", ")}. Each active SKU requires at least " +
+                    s"productCatalog.<sku>.default.{name, description}."
+            )
 
 final case class TemplateConfig(
     logoPosition: LogoPosition = LogoPosition.TopLeft,

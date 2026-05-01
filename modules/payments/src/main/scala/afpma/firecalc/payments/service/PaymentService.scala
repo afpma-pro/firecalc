@@ -26,13 +26,15 @@ trait PaymentService[F[_]]:
 
 object PaymentService:
     def create[F[_]: Async](
-        httpClient  : Client[F],
-        config      : GoCardlessConfig,
-        emailService: EmailService[F],
-        orderService: OrderService[F],
-        customerRepo: CustomerRepository[F]
+        httpClient       : Client[F],
+        config           : GoCardlessConfig,
+        emailService     : EmailService[F],
+        orderService     : OrderService[F],
+        customerRepo     : CustomerRepository[F],
+        productCopyConfig: ProductCopyConfig
     )(implicit logger: Logger[F]): F[PaymentService[F]] =
-        GoCardlessPaymentServiceImpl.create[F](httpClient, config, emailService, orderService, customerRepo)
+        GoCardlessPaymentServiceImpl
+            .create[F](httpClient, config, emailService, orderService, customerRepo, productCopyConfig)
 
     // Keep the mock for testing
     def createMock[F[_]: Async](implicit logger: Logger[F]): F[PaymentService[F]] =

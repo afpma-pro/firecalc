@@ -12,7 +12,6 @@ import javax.crypto.spec.SecretKeySpec
 
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.email.*
-import afpma.firecalc.payments.i18n.implicits.given
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.repository.impl.CustomerSyntax.*
 import afpma.firecalc.payments.service.*
@@ -21,6 +20,8 @@ import afpma.firecalc.payments.shared.api.BackendCompatibleLanguage
 import afpma.firecalc.payments.shared.api.CountryCode_ISO_3166_1_ALPHA_2
 import afpma.firecalc.payments.shared.api.CustomerInfo
 import afpma.firecalc.payments.shared.api.OrderId
+import afpma.firecalc.payments.shared.api.ProductCopyConfig
+import afpma.firecalc.payments.shared.api.ProductCopyResolver
 import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
@@ -368,15 +369,14 @@ given Decoder[GoCardlessMandate]                  = deriveDecoder
 given Decoder[MandateResponseEnvelope]            = deriveDecoder
 
 class GoCardlessPaymentServiceImpl[F[_]: Async](
-    httpClient  : Client[F],
-    config      : GoCardlessConfig,
-    emailService: EmailService[F],
-    orderService: OrderService[F],
-    customerRepo: CustomerRepository[F]
+    httpClient       : Client[F],
+    config           : GoCardlessConfig,
+    emailService     : EmailService[F],
+    orderService     : OrderService[F],
+    customerRepo     : CustomerRepository[F],
+    productCopyConfig: ProductCopyConfig
 )                                              (implicit logger: Logger[F])
     extends PaymentService[F]:
-
-    import BackendCompatibleLanguage.given
 
     private def gcHeaders: Headers =
         Headers(
@@ -441,8 +441,8 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         product                     : Product,
         existingGoCardlessCustomerId: Option[String] // = None
     )(using lang: BackendCompatibleLanguage): F[BillingRequest] =
-        val translations  = I18N_Payments
         val amountInCents = (amount * 100).toInt
+        val copy          = ProductCopyResolver.resolve(product.sku, lang)(using productCopyConfig)
         val request       = CreateBillingRequestRequest(
             mandate_request = MandateRequest(
                 currency = "EUR",
@@ -452,7 +452,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 PaymentRequest     (
                     amount      = amountInCents,
                     currency    = "EUR",
-                    description = translations.common.payment_description(orderId.value.toString, product.description),
+                    description = s"${copy.name} - ${copy.description}",
                     metadata    = Map("order_id" -> orderId.value.toString)
                 )
             ),
@@ -977,10 +977,12 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             // Use the language from the order to ensure consistency
             languageFromOrder = order.language
 
+            productCopy = ProductCopyResolver.resolve(product.sku, languageFromOrder)(using productCopyConfig)
+
             paymentLinkEmail = PaymentLinkEmail(
                 email       = EmailAddress.unsafeFromString(customerEmail),
                 paymentUrl  = paymentUrl,
-                productName = product.name,
+                productName = productCopy.name,
                 amount      = amount,
                 currency    = product.currency.toString
             )
@@ -989,17 +991,18 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             _ <- emailService.sendUserPaymentLink(paymentLinkEmail)(using languageFromOrder)
 
             _ <- logger.info(
-                s"Payment link email sent to $customerEmail for order ${orderId.value} with product: ${product.name} in language: ${languageFromOrder.code}"
+                s"Payment link email sent to $customerEmail for order ${orderId.value} with product: ${product.sku} in language: ${languageFromOrder.code}"
             )
         } yield ()
 
 object GoCardlessPaymentServiceImpl:
     def create[F[_]: Async](
-        httpClient  : Client[F],
-        config      : GoCardlessConfig,
-        emailService: EmailService[F],
-        orderService: OrderService[F],
-        customerRepo: CustomerRepository[F]
+        httpClient       : Client[F],
+        config           : GoCardlessConfig,
+        emailService     : EmailService[F],
+        orderService     : OrderService[F],
+        customerRepo     : CustomerRepository[F],
+        productCopyConfig: ProductCopyConfig
     )(implicit logger: Logger[F]): F[PaymentService[F]] =
         Async[F].pure(
             new GoCardlessPaymentServiceImpl[F](
@@ -1007,6 +1010,7 @@ object GoCardlessPaymentServiceImpl:
                 config,
                 emailService,
                 orderService,
-                customerRepo
+                customerRepo,
+                productCopyConfig
             )
         )

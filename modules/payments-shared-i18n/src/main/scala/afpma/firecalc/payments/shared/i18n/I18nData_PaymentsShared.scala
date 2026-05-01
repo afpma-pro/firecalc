@@ -10,8 +10,7 @@ import afpma.firecalc.payments.shared.i18n.I18nData_PaymentsShared.*
 // import io.taig.babel.StringFormat1
 
 final case class I18nData_PaymentsShared(
-    billing_info: BillingInfo,
-    products    : Products
+    billing_info: BillingInfo
 )
 
 object I18nData_PaymentsShared:
@@ -34,14 +33,4 @@ object I18nData_PaymentsShared:
         postal_code             : String,
         country_code            : String,
         phone_number            : String
-    )
-
-    case class Products(
-        pdf_report_EN_15544_2023: ProductTranslation,
-        test                    : ProductTranslation
-    )
-
-    case class ProductTranslation(
-        name       : String,
-        description: String
     )

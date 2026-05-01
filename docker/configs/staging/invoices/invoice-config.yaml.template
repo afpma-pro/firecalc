@@ -1,6 +1,8 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
+#
+
 # Quick-start scaffold — copy to invoice-config.yaml and fill in values.
 # For detailed setup docs and alternatives, see the .example counterpart.
 #
@@ -29,6 +31,18 @@ invoice:
       fr: "TVA non applicable, art. 293 B du CGI"
       en: "Non-profit organization - Tax exempt"
       default: "Tax exempt"
+  productCatalog:
+    entries:
+      pdf_report_EN_15544_2023:
+        fr:
+          name: "Note de calcul NF EN 15544:2023"
+          description: "Note de calcul conforme à la normes NF EN 15544:2023"
+        en:
+          name: "Calculation Report EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
+        default:
+          name: "Calculation Report EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
   paymentTerms:
     dueDays: ${PAYMENT_DUE_DAYS:-30}
     description: "Payment due within ${PAYMENT_DUE_DAYS:-30} days of invoice date"

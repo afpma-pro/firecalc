@@ -13,11 +13,14 @@ import afpma.firecalc.invoices.models.*
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.shared.api.ProductCopy
+import afpma.firecalc.payments.shared.api.ProductCopyConfig
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 
 import org.scalatest.funsuite.AnyFunSuite
+import io.taig.babel.Locales
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
@@ -138,14 +141,13 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
                 updatedAt    = java.time.Instant.now()
             ),
             product         = Product(
-                id          = testProductId,
-                name        = "FireCalc Report",
-                description = "PDF report",
-                price       = BigDecimal("89.00"),
-                currency    = Currency.EUR,
-                active      = true,
-                taxRate     = BigDecimal("20.0"),
-                taxExempt   = false
+                id        = testProductId,
+                sku       = "test",
+                price     = BigDecimal("89.00"),
+                currency  = Currency.EUR,
+                active    = true,
+                taxRate   = BigDecimal("20.0"),
+                taxExempt = false
             ),
             productMetadata = None
         )
@@ -160,7 +162,16 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
             mandateResult
 
     private def makeService(stub: StubPaymentService): InvoicePdfGenerationServiceImpl[IO] =
-        new InvoicePdfGenerationServiceImpl[IO](factory, stub)
+        val testProductCopyConfig = ProductCopyConfig(
+            Map(
+                "test" -> Map(
+                    "default" -> ProductCopy("FireCalc Report", "PDF report"),
+                    "fr"      -> ProductCopy("Note de calcul", "Rapport PDF"),
+                    "en"      -> ProductCopy("FireCalc Report", "PDF report")
+                )
+            )
+        )
+        new InvoicePdfGenerationServiceImpl[IO](factory, stub, testProductCopyConfig)
 
     // Case 1: Order with no paymentId → mandate lookup skipped, methods come from YAML only.
     test("order without paymentId — getMandateForPayment never called, methods = YAML methods only") {
@@ -168,7 +179,7 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
         val service = makeService(stub)
         val context = makeContext(paymentProvider = None, paymentId = None)
 
-        val params = service.buildInvoiceParams(context).unsafeRunSync()
+        val params = service.buildInvoiceParams(context, Locales.fr).unsafeRunSync()
 
         assert(params.paymentTerms.methods.size == 1                                    )
         assert(params.paymentTerms.methods.head.isInstanceOf[PaymentMethod.BankTransfer])
@@ -185,7 +196,7 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
         val service = makeService(stub)
         val context = makeContext(paymentProvider = Some(PaymentProvider.GoCardless), paymentId = Some("PM123"))
 
-        val params = service.buildInvoiceParams(context).unsafeRunSync()
+        val params = service.buildInvoiceParams(context, Locales.fr).unsafeRunSync()
 
         assert(params.paymentTerms.methods.size == 2)
         params.paymentTerms.methods.head match
@@ -204,7 +215,7 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
         val service = makeService(stub)
         val context = makeContext(paymentProvider = Some(PaymentProvider.GoCardless), paymentId = Some("PM456"))
 
-        val params = service.buildInvoiceParams(context).unsafeRunSync()
+        val params = service.buildInvoiceParams(context, Locales.fr).unsafeRunSync()
 
         assert(params.paymentTerms.methods.size == 1                                    )
         assert(params.paymentTerms.methods.head.isInstanceOf[PaymentMethod.BankTransfer])
@@ -216,7 +227,7 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
         val service = makeService(stub)
         val context = makeContext(paymentProvider = Some(PaymentProvider.GoCardless), paymentId = Some("PM789"))
 
-        val params = service.buildInvoiceParams(context).unsafeRunSync()
+        val params = service.buildInvoiceParams(context, Locales.fr).unsafeRunSync()
 
         assert(params.paymentTerms.methods.size == 2)
         params.paymentTerms.methods.head match
@@ -235,7 +246,7 @@ class InvoicePdfGenerationServiceSpec extends AnyFunSuite:
         val service = makeService(stub)
         val context = makeContext(paymentProvider = Some(PaymentProvider.GoCardless), paymentId = Some("PM999"))
 
-        val params = service.buildInvoiceParams(context).unsafeRunSync()
+        val params = service.buildInvoiceParams(context, Locales.fr).unsafeRunSync()
 
         assert(params.paymentTerms.methods.size == 2)
         params.paymentTerms.methods.head match

@@ -28,14 +28,13 @@ import afpma.firecalc.payments.shared.api.{
 }
 
 case class Product(
-    id         : ProductId,
-    name       : String,
-    description: String,
-    price      : BigDecimal,
-    currency   : Currency,
-    active     : Boolean,
-    taxRate    : BigDecimal,
-    taxExempt  : Boolean
+    id       : ProductId,
+    sku      : String,
+    price    : BigDecimal,
+    currency : Currency,
+    active   : Boolean,
+    taxRate  : BigDecimal,
+    taxExempt: Boolean
 )
 
 case class Customer(

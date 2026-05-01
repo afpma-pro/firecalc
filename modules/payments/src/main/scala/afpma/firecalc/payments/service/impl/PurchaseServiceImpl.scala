@@ -29,7 +29,8 @@ class PurchaseServiceImpl[F[_]: Async](
     authService        : AuthenticationService[F],
     orderService       : OrderService[F],
     paymentService     : PaymentService[F],
-    emailService       : EmailService[F]
+    emailService       : EmailService[F],
+    productCopyConfig  : ProductCopyConfig
 )                                     (implicit logger: Logger[F])
     extends PurchaseService[F]:
 
@@ -105,11 +106,13 @@ class PurchaseServiceImpl[F[_]: Async](
 
             isNewUser = customerOpt.isEmpty
 
+            productCopy = ProductCopyResolver.resolve(product.sku, request.customer.language)(using productCopyConfig)
+
             authCodeEmail = AuthenticationCodeEmail(
                 email       = EmailAddress.unsafeFromString(validatedEmail),
                 code        = authCode,
                 isNewUser   = isNewUser,
-                productName = Some(product.name),
+                productName = Some(productCopy.name),
                 amount      = product.price
             )
             emailResult <- {

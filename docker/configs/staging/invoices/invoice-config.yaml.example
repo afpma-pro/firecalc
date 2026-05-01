@@ -1,3 +1,8 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
+#
+
 # =============================================================================
 # Invoice Configuration - STAGING Environment
 # =============================================================================
@@ -10,7 +15,7 @@
 #
 # IMPORTANT:
 # - This is a YAML configuration file (indentation matters!)
-# - Supports environment variable substitution: ${VAR_NAME} or ${VAR_NAME:-default}
+# - Supports environment variable substitution: $\{VAR_NAME\} or $\{VAR_NAME:-default\}
 # - Remove .example extension when deploying:
 #   cp invoice-config.yaml.example invoice-config.yaml
 # - Update company details with your actual information
@@ -62,6 +67,25 @@ invoice:
       fr: "${COMPANY_TAX_EXEMPT_FR:-TVA non applicable, art. 293 B du CGI}"
       en: "${COMPANY_TAX_EXEMPT_EN:-Non-profit organization - Tax exempt}"
       default: "${COMPANY_TAX_EXEMPT_DEFAULT:-Tax exempt}"
+
+  # ---------------------------------------------------------------------------
+  # Product Catalog (per-SKU, per-locale customer-facing copy)
+  # ---------------------------------------------------------------------------
+  # Sibling of `sender`: org-level SKU copy, NOT a sender field.
+  # Each active SKU from the Scala catalog must have at least a "default" entry.
+  # Keys are BCP 47 language tags ("fr", "en", etc.) plus "default" fallback.
+  productCatalog:
+    entries:
+      pdf_report_EN_15544_2023:
+        fr:
+          name: "Note de calcul NF EN 15544:2023"
+          description: "Note de calcul conforme à la normes NF EN 15544:2023"
+        en:
+          name: "Calculation Report EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
+        default:
+          name: "Calculation Report EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
   
   # ---------------------------------------------------------------------------
   # Payment Terms
@@ -210,8 +234,8 @@ template:
 #   - Indentation matters! Use spaces, not tabs
 #   - Use null for empty/missing values
 #   - Strings with special characters need quotes
-#   - ${VAR} requires environment variable to be set
-#   - ${VAR:-default} uses default if variable not set
+#   - $\{VAR\} requires environment variable to be set
+#   - $\{VAR:-default\} uses default if variable not set
 #
 # Security:
 #   - This file may contain sensitive company information

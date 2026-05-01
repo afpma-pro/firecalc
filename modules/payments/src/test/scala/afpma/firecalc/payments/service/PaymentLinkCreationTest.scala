@@ -30,14 +30,13 @@ object PaymentLinkCreationTest extends TestSuite {
 
     // Test data for payment link creation scenarios
     val testProduct = Product(
-        id          = ProductId(UUID.randomUUID()),
-        name        = "Payment Link Test Product",
-        description = "Product for testing payment link creation",
-        price       = BigDecimal("75.50"),
-        currency    = Currency.EUR,
-        active      = true,
-        taxRate     = BigDecimal("20.0"),
-        taxExempt   = false
+        id        = ProductId(UUID.randomUUID()),
+        sku       = "test",
+        price     = BigDecimal("75.50"),
+        currency  = Currency.EUR,
+        active    = true,
+        taxRate   = BigDecimal("20.0"),
+        taxExempt = false
     )
 
     val testCustomerInfo = CustomerInfo(

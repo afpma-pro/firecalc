@@ -32,8 +32,7 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
             result <- future2AsyncF {
                 Product
                     .productId(id.value)
-                    .name
-                    .description
+                    .sku
                     .price
                     .currency
                     .active
@@ -44,11 +43,10 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                     .map(
                         _.headOption
                             .map:
-                                case (id, name, description, price, currency, active, taxRate, taxExempt) =>
+                                case (id, sku, price, currency, active, taxRate, taxExempt) =>
                                     domain.Product(
                                         api.ProductId          (id               ),
-                                        name,
-                                        description,
+                                        sku,
                                         price,
                                         domain.Currency.valueOf(currency.toString),
                                         active,
@@ -61,20 +59,18 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
         yield result
 
     def findOrCreate(
-        name       : String,
-        description: String,
-        price      : BigDecimal,
-        currency   : domain.Currency,
-        taxRate    : BigDecimal,
-        taxExempt  : Boolean
+        sku      : String,
+        price    : BigDecimal,
+        currency : domain.Currency,
+        taxRate  : BigDecimal,
+        taxExempt: Boolean
     ): F[domain.Product] =
         for
-            _ <- logger.info(s"Finding or Creating new product: $name")
+            _ <- logger.info(s"Finding or Creating new product: $sku")
 
             internalId <- future2AsyncF {
                 Product.id
-                    .name_(name)
-                    .description_(description)
+                    .sku_(sku)
                     .price_(price)
                     .currency_(Currency.valueOf(currency.toString))
                     .active_(true)
@@ -88,8 +84,7 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
             productId = UUID.randomUUID()
             product   = domain.Product(
                 api.ProductId(productId),
-                name,
-                description,
+                sku,
                 price,
                 currency,
                 active    = true,
@@ -106,8 +101,8 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                     }
                 case None             =>
                     future2AsyncF {
-                        Product.productId.name.description.price.currency.active.taxRate.taxExempt
-                            .insert((productId, name, description, price, currency.toString, true, taxRate, taxExempt))
+                        Product.productId.sku.price.currency.active.taxRate.taxExempt
+                            .insert((productId, sku, price, currency.toString, true, taxRate, taxExempt))
                             .transact
                     } flatMap { _ =>
                         logger.info(s"Created product: ${product.id.value}")
@@ -115,35 +110,33 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
         yield product
 
     def create(
-        id         : api.ProductId,
-        name       : String,
-        description: String,
-        price      : BigDecimal,
-        currency   : domain.Currency,
-        active     : Boolean,
-        taxRate    : BigDecimal,
-        taxExempt  : Boolean
+        id       : api.ProductId,
+        sku      : String,
+        price    : BigDecimal,
+        currency : domain.Currency,
+        active   : Boolean,
+        taxRate  : BigDecimal,
+        taxExempt: Boolean
     ): F[domain.Product] =
         for
-            _ <- logger.info(s"Creating product: $name (id: ${id.value})")
+            _ <- logger.info(s"Creating product: $sku (id: ${id.value})")
             _ <- future2AsyncF {
-                Product.productId.name.description.price.currency.active.taxRate.taxExempt
-                    .insert((id.value, name, description, price, currency.toString, active, taxRate, taxExempt))
+                Product.productId.sku.price.currency.active.taxRate.taxExempt
+                    .insert((id.value, sku, price, currency.toString, active, taxRate, taxExempt))
                     .transact
             }
-            product = domain.Product(id, name, description, price, currency, active, taxRate, taxExempt)
+            product = domain.Product(id, sku, price, currency, active, taxRate, taxExempt)
             _ <- logger.info(s"Created product: ${id.value}")
         yield product
 
     def update(
-        id         : api.ProductId,
-        name       : String,
-        description: String,
-        price      : BigDecimal,
-        currency   : domain.Currency,
-        active     : Boolean,
-        taxRate    : BigDecimal,
-        taxExempt  : Boolean
+        id       : api.ProductId,
+        sku      : String,
+        price    : BigDecimal,
+        currency : domain.Currency,
+        active   : Boolean,
+        taxRate  : BigDecimal,
+        taxExempt: Boolean
     ): F[domain.Product] =
         for
             _ <- logger.info(s"Updating product: ${id.value}")
@@ -159,8 +152,7 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
             // Update using internal ID
             _ <- future2AsyncF {
                 Product(internalId)
-                    .name(name)
-                    .description(description)
+                    .sku(sku)
                     .price(price)
                     .currency(Currency.valueOf(currency.toString))
                     .active(active)
@@ -170,13 +162,13 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                     .transact
             }
 
-            product = domain.Product(id, name, description, price, currency, active, taxRate, taxExempt)
+            product = domain.Product(id, sku, price, currency, active, taxRate, taxExempt)
             _ <- logger.info(s"Updated product: ${id.value}")
         yield product
 
     def upsert(productInfo: api.v1.ProductInfo): F[domain.Product] =
         for
-            _ <- logger.info(s"Upserting product: ${productInfo.nameKey} (id: ${productInfo.id.value})")
+            _ <- logger.info(s"Upserting product: ${productInfo.sku} (id: ${productInfo.id.value})")
 
             // Check if product exists
             existingProduct <- findById(productInfo.id)
@@ -192,8 +184,7 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                 case Some(_) =>
                     update(
                         productInfo.id,
-                        productInfo.nameKey,
-                        productInfo.descriptionKey,
+                        productInfo.sku,
                         productInfo.price,
                         currency,
                         productInfo.active,
@@ -203,8 +194,7 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                 case None    =>
                     create(
                         productInfo.id,
-                        productInfo.nameKey,
-                        productInfo.descriptionKey,
+                        productInfo.sku,
                         productInfo.price,
                         currency,
                         productInfo.active,
@@ -212,5 +202,5 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                         productInfo.taxExempt
                     )
 
-            _ <- logger.info(s"Upserted product: ${productInfo.id.value}")
+            _ <- logger.info(s"Upserted product: ${productInfo.id.value} (sku=${productInfo.sku})")
         yield product
