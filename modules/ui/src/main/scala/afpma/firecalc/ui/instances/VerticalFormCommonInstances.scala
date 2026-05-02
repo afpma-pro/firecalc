@@ -20,7 +20,7 @@ import afpma.firecalc.payments.shared.i18n.implicits.I18N_PaymentsShared
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
-import afpma.firecalc.ui.components.FireboxCatalogSelectComponent
+import afpma.firecalc.ui.components.Door15aFireboxCatalogSelectComponent
 import afpma.firecalc.ui.components.SingleTestedCatalogSelectComponent
 import afpma.firecalc.ui.models.BillableCountry
 import afpma.firecalc.ui.models.BillableCustomerType
@@ -28,11 +28,12 @@ import afpma.firecalc.ui.models.BillingLanguage
 import afpma.firecalc.ui.models.door15aFireboxesSignal
 import afpma.firecalc.ui.models.firebox_var
 import afpma.firecalc.ui.models.singleTestedFireboxesSignal
-import afpma.firecalc.ui.models.stove_params_var
+import afpma.firecalc.ui.models.stove_params_max_load_var
 
 import cats.Show
 
 import com.raquo.airstream.state.Var
+import com.raquo.laminar.api.L.*
 
 import coulomb.*
 
@@ -376,6 +377,50 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given ValidateVar[TypeOfAppliance] = ValidateVar.valid
         FormDerivation.forEnumOrSumTypeLike_UsingShowAsId(TypeOfAppliance.values.toList)
 
+    private def makeLocalSyncedVarFromExtVar[G, L, E](
+        globalVar         : Var[G],
+        zoomIn            : G => L,
+        zoomOut           : (G, L) => G,
+        extVar            : Var[E],
+        locToExt          : L => E,
+        extToLoc          : E => L,
+        initialSyncCond   : (E, L) => Boolean,
+        extToLocalSyncCond: (E, L) => Boolean,
+        localToExtSyncCond: (L, E) => Boolean
+    ): Seq[Binder[HtmlElement]] =
+
+        val locVar: Var[L] = globalVar.zoomLazy(zoomIn)(zoomOut)
+
+        val syncLocalToExt = locVar.signal.distinct.changes
+            .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+            .withCurrentValueOf(extVar)
+            .collect {
+                case (l, e) if localToExtSyncCond(l, e) => locToExt(l)
+            } --> extVar.writer
+
+        val syncExtToLocal = extVar.signal.distinct.changes
+            .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
+            .withCurrentValueOf(locVar)
+            .collect {
+                case (e, l) if extToLocalSyncCond(e, l) => extToLoc(e)
+            } --> locVar.writer
+
+        // Initial sync: ensure `extVar` and `locVar` are consistent on initialization
+        // Handle case when values need to be synchronized immediately.
+        val initialSync = extVar.signal
+            .composeChanges(_.take(1))
+            .map { e =>
+                val currLoc = locVar.now()
+                if (initialSyncCond(e, currLoc)) {
+                    locVar.set(extToLoc(e))
+                }
+            }
+            .map(_ => ())
+            --> Observer[Unit](_ => ())
+
+        val binders = Seq(initialSync, syncExtToLocal, syncLocalToExt)
+        binders
+
     given given_Firebox_SingleTested: DF[Firebox.SingleTested] =
         import defaultable.qty_d.zeroWithUnit
         given defaultable_TCelsius: Defaultable[TCelsius] = defaultable.given_TCelsius
@@ -428,11 +473,25 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         Form.makeFor[Firebox.SingleTested](d): (v, fc) =>
             (renderer: FormRenderer) ?=>
                 import com.raquo.laminar.api.L.*
+
+                val binders = makeLocalSyncedVarFromExtVar(
+                    globalVar          = v,
+                    zoomIn             = _.maximum_fuel_mass,
+                    zoomOut            = (fb, x) => fb.copy(maximum_fuel_mass = x),
+                    extVar             = stove_params_max_load_var,
+                    locToExt           = Some(_),
+                    extToLoc           = _.getOrElse(0.kg),
+                    initialSyncCond    = (e, l) => (e != l),
+                    extToLocalSyncCond = (e, l) => e != l,
+                    localToExtSyncCond = (l, e) => l != e && l != 0.kg
+                )
+
                 val modal = SingleTestedCatalogSelectComponent(
                     entriesSignal = singleTestedFireboxesSignal,
                     onSelect      = Observer(v.set)
                 )
                 div(
+                    binders,
                     button                (
                         cls := "btn btn-secondary btn-sm mb-2",
                         I18N_UI.catalog.select_from_catalog,
@@ -534,35 +593,29 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         Form.makeFor[Firebox.Door15aFirebox_Catalog](d): (v, fc) =>
             (renderer: FormRenderer) ?=>
                 import com.raquo.laminar.api.L.*
-                // Bidirectional sync
-                // mb_min and mb_max are independent — they must NOT participate in this sync.
-                val loadSizeNominalVar: Var[Option[Mass]] =
-                    v.zoomLazy(_.load_size_nominal)((fb, m) => fb.copy(load_size_nominal = m))
-                val maximumLoadVar    : Var[Option[Mass]] =
-                    stove_params_var.zoomLazy(_.maximum_load)((sp, m) =>
-                        if (m == sp.maximum_load) sp
-                        else if (m.isDefined) sp.with_mB(m.get)
-                        else sp
-                    )
-                val syncLoadToMax = loadSizeNominalVar.signal.distinct.changes
-                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
-                    .withCurrentValueOf(maximumLoadVar)
-                    .collect { case (fv, lv) if fv != lv => fv } --> maximumLoadVar.writer
-                val syncMaxToLoad = maximumLoadVar.signal.distinct.changes
-                    .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
-                    .withCurrentValueOf(loadSizeNominalVar)
-                    .collect { case (lv, fv) if lv != fv => lv } --> loadSizeNominalVar.writer
 
-                val modal = FireboxCatalogSelectComponent(
+                val binders = makeLocalSyncedVarFromExtVar(
+                    globalVar          = v,
+                    zoomIn             = _.load_size_nominal,
+                    zoomOut            = (fb, x) => fb.copy(load_size_nominal = x),
+                    extVar             = stove_params_max_load_var,
+                    locToExt           = identity,
+                    extToLoc           = identity,
+                    initialSyncCond    = (e, l) => (e != l),
+                    extToLocalSyncCond = (e, l) => e != l,
+                    localToExtSyncCond = (l, e) => l != e
+                )
+
+                val modal = Door15aFireboxCatalogSelectComponent(
                     entriesSignal = door15aFireboxesSignal,
                     onSelect      = Observer { entry =>
-                        val ml = stove_params_var.now().maximum_load
+                        val ml = stove_params_max_load_var.now()
                         v.set(if ml.isDefined then entry.copy(load_size_nominal = ml) else entry)
                     }
                 )
+
                 div(
-                    syncLoadToMax,
-                    syncMaxToLoad,
+                    binders,
                     button                (
                         cls := "btn btn-secondary btn-sm mb-2",
                         I18N_UI.catalog.select_from_catalog,
@@ -586,9 +639,19 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         FormDerivation
             .derived[Firebox]
             .withOnSubtypeSwitch { (prev, next) =>
-                next match
-                    case _: Firebox.SingleTested => next
-                    case _ => next.withDimensions(prev.firebox_depth, prev.firebox_width, prev.firebox_height)
+                if (prev == next) then next
+                else
+                    // sync firebox dimensions from previous to next
+                    val updatedDim =
+                        next.withDimensions(prev.firebox_depth, prev.firebox_width, prev.firebox_height)
+
+                    // sync nominal load from current value to next firebox
+                    val curr_load   = stove_params_max_load_var.now()
+                    val updatedLoad =
+                        if (curr_load.isDefined)
+                            updatedDim.withNominalLoad(curr_load.get)
+                        else updatedDim
+                    updatedLoad
             }
             .autoOverwriteFieldNames
             .wrappedInto(c =>

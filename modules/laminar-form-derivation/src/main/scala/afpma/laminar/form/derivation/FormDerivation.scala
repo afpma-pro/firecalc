@@ -198,7 +198,8 @@ object FormDerivation extends AutoDerivation[Form]:
                     if newIdx >= 0 then
                         val newDefault  = vars_subt(newIdx).now()
                         val transformed = transform(prevValue, newDefault)
-                        if transformed != newDefault then vars_subt(newIdx).set(transformed)
+                        if transformed != newDefault
+                        then vars_subt(newIdx).set(transformed)
             }
         }
 

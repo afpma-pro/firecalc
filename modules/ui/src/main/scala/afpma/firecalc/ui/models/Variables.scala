@@ -160,6 +160,13 @@ val adjacent_buildings_var =
 val stove_params_var =
     engineStateVar.zoomLazy(_.stove_params)((ast, x) => ast.copy(stove_params = x))
 
+val stove_params_max_load_var: Var[Option[Mass]] =
+    stove_params_var.zoomLazy(_.maximum_load)((sp, m) =>
+        if (m == sp.maximum_load) sp
+        else if (m.isDefined) sp.with_mB(m.get)
+        else sp
+    )
+
 val air_intake_incrdescr_var =
     engineStateVar.zoomLazy(_.air_intake_descr)((g, x) => g.copy(air_intake_descr = x))
 

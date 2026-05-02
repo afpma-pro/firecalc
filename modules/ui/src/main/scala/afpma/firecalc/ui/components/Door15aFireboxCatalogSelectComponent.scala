@@ -20,10 +20,10 @@ import afpma.firecalc.catalog.CatalogCategoryInstances.given
 import io.taig.babel.Locale
 
 /** Modal component for selecting a firebox from the 15a firebox catalog. */
-case class FireboxCatalogSelectComponent(
+case class Door15aFireboxCatalogSelectComponent(
     entriesSignal: Signal[Seq[Firebox.Door15aFirebox_Catalog]],
     onSelect     : Observer[Firebox.Door15aFirebox_Catalog]
-)                                       (using Locale, DisplayUnits)
+)                                              (using Locale, DisplayUnits)
     extends Component:
 
     private val cat = summon[CatalogCategory[Firebox.Door15aFirebox_Catalog]]
@@ -46,4 +46,4 @@ case class FireboxCatalogSelectComponent(
     def open(): Unit = dialog.open()
     val node: HtmlElement = dialog.node
 
-end FireboxCatalogSelectComponent
+end Door15aFireboxCatalogSelectComponent
