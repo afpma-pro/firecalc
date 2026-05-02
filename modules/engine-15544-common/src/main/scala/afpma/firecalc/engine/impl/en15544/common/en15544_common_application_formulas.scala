@@ -13,7 +13,6 @@ import cats.syntax.all.catsSyntaxValidatedId
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.LoadQty.withLoad
-import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -55,18 +54,10 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
     def t_n: t_n =
         inputs.stoveParams.heating_cycle
 
-    // If tested fireboxs are used, the maximum load at nominal heat output shall be the maximum
-    // fuel mass according to the type test.
-    def m_B: m_B = // TODO: VNelMcalcErr[m_B] and return InconsistentMaxLoadValueAccrossInputs
-        inputs.design.firebox match
-            case dcc: Firebox_15544.SingleTested =>
-                dcc.maximumFuelMass // should be synced with inputs.stoveParams.mB_or_pn
-            // case fb15a : Firebox_15544.Door15aFirebox_Catalog_DatabaseEntry =>
-            //     fb15a.mb
-            case _: Firebox_15544 =>
-                inputs.stoveParams.mB_or_pn match
-                    case Left(mb) => mb
-                    case Right(_) => formulas.m_B_calc(P_n, t_n, n_min)
+    def m_B: m_B =
+        inputs.stoveParams.mB_or_pn match
+            case Left(mb) => mb
+            case Right(_) => formulas.m_B_calc(P_n, t_n, n_min)
 
     given Conversion[LoadQty, Option[Mass]] = (lq: LoadQty) =>
         lq match

@@ -43,6 +43,8 @@ case class TraditionalFirebox(
     type Self = TraditionalFirebox
     override val firebox_type: Locale ?=> String = I18N.firebox_names.traditional
     override val min_load                 = MinLoad.HalfOfMaxLoad.makeWithoutValue
+    override def nominal_load             = None
+    override def max_load                 = None
     override val pn_reduced               = HeatOutputReduced.HalfOfNominal.makeWithoutValue
     override val reference                = LocalizedString.from(I18N.firebox_names.traditional)
     override val type_of_appliance        = TypeOfAppliance.WoodLogs

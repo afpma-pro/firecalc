@@ -162,6 +162,7 @@ object I18nData:
         glass_area                                 : String,
         ref                                        : String,
         typ                                        : String,
+        load_size_nominal                          : String,
         ecolabeled                                 : Firebox_15544.Ecolabeled,
         tested                                     : Firebox_15544.Tested,
         traditional                                : Firebox_15544.Traditional,
@@ -508,6 +509,7 @@ object I18nData:
     )
 
     case class Errors(
+        term_should_be_defined                 : StringFormat2,
         term_should_be_greater_or_eq_than      : StringFormat3,
         term_should_be_greater_than            : StringFormat3,
         term_should_be_less_or_eq_than         : StringFormat3,
@@ -518,6 +520,7 @@ object I18nData:
         glass_area_too_large                   : StringFormat2,
         glass_surface_ratio_not_confirmed      : String,
         firebox_height_out_of_range            : StringFormat3,
+        inconsistent_max_load_accross_inputs   : StringFormat3,
         firebox_base_surface_not_in_range      : StringFormat3,
         firebox_base_ratio_invalid             : StringFormat5,
         firebox_base_min_width                 : StringFormat2,

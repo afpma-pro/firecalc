@@ -27,6 +27,12 @@ enum MinLoad:
 
 object MinLoad:
 
+    extension (min_load: MinLoad)
+        def value: Option[Mass] = min_load match
+            case NotDefined              => None
+            case HalfOfMaxLoad(min_load) => min_load
+            case FromTypeTest(min_load)  => Some(min_load)
+
     object HalfOfMaxLoad:
         val makeWithoutValue: HalfOfMaxLoad = HalfOfMaxLoad(None)
         def makeFromValue  (min_load: Mass): HalfOfMaxLoad = HalfOfMaxLoad(min_load.some)

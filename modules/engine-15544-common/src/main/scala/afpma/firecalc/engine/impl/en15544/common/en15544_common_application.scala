@@ -761,7 +761,8 @@ abstract class EN15544_V_2023_Common_Application
             Validated
                 .fromOption(
                     NonEmptyList.fromList(
-                        fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
+                        fc.internal_firebox_custom_constraints(firebox)(using Locales.en) :::
+                            fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
                     ),
                     ()
                 )

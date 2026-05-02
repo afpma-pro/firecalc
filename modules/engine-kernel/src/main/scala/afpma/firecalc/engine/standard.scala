@@ -171,25 +171,39 @@ object standard {
         override final def sectionTyp: PipeType = FireboxPipeT
 
     given ShowUsingLocale[FireboxError] = showUsingLocale:
-        case e: InvalidTermValue[?]           => show_InvalidTermValue(using e.showT).show(e)
-        case e: FireboxBaseSurfaceNotInRange  => Show[FireboxBaseSurfaceNotInRange].show(e)
-        case e: FireboxBaseRatioInvalid       => Show[FireboxBaseRatioInvalid].show(e)
-        case e: FireboxBaseMinWidthInvalid    => Show[FireboxBaseMinWidthInvalid].show(e)
-        case e: GlassAreaTooLarge             => Show[GlassAreaTooLarge].show(e)
-        case e: GlassSurfaceRatioNotConfirmed => Show[GlassSurfaceRatioNotConfirmed].show(e)
-        case e: FireboxHeightOutOfRange       => Show[FireboxHeightOutOfRange].show(e)
-        case e: InjectorVelocityBelowMinimum  => Show[InjectorVelocityBelowMinimum].show(e)
-        case e: InjectorVelocityAboveMaximum  => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: MissingFlowRate               => Show[MissingFlowRate].show(e)
-        case e: AirIntakePipeShapeMismatch    => e.show
-        case e: FireboxErrorCustom            => e.reason
-        case e: InvalidFireboxConstraint      => e.show
+        case e: InvalidTermValue[?]              => show_InvalidTermValue(using e.showT).show(e)
+        case e: InconsistentMaxLoadAccrossInputs => Show[InconsistentMaxLoadAccrossInputs].show(e)
+        case e: FireboxBaseSurfaceNotInRange     => Show[FireboxBaseSurfaceNotInRange].show(e)
+        case e: FireboxBaseRatioInvalid          => Show[FireboxBaseRatioInvalid].show(e)
+        case e: FireboxBaseMinWidthInvalid       => Show[FireboxBaseMinWidthInvalid].show(e)
+        case e: GlassAreaTooLarge                => Show[GlassAreaTooLarge].show(e)
+        case e: GlassSurfaceRatioNotConfirmed    => Show[GlassSurfaceRatioNotConfirmed].show(e)
+        case e: FireboxHeightOutOfRange          => Show[FireboxHeightOutOfRange].show(e)
+        case e: InjectorVelocityBelowMinimum     => Show[InjectorVelocityBelowMinimum].show(e)
+        case e: InjectorVelocityAboveMaximum     => Show[InjectorVelocityAboveMaximum].show(e)
+        case e: MissingFlowRate                  => Show[MissingFlowRate].show(e)
+        case e: AirIntakePipeShapeMismatch       => e.show
+        case e: FireboxErrorCustom               => e.reason
+        case e: InvalidFireboxConstraint         => e.show
 
     case class InvalidFireboxConstraint(error: TermConstraintError[?]) extends FireboxError
     object InvalidFireboxConstraint:
         given ShowUsingLocale[InvalidFireboxConstraint] = showUsingLocale(_.error.failMsg)
 
     final class FireboxErrorCustom(val reason: Locale ?=> String) extends FireboxError
+
+    case class InconsistentMaxLoadAccrossInputs(
+        stoveParamsValue: Mass,
+        fireboxValue    : Mass,
+        fireboxType     : Locale => String
+    ) extends FireboxError
+    object InconsistentMaxLoadAccrossInputs:
+        given ShowUsingLocale[InconsistentMaxLoadAccrossInputs] = showUsingLocale: e =>
+            I18N.errors.inconsistent_max_load_accross_inputs(
+                e.stoveParamsValue.show,
+                e.fireboxValue.show,
+                e.fireboxType(summon[Locale])
+            )
 
     case class FireboxBaseSurfaceNotInRange(actual: String, min: String, max: String) extends FireboxError
     object FireboxBaseSurfaceNotInRange:
@@ -248,6 +262,8 @@ object standard {
         given showT  : Show[T] = scala.compiletime.deferred
 
     given show_InvalidTermValue: [T: Show] => ShowUsingLocale[InvalidTermValue[T]] = showUsingLocale:
+        case x: TermValueShouldBeDefined             =>
+            I18N.errors.term_should_be_defined(x.termName, "[none]")
         case x: TermValueShouldBeGreaterOrEqThan[?]  =>
             I18N.errors.term_should_be_greater_or_eq_than(x.termName, x.minValue.show, x.termValue.show)
         case x: TermValueShouldBeGreaterThan[?]      =>
@@ -260,6 +276,12 @@ object standard {
             I18N.errors.term_should_be_between_inclusive(x.termName, x.minValue.show, x.maxValue.show, x.termValue.show)
         case x: TermValueCustom[?]                   =>
             x.message
+
+    case class TermValueShouldBeDefined(
+        override val termName: String
+    ) extends InvalidTermValue[Unit]:
+        override val termValue: Unit       = ()
+        override given showT  : Show[Unit] = Show.show(_ => "[none]")
 
     case class TermValueShouldBeGreaterOrEqThan[T: Show](
         override val termName : String,

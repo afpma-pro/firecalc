@@ -55,6 +55,8 @@ case class AFPMA_PRSE(
 
     override val firebox_type: Locale ?=> String = I18N.firebox_names.afpma_prse
     override def min_load                 = MinLoad.HalfOfMaxLoad.makeWithoutValue
+    override def nominal_load             = None
+    override def max_load                 = None
     override def height_of_lowest_opening = h91_hauteurDuCendrier_AF
     override val reference                = LocalizedString.from(I18N.firebox_names.afpma_prse)
     override val type_of_appliance        = TypeOfAppliance.WoodLogs
