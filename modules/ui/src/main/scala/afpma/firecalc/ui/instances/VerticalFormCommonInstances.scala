@@ -219,7 +219,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         import vv.area.valid_whenStrictlyPositive
         given_dual_Area_cm2_m2_or_in2
             .form()
-            .withFieldName(I18N.terms.area)
+            .withFieldName(I18N.firebox.glass_area)
 
     // Firebox
 
