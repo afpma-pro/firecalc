@@ -41,7 +41,25 @@ given singleTestedConstraints: (FireboxConstraints[SingleTested] & RemovedFirebo
                 firebox.minimumFuelMass.map(TermConstraint.Min.apply)
             val maxConstraint: Option[TermConstraint[m_B]] =
                 Some(TermConstraint.Max(firebox.maximumFuelMass))
-            Seq     (minConstraint, maxConstraint               )
+
+            val maxShouldEqualStoveParamsNominal: Option[TermConstraint[m_B]] =
+                Some(
+                    TermConstraint.GenericTyped(
+                        firebox.maximumFuelMass,
+                        fbMax =>
+                            Either.cond(
+                                fbMax == ctx.m_B,
+                                fbMax,
+                                InconsistentMaxLoadAccrossInputs(
+                                    stoveParamsValue = ctx.m_B,
+                                    fireboxValue     = fbMax,
+                                    loc => firebox.firebox_type(using loc)
+                                )
+                            )
+                    )
+                )
+
+            Seq(minConstraint, maxConstraint, maxShouldEqualStoveParamsNominal)
 
         // ── 4.2.2 – m_B_min: not constrained for SingleTested ────────────────
         override def m_B_min_constraints(
