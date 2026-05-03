@@ -680,37 +680,37 @@ abstract class EN15544_V_2023_Common_Application
             )
 
         // Validations
-        def validateVelocitiesInFluePipe(): VNelMcalcErr[Unit] =
+        lazy val validateVelocitiesInFluePipe: VNelMcalcErr[Unit] =
             conceptualFlueRegionPipeResults.andThen: rs =>
                 rs.toList.map(validateVelocitiesIn).sequence.map(_ => ())
 
-        def validateVelocitiesInConnectorPipe(): VNelMcalcErr[Unit] =
+        lazy val validateVelocitiesInConnectorPipe: VNelMcalcErr[Unit] =
             connector_PipeResult.andThen(validateVelocitiesIn)
 
-        def validateVelocitiesInChimneyPipe(): VNelMcalcErr[Unit] =
+        lazy val validateVelocitiesInChimneyPipe: VNelMcalcErr[Unit] =
             chimney_PipeResult.andThen(validateVelocitiesIn)
 
-        def validateVelocitiesInPipes(): VNel[Unit] =
+        lazy val validateVelocitiesInPipes: VNel[Unit] =
             List(
-                validateVelocitiesInFluePipe     (),
-                validateVelocitiesInConnectorPipe(),
-                validateVelocitiesInChimneyPipe  ()
+                validateVelocitiesInFluePipe,
+                validateVelocitiesInConnectorPipe,
+                validateVelocitiesInChimneyPipe
             ).sequence[[x] =>> VNelMcalcErr[x], Unit].map(_ => ())
 
-        def validatePressureRequirements_EN15544(): VNelMcalcErr[Unit] =
+        lazy val validatePressureRequirements_EN15544: VNelMcalcErr[Unit] =
             pressureRequirement_EN15544.andThen: preq =>
                 preq.isInValidRange match
                     case true  => ().validNel
                     case false => InvalidPressureRequirement(preq).invalidNel
 
-        def validateChimneyWallTempIsAboveCondensationTemp(): VNelMcalcErr[Unit] =
+        lazy val validateChimneyWallTempIsAboveCondensationTemp: VNelMcalcErr[Unit] =
             estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>
                 if (t >= formulas.t_chimney_wall_top_min)
                     ().validNel[MecaFlu_Error]
                 else
                     MecaFlu_Error.InvalidChimneyWallTemperature(t).invalidNel
 
-        def validateEfficiencyIsAboveMinEfficiency(): VNelMcalcErr[Unit] =
+        lazy val validateEfficiencyIsAboveMinEfficiency: VNelMcalcErr[Unit] =
             η.andThen: eff =>
                 emissions_and_efficiency_values.min_efficiency_full_stove_nominal.map:
                     case Some(min_eff) =>
@@ -742,11 +742,11 @@ abstract class EN15544_V_2023_Common_Application
                         else FluePipeLengthBelowMinimum(totalLen, lzMin.unwrap).invalidNel
                     case Validated.Invalid(_)   => ().validNel // can't check if L_Z_min computation failed
 
-        def validateCitedConstraints(): VNelMcalcErr[Unit] =
+        lazy val validateCitedConstraints: VNelMcalcErr[Unit] =
             val base = citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
             base.andThen(_ => validateLzMinConstraint())
 
-        def validateFireboxSpecificConstraints(): ValidatedNel[FireboxError, Unit] =
+        lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit] =
             val fbCtx = FireboxConstraintContext(
                 mB                 = m_B,
                 flow_rate          = V_L,

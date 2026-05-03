@@ -425,13 +425,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(
         pipeResult_vnel_signal.map(_.andThen(_.`ph-(pR+pu)`))
 
     private lazy val velocityCheck_sig: Signal[VNelMcalcErr[Any]] =
-        results_en15544_strict_sig.flatMapVNelE(_.primary.validateVelocitiesInFluePipe())
+        results_en15544_strict_sig.flatMapVNelE(_.primary.validateVelocitiesInFluePipe)
 
     private lazy val shapeCheck_sig: Signal[VNelMcalcErr[Any]] =
         results_en15544_strict_sig.flatMapVNelE(_.validateFluePipeShape())
 
     private lazy val citedConstraintsCheck_sig: Signal[VNelMcalcErr[Any]] =
-        results_en15544_strict_sig.flatMapVNelE(_.primary.validateCitedConstraints())
+        results_en15544_strict_sig.flatMapVNelE(_.primary.validateCitedConstraints)
 
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig
@@ -1291,9 +1291,9 @@ final case class DynamicThermalPipeSlotPanel(
     private lazy val velocityCheck_sig: Signal[VNelMcalcErr[Any]] =
         results_en15544_strict_sig.flatMapVNelE: strict =>
             pipeTypeVal match
-                case ConnectorPipeT => strict.primary.validateVelocitiesInConnectorPipe()
-                case ChimneyPipeT   => strict.primary.validateVelocitiesInChimneyPipe()
-                case _              => strict.primary.validateVelocitiesInFluePipe()
+                case ConnectorPipeT => strict.primary.validateVelocitiesInConnectorPipe
+                case ChimneyPipeT   => strict.primary.validateVelocitiesInChimneyPipe
+                case _              => strict.primary.validateVelocitiesInFluePipe
 
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig

@@ -288,16 +288,16 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val outputs: Outputs
 
         // Validations
-        def validateVelocitiesInFluePipe                  (                    ): VNelMcalcErr[Unit]
-        def validateVelocitiesInConnectorPipe             (                    ): VNelMcalcErr[Unit]
-        def validateVelocitiesInChimneyPipe               (                    ): VNelMcalcErr[Unit]
-        def validateVelocitiesInPipes                     (                    ): VNel[Unit]
-        def validatePressureRequirements_EN15544          (                    ): VNelMcalcErr[Unit]
-        def validateChimneyWallTempIsAboveCondensationTemp(                    ): VNelMcalcErr[Unit]
-        def validateEfficiencyIsAboveMinEfficiency        (                    ): VNelMcalcErr[Unit]
-        def validateSeasonalEfficiency                    (countryCode: Country): VNelMcalcErr[Unit]
-        def validateCitedConstraints                      (                    ): VNelMcalcErr[Unit]
-        def validateFireboxSpecificConstraints            (                    ): ValidatedNel[FireboxError, Unit]
+        lazy val validateVelocitiesInFluePipe                  : VNelMcalcErr[Unit]
+        lazy val validateVelocitiesInConnectorPipe             : VNelMcalcErr[Unit]
+        lazy val validateVelocitiesInChimneyPipe               : VNelMcalcErr[Unit]
+        lazy val validateVelocitiesInPipes                     : VNel[Unit]
+        lazy val validatePressureRequirements_EN15544          : VNelMcalcErr[Unit]
+        lazy val validateChimneyWallTempIsAboveCondensationTemp: VNelMcalcErr[Unit]
+        lazy val validateEfficiencyIsAboveMinEfficiency        : VNelMcalcErr[Unit]
+        def validateSeasonalEfficiency(countryCode: Country): VNelMcalcErr[Unit]
+        lazy val validateCitedConstraints          : VNelMcalcErr[Unit]
+        lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit]
     end AtParams
 
     // ─── Pre-built AtParams instances ───────────────────────────────────

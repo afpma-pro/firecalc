@@ -381,6 +381,7 @@ lazy val results_en15544_strict_sig: Signal[VNelMcalcErr[EN15544_Strict_Applicat
 lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
     results_en15544_strict_sig
         .combineWith(project_descr_var.signal)
+        .distinct
         .map((vnelAppl, prj) =>
             vnelAppl
                 .map(
@@ -435,8 +436,7 @@ lazy val results_en15544_estimated_output_temperatures: Signal[VNelMcalcErr[Esti
 lazy val chimney_wall_temp_above_condensation_temp_sig: Signal[Boolean] =
     results_en15544_strict_sig.flatMapAndFoldVNelE(
         strict =>
-            strict.primary
-                .validateChimneyWallTempIsAboveCondensationTemp()
+            strict.primary.validateChimneyWallTempIsAboveCondensationTemp
                 .map(_ => true),
         default = false
     )
