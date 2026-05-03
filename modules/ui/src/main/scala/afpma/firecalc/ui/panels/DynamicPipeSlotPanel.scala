@@ -25,7 +25,7 @@ import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.utils.flatMapVNelE
+import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
 
 import cats.Show
 import cats.data.Validated
@@ -361,8 +361,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 statusIcon.map(n => Some(div(n)))
             case Some(hi) =>
                 statusIcon
-                    .combineWith(headRegionLengthsSig)
-                    .combineWith(lZMinSig)
+                    .combineWithDistinct(headRegionLengthsSig, lZMinSig)
                     .map: (icon, lengthsOpt, lzMinOpt) =>
                         val summaryOpt = DynamicPipeSlotPanel.lengthSummaryFromIndex(
                             headIdx                    = hi,
@@ -435,11 +434,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig
-            .combineWith(pipeResult_vnel_signal)
-            .combineWith(pressureSumCheck_sig)
-            .combineWith(velocityCheck_sig)
-            .combineWith(shapeCheck_sig)
-            .combineWith(citedConstraintsCheck_sig)
+            .combineWithDistinct(
+                pipeResult_vnel_signal,
+                pressureSumCheck_sig,
+                velocityCheck_sig,
+                shapeCheck_sig,
+                citedConstraintsCheck_sig
+            )
             .map: (results, pipeResultV, pressureV, velocityV, shapeV, citedV) =>
                 val buildV = results
                     .lift(slotIndex)
@@ -564,7 +565,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .flatMap: (idx, elem) =>
@@ -597,7 +598,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 
     private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .collect { case (idx, _: AddDirectionChange) => idx }
@@ -1077,8 +1078,7 @@ final case class DynamicThermalPipeSlotPanel(
                 statusIcon.map(n => Some(div(n)))
             case Some(hi) =>
                 statusIcon
-                    .combineWith(headRegionLengthsSig)
-                    .combineWith(lZMinSig)
+                    .combineWithDistinct(headRegionLengthsSig, lZMinSig)
                     .map: (icon, lengthsOpt, lzMinOpt) =>
                         val summaryOpt = DynamicPipeSlotPanel.lengthSummaryFromIndex(
                             headIdx                    = hi,
@@ -1297,9 +1297,7 @@ final case class DynamicThermalPipeSlotPanel(
 
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig
-            .combineWith(pipeResult_vnel_signal)
-            .combineWith(pressureSumCheck_sig)
-            .combineWith(velocityCheck_sig)
+            .combineWithDistinct(pipeResult_vnel_signal, pressureSumCheck_sig, velocityCheck_sig)
             .map: (results, pipeResultV, pressureV, velocityV) =>
                 val buildV = results
                     .lift(slotIndex)

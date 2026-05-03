@@ -24,6 +24,33 @@ extension [A](svnele: Signal[VNelMcalcErr[A]])
     def flatMapAndFoldVNelE[B](f: A => VNelMcalcErr[B], default: B): Signal[B] =
         svnele.map(_.andThen(f).getOrElse(default))
 
+extension [A](signal: Signal[A])
+    def combineWithDistinct[B](that: Signal[B]): Signal[(A, B)] =
+        signal.combineWith(that).distinct
+
+    def combineWithDistinct[B, C](s1: Signal[B], s2: Signal[C]): Signal[(A, B, C)] =
+        signal.combineWith(s1, s2).distinct
+
+    def combineWithDistinct[B, C, D](s1: Signal[B], s2: Signal[C], s3: Signal[D]): Signal[(A, B, C, D)] =
+        signal.combineWith(s1, s2, s3).distinct
+
+    def combineWithDistinct[B, C, D, E](
+        s1: Signal[B],
+        s2: Signal[C],
+        s3: Signal[D],
+        s4: Signal[E]
+    ): Signal[(A, B, C, D, E)] =
+        signal.combineWith(s1, s2, s3, s4).distinct
+
+    def combineWithDistinct[B, C, D, E, F](
+        s1: Signal[B],
+        s2: Signal[C],
+        s3: Signal[D],
+        s4: Signal[E],
+        s5: Signal[F]
+    ): Signal[(A, B, C, D, E, F)] =
+        signal.combineWith(s1, s2, s3, s4, s5).distinct
+
 extension [A](svnel: Signal[VNelString[A]])
 
     def mapVNelString[B](f: A => B): Signal[VNelString[B]] =

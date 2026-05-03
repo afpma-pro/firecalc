@@ -8,6 +8,7 @@ package afpma.firecalc.ui.daisyui
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.icons.lucide
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.syntax.all.*
 
 import com.raquo.airstream.state.Var
@@ -36,7 +37,7 @@ trait DaisyUIDynamicList extends Component:
     def getElemXtra(fromWElems: Seq[(Int, Elem)], fromXtras: XtraInputs, key: (Int, Elem)): XtraOutputs
 
     lazy val welem_xtraoutput_sig: Signal[Seq[(Int, Elem, XtraOutputs)]] = welems_var.signal
-        .combineWith(xtras_input_sig)
+        .combineWithDistinct(xtras_input_sig)
         .map[Seq[(Int, Elem, XtraOutputs)]]: (welems, xtraIns) =>
             welems.map: (id, elem) =>
                 val xtra = getElemXtra(

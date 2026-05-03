@@ -17,6 +17,7 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.icons.lucide
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
@@ -77,7 +78,7 @@ case class DirectionBadgeComponent(
             case None        => Signal.fromValue(None)
             case Some(fdVar) =>
                 fdVar.signal
-                    .combineWith(frameBefore, deflectionAngle)
+                    .combineWithDistinct(frameBefore, deflectionAngle)
                     .map { case (fdOpt, frameOpt, deflOpt) =>
                         for fd <- fdOpt; frame <- frameOpt; defl <- deflOpt
                         yield isReachable(fd, frame, defl)
@@ -119,7 +120,7 @@ case class DirectionBadgeComponent(
         div(
             cls := "text-xs",
             child <-- absDirection
-                .combineWith(isCompatibleSig)
+                .combineWithDistinct(isCompatibleSig)
                 .map:
                     case (None, _          ) => emptyNode
                     case (Some(dir), compat) =>
@@ -172,7 +173,7 @@ case class DirectionBadgeComponent(
     private def editableBadge(dir: Vec3, fdVar: Var[Option[AbsoluteDirection]]): HtmlElement =
         val presetsSig: Signal[List[(Vec3, Double)]] =
             frameBefore
-                .combineWith(deflectionAngle)
+                .combineWithDistinct(deflectionAngle)
                 .map:
                     case (Some(frame), Some(deflDeg)) => frame.reachableCardinals(deflDeg)
                     case _ => Nil
@@ -182,14 +183,14 @@ case class DirectionBadgeComponent(
             summary(
                 if compact then
                     cls <-- isCompatibleSig
-                        .combineWith(presetsSig)
+                        .combineWithDistinct(presetsSig)
                         .map: (compat, presets) =>
                             val warn  = if compat.contains(false) then "badge-warning" else "badge-ghost"
                             val inter = if presets.nonEmpty then " cursor-pointer list-none" else ""
                             s"inline-flex items-center gap-1 badge $warn badge-sm font-mono$inter"
                 else
                     cls <-- isCompatibleSig
-                        .combineWith(presetsSig)
+                        .combineWithDistinct(presetsSig)
                         .map: (compat, presets) =>
                             val warn = if compat.contains(false) then " text-warning" else ""
                             if presets.nonEmpty then s"select select-xs cursor-pointer list-none$warn"

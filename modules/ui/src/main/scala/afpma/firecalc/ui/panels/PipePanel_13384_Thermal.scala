@@ -25,6 +25,7 @@ import afpma.firecalc.ui.models.flowResistancePresetsSignal
 import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.services.CatalogImageStore
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.Show
 
 import com.raquo.laminar.api.L.*
@@ -67,7 +68,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      */
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal
-            .combineWith(externalInitialFrameSig)
+            .combineWithDistinct(externalInitialFrameSig)
             .map: (elems, externalFrame) =>
                 var frame: Option[PipeFrame] = externalFrame
                 val builder = Map.newBuilder[Int, PipeFrame]
@@ -101,7 +102,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      */
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .flatMap: (idx, elem) =>
@@ -138,7 +139,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      */
     private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .collect { case (idx, _: AddDirectionChange) => idx }

@@ -23,6 +23,7 @@ import afpma.firecalc.ui.models.anglePresetsSignal
 import afpma.firecalc.ui.models.firebox_var
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.Show
 
 import com.raquo.laminar.api.L.*
@@ -144,7 +145,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .flatMap: (idx, elem) =>
@@ -177,7 +178,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .collect { case (idx, _: AddDirectionChange) => idx }

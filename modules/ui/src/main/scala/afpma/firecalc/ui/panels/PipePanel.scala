@@ -37,6 +37,7 @@ import afpma.firecalc.ui.models.panelOpenedVar
 import afpma.firecalc.ui.models.vizHoveredElement
 import afpma.firecalc.ui.models.vizSelectedElement
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.Show
 import cats.data.*
 import cats.syntax.show.*
@@ -83,7 +84,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     override lazy val xtras_input_sig: Signal[(Option[PipeIdsMapping], Seq[PipeSectionResult[?]])] =
         pipeMappings_vnel_signal
             .map(_.toOption)
-            .combineWith(
+            .combineWithDistinct(
                 pipeResult_vnel_signal.map:
                     case Validated.Valid(fp)  =>
                         fp match
@@ -174,7 +175,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     private def vizHighlightSignal(i: Int): Signal[String] =
         vizHoveredElement.signal
-            .combineWith(vizSelectedElement.signal)
+            .combineWithDistinct(vizSelectedElement.signal)
             .map { (hover, select) =>
                 val matchesHover  = hover.exists(id => ownsVizElement(id) && vizElementIndex(id) == i)
                 val matchesSelect = select.exists(id => ownsVizElement(id) && vizElementIndex(id) == i)
@@ -384,8 +385,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     def statusIcon =
         vnel_signal
-            .combineWith(pipeMappings_vnel_signal.map(_.toOption))
-            .combineWith(elems_v.signal.map(_.size)              )
+            .combineWithDistinct(pipeMappings_vnel_signal.map(_.toOption), elems_v.signal.map(_.size))
             .map: (vnel, idsMappingOpt, elemsSize) =>
                 val reverseMap = buildReverseIdsMap(idsMappingOpt, elemsSize)
                 PanelStatusHelper
@@ -434,7 +434,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 xtra_sig             = titleXtraSig,
                 quadrionSubtotal_sig = quadrionSubtotal_sig,
                 bottomContent_sig    = expertModeOn
-                    .combineWith(panelOpened.signal)
+                    .combineWithDistinct(panelOpened.signal)
                     .map((expert, open) => Option.when(expert && open)(detailed_headers_title)),
                 titlePrefix          = accordionTitlePrefix,
                 titleNode            = titleNodeOpt

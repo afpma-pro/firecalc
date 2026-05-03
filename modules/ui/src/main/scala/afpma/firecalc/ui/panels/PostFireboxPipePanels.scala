@@ -17,6 +17,7 @@ import afpma.firecalc.ui.*
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.data.Validated
 
 import com.raquo.airstream.core.Signal
@@ -148,7 +149,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
      */
     private lazy val headRegionLengthLabelSig: Signal[HtmlElement] =
         postFireboxSlots_var.signal
-            .combineWith(postFireboxPipeResults_sig, lZMinSig)
+            .combineWithDistinct(postFireboxPipeResults_sig, lZMinSig)
             .map: (slots, resultsV, lZMinOpt) =>
                 val normalized         = normalizeSlots(slots)
                 val headIndices        = DynamicPipeSlotPanel.computeHeadRegionIndices(normalized)
@@ -193,7 +194,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
      */
     private lazy val headRegionLengthsSig: Signal[Option[Vector[Double]]] =
         postFireboxSlots_var.signal
-            .combineWith(postFireboxPipeResults_sig)
+            .combineWithDistinct(postFireboxPipeResults_sig)
             .map: (slots, resultsV) =>
                 val normalized  = normalizeSlots(slots)
                 val headIndices = DynamicPipeSlotPanel.computeHeadRegionIndices(normalized)

@@ -26,6 +26,7 @@ import cats.data.Validated
 import cats.syntax.option.*
 import cats.syntax.show.*
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.codecs.*
 
@@ -82,7 +83,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
             title         = Title.WithTitleOnly(
                 I18N.panels.client_project,
                 xtra_sig = project_descr_var.signal
-                    .combineWith(filename_var.signal)
+                    .combineWithDistinct(filename_var.signal)
                     .map: (prj, fname) =>
                         div(
                             cls := "flex flex-row",
@@ -104,7 +105,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
             title         = Title.WithTitleOnly(
                 I18N.panels.output_and_other_parameters,
                 xtra_sig = stove_params_var.signal
-                    .combineWith(results_en15544_strict_sig)
+                    .combineWithDistinct(results_en15544_strict_sig)
                     .map { (pdm, vnel_appl) =>
                         given Show[QtyD[Kilogram]] = shows.defaults.show_Kilograms_1
                         given showPound0: Show[QtyD[Pound]] = shows.defaults.show_Pound_0
@@ -145,7 +146,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
             title         = Title.WithQuadrionSubtotal(
                 I18N.panels.geographical_location_and_external_factors,
                 xtra_sig             = local_conditions_var.signal
-                    .combineWith(en13384_P_L_sig)
+                    .combineWithDistinct(en13384_P_L_sig)
                     .map: (lc, pL) =>
                         given Show[Length]     = shows.defaults.show_Meters_0
                         given Show[QtyD[Foot]] = shows.defaults.show_Foot_0

@@ -380,7 +380,7 @@ lazy val results_en15544_strict_sig: Signal[VNelMcalcErr[EN15544_Strict_Applicat
 
 lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
     results_en15544_strict_sig
-        .combineWith(project_descr_var.signal)
+        .combineWithDistinct(project_descr_var.signal)
         .distinct
         .map((vnelAppl, prj) =>
             vnelAppl
@@ -393,7 +393,7 @@ lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
 lazy val en15544_strict_local_regulations_and_check_results
     : Signal[(Option[LocalRegulations], LocalRegulations.ParamCheckResults)] =
     results_en15544_strict_sig
-        .combineWith(project_descr_var.signal)
+        .combineWithDistinct(project_descr_var.signal)
         .map((vnelAppl, prj) =>
             vnelAppl
                 .map { appl =>
