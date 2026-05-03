@@ -209,16 +209,9 @@ object FormDerivation extends AutoDerivation[Form]:
         val subt_selected_sigs = subt_labels.map(isSubtypeLabelCurrentlySelected)
 
         def combineVarAndSelForSubType(var_subt: Var[A], subt_selected_sig: Signal[Boolean]): Binder[HtmlElement] =
-            var_subt.signal
-                .combineWith(subt_selected_sig)
-                .map:
-                    case (subt_value, true) => Some(subt_value)
-                    case (_, false        ) => None
-                .distinct
-                .changes
-                .filter(_.isDefined)
-                .map(_.get)
-                .asInstanceOf[EventStream[A]] --> variable.writer
+            var_subt.signal.changes
+                .withCurrentValueOf(subt_selected_sig)
+                .collect { case (subt_value, true) => subt_value } --> variable.writer
 
         val vars_subt_to_variable_binders: Seq[Binder[HtmlElement]] =
             vars_subt
