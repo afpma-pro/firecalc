@@ -641,9 +641,17 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             .withOnSubtypeSwitch { (prev, next) =>
                 if (prev == next) then next
                 else
+                    import afpma.firecalc.ui.models.FireboxCacheState.cacheKey
+                    val prevKey = cacheKey(prev)
+                    val currKey = cacheKey(next)
+                    afpma.firecalc.ui.models.fireboxCacheStateVar.update(s =>
+                        s.copy(cache = s.cache.updated(prevKey, prev))
+                    )
+                    val base = afpma.firecalc.ui.models.fireboxCacheStateVar.now().cache.get(currKey).getOrElse(next)
+
                     // sync firebox dimensions from previous to next
                     val updatedDim =
-                        next.withDimensions(prev.firebox_depth, prev.firebox_width, prev.firebox_height)
+                        base.withDimensions(prev.firebox_depth, prev.firebox_width, prev.firebox_height)
 
                     // sync nominal load from current value to next firebox
                     val curr_load   = stove_params_max_load_var.now()
