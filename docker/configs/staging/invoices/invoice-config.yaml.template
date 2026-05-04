@@ -36,7 +36,7 @@ invoice:
       pdf_report_EN_15544_2023:
         fr:
           name: "Note de calcul NF EN 15544:2023"
-          description: "Note de calcul conforme à la normes NF EN 15544:2023"
+          description: "Note de calcul conforme à la norme NF EN 15544:2023"
         en:
           name: "Calculation Report EN 15544:2023"
           description: "Calculation report compliant with NF EN 15544:2023 standard"

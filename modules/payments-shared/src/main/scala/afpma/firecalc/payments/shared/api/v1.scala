@@ -283,15 +283,15 @@ object v1:
                 Map     (
                     "fr"      -> ProductCopy(
                         "Note de calcul NF EN 15544:2023",
-                        "Note de calcul professionnelle conforme aux normes NF EN 15544:2023"
+                        "Note de calcul conforme à la norme NF EN 15544:2023"
                     ),
                     "en"      -> ProductCopy(
                         "Calculation Report NF EN 15544:2023",
-                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                        "Calculation report compliant with NF EN 15544:2023 standard"
                     ),
                     "default" -> ProductCopy(
                         "Calculation Report NF EN 15544:2023",
-                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                        "Calculation report compliant with NF EN 15544:2023 standard"
                     )
                 )
             ),
@@ -313,15 +313,15 @@ object v1:
                 Map     (
                     "fr"      -> ProductCopy(
                         "Note de calcul NF EN 15544:2023",
-                        "Note de calcul professionnelle conforme aux normes NF EN 15544:2023"
+                        "Note de calcul conforme à la norme NF EN 15544:2023"
                     ),
                     "en"      -> ProductCopy(
                         "Calculation Report NF EN 15544:2023",
-                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                        "Calculation report compliant with NF EN 15544:2023 standard"
                     ),
                     "default" -> ProductCopy(
                         "Calculation Report NF EN 15544:2023",
-                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                        "Calculation report compliant with NF EN 15544:2023 standard"
                     )
                 )
             ),
@@ -343,15 +343,15 @@ object v1:
                 Map     (
                     "fr"      -> ProductCopy(
                         "Note de calcul NF EN 15544:2023",
-                        "Note de calcul professionnelle conforme aux normes NF EN 15544:2023"
+                        "Note de calcul conforme à la norme NF EN 15544:2023"
                     ),
                     "en"      -> ProductCopy(
                         "Calculation Report NF EN 15544:2023",
-                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                        "Calculation report compliant with NF EN 15544:2023 standard"
                     ),
                     "default" -> ProductCopy(
                         "Calculation Report NF EN 15544:2023",
-                        "Professional chimney calculation report compliant with NF EN 15544:2023 standards"
+                        "Calculation report compliant with NF EN 15544:2023 standard"
                     )
                 )
             ),
