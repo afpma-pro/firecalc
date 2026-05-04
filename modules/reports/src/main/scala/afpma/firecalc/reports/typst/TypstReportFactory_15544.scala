@@ -25,12 +25,14 @@ import io.taig.babel.Locale
 import afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
 import afpma.firecalc.engine.utils.ShowAsTable
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 abstract class TypstReportFactory_15544(
-    val isDraft              : Boolean,
-    val checkPressureReq13384: Boolean
+    val isDraft                 : Boolean,
+    val checkPressureReq13384   : Boolean,
+    val checkTemperatureReq13384: Boolean
 )                                      (using Locale)
     extends HasTypeMembers_15544_Alg:
     self =>
@@ -302,6 +304,8 @@ abstract class TypstReportFactory_15544(
         en15544_app.en13384_application.P_L.typ
 
     def en13384_temperatureRequirements: String =
+        given ShowAsTable[TemperatureRequirements_13384] =
+            showAsTable_13384_instances.showAsTable_temperatureRequirements_en13384(checkTemperatureReq13384)
         en15544_app.temperatureRequirements_EN13384.getOrThrow.typ
 
     def en13384_pressureRequirements: String =

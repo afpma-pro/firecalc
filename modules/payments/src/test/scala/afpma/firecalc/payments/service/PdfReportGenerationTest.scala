@@ -58,7 +58,11 @@ object PdfReportGenerationTest extends TestSuite {
 
                                 case Right(loadedFactory) =>
                                     // Generate PDF and verify success (using isDraft = true for tests)
-                                    loadedFactory.makePDF(isDraft = true, checkPressureReq13384 = false) match
+                                    loadedFactory.makePDF                 (
+                                        isDraft                  = true,
+                                        checkPressureReq13384    = false,
+                                        checkTemperatureReq13384 = false
+                                    ) match
                                         case Left(error) =>
                                             throw new RuntimeException(s"Failed to generate PDF: $error")
 

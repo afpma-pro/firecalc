@@ -146,12 +146,28 @@ class ShowAsTableInstances_13384(using locale: Locale):
                     Nil
             out.filter(_.nonEmpty)
 
-    given showAsTable_temperatureRequirements_en13384: ShowAsTable[TemperatureRequirements_13384] =
+    def showAsTable_temperatureRequirements_en13384(checkAndShowReq: Boolean)(using
+        Locale
+    ): ShowAsTable[TemperatureRequirements_13384] =
+        def check_and_show_status_ok_or_not(cond: Boolean, suffixIfTrue: String, suffixIfFalse: String) =
+            if (checkAndShowReq) then if (cond) s"OK $suffixIfTrue" else s"NOT OK $suffixIfFalse"
+            else I18N.not_applicable_short
         ShowAsTable.mkLightFor(I18N.headers.temperature_requirements_13384) { x =>
             import x.*
             val tigPretty    = tig.showP
-            val status       = if (tiob >= tig            ) s"OK (>= $tigPretty)" else s"NOT OK (< $tigPretty)"
-            val status_short = if ((tiob - tig).value >= 0) "OK" else "NOT OK"
+            val status       =
+                check_and_show_status_ok_or_not         (
+                    cond          = tiob >= tig,
+                    suffixIfTrue  = s"(>= $tigPretty)",
+                    suffixIfFalse = s"(< $tigPretty)"
+                )
+            val status_short =
+                check_and_show_status_ok_or_not(
+                    cond          = (tiob - tig).value >= 0,
+                    suffixIfTrue  = "",
+                    suffixIfFalse = ""
+                )
+                if ((tiob - tig).value >= 0) "OK" else "NOT OK"
             val _I           = I18N.en13384.terms
             (I18N.type_of_load.descr                                                :: ""            :: x.atLoadQty.show.toUpperCase() :: "" :: Nil) ::
                 (_I.T_sp                                                            :: "T_sp"        :: tsp.showOrElse("") :: "" :: Nil) ::

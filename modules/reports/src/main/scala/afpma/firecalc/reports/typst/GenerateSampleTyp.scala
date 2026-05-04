@@ -37,7 +37,11 @@ object GenerateSampleTyp:
                 ,
                 reportFactory =>
                     // First generate the Typst string and write it to file for debugging
-                    reportFactory.makeTypstString(isDraft = true, checkPressureReq13384 = false) match
+                    reportFactory.makeTypstString                 (
+                        isDraft                  = true,
+                        checkPressureReq13384    = false,
+                        checkTemperatureReq13384 = false
+                    ) match
                         case Left(err)          =>
                             System.err.println(s"Error generating Typst string: $err")
                             System.exit       (-1                                    )
@@ -51,7 +55,11 @@ object GenerateSampleTyp:
                             println      (s"Typst file written: ${typOutPath.toString}")
 
                     // Then generate the PDF
-                    reportFactory.makePDFBuffer(isDraft = true, checkPressureReq13384 = false) match
+                    reportFactory.makePDFBuffer                 (
+                        isDraft                  = true,
+                        checkPressureReq13384    = false,
+                        checkTemperatureReq13384 = false
+                    ) match
 
                         case Left(err) =>
                             System.err.println(s"Error generating PDF: $err")

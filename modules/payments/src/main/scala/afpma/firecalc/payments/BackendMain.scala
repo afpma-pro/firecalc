@@ -98,7 +98,11 @@ object Main extends IOApp:
             reportFactory.loadYAMLString(yamlContent) match {
                 case Left(err)            => throw err // Re-throw FireCalcReportError as-is
                 case Right(loadedFactory) =>
-                    loadedFactory.makePDF(isDraft = asDraft, checkPressureReq13384 = false) match {
+                    loadedFactory.makePDF                 (
+                        isDraft                  = asDraft,
+                        checkPressureReq13384    = false,
+                        checkTemperatureReq13384 = false
+                    ) match {
                         case Left(err)      => throw err // Re-throw FireCalcReportError as-is
                         case Right(pdfFile) => pdfFile
                     }

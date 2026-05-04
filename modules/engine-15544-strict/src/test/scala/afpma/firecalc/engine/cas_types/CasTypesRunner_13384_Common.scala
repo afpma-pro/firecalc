@@ -15,6 +15,7 @@ import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.{*, given}
 
@@ -144,6 +145,9 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
 
                 given showAsTable_pressReq13384: ShowAsTable[PressureRequirements_13384] =
                     _showAsTableInstances_EN13384.mkShowAsTable_PressureRequirements_EN13384(checkAndShowReq = true)
+
+                given showAsTable_tempReq13384: ShowAsTable[TemperatureRequirements_13384] =
+                    _showAsTableInstances_EN13384.showAsTable_temperatureRequirements_en13384(checkAndShowReq = true)
 
                 given HeatingAppliance = en13384_appl.heatingAppliance_final(using
                     _heatingAppliance

@@ -19,6 +19,7 @@ import io.taig.babel.Locales
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
 
 trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
@@ -46,6 +47,9 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         given showAsTable_pressReq13384: ShowAsTable[PressureRequirements_13384] =
             showAsTableInstances_13384.mkShowAsTable_PressureRequirements_EN13384(checkAndShowReq = false)
+
+        given showAsTable_tempReq13384: ShowAsTable[TemperatureRequirements_13384] =
+            showAsTableInstances_13384.showAsTable_temperatureRequirements_en13384(checkAndShowReq = false)
 
         def seperate_tables = emit("\n".repeat(3))
 
