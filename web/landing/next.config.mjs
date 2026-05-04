@@ -10,6 +10,9 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  turbopack: {
+    root: process.cwd(),
+  },
 };
 
 export default withNextIntl(nextConfig);

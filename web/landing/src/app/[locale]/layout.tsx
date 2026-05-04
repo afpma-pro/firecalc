@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import {notFound} from 'next/navigation';
@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     apple: [{url: '/apple-touch-icon.png', sizes: '180x180'}],
   },
   manifest: '/manifest.webmanifest',
+};
+
+export const viewport: Viewport = {
   themeColor: '#EF662F',
 };
 
