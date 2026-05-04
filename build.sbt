@@ -1475,7 +1475,7 @@ lazy val payments = (project in file("modules/payments"))
             "com.github.eikek" %% "emil-javamail" % "0.15.0",
 
             // molecule
-            "org.scalamolecule" %% "molecule-db-sqlite" % "0.25.1",
+            "org.scalamolecule" %% "molecule-db-sqlite" % "0.30.0",
 
             // flyway
             "org.flywaydb" % "flyway-core" % "11.10.4",
