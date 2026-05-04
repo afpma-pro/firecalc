@@ -162,12 +162,11 @@ class ShowAsTableInstances_13384(using locale: Locale):
                     suffixIfFalse = s"(< $tigPretty)"
                 )
             val status_short =
-                check_and_show_status_ok_or_not(
+                check_and_show_status_ok_or_not         (
                     cond          = (tiob - tig).value >= 0,
                     suffixIfTrue  = "",
                     suffixIfFalse = ""
                 )
-                if ((tiob - tig).value >= 0) "OK" else "NOT OK"
             val _I           = I18N.en13384.terms
             (I18N.type_of_load.descr                                                :: ""            :: x.atLoadQty.show.toUpperCase() :: "" :: Nil) ::
                 (_I.T_sp                                                            :: "T_sp"        :: tsp.showOrElse("") :: "" :: Nil) ::
