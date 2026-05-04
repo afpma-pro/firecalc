@@ -1160,7 +1160,6 @@ lazy val ui = (project in file("modules/ui"))
             _.withModuleSplitStyle(ModuleSplitStyle.FewestModules)
                 .withSourceMap(false)
                 .withOptimizer(true)
-                .withClosureCompiler(false)
         },
         scalaJSUseMainModuleInitializer := true,
         Compile / sourceGenerators += Def.task {
