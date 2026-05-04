@@ -683,7 +683,7 @@ lazy val viz = (project in file("modules/viz"))
         name                            := "firecalc-viz",
         version                         := ui_version,
         libraryDependencies ++= Seq(
-            "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+            "org.scala-js" %%% "scalajs-dom" % "2.8.1"
         ),
         scalaJSLinkerConfig ~= {
             _.withModuleKind(ModuleKind.ESModule)
@@ -702,7 +702,7 @@ lazy val graph = (project in file("modules/graph"))
         name                            := "firecalc-graph",
         version                         := ui_version,
         libraryDependencies ++= Seq(
-            "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+            "org.scala-js" %%% "scalajs-dom" % "2.8.1"
         ),
         scalaJSLinkerConfig ~= {
             _.withModuleKind(ModuleKind.ESModule)
