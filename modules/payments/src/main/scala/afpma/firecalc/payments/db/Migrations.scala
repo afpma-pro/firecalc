@@ -21,7 +21,7 @@ object Migrations {
                 Flyway
                     .configure()
                     .dataSource(dbUrl, null, null)
-                    .locations("classpath:db/migration")
+                    .locations("classpath:db/migration/afpma/firecalc/payments/repository/impl/MoleculeDomain/sqlite")
                     .load()
             }
             _      <- Sync[F].delay(flyway.migrate()).handleErrorWith { case e: FlywayException =>
