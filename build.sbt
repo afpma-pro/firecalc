@@ -24,7 +24,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
 // Global / watchForceTriggerOnAnyChange := true
 
-val scala_version = "3.8.2"
+val scala_version = "3.8.3"
 
 // only available locally, waiting for PR to be merged at https://github.com/taig/babel/pull/481
 val babel_version_custom = "0.5.4"
