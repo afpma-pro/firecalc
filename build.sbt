@@ -1437,7 +1437,7 @@ lazy val payments = (project in file("modules/payments"))
             val needsGen      = !srcManagedDir.exists() || IO.listFiles(srcManagedDir).isEmpty
             if (needsGen) {
                 Def.task {
-                    val _ = moleculeGen.value
+                    val _ = moleculeGen.inputTaskValue
                     Seq.empty[File]
                 }
             } else {
