@@ -16,7 +16,7 @@ The payments module implements a __passwordless authentication + payment system_
 
 ### Key Components
 
-1. __Domain Layer__ (`models_v2.scala`)
+1. __Domain Layer__ (`domain.scala`)
 
    - Core entities: Product, ProductOrder, PurchaseIntent, Customer, ProductMetadata
    - Value types: OrderId, ProductId, PurchaseToken, CustomerId
@@ -26,7 +26,7 @@ The payments module implements a __passwordless authentication + payment system_
 2. __Repository Layer__
 
    - Database abstraction using Molecule ORM
-   - Repositories: UserRepository, ProductRepository, OrderRepository, PurchaseIntentRepository, CustomerRepository
+    - Repositories: ProductRepository, CustomerRepository, OrderRepository, PurchaseIntentRepository, ProductMetadataRepository, InvoiceCounterRepository
 
 3. __Service Layer__
 
@@ -38,7 +38,7 @@ The payments module implements a __passwordless authentication + payment system_
 
 4. __HTTP Layer__
 
-   - __PurchaseRoutes__: `/purchase/create-intent`, `/purchase/verify-and-process`
+   - __PurchaseRoutes__: `POST /v1/purchase/create-intent`, `POST /v1/purchase/verify-and-process`
    - __WebhookRoutes__: `/webhooks/gocardless` for payment confirmations
    - __StaticPageRoutes__: Payment completion pages
 
@@ -138,7 +138,7 @@ Comprehensive test suite using **utest** framework with the following structure:
 
 ### Database Schema (SQLite)
 
-- __Product__: id, productId(UUID), name, description, price, active
+- __Product__: id, productId(UUID), sku, price, currency, active, taxRate, taxExempt
 - __ProductOrder__: id, orderId(UUID), customerId(UUID), productId(UUID), amount, status, paymentProvider, paymentId, language, productMetadata(FK), invoiceNumber, timestamps
 - __Customer__: id, customerId(UUID), email, customerType, language, givenName, familyName, companyName, address fields, phoneNumber, paymentProviderId, paymentProvider, timestamps
 - __PurchaseIntent__: id, token(UUID), productId(UUID), amount, authCode, customer(FK), processed, productMetadata(FK), expiresAt, createdAt

@@ -486,7 +486,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
         commonSettings,
         name                                                 := "firecalc-engine",
         version                                              := engine_version,
-        mainClass                                            := Some("afpma.firecalc.MCalc"),
+        mainClass                                            := Some("afpma.firecalc.engine.MCalc"),
         scalacOptions ++= Seq(
             "-Xmax-inlines:32"
             // "-Yprofile-enabled",

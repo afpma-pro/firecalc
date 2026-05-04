@@ -43,7 +43,7 @@ Core architectural patterns and design decisions:
 - **[SCHEMA_VERSIONING_ARCHITECTURE.md](SCHEMA_VERSIONING_ARCHITECTURE.md)** - ⭐ Data schema versioning architecture (AppState, BillingInfo, etc.)
 - **[ENGINE_VALIDATION_GOLDEN_TESTS.md](ENGINE_VALIDATION_GOLDEN_TESTS.md)** - ⭐ Golden fixture validation against external EN 13384 / EN 15544 reference implementations; reserved naming policy
 - **[TRANSLATION_AUTOMATION_SPEC.md](TRANSLATION_AUTOMATION_SPEC.md)** - Automated translation discovery system
-- **[guides/DIRECTION_PROPAGATION.md](guides/DIRECTION_PROPAGATION.md)** - Direction propagation in pipe panels (PipeFrame, RelativeDirectionInput, cascade sync)
+- **[guides/DIRECTION_PROPAGATION.md](guides/DIRECTION_PROPAGATION.md)** — Direction propagation in pipe panels (PipeFrame, RelativeDirectionInput, cascade sync) (lives in `guides/`, see [Setup & Development Guides](#setup--development-guides))
 - **[BABEL_CUSTOM_VERSION_DEPENDENCY.md](BABEL_CUSTOM_VERSION_DEPENDENCY.md)** - Custom Babel 0.5.4 local dependency (temporary)
 - **[WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md](WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md)** - Windows CI workarounds for SBT/Coursier
 
@@ -143,9 +143,7 @@ See [`scripts/git-hooks/README.md`](../../scripts/git-hooks/README.md) for detai
 
 When adding new documentation:
 - **Guides** → Place in `guides/` (setup, workflows, how-tos)
-- **Design Docs** → Place in `design/` (technical decisions, APIs)
-- **TODOs** → Place in `todos/` (planned work)
-- **Testing** → Place in `testing/` (test data, examples)
+- **Design Docs** → Place in `docs/dev/guides/` — the `design/`, `testing/`, and `todos/` directories do not exist; place docs in appropriate subdirectories of `docs/dev/guides/`.
 
 Keep module-specific technical documentation in module roots (e.g., `modules/payments/ARCHITECTURE.md`).
 
