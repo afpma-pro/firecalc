@@ -70,7 +70,8 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
                 billTo             = None,              // Same as recipient for now
                 currency           = "EUR",
                 notes              = context.productMetadata.flatMap { case FileDescriptionWithContent(filename, _, _) =>
-                    Some(s"Related file: $filename")
+                    // Some(s"Related file: $filename")
+                    None // no notes for now
                 },
                 discountPercentage = None,
                 status             = InvoiceStatus.Sent // Invoice is being sent via email
