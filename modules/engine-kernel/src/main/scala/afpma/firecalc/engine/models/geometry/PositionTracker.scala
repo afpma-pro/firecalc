@@ -94,30 +94,34 @@ object PositionTracker:
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                 case AddSectionVertical(_, elevGain)                                =>
                     val eg    = elevGain.toUnit[Meter].value
-                    val dir   = if eg >= 0 then Vec3.Up else Vec3.Down
-                    val disp  = Vec3(0, 0, eg)
+                    val base  = frame.map(_.direction).getOrElse(Vec3.Up)
+                    val dir   = if eg < 0 then base * -1.0 else base
+                    val l     = math.abs(eg)
+                    val disp  = dir * l
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
                         startPoint   = currentPosition,
                         endPoint     = endPt,
                         direction    = dir,
-                        length       = math.abs(eg),
+                        length       = l,
                         innerShape   = currentInnerShape,
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
                 case AddSectionHorizontal(_, horizLen)                              =>
                     val hl    = horizLen.toUnit[Meter].value
-                    val dir   = horizontalDirection(frame)
-                    val disp  = dir * hl
+                    val base  = frame.map(_.direction).getOrElse(Vec3.Rear)
+                    val dir   = if hl < 0 then base * -1.0 else base
+                    val l     = math.abs(hl)
+                    val disp  = dir * l
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
                         startPoint   = currentPosition,
                         endPoint     = endPt,
                         direction    = dir,
-                        length       = math.abs(hl),
+                        length       = l,
                         innerShape   = currentInnerShape,
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
@@ -203,30 +207,34 @@ object PositionTracker:
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                 case AddSectionVertical(_, elevGain)                                =>
                     val eg    = elevGain.toUnit[Meter].value
-                    val dir   = if eg >= 0 then Vec3.Up else Vec3.Down
-                    val disp  = Vec3(0, 0, eg)
+                    val base  = frame.map(_.direction).getOrElse(Vec3.Up)
+                    val dir   = if eg < 0 then base * -1.0 else base
+                    val l     = math.abs(eg)
+                    val disp  = dir * l
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
                         startPoint   = currentPosition,
                         endPoint     = endPt,
                         direction    = dir,
-                        length       = math.abs(eg),
+                        length       = l,
                         innerShape   = currentInnerShape,
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
                 case AddSectionHorizontal(_, horizLen)                              =>
                     val hl    = horizLen.toUnit[Meter].value
-                    val dir   = horizontalDirection(frame)
-                    val disp  = dir * hl
+                    val base  = frame.map(_.direction).getOrElse(Vec3.Rear)
+                    val dir   = if hl < 0 then base * -1.0 else base
+                    val l     = math.abs(hl)
+                    val disp  = dir * l
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
                         startPoint   = currentPosition,
                         endPoint     = endPt,
                         direction    = dir,
-                        length       = math.abs(hl),
+                        length       = l,
                         innerShape   = currentInnerShape,
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
@@ -320,30 +328,34 @@ object PositionTracker:
                         frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                 case AddSectionVertical(_, elevGain)                                =>
                     val eg    = elevGain.toUnit[Meter].value
-                    val dir   = if eg >= 0 then Vec3.Up else Vec3.Down
-                    val disp  = Vec3(0, 0, eg)
+                    val base  = frame.map(_.direction).getOrElse(Vec3.Up)
+                    val dir   = if eg < 0 then base * -1.0 else base
+                    val l     = math.abs(eg)
+                    val disp  = dir * l
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
                         startPoint   = currentPosition,
                         endPoint     = endPt,
                         direction    = dir,
-                        length       = math.abs(eg),
+                        length       = l,
                         innerShape   = currentInnerShape,
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
                 case AddSectionHorizontal(_, horizLen)                              =>
                     val hl    = horizLen.toUnit[Meter].value
-                    val dir   = horizontalDirection(frame)
-                    val disp  = dir * hl
+                    val base  = frame.map(_.direction).getOrElse(Vec3.Rear)
+                    val dir   = if hl < 0 then base * -1.0 else base
+                    val l     = math.abs(hl)
+                    val disp  = dir * l
                     val endPt = currentPosition + disp
                     segments += PipeSegmentPosition(
                         elementIndex = idx,
                         startPoint   = currentPosition,
                         endPoint     = endPt,
                         direction    = dir,
-                        length       = math.abs(hl),
+                        length       = l,
                         innerShape   = currentInnerShape,
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )

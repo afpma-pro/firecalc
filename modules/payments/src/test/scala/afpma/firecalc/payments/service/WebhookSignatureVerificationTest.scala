@@ -10,6 +10,7 @@ import javax.crypto.spec.SecretKeySpec
 
 import afpma.firecalc.payments.service.impl.GoCardlessConfig
 import afpma.firecalc.payments.service.impl.GoCardlessPaymentServiceImpl
+import afpma.firecalc.payments.shared.api.ProductCopyConfig
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -41,12 +42,13 @@ object WebhookSignatureVerificationTest extends TestSuite {
         val config = GoCardlessConfig
             .sandbox("unused", "unused.local", "https", "admin@test.com")
             .withWebhookSecret(testWebhookSecret)
-        new GoCardlessPaymentServiceImpl[IO]  (
-            httpClient   = null,
-            config       = config,
-            emailService = null,
-            orderService = null,
-            customerRepo = null
+        new GoCardlessPaymentServiceImpl[IO]       (
+            httpClient        = null,
+            config            = config,
+            emailService      = null,
+            orderService      = null,
+            customerRepo      = null,
+            productCopyConfig = ProductCopyConfig.empty
         )
 
     /** Create a service with live config. */
@@ -57,12 +59,13 @@ object WebhookSignatureVerificationTest extends TestSuite {
             domain        = "unused.local",
             adminEmail    = "admin@test.com"
         )
-        new GoCardlessPaymentServiceImpl[IO]  (
-            httpClient   = null,
-            config       = config,
-            emailService = null,
-            orderService = null,
-            customerRepo = null
+        new GoCardlessPaymentServiceImpl[IO]       (
+            httpClient        = null,
+            config            = config,
+            emailService      = null,
+            orderService      = null,
+            customerRepo      = null,
+            productCopyConfig = ProductCopyConfig.empty
         )
 
     val tests = Tests {

@@ -12,8 +12,8 @@
     "deploy": "npm run build && touch out/.nojekyll && echo 'firecalc.afpma.pro' > out/CNAME"
   },
   "dependencies": {
-    "next": "16.0.4",
-    "next-intl": "^4.5.5",
+    "next": "^16.2.4",
+    "next-intl": "^4.11.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -22,6 +22,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
+    "baseline-browser-mapping": "^2.10.27",
     "daisyui": "^4.12.0",
     "inline-source": "^8.0.3",
     "postcss": "^8.4.47",

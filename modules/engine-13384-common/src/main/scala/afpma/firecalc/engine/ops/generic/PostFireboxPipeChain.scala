@@ -19,11 +19,17 @@ import cats.data.ValidatedNel
  *
  * The topology grammar:
  * {{{
- *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
- *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
- *   CONNECTOR_PIPE   := ConnectorPipeT
- *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
+ *   PostFireboxChain   := HEAD_REGION  TERMINAL_CONNECTOR  CHIMNEY
+ *   HEAD_REGION        := empty  OR  arbitrary sequence of Flue/Connector ending with FluePipe
+ *   TERMINAL_CONNECTOR := ConnectorPipeT   (mandatory slot; descriptor may be empty)
+ *   CHIMNEY            := ChimneyPipeT     (mandatory, exactly one, last)
  * }}}
+ *
+ * Derived rules:
+ *   - HEAD_REGION may be empty (EN 13384-only pipelines + legacy V6 YAML).
+ *   - HEAD_REGION may start with either FluePipe or ConnectorPipe.
+ *   - HEAD_REGION may contain any arrangement of FluePipe/ConnectorPipe (no alternation constraint).
+ *   - HEAD_REGION, if non-empty, must end with a FluePipe.
  *
  * Construct via `PostFireboxPipeChain.validated`.
  */
@@ -35,18 +41,39 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
     private val lastFluePipeIdx: Int =
         slots.lastIndexWhere(_.pipeType == FluePipeT)
 
-    /** All slots up to and including the last FluePipeT. */
-    def fluePipeRegion: Vector[PipeSlot] =
+    /**
+     * All slots that belong to the HEAD_REGION — i.e. everything up to and
+     * including the last FluePipeT. Under the validated grammar, HEAD_REGION
+     * is non-empty and ends with a FluePipe, so this corresponds to the
+     * "head" portion of the chain.
+     *
+     * Historical name: `fluePipeRegion`. Kept (as an alias to `headRegion`)
+     * for call-site compatibility while the DTO refactor (Phase 2) is in
+     * flight.
+     */
+    def headRegion: Vector[PipeSlot] =
         if lastFluePipeIdx < 0 then Vector.empty
         else slots.take(lastFluePipeIdx + 1)
 
-    /** The optional ConnectorPipeT slot immediately after the flue-pipe region. */
-    def connectorSlot: Option[PipeSlot] =
+    /** Alias — see [[headRegion]]. */
+    def fluePipeRegion: Vector[PipeSlot] = headRegion
+
+    /**
+     * The terminal ConnectorPipeT slot between HEAD_REGION and CHIMNEY.
+     *
+     * Under the validated grammar this slot is mandatory; returning an
+     * `Option` keeps the accessor total for defensive reads but a validated
+     * chain always has `Some`.
+     */
+    def terminalConnectorSlot: Option[PipeSlot] =
         val candidateIdx = lastFluePipeIdx + 1
         if candidateIdx >= 0 && candidateIdx < slots.size - 1 then
             val s = slots(candidateIdx)
             if s.pipeType == ConnectorPipeT then Some(s) else None
         else None
+
+    /** Alias — see [[terminalConnectorSlot]]. */
+    def connectorSlot: Option[PipeSlot] = terminalConnectorSlot
 
     /** The chimney slot — always the last element. */
     def chimneySlot: PipeSlot = slots.last
@@ -74,14 +101,20 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
     // ── result region accessors ─────────────────────────────────────────
 
-    /** Flue-pipe results — same indexing as `fluePipeRegion`. */
-    def fluePipeResults(results: Vector[PipeResult]): Vector[PipeResult] =
+    /** Head-region results — same indexing as [[headRegion]]. */
+    def headRegionResults(results: Vector[PipeResult]): Vector[PipeResult] =
         if lastFluePipeIdx < 0 then Vector.empty
         else results.take(lastFluePipeIdx + 1)
 
-    /** The connector result, if a ConnectorPipeT slot exists. */
-    def connectorResult(results: Vector[PipeResult]): Option[PipeResult] =
-        connectorSlot.map(_ => results(lastFluePipeIdx + 1))
+    /** Alias — see [[headRegionResults]]. */
+    def fluePipeResults(results: Vector[PipeResult]): Vector[PipeResult] = headRegionResults(results)
+
+    /** The terminal connector result, if a ConnectorPipeT terminal slot exists. */
+    def terminalConnectorResult(results: Vector[PipeResult]): Option[PipeResult] =
+        terminalConnectorSlot.map(_ => results(lastFluePipeIdx + 1))
+
+    /** Alias — see [[terminalConnectorResult]]. */
+    def connectorResult(results: Vector[PipeResult]): Option[PipeResult] = terminalConnectorResult(results)
 
     /** The chimney result — always the last element. */
     def chimneyResult(results: Vector[PipeResult]): PipeResult =
@@ -99,49 +132,80 @@ object PostFireboxPipeChain:
      *
      * Returns a `ValidatedNel[TopologyError, PostFireboxPipeChain]` so that
      * all violations are reported at once.
+     *
+     * HEAD_REGION may be empty (EN 13384-only pipelines + legacy V6 YAML).
      */
-    def validated(slots: Vector[PipeSlot]): ValidatedNel[TopologyError, PostFireboxPipeChain] =
+    def validated(
+        slots: Vector[PipeSlot]
+    ): ValidatedNel[TopologyError, PostFireboxPipeChain] =
         import TopologyError.*
 
-        val lastIdx = slots.size - 1
-
-        // Rule 1: last slot must be ChimneyPipeT (or empty → MissingChimney)
-        val rule1 =
+        // ── Chimney rules (Rule C1/C2) ────────────────────────────────────
+        //   C1: last slot must be ChimneyPipeT (or empty → MissingChimney)
+        //   C2: no ChimneyPipeT except the last slot
+        val chimneyLastRule =
             if slots.isEmpty || slots.last.pipeType != ChimneyPipeT then Validated.invalidNel(MissingChimney)
             else Validated.validNel                                                          (()            )
 
-        // Rule 5: no ChimneyPipeT except the last slot
-        val rule5 =
+        val chimneyOnlyLastRule =
             if slots.dropRight(1).exists(_.pipeType == ChimneyPipeT) then Validated.invalidNel(ChimneyNotLast)
             else Validated.validNel     (()                        )
 
-        // Find the last FluePipeT index
-        val lastFlueIdx = slots.lastIndexWhere(_.pipeType == FluePipeT)
+        // Everything before the chimney slot (drop the last element if
+        // it's the chimney; otherwise drop it anyway so we don't analyse
+        // a malformed tail twice).
+        val preChimney: Vector[PipeSlot] =
+            if slots.isEmpty then Vector.empty else slots.dropRight(1)
 
-        // The "after-flue" region: everything after the last FluePipeT, excluding chimney (last)
-        val afterFlueBeforeChimney =
-            if lastFlueIdx < 0 then slots.dropRight(1                       )
-            else slots.slice                       (lastFlueIdx + 1, lastIdx)
+        // ── Locate HEAD_REGION / TERMINAL_CONNECTOR on the flat sequence ─
+        // Under the new grammar the terminal connector is the slot
+        // immediately before the chimney; HEAD_REGION is everything before
+        // that terminal slot.
+        //
+        // If `preChimney` is empty, both head and terminal are missing.
+        // If `preChimney.last` is not a ConnectorPipeT, the terminal slot
+        // is missing (MissingTerminalConnector) — HEAD_REGION is then the
+        // entire `preChimney`.
+        val terminalPresent: Boolean = preChimney.nonEmpty && preChimney.last.pipeType == ConnectorPipeT
 
-        // Rule 3: no FluePipeT after the connector position
-        val rule3 =
-            if afterFlueBeforeChimney.exists(_.pipeType == FluePipeT) then Validated.invalidNel(FluePipeAfterConnector)
-            else Validated.validNel         (()                     )
+        val head: Vector[PipeSlot] =
+            if terminalPresent then preChimney.dropRight(1) else preChimney
 
-        // Rule 4: at most one ConnectorPipeT after last FluePipeT
-        val rule4 =
-            if afterFlueBeforeChimney.count(_.pipeType == ConnectorPipeT) > 1 then
-                Validated.invalidNel(MultipleConnectorsAfterFlue)
+        // ── TERMINAL_CONNECTOR rule ──────────────────────────────────────
+        // Need exactly one ConnectorPipeT between HEAD_REGION and CHIMNEY.
+        // When `slots` is empty we don't emit MissingTerminalConnector
+        // (MissingChimney already signals the degenerate case and avoids
+        // double-reporting for the empty input).
+        val terminalConnectorRule =
+            if slots.isEmpty then Validated.validNel(())
+            else if !terminalPresent then Validated.invalidNel(MissingTerminalConnector)
+            else Validated.validNel                           (()                      )
+
+        // ── HEAD_REGION rules ────────────────────────────────────────────
+        //   H1: may be empty (empty head is legal)
+        //   H2: contains only FluePipeT or ConnectorPipeT (chimney already
+        //       handled by chimneyOnlyLastRule; anything else is a type
+        //       error outside this validator's remit)
+        //   H3: when non-empty, must end with FluePipeT (cannot end with
+        //       ConnectorPipeT — preserves the fixed terminal-connector
+        //       distinction)
+        //
+        // H-rules are only meaningful when the outer shape is plausible:
+        // if the chain is empty we skip them (MissingChimney already fires).
+        val headRulesRelevant: Boolean = slots.nonEmpty
+
+        val headEndsWithFlueRule =
+            if headRulesRelevant && head.nonEmpty && head.last.pipeType == ConnectorPipeT then
+                Validated.invalidNel(HeadRegionEndsWithConnector)
             else Validated.validNel (()                         )
-
-        // Rule 6: if there's a flue region, there must be a connector-position slot after it
-        val rule6 =
-            if lastFlueIdx >= 0 && afterFlueBeforeChimney.count(_.pipeType == ConnectorPipeT) == 0 then
-                Validated.invalidNel(MissingConnectorAfterFlue)
-            else Validated.validNel (()                       )
 
         import cats.syntax.all.*
 
-        (rule1, rule3, rule4, rule5, rule6).mapN { (_, _, _, _, _) =>
+        (
+            chimneyLastRule,
+            chimneyOnlyLastRule,
+            terminalConnectorRule,
+            headEndsWithFlueRule
+        ).mapN { (_, _, _, _) =>
             PostFireboxPipeChain(slots)
         }

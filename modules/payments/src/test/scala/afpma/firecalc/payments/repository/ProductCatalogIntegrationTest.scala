@@ -11,20 +11,19 @@ import afpma.firecalc.payments.TestDatabaseSetup
 import afpma.firecalc.payments.domain.Currency
 import afpma.firecalc.payments.domain.Product
 import afpma.firecalc.payments.shared.api.ProductCatalogSelector
+import afpma.firecalc.payments.shared.api.ProductCopy
+import afpma.firecalc.payments.shared.api.YamlTemplateSeed
 import afpma.firecalc.payments.shared.api.v1.*
-import afpma.firecalc.payments.shared.i18n.I18nData_PaymentsShared
-import afpma.firecalc.payments.shared.i18n.implicits.given
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 
-import io.taig.babel.Locales
 import molecule.db.common.spi.Conn
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import utest.*
 
-object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
+class ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
 
     override implicit val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
@@ -46,12 +45,11 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
                 retrieved <- productRepo.findById(testProduct.id)
             } yield {
                 // Product should be created with correct attributes
-                assert(product.id == testProduct.id                     )
-                assert(product.name == testProduct.nameKey              )
-                assert(product.description == testProduct.descriptionKey)
-                assert(product.price == testProduct.price               )
-                assert(product.currency == Currency.EUR                 )
-                assert(product.active == testProduct.active             )
+                assert(product.id == testProduct.id        )
+                assert(product.sku == testProduct.sku      )
+                assert(product.price == testProduct.price  )
+                assert(product.currency == Currency.EUR    )
+                assert(product.active == testProduct.active)
 
                 // Product should be retrievable
                 assert(retrieved.isDefined               )
@@ -63,21 +61,25 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
             // Given an existing product
             val productId       = ProductId(UUID.fromString("00000000-0000-0000-0000-000000000999"))
             val originalProduct = ProductInfo(
-                id             = productId,
-                nameKey        = "products.original.name",
-                descriptionKey = "products.original.description",
-                price          = BigDecimal(50.00),
-                currency       = "EUR",
-                active         = true
+                id          = productId,
+                sku         = "test_original",
+                exampleCopy = YamlTemplateSeed(Map("default" -> ProductCopy("Original", "Original desc"))),
+                price       = BigDecimal(50.00),
+                currency    = "EUR",
+                active      = true,
+                taxRate     = BigDecimal("20.0"),
+                taxExempt   = false
             )
 
             val updatedProduct = ProductInfo(
-                id             = productId,
-                nameKey        = "products.updated.name",
-                descriptionKey = "products.updated.description",
-                price          = BigDecimal(75.00),
-                currency       = "EUR",
-                active         = false
+                id          = productId,
+                sku         = "test_updated",
+                exampleCopy = YamlTemplateSeed(Map("default" -> ProductCopy("Updated", "Updated desc"))),
+                price       = BigDecimal(75.00),
+                currency    = "EUR",
+                active      = false,
+                taxRate     = BigDecimal("10.0"),
+                taxExempt   = false
             )
 
             (for {
@@ -94,14 +96,13 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
                 // Then verify it was updated
                 retrieved <- productRepo.findById(productId)
             } yield {
-                assert(updated.name == "products.updated.name"              )
-                assert(updated.description == "products.updated.description")
-                assert(updated.price == BigDecimal(75.00)                   )
-                assert(updated.active == false                              )
+                assert(updated.sku == "test_updated"     )
+                assert(updated.price == BigDecimal(75.00))
+                assert(updated.active == false           )
 
-                assert(retrieved.isDefined                          )
-                assert(retrieved.get.name == "products.updated.name")
-                assert(retrieved.get.price == BigDecimal(75.00)     )
+                assert(retrieved.isDefined                     )
+                assert(retrieved.get.sku == "test_updated"     )
+                assert(retrieved.get.price == BigDecimal(75.00))
             }).unsafeRunSync()
         }
 
@@ -149,38 +150,19 @@ object ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
             assert(thrown)
         }
 
-        test("Product catalogs - have valid i18n keys for all products") {
-            // Given all product catalogs
+        test("Product catalogs - have valid exampleCopy for all products") {
             val allCatalogs = List(
                 ("development", DevelopmentCatalog),
                 ("staging", StagingCatalog        ),
                 ("production", ProductionCatalog  )
             )
 
-            // Load i18n data for English and French using given instances
-            val enData = I18N_PaymentsShared(using Locales.en)
-            val frData = I18N_PaymentsShared(using Locales.fr)
-
             allCatalogs.foreach { case (catalogName, catalog) =>
                 catalog.allProducts.foreach { product =>
-                    // Extract the key path from the nameKey (e.g., "products.test.name" -> "test")
-                    val productKey = product.nameKey.split("\\.").dropRight(1).last
-
-                    // Verify English and French translations exist
-                    productKey match {
-                        case "test"                     =>
-                            assert(enData.products.test.name.nonEmpty       )
-                            assert(enData.products.test.description.nonEmpty)
-                            assert(frData.products.test.name.nonEmpty       )
-                            assert(frData.products.test.description.nonEmpty)
-                        case "pdf_report_EN_15544_2023" =>
-                            assert(enData.products.pdf_report_EN_15544_2023.name.nonEmpty       )
-                            assert(enData.products.pdf_report_EN_15544_2023.description.nonEmpty)
-                            assert(frData.products.pdf_report_EN_15544_2023.name.nonEmpty       )
-                            assert(frData.products.pdf_report_EN_15544_2023.description.nonEmpty)
-                        case other                      =>
-                            assert(false) // Unknown product key
-                    }
+                    assert(product.exampleCopy.entries.contains("default"))
+                    val defaultCopy = product.exampleCopy.entries("default")
+                    assert(defaultCopy.name.nonEmpty       )
+                    assert(defaultCopy.description.nonEmpty)
                 }
             }
         }

@@ -40,12 +40,21 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
 
     // Test data
     val testProduct = Product(
-        id          = ProductId(UUID.randomUUID()),
-        name        = "Test Product",
-        description = "A test product",
-        price       = BigDecimal("29.99"),
-        currency    = Currency.EUR,
-        active      = true
+        id        = ProductId(UUID.randomUUID()),
+        sku       = "test",
+        price     = BigDecimal("29.99"),
+        currency  = Currency.EUR,
+        active    = true,
+        taxRate   = BigDecimal("20.0"),
+        taxExempt = false
+    )
+
+    val testProductCopyConfig: ProductCopyConfig = ProductCopyConfig(
+        entries = Map(
+            "test" -> Map(
+                "default" -> ProductCopy(name = "Test Product", description = "Test product for unit tests")
+            )
+        )
     )
 
     val testCustomerInfo = CustomerInfo(
@@ -104,27 +113,35 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
     def createMockServices(repos: TestRepositories) = {
         val productRepo = new ProductRepository[IO] {
             def findById(id: ProductId): IO[Option[Product]] = IO.pure(repos.products.get(id))
-            def findOrCreate(name: String, description: String, price: BigDecimal, currency: Currency): IO[Product] =
+            def findOrCreate(
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("findOrCreate not needed in this test"))
             def create(
-                id         : ProductId,
-                name       : String,
-                description: String,
-                price      : BigDecimal,
-                currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                id       : ProductId,
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                active   : Boolean,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("create not needed in this test"))
             def update(
-                id         : ProductId,
-                name       : String,
-                description: String,
-                price      : BigDecimal,
-                currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                id       : ProductId,
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                active   : Boolean,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("update not needed in this test"))
-            def upsert(productInfo: v1.ProductInfo)                                                   : IO[Product] =
+            def upsert(productInfo: v1.ProductInfo): IO[Product] =
                 IO.raiseError(new NotImplementedError("upsert not needed in this test"))
         }
 
@@ -331,6 +348,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 body     : String,
                 signature: String
             ): IO[Either[String, afpma.firecalc.payments.service.impl.WebhookEventStatus]] = ???
+            def getMandateForPayment(paymentId: String): IO[Option[afpma.firecalc.payments.domain.MandateSnapshot]] =
+                ???
         }
 
         val emailService = new EmailService[IO] {
@@ -344,9 +363,11 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
             def sendUserInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): IO[EmailResult] =
                 IO.pure(EmailSent)
 
-            def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-                language: BackendCompatibleLanguage
-            ): IO[EmailResult] =
+            def sendUserInvoiceWithReport(
+                invoice  : InvoiceEmail,
+                pdfReport: PdfReportEmail,
+                bcc      : List[EmailAddress] = List.empty
+            )(using language: BackendCompatibleLanguage): IO[EmailResult] =
                 IO.pure(EmailSent)
 
             def sendAdminInvoice(invoice: InvoiceEmail)(using language: BackendCompatibleLanguage): IO[EmailResult] =
@@ -407,7 +428,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val request = CreatePurchaseIntentRequest(
@@ -443,11 +465,11 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
             // Verify email was sent
             assert(repos.emailsSent.nonEmpty)
             val sentEmail = repos.emailsSent.head
-            assert(sentEmail.email.value == testCustomerInfo.email )
-            assert(sentEmail.code == "123456"                      )
-            assert(sentEmail.isNewUser == true                     ) // New customer
-            assert(sentEmail.productName.contains(testProduct.name))
-            assert(sentEmail.amount == testProduct.price           )
+            assert(sentEmail.email.value == testCustomerInfo.email)
+            assert(sentEmail.code == "123456"                     )
+            assert(sentEmail.isNewUser == true                    ) // New customer
+            assert(sentEmail.productName.contains("Test Product") )
+            assert(sentEmail.amount == testProduct.price          )
         }
 
         test("createPurchaseIntent - existing customer flow") {
@@ -475,7 +497,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val request = CreatePurchaseIntentRequest(
@@ -516,7 +539,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val fileMetadata = FileDescriptionWithContent(
@@ -564,7 +588,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             // Setup: Create purchase intent first
@@ -635,7 +660,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             // Setup: Create purchase intent first
@@ -686,7 +712,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val verifyRequest = VerifyAndProcessRequest(
@@ -729,7 +756,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             // Setup: Create purchase intent
@@ -785,7 +813,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val invalidCustomer = testCustomerInfo.copy(
@@ -832,7 +861,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val invalidCustomer = testCustomerInfo.copy(

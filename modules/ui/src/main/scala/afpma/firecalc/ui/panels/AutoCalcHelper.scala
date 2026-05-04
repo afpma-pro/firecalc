@@ -5,10 +5,9 @@
 
 package afpma.firecalc.ui.panels
 
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.Vec3
 
@@ -18,34 +17,28 @@ import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
-import coulomb.policy.standard.given
-
 import io.taig.babel.Locale
 
 /**
  * Shared helper for auto-calculating pipe positions on rectangular box boundaries.
  *
- * Used by FluePipePanel (firebox) and PipePanel_13384_FlowOnly (air distribution box).
+ * Used by:
+ *   - DynamicFlowOnlyPipeSlotPanel — firebox boundary, rendered only on the
+ *     first `PostFireboxPipeDescrSlot.FlueSlot`. The "first flue slot" check is
+ *     reactive over `postFireboxSlots_var`, so if the user reorders slots
+ *     (e.g. moves a ConnectorSlot above the flue region), the button migrates
+ *     to whichever FlueSlot is now topologically first.
+ *   - PipePanel_13384_FlowOnly — air distribution box boundary, rendered on
+ *     both `SetInitialPosition` and `SetFinalPosition` of the air intake pipe.
  * Abstracts over the different DTO hierarchies (EN 15544 vs EN 13384) using
  * partial-function extractors bundled in `ElemExtractors[E]`.
  */
 object AutoCalcHelper:
 
-    // ── ElemExtractors ───────────────────────────────────────────────────
-
-    /**
-     * Type-safe bridge across DTO hierarchies.
-     *
-     * Both 15544 and 13384 have SetInitialDirection, AddDirectionChange, SetInnerShape
-     * with identical fields but different types (no common base trait).
-     * Each panel provides a `given` instance where the pattern matching resolves
-     * to their own DTO namespace.
-     */
-    case class ElemExtractors[E](
-        asInitialDirection: PartialFunction[E, (AzimuthDirection, InclinationDirection)],
-        asDirectionChange : PartialFunction[E, (Angle, Option[AbsoluteDirection])],
-        asInnerShape      : PartialFunction[E, PipeShape]
-    )
+    // ── ElemExtractors / replayFrame / lastShapeBefore ──────────────────
+    // Moved to engine-kernel for headless testability; re-exported here for
+    // backward compatibility of all UI call sites.
+    export FrameReplay.{ElemExtractors, replayFrame, lastShapeBefore}
 
     // ── TargetBox ────────────────────────────────────────────────────────
 
@@ -66,48 +59,6 @@ object AutoCalcHelper:
         def topZ: Double = bottomZ + height
 
     // ── Pure algorithms ──────────────────────────────────────────────────
-
-    /**
-     * Replay SetInitialDirection and AddDirectionChange elements to compute
-     * the effective PipeFrame at or before `upToIdx`.
-     *
-     * Mirrors the logic in frameBeforeByIdx but works imperatively (required
-     * because Signal.now() is protected in Airstream — only Var.now() is available).
-     *
-     * @param elems    indexed element list from welems_var.now()
-     * @param upToIdx  inclusive upper bound on element index (use Int.MaxValue for all)
-     */
-    def replayFrame[E](elems: Seq[(Int, E)], upToIdx: Int)(using ext: ElemExtractors[E]): Option[PipeFrame] =
-        var frame: Option[PipeFrame] = None
-        for (idx, elem) <- elems if idx <= upToIdx do
-            ext.asInitialDirection
-                .lift(elem)
-                .foreach: (az, incl) =>
-                    val azDeg = AzimuthDirection.toDegrees(az)
-                    val elDeg = InclinationDirection.toDegrees(incl)
-                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-            ext.asDirectionChange
-                .lift(elem)
-                .foreach: (angle, absDirOpt) =>
-                    for
-                        f  <- frame
-                        fd <- absDirOpt
-                    do
-                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                        frame = Some(f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec))
-        frame
-
-    /**
-     * Find the last PipeShape set before `beforeIdx`.
-     *
-     * @param beforeIdx  exclusive upper bound (use Int.MaxValue for "last in entire list")
-     */
-    def lastShapeBefore[E](elems: Seq[(Int, E)], beforeIdx: Int)(using ext: ElemExtractors[E]): Option[PipeShape] =
-        elems
-            .filter(_._1 < beforeIdx)
-            .collect { case (_, elem) if ext.asInnerShape.isDefinedAt(elem) => ext.asInnerShape(elem) }
-            .lastOption
 
     /** Vertical extent of a pipe cross-section in meters. */
     def innerHeight(shape: PipeShape): Double = shape match

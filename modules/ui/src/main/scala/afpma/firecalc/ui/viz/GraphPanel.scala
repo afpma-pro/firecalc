@@ -41,7 +41,8 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                 results_en15544_combustion_air_pipe,
                 results_en15544_firebox_pipe,
                 postFireboxPipeResults_sig,
-                slotBuildResults_sig
+                slotBuildResults_sig,
+                results_en15544_flue_gas_velocity_bounds
             )
             .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
@@ -61,8 +62,9 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                 cls := "flex-1 relative overflow-hidden",
                 onUnmountCallback { _ => disposeCurrentChart() },
                 child <-- allPipeResultsSig.map {
-                    (airIntake, combustionAir, firebox, postFireboxResults, slotResults) =>
+                    (airIntake, combustionAir, firebox, postFireboxResults, slotResults, velocityBounds) =>
                         disposeCurrentChart()
+                        val (vMin, vMax) = velocityBounds
                         val slots = postFireboxSlots_var.now()
                         val postFireboxPipes: Vector[(String, VNelMcalcErr[PipeResult])] =
                             postFireboxResults match
@@ -82,7 +84,9 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                             combustionAir,
                             firebox,
                             postFireboxPipes,
-                            pipeIdxToDescrIdx = buildPipeIdxToDescrIdx(postFireboxPipes, slots, slotResults)
+                            pipeIdxToDescrIdx  = buildPipeIdxToDescrIdx(postFireboxPipes, slots, slotResults),
+                            flueGasVelocityMin = vMin,
+                            flueGasVelocityMax = vMax
                         )
                         if chartData.series.isEmpty then
                             div(

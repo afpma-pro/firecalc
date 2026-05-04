@@ -11,6 +11,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.IsZeroLengthPipeElement
+
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
@@ -286,13 +288,13 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
         yield en15544.formulas.p_d_calc(nd, nv)
 
     val roughness = curr.el match
-        case el: StraightSection                                                                   =>
+        case el: StraightSection         =>
             el.roughness.some
-        case _ : (DirectionChange | PressureDiff | SectionGeometryChange | SingularFlowResistance) =>
+        case _ : IsZeroLengthPipeElement =>
             None
 
     val staticFriction: Pressure = curr.el match
-        case el: StraightSection                                                                   =>
+        case el: StraightSection         =>
             val dh = el.geometry.dh
             // 4.10.1
             // For the calculation the conditions (temperature. velocity) in the middle of
@@ -300,7 +302,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
             val pd = dynamicPressure(using Position.Middle) // middle velocity of current section
             val λf = en15544.formulas.λ_f_calc(dh, el.roughness)
             en15544.formulas.p_R_calc(λf, pd, el.length, dh)
-        case _ : (PressureDiff | SectionGeometryChange | SingularFlowResistance | DirectionChange) =>
+        case _ : IsZeroLengthPipeElement =>
             0.0.pascals
 
     val vChangeFriction: Pressure = 0.pascals // not considered in EN15544
@@ -414,7 +416,9 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
             case FluePipeT          =>
                 tempStartOverride match
                     case Some(tStart) =>
-                        // Non-first flue pipe: use upstream temperature as reference for exponential decay
+                        // Non-first flue pipe (or first flue whose upstream was updated
+                        // by a preceding head connector): use upstream temperature as
+                        // reference for exponential decay
                         // t(L) = tStart * exp(-0.83 * L / L_Z_calculated)
                         val lzCalc = en15544.L_Z_calculated
                         QtyDAtPosition
@@ -431,6 +435,14 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                             )
                             .atPos
                     case None         =>
+                        // First flue pipe of the chain (no upstream override): use the
+                        // firebox-referenced decay `t_fluepipe(L)`. If the chain has NO
+                        // flue pipes at all (head starts with Connector and never
+                        // alternates back — invalid under current 15544 grammar, but
+                        // guarded against future relaxations), this branch is unreachable
+                        // because `gasTemperature` is only invoked with `elem.typ ==
+                        // FluePipeT` for flue pipe elements. Nothing to return as
+                        // "identity" in that case — plan issue E2.
                         en15544.t_fluepipe(totalLengthUntil(elem))
             case _                  =>
                 throw new Exception(s"${elem.fullRef}: could not determine 'temperature' for gas '$gas'")
@@ -445,7 +457,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
         // step1: run minimalist calculation, just to get all velocities at middle
         val dv_middle_results = fd.elements.map: elem =>
             elem.el match
-                case s: StraightSection                                                                   =>
+                case s: StraightSection         =>
                     val named = elem.copy(el = s)
                     val gip   = GasInPipeEl(gas, named, params)
                     FlowOnlyMecaFlu_15544
@@ -456,7 +468,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                             z_geodetical_height
                         )
                         .some
-                case _: (SectionGeometryChange | SingularFlowResistance | PressureDiff | DirectionChange) => None
+                case _: IsZeroLengthPipeElement => None
 
         // step2: zip elements with computed velocity of next element
         val curr_and_next_dvo_list =

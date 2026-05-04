@@ -11,7 +11,7 @@ import afpma.firecalc.dto.generators.firebox.Firebox_V4_Generators
 import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_13384_V3_Generators
 import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_15544_V3_Generators
 import afpma.firecalc.dto.generators.pipe_descr.SetThermalPipeProp_13384_V3_Generators
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
 
 import org.scalacheck.Gen

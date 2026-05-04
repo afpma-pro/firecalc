@@ -141,6 +141,13 @@ trait EN15544_V_2023_Formulas_Alg:
     def ζ1_modified_calc(ζα1: ζ, ζα2: ζ, ζα3: ζ, α1: QtyD[Degree], α2: QtyD[Degree], lz: QtyD[Meter], dh: D_h): ζ
     def ζ2_modified_calc(ζα1: ζ, ζα2: ζ, ζα3: ζ, α1: QtyD[Degree], α2: QtyD[Degree], lz: QtyD[Meter], dh: D_h): ζ
 
+    // 4.9.3
+    /** Flue-gas velocity minimum (EN 15544, Section 4.9.3). */
+    val flueGasVelocityMin: v
+
+    /** Flue-gas velocity maximum (EN 15544, Section 4.9.3). */
+    val flueGasVelocityMax: v
+
     // 4.10.2
     def t_chimney_wall_top_min: t_chimney_wall_top_min
 

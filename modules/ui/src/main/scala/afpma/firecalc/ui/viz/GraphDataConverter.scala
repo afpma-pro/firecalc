@@ -18,6 +18,8 @@ import afpma.firecalc.engine.models.PipeIdx
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeResult.PipeResultFromSections
 import afpma.firecalc.engine.models.PipeSectionResult
+import afpma.firecalc.engine.models.isDirectionChange
+import afpma.firecalc.engine.models.isSectionGeometryChange
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
 
@@ -75,7 +77,7 @@ object GraphDataConverter:
                 case _                                         => None // "Registre d'air", "Combustion Air" — not highlightable
 
     private def isDirectionChange(ps: PlottableSection): Boolean =
-        ps.section.section_length.value == 0.0
+        ps.section.isDirectionChange
 
     /**
      * Find the nearest highlightable neighbor in the given direction.
@@ -104,11 +106,19 @@ object GraphDataConverter:
         if neighbor.exists(isDirectionChange) then neighborName.toVector
         else (currentName ++ neighborName).toVector
 
+    /** Floor min / ceil max to the nearest multiple of `step`; empty input → (0, 0). */
+    private def niceRange(ys: Vector[Double], step: Double): (Double, Double) =
+        val mn = ys.minOption.getOrElse(0.0)
+        val mx = ys.maxOption.getOrElse(0.0)
+        (math.floor(mn / step) * step, math.ceil(mx / step) * step)
+
     // Series colors
-    private val TemperatureColor         = "#E63946"
-    private val VelocityColor            = "#2A9D8F"
-    private val ElevationColor           = "#E9C46A"
-    private val PressureColor            = "#6C757D"
+    private object GraphSeriesColors:
+        val Pressure   : String = "#1E40AF" // Tailwind blue-800
+        val Velocity   : String = "#0F766E" // Tailwind teal-700
+        val Temperature: String = "#DC2626" // Tailwind red-600
+        val Elevation  : String = "#7E22CE" // Tailwind purple-700
+
     private val RegistreAirPressureColor = "#FAAF4C"
 
     // Background band colors (matching 3D viz pipe group palette, ~12% opacity)
@@ -163,11 +173,13 @@ object GraphDataConverter:
      * and carry labels for display.
      */
     def convertGeneric(
-        airIntake        : VNelMcalcErr[PipeResult],
-        combustionAir    : VNelMcalcErr[PipeResult],
-        firebox          : VNelMcalcErr[PipeResult],
-        postFireboxPipes : Vector[(String, VNelMcalcErr[PipeResult])],
-        pipeIdxToDescrIdx: Map[String, Map[Int, Int]] = Map.empty
+        airIntake         : VNelMcalcErr[PipeResult],
+        combustionAir     : VNelMcalcErr[PipeResult],
+        firebox           : VNelMcalcErr[PipeResult],
+        postFireboxPipes  : Vector[(String, VNelMcalcErr[PipeResult])],
+        pipeIdxToDescrIdx : Map[String, Map[Int, Int]] = Map.empty,
+        flueGasVelocityMin: Double                     = 1.2, // EN 15544 §4.9.3 fallback
+        flueGasVelocityMax: Double                     = 6.0  // EN 15544 §4.9.3 fallback
     )(using Locale, DisplayUnits): ChartData =
 
         // All pipe results in order, for delta_pressure accumulation
@@ -243,70 +255,138 @@ object GraphDataConverter:
 
         if allSections.isEmpty then ChartData(series = Vector.empty, yAxes = Vector.empty, xAxisLabel = "")
         else
+            // Zero-length sections (synthetic "Registre d'air" pressure-delta anchor,
+            // SingularFlowResistance singular-loss elements, etc.) render as two stacked
+            // duplicate velocity markers at the same x — visual noise with no physical
+            // information. Strip them from velocity; pressure / temperature / elevation
+            // keep them because their y-jump at the section boundary IS the information.
+            val velocitySections = allSections.filter(ps => ps.xEnd - ps.xStart > 1e-9)
+
             val tempPoints     = buildSeriesPoints(allSections, "temperature")
-            val velocityPoints = buildSeriesPoints(allSections, "velocity")
+            val velocityPoints = buildSeriesPoints(velocitySections, "velocity")
             val elevPoints     = buildSeriesPoints(allSections, "elevation")
             val pressPoints    = buildSeriesPoints(allSections, "pressure")
 
-            val tempLabel  = displayUnits(s"${I18N_UI.graph.temperature} (°C)", s"${I18N_UI.graph.temperature} (°F)")
-            val rightLabel = displayUnits(
-                s"${I18N_UI.graph.pressure} (Pa) – ${I18N_UI.graph.velocity} (m/s) – ${I18N_UI.graph.elevation} (m)",
-                s"${I18N_UI.graph.pressure} (Pa) – ${I18N_UI.graph.velocity} (ft/s) – ${I18N_UI.graph.elevation} (ft)"
-            )
-            val xLabel     = displayUnits(s"${I18N_UI.graph.length} (m)", s"${I18N_UI.graph.length} (ft)")
+            val tempLabel      = displayUnits(s"${I18N_UI.graph.temperature} (°C)", s"${I18N_UI.graph.temperature} (°F)")
+            val pressureLabel  = s"${I18N_UI.graph.pressure} (Pa)"
+            val velocityLabel  = displayUnits(s"${I18N_UI.graph.velocity} (m/s)", s"${I18N_UI.graph.velocity} (ft/s)")
+            val elevationLabel = displayUnits(s"${I18N_UI.graph.elevation} (m)", s"${I18N_UI.graph.elevation} (ft)")
+            val rightLabel     = s"$pressureLabel – $velocityLabel – $elevationLabel"
+            val xLabel         = displayUnits(s"${I18N_UI.graph.length} (m)", s"${I18N_UI.graph.length} (ft)")
 
             val series = Vector(
-                ChartSeries     (
-                    id      = "pressure",
-                    name    = I18N_UI.graph.pressure,
-                    color   = PressureColor,
-                    points  = pressPoints,
-                    yAxisId = "right"
+                ChartSeries           (
+                    id            = "pressure",
+                    name          = I18N_UI.graph.pressure,
+                    color         = GraphSeriesColors.Pressure,
+                    points        = pressPoints,
+                    yAxisId       = "left",
+                    soloAxisLabel = pressureLabel
                 ),
-                ChartSeries     (
-                    id      = "velocity",
-                    name    = I18N_UI.graph.velocity,
-                    color   = VelocityColor,
-                    points  = velocityPoints,
-                    yAxisId = "right"
+                ChartSeries           (
+                    id            = "velocity",
+                    name          = I18N_UI.graph.velocity,
+                    color         = GraphSeriesColors.Velocity,
+                    points        = velocityPoints,
+                    yAxisId       = "left",
+                    soloAxisLabel = velocityLabel
                 ),
-                ChartSeries     (
-                    id      = "temperature",
-                    name    = I18N_UI.graph.temperature,
-                    color   = TemperatureColor,
-                    points  = tempPoints,
-                    yAxisId = "temp"
+                ChartSeries           (
+                    id            = "temperature",
+                    name          = I18N_UI.graph.temperature,
+                    color         = GraphSeriesColors.Temperature,
+                    points        = tempPoints,
+                    yAxisId       = "right",
+                    soloAxisLabel = tempLabel
                 ),
-                ChartSeries     (
-                    id      = "elevation",
-                    name    = I18N_UI.graph.elevation,
-                    color   = ElevationColor,
-                    points  = elevPoints,
-                    yAxisId = "right",
-                    dashed  = true
+                ChartSeries           (
+                    id            = "elevation",
+                    name          = I18N_UI.graph.elevation,
+                    color         = GraphSeriesColors.Elevation,
+                    points        = elevPoints,
+                    yAxisId       = "left",
+                    dashed        = true,
+                    soloAxisLabel = elevationLabel
                 )
             )
 
-            val yAxes = Vector(
-                YAxisConfig(id = "temp", label  = tempLabel, position  = YAxisPosition.Left                       ),
-                YAxisConfig(id = "right", label = rightLabel, position = YAxisPosition.Right, stepSize = Some(5.0))
-            )
+            // Left axis (pressure/velocity/elevation): floor/ceil to 5 so the primary grid
+            // aligns on every multiple of 5. Right axis (temperature): floor/ceil to 25 and
+            // carry the tick count of the left primary grid so the two axes' horizontal
+            // gridlines coincide 1:1 across the chart.
+            val (leftMin, leftMax) = niceRange((pressPoints ++ velocityPoints ++ elevPoints).map(_.y), 5.0)
+            val (tempMin, tempMax) = niceRange(tempPoints.map(_.y), 25.0)
+            val primaryTickCount = ((leftMax - leftMin) / 5.0).toInt + 1
+            val tempStepSize: Double =
+                if primaryTickCount <= 1 then tempMax - tempMin
+                else (tempMax - tempMin) / (primaryTickCount - 1).toDouble
 
-            // Build background bands from pipe group boundaries
-            val bands     = Vector.newBuilder[BackgroundBand]
-            var bandStart = 0.0
+            // Left holds pressure / velocity / elevation; right holds temperature.
+            val leftAxisConfig  = YAxisConfig(
+                id                = "left",
+                label             = rightLabel,
+                position          = YAxisPosition.Left,
+                min               = Some(leftMin),
+                max               = Some(leftMax),
+                stepSize          = Some(5.0),
+                primaryGridStep   = Some(5.0),
+                secondaryGridStep = Some(1.0)
+            )
+            val rightAxisConfig = YAxisConfig(
+                id       = "right",
+                label    = tempLabel,
+                position = YAxisPosition.Right,
+                min      = Some(tempMin),
+                max      = Some(tempMax),
+                stepSize = Some(tempStepSize)
+            )
+            val yAxes           = Vector(leftAxisConfig, rightAxisConfig)
+
+            // Build background bands from pipe group boundaries and, in the same pass,
+            // collect the x-segments where velocity operating-window reference lines apply
+            // (flue region, terminal connector, chimney — identified by raw pipe type,
+            // BEFORE i18n translation via `displayLabel`).
+            val bands                   = Vector.newBuilder[BackgroundBand]
+            val velocityLineSegsBuilder = Vector.newBuilder[XSegment]
+            val velocityLinePipeTypes   = Set("Flue", "Connector", "Chimney")
+            var bandStart               = 0.0
             pipes.foreach { (pipeName, _) =>
                 val pipeEnd = allSections.filter(_.pipeName == pipeName).lastOption.map(_.xEnd).getOrElse(bandStart)
                 if pipeEnd > bandStart then
                     bands += BackgroundBand(bandStart, pipeEnd, bandColorFor(pipeName), displayLabel(pipeName))
+                    val rawPipeType = pipeName match
+                        case SlotPipePattern(_, t) => t
+                        case other                 => other
+                    if velocityLinePipeTypes.contains(rawPipeType) then
+                        velocityLineSegsBuilder += XSegment(bandStart, pipeEnd)
                 bandStart = pipeEnd
             }
+            val velocityLineSegments: Vector[XSegment] = velocityLineSegsBuilder.result()
+
+            // "1.2 m/s" / "6 m/s" — integer values drop the decimal zero.
+            def fmtBound(v: Double): String =
+                val s = if v == v.toLong.toDouble then v.toLong.toString else f"$v%.1f"
+                s"$s m/s"
+
+            val velocityRefLines: Vector[HorizontalReferenceLine] =
+                if velocityLineSegments.isEmpty then Vector.empty
+                else
+                    Vector(flueGasVelocityMin, flueGasVelocityMax).map: y =>
+                        HorizontalReferenceLine             (
+                            yAxisId              = "left",
+                            y                    = y,
+                            color                = "#FFB74D",
+                            label                = fmtBound(y),
+                            visibleWhenSeriesIds = Vector("velocity"),
+                            segments             = velocityLineSegments
+                        )
 
             ChartData         (
                 series          = series,
                 yAxes           = yAxes,
                 xAxisLabel      = xLabel,
                 backgroundBands = bands.result(),
+                horizontalLines = velocityRefLines,
                 xMin            = Some(-0.5),
                 xMax            = Some(runningLength + 0.5)
             )
@@ -423,7 +503,11 @@ object GraphDataConverter:
                 highlightTargets = endTargets
             )
 
-            Vector(startPoint, endPoint)
+            // Suppress the two co-located points of zero-length SectionGeometryChange entries.
+            // Accumulators above have already absorbed its singular pressure loss (pu), so the
+            // next section's start point carries the correct cumulative pressure.
+            if section.isSectionGeometryChange then Vector.empty
+            else Vector(startPoint, endPoint)
         }
 
         originPoint +: sectionPoints

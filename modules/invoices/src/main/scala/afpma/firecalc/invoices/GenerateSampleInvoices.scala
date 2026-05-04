@@ -13,9 +13,9 @@ import afpma.firecalc.invoices.models.Address
 import afpma.firecalc.invoices.models.Company
 import afpma.firecalc.invoices.models.CompanyConfig
 import afpma.firecalc.invoices.models.InvoiceConfig
-import afpma.firecalc.invoices.models.InvoiceData
 import afpma.firecalc.invoices.models.InvoiceLineItem
 import afpma.firecalc.invoices.models.InvoiceParams
+import afpma.firecalc.invoices.models.InvoiceSenderConfig
 import afpma.firecalc.invoices.models.InvoiceStatus
 import afpma.firecalc.invoices.models.PaymentMethod
 import afpma.firecalc.invoices.models.PaymentTerms
@@ -147,10 +147,66 @@ object GenerateSampleInvoices:
         // Use the default template for now
         val template = DefaultInvoiceTemplate()
 
+        // Demo runtime data (hardcoded in Scala as per plan)
+        val demoRecipient = Company(
+            name    = "Demo Customer Ltd",
+            address = Address(
+                street     = "456 Client Boulevard",
+                city       = "Lyon",
+                postalCode = "69001",
+                region     = "Auvergne-Rhône-Alpes",
+                country    = "France"
+            ),
+            email   = "accounts@client-solutions.com"
+        )
+
+        val demoLineItems = List(
+            InvoiceLineItem          (
+                description = "Professional Software License",
+                quantity    = BigDecimal("1"),
+                unitPrice   = BigDecimal("2500.00"),
+                taxRate     = BigDecimal("20.0"),
+                unit        = Some("license")
+            ),
+            InvoiceLineItem          (
+                description = "Implementation Services",
+                quantity    = BigDecimal("40"),
+                unitPrice   = BigDecimal("150.00"),
+                taxRate     = BigDecimal("20.0"),
+                unit        = Some("hours")
+            ),
+            InvoiceLineItem.taxExempt(
+                description = "Non-profit Educational Material",
+                quantity    = BigDecimal("5"),
+                unitPrice   = BigDecimal("120.00"),
+                unit        = Some("units")
+            )
+        )
+
+        val invoiceParams = InvoiceParams(
+            invoiceNumber      = s"DEMO-${suffix.toUpperCase}-001",
+            recipient          = demoRecipient,
+            lineItems          = demoLineItems,
+            paymentTerms       = config.invoice.paymentTerms,
+            invoiceDate        = LocalDate.now(),
+            dueDate            = None,
+            reference          = Some(s"REF-$baseName"),
+            currency           = config.invoice.currency,
+            notes              = config.invoice.notes,
+            discountPercentage = None,
+            status             = InvoiceStatus.Sent
+        )
+
+        val companyConfig = CompanyConfig(
+            sender         = config.invoice.sender,
+            templateConfig = config.template
+        )
+
         // Generate Typst file for inspection
         val typstContent = {
-            given Locale = locale
-            template.render(config.invoice)
+            given Locale    = locale
+            val invoiceData = invoiceParams.toInvoiceData(companyConfig)
+            template.render(invoiceData)
         }
         val typstFile    = new File(outputDir, s"$baseName-$suffix.typ")
         val typstWriter  = new java.io.FileWriter(typstFile)
@@ -163,29 +219,6 @@ object GenerateSampleInvoices:
 
         // Generate PDF file with proper locale using new API
         val pdfResult = {
-            // given Locale = locale
-
-            // Convert InvoiceConfig to CompanyConfig + InvoiceParams structure
-            val companyConfig = CompanyConfig(
-                sender         = config.invoice.sender,
-                templateConfig = config.template
-            )
-
-            val invoiceParams = InvoiceParams(
-                invoiceNumber      = config.invoice.invoiceNumber,
-                recipient          = config.invoice.recipient,
-                lineItems          = config.invoice.lineItems,
-                paymentTerms       = config.invoice.paymentTerms,
-                invoiceDate        = config.invoice.invoiceDate,
-                dueDate            = config.invoice.dueDate,
-                reference          = config.invoice.reference,
-                billTo             = config.invoice.billTo,
-                currency           = config.invoice.currency,
-                notes              = config.invoice.notes,
-                discountPercentage = config.invoice.discountPercentage,
-                status             = config.invoice.status
-            )
-
             val factory = FireCalcInvoiceFactory.fromTemplate(companyConfig)
             factory
                 .generateInvoiceWithTemplate(invoiceParams, template, locale)
@@ -225,7 +258,7 @@ object GenerateSampleInvoices:
     }
 
     /** Create a simple invoice for testing. */
-    def createSimpleInvoice(): InvoiceData = {
+    def createSimpleInvoice(): InvoiceSenderConfig = {
         val senderAddress = Address(
             street      = "123 Business Street",
             streetLine2 = Some("Suite 100"),
@@ -244,28 +277,14 @@ object GenerateSampleInvoices:
             email              = "billing@acme-dev.com",
             phone              = Some("+33 1 23 45 67 89"),
             website            = Some("https://www.acme-dev.com"),
-            logo               = None
-        )
-
-        val customerAddress = Address(
-            street      = "456 Client Boulevard",
-            streetLine2 = None,
-            city        = "Lyon",
-            region      = "Auvergne-Rhône-Alpes",
-            postalCode  = "69001",
-            country     = "France"
-        )
-
-        val customer = Company(
-            name               = "Client Solutions Ltd",
-            displayName        = None,
-            address            = customerAddress,
-            vatNumber          = Some("FR98765432101"),
-            registrationNumber = Some("RCS Lyon 987 654 321"),
-            email              = "accounts@client-solutions.com",
-            phone              = Some("+33 4 78 90 12 34"),
-            website            = Some("https://www.client-solutions.com"),
-            logo               = None
+            logo               = None,
+            taxExemptNotice    = Some(
+                Map     (
+                    "fr"      -> "TVA non applicable, art. 293 B du CGI",
+                    "en"      -> "Non-profit organization - Tax exempt",
+                    "default" -> "Tax exempt"
+                )
+            )
         )
 
         val paymentTerms = PaymentTerms(
@@ -283,36 +302,10 @@ object GenerateSampleInvoices:
             notes              = Some("Early payment discount: 2% if paid within 10 days")
         )
 
-        val lineItems = List(
-            InvoiceLineItem(
-                description = "Professional Software License",
-                quantity    = BigDecimal("1"),
-                unitPrice   = BigDecimal("2500.00"),
-                taxRate     = BigDecimal("20.0"),
-                unit        = Some("license")
-            ),
-            InvoiceLineItem(
-                description = "Implementation Services",
-                quantity    = BigDecimal("40"),
-                unitPrice   = BigDecimal("150.00"),
-                taxRate     = BigDecimal("20.0"),
-                unit        = Some("hours")
-            )
-        )
-
-        InvoiceData     (
-            invoiceNumber      = "INV-TEST-001",
-            invoiceDate        = LocalDate.now(),
-            dueDate            = Some(LocalDate.now().plusDays(30)),
-            reference          = Some("Test Invoice"),
-            sender             = sender,
-            recipient          = customer,
-            billTo             = None,
-            lineItems          = lineItems,
-            paymentTerms       = paymentTerms,
-            currency           = "EUR",
-            notes              = Some("Thank you for your business! This is a test invoice."),
-            discountPercentage = None,
-            status             = InvoiceStatus.Draft
+        InvoiceSenderConfig      (
+            sender       = sender,
+            paymentTerms = paymentTerms,
+            currency     = "EUR",
+            notes        = Some("Thank you for your business! This is a test invoice configuration.")
         )
     }

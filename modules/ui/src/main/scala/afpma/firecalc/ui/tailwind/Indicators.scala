@@ -24,7 +24,8 @@ final case class Indicators()(using Locale, DisplayUnits) extends Component:
 
     lazy val node =
         div(
-            cls := "top-8 relative flex justify-end",
+            cls := "top-8 relative flex justify-end items-center gap-4",
+            AppToasts           (),
             EquilibriumIndicator(),
             EfficiencyIndicator (),
 

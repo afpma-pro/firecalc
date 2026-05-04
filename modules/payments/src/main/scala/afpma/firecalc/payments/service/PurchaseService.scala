@@ -27,7 +27,8 @@ object PurchaseService:
         authService        : AuthenticationService[F],
         orderService       : OrderService[F],
         paymentService     : PaymentService[F],
-        emailService       : EmailService[F]
+        emailService       : EmailService[F],
+        productCopyConfig  : ProductCopyConfig
     )(implicit logger: Logger[F]): F[PurchaseService[F]] =
         Async[F].pure(
             new PurchaseServiceImpl[F](
@@ -38,6 +39,7 @@ object PurchaseService:
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                productCopyConfig
             )
         )

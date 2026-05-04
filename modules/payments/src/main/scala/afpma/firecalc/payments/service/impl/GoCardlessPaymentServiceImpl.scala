@@ -12,7 +12,6 @@ import javax.crypto.spec.SecretKeySpec
 
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.email.*
-import afpma.firecalc.payments.i18n.implicits.given
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.repository.impl.CustomerSyntax.*
 import afpma.firecalc.payments.service.*
@@ -21,6 +20,8 @@ import afpma.firecalc.payments.shared.api.BackendCompatibleLanguage
 import afpma.firecalc.payments.shared.api.CountryCode_ISO_3166_1_ALPHA_2
 import afpma.firecalc.payments.shared.api.CustomerInfo
 import afpma.firecalc.payments.shared.api.OrderId
+import afpma.firecalc.payments.shared.api.ProductCopyConfig
+import afpma.firecalc.payments.shared.api.ProductCopyResolver
 import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
@@ -273,8 +274,18 @@ case class BillingRequest(
 
 case class GoCardlessPayment(
     id      : String,
-    metadata: Map[String, String]
+    metadata: Map[String, String],
+    links   : Option[Map[String, String]] = None
 )
+
+case class GoCardlessMandate(
+    id                       : String,
+    reference                : Option[String],
+    created_at               : Option[String],
+    next_possible_charge_date: Option[String]
+)
+
+case class MandateResponseEnvelope(mandates: GoCardlessMandate)
 
 // Webhook models
 case class WebhookEvent(
@@ -354,17 +365,18 @@ given Decoder[BillingRequestResponseEnvelope]     = deriveDecoder
 given Decoder[PaymentResponseEnvelope]            = deriveDecoder
 given Encoder[BillingRequestFlowEnvelope]         = deriveEncoder_andDeepDropNullValues
 given Decoder[BillingRequestFlowResponseEnvelope] = deriveDecoder
+given Decoder[GoCardlessMandate]                  = deriveDecoder
+given Decoder[MandateResponseEnvelope]            = deriveDecoder
 
 class GoCardlessPaymentServiceImpl[F[_]: Async](
-    httpClient  : Client[F],
-    config      : GoCardlessConfig,
-    emailService: EmailService[F],
-    orderService: OrderService[F],
-    customerRepo: CustomerRepository[F]
+    httpClient       : Client[F],
+    config           : GoCardlessConfig,
+    emailService     : EmailService[F],
+    orderService     : OrderService[F],
+    customerRepo     : CustomerRepository[F],
+    productCopyConfig: ProductCopyConfig
 )                                              (implicit logger: Logger[F])
     extends PaymentService[F]:
-
-    import BackendCompatibleLanguage.given
 
     private def gcHeaders: Headers =
         Headers(
@@ -429,8 +441,8 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         product                     : Product,
         existingGoCardlessCustomerId: Option[String] // = None
     )(using lang: BackendCompatibleLanguage): F[BillingRequest] =
-        val translations  = I18N_Payments
         val amountInCents = (amount * 100).toInt
+        val copy          = ProductCopyResolver.resolve(product.sku, lang)(using productCopyConfig)
         val request       = CreateBillingRequestRequest(
             mandate_request = MandateRequest(
                 currency = "EUR",
@@ -440,7 +452,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
                 PaymentRequest     (
                     amount      = amountInCents,
                     currency    = "EUR",
-                    description = translations.common.payment_description(orderId.value.toString, product.description),
+                    description = s"${copy.name} - ${copy.description}",
                     metadata    = Map("order_id" -> orderId.value.toString)
                 )
             ),
@@ -502,11 +514,39 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         (if isValid then logger.info(s"Webhook signature verification passed (env: ${config.environment})")
          else logger.error(s"Webhook signature verification FAILED (env: ${config.environment})")).map(_ => isValid)
 
-    private def getPayment(paymentId: String): F[GoCardlessPayment] =
+    def getPayment(paymentId: String): F[GoCardlessPayment] =
         makeRequest[Unit, PaymentResponseEnvelope](
             Method.GET,
             s"/payments/$paymentId"
         ).map(_.payments)
+
+    def getMandateForPayment(paymentId: String): F[Option[MandateSnapshot]] =
+        for
+            payment <- getPayment(paymentId)
+            mandateId = payment.links.flatMap(_.get("mandate"))
+            snapshotOpt <- mandateId.traverse(getMandateById)
+        yield snapshotOpt
+
+    def getMandateById(mandateId: String): F[MandateSnapshot] =
+        makeRequest[Unit, MandateResponseEnvelope](Method.GET, s"/mandates/$mandateId")
+            .map(extractMandateFromEnvelope)
+            .map(_.getOrElse(MandateSnapshot(reference = None, createdDate = None, nextPossibleChargeDate = None)))
+
+    def extractMandateFromEnvelope(mre: MandateResponseEnvelope): Option[MandateSnapshot] =
+        val m = mre.mandates
+        Some(
+            MandateSnapshot             (
+                reference              = m.reference,
+                createdDate            = m.created_at.flatMap(parseIsoDate),
+                nextPossibleChargeDate = m.next_possible_charge_date.flatMap(parseLocalDate)
+            )
+        )
+
+    private def parseIsoDate(s: String): Option[java.time.LocalDate] =
+        Try(java.time.OffsetDateTime.parse(s).toLocalDate).toOption
+
+    private def parseLocalDate(s: String): Option[java.time.LocalDate] =
+        Try(java.time.LocalDate.parse(s)).toOption
 
     // Helper method to extract OrderId from webhook event resource_metadata
     private def extractOrderId(event: WebhookEvent): F[Option[OrderId]] =
@@ -937,10 +977,12 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             // Use the language from the order to ensure consistency
             languageFromOrder = order.language
 
+            productCopy = ProductCopyResolver.resolve(product.sku, languageFromOrder)(using productCopyConfig)
+
             paymentLinkEmail = PaymentLinkEmail(
                 email       = EmailAddress.unsafeFromString(customerEmail),
                 paymentUrl  = paymentUrl,
-                productName = product.name,
+                productName = productCopy.name,
                 amount      = amount,
                 currency    = product.currency.toString
             )
@@ -949,17 +991,18 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             _ <- emailService.sendUserPaymentLink(paymentLinkEmail)(using languageFromOrder)
 
             _ <- logger.info(
-                s"Payment link email sent to $customerEmail for order ${orderId.value} with product: ${product.name} in language: ${languageFromOrder.code}"
+                s"Payment link email sent to $customerEmail for order ${orderId.value} with product: ${product.sku} in language: ${languageFromOrder.code}"
             )
         } yield ()
 
 object GoCardlessPaymentServiceImpl:
     def create[F[_]: Async](
-        httpClient  : Client[F],
-        config      : GoCardlessConfig,
-        emailService: EmailService[F],
-        orderService: OrderService[F],
-        customerRepo: CustomerRepository[F]
+        httpClient       : Client[F],
+        config           : GoCardlessConfig,
+        emailService     : EmailService[F],
+        orderService     : OrderService[F],
+        customerRepo     : CustomerRepository[F],
+        productCopyConfig: ProductCopyConfig
     )(implicit logger: Logger[F]): F[PaymentService[F]] =
         Async[F].pure(
             new GoCardlessPaymentServiceImpl[F](
@@ -967,6 +1010,7 @@ object GoCardlessPaymentServiceImpl:
                 config,
                 emailService,
                 orderService,
-                customerRepo
+                customerRepo,
+                productCopyConfig
             )
         )

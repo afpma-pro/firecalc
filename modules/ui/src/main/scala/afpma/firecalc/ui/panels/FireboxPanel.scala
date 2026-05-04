@@ -19,7 +19,7 @@ import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.utils.flatMapVNelE
+import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
 
 import cats.data.*
 import cats.implicits.toShow
@@ -40,7 +40,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
 
     private val vizHighlightSignal: Signal[String] =
         vizHoveredElement.signal
-            .combineWith(vizSelectedElement.signal)
+            .combineWithDistinct(vizSelectedElement.signal)
             .map: (hover, select) =>
                 val matches = hover.contains(VizElementId.FireboxElement) ||
                     select.contains(VizElementId.FireboxElement)
@@ -52,21 +52,21 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
 
     val cited_constraints_validation_sig: Signal[VNelMcalcErr[Unit]] =
         results_en15544_strict_sig.flatMapVNelE: strict =>
-            strict.primary.validateCitedConstraints()
+            strict.primary.validateCitedConstraints
 
     lazy val firebox_custom_constraints_sig: Signal[VNelMcalcErr[Unit]] =
         results_en15544_strict_sig.flatMapVNelE: strict =>
-            strict.primary.validateFireboxSpecificConstraints()
+            strict.primary.validateFireboxSpecificConstraints
 
     /** Sum of pressures available for 'combustion air pipe' and 'firebox pipe' */
     val firebox_pressures_avail_signal =
         results_en15544_combustion_air_pipe
-            .combineWith(results_en15544_firebox_pipe)
+            .combineWithDistinct(results_en15544_firebox_pipe)
             .map((vp1, vp2) => vp1.map(_.`ph-(pR+pu)`).andThen(_ => vp2.map(_.`ph-(pR+pu)`)))
 
     lazy val all_cons_signal =
         cited_constraints_validation_sig
-            .combineWith(firebox_custom_constraints_sig)
+            .combineWithDistinct(firebox_custom_constraints_sig)
             .map: (v1, v2) =>
                 v1.andThen(_ => v2)
 
@@ -82,8 +82,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                 title   = Title.WithQuadrionSubtotal(
                     I18N.panels.firebox,
                     xtra_sig             = firebox_var.signal
-                        .combineWith(all_cons_signal)
-                        .combineWith(firebox_pressures_avail_signal)
+                        .combineWithDistinct(all_cons_signal, firebox_pressures_avail_signal)
                         .map: (fb, all_cons, fb_press_avail) =>
                             val statusCons  =
                                 PanelStatusHelper

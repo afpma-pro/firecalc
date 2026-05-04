@@ -547,8 +547,8 @@ object FormDerivationSpec extends TestSuite:
                 @nowarn given vvOptDoubleStrict: ValidateVar[Option[Double]] = // scalafix:ok
                     ValidateVar.make:
                         case Some(d) if d >= 0 => VNelString.validUnit
-                        case Some(d) => VNelString.invalidOne(s"negative: $d")
-                        case None => VNelString.invalidOne("missing")
+                        case Some(d)           => VNelString.invalidOne(s"negative: $d")
+                        case None              => VNelString.invalidOne("missing")
                 val form = FormDerivation.splitViaMatchingOnly[Shape]
                 assert(form.validateVar.validate(Circle(-1.0)).isInvalid)
             }

@@ -320,8 +320,26 @@ object PipeResult:
     ) extends WithoutSections {
         val gas_temp_mean = utils.mean_temp_using_inverse_alg(gas_temp_start, gas_temp_end)
 
+        /**
+         * Fallback `temperature_iob` for a values-only (noop / useless) `PipeResult`.
+         *
+         * A `PipeResultFromValues` is produced by `PipeResult.useless` (via
+         * `PipeSlot.noop`) — used for absent optional pipes or when a pipe's
+         * full description could not be extracted. There is no thermal
+         * section to compute heat-transfer from, so no principled value
+         * exists. We return `gas_temp_end` (which for `useless` equals the
+         * incoming gas temperature) as a best-effort pass-through: if no
+         * heat is removed, the inner-of-bore wall temperature approaches
+         * the gas temperature.
+         *
+         * Historically this threw, which crashed the UI when downstream
+         * chimney validations (e.g. `validateChimneyWallTempIsAboveCondensationTemp`)
+         * were invoked on a chain whose chimney slot fell back to noop
+         * (e.g. chimney descriptor failed extraction under the new
+         * connector-first HEAD_REGION grammar introduced in f416e7db).
+         */
         def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt): TCelsius =
-            throw new Exception("unexpected call to 'temperature_iob'")
+            gas_temp_end
     }
 
     private[firecalc] abstract class PipeResultFromSections(val elements: Vector[PipeSectionResult[?]])
@@ -485,6 +503,11 @@ case class PipesResult_15544(
     // ── aggregate lists ──
     private val postFireboxResults: List[PipeResult] = postFirebox.map(_._2).toList
 
+    // When `lastFluePipeIdx < 0` (no FluePipe in the post-firebox chain — legal under
+    // EN 13384 standalone grammar where HEAD_REGION is empty), the "until flue pipe
+    // end" aggregations (`Σ_pRs_until_fluepipe_end`, `Σ_pRg_until_fluepipe_end`, …)
+    // reduce to the combustion-air + firebox contribution only. `List.map.sum` on an
+    // empty tail yields zero, so the cumulative sums render cleanly. Plan issue E3.
     val orderedPipesUntilFluePipe = /* airIntake :: */ combustionAir :: firebox ::
         (if lastFluePipeIdx < 0 then Nil
          else postFirebox.take(lastFluePipeIdx + 1).map(_._2).toList)

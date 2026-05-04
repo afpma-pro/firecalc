@@ -21,6 +21,7 @@ sealed trait Firebox_V4 extends FireboxI
 object Firebox_V4:
 
     extension (fb: Firebox_V4)
+
         def withDimensions(depth: Length, width: Length, height: Length): Firebox_V4 = fb match
             case t: Traditional            => t.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
             case e: Ecolabeled             => e.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
@@ -28,6 +29,13 @@ object Firebox_V4:
             case s: SingleTested           => s.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
             case d: Door15aFirebox_Catalog =>
                 d.copy(firebox_depth = depth, firebox_width = width, firebox_height = height)
+
+        def withNominalLoad(load: Mass): Firebox_V4 = fb match
+            case t: Traditional            => t
+            case e: Ecolabeled             => e
+            case a: AFPMA_PRSE             => a
+            case s: SingleTested           => s.copy(maximum_fuel_mass = load)
+            case d: Door15aFirebox_Catalog => d.copy(load_size_nominal = Some(load))
 
     export Firebox_V3.TestStandard
 

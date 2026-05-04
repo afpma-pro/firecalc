@@ -6,6 +6,7 @@
 package afpma.firecalc.payments.domain
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 import io.circe.Decoder
@@ -27,12 +28,13 @@ import afpma.firecalc.payments.shared.api.{
 }
 
 case class Product(
-    id         : ProductId,
-    name       : String,
-    description: String,
-    price      : BigDecimal,
-    currency   : Currency,
-    active     : Boolean
+    id       : ProductId,
+    sku      : String,
+    price    : BigDecimal,
+    currency : Currency,
+    active   : Boolean,
+    taxRate  : BigDecimal,
+    taxExempt: Boolean
 )
 
 case class Customer(
@@ -153,6 +155,13 @@ case class AuthenticationCode(
 )
 
 case class EmailResult(success: Boolean, message: String)
+
+/** Snapshot of a GoCardless SEPA mandate fetched at invoice-render time. */
+case class MandateSnapshot(
+    reference             : Option[String],
+    createdDate           : Option[LocalDate],
+    nextPossibleChargeDate: Option[LocalDate]
+)
 
 // GoCardless webhook models
 case class GoCardlessWebhookPayload(

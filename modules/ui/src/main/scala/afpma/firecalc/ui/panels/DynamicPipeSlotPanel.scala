@@ -10,9 +10,11 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.i18n.implicits.I18N
+
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
@@ -23,7 +25,7 @@ import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.utils.flatMapVNelE
+import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
 
 import cats.Show
 import cats.data.Validated
@@ -40,20 +42,259 @@ import io.taig.babel.Locale
 /** Factory for creating the right DynamicPipeSlotPanel variant per slot type. */
 object DynamicPipeSlotPanel:
 
-    /** Create a panel for the given slot index and type. */
-    def forSlot(slotIndex: Int, slot: PostFireboxPipeDescrSlot, slotControlsNode: Option[HtmlElement] = None)(using
-        Locale,
-        DisplayUnits
-    ): PipePanel =
+    /**
+     * Create a panel for the given slot index and type.
+     *
+     * @param headIdx
+     *   The slot's 0-based index within the head region, or `None` if the slot is outside the head
+     *   region (terminal connector, chimney). Captured at panel-construction time; panels are rebuilt
+     *   on every structural mutation so this value is stable for the panel's lifetime.
+     * @param isLastInHeadRegion
+     *   True iff this slot is the last slot of the head region (carries the `min.` L_Z annotation).
+     * @param headRegionLengthsSig
+     *   Per-head-slot `lengthSum.value`s, `None` if any upstream slot's pipe result is Invalid
+     *   (fail-closed per D5). Reactive — changes when pipe lengths change without structural
+     *   mutations.
+     * @param lZMinSig
+     *   EN 15544 minimum flue-pipe length, `None` if Invalid. Reactive.
+     */
+    def forSlot(
+        slotIndex           : Int,
+        slot                : PostFireboxPipeDescrSlot,
+        slotControlsNode    : Option[HtmlElement]            = None,
+        headIdx             : Option[Int]                    = None,
+        isLastInHeadRegion  : Boolean                        = false,
+        headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
+        lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
+    )(using Locale, DisplayUnits): PipePanel =
         slot match
             case PostFireboxPipeDescrSlot.FlueSlot(_)        =>
-                DynamicFlowOnlyPipeSlotPanel(slotIndex, slotControlsNode)
+                DynamicFlowOnlyPipeSlotPanel(
+                    slotIndex,
+                    slotControlsNode,
+                    headIdx,
+                    isLastInHeadRegion,
+                    headRegionLengthsSig,
+                    lZMinSig
+                )
             case PostFireboxPipeDescrSlot.ThermalFlueSlot(_) =>
-                DynamicThermalPipeSlotPanel(slotIndex, FluePipeT, I18N.panels.channel_pipe, slotControlsNode)
+                DynamicThermalPipeSlotPanel(
+                    slotIndex,
+                    FluePipeT,
+                    I18N.panels.channel_pipe,
+                    slotControlsNode,
+                    headIdx,
+                    isLastInHeadRegion,
+                    headRegionLengthsSig,
+                    lZMinSig
+                )
             case PostFireboxPipeDescrSlot.ConnectorSlot(_)   =>
-                DynamicThermalPipeSlotPanel(slotIndex, ConnectorPipeT, I18N.panels.connector_pipe, slotControlsNode)
+                DynamicThermalPipeSlotPanel(
+                    slotIndex,
+                    ConnectorPipeT,
+                    I18N.panels.connector_pipe,
+                    slotControlsNode,
+                    headIdx,
+                    isLastInHeadRegion,
+                    headRegionLengthsSig,
+                    lZMinSig
+                )
             case PostFireboxPipeDescrSlot.ChimneySlot(_)     =>
                 DynamicThermalPipeSlotPanel(slotIndex, ChimneyPipeT, I18N.panels.chimney_pipe, slotControlsNode)
+
+    // ── Auto-calc visibility predicates (pure, testable) ─────────────────
+    //
+    // Unified rule: the auto-calc button is visible on whichever slot is
+    // topologically first in HEAD_REGION (index 0), regardless of pipe type.
+    // The button aligns a pipe's start to the firebox boundary; only the
+    // very first slot touches the firebox. Subsequent slots inherit their
+    // start from the previous slot's endpoint.
+    //
+    // These predicates are pure functions of the slot vector + the panel's
+    // own slotIndex — extracted here so they can be unit-tested without
+    // spinning up Laminar owners or reactive wiring.
+
+    /** True iff `slotIndex == 0` AND the slot at index 0 is a `FlueSlot` or `ThermalFlueSlot`. */
+    def isFirstHeadSlotAndIsFlue(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
+        slotIndex == 0 && (slots.lift(0) match
+            case Some(_: PostFireboxPipeDescrSlot.FlueSlot)        => true
+            case Some(_: PostFireboxPipeDescrSlot.ThermalFlueSlot) => true
+            case _ => false)
+
+    /** True iff `slotIndex == 0` AND the slot at index 0 is a `ConnectorSlot`. */
+    def isFirstHeadSlotAndIsConnector(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
+        slotIndex == 0 && (slots.lift(0) match
+            case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => true
+            case _ => false)
+
+    // ── Head-region title / length-summary helpers (pure, testable) ──────
+    //
+    // These functions are pure computations of the slot vector and associated
+    // data; no Laminar owners or reactive wiring required. They are exposed
+    // on the companion object so unit tests can call them directly.
+
+    /**
+     * Compute the numbered head-region title for the slot at `slotIndex`, or `None` if the slot is
+     * outside the head region.
+     *
+     * @param slots
+     *   The full post-firebox slot vector (including terminal connector and chimney).
+     * @param slotIndex
+     *   The global index of the slot within `slots`.
+     * @param channelPipeLabel
+     *   Translated label for FlueSlot / ThermalFlueSlot (e.g. `I18N.panels.channel_pipe`).
+     * @param connectorPipeLabel
+     *   Translated label for ConnectorSlot-in-head-region (e.g. `I18N.panels.connector_pipe`).
+     * @return
+     *   `Some("{label} #{N}")` if in head region, `None` otherwise.
+     */
+    def numberedTitle(
+        slots             : Seq[PostFireboxPipeDescrSlot],
+        slotIndex         : Int,
+        channelPipeLabel  : String,
+        connectorPipeLabel: String
+    ): Option[String] =
+        val headRegionIndices = computeHeadRegionIndices(slots)
+        headRegionIndices.indexOf(slotIndex) match
+            case -1      => None
+            case headIdx =>
+                val label = slots.lift(slotIndex) match
+                    case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => connectorPipeLabel
+                    case _                                               => channelPipeLabel
+                Some(s"$label #${headIdx + 1}")
+
+    /**
+     * Compute the length-summary string for the head-region slot at `slotIndex`, or `None` if the
+     * slot is outside the head region, pipe result is Invalid, or this is the first slot of a
+     * multi-slot region (no cumulative shown for `headIdx == 0` when size >= 2 — per matrix row).
+     *
+     * Implements the full display matrix (PRD §Full display matrix):
+     *   - head size == 1, last == only: `"Length: X (min. Z)"` or `"Length: X"` if lzMin None
+     *   - head size >= 2, not last, headIdx == 0: `"Length: X"`
+     *   - head size >= 2, not last, headIdx >= 1: `"Length: X (cum. Y)"`
+     *   - head size >= 2, last: `"Length: X (cum. Y, min. Z)"` or `"Length: X (cum. Y)"` if lzMin None
+     *
+     * Fail-closed (D5): if `lengths` is `None` (any upstream pipe result Invalid) the function
+     * returns `None` (empty summary).
+     *
+     * @param slots
+     *   The full post-firebox slot vector.
+     * @param slotIndex
+     *   The global index of the slot within `slots`.
+     * @param lengths
+     *   Per-head-slot `lengthSum.value`s, in head-region order. `None` if any slot's pipe result is
+     *   Invalid (fail-closed).
+     * @param lZMin
+     *   EN 15544 minimum flue-pipe length, `None` if Invalid.
+     * @param fmtLength
+     *   Format a `Double` length value as a display string (e.g. `"1.20 m"`).
+     * @param fmtChanLength
+     *   Format key for `"Length: {0}"` (1 arg).
+     * @param fmtChanLengthWithMin
+     *   Format key for `"Length: {0} (min. {1})"` (2 args).
+     * @param fmtChanLengthWithCum
+     *   Format key for `"Length: {0} (cum. {1})"` (2 args).
+     * @param fmtChanLengthWithCumAndMin
+     *   Format key for `"Length: {0} (cum. {1}, min. {2})"` (3 args).
+     */
+    def lengthSummary(
+        slots                     : Seq[PostFireboxPipeDescrSlot],
+        slotIndex                 : Int,
+        lengths                   : Option[Vector[Double]],
+        lZMin                     : Option[Double],
+        fmtLength                 : Double => String,
+        fmtChanLength             : String => String,
+        fmtChanLengthWithMin      : (String, String) => String,
+        fmtChanLengthWithCum      : (String, String) => String,
+        fmtChanLengthWithCumAndMin: (String, String, String) => String
+    ): Option[String] =
+        val headRegionIndices = computeHeadRegionIndices(slots)
+        val headIdx           = headRegionIndices.indexOf(slotIndex)
+        if headIdx < 0 then None
+        else
+            // `for`-yield chains the two Option unwraps (`lengths`, then
+            // `lens.lift(headIdx)`) into a single monadic pipeline. Each branch
+            // of the body yields a plain `String`; the outer `for` wraps the
+            // final value in `Some` and short-circuits to `None` on any unwrap
+            // miss. This replaces the previous `.getOrElse(return None)` which
+            // used Scala-2-style non-local returns (deprecated in Scala 3).
+            for
+                lens   <- lengths
+                ownLen <- lens.lift(headIdx)
+            yield
+                val headSize = headRegionIndices.size
+                val isLast   = headIdx == headSize - 1
+                val xStr     = fmtLength(ownLen)
+                val cumLen   = lens.take(headIdx + 1).sum
+                val yStr     = fmtLength(cumLen)
+                val zStrOpt  = lZMin.map(fmtLength)
+                if headSize == 1 then
+                    // only slot — show own length + optional min
+                    zStrOpt match
+                        case Some(z) => fmtChanLengthWithMin(xStr, z)
+                        case None    => fmtChanLength(xStr)
+                else if !isLast then
+                    // not last — show own + cum (except headIdx 0: no cum)
+                    if headIdx == 0 then fmtChanLength(xStr      )
+                    else fmtChanLengthWithCum         (xStr, yStr)
+                else
+                    // last of multi-slot region — show own + cum + optional min
+                    zStrOpt match
+                        case Some(z) => fmtChanLengthWithCumAndMin(xStr, yStr, z)
+                        case None    => fmtChanLengthWithCum(xStr, yStr)
+
+    /**
+     * Low-level length-summary computation used inside reactive signals.
+     *
+     * Takes pre-computed `headIdx` and `isLast` (captured at panel-construction time, stable for
+     * the panel's lifetime), plus reactive `lengths` and `lZMin`. Implements the full display
+     * matrix.
+     */
+    private[panels] def lengthSummaryFromIndex(
+        headIdx                   : Int,
+        isLast                    : Boolean,
+        lengths                   : Option[Vector[Double]],
+        lZMin                     : Option[Double],
+        fmtLength                 : Double => String,
+        fmtChanLength             : String => String,
+        fmtChanLengthWithMin      : (String, String) => String,
+        fmtChanLengthWithCum      : (String, String) => String,
+        fmtChanLengthWithCumAndMin: (String, String, String) => String
+    ): Option[String] =
+        // See the sibling `lengthSummary` for the rationale — `for`-yield over
+        // `Option` replaces `getOrElse(return None)` (non-local return,
+        // deprecated in Scala 3). Each body branch yields a plain `String`.
+        for
+            lens   <- lengths
+            ownLen <- lens.lift(headIdx)
+        yield
+            val headSize = lens.size
+            val xStr     = fmtLength(ownLen)
+            val cumLen   = lens.take(headIdx + 1).sum
+            val yStr     = fmtLength(cumLen)
+            val zStrOpt  = lZMin.map(fmtLength)
+            if headSize == 1 then
+                // only slot — own length + optional min
+                zStrOpt match
+                    case Some(z) => fmtChanLengthWithMin(xStr, z)
+                    case None    => fmtChanLength(xStr)
+            else if !isLast then
+                // intermediate slot — own + cum (skip cum for headIdx 0)
+                if headIdx == 0 then fmtChanLength(xStr      )
+                else fmtChanLengthWithCum         (xStr, yStr)
+            else
+                // last of multi-slot region — own + cum + optional min
+                zStrOpt match
+                    case Some(z) => fmtChanLengthWithCumAndMin(xStr, yStr, z)
+                    case None    => fmtChanLengthWithCum(xStr, yStr)
+
+    /**
+     * Indices (within the full slot vector) that belong to the head region, in order.
+     *  Delegates to [[PostFireboxPipeDescrSlot.headRegionIndices]] — kept as a thin
+     *  alias for call-site brevity in this file.
+     */
+    private[panels] def computeHeadRegionIndices(slots: Seq[PostFireboxPipeDescrSlot]): Vector[Int] =
+        PostFireboxPipeDescrSlot.headRegionIndices(slots)
 
 end DynamicPipeSlotPanel
 
@@ -61,10 +302,15 @@ end DynamicPipeSlotPanel
 // FlowOnly 15544 variant (flue pipe in Strict mode)
 // ═══════════════════════════════════════════════════════════════════
 
-final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: Option[HtmlElement] = None)(using
-    Locale,
-    DisplayUnits
-) extends PipePanel:
+final case class DynamicFlowOnlyPipeSlotPanel(
+    slotIndex           : Int,
+    slotControlsNode    : Option[HtmlElement]            = None,
+    headIdx             : Option[Int]                    = None,
+    isLastInHeadRegion  : Boolean                        = false,
+    headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
+    lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
+)                                            (using Locale, DisplayUnits)
+    extends PipePanel:
 
     override protected def vizFieldsetIdPrefix : String              = s"slot-$slotIndex"
     override protected lazy val pipeTypeCls    : String              = "pipe-type-flue"
@@ -93,7 +339,48 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
     type PT  = FluePipeT
     lazy val sectionType = FluePipeT
 
-    lazy val titleString = I18N.panels.channel_pipe
+    lazy val titleString: String =
+        headIdx match
+            case Some(hi) => s"${I18N.panels.channel_pipe} #${hi + 1}"
+            case None     => I18N.panels.channel_pipe
+
+    override protected def titleNodeOpt: Option[HtmlElement] =
+        headIdx.map: hi =>
+            span(
+                I18N.panels.channel_pipe,
+                " ",
+                span(cls := "text-base-content/40", s"#${hi + 1}")
+            )
+
+    // ── Head-region length summary in titleXtraSig ────────────────
+
+    override protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
+        headIdx match
+            case None     =>
+                // Outside head region — fall back to base (status icon only)
+                statusIcon.map(n => Some(div(n)))
+            case Some(hi) =>
+                statusIcon
+                    .combineWithDistinct(headRegionLengthsSig, lZMinSig)
+                    .map: (icon, lengthsOpt, lzMinOpt) =>
+                        val summaryOpt = DynamicPipeSlotPanel.lengthSummaryFromIndex(
+                            headIdx                    = hi,
+                            isLast                     = isLastInHeadRegion,
+                            lengths                    = lengthsOpt,
+                            lZMin                      = lzMinOpt,
+                            fmtLength                  = v => f"$v%.2f m",
+                            fmtChanLength              = I18N.panels.channel_pipe_length.apply,
+                            fmtChanLengthWithMin       = I18N.panels.channel_pipe_length_with_min.apply,
+                            fmtChanLengthWithCum       = I18N.panels.channel_pipe_length_with_cum.apply,
+                            fmtChanLengthWithCumAndMin = I18N.panels.channel_pipe_length_with_cum_and_min.apply
+                        )
+                        Some(
+                            div(
+                                cls := "flex items-center",
+                                icon,
+                                summaryOpt.map(s => span(cls := "ml-2 text-xs font-normal", s)).getOrElse(emptyNode)
+                            )
+                        )
 
     // ── Slot-indexed wiring ──────────────────────────────────────
 
@@ -113,8 +400,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     type PipeIdsMapping = Int => Option[Int]
 
+    // Covariance carries this assignment without a cast:
+    //   - `Signal[+A]` is covariant,
+    //   - `ValidatedNel[+E, +A]` (= `Validated[NonEmptyList[E], A]`) is covariant in E,
+    //   - `IncrementalValidation_Error <: MCalc_Error`,
+    // so `Signal[ValidatedNel[IncrementalValidation_Error, _]] <: Signal[VNelMcalcErr[_]]`.
     override lazy val pipeMappings_vnel_signal: Signal[VNelMcalcErr[PipeIdsMapping]] =
-        slotMappingFnSig(slotIndex).asInstanceOf[Signal[VNelMcalcErr[PipeIdsMapping]]]
+        slotMappingFnSig(slotIndex)
 
     override lazy val pipeResult_vnel_signal: Signal[VNelMcalcErr[PipeResult]] =
         postFireboxPipeResults_sig.map: vnel =>
@@ -132,21 +424,23 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
         pipeResult_vnel_signal.map(_.andThen(_.`ph-(pR+pu)`))
 
     private lazy val velocityCheck_sig: Signal[VNelMcalcErr[Any]] =
-        results_en15544_strict_sig.flatMapVNelE(_.primary.validateVelocitiesInFluePipe())
+        results_en15544_strict_sig.flatMapVNelE(_.primary.validateVelocitiesInFluePipe)
 
     private lazy val shapeCheck_sig: Signal[VNelMcalcErr[Any]] =
         results_en15544_strict_sig.flatMapVNelE(_.validateFluePipeShape())
 
     private lazy val citedConstraintsCheck_sig: Signal[VNelMcalcErr[Any]] =
-        results_en15544_strict_sig.flatMapVNelE(_.primary.validateCitedConstraints())
+        results_en15544_strict_sig.flatMapVNelE(_.primary.validateCitedConstraints)
 
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig
-            .combineWith(pipeResult_vnel_signal)
-            .combineWith(pressureSumCheck_sig)
-            .combineWith(velocityCheck_sig)
-            .combineWith(shapeCheck_sig)
-            .combineWith(citedConstraintsCheck_sig)
+            .combineWithDistinct(
+                pipeResult_vnel_signal,
+                pressureSumCheck_sig,
+                velocityCheck_sig,
+                shapeCheck_sig,
+                citedConstraintsCheck_sig
+            )
             .map: (results, pipeResultV, pressureV, velocityV, shapeV, citedV) =>
                 val buildV = results
                     .lift(slotIndex)
@@ -178,6 +472,73 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     import afpma.firecalc.engine.models.geometry.Vec3
 
+    // ── Auto-calc: firebox exit position (first flue slot only) ──
+
+    private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544] = AutoCalcHelper.ElemExtractors(
+        asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
+        asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+        asInnerShape         = { case sis: SetInnerShape => sis.shape },
+        withDirChangeAbsDir  = (e, newAbsDir) =>
+            e match
+                case x: AddSharpeAngle_0_to_180 => x.copy(absDir = newAbsDir)
+                case x: AddCircularArc_60       => x.copy(absDir = newAbsDir)
+                case _ => e,
+        withInitialDirection = (e, az, incl) =>
+            e match
+                case x: SetInitialDirection => x.copy(azimuth = az, inclination = incl)
+                case _ => e
+    )
+
+    /**
+     * Reactive check: is this slot the first HEAD_REGION slot (index 0) AND is it
+     * a `FlueSlot`?
+     *
+     * The auto-calc button auto-aligns the pipe's start to the firebox boundary —
+     * only the very first slot (index 0) actually touches the firebox, regardless
+     * of pipe type. Subsequent slots inherit their start from the previous slot's
+     * endpoint.
+     *
+     * The unified rule is: "auto-calc button is visible iff this slot is the first
+     * HEAD_REGION slot" — implemented here for `FlueSlot` and in
+     * `isFirstHeadSlotAndIsConnectorSig` (thermal panel) for `ConnectorSlot`.
+     * Delegates to the pure predicate in the companion object for testability.
+     */
+    private lazy val isFirstHeadSlotAndIsFlueSig: Signal[Boolean] =
+        postFireboxSlots_var.signal.map(slots => DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, slotIndex))
+
+    private def autoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
+        AutoCalcHelper.mkStatusSig(
+            hasFrameSig = frameBeforeByIdx.map(_.contains(posIdx)),
+            hasShapeSig = welems_var.signal.map(_.filter(_._1 < posIdx).exists: (_, e) =>
+                summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544]].asInnerShape.isDefinedAt(e))
+        )
+
+    private def computeAutoPosition(posIdx: Int): Option[SetInitialPosition] =
+        val elems    = welems_var.now()
+        val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
+        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
+        for
+            frame <- frameOpt
+            shape <- shapeOpt
+        yield
+            val fb  = firebox_var.now()
+            val box = AutoCalcHelper.TargetBox(
+                centerX   = 0.0,
+                centerY   = 0.0,
+                halfWidth = fb.firebox_width.value / 2.0,
+                halfDepth = fb.firebox_depth.value / 2.0,
+                bottomZ   = 0.0,
+                height    = fb.firebox_height.value
+            )
+            val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
+            SetInitialPosition(x.m, y.m, z.m)
+
+    private def autoCalcExtra(posIdx: Int): Var[SetInitialPosition] => HtmlElement =
+        AutoCalcHelper.autoCalcButton(
+            autoCalcStatusSig(posIdx),
+            () => computeAutoPosition(posIdx)
+        )
+
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal.map: elems =>
             var frame: Option[PipeFrame] = None
@@ -204,7 +565,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .flatMap: (idx, elem) =>
@@ -213,12 +574,17 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
                             .flatMap: frameBefore =>
                                 elem match
                                     case dc: AddDirectionChange           =>
+                                        // For pinned direction changes, show the STORED pin as-is.
+                                        // Previously this called `applyBendForFinalDir(...)` which
+                                        // silently projects to the closest reachable direction when
+                                        // the pin is unreachable at the current (frame, angle) — that
+                                        // projection then overwrites the badge display and hides what
+                                        // the user actually pinned. The badge's isCompatibleSig already
+                                        // marks unreachable pins with a warning; let users see their
+                                        // pin instead of the projection.
                                         dc.absDir.map: fd =>
                                             val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                            idx -> frameBefore
-                                                .applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec)
-                                                .direction
+                                            idx -> Vec3.fromAzimuthElevation(azDeg, elDeg)
                                     case _ : AddFlowOnlyPipeElement_15544 =>
                                         Some(idx -> frameBefore.direction)
                                     case _ => None
@@ -232,7 +598,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
 
     private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .collect { case (idx, _: AddDirectionChange) => idx }
@@ -247,6 +613,30 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
         setter: (A, Option[AbsoluteDirection]) => A
     ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
         ev => Some(ev.zoomLazy(getter)(setter))
+
+    /**
+     * Build the `onBadgeDirectionCommit` callback for direction-change elements at `elemIdx`.
+     *
+     * Direction edits are now detected by the PostFireboxPipePanels observer via
+     * ChainEditDispatcher.detectEdit — no explicit offer construction is needed here.
+     * Returns None so the badge commit becomes a no-op at the panel level; the observer
+     * fires when the Var is written and handles the offer.
+     */
+    private def mkOnDirectionCommit(
+        elemIdx: Int
+    ): Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] =
+        None
+
+    /**
+     * Build a callback for SetInitialDirection elements at `elemIdx`.
+     *
+     * Direction edits are now detected by the PostFireboxPipePanels observer via
+     * ChainEditDispatcher.detectEdit. Returns None; the observer handles the offer.
+     */
+    private def mkOnInitialDirectionCommit(
+        elemIdx: Int
+    ): Option[(AzimuthDirection, InclinationDirection, AzimuthDirection, InclinationDirection) => Unit] =
+        None
 
     private def relativeDirectionExtra[A <: AddDirectionChange](
         idx   : Int,
@@ -330,12 +720,30 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             ] { case (i, incr: SetInitialDirection, x) =>
                 (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInitialDirection]  (
-                    iix._1,
+                val elemIdx = iix._1
+                val extraFn  : Var[SetInitialDirection] => HtmlElement = ev =>
+                    import com.raquo.laminar.api.L.*
+                    mkOnInitialDirectionCommit(elemIdx) match
+                        case None           => span()
+                        case Some(onCommit) =>
+                            var prevAz   = ev.now().azimuth
+                            var prevIncl = ev.now().inclination
+                            span(
+                                ev.signal.changes --> { sid =>
+                                    val oldAz   = prevAz
+                                    val oldIncl = prevIncl
+                                    prevAz   = sid.azimuth
+                                    prevIncl = sid.inclination
+                                    onCommit(oldAz, oldIncl, sid.azimuth, sid.inclination)
+                                }
+                            )
+                renderElemTyped[SetInitialDirection](
+                    elemIdx,
                     I18N.set_prop.SetInitialDirection,
                     iix._2,
                     sig,
                     isProperty   = true,
+                    extra        = extraFn,
                     propertyShow = Some(summon[Show[SetInitialDirection]])
                 )
             }
@@ -346,13 +754,24 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             ] { case (i, incr: SetInitialPosition, x) =>
                 (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[SetInitialPosition]  (
+                // Auto-calc button only on the first HEAD_REGION slot (index 0) when it's a Flue —
+                // subsequent slots inherit their start position from the previous slot's endpoint.
+                // If the head chain starts with a Connector instead, the sibling predicate
+                // `isFirstHeadSlotAndIsConnectorSig` in the thermal panel takes over.
+                val extraFn  : Var[SetInitialPosition] => HtmlElement = ev =>
+                    div(
+                        child <-- isFirstHeadSlotAndIsFlueSig.map:
+                            case true  => autoCalcExtra(iix._1)(ev)
+                            case false => span()
+                    )
+                renderElemTyped[SetInitialPosition](
                     iix._1,
                     I18N.set_prop.SetInitialPosition,
                     iix._2,
                     sig,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]])
+                    propertyShow = Some(summon[Show[SetInitialPosition]]),
+                    extra        = extraFn
                 )
             }
             .handleCase[
@@ -430,27 +849,29 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
             ] { case (i, incr: AddSharpeAngle_0_to_180, x) =>
                 (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddSharpeAngle_0_to_180]      (
+                renderElemTyped[AddSharpeAngle_0_to_180]            (
                     iix._1,
                     I18N.add_element.AddSharpeAngle_0_to_180,
                     iix._2,
                     sig,
-                    isProperty       = false,
-                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
-                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
+                    isProperty             = false,
+                    extra                  = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar       = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd)),
+                    onBadgeDirectionCommit = mkOnDirectionCommit(iix._1)
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddCircularArc_60, XtraOutputs), HtmlElement] {
                 case (i, incr: AddCircularArc_60, x) => (i, incr, x)
             } { (iix, sig) =>
-                renderElemTyped[AddCircularArc_60]      (
+                renderElemTyped[AddCircularArc_60]            (
                     iix._1,
                     I18N.add_element.AddCircularArc_60,
                     iix._2,
                     sig,
-                    isProperty       = false,
-                    extra            = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
-                    badgeFinalDirVar = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd))
+                    isProperty             = false,
+                    extra                  = relativeDirectionExtra(iix._1, _.absDir, (a, fd) => a.copy(absDir = fd)),
+                    badgeFinalDirVar       = absDirBadgeVar(_.absDir, (a, fd) => a.copy(absDir = fd)),
+                    onBadgeDirectionCommit = mkOnDirectionCommit(iix._1)
                 )
             }
             .handleCase[
@@ -497,11 +918,30 @@ final case class DynamicFlowOnlyPipeSlotPanel(slotIndex: Int, slotControlsNode: 
     import defaultable_15544.incr_descr_en15544.given
 
     lazy val tagTreeMenu = TagTreeMenu(
+        shortcut_quick_flue_section,
         shortcut_start_new_pipe,
         shortcut_add_new_connector,
         prop_elements,
         geom_elements
     )
+
+    lazy val shortcut_quick_flue_section =
+        import afpma.laminar.form.{Defaultable as D}
+        import afpma.firecalc.engine.models.FluePipe_Module_15544.innerShapeAtPrefix
+        TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_15544]    (
+            txt     = I18N_UI.shortcuts.quick_flue_section,
+            compute = (insertIdx: Int) => {
+                val prevShape: PipeShape = FluePipe_Module_15544.incremental
+                    .define(elems_v.now()*)
+                    .innerShapeAtPrefix(insertIdx)
+                    .getOrElse(summon[D[SetInnerShape]].default.shape)
+                Seq(
+                    SetInnerShape(prevShape),
+                    summon[D[AddSectionSlopped]].default,
+                    summon[D[AddSharpeAngle_0_to_180]].default
+                )
+            }
+        )
 
     lazy val shortcut_start_new_pipe =
         import afpma.laminar.form.{Defaultable as D}
@@ -576,10 +1016,14 @@ end DynamicFlowOnlyPipeSlotPanel
 // ═══════════════════════════════════════════════════════════════════
 
 final case class DynamicThermalPipeSlotPanel(
-    slotIndex       : Int,
-    pipeTypeVal     : PipeType,
-    title           : String,
-    slotControlsNode: Option[HtmlElement] = None
+    slotIndex           : Int,
+    pipeTypeVal         : PipeType,
+    title               : String,
+    slotControlsNode    : Option[HtmlElement]            = None,
+    headIdx             : Option[Int]                    = None,
+    isLastInHeadRegion  : Boolean                        = false,
+    headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
+    lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
 )                                           (using Locale, DisplayUnits)
     extends PipePanel_13384_Thermal:
 
@@ -605,10 +1049,55 @@ final case class DynamicThermalPipeSlotPanel(
         case _                                          => -1
 
     type Out = Any // type-erased
-    type PT  = pipeTypeVal.type
-    lazy val sectionType: PT = pipeTypeVal.asInstanceOf[PT]
+    // `sectionType` is only consumed via `==` in the base class (see
+    // `PipePanel.keepGlobalErrorsOrErrorsSpecificToSectionTyp`), so a singleton
+    // path-dependent type (`pipeTypeVal.type`) would buy us nothing and force an
+    // unchecked cast. Widen to `PipeType` — equality is all we need.
+    type PT  = PipeType
+    lazy val sectionType: PT = pipeTypeVal
 
-    lazy val titleString: String = title
+    lazy val titleString: String =
+        headIdx match
+            case Some(hi) => s"$title #${hi + 1}"
+            case None     => title
+
+    override protected def titleNodeOpt: Option[HtmlElement] =
+        headIdx.map: hi =>
+            span(
+                title,
+                " ",
+                span(cls := "text-base-content/40", s"#${hi + 1}")
+            )
+
+    // ── Head-region length summary in titleXtraSig ────────────────
+
+    override protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
+        headIdx match
+            case None     =>
+                // Outside head region — fall back to base (status icon only)
+                statusIcon.map(n => Some(div(n)))
+            case Some(hi) =>
+                statusIcon
+                    .combineWithDistinct(headRegionLengthsSig, lZMinSig)
+                    .map: (icon, lengthsOpt, lzMinOpt) =>
+                        val summaryOpt = DynamicPipeSlotPanel.lengthSummaryFromIndex(
+                            headIdx                    = hi,
+                            isLast                     = isLastInHeadRegion,
+                            lengths                    = lengthsOpt,
+                            lZMin                      = lzMinOpt,
+                            fmtLength                  = v => f"$v%.2f m",
+                            fmtChanLength              = I18N.panels.channel_pipe_length.apply,
+                            fmtChanLengthWithMin       = I18N.panels.channel_pipe_length_with_min.apply,
+                            fmtChanLengthWithCum       = I18N.panels.channel_pipe_length_with_cum.apply,
+                            fmtChanLengthWithCumAndMin = I18N.panels.channel_pipe_length_with_cum_and_min.apply
+                        )
+                        Some(
+                            div(
+                                cls := "flex items-center",
+                                icon,
+                                summaryOpt.map(s => span(cls := "ml-2 text-xs font-normal", s)).getOrElse(emptyNode)
+                            )
+                        )
 
     // ── Slot-indexed wiring ──────────────────────────────────────
 
@@ -635,12 +1124,154 @@ final case class DynamicThermalPipeSlotPanel(
     override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] =
         slotInitialFrameSig(slotIndex)
 
+    // ── Auto-calc: firebox-boundary for Connector-first head chains (plan U2) ──
+
+    import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
+    import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
+
+    private given thermalElemExtractors_13384: AutoCalcHelper.ElemExtractors[ThermalPipeDescr_13384] =
+        AutoCalcHelper.ElemExtractors  (
+            asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
+            asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asInnerShape         = { case sis: SetInnerShape => sis.shape },
+            withDirChangeAbsDir  = (e, newAbsDir) =>
+                e match
+                    case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
+                    case _ => e,
+            withInitialDirection = (e, az, incl) =>
+                e match
+                    case x: SetInitialDirection => x.copy(azimuth = az, inclination = incl)
+                    case _ => e
+        )
+
+    private def mkOnInitialDirectionCommit_thermal(
+        elemIdx: Int
+    ): Option[(AzimuthDirection, InclinationDirection, AzimuthDirection, InclinationDirection) => Unit] =
+        // Direction edits are detected by the PostFireboxPipePanels observer via
+        // ChainEditDispatcher.detectEdit. No explicit offer construction needed here.
+        None
+
+    override protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement =
+        ev =>
+            import com.raquo.laminar.api.L.*
+            mkOnInitialDirectionCommit_thermal(idx) match
+                case None           => span()
+                case Some(onCommit) =>
+                    var prevAz   = ev.now().azimuth
+                    var prevIncl = ev.now().inclination
+                    span(
+                        ev.signal.changes --> { sid =>
+                            val oldAz   = prevAz
+                            val oldIncl = prevIncl
+                            prevAz   = sid.azimuth
+                            prevIncl = sid.inclination
+                            onCommit(oldAz, oldIncl, sid.azimuth, sid.inclination)
+                        }
+                    )
+
+    /**
+     * Reactive: is this slot the first HEAD_REGION slot (index 0) AND is it a
+     * `ConnectorSlot`? In that case the auto-calc button (normally attached to
+     * the first FlueSlot) must migrate to this ConnectorSlot so Connector-first
+     * chains still get firebox-boundary alignment.
+     *
+     * Physical applicability check (plan U2): the auto-calc algorithm is
+     * `AutoCalcHelper.computeTopAlignedPosition`, which is purely geometric
+     * (projects the pipe direction + cross-section onto a firebox-box face).
+     * It has no dependency on EN 15544 flow-only vs EN 13384 thermal physics,
+     * so wiring it to a ConnectorPipe is physically meaningful.
+     *
+     * Unified rule: "auto-calc visible iff this slot is the first HEAD_REGION
+     * slot (index 0)" — type-agnostic. The sibling
+     * `isFirstHeadSlotAndIsFlueSig` in the flow-only panel handles the Flue-first
+     * case; this handles the Connector-first case. Delegates to the pure
+     * predicate in the companion object for testability.
+     */
+    private lazy val isFirstHeadSlotAndIsConnectorSig: Signal[Boolean] =
+        if pipeTypeVal != ConnectorPipeT then Signal.fromValue(false)
+        else
+            postFireboxSlots_var.signal.map                   (slots =>
+                DynamicPipeSlotPanel.isFirstHeadSlotAndIsConnector(slots, slotIndex)
+            )
+
+    /**
+     * Reactive: is this slot the first HEAD_REGION slot (index 0) AND is it a
+     * `ThermalFlueSlot`? Mirrors the flow-only panel's
+     * `isFirstHeadSlotAndIsFlueSig` for MCE / thermal-flue-first chains.
+     * Delegates to the shared pure predicate (which now covers both `FlueSlot`
+     * and `ThermalFlueSlot`) for testability.
+     */
+    private lazy val isFirstHeadSlotAndIsFlueSig: Signal[Boolean] =
+        if pipeTypeVal != FluePipeT then Signal.fromValue(false                                                                   )
+        else postFireboxSlots_var.signal.map             (slots => DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, slotIndex))
+
+    private def connectorAutoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
+        AutoCalcHelper.mkStatusSig(
+            hasFrameSig = frameBeforeForInitialPos(posIdx).map(_.isDefined),
+            hasShapeSig = welems_var.signal.map(_.filter(_._1 < posIdx).exists: (_, e) =>
+                summon[AutoCalcHelper.ElemExtractors[ThermalPipeDescr_13384]].asInnerShape.isDefinedAt(e))
+        )
+
+    private def frameBeforeForInitialPos(posIdx: Int): Signal[Option[PipeFrame]] =
+        welems_var.signal.map: elems =>
+            AutoCalcHelper.replayFrame(elems, posIdx)
+
+    private def computeConnectorAutoPosition(posIdx: Int): Option[SetInitialPosition] =
+        val elems    = welems_var.now()
+        val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
+        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
+        for
+            frame <- frameOpt
+            shape <- shapeOpt
+        yield
+            val fb  = firebox_var.now()
+            val box = AutoCalcHelper.TargetBox(
+                centerX   = 0.0,
+                centerY   = 0.0,
+                halfWidth = fb.firebox_width.value / 2.0,
+                halfDepth = fb.firebox_depth.value / 2.0,
+                bottomZ   = 0.0,
+                height    = fb.firebox_height.value
+            )
+            val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
+            SetInitialPosition(x.m, y.m, z.m)
+
+    override protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
+        ev =>
+            div(
+                child <-- isFirstHeadSlotAndIsConnectorSig.map:
+                    case true  =>
+                        AutoCalcHelper.autoCalcButton[SetInitialPosition](
+                            connectorAutoCalcStatusSig(idx),
+                            () => computeConnectorAutoPosition(idx)
+                        )(ev)
+                    case false => span(),
+                child <-- isFirstHeadSlotAndIsFlueSig.map:
+                    case true  =>
+                        AutoCalcHelper.autoCalcButton[SetInitialPosition](
+                            connectorAutoCalcStatusSig(idx),
+                            () => computeConnectorAutoPosition(idx)
+                        )(ev)
+                    case false => span()
+            )
+
     // ── IdsMapping: erased Int → Option[Int] ─────────────────────
 
     type PipeIdsMapping = Int => Option[Int]
 
+    // Covariance carries this assignment — see the matching comment on the
+    // flow-only panel's `pipeMappings_vnel_signal` above.
     override lazy val pipeMappings_vnel_signal: Signal[VNelMcalcErr[PipeIdsMapping]] =
-        slotMappingFnSig(slotIndex).asInstanceOf[Signal[VNelMcalcErr[PipeIdsMapping]]]
+        slotMappingFnSig(slotIndex)
 
     override lazy val pipeResult_vnel_signal: Signal[VNelMcalcErr[PipeResult]] =
         postFireboxPipeResults_sig.map: vnel =>
@@ -660,15 +1291,13 @@ final case class DynamicThermalPipeSlotPanel(
     private lazy val velocityCheck_sig: Signal[VNelMcalcErr[Any]] =
         results_en15544_strict_sig.flatMapVNelE: strict =>
             pipeTypeVal match
-                case ConnectorPipeT => strict.primary.validateVelocitiesInConnectorPipe()
-                case ChimneyPipeT   => strict.primary.validateVelocitiesInChimneyPipe()
-                case _              => strict.primary.validateVelocitiesInFluePipe()
+                case ConnectorPipeT => strict.primary.validateVelocitiesInConnectorPipe
+                case ChimneyPipeT   => strict.primary.validateVelocitiesInChimneyPipe
+                case _              => strict.primary.validateVelocitiesInFluePipe
 
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Any]] =
         slotBuildResults_sig
-            .combineWith(pipeResult_vnel_signal)
-            .combineWith(pressureSumCheck_sig)
-            .combineWith(velocityCheck_sig)
+            .combineWithDistinct(pipeResult_vnel_signal, pressureSumCheck_sig, velocityCheck_sig)
             .map: (results, pipeResultV, pressureV, velocityV) =>
                 val buildV = results
                     .lift(slotIndex)

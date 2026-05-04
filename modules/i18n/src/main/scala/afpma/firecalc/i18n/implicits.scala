@@ -139,6 +139,8 @@ object implicits {
     given Decoder[I18nData.TestEmissionValueI18n]                                                                = deriveDecoder[I18nData.TestEmissionValueI18n]
     given Decoder[I18nData.EmissionValuesI18n]                                                                   = deriveDecoder[I18nData.EmissionValuesI18n]
 
+    given Decoder[I18nData.CountryNames] = deriveDecoder[I18nData.CountryNames]
+
     given Decoder[I18nData.IncrementalValidation]                       = deriveDecoder[I18nData.IncrementalValidation]
     given Decoder[I18nData.IncrementalValidation.NotDefinedYet]         =
         deriveDecoder[I18nData.IncrementalValidation.NotDefinedYet]

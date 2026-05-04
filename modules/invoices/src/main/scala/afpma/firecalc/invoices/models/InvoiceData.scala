@@ -12,6 +12,7 @@ import io.circe.Codec
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.*
+import afpma.firecalc.invoices.i18n.I18nData_Invoices
 
 /**
  * Represents a complete invoice with all necessary information.
@@ -128,13 +129,13 @@ enum InvoiceStatus:
     case Cancelled
     case PartiallyPaid
 
-    def displayName: String = this match
-        case Draft         => "Draft"
-        case Sent          => "Sent"
-        case Paid          => "Paid"
-        case Overdue       => "Overdue"
-        case Cancelled     => "Cancelled"
-        case PartiallyPaid => "Partially Paid"
+    def displayName(using i18n: I18nData_Invoices): String = this match
+        case Draft         => i18n.status.draft
+        case Sent          => i18n.status.sent
+        case Paid          => i18n.status.paid
+        case Overdue       => i18n.status.overdue
+        case Cancelled     => i18n.status.cancelled
+        case PartiallyPaid => i18n.status.partiallyPaid
 
 object InvoiceStatus:
     given Decoder[InvoiceStatus] = Decoder.decodeString.emap {

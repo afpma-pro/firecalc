@@ -7,6 +7,15 @@ import scala.io.Source
 import org.scalajs.linker.interface.ModuleSplitStyle
 import sbtassembly.MergeStrategy
 
+// Custom task keys for product copy YAML management
+lazy val genYamlTemplate = taskKey[Unit](
+    "Regenerate invoice-config.yaml.example files from the current Scala catalog's exampleCopy."
+)
+
+lazy val verifyYamlAgainstCatalog = taskKey[Unit](
+    "Verify committed invoice-config.yaml files match the current Scala catalog."
+)
+
 ThisBuild / semanticdbEnabled := true
 ThisBuild / scalafixOnCompile := false
 ThisBuild / scalafmtOnCompile := false
@@ -15,7 +24,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
 // Global / watchForceTriggerOnAnyChange := true
 
-val scala_version = "3.8.2"
+val scala_version = "3.8.3"
 
 // only available locally, waiting for PR to be merged at https://github.com/taig/babel/pull/481
 val babel_version_custom = "0.5.4"
@@ -117,10 +126,10 @@ ThisBuild / startYear        := Some(2025)
 ThisBuild / licenses         := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage         := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version        = "0.3.0-b19"
-lazy val reports_base_version  = "0.9.0-b19"
-lazy val payments_base_version = "0.9.0-b19"
-lazy val ui_base_version       = "0.9.0-b19"
+lazy val engine_version        = "0.3.0-b20-SNAPSHOT"
+lazy val reports_base_version  = "0.9.0-b20-SNAPSHOT"
+lazy val payments_base_version = "0.9.0-b20-SNAPSHOT"
+lazy val ui_base_version       = "0.9.0-b20-SNAPSHOT"
 
 // Repository information (single source of truth)
 lazy val githubOwner = "afpma-pro"
@@ -502,7 +511,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
     )
     .jvmConfigure(
         _.settings(
-            Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala",
+            Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala",
             libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
         )
     )
@@ -674,7 +683,7 @@ lazy val viz = (project in file("modules/viz"))
         name                            := "firecalc-viz",
         version                         := ui_version,
         libraryDependencies ++= Seq(
-            "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+            "org.scala-js" %%% "scalajs-dom" % "2.8.1"
         ),
         scalaJSLinkerConfig ~= {
             _.withModuleKind(ModuleKind.ESModule)
@@ -693,7 +702,7 @@ lazy val graph = (project in file("modules/graph"))
         name                            := "firecalc-graph",
         version                         := ui_version,
         libraryDependencies ++= Seq(
-            "org.scala-js" %%% "scalajs-dom" % "2.8.0"
+            "org.scala-js" %%% "scalajs-dom" % "2.8.1"
         ),
         scalaJSLinkerConfig ~= {
             _.withModuleKind(ModuleKind.ESModule)
@@ -1151,7 +1160,6 @@ lazy val ui = (project in file("modules/ui"))
             _.withModuleSplitStyle(ModuleSplitStyle.FewestModules)
                 .withSourceMap(false)
                 .withOptimizer(true)
-                .withClosureCompiler(false)
         },
         scalaJSUseMainModuleInitializer := true,
         Compile / sourceGenerators += Def.task {
@@ -1202,6 +1210,9 @@ lazy val ui_i18n = crossProject(JSPlatform /*, JVMPlatform*/ )
         version                                 := ui_version,
         libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
         libraryDependencies += "io.taig"       %%% "babel-generic" % babel_version_custom,
+
+        // DirectionBadge has 30 fields — bump inline limit to prevent deriveDecoder overflow
+        scalacOptions += "-Xmax-inlines:48",
 
         // Make Bloop/Metals watch the i18n conf files for changes
         Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -1381,12 +1392,13 @@ lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
 
 lazy val payments = (project in file("modules/payments"))
     .enablePlugins(MoleculePlugin)
-    .settings   (
-        name    := "firecalc-payments",
-        version := payments_version,
+    .settings                     (
+        name                      := "firecalc-payments",
+        version                   := payments_version,
         commonSettings,
         scalacOptions ++= Seq(
         ),
+        Compile / run / mainClass := Some("afpma.firecalc.payments.Main"),
 
         // Ensure moleculeGen runs before compile and copy SQL files to classpath.
         // moleculeGen is guarded: it only runs when generated sources are missing
@@ -1397,8 +1409,8 @@ lazy val payments = (project in file("modules/payments"))
             val compilationResult = (Compile / compile).value
 
             // Copy moleculeGen SQL files to target classes directory after compilation
-            val moleculeGenSourceDir = baseDirectory.value / "src" / "main" / "resources" / "moleculeGen"
-            val targetClassesDir     = (Compile / classDirectory).value / "moleculeGen"
+            val moleculeGenSourceDir = baseDirectory.value / "src" / "main" / "resources" / "db" / "schema"
+            val targetClassesDir     = (Compile / classDirectory).value / "db" / "schema"
 
             if (moleculeGenSourceDir.exists()) {
                 if (targetClassesDir.exists()) {
@@ -1424,7 +1436,7 @@ lazy val payments = (project in file("modules/payments"))
             val needsGen      = !srcManagedDir.exists() || IO.listFiles(srcManagedDir).isEmpty
             if (needsGen) {
                 Def.task {
-                    val _ = moleculeGen.value
+                    val _ = moleculeGen.inputTaskValue
                     Seq.empty[File]
                 }
             } else {
@@ -1462,7 +1474,7 @@ lazy val payments = (project in file("modules/payments"))
             "com.github.eikek" %% "emil-javamail" % "0.15.0",
 
             // molecule
-            "org.scalamolecule" %% "molecule-db-sqlite" % "0.25.1",
+            "org.scalamolecule" %% "molecule-db-sqlite" % "0.30.0",
 
             // flyway
             "org.flywaydb" % "flyway-core" % "11.10.4",
@@ -1478,7 +1490,16 @@ lazy val payments = (project in file("modules/payments"))
             "org.scalatest" %% "scalatest"                     % "3.2.19" % "test",
             "org.typelevel" %% "cats-effect-testing-scalatest" % "1.6.0"  % "test"
         ),
-        testFrameworks += new TestFramework("utest.runner.Framework")
+        testFrameworks += new TestFramework("utest.runner.Framework"),
+
+        // Product-copy YAML sync tasks — implemented as main-class shims
+        // because sbt task bodies cannot import project-source types.
+        genYamlTemplate          := (Compile / runMain)
+            .toTask(" afpma.firecalc.payments.dev.GenYamlTemplate")
+            .value,
+        verifyYamlAgainstCatalog := (Compile / runMain)
+            .toTask(" afpma.firecalc.payments.dev.VerifyYamlAgainstCatalog")
+            .value
     )
     .settings(watchI18nSources("payments-i18n", "invoices-i18n"))
     .dependsOn(
@@ -1528,4 +1549,4 @@ lazy val invoices = (project in file("modules/invoices"))
         )
     )
     .settings(watchI18nSources("invoices-i18n"))
-    .dependsOn(invoices_i18n)
+    .dependsOn(invoices_i18n, payments_shared.jvm)

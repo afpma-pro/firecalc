@@ -9,15 +9,15 @@
     "metals.serverProperties": [
         "-Dmetals.enable-best-effort=true",
         "-Xss10m",
-        "-Xms16g",
-        "-Xmx32g",
+        "-Xms8g",
+        "-Xmx24g",
         "-XX:MaxInlineLevel=32"
     ],
     "metals.enableIndentOnPaste": false,
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.7+5-b6b3368e-SNAPSHOT",
+    "metals.serverVersion": "1.6.7+21-7150cac2-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 38615,
     "metals.suggestLatestUpgrade": "on",
@@ -78,7 +78,8 @@
             "**/*.json",
             "**/*.fcalc",
             "**/*.fcalc.base64",
-            "**/*.fcalc-db"
+            "**/*.fcalc-db",
+            "**/.env.*"
         ]
     },
     "psi-header.variables": [

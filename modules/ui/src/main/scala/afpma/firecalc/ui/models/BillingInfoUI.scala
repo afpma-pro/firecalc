@@ -80,6 +80,7 @@ case class BillingInfoUI()(using DisplayUnits, Locale):
 
     given Form[BillingInfo] =
         import ValidateVarCommonInstances.string.validOption_Always
+        import vertical_form.given_BillableCustomerType
         given DF[String]         = vertical_form.string_emptyAsDefault_alwaysValid
         given DF[Option[String]] = FormDerivation.forOptionString
 

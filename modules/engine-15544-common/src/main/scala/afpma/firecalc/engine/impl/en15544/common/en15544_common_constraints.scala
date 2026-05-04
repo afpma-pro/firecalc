@@ -119,10 +119,10 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
     final def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit] =
         val ap = atDraftMin_LoadNominal
         List(
-            validateFluePipeShape                            (),
-            ap.validateVelocitiesInPipes                     (),
-            ap.validatePressureRequirements_EN15544          (),
-            ap.validateChimneyWallTempIsAboveCondensationTemp(),
+            validateFluePipeShape(),
+            ap.validateVelocitiesInPipes,
+            ap.validatePressureRequirements_EN15544,
+            ap.validateChimneyWallTempIsAboveCondensationTemp,
 
             // validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
 
@@ -130,9 +130,9 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
             // So this EN 16510 constraint does not need to pass. Even if it does in practice.
             // ap.validateSeasonalEfficiency(countryCode),
 
-            ap.validateCitedConstraints          (),
+            ap.validateCitedConstraints,
             // Firebox
-            ap.validateFireboxSpecificConstraints()
+            ap.validateFireboxSpecificConstraints
             // TODO: any missing validation ?
             // - extra conditions for EN 13384 ?
         ).sequence[VNel, Unit].map(_ => ())

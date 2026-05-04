@@ -282,6 +282,10 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
 
     // Section "4.10.1", "Pressure requirement"
 
+    // Section "4.9.3", "Flue gas velocity bounds"
+    override val flueGasVelocityMin: v = 1.2.m_per_s
+    override val flueGasVelocityMax: v = 6.m_per_s
+
     // Section "4.10.2", "Pressure requirement"
     override val t_chimney_wall_top_min: t_chimney_wall_top_min = 45.degreesCelsius
 

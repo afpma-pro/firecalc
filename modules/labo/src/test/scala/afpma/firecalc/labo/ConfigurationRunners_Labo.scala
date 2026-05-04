@@ -21,9 +21,9 @@ import cats.syntax.all.*
 
 import coulomb.*
 
-import java.io.{File, FileOutputStream, PrintStream}
+import afpma.firecalc.engine.testutil.SnapshotAssert
 
-import scala.util.Using
+import java.nio.file.Paths
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale
@@ -211,11 +211,11 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
                 .getOrElse:
                     SimplePreview.forQtyWhenEmpty(ref = searchFor, qtyName = "gas_temp", qtyUnit = "°C")
 
-    private def showForMCEComparisonWithLabData(
+    private def buildCSVForMCEComparisonWithLabData(
         ex      : StoveProjectDescr_15544_Labo_Alg,
         _en15544: EN15544_V_2023_Common_Application,
         ap      : _en15544.AtParams
-    ) =
+    ): String =
 
         import ex.given_Locale
         given _en15544.Params_15544 = ap.params
@@ -249,15 +249,15 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
             ) ++ pipesResult_15544.postFirebox.map(_._2)
         ).asSectionResultsMerged
 
-        println("""|
-                    |
-                    |""".stripMargin)
+        val sb = new StringBuilder
+
+        sb.append("\n\n\n")
 
         // en tête du fichier CSV
-        println(vecsec.pressureDiffAtStartOf("P09").showHeaderAsQuotedCSVRow(";")   )
+        sb.append(vecsec.pressureDiffAtStartOf("P09").showHeaderAsQuotedCSVRow(";")   ).append("\n")
         // valeurs :
         // débits massiques
-        println(
+        sb.append(
             SimplePreview
                 .forQty(
                     "input_air_mass_rate",
@@ -266,8 +266,8 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
                     "kg/s"
                 )
                 .showValuesAsQuotedCSVRow(";")
-        )
-        println(
+        ).append ("\n"                                                                )
+        sb.append(
             SimplePreview
                 .forQty(
                     "flue_gas_mass_rate",
@@ -276,56 +276,54 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
                     "kg/s"
                 )
                 .showValuesAsQuotedCSVRow(";")
-        )
+        ).append ("\n"                                                                )
         // différences de pression
-        println(vecsec.pressureDiffAtStartOf("P01").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P02").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P03").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P04").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P05").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P06").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P07").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P08").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P09").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P10").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P11").showValuesAsQuotedCSVRow(";")   )
-        println(vecsec.pressureDiffAtStartOf("P12").showValuesAsQuotedCSVRow(";")   )
+        sb.append(vecsec.pressureDiffAtStartOf("P01").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P02").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P03").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P04").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P05").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P06").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P07").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P08").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P09").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P10").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P11").showValuesAsQuotedCSVRow(";")   ).append("\n")
+        sb.append(vecsec.pressureDiffAtStartOf("P12").showValuesAsQuotedCSVRow(";")   ).append("\n")
         // températures
-        println(vecsec.gasTemperatureAtStartOf("TC01").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC02").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC03").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC04").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC05").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC06").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC07").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC08").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC09").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC10").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC11").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC12").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC13").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC14").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC15").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC16").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC17").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC18").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC19").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC20").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC21").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC22").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC23").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC24").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC25").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC26").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC27").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC28").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC29").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC30").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC31").showValuesAsQuotedCSVRow(";"))
-        println(vecsec.gasTemperatureAtStartOf("TC32").showValuesAsQuotedCSVRow(";"))
-        println("""|
-                    |
-                    |""".stripMargin)
+        sb.append(vecsec.gasTemperatureAtStartOf("TC01").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC02").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC03").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC04").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC05").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC06").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC07").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC08").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC09").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC10").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC11").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC12").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC13").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC14").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC15").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC16").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC17").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC18").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC19").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC20").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC21").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC22").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC23").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC24").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC25").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC26").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC27").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC28").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC29").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC30").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC31").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append(vecsec.gasTemperatureAtStartOf("TC32").showValuesAsQuotedCSVRow(";")).append("\n")
+        sb.append("\n\n\n"                                                            )
 
         // vecsec.foreach: x =>
         //     println(s"""${x.section_name} | ${x.gas_temp_start.showP}""")
@@ -345,21 +343,22 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
         //         nel.toList.map(_.show).foreach(println)
         //         fail()
 
-    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg, outputFile: String) =
+        sb.toString()
+
+    def run_15544_mce_for_lab_comparison(ex_15544_labo: StoveProjectDescr_15544_Labo_Alg, snapshotName: String) =
         import scala.language.adhocExtensions
 
         val config = ex_15544_labo
-        val dir    = new File("modules/labo/src/test/resources/test-output")
-        dir.mkdirs()
-        Using.resource(new FileOutputStream(new File(dir, outputFile))): fos =>
-            Using.resource(new PrintStream(fos)): ps =>
-                Console.withOut(ps):
-                    val out = config.en15544_Alg.map: mce_labo =>
-                        showForMCEComparisonWithLabData(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
-                    out.fold(
-                        nel => nel.toList.foreach(e => fail(e.show)),
-                        _ => ()
-                    )
+        val out    = config.en15544_Alg.map: mce_labo =>
+            buildCSVForMCEComparisonWithLabData(ex_15544_labo, mce_labo, mce_labo.atDraftMax_LoadNominal)
+        out.fold(
+            nel => nel.toList.foreach(e => fail(e.show)),
+            csv =>
+                SnapshotAssert.assertMatches(
+                    csv,
+                    Paths.get(s"modules/labo/src/test/resources/snapshots/ConfigurationRunners_Labo/$snapshotName")
+                )
+        )
     end run_15544_mce_for_lab_comparison
 
 }

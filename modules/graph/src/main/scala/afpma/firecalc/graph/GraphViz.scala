@@ -56,7 +56,7 @@ object GraphViz:
 
     private def chartDataToJs(data: ChartData): ChartDataJS =
         val seriesJs = js.Array(data.series.map { s =>
-            val pointsJs        = js.Array(s.points.map { p =>
+            val pointsJs            = js.Array(s.points.map { p =>
                 DataPointJS               (
                     x                = p.x,
                     y                = p.y,
@@ -68,13 +68,14 @@ object GraphViz:
                 )
             }*)
             ChartSeriesJS(
-                id        = s.id,
-                name      = s.name,
-                color     = s.color,
-                points    = pointsJs,
-                yAxisId   = s.yAxisId,
-                lineWidth = s.lineWidth,
-                dashed    = s.dashed
+                id            = s.id,
+                name          = s.name,
+                color         = s.color,
+                points        = pointsJs,
+                yAxisId       = s.yAxisId,
+                lineWidth     = s.lineWidth,
+                dashed        = s.dashed,
+                soloAxisLabel = s.soloAxisLabel
             )
         }*)
 
@@ -83,21 +84,28 @@ object GraphViz:
                 case YAxisPosition.Left  => "left"
                 case YAxisPosition.Right => "right"
             val minJs: js.UndefOr[Double] = a.min.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val maxJs : js.UndefOr[Double] = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            val stepJs: js.UndefOr[Double] = a.stepSize.fold[js.UndefOr[Double]](js.undefined)(v => v)
-            YAxisConfigJS      (
-                id       = a.id,
-                label    = a.label,
-                position = posStr,
-                min      = minJs,
-                max      = maxJs,
-                stepSize = stepJs
+            val maxJs                             : js.UndefOr[Double] = a.max.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val stepJs                            : js.UndefOr[Double] = a.stepSize.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val primaryGridStepJs                 : js.UndefOr[Double] = a.primaryGridStep.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            val secondaryGridStepJs               : js.UndefOr[Double] =
+                a.secondaryGridStep.fold[js.UndefOr[Double]](js.undefined)(v => v)
+            YAxisConfigJS(
+                id                = a.id,
+                label             = a.label,
+                position          = posStr,
+                min               = minJs,
+                max               = maxJs,
+                stepSize          = stepJs,
+                primaryGridStep   = primaryGridStepJs,
+                secondaryGridStep = secondaryGridStepJs
             )
         }*)
 
         val bandsJs = js.Array(data.backgroundBands.map { b =>
             BackgroundBandJS(xStart = b.xStart, xEnd = b.xEnd, color = b.color, label = b.label)
         }*)
+
+        val horizontalLinesJs = js.Array(data.horizontalLines.map(horizontalReferenceLineToJs)*)
 
         val xMinJs: js.UndefOr[Double] = data.xMin.fold[js.UndefOr[Double]](js.undefined)(v => v)
         val xMaxJs: js.UndefOr[Double] = data.xMax.fold[js.UndefOr[Double]](js.undefined)(v => v)
@@ -107,6 +115,20 @@ object GraphViz:
             yAxes           = yAxesJs,
             xAxisLabel      = data.xAxisLabel,
             backgroundBands = bandsJs,
+            horizontalLines = horizontalLinesJs,
             xMin            = xMinJs,
             xMax            = xMaxJs
+        )
+
+    private def xSegmentToJs(seg: XSegment): XSegmentJS =
+        XSegmentJS(xStart = seg.xStart, xEnd = seg.xEnd)
+
+    private def horizontalReferenceLineToJs(line: HorizontalReferenceLine): HorizontalReferenceLineJS =
+        HorizontalReferenceLineJS             (
+            yAxisId              = line.yAxisId,
+            y                    = line.y,
+            color                = line.color,
+            label                = line.label,
+            visibleWhenSeriesIds = js.Array(line.visibleWhenSeriesIds*),
+            segments             = js.Array(line.segments.map(xSegmentToJs)*)
         )

@@ -9,12 +9,17 @@ import afpma.firecalc.units.coulombutils.VolumeFlow
 
 import afpma.firecalc.dto.all.PipeShape
 
+import afpma.firecalc.i18n.implicits.I18N
+
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.λ
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.TermValueShouldBeLessOrEqThan
+
+import coulomb.policy.standard.given
 
 import io.taig.babel.Locale
 
@@ -45,6 +50,60 @@ case class ConstraintContext(
  * and dispatched by the application layer.
  */
 trait FireboxConstraints[-F <: Firebox_15544]:
+
+    /** Checks consistency of internal load values in this specific firebox */
+    private def internal_constraint_firebox_nominal_load_in_range(
+        firebox: F
+    )(using Locale): Option[TermConstraint[m_B]] =
+
+        (firebox.min_load.value, firebox.nominal_load, firebox.max_load) match
+            case (minO, Some(nom), maxO) =>
+                val isValid = (nom: m_B) =>
+                    (minO, maxO) match
+                        case (None, None          ) =>
+                            Right(nom)
+                        case (Some(min), Some(max)) =>
+                            if (min <= nom && nom <= max)
+                                Right(nom)
+                            else
+                                Left(
+                                    TermValueShouldBeBetweenInclusive[m_B](
+                                        I18N.firebox.load_size_nominal,
+                                        nom,
+                                        min,
+                                        max
+                                    )
+                                )
+                        case (Some(min), None     ) =>
+                            if (min <= nom) then Right(nom)
+                            else
+                                Left(
+                                    TermValueShouldBeGreaterOrEqThan[m_B](
+                                        I18N.firebox.load_size_nominal,
+                                        nom,
+                                        min
+                                    )
+                                )
+
+                        case (None, Some(max)) =>
+                            if (nom <= max) then Right(nom)
+                            else
+                                Left(
+                                    TermValueShouldBeLessOrEqThan[m_B](
+                                        I18N.firebox.load_size_nominal,
+                                        nom,
+                                        max
+                                    )
+                                )
+                Some(
+                    TermConstraint.GenericTyped[m_B, InvalidTermValue[m_B]]  (
+                        value   = nom,
+                        isValid = isValid
+                    )
+                )
+
+            case _ =>
+                None
 
     def m_B_constraints(
         firebox: F,
@@ -96,6 +155,29 @@ trait FireboxConstraints[-F <: Firebox_15544]:
         firebox: F,
         ctx    : FireboxConstraintContext
     )                             (using Locale): List[FireboxError]
+
+    /** Validate internal firebox-specific constraints not covered by EN 15544. */
+    def internal_firebox_custom_constraints(
+        firebox: F
+    )(using Locale): List[FireboxError] =
+        val allTermConstraints_on_local_m_B =
+            AllTermConstraints[m_B](
+                Seq(
+                    internal_constraint_firebox_nominal_load_in_range(firebox)
+                )
+            )
+
+        val checkableConstraints_on_local_m_B =
+            CheckableConstraint(
+                firebox.nominal_load.map(x => x: m_B),
+                allTermConstraints_on_local_m_B
+            )
+
+        List(
+            checkableConstraints_on_local_m_B.vresultOption
+                .flatMap(_.showInvalidConstraintErrors)
+                .map(_.map(x => InvalidFireboxConstraint(x)))
+        ).flatten.flatten
 
 end FireboxConstraints
 

@@ -16,14 +16,14 @@ resolvers ++= Seq(
 
 addSbtPlugin("io.spray"                    % "sbt-revolver"             % "0.10.0"      )
 addSbtPlugin("org.portable-scala"          % "sbt-scalajs-crossproject" % "1.3.2"       )
-addSbtPlugin("org.scala-js"                % "sbt-scalajs"              % "1.20.2"      )
-addSbtPlugin("ch.epfl.scala"               % "sbt-scalafix"             % "0.14.5"      )
+addSbtPlugin("org.scala-js"                % "sbt-scalajs"              % "1.21.0"      )
+addSbtPlugin("ch.epfl.scala"               % "sbt-scalafix"             % "0.14.6"      )
 addSbtPlugin("org.scalablytyped.converter" % "sbt-converter"            % "1.0.0-beta44")
-addSbtPlugin("org.scalamolecule"           % "sbt-molecule"             % "1.20.0"      )
+addSbtPlugin("org.scalamolecule"           % "sbt-molecule"             % "1.25.0"      )
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.3.1")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.6")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.0")
 
 // addSbtPlugin("org.scalameta" % "sbt-metals" % "1.6.2")
 

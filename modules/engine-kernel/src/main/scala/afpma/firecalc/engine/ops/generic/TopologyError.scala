@@ -10,24 +10,32 @@ package afpma.firecalc.engine.ops.generic
  *
  * The grammar:
  * {{{
- *   PostFireboxChain := FLUE_PIPE_REGION  CONNECTOR_PIPE  CHIMNEY_PIPE
- *   FLUE_PIPE_REGION := (FluePipeT | ConnectorPipeT)*  FluePipeT  |  ε
- *   CONNECTOR_PIPE   := ConnectorPipeT
- *   CHIMNEY_PIPE     := ChimneyPipeT  (always exactly one, always last)
+ *   PostFireboxChain   := HEAD_REGION  TERMINAL_CONNECTOR  CHIMNEY
+ *   HEAD_REGION        := EMPTY | non-empty sequence of Flue/Connector ending with FluePipe
+ *   TERMINAL_CONNECTOR := ConnectorPipeT   (mandatory slot; descriptor may be empty)
+ *   CHIMNEY            := ChimneyPipeT     (mandatory, exactly one, last)
  * }}}
+ *
+ * Retained rules:
+ *   - HEAD_REGION may be empty (EN 13384-only pipelines + legacy V6 YAML).
+ *   - HEAD_REGION may start with either FluePipe or ConnectorPipe.
+ *   - HEAD_REGION may contain any arrangement of Flue/Connector (no alternation
+ *     constraint — two adjacent Flues or two adjacent Connectors are legal).
+ *   - HEAD_REGION, if non-empty, must end with a FluePipe (preserves the fixed
+ *     terminal-connector distinction — that slot is non-editable).
  */
 enum TopologyError:
-    /** Rule 1: last slot must be ChimneyPipeT */
+    /** The last slot must be ChimneyPipeT (or the slot vector is empty). */
     case MissingChimney
 
-    /** Rule 3: no FluePipeT may appear after the CONNECTOR_PIPE position */
-    case FluePipeAfterConnector
-
-    /** Rule 4: at most one ConnectorPipeT after the last FluePipeT */
-    case MultipleConnectorsAfterFlue
-
-    /** Rule 5: no ChimneyPipeT except the last slot */
+    /** A ChimneyPipeT appears somewhere other than the last slot. */
     case ChimneyNotLast
 
-    /** Rule 6: a flue-bearing topology must have a ConnectorPipeT after the last FluePipeT */
-    case MissingConnectorAfterFlue
+    /** The terminal connector slot between HEAD_REGION and CHIMNEY is missing. */
+    case MissingTerminalConnector
+
+    /**
+     * HEAD_REGION ends with a ConnectorPipeT — it must end with a FluePipeT
+     * (otherwise the connector would duplicate the terminal connector slot).
+     */
+    case HeadRegionEndsWithConnector

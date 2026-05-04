@@ -13,9 +13,9 @@ case class CameraState(position: List[Double], up: List[Double], target: List[Do
 
 case class UIState(
     cameraState          : Option[CameraState]  = None,
-    panelStates          : Map[String, Boolean]  = Map.empty,
-    vizDisplayType       : Option[String]        = None,
-    vizAnnotationsVisible: Option[Boolean]       = None
+    panelStates          : Map[String, Boolean] = Map.empty,
+    vizDisplayType       : Option[String]       = None,
+    vizAnnotationsVisible: Option[Boolean]      = None
 )
 
 object UIState:
@@ -32,10 +32,10 @@ object UIState:
     }
 
     given Encoder[UIState] = Encoder.instance { s =>
-        Json.obj(
-            "cameraState"          -> s.cameraState.asJson,
-            "panelStates"          -> s.panelStates.asJson,
-            "vizDisplayType"       -> s.vizDisplayType.asJson,
+        Json.obj          (
+            "cameraState"           -> s.cameraState.asJson,
+            "panelStates"           -> s.panelStates.asJson,
+            "vizDisplayType"        -> s.vizDisplayType.asJson,
             "vizAnnotationsVisible" -> s.vizAnnotationsVisible.asJson
         )
     }

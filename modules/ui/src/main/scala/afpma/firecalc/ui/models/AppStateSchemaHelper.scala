@@ -61,6 +61,6 @@ object AppStateSchemaHelper:
                 scala.scalajs.js.Dynamic.global.console.log(
                     "Loaded engine-state-only file (legacy .fcalc format) via FireCalcYAML fallback"
                 )
-                createInitialSchema().copy(engine_state = engineState)
+                createInitialSchema().copy                 (engine_state = engineState)
             }
         }

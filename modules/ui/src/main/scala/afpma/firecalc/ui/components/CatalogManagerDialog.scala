@@ -36,7 +36,8 @@ case class CatalogManagerDialog()(using Locale) extends Component:
         errorMessageVar.set                                     (None)
         dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(    )
 
-    private def close(): Unit = dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
+    private def close(): Unit =
+        dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
 
     private def formatParseError(parseError: CatalogParseError): String = parseError match
         case CatalogParseError.InvalidFile(detail)              =>

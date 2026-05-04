@@ -1,0 +1,13 @@
+ teneur en eau du bois = 17,0 %
+ humidité du bois      = 20,5 %
+
+ xC_wet = 38,0 %
+ xC_dry = 45,8 %
+
+ Pour λ = 2.95
+
+ CO2 : 6.415025936654533 (en volume sur humide)
+ CO2 : 7.118930927546834 (en volume sur sec)
+
+ H2O : 9,9 % (en volume)
+

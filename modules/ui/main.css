@@ -7,7 +7,7 @@
 @import "./style.css";
 
 /* @source "./src/main/scala/"; */
-@source "./target/scala-3.8.2/firecalc-ui-fastopt"; 
+@source "./target/scala-3.8.3/firecalc-ui-fastopt"; 
 
 @plugin "@tailwindcss/typography";
 

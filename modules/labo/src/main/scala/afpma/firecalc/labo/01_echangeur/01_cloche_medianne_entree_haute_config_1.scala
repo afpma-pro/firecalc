@@ -143,6 +143,10 @@ object `01_cloche_medianne_entree_haute_config_1`
         import CombustionAirPipe_Module_13384.*
         define(
             // addPressureDiff("dispositif de réglage d'air", 3.2.unitless: ζ), // ???
+            setInitialDirection       (
+                azimuth     = AzimuthDirection.Front,
+                inclination = InclinationDirection.Horizontal
+            ), // Front
 
             pipeLocation              (Area.AirDansLePoele       ),
             roughness (Material_13384.WeldedSteel()),
@@ -151,14 +155,14 @@ object `01_cloche_medianne_entree_haute_config_1`
             addSectionHorizontal      ("entrée P03 TC03", 18.cm  ),
             addSharpAngle_90deg_unsafe(
                 "angle vif 90°",
-                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
             ), // Up
 
             innerShape(rectangle(36.cm, 36.cm)),
             addSectionVertical        ("montée", 7.3.cm          ),
             addSharpAngle_90deg_unsafe(
                 "angle vif 90°",
-                absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+                absDir      = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
             ), // Left (TOCHECK / arbitrary)
 
             channelsSplit             (11                        ),
@@ -166,14 +170,14 @@ object `01_cloche_medianne_entree_haute_config_1`
             addSectionHorizontal      ("sous sole", 25.cm        ),
             addSharpAngle_90deg       (
                 "angle vif 90°",
-                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
             ), // Up
 
             innerShape(rectangle(6.6.cm, 3.3.cm)),
             addSectionVertical        ("montée", 27.3.cm         ),
             addSharpAngle_90deg_unsafe(
                 "angle vif 90°",
-                absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                absDir      = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
             ), // Right (TOCHECK / arbitrary)
 
             innerShape(rectangle(26.4.cm, 1.8.cm)),
@@ -191,11 +195,12 @@ object `01_cloche_medianne_entree_haute_config_1`
     val fireboxPipe =
         import FireboxPipe_Module_13384.*
         define(
-            pipeLocation      (Area.Foyer                ),
-            roughness         (Refractory_Bricks         ),
+            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // Up
+            pipeLocation       (Area.Foyer                                                            ),
+            roughness          (Refractory_Bricks                                                     ),
             innerShape(rectangle(39.cm, 55.cm)),
-            layer             (e = 1.cm, λ = 1.3.W_per_mK),
-            addSectionVertical("foyer P05", 58.3.cm      )
+            layer              (e       = 1.cm, λ                            = 1.3.W_per_mK           ),
+            addSectionVertical ("foyer P05", 58.3.cm                                                  )
         )
             .toFullDescr()
             .extractPipe

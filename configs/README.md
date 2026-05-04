@@ -237,6 +237,7 @@ FIRECALC_ENV=prod java -jar modules/payments/target/scala-*/firecalc-payments-as
 - **File**: `invoices/company-invoice.yaml`
 - **Format**: YAML
 - **Contains**: Company information, branding, invoice templates
+- **SEPA mandate fields** (`paymentTerms.methods[].SepaMandate.{mandateReference, mandateDate, nextPossibleChargeDate}`) are populated at runtime from GoCardless when a mandate is created. Leave them `null` in YAML — the invoice renderer shows a "pending" placeholder until the caller fills them in.
 
 ### Logo Files
 - **Reports**: `reports/logo.{jpg,png}` - Used in PDF reports

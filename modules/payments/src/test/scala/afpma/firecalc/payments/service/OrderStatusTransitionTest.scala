@@ -30,12 +30,13 @@ object OrderStatusTransitionTest extends TestSuite {
     )
 
     val testProduct = Product(
-        id          = ProductId(UUID.randomUUID()),
-        name        = "Test Product",
-        description = "A test product",
-        price       = BigDecimal("29.99"),
-        currency    = Currency.EUR,
-        active      = true
+        id        = ProductId(UUID.randomUUID()),
+        sku       = "test",
+        price     = BigDecimal("29.99"),
+        currency  = Currency.EUR,
+        active    = true,
+        taxRate   = BigDecimal("20.0"),
+        taxExempt = false
     )
 
     val testCustomer = Customer(
@@ -111,27 +112,35 @@ object OrderStatusTransitionTest extends TestSuite {
 
         val productRepo = new ProductRepository[IO] {
             def findById(id: ProductId): IO[Option[Product]] = IO.pure(Some(testProduct))
-            def findOrCreate(name: String, description: String, price: BigDecimal, currency: Currency): IO[Product] =
+            def findOrCreate(
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
             def create(
-                id         : ProductId,
-                name       : String,
-                description: String,
-                price      : BigDecimal,
-                currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                id       : ProductId,
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                active   : Boolean,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
             def update(
-                id         : ProductId,
-                name       : String,
-                description: String,
-                price      : BigDecimal,
-                currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                id       : ProductId,
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                active   : Boolean,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
-            def upsert(productInfo: v1.ProductInfo)                                                   : IO[Product] =
+            def upsert(productInfo: v1.ProductInfo): IO[Product] =
                 IO.raiseError(new NotImplementedError("not needed"))
         }
 

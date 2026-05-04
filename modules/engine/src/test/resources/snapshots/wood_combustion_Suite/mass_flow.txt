@@ -1,0 +1,52 @@
+masse matière seche = 12,500 kg
+masse H2O = 1,500 kg
+masse C = 6,250 kg
+masse H = 0,750 kg
+masse O = 5,250 kg
+masse N = 0,125 kg
+
+bois // nb moles H2O = 83,3 mol
+bois // nb moles C = 520,4 mol
+bois // nb moles H = 744,1 mol
+bois // nb moles O = 328,1 mol
+bois // nb moles N = 8,9 mol
+
+air (si λ = 1) // nb moles H2O = 12,5 mol
+air (si λ = 1) // nb moles O   = 1084,6 mol
+air (si λ = 1) // nb moles N   = 4048,0 mol
+
+combustion sans CO (si λ = 1) // nb moles CO2 = 520,4 mol
+combustion sans CO (si λ = 1) // nb moles H2O = 467,8 mol
+combustion sans CO (si λ = 1) // nb moles O2  = 0,0 mol
+combustion sans CO (si λ = 1) // nb moles N2  = 2024,0 mol
+
+
+
+ totaux            entrée 	 | 	 sortie 	
+     C         =   520,4 mol	 520,4 mol
+     H         =   935,7 mol	 935,7 mol
+     O         =   1508,6 mol	 1508,6 mol
+     N         =   4048,0 mol	 4048,0 mol
+
+ total sortie
+
+ 
+air (si λ = 1.6) // nb moles H2O = 20,0 mol
+air (si λ = 1.6) // nb moles O   = 1735,4 mol
+air (si λ = 1.6) // nb moles N   = 6476,7 mol
+
+combustion sans CO (si λ = 1.6) // nb moles CO2 = 520,4 mol
+combustion sans CO (si λ = 1.6) // nb moles H2O = 475,4 mol
+combustion sans CO (si λ = 1.6) // nb moles O2  = 325,4 mol
+combustion sans CO (si λ = 1.6) // nb moles N2  = 3238,4 mol
+
+ totaux            entrée 	 | 	 sortie 	
+     C         =   520,4 mol	 520,4 mol
+     H         =   950,7 mol	 950,7 mol
+     O         =   2166,9 mol	 2166,9 mol
+     N         =   6476,7 mol	 6476,7 mol
+
+ total sortie
+
+ 
+36,8 g/s

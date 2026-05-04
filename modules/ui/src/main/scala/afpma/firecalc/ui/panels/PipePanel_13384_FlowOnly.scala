@@ -23,6 +23,7 @@ import afpma.firecalc.ui.models.anglePresetsSignal
 import afpma.firecalc.ui.models.firebox_var
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.Show
 
 import com.raquo.laminar.api.L.*
@@ -37,9 +38,22 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     import SetFlowOnlyPipeProp_13384.*
 
     private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384] = AutoCalcHelper.ElemExtractors(
-        asInitialDirection = { case SetInitialDirection(az, incl) => (az, incl) },
-        asDirectionChange  = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
-        asInnerShape       = { case sis: SetInnerShape => sis.shape }
+        asInitialDirection  = { case SetInitialDirection(az, incl) => (az, incl) },
+        asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+        asInnerShape        = { case sis: SetInnerShape => sis.shape },
+        withDirChangeAbsDir = (e, newAbsDir) =>
+            e match
+                case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
+                case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
+                case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
+                case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
+                case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
+                case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
+                case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
+                case _ => e
     )
 
     type In = FlowOnlyPipeDescr_13384
@@ -131,7 +145,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .flatMap: (idx, elem) =>
@@ -140,13 +154,14 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                             .flatMap: frameBefore =>
                                 elem match
                                     case dc: AddDirectionChange           =>
+                                        // Pinned: show the STORED pin as-is, not the engine's reachable
+                                        // projection. See DynamicPipeSlotPanel.directionAfterByIdx for
+                                        // rationale. The badge's isCompatibleSig renders the warning
+                                        // indicator when the pin is unreachable at (frame, angle).
                                         val dir = dc.absDir match
                                             case Some(fd) =>
                                                 val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                                frameBefore
-                                                    .applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec)
-                                                    .direction
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
                                             case None     =>
                                                 frameBefore.direction
                                         Some(idx -> dir)
@@ -163,7 +178,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .collect { case (idx, _: AddDirectionChange) => idx }
@@ -279,8 +294,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]]),
-                    extra        = airIntakeAutoCalcExtra(SetInitialPosition.apply)
+                    propertyShow = Some(summon[Show[SetInitialPosition]])
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {

@@ -19,6 +19,7 @@ final case class I18nData_Invoices(
     formatting: Formatting,
     company   : Company,
     payment   : Payment,
+    status    : Status,
     tax       : Tax
 )
 
@@ -37,6 +38,7 @@ object I18nData_Invoices:
         invoice_date  : String,
         due_date      : String,
         reference     : String,
+        order         : String,
         currency      : String,
         status        : String
     )
@@ -76,26 +78,39 @@ object I18nData_Invoices:
     )
 
     final case class Payment(
-        iban_label           : String,
-        bic_label            : String,
-        bank_transfer        : String,
-        credit_card          : String,
-        check                : String,
-        cash                 : String,
-        paypal               : String,
-        sepa_mandate         : String,
-        mandate_reference    : String,
-        mandate_date         : String,
-        payment_due_within   : StringFormat1, // "Payment due within {0} days"
-        late_fee_label       : String,
-        early_discount_label : String,
-        if_paid_within       : String,
-        days                 : String,
-        payment_methods_label: String
+        iban_label                   : String,
+        bic_label                    : String,
+        bank_transfer                : String,
+        credit_card                  : String,
+        check                        : String,
+        cash                         : String,
+        paypal                       : String,
+        sepa_mandate                 : String,
+        mandate_reference            : String,
+        mandate_date                 : String,
+        next_possible_charge_date    : String,
+        sepa_mandate_pending         : String,
+        sepa_mandate_failure_fallback: String,
+        payment_due_within           : StringFormat1, // "Payment due within {0} days"
+        late_fee_label               : String,
+        early_discount_label         : String,
+        if_paid_within               : String,
+        days                         : String,
+        payment_methods_label        : String
+    )
+
+    final case class Status(
+        draft        : String,
+        sent         : String,
+        paid         : String,
+        overdue      : String,
+        cancelled    : String,
+        partiallyPaid: String
     )
 
     final case class Tax(
         exempt              : String,
         exempt_label        : String,
+        exempt_rate_display : String,
         non_profit_exemption: String
     )

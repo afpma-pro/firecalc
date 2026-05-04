@@ -11,6 +11,8 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.AppendLayerDescr
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
 
+import afpma.firecalc.domain.IsSingularFlowResistance
+
 import afpma.firecalc.i18n.*
 
 import magnolia1.Transl
@@ -353,6 +355,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.add_element.cross_section))
         cross_section: OptionOfEither[AreaInCm2, PipeShape] // Option[Either[L, R]] has issues when serializing via circe, so custom type with custom encoder/decoder as a workaround
     ) extends AddThermalPipeElement_13384_V3
+        with IsSingularFlowResistance
 
     case class AddPressureDiff(
         @Transl(I(_.terms.name))
@@ -360,3 +363,17 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.pressure_difference))
         pressure_difference: Pressure
     ) extends AddThermalPipeElement_13384_V3
+
+extension (descrs: Seq[ThermalPipeDescr_13384_V3])
+    /**
+     * True iff the last *pipe element* (excluding `Set...` property setters) carries
+     * the `IsSingularFlowResistance` marker — i.e. the pipe ends with a singular
+     * flow resistance.
+     */
+    def endsWithSingularFlowResistance: Boolean =
+        descrs
+            .collect:
+                case el: AddThermalPipeElement_13384_V3 => el
+            .lastOption match
+            case Some(_: IsSingularFlowResistance) => true
+            case _                                 => false

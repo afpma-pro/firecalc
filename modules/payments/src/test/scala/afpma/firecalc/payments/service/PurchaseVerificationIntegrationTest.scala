@@ -28,12 +28,21 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
 
     // Test data
     val testProduct = Product(
-        id          = ProductId(UUID.randomUUID()),
-        name        = "Integration Test Product",
-        description = "A product for integration testing",
-        price       = BigDecimal("49.99"),
-        currency    = Currency.EUR,
-        active      = true
+        id        = ProductId(UUID.randomUUID()),
+        sku       = "test",
+        price     = BigDecimal("49.99"),
+        currency  = Currency.EUR,
+        active    = true,
+        taxRate   = BigDecimal("20.0"),
+        taxExempt = false
+    )
+
+    val testProductCopyConfig: ProductCopyConfig = ProductCopyConfig(
+        entries = Map(
+            "test" -> Map(
+                "default" -> ProductCopy(name = "Test Product", description = "Test product for integration tests")
+            )
+        )
     )
 
     val testCustomerInfo = CustomerInfo(
@@ -71,27 +80,35 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
     def createMockTupleServices(repos: TestTupleHandlingRepositories) = {
         val productRepo = new ProductRepository[IO] {
             def findById(id: ProductId): IO[Option[Product]] = IO.pure(repos.products.get(id))
-            def findOrCreate(name: String, description: String, price: BigDecimal, currency: Currency): IO[Product] =
+            def findOrCreate(
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("findOrCreate not needed in this test"))
             def create(
-                id         : ProductId,
-                name       : String,
-                description: String,
-                price      : BigDecimal,
-                currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                id       : ProductId,
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                active   : Boolean,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("create not needed in this test"))
             def update(
-                id         : ProductId,
-                name       : String,
-                description: String,
-                price      : BigDecimal,
-                currency   : Currency,
-                active     : Boolean
-            )                                                                                         : IO[Product] =
+                id       : ProductId,
+                sku      : String,
+                price    : BigDecimal,
+                currency : Currency,
+                active   : Boolean,
+                taxRate  : BigDecimal,
+                taxExempt: Boolean
+            ): IO[Product] =
                 IO.raiseError(new NotImplementedError("update not needed in this test"))
-            def upsert(productInfo: v1.ProductInfo)                                                   : IO[Product] =
+            def upsert(productInfo: v1.ProductInfo): IO[Product] =
                 IO.raiseError(new NotImplementedError("upsert not needed in this test"))
         }
 
@@ -316,6 +333,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 body     : String,
                 signature: String
             ): IO[Either[String, afpma.firecalc.payments.service.impl.WebhookEventStatus]] = ???
+            def getMandateForPayment(paymentId: String): IO[Option[afpma.firecalc.payments.domain.MandateSnapshot]] =
+                ???
         }
 
         val emailService = new EmailService[IO] {
@@ -331,9 +350,11 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
             ): IO[email.EmailResult] =
                 IO.pure(EmailSent)
 
-            def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-                language: BackendCompatibleLanguage
-            ): IO[email.EmailResult] =
+            def sendUserInvoiceWithReport(
+                invoice  : InvoiceEmail,
+                pdfReport: PdfReportEmail,
+                bcc      : List[EmailAddress] = List.empty
+            )(using language: BackendCompatibleLanguage): IO[email.EmailResult] =
                 IO.pure(EmailSent)
 
             def sendAdminInvoice(invoice: InvoiceEmail)(using
@@ -396,7 +417,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             // Step 1: Create purchase intent
@@ -469,7 +491,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             // Create purchase intent
@@ -530,7 +553,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val fullCustomerInfo = CustomerInfo(
@@ -600,7 +624,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 authService,
                 orderService,
                 paymentService,
-                emailService
+                emailService,
+                testProductCopyConfig
             )
 
             val minimalCustomerInfo = CustomerInfo(

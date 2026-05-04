@@ -17,6 +17,7 @@ import afpma.firecalc.engine.models.geometry.Vec3
 
 import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 
+import afpma.firecalc.filaire.ChimneyEndCapDefaults
 import afpma.firecalc.filaire.FilaireTypes.*
 import afpma.firecalc.filaire.FilaireTypes.CrossSection
 
@@ -88,6 +89,47 @@ object VizConverter:
             displayName = displayName
         )
 
+    /** Color used for the symbolic chimney end-cap disc. */
+    val ChimneyEndCapColor: LineColor = ChimneyEndCapDefaults.Color
+
+    /**
+     * Build the symbolic end-cap disc line rendered just past the chimney's end.
+     *
+     * Caller is expected to invoke this only when the chimney's last element is a
+     * singular flow resistance — detection lives in `chimneyEndCapInputs_sig` in
+     * `Variables.scala`, which also provides the chimney's terminal inner shape via
+     * `ChimneyPipe_Module.lastInnerShape` (folds through `PipeFullDescr.lastInnerGeom`).
+     *
+     * Returns None when the chimney has no terminal frame (no orientation to extrude
+     * the disc along).
+     *
+     * Geometry:
+     *   - origin    = chimney `finalPoint` + axis × `GapCm`
+     *   - direction = chimney terminal axis (normalized)
+     *   - length    = `ThicknessCm`
+     *   - shape     = circle of diameter `DiameterMultiplier × endCapShape.dh`
+     */
+    def chimneyEndCapLineO(
+        chimneyPos : PipePositionResult,
+        endCapShape: PipeShape,
+        displayName: Option[String] = None
+    ): Option[FireCalcFilaireLine] =
+        chimneyPos.finalFrame.map: frame =>
+            val axisVec3       = frame.direction.normalized
+            val gapM           = ChimneyEndCapDefaults.GapCm / M_TO_CM
+            val originVec3     = chimneyPos.finalPoint + axisVec3 * gapM
+            val dhCm           = endCapShape.dh.value * M_TO_CM
+            val discDiameterCm = ChimneyEndCapDefaults.DiameterMultiplier * dhCm
+            FireCalcFilaireLine     (
+                origin      = vec3ToOrigin(originVec3),
+                direction   = vec3ToVector(axisVec3),
+                length      = Length(ChimneyEndCapDefaults.ThicknessCm),
+                color       = ChimneyEndCapColor,
+                shape       = CrossSection.Circle(Cm(discDiameterCm)),
+                name        = Some("ChimneyEndCap"),
+                displayName = displayName
+            )
+
     /**
      * Build a single FireCalcFilaireLine representing the air distribution box.
      * Same width/depth as the firebox, positioned directly below it.
@@ -156,10 +198,15 @@ object VizConverter:
         postFireboxSlots: scala.collection.immutable.Vector[(PipeType, String, String, PipePositionResult)],
         airIntake       : PipePositionResult,
         fireboxLine     : FireCalcFilaireLine,
-        airDistribLine  : FireCalcFilaireLine
+        airDistribLine  : FireCalcFilaireLine,
+        chimneyEndCapO  : Option[FireCalcFilaireLine] = None
     ): FireCalcFilaireGroups =
-        val exhaustLines = postFireboxSlots.toList.flatMap: (pt, name, displayName, pos) =>
+        val exhaustLines        = postFireboxSlots.toList.flatMap: (pt, name, displayName, pos) =>
             pipeToLines(pos, colorForPipeType(pt), name, Some(displayName))
+        val chimneyEndCapGroupO = chimneyEndCapO.map: line =>
+            // Separate group so Three.js mitring does not deform the chimney's end face
+            // against the wider, differently-colored end-cap.
+            FireCalcFilaireGroup(List(line), Some("Chimney End Cap"))
         List(
             FireCalcFilaireGroup(List(airDistribLine), Some("Air Distribution")),
             FireCalcFilaireGroup(List(fireboxLine), Some("Firebox")            ),
@@ -168,4 +215,4 @@ object VizConverter:
                 pipeToLines(airIntake, AirIntakeColor, "Air Intake", Some("Air Intake")),
                 Some       ("Air Intake"                                               )
             )
-        )
+        ) ++ chimneyEndCapGroupO.toList

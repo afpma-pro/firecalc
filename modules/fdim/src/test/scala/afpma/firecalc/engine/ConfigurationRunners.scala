@@ -20,10 +20,11 @@ import io.taig.babel.Locale
 import io.taig.babel.Locales
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 
 trait ConfigurationRunners extends AnyFreeSpec with Matchers {
 
-    given Locale = Locales.en // acceptable to force Locale in tests
+    given loc: Locale = Locales.en // acceptable to force Locale in tests
 
     private def showDetailedNoteAsTextImpl(
         projectReference: String,
@@ -33,22 +34,21 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         ap              : _en15544.AtParams
     ) =
 
-        println("-------------------------------------------------")
-        println(s"CONFIGURATION = ${projectReference}"             )
-        println("-------------------------------------------------")
-
         given Locale                      = givenLocale
         given _en15544.Params_15544       = ap.params
         given LocalRegulations            = localRegs
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
 
-        val showAsTableInstances         = new afpma.firecalc.engine.ops.ShowAsTableInstances
-        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
-        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+        val showAsTableInstances         = new afpma.firecalc.engine.ops.ShowAsTableInstances(using loc)
+        val showAsTableInstances_EN15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544(using loc)
+        val showAsTableInstances_EN13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384(using loc)
 
         import showAsTableInstances.given
         import showAsTableInstances_EN15544.given
         import showAsTableInstances_EN13384.given
+
+        given showAsTable_pressReq13384: ShowAsTable[PressureRequirements_13384] =
+            showAsTableInstances_EN13384.mkShowAsTable_PressureRequirements_EN13384(checkAndShowReq = false)
 
         println(_en15544.inputs.en13384NationalAcceptedData.showAsCliTable)
         println("\n"                                                      )

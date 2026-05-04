@@ -9,6 +9,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import afpma.firecalc.invoices.i18n.I18nData_Invoices
+import afpma.firecalc.invoices.models.Company
 import afpma.firecalc.invoices.models.InvoiceData
 import afpma.firecalc.invoices.models.InvoiceLineItem
 import afpma.firecalc.invoices.typst.InvoiceTypstInstances
@@ -109,7 +110,7 @@ class DefaultInvoiceTemplate(val config: TemplateConfig = TemplateConfig()) exte
     |  [*${i18n.fields.invoice_number}*], [${invoice.invoiceNumber}],
     |  [*${i18n.fields.invoice_date}*], [${invoice.invoiceDate.format(formatter)}],
     |  [*${i18n.fields.due_date}*], [${invoice.effectiveDueDate.format(formatter)}],
-    |  ${invoice.reference.map(ref => s"[*${i18n.fields.reference}*], [$ref],").getOrElse("")}
+    |  ${invoice.reference.map(ref => s"[*${i18n.fields.reference}*], [${i18n.fields.order} $ref],").getOrElse("")}
     |  [*${i18n.fields.currency}*], [${invoice.currency}],
     |  [*${i18n.fields.status}*], [${invoice.status.displayName}],
     |)
@@ -146,7 +147,7 @@ class DefaultInvoiceTemplate(val config: TemplateConfig = TemplateConfig()) exte
 
     private def formatTaxRate(item: InvoiceLineItem)(using i18n: I18nData_Invoices): String =
         if (item.isTaxExempt) {
-            i18n.tax.exempt_label
+            i18n.tax.exempt_rate_display
         } else if (item.effectiveTaxRate > 0) {
             s"${item.effectiveTaxRate}%"
         } else {
@@ -204,7 +205,7 @@ class DefaultInvoiceTemplate(val config: TemplateConfig = TemplateConfig()) exte
     |${invoice.paymentTerms.toTypst}
     |""".stripMargin
 
-    private def footer(invoice: InvoiceData)(using i18n: I18nData_Invoices): String =
+    private def footer(invoice: InvoiceData)(using i18n: I18nData_Invoices, locale: Locale): String =
         val notesSection = invoice.notes
             .map { notes =>
                 s"""
@@ -237,18 +238,28 @@ class DefaultInvoiceTemplate(val config: TemplateConfig = TemplateConfig()) exte
 
         s"$notesSection$taxExemptionNotices\n$generationInfo"
 
-    private def buildTaxExemptionNotices(invoice: InvoiceData)(using i18n: I18nData_Invoices): String =
+    private def buildTaxExemptionNotices(invoice: InvoiceData)(using i18n: I18nData_Invoices, locale: Locale): String =
         val taxExemptItems = invoice.lineItems.filter(_.isTaxExempt)
 
         if (taxExemptItems.nonEmpty) {
+            val orgNotice  = resolveTaxExemptNotice(invoice.sender)
+            val noticeText = orgNotice.getOrElse(s"${i18n.tax.exempt} - ${i18n.tax.non_profit_exemption}")
             s"""
         |
-        |#align(center, text(size: 9pt)[${i18n.tax.exempt} - ${i18n.tax.non_profit_exemption}])
+        |#align(center, text(size: 9pt)[$noticeText])
         |
         |""".stripMargin
 
         } else {
             ""
+        }
+
+    private[templates] def resolveTaxExemptNotice(sender: Company)(using locale: Locale): Option[String] =
+        sender.taxExemptNotice.flatMap { m =>
+            m.get(locale.printLanguageTag)
+                .orElse(m.get("default"))
+                .map(_.trim)
+                .filter(_.nonEmpty)
         }
 
 object DefaultInvoiceTemplate:

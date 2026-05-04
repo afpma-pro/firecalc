@@ -11,6 +11,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.IsZeroLengthPipeElement
+
 import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
@@ -46,6 +48,19 @@ trait FlowOnlyAirIntakePipe_Module extends AirIntakePipe_Common_Module:
     export FullDescrResult.*
 
 type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
+
+/**
+ * EN 13384 connector pipe module.
+ *
+ * Plan issue E4 (npipe-topology-connector-first): verified that a ConnectorPipe
+ * with no upstream pipe composes correctly when driven via `PostFireboxPipeChain`.
+ * The EN 13384 standalone entry point (`en13384_common_application.postFireboxChainResults`)
+ * seeds the initial `UpstreamState` with `temp_start = T_WN / T_Wmin` (firebox exit)
+ * and `last_pipe_density = last_pipe_velocity = None` — the thermal pipe calculation
+ * only requires the start temperature; it does not read the last_pipe_* fields when
+ * computing its own density/velocity. No "seed" alternative is needed here: the
+ * existing path already feeds firebox exit directly as the connector inlet.
+ */
 object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.IncrementalPipeDefModule[ConnectorPipeT]:
 
     val incremental = afpma.firecalc.engine.impl.en13384.ThermalIncrementalBuilder_13384.makeFor[ConnectorPipeT]
@@ -116,6 +131,25 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
             .toFullDescrWithExternalInitialFrame(externalInitialFrame)
             .map((ids, fd, _) => (ids, fd))
 
+    /**
+     * Inner cross-section at the chimney's terminal end.
+     *
+     * Builds via the shared incremental builder, so every shape-affecting
+     * element type is folded exhaustively through `HasInnerShapeAtPos[PipeElDescr]`
+     * (declared `compiletime.deferred` in `PipeDescrAlg` — new element types must
+     * opt in or fail to compile). Honours `SetInnerShape`, nested batches, and
+     * mid-pipe `SectionGeometryChange` elements.
+     *
+     * `externalInitialFrame` is the upstream slot's exit frame (typically the
+     * connector's `finalFrame`). Chimneys do not declare their own initial
+     * direction, so this argument is required for validation to succeed.
+     */
+    def lastInnerShape(
+        incrSeq             : Seq[ThermalPipeDescr_13384],
+        externalInitialFrame: Option[PipeFrame]
+    ): Option[PipeShape] =
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame).extractPipe.toOption.flatMap(_.lastInnerGeom)
+
     type PipeCanBe = FullDescr
 
     given HasOutsideSurfaceInLocation[ChimneyPipe]      :
@@ -137,14 +171,13 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
     given HasUnheatedHeightInsideAndOutside[ChimneyPipe]:
         extension (ch: ChimneyPipe)
             def unheatedHeightInsideAndOutside: UnheatedHeightInsideAndOutside =
-                import en13384.ThermalPipeDescr_13384.{elems as _, *}
                 ch.elems
                     .map(_.el)
                     // keep only unheated locations
                     .filter:
-                        case sec: en13384.ThermalPipeDescr_13384.StraightSection                                    =>
+                        case sec: en13384.ThermalPipeDescr_13384.StraightSection =>
                             sec.pipeLoc.areaHeatingStatus == AreaHeatingStatus.NotHeated
-                        case _  : (DirectionChange | SectionGeometryChange | SingularFlowResistance | PressureDiff) =>
+                        case _  : IsZeroLengthPipeElement                        =>
                             false
                     .map:
                         case sec: en13384.ThermalPipeDescr_13384.StraightSection => sec.elevation_gain

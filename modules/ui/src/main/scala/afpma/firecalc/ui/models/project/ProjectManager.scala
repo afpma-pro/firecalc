@@ -25,22 +25,45 @@ object ProjectManager:
      * @return true if project was loaded, false if not found
      */
     def switchToProject(id: ProjectId): Boolean =
-        import afpma.firecalc.ui.models.{appStateSchemaVar, undoManager}
-
         // No-op if already on this project
         if activeProjectIdVar.now().contains(id) then return true
 
         // Save current project first
         saveCurrentProject()
 
-        // Load the new project
+        // Load and install the new project
+        restoreProjectState(id)
+
+    /**
+     * Check whether a project exists in storage without loading it.
+     *
+     * Used by Frontend.renderPage to decide whether to render HomeView or redirect to
+     * the selector, without actually installing the project into appStateSchemaVar —
+     * that installation is deferred to onMountCallback to avoid clobbering the still-
+     * mounted previous page's reactive subtree.
+     */
+    def projectExists(id: ProjectId): Boolean =
+        ProjectStorage.load(id).isDefined
+
+    /**
+     * Install the given project's persisted state into the in-memory vars
+     * (appStateSchemaVar, fireboxCacheStateVar, activeProjectIdVar), reset the undo
+     * manager, and return true iff the project was found.
+     *
+     * Unlike switchToProject, this does NOT save the current project first and does NOT
+     * check whether the target id is already active. It is intended to be called either
+     * from switchToProject (post-save) or from Frontend.main()'s pre-render preload, so
+     * that the reactive graph sees the restored state on its very first access.
+     */
+    def restoreProjectState(id: ProjectId): Boolean =
+        import afpma.firecalc.ui.models.{appStateSchemaVar, fireboxCacheStateVar, undoManager}
+
         ProjectStorage.load(id) match
             case Some(schema) =>
                 undoManager.withRestoring {
                     appStateSchemaVar.set(schema)
                 }
                 undoManager.reset()
-                import afpma.firecalc.ui.models.fireboxCacheStateVar
                 val cachedFirebox = loadFireboxCache(id)
                 fireboxCacheStateVar.set(cachedFirebox)
                 activeProjectIdVar.set  (Some(id)     )

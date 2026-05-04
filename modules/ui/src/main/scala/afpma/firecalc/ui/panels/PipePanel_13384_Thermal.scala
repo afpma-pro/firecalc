@@ -25,6 +25,7 @@ import afpma.firecalc.ui.models.flowResistancePresetsSignal
 import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.services.CatalogImageStore
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.Show
 
 import com.raquo.laminar.api.L.*
@@ -67,7 +68,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      */
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal
-            .combineWith(externalInitialFrameSig)
+            .combineWithDistinct(externalInitialFrameSig)
             .map: (elems, externalFrame) =>
                 var frame: Option[PipeFrame] = externalFrame
                 val builder = Map.newBuilder[Int, PipeFrame]
@@ -101,7 +102,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      */
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .flatMap: (idx, elem) =>
@@ -110,13 +111,14 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                             .flatMap: frameBefore =>
                                 elem match
                                     case dc: AddDirectionChange          =>
+                                        // Pinned: show the STORED pin as-is, not the engine's reachable
+                                        // projection. See DynamicPipeSlotPanel.directionAfterByIdx for
+                                        // rationale. The badge's isCompatibleSig renders the warning
+                                        // indicator when the pin is unreachable at (frame, angle).
                                         val dir = dc.absDir match
                                             case Some(fd) =>
                                                 val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                                frameBefore
-                                                    .applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec)
-                                                    .direction
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
                                             case None     =>
                                                 frameBefore.direction
                                         Some(idx -> dir)
@@ -137,7 +139,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      */
     private lazy val previousDirectionByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
-            .combineWith(frameBeforeByIdx)
+            .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
                     .collect { case (idx, _: AddDirectionChange) => idx }
@@ -174,6 +176,29 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         welems_var.signal.map: elems =>
             elems.collectFirst:
                 case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
+
+    /**
+     * Hook for concrete panels to inject extra UI (e.g. an auto-calc button)
+     * next to the `SetInitialPosition` property editor.
+     *
+     * Used by `DynamicThermalPipeSlotPanel` to render a firebox-boundary
+     * auto-calc button on the first head-region ConnectorSlot when the head
+     * region has no FluePipe (plan issue U2 — Connector-first chains).
+     *
+     * Default: no-op (returns an empty span).
+     */
+    protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
+        (_: Var[SetInitialPosition]) => span()
+
+    /**
+     * Extension hook for SetInitialDirection: returns an `extra` node factory for the element
+     * at `idx`. Called once per element lifetime (stable split key). Concrete panels may
+     * override to fire rotation-offer callbacks when the initial direction changes.
+     *
+     * Default: no-op (returns an empty span).
+     */
+    protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement =
+        (_: Var[SetInitialDirection]) => span()
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -341,19 +366,25 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     iaax._2,
                     sig,
                     isProperty   = true,
+                    extra        = initialDirectionExtraFn(iaax._1),
                     propertyShow = Some(summon[Show[SetInitialDirection]])
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
                 case (i, aa: SetInitialPosition, x) => (i, aa, x)
             } { (iaax, sig) =>
+                // Auto-calc hook — overridable by concrete panels (see
+                // `DynamicThermalPipeSlotPanel` which supplies a firebox-boundary
+                // auto-calc button when this ConnectorSlot is the first head-region
+                // slot in a Connector-first chain — plan issue U2).
                 renderElemTyped[SetInitialPosition]  (
                     iaax._1,
                     I18N.set_prop.SetInitialPosition,
                     iaax._2,
                     sig,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]])
+                    propertyShow = Some(summon[Show[SetInitialPosition]]),
+                    extra        = initialPositionExtraFn(iaax._1)
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {

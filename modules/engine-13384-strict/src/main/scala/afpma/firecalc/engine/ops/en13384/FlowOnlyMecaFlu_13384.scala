@@ -18,6 +18,7 @@ import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.domain.IsZeroLengthPipeElement
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.gtypedefs.ζ
@@ -225,9 +226,9 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
         en13384.w_m_calc(crossSectionArea_middle, massFlow, density(using Middle))
 
     val elevation_gain = curr.el match
-        case el: StraightSection                                                                   =>
+        case el: StraightSection         =>
             el.elevation_gain
-        case _ : (SingularFlowResistance | PressureDiff | DirectionChange | SectionGeometryChange) =>
+        case _ : IsZeroLengthPipeElement =>
             0.0.meters
 
     override val density_mean   = en13384_density_mean(temp_mean, gp.pipeEl.typ, pReq).some
@@ -251,13 +252,13 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
         en13384.P_R_dynamicPressure_calc(d_mean, en13384_flowVelocity_mean)
 
     val roughness = curr.el match
-        case el: StraightSection                                                                   =>
+        case el: StraightSection         =>
             el.roughness.some
-        case _ : (DirectionChange | PressureDiff | SectionGeometryChange | SingularFlowResistance) =>
+        case _ : IsZeroLengthPipeElement =>
             None
 
     val staticFriction: Pressure = curr.el match
-        case el: StraightSection                                                                   =>
+        case el: StraightSection         =>
             MecaFluOps.whenGasType(gp.pipeEl.typ)(
                 ifCombustionAir = en13384.P_B_staticFriction(
                     el.length,
@@ -276,7 +277,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                     temperature_for_pr_pu_pd
                 )
             )
-        case _ : (DirectionChange | PressureDiff | SectionGeometryChange | SingularFlowResistance) =>
+        case _ : IsZeroLengthPipeElement =>
             0.0.pascals
 
     val en13384_pg: Pressure =

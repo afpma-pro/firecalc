@@ -14,7 +14,7 @@ import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.*
 import afpma.firecalc.dto.v3.*
 import afpma.firecalc.dto.v4.*
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
 

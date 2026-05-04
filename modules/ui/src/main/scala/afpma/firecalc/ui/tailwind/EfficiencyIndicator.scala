@@ -40,7 +40,7 @@ final case class EfficiencyIndicator()(using Locale, DisplayUnits) extends Compo
 
     lazy val effValidation: Signal[VNelMcalcErr[Unit]] =
         results_en15544_strict_sig.flatMapVNelE(
-            _.primary.validateEfficiencyIsAboveMinEfficiency()
+            _.primary.validateEfficiencyIsAboveMinEfficiency
         )
 
     lazy val effIsTooLow: Signal[Option[EfficiencyIsTooLow]] =

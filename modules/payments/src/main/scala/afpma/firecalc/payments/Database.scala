@@ -22,6 +22,13 @@ import org.typelevel.log4cats.Logger
 // Database setup with SQLite Single Writer best practices
 object Database:
 
+    // Eagerly register the SQLite JDBC driver on this classloader.
+    // Under sbt's isolated classloader model, ServiceLoader-based auto-registration
+    // (META-INF/services/java.sql.Driver) is unreliable — DriverManager uses the
+    // system classloader while the driver JAR is on the sbt/test classloader.
+    // Class.forName forces static initialisation on the correct classloader.
+    Class.forName("org.sqlite.JDBC")
+
     /**
      * Creates a properly configured SQLite connection for Single Writer architecture.
      *

@@ -5,6 +5,7 @@
 
 package afpma.firecalc.payments.service.impl
 
+import afpma.firecalc.payments.domain.MandateSnapshot
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.service.impl.*
 import afpma.firecalc.payments.shared.api.*
@@ -34,3 +35,6 @@ class MockPaymentServiceImpl[F[_]: Async](implicit logger: Logger[F]) extends Pa
             _ <- logger.info(s"Mock: Processing webhook with signature: $signature")
             _ <- logger.debug(s"Mock: Webhook body: $body")
         yield Right(WebhookEventStatus.Processed)
+
+    def getMandateForPayment(paymentId: String): F[Option[MandateSnapshot]] =
+        Async[F].raiseError(new NotImplementedError(s"MockPaymentServiceImpl.getMandateForPayment($paymentId)"))

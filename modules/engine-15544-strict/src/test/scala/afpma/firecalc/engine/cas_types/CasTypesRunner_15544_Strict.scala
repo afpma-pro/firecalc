@@ -18,10 +18,12 @@ import io.taig.babel.Locale
 import io.taig.babel.Locales
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
 
 trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
-    given Locale = Locales.en // acceptable to force Locale in tests
+    given loc: Locale = Locales.fr // acceptable to force Locale in tests
 
     private def showDebug_impl(
         cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg,
@@ -35,13 +37,19 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         given LocalRegulations            = cas_type.localRegulations
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
 
-        val showAsTableInstances       = new afpma.firecalc.engine.ops.ShowAsTableInstances
-        val showAsTableInstances_15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
-        val showAsTableInstances_13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+        val showAsTableInstances       = new afpma.firecalc.engine.ops.ShowAsTableInstances(using loc)
+        val showAsTableInstances_15544 = new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544(using loc)
+        val showAsTableInstances_13384 = new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384(using loc)
 
         import showAsTableInstances.given
         import showAsTableInstances_15544.given
         import showAsTableInstances_13384.given
+
+        given showAsTable_pressReq13384: ShowAsTable[PressureRequirements_13384] =
+            showAsTableInstances_13384.mkShowAsTable_PressureRequirements_EN13384(checkAndShowReq = false)
+
+        given showAsTable_tempReq13384: ShowAsTable[TemperatureRequirements_13384] =
+            showAsTableInstances_13384.showAsTable_temperatureRequirements_en13384(checkAndShowReq = false)
 
         def seperate_tables = emit("\n".repeat(3))
 

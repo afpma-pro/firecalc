@@ -1,0 +1,6 @@
+co2 max dry = 20.888603217665008 
+co2 max wet = 18.426955897142204 
+fg_o2_dry_2 = 13.91240307179575 
+lambdafromO2dry = 1.9612613613838166
+lambda2 = 2.9601584505225573 par rapport à 2.95 ???
+fg_co2_dry_2 = -1362.971718548836 par rapport à 7.05 %

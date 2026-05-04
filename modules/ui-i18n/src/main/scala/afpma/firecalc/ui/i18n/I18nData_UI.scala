@@ -32,6 +32,7 @@ final case class I18nData_UI(
     pdf_ordering         : PDFOrdering,
     placeholders         : Placeholders,
     project_selector     : ProjectSelector,
+    shortcuts            : Shortcuts,
     tooltips             : Tooltips,
     ui_messages          : UiMessages,
     viz                  : Viz,
@@ -158,6 +159,7 @@ object I18nData_UI:
             report                     : Modal.Report,
             order_steps                : Modal.OrderSteps,
             accept_terms_and_conditions: String,
+            link                       : String,
             connection                 : Modal.Connection,
             validation                 : Modal.Validation,
             payment                    : Modal.Payment,
@@ -272,7 +274,8 @@ object I18nData_UI:
         direction_incompatible_warning: String,
         cardinal_horizontal           : String,
         custom_btn                    : String,
-        custom_dialog_title           : String
+        custom_dialog_title           : String,
+        custom_option                 : StringFormat1
     )
 
     case class Tooltips(
@@ -335,6 +338,10 @@ case class Placeholders(
 
 case class UiMessages(
     not_implemented_yet: String
+)
+
+case class Shortcuts(
+    quick_flue_section: String
 )
 
 case class Viz(

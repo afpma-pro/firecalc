@@ -6,7 +6,7 @@
 package afpma.firecalc.dto
 
 import afpma.firecalc.dto.generators.schema.FireCalcYAML_V6_Generators
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
 
 import org.scalactic.anyvals.PosInt

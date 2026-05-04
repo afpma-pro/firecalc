@@ -13,6 +13,7 @@ import io.taig.babel.StringFormat2
 import io.taig.babel.StringFormat3
 import io.taig.babel.StringFormat4
 import io.taig.babel.StringFormat5
+import io.taig.babel.StringFormat6
 
 trait LocalizedAlg:
     val language: Language
@@ -78,12 +79,14 @@ final case class I18nData(
     area_heating_status            : AreaHeatingStatus,
     reports                        : Reports,
     warnings                       : Warnings,
+    not_applicable_short           : String,
     not_defined                    : String,
     not_respected                  : String,
     missing_data                   : String,
     test_report                    : TestReportI18n,
     test_emission_value            : TestEmissionValueI18n,
-    emission_values                : EmissionValuesI18n
+    emission_values                : EmissionValuesI18n,
+    country_names                  : CountryNames
 )
 
 object I18nData:
@@ -159,6 +162,7 @@ object I18nData:
         glass_area                                 : String,
         ref                                        : String,
         typ                                        : String,
+        load_size_nominal                          : String,
         ecolabeled                                 : Firebox_15544.Ecolabeled,
         tested                                     : Firebox_15544.Tested,
         traditional                                : Firebox_15544.Traditional,
@@ -505,32 +509,37 @@ object I18nData:
     )
 
     case class Errors(
-        term_should_be_greater_or_eq_than    : StringFormat3,
-        term_should_be_greater_than          : StringFormat3,
-        term_should_be_less_or_eq_than       : StringFormat3,
-        term_should_be_less_than             : StringFormat3,
-        term_should_be_between_inclusive     : StringFormat4,
-        term_constraint_min_error            : StringFormat3,
-        term_constraint_max_error            : StringFormat3,
-        glass_area_too_large                 : StringFormat2,
-        glass_surface_ratio_not_confirmed    : String,
-        firebox_height_out_of_range          : StringFormat3,
-        firebox_base_surface_not_in_range    : StringFormat3,
-        firebox_base_ratio_invalid           : StringFormat5,
-        firebox_base_min_width               : StringFormat2,
-        co2_calculation_only_for_wood_boilers: String,
-        injector_velocity_below_minimum      : StringFormat2,
-        injector_velocity_above_maximum      : StringFormat2,
-        flue_gas_velocity_error              : StringFormat5,
-        missing_flow_rate                    : String,
-        air_intake_pipe_shape_mismatch       : StringFormat2,
-        value_out_of_bound                   : StringFormat5,
-        could_not_interpolate                : StringFormat7,
-        empty_data_set                       : String,
-        parse_error                          : StringFormat1,
-        value_out_of_range                   : StringFormat2,
-        value_out_of_range_with_range        : StringFormat6,
-        missing_grid_point                   : StringFormat2
+        term_should_be_defined                 : StringFormat2,
+        term_should_be_greater_or_eq_than      : StringFormat3,
+        term_should_be_greater_than            : StringFormat3,
+        term_should_be_less_or_eq_than         : StringFormat3,
+        term_should_be_less_than               : StringFormat3,
+        term_should_be_between_inclusive       : StringFormat4,
+        term_constraint_min_error              : StringFormat3,
+        term_constraint_max_error              : StringFormat3,
+        glass_area_too_large                   : StringFormat2,
+        glass_surface_ratio_not_confirmed      : String,
+        firebox_height_out_of_range            : StringFormat3,
+        inconsistent_max_load_accross_inputs   : StringFormat3,
+        firebox_base_surface_not_in_range      : StringFormat3,
+        firebox_base_ratio_invalid             : StringFormat5,
+        firebox_base_min_width                 : StringFormat2,
+        co2_calculation_only_for_wood_boilers  : String,
+        injector_velocity_below_minimum        : StringFormat2,
+        injector_velocity_above_maximum        : StringFormat2,
+        flue_gas_velocity_error_single_boundary: StringFormat6,
+        flue_gas_velocity_error_both_boundaries: StringFormat6,
+        velocity_position_at_start             : String,
+        velocity_position_at_end               : String,
+        missing_flow_rate                      : String,
+        air_intake_pipe_shape_mismatch         : StringFormat2,
+        value_out_of_bound                     : StringFormat5,
+        could_not_interpolate                  : StringFormat7,
+        empty_data_set                         : String,
+        parse_error                            : StringFormat1,
+        value_out_of_range                     : StringFormat2,
+        value_out_of_range_with_range          : StringFormat6,
+        missing_grid_point                     : StringFormat2
     )
 
     case class Headers(
@@ -717,7 +726,10 @@ object I18nData:
         output_and_other_parameters               : String,
         total                                     : String,
         channel_pipe_length_with_min              : StringFormat2,
-        channel_pipe_length                       : StringFormat1
+        channel_pipe_length                       : StringFormat1,
+        channel_pipe_length_with_cum              : StringFormat2,
+        channel_pipe_length_with_cum_and_min      : StringFormat3,
+        channel_pipe_length_min_suffix            : StringFormat1
     )
 
     case class PipeShape(
@@ -902,7 +914,9 @@ object I18nData:
         )
 
         case class Document(
-            title                                  : String,
+            standard_description_15544             : String,
+            in_application_of_standard_x           : StringFormat1,
+            dimensioning_document_title            : String,
             software_label                         : String,
             software_name                          : String,
             versions_label                         : String,
@@ -1056,14 +1070,19 @@ object I18nData:
         nox  : String
     )
 
+    case class CountryNames(
+        france  : String,
+        belgique: String,
+        autriche: String
+    )
+
     case class BuilderErrors(
         errors_in_other_section_type: String
     )
 
     case class TopologyErrors(
-        missing_chimney               : String,
-        chimney_not_last              : String,
-        flue_pipe_after_connector     : String,
-        multiple_connectors_after_flue: String,
-        missing_connector_after_flue  : String
+        missing_chimney                : String,
+        chimney_not_last               : String,
+        missing_terminal_connector_slot: String,
+        head_region_ends_with_connector: String
     )

@@ -103,7 +103,10 @@ object std:
 
         def emissions_values: EmissionsAndEfficiencyValues
 
-        def min_load       : MinLoad
+        def min_load    : MinLoad
+        def nominal_load: Option[Mass]
+        def max_load    : Option[Mass]
+
         def pn_reduced     : HeatOutputReduced
         def co2_dry_nominal: σ_CO2
         def co2_dry_lowest : Option[σ_CO2]
@@ -225,6 +228,9 @@ object std:
                 case Some(min) => MinLoad.FromTypeTest(min)
                 case None      => MinLoad.NotDefined
 
+            override def nominal_load = Some(maximumFuelMass)
+            override def max_load     = Some(maximumFuelMass)
+
         object SingleTested:
             given showAsTable: Locale => ShowAsTable[SingleTested] =
                 ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
@@ -265,6 +271,9 @@ object std:
 
                 override def co2_dry_nominal: σ_CO2         = 7.05.percent
                 override def co2_dry_lowest : Option[σ_CO2] = None
+
+                override def nominal_load = None
+                override def max_load     = None
 
             }
 
@@ -399,6 +408,8 @@ object std:
 
             override def firebox_type      = I18N.firebox_names.door_15a_firebox
             override def min_load          = mb_min.fold(MinLoad.NotDefined)(m => MinLoad.FromTypeTest(m))
+            override def nominal_load      = mb
+            override def max_load          = mb_max
             override def reference         = LocalizedString(_ => uniq_id)
             override def type_of_appliance = TypeOfAppliance.WoodLogs
 

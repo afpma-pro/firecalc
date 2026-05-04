@@ -22,9 +22,17 @@ import afpma.firecalc.engine.utils.getOrThrow
 import afpma.firecalc.reports.typst.TypShow.sanitized
 
 import io.taig.babel.Locale
+import afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+import afpma.firecalc.engine.utils.ShowAsTable
+import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 abstract class TypstReportFactory_15544(
-    val isDraft: Boolean
+    val isDraft                 : Boolean,
+    val checkPressureReq13384   : Boolean,
+    val checkTemperatureReq13384: Boolean
 )                                      (using Locale)
     extends HasTypeMembers_15544_Alg:
     self =>
@@ -56,14 +64,16 @@ abstract class TypstReportFactory_15544(
     // Derive given for WithParams_13384 methods (pressureRequirements_EN13384, temperatureRequirements_EN13384)
     given en15544_app.Params_15544 = atParams.params
 
+    val CURRENT_DATE_TIME = LocalDateTime.now(ZoneId.of("Europe/Paris"))
+
     import TypShow.given
 
     // Typst sections by appearing order
 
     def imports: String =
         """|#import "@preview/fancy-units:0.1.1": num, unit, qty, fancy-units-configure, add-macros
-            |#import "@preview/based:0.1.0": base64
-            |""".stripMargin
+           |#import "@preview/based:0.1.0": base64
+           |""".stripMargin
 
     // Language as an ISO 639-1/2/3 language code (Typst requirement)
     // See: https://typst.app/docs/reference/text/text/#parameters-lang
@@ -143,8 +153,16 @@ abstract class TypstReportFactory_15544(
             |
             |      align(top + right)[
             |        *${stove_proj_15544_strict.project.reference.sanitized}* \\
-            |        CALC_ID : (none) \\
-            |        Date : #datetime.today().display("[day]/[month]/[year]") \\
+            |        #let dt = datetime(
+            |          year: ${CURRENT_DATE_TIME.getYear()},
+            |          month: ${CURRENT_DATE_TIME.getMonthValue()},
+            |          day: ${CURRENT_DATE_TIME.getDayOfMonth()},
+            |          hour: ${CURRENT_DATE_TIME.getHour()},
+            |          minute: ${CURRENT_DATE_TIME.getMinute()},
+            |          second: ${CURRENT_DATE_TIME.getSecond()},
+            |        )
+            |        CALC_ID : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \\
+            |        Date : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \\
             |        \\
             |      ],
             |    )
@@ -199,8 +217,11 @@ abstract class TypstReportFactory_15544(
                     |    )
                     |  ],
                     |  align(center + horizon)[
-                    |    #set text(size: 1.5em)
-                    |    #smallcaps[*${I18N.reports.document.title}*]
+                    |    #text(1.5em)[${I18N.reports.document.standard_description_15544}] \\
+                    |    #text(1.5em)[#smallcaps[*${I18N.reports.document.dimensioning_document_title}*]] \\
+                    |    #text(1.0em)[#smallcaps[${I18N.reports.document.in_application_of_standard_x(
+                       "EN 15544:2023"
+                   )}]]
                     |  ]
                     |)
                     |""".stripMargin
@@ -209,7 +230,11 @@ abstract class TypstReportFactory_15544(
                     |  columns: (1fr),
                     |  align(center + horizon)[
                     |    #set text(size: 1.5em)
-                    |    #smallcaps[*${I18N.reports.document.title}*]
+                    |    #text(1.5em)[${I18N.reports.document.standard_description_15544}] \\
+                    |    #text(1.5em)[#smallcaps[*${I18N.reports.document.dimensioning_document_title}*]] \\
+                    |    #text(1.0em)[#smallcaps[${I18N.reports.document.in_application_of_standard_x(
+                       "EN 15544:2023"
+                   )}]]
                     |  ]
                     |)
                     |""".stripMargin
@@ -279,9 +304,13 @@ abstract class TypstReportFactory_15544(
         en15544_app.en13384_application.P_L.typ
 
     def en13384_temperatureRequirements: String =
+        given ShowAsTable[TemperatureRequirements_13384] =
+            showAsTable_13384_instances.showAsTable_temperatureRequirements_en13384(checkTemperatureReq13384)
         en15544_app.temperatureRequirements_EN13384.getOrThrow.typ
 
     def en13384_pressureRequirements: String =
+        given ShowAsTable[PressureRequirements_13384] =
+            ShowAsTableInstances_13384().mkShowAsTable_PressureRequirements_EN13384(checkPressureReq13384)
         en15544_app.pressureRequirements_EN13384.getOrThrow.typ
 
     def en13384_reference_temperatures: String =

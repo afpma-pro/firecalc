@@ -17,6 +17,7 @@ The `pre-commit` hook automatically checks all staged files for AGPL-3.0-or-late
 - ✅ Supports: Scala, JS/TS, SQL, Shell, Config, Typst, and more
 - ✅ Respects exclusion patterns (node_modules, target, generated files, etc.)
 - ✅ Provides clear error messages with header format examples
+- ✅ Verifies Scala/SBT files are formatted (`scalafmt --check`) — fails fast with instructions to run `make fmt`
 - ✅ Works for all developers regardless of IDE choice
 
 ### Installation

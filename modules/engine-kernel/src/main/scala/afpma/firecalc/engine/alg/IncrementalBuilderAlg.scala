@@ -132,25 +132,40 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
             buildFrom(piDescr, externalInitialFrame)
 
+        /** Returns the PropsState after folding only the first n descriptors — used to prefill UI fields at insert position. */
+        def propsStateAtPrefix(n: Int): ValidatedResult[PropsState] =
+            foldFromInit(piDescr, piDescr.listIncrDescr().take(n), externalInitialFrame = None).map(_._3)
+
+    /**
+     * Fold the given ops vector starting from the initial PropsState / PipeFullDescr / empty IdsMapping.
+     * Optionally seeds the initial direction from an external frame.
+     * Callers wrap this with boundary / post-build validation as appropriate.
+     */
+    private def foldFromInit(
+        piDescr             : PipeIncrDescr,
+        ops                 : Vector[Id_IncrDescr],
+        externalInitialFrame: Option[PipeFrame]
+    ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
+        val iPropsState0 = mkInitPropsState(piDescr)
+        val iPropsState  = externalInitialFrame.fold(iPropsState0)(applyExternalFrame(iPropsState0, _))
+        buildIncrDescr(
+            mkInitPipeFullDescr(piDescr),
+            IdsMapping.empty,
+            iPropsState,
+            opsDone = Vector.empty,
+            opsLeft = ops
+        )
+
     private def buildFrom(
         piDescr             : PipeIncrDescr,
         externalInitialFrame: Option[PipeFrame]
     ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
-        val iPropsState0   = mkInitPropsState(piDescr)
-        val iPropsState    = externalInitialFrame.fold(iPropsState0)(applyExternalFrame(iPropsState0, _))
-        val iPipeFullDescr = mkInitPipeFullDescr(piDescr)
-        val iIdsMapping    = IdsMapping.empty
         val iListIncrDescr = piDescr.listIncrDescr()
         validateBoundaryElements(iListIncrDescr) *>
-            buildIncrDescr(
-                iPipeFullDescr,
-                iIdsMapping,
-                iPropsState,
-                opsDone = Vector.empty,
-                opsLeft = iListIncrDescr
-            ).andThen: (ids, fd, finalState) =>
-                postBuildValidation(iListIncrDescr, finalState) *>
-                    (ids, fd, currentFrameFromPropsState(finalState)).validNel
+            foldFromInit(piDescr, iListIncrDescr, externalInitialFrame)
+                .andThen: (ids, fd, finalState) =>
+                    postBuildValidation(iListIncrDescr, finalState) *>
+                        (ids, fd, currentFrameFromPropsState(finalState)).validNel
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
 

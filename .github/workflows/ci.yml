@@ -1,0 +1,39 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-product-catalog-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup sbt
+        run: |
+          curl -fL https://github.com/sbt/sbt/releases/download/v1.11.6/sbt-1.11.6.tgz | tar xzf -
+          echo "$GITHUB_WORKSPACE/sbt/bin" >> $GITHUB_PATH
+
+      - name: Configure JVM for CI
+        run: cp .jvmopts.ci .jvmopts
+
+      - name: Verify YAML against catalog
+        run: sbt "payments/verifyYamlAgainstCatalog"

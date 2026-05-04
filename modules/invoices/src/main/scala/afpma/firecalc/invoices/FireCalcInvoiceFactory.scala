@@ -41,6 +41,9 @@ trait FireCalcInvoiceFactory:
         locale  : Locale
     ): Either[String, InvoiceResult]
 
+    /** Returns the default payment terms loaded from the invoice YAML configuration. */
+    def loadedPaymentTerms: PaymentTerms
+
 /** Result of invoice generation containing both Typst source and PDF bytes. */
 case class InvoiceResult(
     typstContent: String,
@@ -78,41 +81,58 @@ case class InvoiceResult(
 
 object FireCalcInvoiceFactory:
 
-    /** Creates a new factory instance from company configuration. */
+    /** Creates a new factory instance from company configuration (uses default payment terms). */
     def fromTemplate(companyConfig: CompanyConfig): FireCalcInvoiceFactory =
-        new FireCalcInvoiceFactoryImpl(companyConfig)
+        new FireCalcInvoiceFactoryImpl(companyConfig, PaymentTerms.Presets.Net30)
+
+    /** Creates a new factory instance from company configuration and explicit payment terms. */
+    def fromTemplate(companyConfig: CompanyConfig, paymentTerms: PaymentTerms): FireCalcInvoiceFactory =
+        new FireCalcInvoiceFactoryImpl(companyConfig, paymentTerms)
 
     /** Creates a factory from a company configuration YAML file. */
     def fromConfigFile(configFile: File): Either[String, FireCalcInvoiceFactory] =
         for {
-            companyConfig <- loadCompanyConfigFromFile(configFile)
-        } yield new FireCalcInvoiceFactoryImpl(companyConfig)
+            parsed <- loadInvoiceConfigFromFile(configFile)
+        } yield new FireCalcInvoiceFactoryImpl(parsed._1, parsed._2)
 
     /** Creates a factory from a company configuration YAML string. */
     def fromConfigYaml(yamlContent: String): Either[String, FireCalcInvoiceFactory] =
         for {
-            companyConfig <- parseCompanyConfig(yamlContent)
-        } yield new FireCalcInvoiceFactoryImpl(companyConfig)
+            parsed <- parseInvoiceConfig(yamlContent)
+        } yield new FireCalcInvoiceFactoryImpl(parsed._1, parsed._2)
 
-    /** Loads company configuration from a YAML file. */
+    /** Loads company configuration from a YAML file (returns only the CompanyConfig). */
     def loadCompanyConfigFromFile(file: File): Either[String, CompanyConfig] =
+        loadInvoiceConfigFromFile(file).map(_._1)
+
+    /** Parses the full invoice YAML into (CompanyConfig, PaymentTerms). */
+    private def loadInvoiceConfigFromFile(file: File): Either[String, (CompanyConfig, PaymentTerms)] =
         Try {
             val path    = os.Path(file.getAbsoluteFile())
             val content = os.read(path)
             content
         } match
-            case Success(content) => parseCompanyConfig(content)
+            case Success(content) => parseInvoiceConfig(content)
             case Failure(error)   => Left(s"Failed to read config file: ${error.getMessage}")
 
     /**
-     * Parses company configuration from YAML string.
-     * Extracts CompanyConfig from template structure where:
-     * - invoice.sender becomes CompanyConfig.sender
-     * - template becomes CompanyConfig.templateConfig
+     * Parses company configuration from YAML string (returns only the CompanyConfig).
+     * Payment terms are dropped — callers that need them should use `parseInvoiceConfig` or
+     * load the factory via `fromConfigFile` / `fromConfigYaml`.
+     */
+    def parseCompanyConfig(yamlContent: String): Either[String, CompanyConfig] =
+        parseInvoiceConfig(yamlContent).map(_._1)
+
+    /**
+     * Parses company configuration AND payment terms from YAML string.
+     * Extracts:
+     * - invoice.sender -> CompanyConfig.sender
+     * - template -> CompanyConfig.templateConfig
+     * - invoice.paymentTerms -> PaymentTerms (defaults to Net30 if absent; errors propagate if present-but-malformed)
      *
      * First applies environment variable substitution to resolve template variables.
      */
-    def parseCompanyConfig(yamlContent: String): Either[String, CompanyConfig] =
+    def parseInvoiceConfig(yamlContent: String): Either[String, (CompanyConfig, PaymentTerms)] =
         // First substitute environment variables
         substituteEnvironmentVariables(yamlContent) match
             case Right(substitutedYaml) =>
@@ -122,9 +142,17 @@ object FireCalcInvoiceFactory:
                         val senderResult         = json.hcursor.downField("invoice").downField("sender").as[Company]
                         // Extract template config from template
                         val templateConfigResult = json.hcursor.downField("template").as[TemplateConfig]
+                        // Extract payment terms from invoice.paymentTerms.
+                        // Optional decode: missing -> Net30; malformed -> error propagated.
+                        val paymentTermsResult   =
+                            json.hcursor
+                                .downField("invoice")
+                                .downField("paymentTerms")
+                                .as[Option[PaymentTerms]]
+                                .map(_.getOrElse(PaymentTerms.Presets.Net30))
 
-                        (senderResult, templateConfigResult) match
-                            case (Right(sender), Right(templateConfig)) =>
+                        (senderResult, templateConfigResult, paymentTermsResult) match
+                            case (Right(sender), Right(templateConfig), Right(paymentTerms)) =>
                                 val companyConfig = CompanyConfig(
                                     sender          = sender,
                                     templateConfig  = templateConfig,
@@ -134,11 +162,13 @@ object FireCalcInvoiceFactory:
                                 if (errors.nonEmpty)
                                     Left (s"Invalid company configuration: ${errors.mkString(", ")}")
                                 else
-                                    Right(companyConfig                                             )
-                            case (Left(senderError), _                ) =>
+                                    Right((companyConfig, paymentTerms)                             )
+                            case (Left(senderError), _, _                                  ) =>
                                 Left(s"Failed to extract sender from invoice.sender: ${senderError.getMessage}")
-                            case (_, Left(templateError)              ) =>
+                            case (_, Left(templateError), _                                ) =>
                                 Left(s"Failed to extract template config from template: ${templateError.getMessage}")
+                            case (_, _, Left(paymentTermsError)                            ) =>
+                                Left(s"Failed to decode invoice.paymentTerms: ${paymentTermsError.getMessage}")
                     case Left(error) => Left(s"Failed to parse YAML: ${error.getMessage}")
             case Left(error)            => Left(s"Failed to substitute environment variables: $error")
 
@@ -194,8 +224,11 @@ object FireCalcInvoiceFactory:
 
     /** Internal implementation of the factory. */
     private class FireCalcInvoiceFactoryImpl(
-        private val companyConfig: CompanyConfig
+        private val companyConfig: CompanyConfig,
+        private val paymentTerms : PaymentTerms
     ) extends FireCalcInvoiceFactory:
+
+        override def loadedPaymentTerms: PaymentTerms = paymentTerms
 
         override def generateInvoice(params: InvoiceParams, locale: Locale): Either[String, InvoiceResult] =
             // Use default template

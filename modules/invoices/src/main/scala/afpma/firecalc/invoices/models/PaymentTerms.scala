@@ -83,21 +83,22 @@ enum PaymentMethod:
     case Cash
     case PayPal(email: Option[String] = None)
     case SepaMandate(
-        mandateReference: Option[String]    = None,
-        mandateDate     : Option[LocalDate] = None,
-        iban            : Option[String]    = None
+        mandateReference      : Option[String]    = None,
+        mandateDate           : Option[LocalDate] = None,
+        iban                  : Option[String]    = None,
+        nextPossibleChargeDate: Option[LocalDate] = None
     )
     case Other(description: String)
 
     def displayName(using i18n: I18nData_Invoices): String =
         this match
-            case BankTransfer(_, _)   => i18n.payment.bank_transfer
-            case CreditCard           => i18n.payment.credit_card
-            case Check                => i18n.payment.check
-            case Cash                 => i18n.payment.cash
-            case PayPal(_)            => i18n.payment.paypal
-            case SepaMandate(_, _, _) => i18n.payment.sepa_mandate
-            case Other(desc)          => desc
+            case BankTransfer(_, _)      => i18n.payment.bank_transfer
+            case CreditCard              => i18n.payment.credit_card
+            case Check                   => i18n.payment.check
+            case Cash                    => i18n.payment.cash
+            case PayPal(_)               => i18n.payment.paypal
+            case SepaMandate(_, _, _, _) => i18n.payment.sepa_mandate
+            case Other(desc)             => desc
 
 object PaymentMethod:
     given Codec[PaymentMethod] = deriveCodec[PaymentMethod]

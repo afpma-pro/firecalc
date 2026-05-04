@@ -4,6 +4,7 @@
  */
 
 package afpma.firecalc.payments.service
+import afpma.firecalc.payments.domain.MandateSnapshot
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
@@ -20,15 +21,20 @@ trait PaymentService[F[_]]:
 
     def processWebhook(body: String, signature: String): F[Either[String, WebhookEventStatus]]
 
+    /** Fetch the active mandate associated with a completed payment, if any. */
+    def getMandateForPayment(paymentId: String): F[Option[MandateSnapshot]]
+
 object PaymentService:
     def create[F[_]: Async](
-        httpClient  : Client[F],
-        config      : GoCardlessConfig,
-        emailService: EmailService[F],
-        orderService: OrderService[F],
-        customerRepo: CustomerRepository[F]
+        httpClient       : Client[F],
+        config           : GoCardlessConfig,
+        emailService     : EmailService[F],
+        orderService     : OrderService[F],
+        customerRepo     : CustomerRepository[F],
+        productCopyConfig: ProductCopyConfig
     )(implicit logger: Logger[F]): F[PaymentService[F]] =
-        GoCardlessPaymentServiceImpl.create[F](httpClient, config, emailService, orderService, customerRepo)
+        GoCardlessPaymentServiceImpl
+            .create[F](httpClient, config, emailService, orderService, customerRepo, productCopyConfig)
 
     // Keep the mock for testing
     def createMock[F[_]: Async](implicit logger: Logger[F]): F[PaymentService[F]] =

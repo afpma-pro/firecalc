@@ -5,7 +5,7 @@
 
 package afpma.firecalc.ui.viz
 
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -37,8 +37,8 @@ final case class Viz3DPanel()(using Locale) extends Component:
 
     private var currentHandle         : Option[FilaireVizHandleJS] = None
     private var lastCameraStateJS     : Option[CameraStateJS]      = None
-    private var lastDisplayType       : Option[String]              = None
-    private var lastAnnotationsVisible: Option[Boolean]             = None
+    private var lastDisplayType       : Option[String]             = None
+    private var lastAnnotationsVisible: Option[Boolean]            = None
 
     private val beforeUnloadHandler: js.Function1[dom.Event, Unit] =
         (_: dom.Event) =>
@@ -49,12 +49,16 @@ final case class Viz3DPanel()(using Locale) extends Component:
     private def saveVizState(): Unit =
         for handle <- currentHandle do
             val cameraOpt = handle.getCameraState().toOption
-            val dtOpt     = try Some(handle.getDisplayType()) catch case _: Throwable => None
-            val avOpt     = try Some(handle.getAnnotationsVisible()) catch case _: Throwable => None
+            val dtOpt     =
+                try Some(handle.getDisplayType())
+                catch case _: Throwable => None
+            val avOpt     =
+                try Some(handle.getAnnotationsVisible())
+                catch case _: Throwable => None
 
-            cameraOpt.foreach(cs => lastCameraStateJS = Some(cs))
-            dtOpt.foreach(dt => lastDisplayType = Some(dt))
-            avOpt.foreach(av => lastAnnotationsVisible = Some(av))
+            cameraOpt.foreach(cs => lastCameraStateJS = Some(cs)     )
+            dtOpt.foreach    (dt => lastDisplayType = Some(dt)       )
+            avOpt.foreach    (av => lastAnnotationsVisible = Some(av))
 
             uiStateVar.update { state =>
                 val withCamera = cameraOpt.fold(state) { cs =>
@@ -67,7 +71,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
                         state.copy(cameraState = Some(scalaCS))
                     catch case _: Throwable => state
                 }
-                val withDt = dtOpt.fold(withCamera)(dt => withCamera.copy(vizDisplayType = Some(dt)))
+                val withDt     = dtOpt.fold(withCamera)(dt => withCamera.copy(vizDisplayType = Some(dt)))
                 avOpt.fold(withDt)(av => withDt.copy(vizAnnotationsVisible = Some(av)))
             }
 
@@ -100,7 +104,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
 
     private lazy val allPositionsSig =
         slotPositions_sig
-            .combineWith(airintake_positions_sig, firebox_var.signal)
+            .combineWith(airintake_positions_sig, firebox_var.signal, chimneyEndCapInputs_sig)
             .composeChanges(_.debounce(LAMINAR_VIZ_DEBOUNCE_MS))
 
     lazy val node: HtmlElement =
@@ -128,7 +132,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
                     .collect { case s if s.nonEmpty => () }
                     .flatMapSwitch(_ => EventStream.fromValue(()).delay(15000))
                     --> Observer[Unit](_ => vizSelectedElement.set(Set.empty)),
-                child <-- allPositionsSig.map { (slotPositions, airIntake, firebox) =>
+                child <-- allPositionsSig.map { (slotPositions, airIntake, firebox, chimneyEndCapInputs) =>
                     disposeCurrentViz    (         )
                     vizHoveredElement.set(Set.empty)
                     val fbWidthCm                                                                           = firebox.firebox_width.value * M_TO_CM
@@ -168,11 +172,20 @@ final case class Viz3DPanel()(using Locale) extends Component:
                                 val pos               = slotPositions.lift(idx).getOrElse(emptyPos)
                                 (pt: PipeType, s"Slot$idx", displayName, pos)
                             .toVector
+                    // Symbolic end-cap disc at the chimney's end. Detection (last element is a
+                    // singular flow resistance) and the chimney's terminal inner shape are computed
+                    // upstream by `chimneyEndCapInputs_sig` (Variables.scala) using the DTO marker
+                    // trait `IsSingularFlowResistance` and the engine helper
+                    // `ChimneyPipe_Module.lastInnerShape`.
+                    val chimneyEndCapO: Option[FireCalcFilaireLine] =
+                        chimneyEndCapInputs.flatMap: (chimneyPos, endCapShape) =>
+                            VizConverter.chimneyEndCapLineO(chimneyPos, endCapShape)
                     val groups                                                                              = VizConverter.allPipesToGroupsGeneric(
                         postFireboxSlotDescs,
                         airIntake,
                         fireboxLine,
-                        airDistribLine
+                        airDistribLine,
+                        chimneyEndCapO = chimneyEndCapO
                     )
                     if groups.forall(_.lines.isEmpty) then
                         div         (
@@ -181,23 +194,23 @@ final case class Viz3DPanel()(using Locale) extends Component:
                         )
                     else
                         val restoredAnnotations = loadAnnotationsVisible()
-                        val vizResult          = FilaireLinesViz.render(
+                        val vizResult           = FilaireLinesViz.render(
                             groups,
-                            FilaireVizConfig          (
-                                viewPadding            = 1.5,
-                                displayName            = restoredAnnotations,
-                                backgroundColor        = "#F5F5F5",
-                                hoverColor             = "#3B2416",
-                                _cameraState           = loadCameraState(),
-                                _annotationsOverride   = Some(restoredAnnotations),
-                                labelResetView         = Some(I18N_UI.viz.reset_view),
-                                labelViewMode          = Some(I18N_UI.viz.view_mode),
-                                labelAnnotations       = Some(I18N_UI.viz.annotations),
-                                labelAxisRear          = Some(I18N_UI.direction_badge.cardinal_rear),
-                                labelAxisUp            = Some(I18N_UI.direction_badge.cardinal_up),
-                                labelAxisRight         = Some(I18N_UI.direction_badge.cardinal_right)
+                            FilaireVizConfig         (
+                                viewPadding          = 1.5,
+                                displayName          = restoredAnnotations,
+                                backgroundColor      = "#F5F5F5",
+                                hoverColor           = "#3B2416",
+                                _cameraState         = loadCameraState(),
+                                _annotationsOverride = Some(restoredAnnotations),
+                                labelResetView       = Some(I18N_UI.viz.reset_view),
+                                labelViewMode        = Some(I18N_UI.viz.view_mode),
+                                labelAnnotations     = Some(I18N_UI.viz.annotations),
+                                labelAxisRear        = Some(I18N_UI.direction_badge.cardinal_rear),
+                                labelAxisUp          = Some(I18N_UI.direction_badge.cardinal_up),
+                                labelAxisRight       = Some(I18N_UI.direction_badge.cardinal_right)
                             ),
-                            loadDisplayType(),
+                            loadDisplayType          (),
                             Some[Option[FireCalcFilaireLine] => Unit] {
                                 case Some(line) => toggleVizSelection(line.name.flatMap(VizElementId.fromName).toSet)
                                 case None       => vizSelectedElement.set(Set.empty)

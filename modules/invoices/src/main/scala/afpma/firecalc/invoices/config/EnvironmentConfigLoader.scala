@@ -8,8 +8,11 @@ package afpma.firecalc.invoices.config
 import java.io.File
 
 import afpma.firecalc.invoices.models.InvoiceConfig
+import afpma.firecalc.payments.shared.api.ProductCopyConfig
 
 import scala.io.Source
+import scala.util.Failure
+import scala.util.Success
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -43,6 +46,19 @@ object EnvironmentConfigLoader:
             config          <- InvoiceConfig.decodeFromYaml(substitutedYaml)
         } yield config
     }
+
+    /**
+     * Load configuration from YAML file and return both the config and a validated
+     * [[ProductCopyConfig]] — ensuring every active SKU has at least a `"default"` entry.
+     *
+     * Centralises the load + extract + validate pipeline used at application boot.
+     */
+    def loadWithProductCopy(file: File, activeSkus: Iterable[String]): Try[(InvoiceConfig, ProductCopyConfig)] =
+        loadFromFile(file).flatMap { cfg =>
+            cfg.invoice.validateProductCopyForSkus(activeSkus) match
+                case Right(copy) => Success((cfg, copy))
+                case Left(msg)   => Failure(new IllegalStateException(msg))
+        }
 
     /**
      * Substitute environment variables in YAML content.

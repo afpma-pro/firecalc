@@ -36,6 +36,8 @@ sealed trait Ecolabeled extends CertifiedDesign:
 
     override val emissions_values = EcoPlus_Combustion_Firebox
     override val min_load         = MinLoad.HalfOfMaxLoad.makeWithoutValue
+    override def nominal_load     = None
+    override def max_load         = None
 
     val pn_reduced: HeatOutputReduced
     val co2_dry_nominal: σ_CO2         = 7.05.percent // TOFIX

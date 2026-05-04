@@ -37,6 +37,7 @@ import afpma.firecalc.ui.models.panelOpenedVar
 import afpma.firecalc.ui.models.vizHoveredElement
 import afpma.firecalc.ui.models.vizSelectedElement
 
+import afpma.firecalc.ui.utils.combineWithDistinct
 import cats.Show
 import cats.data.*
 import cats.syntax.show.*
@@ -83,7 +84,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     override lazy val xtras_input_sig: Signal[(Option[PipeIdsMapping], Seq[PipeSectionResult[?]])] =
         pipeMappings_vnel_signal
             .map(_.toOption)
-            .combineWith(
+            .combineWithDistinct(
                 pipeResult_vnel_signal.map:
                     case Validated.Valid(fp)  =>
                         fp match
@@ -174,7 +175,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     private def vizHighlightSignal(i: Int): Signal[String] =
         vizHoveredElement.signal
-            .combineWith(vizSelectedElement.signal)
+            .combineWithDistinct(vizSelectedElement.signal)
             .map { (hover, select) =>
                 val matchesHover  = hover.exists(id => ownsVizElement(id) && vizElementIndex(id) == i)
                 val matchesSelect = select.exists(id => ownsVizElement(id) && vizElementIndex(id) == i)
@@ -182,15 +183,16 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             }
 
     protected def renderElemTyped[AA <: Elem](
-        i               : Int,
-        title           : String,
-        aa              : AA,
-        sig             : Signal[(Int, AA, XtraOutputs)],
-        isProperty      : Boolean,
-        extra           : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
-        badgeFinalDirVar: Var[AA] => Option[Var[Option[AbsoluteDirection]]] = (_: Var[AA]) => None,
-        afterBadge      : Var[AA] => HtmlElement                            = (_: Var[AA]) => span(),
-        propertyShow    : Option[Show[AA]]                                  = None
+        i                     : Int,
+        title                 : String,
+        aa                    : AA,
+        sig                   : Signal[(Int, AA, XtraOutputs)],
+        isProperty            : Boolean,
+        extra                 : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
+        badgeFinalDirVar      : Var[AA] => Option[Var[Option[AbsoluteDirection]]]                      = (_: Var[AA]) => None,
+        afterBadge            : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
+        propertyShow          : Option[Show[AA]]                                                       = None,
+        onBadgeDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode      = extra(elem_v)
@@ -203,7 +205,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             frameBefore       = frameBeforeSig_badge(i),
             absDirVar         = badgeFinalDirVar(elem_v),
             deflectionAngle   = deflectionAngleSig(i),
-            compact           = compact
+            compact           = compact,
+            onDirectionCommit = onBadgeDirectionCommit
         ).node
 
         // Full form node (used inline for non-property, or inside dialog for property)
@@ -382,8 +385,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     def statusIcon =
         vnel_signal
-            .combineWith(pipeMappings_vnel_signal.map(_.toOption))
-            .combineWith(elems_v.signal.map(_.size)              )
+            .combineWithDistinct(pipeMappings_vnel_signal.map(_.toOption), elems_v.signal.map(_.size))
             .map: (vnel, idsMappingOpt, elemsSize) =>
                 val reverseMap = buildReverseIdsMap(idsMappingOpt, elemsSize)
                 PanelStatusHelper
@@ -418,6 +420,12 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     /** Optional prefix element rendered before the title in the accordion header. */
     protected def accordionTitlePrefix: Option[HtmlElement] = None
 
+    /**
+     * Optional rich title node. When present, overrides the plain [[titleString]] rendering
+     * in the accordion header. [[titleString]] is still used for debug/ARIA/data attrs.
+     */
+    protected def titleNodeOpt: Option[HtmlElement] = None
+
     override def renderContent: HtmlElement =
         DaisyUIVerticalAccordionAndJoin.Element    (
             idx     = 0,
@@ -426,9 +434,10 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 xtra_sig             = titleXtraSig,
                 quadrionSubtotal_sig = quadrionSubtotal_sig,
                 bottomContent_sig    = expertModeOn
-                    .combineWith(panelOpened.signal)
+                    .combineWithDistinct(panelOpened.signal)
                     .map((expert, open) => Option.when(expert && open)(detailed_headers_title)),
-                titlePrefix          = accordionTitlePrefix
+                titlePrefix          = accordionTitlePrefix,
+                titleNode            = titleNodeOpt
             ),
             content = content,
             opened  = panelOpened
@@ -463,16 +472,19 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     // -------------------------------------------------------------------------
 
     private class InsertElementDialog:
-        private val insertIdxVar: Var[Option[Int]] = Var(None)
-        private val openMenuBus : EventBus[Unit]   = new EventBus[Unit]
+        // Plain var (not Var): we need *synchronous* increment between successive Appends
+        // within a single batch-shortcut click. An Airstream Var's `.update` is transaction-scoped
+        // and `.now()` can read stale data for the next immediate emission.
+        private var insertIdx  : Option[Int]    = None
+        private val openMenuBus: EventBus[Unit] = new EventBus[Unit]
 
         private val insertObserver: Observer[CollectionCommand[(Int, Elem)]] = Observer { cmd =>
-            insertIdxVar.now() match
+            insertIdx match
                 case Some(atIdx) =>
                     cmd match
                         case CollectionCommand.Append(item) =>
-                            command_bus.emit   (CollectionCommand.Insert(item, atIndex = atIdx))
-                            insertIdxVar.update(_.map(_ + 1)                                   )
+                            command_bus.emit(CollectionCommand.Insert(item, atIndex = atIdx))
+                            insertIdx = Some(atIdx + 1)
                         case other                          =>
                             command_bus.emit(other)
                 case None        =>
@@ -484,17 +496,18 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             insertObserver,
             elems_size_v,
             externalOpenBus = openMenuBus.events,
-            onDone          = () => close()
+            onDone          = () => close(),
+            insertIdxFn     = Some(() => insertIdx.getOrElse(elems_size_v.now()))
         )
 
         def open(atIndex: Int): Unit =
-            insertIdxVar.set                                        (Some(atIndex))
-            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(             )
-            openMenuBus.emit                                        (()           )
+            insertIdx = Some(atIndex)
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal(  )
+            openMenuBus.emit                                        (())
 
         private def close(): Unit =
-            dialogNode.ref.asInstanceOf[HTMLDialogElement].close(    )
-            insertIdxVar.set                                    (None)
+            dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
+            insertIdx = None
 
         private lazy val dialogNode: HtmlElement = dialogTag(
             cls := "modal",

@@ -51,11 +51,22 @@ invoice:
     lateFeePercentage: ${LATE_FEE_PERCENTAGE:-1.5}
     discountPercentage: ${EARLY_DISCOUNT_PERCENTAGE:-0.0}
     discountDays: ${EARLY_DISCOUNT_DAYS:-10}
-    methods: 
-      - 
-        BankTransfer: 
+    methods:
+      -
+        BankTransfer:
           iban: "[REDACTED]"
           bic: "[REDACTED]"
+      # Uncomment to mark SEPA Direct Debit as an accepted method.
+      # Mandate fields (mandateReference, mandateDate, nextPossibleChargeDate)
+      # are populated at runtime from GoCardless when the mandate is created;
+      # leave them as null here. The invoice renderer shows a "pending"
+      # placeholder until they're filled in by the caller.
+      # -
+      #   SepaMandate:
+      #     mandateReference: !!null
+      #     mandateDate: !!null
+      #     iban: "[CREDITOR_IBAN]"
+      #     nextPossibleChargeDate: !!null
     notes: ""
   currency: "${COMPANY_CURRENCY:-EUR}"
   notes: "L'AFPMA vous remercie pour votre commande !"

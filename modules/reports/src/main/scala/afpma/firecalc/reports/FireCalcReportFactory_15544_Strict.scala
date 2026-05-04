@@ -34,9 +34,13 @@ trait FireCalcReportFactory_15544_Strict:
         fcProj: StoveProjectDescr_15544_Strict_Alg
     ): Op[FireCalcReportFactory_15544_Strict]
 
-    def makeTypstString(isDraft: Boolean): Op[String]
-    def makePDFBuffer  (isDraft: Boolean): Op[Array[Byte]]
-    def makePDF        (isDraft: Boolean): Op[File]
+    def makeTypstString(isDraft: Boolean, checkPressureReq13384: Boolean, checkTemperatureReq13384: Boolean): Op[String]
+    def makePDFBuffer  (
+        isDraft                 : Boolean,
+        checkPressureReq13384   : Boolean,
+        checkTemperatureReq13384: Boolean
+    ): Op[Array[Byte]]
+    def makePDF        (isDraft: Boolean, checkPressureReq13384: Boolean, checkTemperatureReq13384: Boolean): Op[File]
 
 object FireCalcReportFactory_15544_Strict:
 
@@ -106,14 +110,19 @@ object FireCalcReportFactory_15544_Strict:
                 case Invalid(e)          =>
                     Left(EN15544ValidationException(e.toList.map(_.toString)))
 
-        private def compileAndRenderTypString(isDraft: Boolean): Op[Unit] =
+        private def compileAndRenderTypString(
+            isDraft                 : Boolean,
+            checkPressureReq13384   : Boolean,
+            checkTemperatureReq13384: Boolean
+        ): Op[Unit] =
             (appl, fcProj) match
                 case (Some(strict_appl), Some(fcProj)) =>
-                    val typstReportFactory = new TypstReportFactory_15544_Strict(isDraft) {
-                        override val en15544_app: EN15544_Application = strict_appl
-                        override val stove_proj_15544_strict = fcProj
-                        override val atParams                = en15544_app.primary
-                    }
+                    val typstReportFactory =
+                        new TypstReportFactory_15544_Strict(isDraft, checkPressureReq13384, checkTemperatureReq13384) {
+                            override val en15544_app: EN15544_Application = strict_appl
+                            override val stove_proj_15544_strict = fcProj
+                            override val atParams                = en15544_app.primary
+                        }
                     // update local state
                     typString = Some(typstReportFactory.build())
                     Right(())
@@ -121,16 +130,24 @@ object FireCalcReportFactory_15544_Strict:
                 case (None, _                        ) => Left(InternalStateException("appl")           )
                 case (_, None                        ) => Left(InternalStateException("fcProj")         )
 
-        override def makeTypstString(isDraft: Boolean): Op[String] =
+        override def makeTypstString(
+            isDraft                 : Boolean,
+            checkPressureReq13384   : Boolean,
+            checkTemperatureReq13384: Boolean
+        ): Op[String] =
             for
-                _      <- compileAndRenderTypString(isDraft)
+                _      <- compileAndRenderTypString(isDraft, checkPressureReq13384, checkTemperatureReq13384)
                 typStr <-
                     if typString.isDefined then Right(typString.get) else Left(InternalStateException("typString"))
             yield typStr
 
-        override def makePDFBuffer(isDraft: Boolean): Op[Array[Byte]] =
+        override def makePDFBuffer(
+            isDraft                 : Boolean,
+            checkPressureReq13384   : Boolean,
+            checkTemperatureReq13384: Boolean
+        ): Op[Array[Byte]] =
             for
-                _        <- compileAndRenderTypString(isDraft)
+                _        <- compileAndRenderTypString(isDraft, checkPressureReq13384, checkTemperatureReq13384)
                 typStr   <-
                     if typString.isDefined then Right(typString.get) else Left(InternalStateException("typString"))
                 pdfBytes <-
@@ -146,8 +163,12 @@ object FireCalcReportFactory_15544_Strict:
                             )
             yield pdfBytes
 
-        override def makePDF(isDraft: Boolean): Op[File] =
-            makePDFBuffer(isDraft).flatMap: pdfBytes =>
+        override def makePDF(
+            isDraft                 : Boolean,
+            checkPressureReq13384   : Boolean,
+            checkTemperatureReq13384: Boolean
+        ): Op[File] =
+            makePDFBuffer(isDraft, checkPressureReq13384, checkTemperatureReq13384).flatMap: pdfBytes =>
                 try
                     val tempFile = Files.createTempFile("firecalc-report", ".pdf").toFile
                     tempFile.deleteOnExit() // Clean up when JVM exits

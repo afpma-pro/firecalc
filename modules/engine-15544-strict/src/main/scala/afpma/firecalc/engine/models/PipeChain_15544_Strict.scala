@@ -7,8 +7,13 @@ package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v6.ChimneySlot_V3
+import afpma.firecalc.dto.v6.ConnectorSlot_V3
+import afpma.firecalc.dto.v6.FlueSlot_V3
+import afpma.firecalc.dto.v6.HeadSlot_V3
+import afpma.firecalc.dto.v6.PostFireboxChain_V3
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -72,6 +77,23 @@ object PipeChain_15544_Strict:
             FlueSlot     (d.flue     ),
             ConnectorSlot(d.connector),
             ChimneySlot  (d.chimney  )
+        )
+
+    /**
+     * Convert descriptors to the structured post-firebox chain (plan issue B1).
+     *
+     * EN 15544 Strict's legacy descriptor shape has a single flue + terminal
+     * connector + chimney, so the emitted chain has a single-slot HEAD_REGION
+     * (`[FlueSlot_V3(d.flue)]`), the descriptor's `connector` as terminal
+     * connector, and `chimney` as the chimney slot. This preserves byte-identical
+     * semantics for all 6 golden `CasType_*` fixtures, which all use a
+     * single-Flue head.
+     */
+    def toChain(d: Descriptors): PostFireboxChain_V3 =
+        PostFireboxChain_V3    (
+            head     = Vector[HeadSlot_V3](FlueSlot_V3(d.flue)),
+            terminal = ConnectorSlot_V3(d.connector),
+            chimney  = ChimneySlot_V3(d.chimney)
         )
 
 end PipeChain_15544_Strict

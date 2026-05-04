@@ -359,7 +359,7 @@ abstract class EN15544_V_2023_Common_Application
          * the LAST `PipeResult` of Stage 1 into the Stage 2 chain, and concatenates results.
          */
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
-            import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
             val pfbSlots = en15544.postFireboxPipeSlots
             // Resolve Stage 1 first, then resolve HA givens for Stage 2.
             flueRegionPipeResults.andThen { case (stage1Results, stage1LastFrame) =>
@@ -457,14 +457,14 @@ abstract class EN15544_V_2023_Common_Application
                             }
 
                         // Seed Stage 2 with the UpstreamState derived from the LAST Stage 1 result.
-                        if stage1Results.isEmpty then
-                            Validated.invalidNel(
-                                UnexpectedDevError("Stage 1 flue region is empty — cannot seed Stage 2")
-                            )
-                        else
+                        // When stage1Results is empty (no flue region), fall back to firebox_PipeResult.
+                        val sourcePipeResult: VNelMcalcErr[PipeResult] =
+                            if stage1Results.isEmpty then firebox_PipeResult
+                            else Validated.validNel(stage1Results.last)
+                        sourcePipeResult.andThen { seedPr =>
                             val computeAt             = en15544.en13384_application.computeAt
                             val stage2InitialUpstream =
-                                UpstreamState.fromPipeResult(stage1Results.last, computeAt)
+                                UpstreamState.fromPipeResult(seedPr, computeAt)
                             val folded                =
                                 stage2PipeSlots.foldLeft[Either[
                                     afpma.firecalc.engine.standard.MecaFlu_Error,
@@ -494,6 +494,7 @@ abstract class EN15544_V_2023_Common_Application
                                         }
                                     Validated.validNel(stage1Tagged ++ stage2Tagged)
                                 case Left(err)                 => Validated.invalidNel(err)
+                        }
             }
 
         // Pipe results — concrete (N-pipe-chain-aware, shared by strict and MCE)
@@ -541,7 +542,7 @@ abstract class EN15544_V_2023_Common_Application
          */
         lazy val conceptualFluePipeResult: VNelMcalcErr[PipeResult] =
             flueRegionPipeResults.andThen { case (rs, _) =>
-                if rs.isEmpty then Validated.invalidNel(UnexpectedDevError("empty flue region"))
+                if rs.isEmpty then firebox_PipeResult
                 else Validated.validNel(rs.last)
             }
 
@@ -599,9 +600,8 @@ abstract class EN15544_V_2023_Common_Application
         lazy val t_F: VNelMcalcErr[t_F] =
             postFireboxPipeResults.andThen { pfb =>
                 val lastFluePipeIdx = pfb.lastIndexWhere(_._1 == FluePipeT)
-                if lastFluePipeIdx < 0 then
-                    Validated.invalidNel(UnexpectedDevError("No flue pipe found in post-firebox vector"))
-                else Validated.validNel(pfb(lastFluePipeIdx)._2.gas_temp_end: t_F)
+                if lastFluePipeIdx < 0 then firebox_PipeResult.map(_.gas_temp_end                      : t_F)
+                else Validated.validNel                           (pfb(lastFluePipeIdx)._2.gas_temp_end: t_F)
             }
 
         lazy val η_s: VNelMcalcErr[Percentage] =
@@ -680,37 +680,37 @@ abstract class EN15544_V_2023_Common_Application
             )
 
         // Validations
-        def validateVelocitiesInFluePipe(): VNelMcalcErr[Unit] =
+        lazy val validateVelocitiesInFluePipe: VNelMcalcErr[Unit] =
             conceptualFlueRegionPipeResults.andThen: rs =>
                 rs.toList.map(validateVelocitiesIn).sequence.map(_ => ())
 
-        def validateVelocitiesInConnectorPipe(): VNelMcalcErr[Unit] =
+        lazy val validateVelocitiesInConnectorPipe: VNelMcalcErr[Unit] =
             connector_PipeResult.andThen(validateVelocitiesIn)
 
-        def validateVelocitiesInChimneyPipe(): VNelMcalcErr[Unit] =
+        lazy val validateVelocitiesInChimneyPipe: VNelMcalcErr[Unit] =
             chimney_PipeResult.andThen(validateVelocitiesIn)
 
-        def validateVelocitiesInPipes(): VNel[Unit] =
+        lazy val validateVelocitiesInPipes: VNel[Unit] =
             List(
-                validateVelocitiesInFluePipe     (),
-                validateVelocitiesInConnectorPipe(),
-                validateVelocitiesInChimneyPipe  ()
+                validateVelocitiesInFluePipe,
+                validateVelocitiesInConnectorPipe,
+                validateVelocitiesInChimneyPipe
             ).sequence[[x] =>> VNelMcalcErr[x], Unit].map(_ => ())
 
-        def validatePressureRequirements_EN15544(): VNelMcalcErr[Unit] =
+        lazy val validatePressureRequirements_EN15544: VNelMcalcErr[Unit] =
             pressureRequirement_EN15544.andThen: preq =>
                 preq.isInValidRange match
                     case true  => ().validNel
                     case false => InvalidPressureRequirement(preq).invalidNel
 
-        def validateChimneyWallTempIsAboveCondensationTemp(): VNelMcalcErr[Unit] =
+        lazy val validateChimneyWallTempIsAboveCondensationTemp: VNelMcalcErr[Unit] =
             estimated_output_temperatures.t_chimney_wall_top_out.andThen: t =>
                 if (t >= formulas.t_chimney_wall_top_min)
                     ().validNel[MecaFlu_Error]
                 else
                     MecaFlu_Error.InvalidChimneyWallTemperature(t).invalidNel
 
-        def validateEfficiencyIsAboveMinEfficiency(): VNelMcalcErr[Unit] =
+        lazy val validateEfficiencyIsAboveMinEfficiency: VNelMcalcErr[Unit] =
             η.andThen: eff =>
                 emissions_and_efficiency_values.min_efficiency_full_stove_nominal.map:
                     case Some(min_eff) =>
@@ -742,11 +742,11 @@ abstract class EN15544_V_2023_Common_Application
                         else FluePipeLengthBelowMinimum(totalLen, lzMin.unwrap).invalidNel
                     case Validated.Invalid(_)   => ().validNel // can't check if L_Z_min computation failed
 
-        def validateCitedConstraints(): VNelMcalcErr[Unit] =
+        lazy val validateCitedConstraints: VNelMcalcErr[Unit] =
             val base = citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
             base.andThen(_ => validateLzMinConstraint())
 
-        def validateFireboxSpecificConstraints(): ValidatedNel[FireboxError, Unit] =
+        lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit] =
             val fbCtx = FireboxConstraintContext(
                 mB                 = m_B,
                 flow_rate          = V_L,
@@ -761,7 +761,8 @@ abstract class EN15544_V_2023_Common_Application
             Validated
                 .fromOption(
                     NonEmptyList.fromList(
-                        fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
+                        fc.internal_firebox_custom_constraints(firebox)(using Locales.en) :::
+                            fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
                     ),
                     ()
                 )
@@ -839,40 +840,47 @@ abstract class EN15544_V_2023_Common_Application
                         ().validNel[FluePipeInvalidGeometryRatio]
         checks.toList.sequence[[x] =>> ValidatedNel[FluePipeInvalidGeometryRatio, x], Unit].map(_ => ())
 
-    private def validateFlueGasVelocity(
-        pipeIdx  : PipeIdx,
-        pipeTyp  : PipeType,
-        pipeName : PipeName,
-        fvelocity: v
-    ): ValidatedNel[FlueGasVelocityError, Unit] =
-        val (minVel, maxVel) = (1.2.m_per_s, 6.m_per_s)
-        if ((fvelocity < minVel) | (fvelocity > maxVel))
-            FlueGasVelocityError(pipeIdx.unwrap, pipeTyp, pipeName, fvelocity, minVel, maxVel)
-                .invalidNel[Unit]
-        else
-            ().validNel[FlueGasVelocityError]
+    private def outOfFlueGasVelocityRange(fvelocity: v): Boolean =
+        (fvelocity < formulas.flueGasVelocityMin) | (fvelocity > formulas.flueGasVelocityMax)
 
     protected def validateVelocitiesIn(
         pipeResult: PipeResult
     ): ValidatedNel[FlueGasVelocityError, Unit] =
         pipeResult match
             case pr: PipeResult.WithSections    =>
+                // Per-section aggregation: at most one error per section.
+                // Start-only, end-only, and both-ends failures collapse into a single
+                // FlueGasVelocityError whose `position` field tells the user which
+                // boundary(ies) fell outside the admissible range.
+                // Zero-length cross-section-change elements are skipped: their boundary
+                // velocities duplicate the adjacent straight sections (already validated),
+                // and under multi-flow (n_flows > 1) the redundant check can flag
+                // spurious violations.
                 pr.elements
+                    .filterNot(_.isSectionGeometryChange)
                     .flatMap: psr =>
-                        // check flow velocity at the start and at the end of section
-                        List(
-                            validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_start),
-                            validateFlueGasVelocity(psr.section_id, psr.section_typ, psr.section_name, psr.v_end  )
-                        )
+                        val startBad = outOfFlueGasVelocityRange(psr.v_start)
+                        val endBad   = outOfFlueGasVelocityRange(psr.v_end)
+                        def mkErr(pos: VelocityPosition, vs: Option[v], ve: Option[v]): FlueGasVelocityError =
+                            FlueGasVelocityError    (
+                                sectionId     = psr.section_id.unwrap,
+                                sectionTyp    = psr.section_typ,
+                                sectionName   = psr.section_name,
+                                position      = pos,
+                                startVelocity = vs,
+                                endVelocity   = ve,
+                                minVel        = formulas.flueGasVelocityMin,
+                                maxVel        = formulas.flueGasVelocityMax
+                            )
+                        (startBad, endBad) match
+                            case (false, false) => None
+                            case (true, false ) => Some(mkErr(VelocityPosition.Start, Some(psr.v_start), None)          )
+                            case (false, true ) => Some(mkErr(VelocityPosition.End, None, Some(psr.v_end))              )
+                            case (true, true  ) => Some(mkErr(VelocityPosition.Both, Some(psr.v_start), Some(psr.v_end)))
+                    .map(_.invalidNel[Unit])
+                    .toList
                     .sequence[[x] =>> ValidatedNel[FlueGasVelocityError, x], Unit]
                     .map(_ => ())
-                    // remove duplicates (if start and end of section are both outside flow velocity admissible range)
-                    .leftMap(errs =>
-                        // errs.toList.foreach(e => scala.scalajs.js.Dynamic.global.console.log(e.toString))
-                        NonEmptyList
-                            .fromList(errs.toList.distinctBy(e => (e.sectionId, e.sectionTyp, e.sectionName)))
-                            .get
-                    )
             case _ : PipeResult.WithoutSections => ().validNel
 
     // Heating appliance — see EN15544_Common_HeatingAppliance

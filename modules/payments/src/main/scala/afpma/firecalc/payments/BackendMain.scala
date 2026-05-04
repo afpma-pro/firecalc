@@ -98,7 +98,11 @@ object Main extends IOApp:
             reportFactory.loadYAMLString(yamlContent) match {
                 case Left(err)            => throw err // Re-throw FireCalcReportError as-is
                 case Right(loadedFactory) =>
-                    loadedFactory.makePDF(isDraft = asDraft) match {
+                    loadedFactory.makePDF                 (
+                        isDraft                  = asDraft,
+                        checkPressureReq13384    = false,
+                        checkTemperatureReq13384 = false
+                    ) match {
                         case Left(err)      => throw err // Re-throw FireCalcReportError as-is
                         case Right(pdfFile) => pdfFile
                     }
@@ -155,16 +159,18 @@ object Main extends IOApp:
      * @return InvoiceEmail Constructed invoice email object
      */
     def buildInvoiceEmail(
-        context      : OrderCompletionContext,
-        email        : String,
-        invoiceNumber: String,
-        pdfBytes     : Array[Byte]
+        context          : OrderCompletionContext,
+        email            : String,
+        invoiceNumber    : String,
+        pdfBytes         : Array[Byte],
+        productCopyConfig: ProductCopyConfig
     ): InvoiceEmail = {
+        val copy = ProductCopyResolver.resolve(context.product.sku, context.customer.language)(using productCopyConfig)
         InvoiceEmail        (
             email         = EmailAddress.unsafeFromString(email),
             orderId       = context.order.id.value.toString,
             invoiceNumber = invoiceNumber,
-            productName   = context.product.name,
+            productName   = copy.name,
             customerName  = context.customer.individualNameOrCompanyName,
             amount        = context.order.amount,
             currency      = context.order.currency.toString,
@@ -187,7 +193,9 @@ object Main extends IOApp:
         fileDesc         : FileDescriptionWithContent,
         pdfReportFile    : File,
         pdfInvoiceAsBytes: Array[Byte],
-        emailService     : EmailService[IO]
+        emailService     : EmailService[IO],
+        adminEmail       : String,
+        productCopyConfig: ProductCopyConfig
     ): IO[Unit] = {
         for {
             invoiceNumber <- IO.fromOption(context.order.invoiceNumber)(
@@ -195,7 +203,13 @@ object Main extends IOApp:
             )
 
             // Use helper method to build invoice email
-            invoiceEmail = buildInvoiceEmail(context, context.customer.email, invoiceNumber, pdfInvoiceAsBytes)
+            invoiceEmail = buildInvoiceEmail(
+                context,
+                context.customer.email,
+                invoiceNumber,
+                pdfInvoiceAsBytes,
+                productCopyConfig
+            )
 
             // Extract base name by removing .fcalc, .firecalc.yaml, or .yaml suffix
             reportBaseName = fileDesc.filename
@@ -214,17 +228,23 @@ object Main extends IOApp:
 
             _ <- {
                 given BackendCompatibleLanguage = context.customer.language
-                emailService.sendUserInvoiceWithReport(invoiceEmail, pdfReportEmail).flatMap {
-                    case EmailFailed(error) =>
-                        IO.raiseError(
-                            EmailSendingFailedException  (
-                                orderId   = context.order.id.value,
-                                recipient = context.customer.email,
-                                reason    = error
+                emailService
+                    .sendUserInvoiceWithReport(
+                        invoiceEmail,
+                        pdfReportEmail,
+                        bcc = List(EmailAddress.unsafeFromString(adminEmail))
+                    )
+                    .flatMap {
+                        case EmailFailed(error) =>
+                            IO.raiseError(
+                                EmailSendingFailedException  (
+                                    orderId   = context.order.id.value,
+                                    recipient = context.customer.email,
+                                    reason    = error
+                                )
                             )
-                        )
-                    case EmailSent          => IO.unit
-                }
+                        case EmailSent          => IO.unit
+                    }
             }
         } yield ()
     }
@@ -241,11 +261,13 @@ object Main extends IOApp:
         context          : OrderCompletionContext,
         adminEmail       : String,
         pdfInvoiceAsBytes: Array[Byte],
-        emailService     : EmailService[IO]
+        emailService     : EmailService[IO],
+        productCopyConfig: ProductCopyConfig
     ): IO[Unit] = {
         context.order.invoiceNumber.traverse_ { invoiceNumber =>
             // Use helper method to build admin invoice email
-            val adminInvoiceEmail = buildInvoiceEmail(context, adminEmail, invoiceNumber, pdfInvoiceAsBytes)
+            val adminInvoiceEmail =
+                buildInvoiceEmail(context, adminEmail, invoiceNumber, pdfInvoiceAsBytes, productCopyConfig)
 
             given BackendCompatibleLanguage = context.customer.language
             emailService
@@ -368,11 +390,6 @@ object Main extends IOApp:
                             orderRepo
                         )
 
-                        // Initialize invoice pdf generation service
-                        invoicePdfGenerationService <- InvoicePdfGenerationService.create[IO](
-                            paymentsConfig.invoiceConfig.configFilePath
-                        )
-
                         // Register invoice generation callback
                         // _ <- orderService.registerInvoiceNumberGenerationCallback(invoiceNumberService)
                         // _ <- logger.info("Registered invoice number generation callback")
@@ -380,6 +397,36 @@ object Main extends IOApp:
                         // Generate invoice numbers retroactively for existing confirmed orders
                         retroactiveCount <- invoiceNumberService.generateInvoiceNumbersRetroactively()
                         _                <- logger.info(s"Generated $retroactiveCount invoice numbers retroactively during startup")
+
+                        // Load invoice config and extract a validated productCopyConfig (one shot).
+                        invoiceConfigFile = new java.io.File(paymentsConfig.invoiceConfig.configFilePath)
+                        activeSkus        = productCatalog.allProducts.filter(_.active).map(_.sku)
+                        loaded <- IO.fromTry(
+                            afpma.firecalc.invoices.config.EnvironmentConfigLoader
+                                .loadWithProductCopy(invoiceConfigFile, activeSkus)
+                        )
+                        (_, productCopyConfig) = loaded
+                        _      <- logger.info("Product copy config validated successfully")
+
+                        // GoCardless configuration - load from config file
+                        goCardlessConfig <- ConfigLoader.loadGoCardlessConfig[IO]()
+
+                        paymentService <- PaymentService
+                            .create[IO](
+                                httpClient,
+                                goCardlessConfig,
+                                emailService,
+                                orderService,
+                                customerRepo,
+                                productCopyConfig
+                            )
+
+                        // Initialize invoice pdf generation service (requires paymentService for SEPA mandate lookup)
+                        invoicePdfGenerationService <- InvoicePdfGenerationService.create[IO](
+                            paymentsConfig.invoiceConfig.configFilePath,
+                            paymentService,
+                            productCopyConfig
+                        )
 
                         // Register order completion callbacks for 'Processing' state
                         _ <- orderService.registerCallbackForFinalStatus(
@@ -428,14 +475,16 @@ object Main extends IOApp:
                                                 s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(newContext.customer.email)}"
                                             )
                                         _ <- logger.info(
-                                            s"[EMAIL-NOTIFIER] Product: ${newContext.product.name} - Amount: ${newContext.order.amount} ${newContext.order.currency}"
+                                            s"[EMAIL-NOTIFIER] Product: ${newContext.product.sku} - Amount: ${newContext.order.amount} ${newContext.order.currency}"
                                         )
                                         _ <- sendInvoiceWithReportToUser(
                                             newContext,
                                             fileDesc,
                                             pdfReportFile,
                                             pdfInvoiceAsBytes,
-                                            emailService
+                                            emailService,
+                                            paymentsConfig.adminConfig.email,
+                                            productCopyConfig
                                         )
 
                                         // Send notification email to admin containing PDF invoice only
@@ -446,7 +495,20 @@ object Main extends IOApp:
                                             newContext,
                                             paymentsConfig.adminConfig.email,
                                             pdfInvoiceAsBytes,
-                                            emailService
+                                            emailService,
+                                            productCopyConfig
+                                        )
+
+                                        // Send notification email to admin containing PDF invoice only
+                                        _ <- logger.info(
+                                            s"[ADMIN-INVOICE] Sending admin invoice notification for order ${newContext.order.id}"
+                                        )
+                                        _ <- sendAdminInvoiceNotification(
+                                            newContext,
+                                            paymentsConfig.adminConfig.email,
+                                            pdfInvoiceAsBytes,
+                                            emailService,
+                                            productCopyConfig
                                         )
                                     yield ()
                                 ).handleErrorWith { err =>
@@ -538,7 +600,7 @@ object Main extends IOApp:
                                     s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(context.customer.email)}"
                                 ) *>
                                     IO.println(
-                                        s"[EMAIL-NOTIFIER] Product: ${context.product.name} - Amount: ${context.order.amount}"
+                                        s"[EMAIL-NOTIFIER] Product: ${context.product.sku} - Amount: ${context.order.amount}"
                                     )
                                 // Here you could send a completion email using the emailService
                                 val adminNotif = AdminNotification(
@@ -559,12 +621,6 @@ object Main extends IOApp:
                             }
                         )
 
-                        // GoCardless configuration - load from config file
-                        goCardlessConfig <- ConfigLoader.loadGoCardlessConfig[IO]()
-
-                        paymentService <- PaymentService
-                            .create[IO](httpClient, goCardlessConfig, emailService, orderService, customerRepo)
-
                         purchaseService <- PurchaseService.create[IO](
                             productRepo,
                             customerRepo,
@@ -573,7 +629,8 @@ object Main extends IOApp:
                             authService,
                             orderService,
                             paymentService,
-                            emailService
+                            emailService,
+                            productCopyConfig
                         )
 
                         _ <- IO.println("Setting up HTTP routes...")

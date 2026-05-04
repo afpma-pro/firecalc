@@ -8,8 +8,8 @@ package afpma.firecalc.engine.models
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v4.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

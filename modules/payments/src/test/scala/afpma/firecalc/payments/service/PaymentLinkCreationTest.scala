@@ -30,12 +30,13 @@ object PaymentLinkCreationTest extends TestSuite {
 
     // Test data for payment link creation scenarios
     val testProduct = Product(
-        id          = ProductId(UUID.randomUUID()),
-        name        = "Payment Link Test Product",
-        description = "Product for testing payment link creation",
-        price       = BigDecimal("75.50"),
-        currency    = Currency.EUR,
-        active      = true
+        id        = ProductId(UUID.randomUUID()),
+        sku       = "test",
+        price     = BigDecimal("75.50"),
+        currency  = Currency.EUR,
+        active    = true,
+        taxRate   = BigDecimal("20.0"),
+        taxExempt = false
     )
 
     val testCustomerInfo = CustomerInfo(
@@ -173,9 +174,11 @@ object PaymentLinkCreationTest extends TestSuite {
             ): IO[email.EmailResult] =
                 IO.pure(EmailSent)
 
-            def sendUserInvoiceWithReport(invoice: InvoiceEmail, pdfReport: PdfReportEmail)(using
-                language: BackendCompatibleLanguage
-            ): IO[email.EmailResult] =
+            def sendUserInvoiceWithReport(
+                invoice  : InvoiceEmail,
+                pdfReport: PdfReportEmail,
+                bcc      : List[EmailAddress] = List.empty
+            )(using language: BackendCompatibleLanguage): IO[email.EmailResult] =
                 IO.pure(EmailSent)
 
             def sendAdminInvoice(invoice: InvoiceEmail)(using
@@ -223,6 +226,8 @@ object PaymentLinkCreationTest extends TestSuite {
                 body     : String,
                 signature: String
             ): IO[Either[String, afpma.firecalc.payments.service.impl.WebhookEventStatus]] = ???
+            def getMandateForPayment(paymentId: String): IO[Option[afpma.firecalc.payments.domain.MandateSnapshot]] =
+                ???
         }
 
         (orderService, customerRepo, emailService, paymentService)

@@ -11,6 +11,9 @@ export const VITE_BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST;
 export const VITE_BACKEND_PORT = import.meta.env.VITE_BACKEND_PORT;
 export const VITE_BACKEND_BASE_PATH = import.meta.env.VITE_BACKEND_BASE_PATH;
 
+/** URL to Conditions Générales de Vente (CGUV / Terms and Conditions of Sale) */
+export const VITE_CGUV_URL = import.meta.env.VITE_CGUV_URL;
+
 // Only export the MODE string - we handle mode logic in Scala using the BuildMode enum
 export const MODE = import.meta.env.MODE;
 
