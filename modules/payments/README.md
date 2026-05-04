@@ -62,7 +62,7 @@ sbt "payments/test:testOnly afpma.firecalc.payments.repository.ProductCatalogInt
 **Technology:** SQLite with Molecule ORM
 
 **Schema Management:**
-- Flyway for migrations
+- Molecule auto-migration (Flyway-based)
 - See [Database Migration Guide](../../docs/dev/guides/DB_SQLITE3_MIGRATION_GUIDE.md)
 
 **Environment-Specific Databases:**
@@ -250,14 +250,13 @@ payments depends on:
 
 ### Adding New Features
 
-1. Update domain models in `models_v2.scala`
-2. Update repository layer
-3. Generate database schema: `sbt payments/moleculeGen`
-4. Create migration script
-5. Update service layer
-6. Add/update HTTP routes
-7. Write tests
-8. Update documentation
+1. Update domain model in `MoleculeDomain.scala` with migration markers
+2. Run `sbt "payments/moleculeGen"` to generate migration SQL
+3. Update repository layer
+4. Update service layer
+5. Add/update HTTP routes
+6. Write tests
+7. Update documentation
 
 ### Code Style
 Follow Scala best development practices:

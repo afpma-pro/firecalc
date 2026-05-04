@@ -3,24 +3,115 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 -->
 
-# Managing SQLite3 Database Schema with Flyway and ScalaMolecule
+# Managing SQLite3 Database Schema with Molecule Auto-Migration
 
-This guide outlines the process for managing the SQLite3 database schema for the `payments` module using `flyway`. It is crucial to follow these steps to ensure that schema changes are applied safely and consistently across all environments.
+This guide outlines the process for managing the SQLite3 database schema for the `payments` module using Molecule's built-in Flyway-based auto-migration system (introduced in molecule v0.29.0).
 
 ## Overview
 
-We use [ScalaMolecule](https://www.scalamolecule.org/) to define our domain model, which in turn generates a target SQL schema optimized for SQLite3. However, Molecule does not handle schema migrations (i.e., evolving the schema from one version to another). For this, we use Flyway, **a** database migration tool.
+[ScalaMolecule](https://www.scalamolecule.org/) now handles schema migrations automatically. When you modify the domain model and run `sbt moleculeGen`, Molecule:
 
-The core workflow is:
-1.  Update the domain model in Scala (`MoleculeDomain.scala`).
-2.  Generate the new target schema using Molecule (`sbt payments/moleculeGen`).
-3.  Compare the new schema with the old one to determine the required changes.
-4.  Write a new SQL migration script with SQLite3-compatible statements.
-5.  Apply the migration using Flyway.
+1.  Compares the current domain structure against the saved previous state (`_previous.scala`)
+2.  Detects additions, renames, and removals (when marked with migration markers)
+3.  Generates versioned Flyway SQL migration files in the dialect-specific directory
+4.  Updates the state file for the next change cycle
+
+Migration files are applied automatically at application startup via Flyway.
+
+## Developer Workflow for Schema Changes
+
+### Step 1: Modify the Domain Model with Migration Markers
+
+Make changes to `MoleculeDomain.scala` and annotate them with migration markers:
+
+- **Additions** are auto-detected (no marker needed)
+- **Removals** require `.remove`
+- **Renames** require `.rename("newName")`
+
+### Step 2: Run moleculeGen
+
+```bash
+sbt "payments/moleculeGen"
+```
+
+Molecule will generate a new Flyway migration SQL file (e.g., `V14__molecule_1_change.sql`) in the dialect directory.
+
+### Step 3: For Ambiguous Changes, Resolve and Re-run
+
+If attributes or entities are removed without explicit markers, Molecule generates a resolution file (`MoleculeDomain_migration.scala`) asking you to choose `.remove` or `.rename`. Edit that file, then re-run `sbt moleculeGen`.
+
+### Step 4: For DML Changes
+
+Molecule auto-migration handles DDL only. For data transformations:
+- Write a separate manual Flyway SQL file alongside molecule's generated one with an appropriate version number
+- Or use molecule's query/update API in application code
+
+### Step 5: Deploy
+
+Deploy normally. Flyway applies new migrations at startup.
+
+## Migration Markers Reference
+
+### Entities
+
+```scala
+trait OldEntity extends Remove
+trait OldEntity extends Rename("NewEntity")
+```
+
+### Attributes
+
+```scala
+trait Person {
+  val email = oneString.remove
+  val oldName = oneString.rename("fullName")
+  val phone = oneString  // Additions are auto-detected
+  val name = oneString.index     // Add or remove index
+  val name = oneString.owner     // ON DELETE CASCADE
+}
+```
+
+### Relationships
+
+```scala
+trait Order {
+  val customer = manyToOne[Customer].remove
+  val user = manyToOne[User].rename("account")
+  val company = manyToOne[Company].owner  // ON DELETE CASCADE
+}
+```
+
+### Segments
+
+```scala
+object analytics extends Remove
+object oldSegment extends Rename("newSegment")
+```
+
+## Resolution File Workflow
+
+When attributes disappear without `.remove` or `.rename`, Molecule generates `MoleculeDomain_migration.scala` with all ambiguous changes listed. Each attribute has two commented-out options:
+
+```scala
+trait InvoiceCounterMigrations extends InvoiceCounter {
+  val testField = oneString.remove     // if removed
+  val testField = oneString.becomes()  // if renamed
+}
+```
+
+Uncomment the intended option (and delete the other), then re-run `sbt moleculeGen`.
+
+## DML Strategy
+
+For data transformations (e.g., seeding data, migrating values between columns), options include:
+
+1. **Manual Flyway SQL file**: Write a separate SQL file alongside molecule's generated DDL file. Choose a version number that slots between molecule-generated files.
+2. **Molecule query/update API**: Use the generated DSL to perform data migrations in application code during startup.
+3. **Application migration code**: Run data transformations in a dedicated migration routine before normal operation begins.
 
 ## ⚠️ CRITICAL: SQLite3 Migration Limitations and Warnings
 
-**READ THIS SECTION CAREFULLY** before writing any migration scripts. SQLite3 has significant limitations compared to other SQL databases that can cause migration failures if not properly understood.
+**READ THIS SECTION CAREFULLY** before writing any manual migration scripts. SQLite3 has significant limitations compared to other SQL databases that can cause migration failures if not properly understood.
 
 ### Supported ALTER TABLE Operations
 
@@ -135,107 +226,11 @@ sqlite3 firecalc-payments-prod_test.db < path/to/your/migration.sql
 sqlite3 firecalc-payments-prod_test.db ".schema"
 ```
 
-## Developer Workflow for Schema Changes
-
-Follow these steps whenever you need to make a change to the database schema.
-
-### Step 1: Modify the Domain Model
-
-Make your desired changes to the entities and attributes in `modules/payments/src/main/scala/afpma/firecalc/payments/repository/MoleculeDomain.scala`.
-
-### Step 2: Regenerate the Target Schema
-
-After modifying the domain model, you must regenerate the SQL schema file. Run the following command from the project root:
-
-```bash
-sbt payments/moleculeGen
-```
-
-This command updates the target schema file located at `modules/payments/target/scala-3.8.3/resource_managed/main/moleculeGen/MoleculeDomain/MoleculeDomain_Schema_sqlite.sql`.
-
-### Step 3: Determine the Schema Difference
-
-To create a migration, you need to know exactly what changed between the old schema and the new one. Use a `diff` tool to compare the newly generated schema with the last version from your git history.
-
-For example, you can use `git diff` on the generated file to see the changes:
-
-```bash
-git diff modules/payments/target/scala-3.8.3/resource_managed/main/moleculeGen/MoleculeDomain/MoleculeDomain_Schema_sqlite.sql
-```
-
-This will show you the exact `CREATE TABLE` or other changes Molecule has generated.
-
-### Step 4: Write a New Migration Script
-
-Based on the differences you identified, create a new SQL migration file **compatible with SQLite3**.
-
-1.  **File Naming:** Migration files must follow the pattern `V<VERSION>__<DESCRIPTION>.sql`. The version number must be unique and sequential. For example: `V2__Add_company_name_to_Customer.sql`.
-
-2.  **Location:** Place the new file in `modules/payments/src/main/resources/db/migration/`.
-
-3.  **Content:** Write **SQLite3-compatible** SQL statements. Examples:
-
-    ```sql
-    -- V2__Add_company_name_to_Customer.sql
-    -- Simple column addition (always supported)
-    ALTER TABLE Customer ADD COLUMN companyName TEXT;
-    ```
-
-    ```sql
-    -- V3__Add_customer_status_with_default.sql
-    -- Adding column with default value
-    ALTER TABLE Customer ADD COLUMN status TEXT DEFAULT 'active';
-    ```
-
-    ```sql
-    -- V4__Create_payment_log_table.sql
-    -- Creating new table
-    CREATE TABLE PaymentLog (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        customerId INTEGER NOT NULL,
-        amount REAL NOT NULL,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (customerId) REFERENCES Customer(id)
-    );
-    
-    CREATE INDEX idx_payment_log_customer ON PaymentLog(customerId);
-    CREATE INDEX idx_payment_log_timestamp ON PaymentLog(timestamp);
-    ```
-
-**Important**: 
-- The migration script should only contain the changes needed to get from the previous schema version to the new one. 
-- Do not copy the entire generated schema.
-- Ensure all statements are SQLite3-compatible (see warnings section above).
-
-## Applying Migrations
-
-Migrations are applied automatically when the application starts. The `Main.scala` file calls the `Migrations.migrate` method before initializing the database connection.
-
-Before applying migrations, **always backup the database**:
-
-```bash
-# Create timestamped backup
-cp firecalc-payments-prod.db firecalc-payments-prod.db.backup-$(date +%Y%m%d-%H%M%S)
-
-# Verify backup was created
-ls -la firecalc-payments-prod.db.backup-*
-```
-
-Then, apply migrations by running the application:
-
-```bash
-sbt "payments/run"
-```
-
-The application will log the status of the migrations to the console. Monitor for any SQLite3-specific errors.
-
 ## Database Backup and Restore (SQLite3)
 
 SQLite3's simplicity makes backup and restore straightforward: it's just a file copy. **Always back up the database before applying migrations.**
 
 ### Backup
-
-To create a backup of the SQLite3 database, simply copy the database file:
 
 ```bash
 # Create a backup before migrating (with timestamp)
@@ -250,8 +245,6 @@ sqlite3 firecalc-payments-prod.db.backup-$(date +%Y%m%d-%H%M%S) "PRAGMA integrit
 
 ### Restore
 
-To restore the database from a backup, simply replace the current database file:
-
 ```bash
 # Stop the application first!
 # Then restore from specific backup
@@ -262,8 +255,6 @@ sqlite3 firecalc-payments-prod.db "PRAGMA integrity_check;"
 ```
 
 ### Database Maintenance
-
-Periodically optimize your SQLite3 database:
 
 ```bash
 # Vacuum to reclaim space and optimize
@@ -276,114 +267,81 @@ sqlite3 firecalc-payments-prod.db "ANALYZE;"
 sqlite3 firecalc-payments-prod.db "PRAGMA integrity_check;"
 ```
 
-## Best Practices for SQLite3 Migrations
+## Best Practices
 
--   **Always Use Table Recreation Pattern for Schema Changes**: When adding columns to existing tables, always create an "_old" table and a "_new" table as a transition, then drop "_old" and remove "_new" suffix. This ensures data consistency and proper constraint handling.
+-   **Use Migration Markers**: Always use `.remove`, `.rename`, etc. when changing the domain to avoid ambiguous change resolution steps.
 
--   **Never Edit an Applied Migration**: Once a migration has been applied to any database (especially production), it must be considered immutable. If you need to make further changes, create a new migration. Flyway's validation will fail if it detects a checksum mismatch.
+-   **Never Edit an Applied Migration**: Once a migration has been applied to any database (especially production), it must be considered immutable. Flyway's validation will fail if it detects a checksum mismatch.
 
--   **Write Small, Atomic Migrations**: Each migration should represent a single, logical change to the schema. This makes troubleshooting easier and reduces the risk of partial application.
+-   **Write Small, Atomic Changes**: Make one logical change at a time. This simplifies the generated migration and troubleshooting.
 
--   **Test Migrations Thoroughly**: Always run migrations in a local environment before applying them to production. Verify that:
-    - The migration completes successfully
-    - The application works as expected after the migration
-    - No data is lost or corrupted
-    - Performance is not significantly impacted
+-   **Test Migrations Thoroughly**: Run `sbt moleculeGen` and verify the generated SQL before deploying. Test on a database copy.
 
--   **Use SQLite3-Compatible Syntax Only**: Before writing any migration, consult the SQLite3 limitations section above. Use the table recreation pattern for complex changes.
+-   **Coordinate with Team**: Ensure your migration version numbers do not conflict with those created by other developers. Version numbers are computed from the dialect directory, so concurrent domain changes need sequencing.
 
--   **Handle Foreign Keys Carefully**: 
-    ```sql
-    -- Disable foreign keys during complex migrations
-    PRAGMA foreign_keys = OFF;
-    -- ... perform migration ...
-    PRAGMA foreign_keys = ON;
-    ```
+-   **Version Control Migration Files**: Always commit migration files and the `_previous.scala` state file to version control.
 
--   **Coordinate with Team**: Ensure that your migration version numbers do not conflict with those created by other developers.
+## Common Patterns
 
--   **Monitor Database Size**: SQLite3 databases can grow large. Monitor the size and consider `VACUUM` operations:
-    ```bash
-    # Check database size
-    ls -lh firecalc-payments-prod.db
-    
-    # Check for unused space
-    sqlite3 firecalc-payments-prod.db "PRAGMA freelist_count;"
-    ```
+### Adding a Field
 
--   **Version Control Migration Files**: Always commit migration files to version control and never modify them after they've been applied to any environment.
-
-## Common SQLite3 Migration Patterns
-
-### Adding Columns
-```sql
--- Simple column addition
-ALTER TABLE Customer ADD COLUMN phone TEXT;
-
--- Column with default value
-ALTER TABLE Customer ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
-
--- Column with constraints (new columns can have constraints)
-ALTER TABLE Customer ADD COLUMN email TEXT UNIQUE;
+```scala
+// In MoleculeDomain.scala — no marker needed for additions
+trait Product {
+  val newField = oneString
+}
 ```
 
-### Creating Related Tables
+Run `sbt moleculeGen` → generates `V<N>__molecule_1_change.sql` with:
 ```sql
--- Create related table with foreign key
-CREATE TABLE CustomerAddress (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customerId INTEGER NOT NULL,
-    street TEXT NOT NULL,
-    city TEXT NOT NULL,
-    FOREIGN KEY (customerId) REFERENCES Customer(id) ON DELETE CASCADE
-);
-
--- Create index for foreign key
-CREATE INDEX idx_customer_address_customer ON CustomerAddress(customerId);
+ALTER TABLE Product ADD COLUMN newField TEXT;
 ```
 
-### Data Migration with New Tables
-```sql
--- Create lookup table
-CREATE TABLE CustomerType (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
-);
+### Removing a Field
 
--- Insert reference data
-INSERT INTO CustomerType (id, name) VALUES 
-    (1, 'Individual'),
-    (2, 'Business'),
-    (3, 'Non-Profit');
-
--- Add foreign key column to existing table
-ALTER TABLE Customer ADD COLUMN typeId INTEGER DEFAULT 1;
-
--- Update existing data based on business logic
-UPDATE Customer SET typeId = 2 WHERE companyName IS NOT NULL;
-
--- Create index
-CREATE INDEX idx_customer_type ON Customer(typeId);
+```scala
+trait Product {
+  val oldField = oneString.remove
+}
 ```
 
-## Troubleshooting SQLite3 Migrations
+### Renaming a Field
+
+```scala
+trait Product {
+  val oldName = oneString.rename("newName")
+}
+```
+
+### Adding a New Entity
+
+```scala
+trait MoleculeDomain extends DomainStructure:
+  // new entity — auto-detected
+  trait NewEntity {
+    val id = oneLong
+    val name = oneString
+  }
+```
+
+## Troubleshooting
 
 ### Common Error Messages
 
 1. **"table X has no column named Y"**
-   - Solution: Ensure column exists before referencing it, or add it first
+   - Ensure column exists before referencing it, or add it first
 
 2. **"no such table: X"**
-   - Solution: Check table name spelling and ensure table exists
+   - Check table name spelling and ensure table exists
 
 3. **"cannot start a transaction within a transaction"**
-   - Solution: SQLite3 auto-starts transactions; avoid explicit BEGIN/COMMIT in migrations
+   - SQLite3 auto-starts transactions; avoid explicit BEGIN/COMMIT in migrations
 
 4. **"foreign key constraint failed"**
-   - Solution: Ensure referenced data exists, or temporarily disable foreign keys
+   - Ensure referenced data exists, or temporarily disable foreign keys
 
 5. **"duplicate column name"**
-   - Solution: Check if column already exists before adding
+   - Check if column already exists before adding
 
 ### Debugging Failed Migrations
 
@@ -395,7 +353,16 @@ sqlite3 firecalc-payments-prod.db "SELECT * FROM flyway_schema_history ORDER BY 
 sqlite3 firecalc-payments-prod.db ".schema"
 
 # Check specific table structure
-sqlite3 firecalc-payments-prod.db ".schema Customer"
+sqlite3 firecalc-payments-prod.db ".schema InvoiceCounter"
 
 # Check indexes
-sqlite3 firecalc-payments-prod.db ".indexes Customer"
+sqlite3 firecalc-payments-prod.db ".indexes InvoiceCounter"
+```
+
+### Checking Migration Status
+
+```bash
+sbt moleculeMigrationStatus
+```
+
+Displays which domains have migration handling enabled and current state.

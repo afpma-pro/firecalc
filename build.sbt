@@ -1410,8 +1410,8 @@ lazy val payments = (project in file("modules/payments"))
             val compilationResult = (Compile / compile).value
 
             // Copy moleculeGen SQL files to target classes directory after compilation
-            val moleculeGenSourceDir = baseDirectory.value / "src" / "main" / "resources" / "moleculeGen"
-            val targetClassesDir     = (Compile / classDirectory).value / "moleculeGen"
+            val moleculeGenSourceDir = baseDirectory.value / "src" / "main" / "resources" / "db" / "schema"
+            val targetClassesDir     = (Compile / classDirectory).value / "db" / "schema"
 
             if (moleculeGenSourceDir.exists()) {
                 if (targetClassesDir.exists()) {

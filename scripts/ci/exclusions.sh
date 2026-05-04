@@ -45,6 +45,7 @@ EXCLUDE_FILES=(
     ".editorconfig"
     ".gitignore"
     ".gitattributes"
+    "modules/payments/src/main/resources/db/schema/afpma/firecalc/payments/repository/impl/MoleculeDomain/MoleculeDomain_sqlite.sql"
 )
 
 # File extensions excluded from header requirements (from .vscode/settings.json psi-header.changes-tracking.exclude)
