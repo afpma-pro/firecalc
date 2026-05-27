@@ -6,13 +6,11 @@
 package afpma.firecalc.engine.ops
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.common.AirSpaceDetailed_V1
-import afpma.firecalc.dto.common.PipeShape
-
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
@@ -44,6 +42,42 @@ trait MecaFluAlg:
 
     /** Result type for a full pipe */
     type FullResult <: PipeResult
+
+    /**
+     * Compute pipe section result using unified context object.
+     * Replaces scattered parameters with a single typed context.
+     */
+    def makePipeSectionResult(
+        ctx: MecaFluSectionContext[pipeDescr.PipeElDescr, Params]
+    )(using appCtx: MecaFluAppContext): SectionResult
+
+    /**
+     * Compute full pipe result using unified context object.
+     * Replaces scattered parameters with a single typed context.
+     */
+    def makePipeResult(
+        ctx   : MecaFluPipeContext[pipeDescr.PipeElDescr],
+        params: Params
+    )(using appCtx: MecaFluAppContext): Either[MecaFlu_Error, FullResult]
+
+/** Base application context for MecaFlu operations. Sub-traits add standard-specific fields. */
+trait MecaFluAppContext
+
+/** EN13384 application context — carries HeatingAppliance data. */
+trait MecaFlu_13384_AppCtx extends MecaFluAppContext:
+    def en13384: EN13384_1_A1_2019_Application_Alg
+    def hafg   : HeatingAppliance.FlueGas
+    def hamf   : HeatingAppliance.MassFlows
+
+object MecaFlu_13384_AppCtx:
+    def apply(
+        _en13384: EN13384_1_A1_2019_Application_Alg,
+        _hafg   : HeatingAppliance.FlueGas,
+        _hamf   : HeatingAppliance.MassFlows
+    ): MecaFlu_13384_AppCtx = new MecaFlu_13384_AppCtx:
+        def en13384 = _en13384
+        def hafg    = _hafg
+        def hamf    = _hamf
 
 /** Intermediate algebra for EN13384-based fluid mechanics calculations. */
 trait MecaFlu_13384_Alg extends MecaFluAlg with HasTypeMembers_13384_Alg:
@@ -154,48 +188,5 @@ object MecaFluOps:
             case e =>
                 e.printStackTrace(                                              )
                 Left             (MecaFlu_Error.UnexpectedThrowable(e, pipeType))
-
-    // ============================================
-    // Pipe Section Accumulator State
-    // ============================================
-
-    /**
-     * State carried between pipe section calculations during accumulation.
-     * Used by the mapAccumulate pattern in PipeResult implementations.
-     */
-    case class AccumulatorState(
-        gasTempStart        : TCelsius,
-        lastCrossSectionArea: Option[Area],
-        lastInnerGeom       : Option[PipeShape],
-        // Optional fields for thermal calculations
-        lastAirSpaceDetailed: Option[AirSpaceDetailed_V1] = None
-    )
-
-    /** Create initial accumulator state for pipe result calculation. */
-    def initialAccumulatorState(
-        startTemp           : TCelsius,
-        lastAirSpace        : Option[AirSpaceDetailed_V1] = None
-    ): AccumulatorState =
-        AccumulatorState(
-            gasTempStart         = startTemp,
-            lastCrossSectionArea = None,
-            lastInnerGeom        = None,
-            lastAirSpaceDetailed = lastAirSpace
-        )
-
-    /** Update accumulator state after processing a pipe section. */
-    def updateAccumulatorState(
-        current                    : AccumulatorState,
-        newGasTempEnd              : TCelsius,
-        newCrossSectionArea        : Area,
-        newInnerGeom               : PipeShape,
-        newAirSpaceDetailed        : Option[AirSpaceDetailed_V1] = None
-    ): AccumulatorState =
-        current.copy(
-            gasTempStart         = newGasTempEnd,
-            lastCrossSectionArea = Some(newCrossSectionArea),
-            lastInnerGeom        = Some(newInnerGeom),
-            lastAirSpaceDetailed = newAirSpaceDetailed.orElse(current.lastAirSpaceDetailed)
-        )
 
 end MecaFluOps
