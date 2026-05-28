@@ -151,9 +151,11 @@ object I18nData_Payments:
     )
 
     final case class Errors(
-        email_send_failed       : String,
-        invalid_email           : String,
-        payment_processing_error: String,
-        order_not_found         : String,
-        authentication_failed   : String
+        email_send_failed                   : String,
+        invalid_email                       : String,
+        payment_processing_error            : String,
+        order_not_found                     : String,
+        authentication_failed               : String,
+        product_firebox_mismatch_fee_required    : String,
+        product_firebox_mismatch_fee_not_required: String
     )

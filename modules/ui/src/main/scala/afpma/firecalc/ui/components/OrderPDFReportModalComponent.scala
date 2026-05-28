@@ -9,6 +9,7 @@ import afpma.firecalc.dto.common.DisplayUnits
 
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.shared.api.v1.requiresLicenseFee
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
@@ -86,6 +87,25 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
     val billing_email_valid_sig = billing_email_sig.map { email =>
         validateEmail(email)
     }
+
+    private val requiresLicenseFeeSignal: Signal[Boolean] =
+        engineStateVar.signal.map { state =>
+            state.firebox.requiresLicenseFee
+        }
+
+    private val baseProductPrice: BigDecimal =
+        ViteEnv.buildMode match
+            case BuildMode.Development => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.price
+            case BuildMode.Staging     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.price
+            case BuildMode.Production  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.price
+
+    private val feeProductPrice: BigDecimal =
+        ViteEnv.buildMode match
+            case BuildMode.Development => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+            case BuildMode.Staging     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+            case BuildMode.Production  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+
+    private val licenseFeePrice: BigDecimal = feeProductPrice - baseProductPrice
 
     private def validateEmail(email: String): Boolean =
         if email.trim.isEmpty then false
@@ -165,11 +185,15 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
         // Get language from current locale
         val language: BillingLanguage = locale.transformInto[BillingLanguage]
 
-        // Select product ID based on build mode
-        val productId = ViteEnv.buildMode match
-            case BuildMode.Development => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.id
-            case BuildMode.Staging     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.id
-            case BuildMode.Production  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.id
+        // Select product ID based on build mode and firebox type
+        val requiresFee = engineStateVar.now().firebox.requiresLicenseFee
+        val productId = (ViteEnv.buildMode, requiresFee) match
+            case (BuildMode.Development, true)  => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Development, false) => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case (BuildMode.Staging, true)      => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Staging, false)     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case (BuildMode.Production, true)   => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Production, false)  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.id
 
         // Use transformers to convert BillingInfo + language to CustomerInfo
         val billingInfoWithLanguage = BillingInfoWithLanguage.fromBillingInfoAndLanguage(
@@ -444,7 +468,27 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                     br             (                                                                                   ),
                     p              (I18N_UI.pdf_ordering.modal.report.will_be_sent_to_email                            ),
                     br             (                                                                                   ),
-                    p(b(I18N_UI.pdf_ordering.modal.report.price)),
+                    div            (cls := "space-y-1"                                                                   ,
+                        div            (cls := "flex justify-between text-sm"                                              ,
+                            span(I18N_UI.pdf_ordering.modal.report.line_name)                                               ,
+                            span(s"${baseProductPrice} EUR")                                                                )
+                    ),
+                    child <-- requiresLicenseFeeSignal.map { requiresFee =>
+                        if requiresFee then
+                            div(cls := "space-y-1"                                                                   ,
+                                div(cls := "flex justify-between text-sm"                                              ,
+                                    span(I18N_UI.pdf_ordering.modal.license_fee.line_name)                               ,
+                                    span(s"${licenseFeePrice} EUR")                                                     )
+                            )
+                        else
+                            emptyNode
+                    },
+                    child <-- requiresLicenseFeeSignal.map { requiresFee =>
+                        val total = if requiresFee then feeProductPrice else baseProductPrice
+                        div(cls := "flex justify-between font-bold border-t pt-2 mt-2"                                   ,
+                            span(I18N_UI.pdf_ordering.modal.total)                                                       ,
+                            span(s"$total EUR")                                                                         )
+                    },
                     br             (                                                                                   ),
                     ul             (
                         I18N_UI.pdf_ordering.modal.order_steps.title,

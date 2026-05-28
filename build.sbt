@@ -1300,7 +1300,7 @@ lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("payments-shared-i18n"))
-    .dependsOn(utils, payments_shared_i18n)
+    .dependsOn(utils, dto, payments_shared_i18n)
 
 // =========
 // payments-i18n
@@ -1456,8 +1456,9 @@ lazy val payments = (project in file("modules/payments"))
             "org.http4s"    %% "http4s-circe"        % "0.23.30",
             "org.http4s"    %% "http4s-dsl"          % "0.23.30",
             "org.http4s"    %% "http4s-scalatags"    % "0.25.2",
-            "io.circe"      %% "circe-generic"       % "0.14.14",
+            "io.circe"      %% "circe-generic"        % "0.14.14",
             "io.circe"      %% "circe-literal"       % "0.14.14",
+            "io.circe"      %% "circe-yaml-scalayaml" % "0.16.0",
             "org.typelevel" %% "cats-effect"         % "3.6.1",
             "ch.qos.logback" % "logback-classic"     % "1.5.18",
             "org.typelevel" %% "log4cats-slf4j"      % "2.7.1",

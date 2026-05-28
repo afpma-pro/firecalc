@@ -157,6 +157,8 @@ object I18nData_UI:
             button_cancel              : String,
             title                      : String,
             report                     : Modal.Report,
+            license_fee                : Modal.LicenseFee,
+            total                      : String,
             order_steps                : Modal.OrderSteps,
             accept_terms_and_conditions: String,
             link                       : String,
@@ -170,7 +172,12 @@ object I18nData_UI:
             final case class Report(
                 compliant_with_standard: String,
                 will_be_sent_to_email  : String,
-                price                  : String
+                price                  : String,
+                line_name              : String
+            )
+
+            final case class LicenseFee(
+                line_name: String
             )
 
             final case class OrderSteps(

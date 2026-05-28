@@ -35,7 +35,7 @@ object GenYamlTemplate:
         sb.append("    productCatalog:\n")
         sb.append("      entries:\n"     )
         StagingProductCatalog.allProducts.foreach { p =>
-            sb.append(s"        ${p.sku}:\n")
+            sb.append(s"        ${p.sku.value}:\n")
             p.exampleCopy.entries.toList.sortBy(_._1).foreach { case (localeTag, copy) =>
                 sb.append(s"          $localeTag:\n"                                         )
                 sb.append(s"            name: \"${escapeYamlDQ(copy.name)}\"\n"              )

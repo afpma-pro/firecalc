@@ -33,7 +33,7 @@ object VerifyYamlAgainstCatalog:
     )
 
     def main(args: Array[String]): Unit =
-        val activeSkus = StagingProductCatalog.allProducts.filter(_.active).map(_.sku)
+        val activeSkus = StagingProductCatalog.allProducts.filter(_.active).map(_.sku.value)
         val errors     = mutable.ListBuffer.empty[String]
         val checked    = mutable.ListBuffer.empty[Path]
 

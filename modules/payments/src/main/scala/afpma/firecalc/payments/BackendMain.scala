@@ -30,12 +30,9 @@ import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.api.ProductCatalogSelector
+import afpma.firecalc.payments.util.Base64StringDecoder
 import afpma.firecalc.payments.util.LogSanitizer
-
 import cats.effect.*
-import cats.effect.ExitCode
-import cats.effect.IO
-import cats.effect.IOApp
 import cats.syntax.all.*
 
 import scala.concurrent.ExecutionContext
@@ -70,25 +67,14 @@ object Main extends IOApp:
         asDraft : Boolean
     ): F[File] =
         Async[F].blocking {
-            // Decode base64 content directly to UTF-8 string, avoiding file I/O issues
-            val yamlContent =
-                try {
-                    val decodedBytes = java.util.Base64.getDecoder.decode(fileDesc.content)
-                    new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8)
-                } catch {
-                    case ex: IllegalArgumentException =>
-                        throw ReportFileAccessException(
-                            fileDesc.filename,
-                            s"base64_decoding (msg: ${ex.getMessage()})",
-                            Some(ex)
-                        )
-                    case ex: Exception                =>
-                        throw ReportFileAccessException(
-                            fileDesc.filename,
-                            s"content_decoding (msg: ${ex.getMessage()})",
-                            Some(ex)
-                        )
-                }
+            val yamlContent = Base64StringDecoder.decodeToString(fileDesc.content) match
+                case Right(content) => content
+                case Left(errorMsg) =>
+                    throw ReportFileAccessException(
+                        fileDesc.filename,
+                        s"base64_decoding (msg: $errorMsg)",
+                        None
+                    )
 
             given Locale = locale
 
@@ -165,7 +151,7 @@ object Main extends IOApp:
         pdfBytes         : Array[Byte],
         productCopyConfig: ProductCopyConfig
     ): InvoiceEmail = {
-        val copy = ProductCopyResolver.resolve(context.product.sku, context.customer.language)(using productCopyConfig)
+        val copy = ProductCopyResolver.resolve(v1.Sku(context.product.sku), context.customer.language)(using productCopyConfig)
         InvoiceEmail        (
             email         = EmailAddress.unsafeFromString(email),
             orderId       = context.order.id.value.toString,
@@ -400,7 +386,7 @@ object Main extends IOApp:
 
                         // Load invoice config and extract a validated productCopyConfig (one shot).
                         invoiceConfigFile = new java.io.File(paymentsConfig.invoiceConfig.configFilePath)
-                        activeSkus        = productCatalog.allProducts.filter(_.active).map(_.sku)
+                        activeSkus        = productCatalog.allProducts.filter(_.active).map(_.sku.value)
                         loaded <- IO.fromTry(
                             afpma.firecalc.invoices.config.EnvironmentConfigLoader
                                 .loadWithProductCopy(invoiceConfigFile, activeSkus)

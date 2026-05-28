@@ -38,11 +38,21 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
 
     implicit val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-    // Test data
+    // Test data — product IDs match production catalog UUIDs so Sku.isLicenseFeeProduct resolves correctly
     val testProduct = Product(
-        id        = ProductId(UUID.randomUUID()),
+        id        = ProductId(UUID.fromString("550e8400-e29b-41d4-a716-446655440000")),
         sku       = "test",
         price     = BigDecimal("29.99"),
+        currency  = Currency.EUR,
+        active    = true,
+        taxRate   = BigDecimal("20.0"),
+        taxExempt = false
+    )
+
+    val testProductWithFee = Product(
+        id        = ProductId(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")),
+        sku       = "test_WITH_FIREBOX_LICENSE_FEE",
+        price     = BigDecimal("39.99"),
         currency  = Currency.EUR,
         active    = true,
         taxRate   = BigDecimal("20.0"),
@@ -53,6 +63,15 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
         entries = Map(
             "test" -> Map(
                 "default" -> ProductCopy(name = "Test Product", description = "Test product for unit tests")
+            ),
+            "test_WITH_FIREBOX_LICENSE_FEE" -> Map(
+                "default" -> ProductCopy(name = "Test Product With Fee", description = "Test product for unit tests")
+            ),
+            "pdf_report_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE" -> Map(
+                "default" -> ProductCopy(name = "Report With Fee", description = "Report with firebox license")
+            ),
+            "pdf_report_EN_15544_2023" -> Map(
+                "default" -> ProductCopy(name = "Report", description = "Calculation report")
             )
         )
     )
@@ -97,7 +116,10 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
     )
 
     class TestRepositories {
-        var products       : Map[ProductId, Product]             = Map(testProduct.id -> testProduct)
+        var products       : Map[ProductId, Product]             = Map(
+            testProduct.id        -> testProduct,
+            testProductWithFee.id -> testProductWithFee
+        )
         var customers      : Map[String, Customer]               = Map.empty
         var customersById  : Map[CustomerId, Customer]           = Map.empty
         var purchaseIntents: Map[PurchaseToken, PurchaseIntent]  = Map.empty
@@ -404,6 +426,175 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
             emailService
         )
     }
+
+    import java.util.Base64
+
+    private def b64(s: String): String =
+        Base64.getEncoder.encodeToString(s.getBytes("UTF-8"))
+
+    private val traditionalFireboxYaml = b64(
+        """version: 6
+          |locale: fr
+          |display_units: SI
+          |standard_or_computation_method: "EN 15544:2023"
+          |project_description:
+          |  reference: test
+          |  date: ""
+          |  country: France
+          |local_conditions:
+          |  altitude:
+          |    value: "200"
+          |    unit: meter
+          |  coastal_region: false
+          |  chimney_termination:
+          |    chimney_location_on_roof:
+          |      chimney_height_above_ridgeline: MoreThan40cm
+          |    adjacent_buildings:
+          |      horizontal_distance_between_chimney_and_adjacent_buildings: MoreThan15m
+          |stove_params:
+          |  sizing_method: MaxLoad
+          |  maximum_load:
+          |    value: "14.5"
+          |    unit: kilogram
+          |  heating_cycle:
+          |    value: "8"
+          |    unit: hour
+          |  min_efficiency:
+          |    value: "70"
+          |    unit: percent
+          |  facing_type: WithoutAirGap
+          |  inner_construction_material: WithinSpecs
+          |air_intake_descr: []
+          |firebox:
+          |  Traditional:
+          |    heat_output_reduced: null
+          |    firebox_depth:
+          |      value: "0.442"
+          |      unit: meter
+          |    firebox_width:
+          |      value: "0.332"
+          |      unit: meter
+          |    firebox_height:
+          |      value: "0.641"
+          |      unit: meter
+          |    height_of_lowest_opening:
+          |      value: "0.05"
+          |      unit: meter
+          |    pressure_loss_coefficient_from_door:
+          |      value: "0.3"
+          |      unit: "1"
+          |    total_air_intake_surface_area_on_door:
+          |      value: "0.0097"
+          |      unit: "meter^2"
+          |    glass_width:
+          |      value: "0.3"
+          |      unit: meter
+          |    glass_height:
+          |      value: "0.3"
+          |      unit: meter
+          |post_firebox_pipes: []""".stripMargin
+    )
+
+    private val ecolabeledFireboxYaml = b64(
+        """version: 6
+          |locale: fr
+          |display_units: SI
+          |standard_or_computation_method: "EN 15544:2023"
+          |project_description:
+          |  reference: test
+          |  date: ""
+          |  country: France
+          |local_conditions:
+          |  altitude:
+          |    value: "200"
+          |    unit: meter
+          |  coastal_region: false
+          |  chimney_termination:
+          |    chimney_location_on_roof:
+          |      chimney_height_above_ridgeline: MoreThan40cm
+          |    adjacent_buildings:
+          |      horizontal_distance_between_chimney_and_adjacent_buildings: MoreThan15m
+          |stove_params:
+          |  sizing_method: MaxLoad
+          |  maximum_load:
+          |    value: "14.5"
+          |    unit: kilogram
+          |  heating_cycle:
+          |    value: "8"
+          |    unit: hour
+          |  min_efficiency:
+          |    value: "70"
+          |    unit: percent
+          |  facing_type: WithoutAirGap
+          |  inner_construction_material: WithinSpecs
+          |air_intake_descr: []
+          |firebox:
+          |  Ecolabeled:
+          |    heat_output_reduced: null
+          |    version:
+          |      type: "either"
+          |      left_or_right: "left"
+          |      value: "Version 1"
+          |    air_intake_shape: null
+          |    firebox_depth:
+          |      value: "0.442"
+          |      unit: meter
+          |    firebox_width:
+          |      value: "0.332"
+          |      unit: meter
+          |    firebox_height:
+          |      value: "0.641"
+          |      unit: meter
+          |    height_of_first_row_of_air_injectors:
+          |      value: "0.1"
+          |      unit: meter
+          |    door_opening_width:
+          |      value: "0.3"
+          |      unit: meter
+          |    glass_width:
+          |      value: "0.3"
+          |      unit: meter
+          |    glass_height:
+          |      value: "0.3"
+          |      unit: meter
+          |    ash_pit_height:
+          |      value: "0.05"
+          |      unit: meter
+          |    air_manifold_height:
+          |      value: "0.05"
+          |      unit: meter
+          |    firebox_floor_thickness:
+          |      value: "0.05"
+          |      unit: meter
+          |    firebox_inner_wall_thickness:
+          |      value: "0.05"
+          |      unit: meter
+          |    firebox_outer_wall_thickness:
+          |      value: "0.05"
+          |      unit: meter
+          |    air_column_thickness:
+          |      value: "0.05"
+          |      unit: meter
+          |    width_between_two_air_columns_sides:
+          |      value: "0.05"
+          |      unit: meter
+          |    width_between_two_air_columns_rear:
+          |      value: "0.05"
+          |      unit: meter
+          |    reinforcement_bars_offset_in_corners_R1:
+          |      value: "0"
+          |      unit: meter
+          |    reinforcement_bars_offset_in_corners_R2:
+          |      value: "0"
+          |      unit: meter
+          |    reinforcement_bars_offset_in_corners_R3:
+          |      value: "0"
+          |      unit: meter
+          |    injector_height:
+          |      value: "0"
+          |      unit: meter
+          |post_firebox_pipes: []""".stripMargin
+    )
 
     val tests = Tests {
 
@@ -885,6 +1076,137 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 case Right(_)                   =>
                     throw new Exception("Expected validation error but got success")
             }
+        }
+
+        test("product-firebox mismatch - license fee product with Traditional firebox (fee not required)") {
+            val repos = new TestRepositories()
+            val (
+                productRepo,
+                customerRepo,
+                purchaseIntentRepo,
+                productMetadataRepo,
+                authService,
+                orderService,
+                paymentService,
+                emailService
+            )         = createMockServices(repos)
+
+            val service = new PurchaseServiceImpl[IO](
+                productRepo,
+                customerRepo,
+                purchaseIntentRepo,
+                productMetadataRepo,
+                authService,
+                orderService,
+                paymentService,
+                emailService,
+                testProductCopyConfig
+            )
+
+            val fileMetadata = FileDescriptionWithContent(
+                filename = "test.fcalc",
+                mimeType = "application/x-yaml",
+                content  = traditionalFireboxYaml
+            )
+
+            val request = CreatePurchaseIntentRequest(
+                productId       = testProductWithFee.id,
+                productMetadata = Some(fileMetadata),
+                customer        = testCustomerInfo
+            )
+
+            val result = service.createPurchaseIntent(request).attempt.unsafeRunSync()
+            result match {
+                case Left(ex: ProductFireboxMismatchException) =>
+                    assert(ex.errorCode == "PRODUCT_FIREBOX_MISMATCH")
+                    assert(ex.getMessage.contains("not subject to a license fee"))
+                case Left(other)                               =>
+                    throw new Exception(s"Expected ProductFireboxMismatchException but got ${other.getClass}: ${other.getMessage}")
+                case Right(_)                                  =>
+                    throw new Exception("Expected ProductFireboxMismatchException but got success")
+            }
+        }
+
+        test("product-firebox match - Traditional firebox with base product (success)") {
+            val repos = new TestRepositories()
+            val (
+                productRepo,
+                customerRepo,
+                purchaseIntentRepo,
+                productMetadataRepo,
+                authService,
+                orderService,
+                paymentService,
+                emailService
+            )         = createMockServices(repos)
+
+            val service = new PurchaseServiceImpl[IO](
+                productRepo,
+                customerRepo,
+                purchaseIntentRepo,
+                productMetadataRepo,
+                authService,
+                orderService,
+                paymentService,
+                emailService,
+                testProductCopyConfig
+            )
+
+            val fileMetadata = FileDescriptionWithContent(
+                filename = "test.fcalc",
+                mimeType = "application/x-yaml",
+                content  = traditionalFireboxYaml
+            )
+
+            val request = CreatePurchaseIntentRequest(
+                productId       = testProduct.id,
+                productMetadata = Some(fileMetadata),
+                customer        = testCustomerInfo
+            )
+
+            val result = service.createPurchaseIntent(request).unsafeRunSync()
+            assert(result.value != null)
+        }
+
+        test("product-firebox match - Ecolabeled firebox with license fee product (success)") {
+            val repos = new TestRepositories()
+            val (
+                productRepo,
+                customerRepo,
+                purchaseIntentRepo,
+                productMetadataRepo,
+                authService,
+                orderService,
+                paymentService,
+                emailService
+            )         = createMockServices(repos)
+
+            val service = new PurchaseServiceImpl[IO](
+                productRepo,
+                customerRepo,
+                purchaseIntentRepo,
+                productMetadataRepo,
+                authService,
+                orderService,
+                paymentService,
+                emailService,
+                testProductCopyConfig
+            )
+
+            val fileMetadata = FileDescriptionWithContent(
+                filename = "test.fcalc",
+                mimeType = "application/x-yaml",
+                content  = ecolabeledFireboxYaml
+            )
+
+            val request = CreatePurchaseIntentRequest(
+                productId       = testProductWithFee.id,
+                productMetadata = Some(fileMetadata),
+                customer        = testCustomerInfo
+            )
+
+            val result = service.createPurchaseIntent(request).unsafeRunSync()
+            assert(result.value != null)
         }
     }
 }

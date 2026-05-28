@@ -46,7 +46,7 @@ class ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
             } yield {
                 // Product should be created with correct attributes
                 assert(product.id == testProduct.id        )
-                assert(product.sku == testProduct.sku      )
+                assert(product.sku == testProduct.sku.value)
                 assert(product.price == testProduct.price  )
                 assert(product.currency == Currency.EUR    )
                 assert(product.active == testProduct.active)
@@ -62,7 +62,7 @@ class ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
             val productId       = ProductId(UUID.fromString("00000000-0000-0000-0000-000000000999"))
             val originalProduct = ProductInfo(
                 id          = productId,
-                sku         = "test_original",
+                sku         = Sku("test_original"),
                 exampleCopy = YamlTemplateSeed(Map("default" -> ProductCopy("Original", "Original desc"))),
                 price       = BigDecimal(50.00),
                 currency    = "EUR",
@@ -73,7 +73,7 @@ class ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
 
             val updatedProduct = ProductInfo(
                 id          = productId,
-                sku         = "test_updated",
+                sku         = Sku("test_updated"),
                 exampleCopy = YamlTemplateSeed(Map("default" -> ProductCopy("Updated", "Updated desc"))),
                 price       = BigDecimal(75.00),
                 currency    = "EUR",
@@ -96,7 +96,7 @@ class ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
                 // Then verify it was updated
                 retrieved <- productRepo.findById(productId)
             } yield {
-                assert(updated.sku == "test_updated"     )
+                assert(updated.sku == "test_updated")
                 assert(updated.price == BigDecimal(75.00))
                 assert(updated.active == false           )
 

@@ -428,3 +428,15 @@ final case class ExternalServiceException(
         "reason"    -> reason
     )
 }
+
+final case class ProductFireboxMismatchException(
+    productId: String,
+    message  : String
+) extends PurchaseServiceError(
+        message
+    ) {
+    override def errorCode: String = "PRODUCT_FIREBOX_MISMATCH"
+    override def context: Map[String, String] = Map(
+        "productId" -> productId
+    )
+}
