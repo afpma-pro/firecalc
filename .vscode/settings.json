@@ -17,7 +17,7 @@
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.7+41-335bd931-SNAPSHOT",
+    "metals.serverVersion": "1.6.7+42-6fa76702-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 38615,
     "metals.suggestLatestUpgrade": "on",
