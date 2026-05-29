@@ -21,8 +21,6 @@ import afpma.firecalc.engine.standard.InvalidFireboxConstraint
 
 import cats.syntax.all.*
 
-import io.taig.babel.Locale
-
 /**
  * EN 15544 constraints for [[Door15aFirebox_Catalog]] fireboxes.
  *
@@ -72,7 +70,7 @@ given door15aCatalogConstraints: FireboxConstraints[Door15aFirebox_Catalog] =
         /** Validate that the actual air intake pipe shape is among the expected shapes. */
         private def airIntakePipeShapeConstraint(
             firebox: Door15aFirebox_Catalog
-        )(using Locale): List[FireboxError] =
+        ): List[FireboxError] =
             val actual   = firebox.actualAirIntakePipeShape
             val expected = firebox.expectedAirIntakePipeShapes
             if expected.contains(actual) then Nil
@@ -87,7 +85,7 @@ given door15aCatalogConstraints: FireboxConstraints[Door15aFirebox_Catalog] =
         override def firebox_custom_constraints(
             firebox: Door15aFirebox_Catalog,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] =
+        ): List[FireboxError] =
             val sbErrors        =
                 s_B_constraints(firebox).checkAllAndCombine(firebox.sb).foldToErrDeep(InvalidFireboxConstraint.apply)
             val pipeShapeErrors = airIntakePipeShapeConstraint(firebox)

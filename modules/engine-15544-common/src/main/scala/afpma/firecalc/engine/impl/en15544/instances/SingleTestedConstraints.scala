@@ -20,8 +20,6 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.λ
 import afpma.firecalc.engine.standard.*
 
-import io.taig.babel.Locale
-
 /**
  * EN 15544 constraints for [[SingleTested]] fireboxes.
  *
@@ -113,7 +111,7 @@ given singleTestedConstraints: (FireboxConstraints[SingleTested] & RemovedFirebo
         override def firebox_custom_constraints(
             firebox: SingleTested,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] =
+        ): List[FireboxError] =
             AllTermConstraints(pellets_load_burn_duration_constraints(firebox))
                 .checkAllAndCombineWhenDefined(firebox.pellets_load_burn_duration)
                 .map(_.foldToErrDeep(InvalidFireboxConstraint.apply)) match

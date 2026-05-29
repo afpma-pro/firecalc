@@ -29,8 +29,6 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
-import io.taig.babel.Locale
-
 given fireboxConstraints_Strict: FireboxConstraints[Firebox_15544] =
     FireboxConstraints_Strict.make[Firebox_15544]
 
@@ -303,6 +301,6 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
     override def firebox_custom_constraints(
         firebox: F,
         ctx    : FireboxConstraintContext
-    )(using Locale): List[FireboxError] = Nil
+    ): List[FireboxError] = Nil
 
 end FireboxConstraints_Strict

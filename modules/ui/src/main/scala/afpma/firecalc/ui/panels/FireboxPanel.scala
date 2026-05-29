@@ -88,7 +88,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
             case Validated.Invalid(nel) =>
                 val filtered = nel.toList.filterNot:
                     case _: FireboxTypeDisabledError => true
-                    case _                           => false
+                    case _ => false
                 if filtered.nonEmpty then NonEmptyList.fromListUnsafe(filtered).invalid
                 else ().validNel[MCalc_Error]
 

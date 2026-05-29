@@ -24,18 +24,18 @@ import org.scalatest.matchers.should.Matchers
 class TraditionalFireboxConstraintDispatchSuite extends AnyFreeSpec with Matchers:
 
     private def stubTraditionalDTO(
-        totalAirIntakeSurfaceAreaOnDoor: Double 
+        totalAirIntakeSurfaceAreaOnDoor                  : Double
     ): Firebox.Traditional =
         Firebox.Traditional(
-            heat_output_reduced                       = HeatOutputReduced.NotDefined,
-            firebox_depth                             = 0.44.meters,
-            firebox_width                             = 0.42.meters,
-            firebox_height                            = 0.78.meters,
-            height_of_lowest_opening                  = 0.05.meters,
-            pressure_loss_coefficient_from_door       = 0.3.unitless,
-            total_air_intake_surface_area_on_door     = totalAirIntakeSurfaceAreaOnDoor.cm2,
-            glass_width                               = 0.15.meters,
-            glass_height                              = 0.20.meters
+            heat_output_reduced                   = HeatOutputReduced.NotDefined,
+            firebox_depth                         = 0.44.meters,
+            firebox_width                         = 0.42.meters,
+            firebox_height                        = 0.78.meters,
+            height_of_lowest_opening              = 0.05.meters,
+            pressure_loss_coefficient_from_door   = 0.3.unitless,
+            total_air_intake_surface_area_on_door = totalAirIntakeSurfaceAreaOnDoor.cm2,
+            glass_width                           = 0.15.meters,
+            glass_height                          = 0.20.meters
         )
 
     private def stubStoveParams(maxLoad: Double): StoveParams =
@@ -47,8 +47,8 @@ class TraditionalFireboxConstraintDispatchSuite extends AnyFreeSpec with Matcher
         )
 
     private def buildEngineState(
-        firebox    : Firebox.Traditional,
-        stoveParams: StoveParams
+        firebox                            : Firebox.Traditional,
+        stoveParams                        : StoveParams
     ): FireCalcYAML_V6 =
         FireCalcYAML_V6(
             locale                         = Locale(Languages.Fr),
@@ -79,10 +79,12 @@ class TraditionalFireboxConstraintDispatchSuite extends AnyFreeSpec with Matcher
     "Traditional firebox constraint dispatch through resolver" - {
 
         "firebox_custom_constraints override: tiny h67 triggers injector velocity error" in {
-            val app = loadApp(buildEngineState(
-                stubTraditionalDTO(totalAirIntakeSurfaceAreaOnDoor = 1.0),
-                stubStoveParams(18.5)
-            ))
+            val app    = loadApp(
+                buildEngineState(
+                    stubTraditionalDTO(totalAirIntakeSurfaceAreaOnDoor = 1.0),
+                    stubStoveParams   (18.5                                 )
+                )
+            )
             val result = app.validateResultsExceptEmissionsValues(Country.France)
             result.isValid shouldBe false
         }

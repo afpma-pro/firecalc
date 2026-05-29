@@ -29,7 +29,7 @@ import org.scalatest.matchers.should.Matchers
 class EcolabeledConstraintDispatchSuite extends AnyFreeSpec with Matchers:
 
     private def stubEcolabeledDTO(
-        heightOfFirstRowOfAirInjectors: Length
+        heightOfFirstRowOfAirInjectors                    : Length
     ): Firebox.Ecolabeled =
         Firebox.Ecolabeled(
             heat_output_reduced                     = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
@@ -65,8 +65,8 @@ class EcolabeledConstraintDispatchSuite extends AnyFreeSpec with Matchers:
         )
 
     private def buildEngineState(
-        firebox    : Firebox.Ecolabeled,
-        stoveParams: StoveParams
+        firebox                            : Firebox.Ecolabeled,
+        stoveParams                        : StoveParams
     ): FireCalcYAML_V6 =
         FireCalcYAML_V6(
             locale                         = Locale(Languages.Fr),
@@ -97,27 +97,27 @@ class EcolabeledConstraintDispatchSuite extends AnyFreeSpec with Matchers:
     "Ecolabeled constraint dispatch through resolver" - {
 
         "resolver returns Ecolabeled instance with m_B min=6kg (not base 10kg)" in {
-            val fb = Ecolabeled_V1(
-                pn_reduced                               = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
-                h11_profondeurDuFoyer                    = 54.cm,
-                h12_largeurDuFoyer                       = 54.cm,
-                h13_hauteurDuFoyer                       = 81.3.cm,
-                h70_largeurPorteDansMaconnerie            = 52.cm,
-                h71_largeurVitre                         = 50.cm,
-                h72_hauteurVitre                         = 40.cm,
-                h74_hauteur_de_cendrier_AF               = 8.cm,
+            val fb          = Ecolabeled_V1(
+                pn_reduced                                      = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
+                h11_profondeurDuFoyer                           = 54.cm,
+                h12_largeurDuFoyer                              = 54.cm,
+                h13_hauteurDuFoyer                              = 81.3.cm,
+                h70_largeurPorteDansMaconnerie                  = 52.cm,
+                h71_largeurVitre                                = 50.cm,
+                h72_hauteurVitre                                = 40.cm,
+                h74_hauteur_de_cendrier_AF                      = 8.cm,
                 h75_hauteurArriveeConduitAir_DessousSoleFoyer_W = 11.cm,
-                h76_epaisseurSole                        = 8.cm,
-                h77_epaisseurParoiInterneFoyer_D1        = 6.cm,
-                epaisseurParoiExterneFoyer_D2            = 6.cm,
-                h78_largeurEspaceInterparoisDuFoyer_S    = 3.5.cm,
-                h79_largeurRenfortMedianLateraux         = 4.5.cm,
-                h80_largeurRenfortMedianArriere          = 4.5.cm,
-                r1                                       = 4.5.cm,
-                r2                                       = 4.5.cm,
-                r3                                       = 4.5.cm,
-                h82_hauteurDesInjecteurs_Z               = 0.8.cm,
-                h83_hauteurEntreLaSoleEtLe1erInjecteur_X = 10.cm
+                h76_epaisseurSole                               = 8.cm,
+                h77_epaisseurParoiInterneFoyer_D1               = 6.cm,
+                epaisseurParoiExterneFoyer_D2                   = 6.cm,
+                h78_largeurEspaceInterparoisDuFoyer_S           = 3.5.cm,
+                h79_largeurRenfortMedianLateraux                = 4.5.cm,
+                h80_largeurRenfortMedianArriere                 = 4.5.cm,
+                r1                                              = 4.5.cm,
+                r2                                              = 4.5.cm,
+                r3                                              = 4.5.cm,
+                h82_hauteurDesInjecteurs_Z                      = 0.8.cm,
+                h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = 10.cm
             )
             val constraints = FireboxConstraintsResolver.resolve(fb)
             val ctx         = ConstraintContext(
@@ -132,8 +132,8 @@ class EcolabeledConstraintDispatchSuite extends AnyFreeSpec with Matchers:
                 H_BR                           = 81.3.cm,
                 n_min                          = 78.percent
             )
-            val resolved = constraints.m_B_constraints(fb, ctx)
-            val hasMin6kg = resolved.exists {
+            val resolved    = constraints.m_B_constraints(fb, ctx)
+            val hasMin6kg   = resolved.exists {
                 case Some(tc: TermConstraint.Min[?]) => tc.min == 6.kg
                 case _                               => false
             }
@@ -141,7 +141,9 @@ class EcolabeledConstraintDispatchSuite extends AnyFreeSpec with Matchers:
         }
 
         "custom constraint: h83 < 5cm surfaces error through application layer" in {
-            val app = loadApp(buildEngineState(stubEcolabeledDTO(heightOfFirstRowOfAirInjectors = 3.cm), stubStoveParams(26.0)))
+            val app    = loadApp(
+                buildEngineState(stubEcolabeledDTO(heightOfFirstRowOfAirInjectors = 3.cm), stubStoveParams(26.0))
+            )
             val result = app.validateResultsExceptEmissionsValues(Country.France)
             result.isValid shouldBe false
         }

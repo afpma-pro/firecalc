@@ -33,12 +33,14 @@ object FireboxConstraintsResolver:
     def resolve(firebox: Firebox_15544): FireboxConstraints[firebox.Self] =
         import afpma.firecalc.engine.impl.en15544.instances.given
         val inst: FireboxConstraints[? <: Firebox_15544] = firebox match
-            case _: Ecolabeled                           => summon[FireboxConstraints[Ecolabeled]]
-            case _: TraditionalFirebox                   => summon[FireboxConstraints[TraditionalFirebox]]
-            case _: AFPMA_PRSE                           => summon[FireboxConstraints[AFPMA_PRSE]]
-            case _: Firebox_15544.SingleTested           => summon[FireboxConstraints[Firebox_15544.SingleTested]]
-            case _: Firebox_15544.Door15aFirebox_Catalog => summon[FireboxConstraints[Firebox_15544.Door15aFirebox_Catalog]]
-            case _: Firebox_15544.Traditional.CustomForLab => summon[FireboxConstraints[Firebox_15544.Traditional.CustomForLab]]
-            case _: Firebox_15544.Traditional            => summon[FireboxConstraints[Firebox_15544]]
-            case _: Firebox_15544.CertifiedDesign        => summon[FireboxConstraints[Firebox_15544]]
+            case _: Ecolabeled                             => summon[FireboxConstraints[Ecolabeled]]
+            case _: TraditionalFirebox                     => summon[FireboxConstraints[TraditionalFirebox]]
+            case _: AFPMA_PRSE                             => summon[FireboxConstraints[AFPMA_PRSE]]
+            case _: Firebox_15544.SingleTested             => summon[FireboxConstraints[Firebox_15544.SingleTested]]
+            case _: Firebox_15544.Door15aFirebox_Catalog   =>
+                summon[FireboxConstraints[Firebox_15544.Door15aFirebox_Catalog]]
+            case _: Firebox_15544.Traditional.CustomForLab =>
+                summon[FireboxConstraints[Firebox_15544.Traditional.CustomForLab]]
+            case _: Firebox_15544.Traditional              => summon[FireboxConstraints[Firebox_15544]]
+            case _: Firebox_15544.CertifiedDesign          => summon[FireboxConstraints[Firebox_15544]]
         inst.asInstanceOf[FireboxConstraints[firebox.Self]]

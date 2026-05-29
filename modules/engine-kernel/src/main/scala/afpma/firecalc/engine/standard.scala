@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.FireboxAvailabilityExtensions.localizedTypeName
 
+import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
@@ -259,62 +260,67 @@ object standard {
             I18N.errors.air_intake_pipe_shape_mismatch(e.expected, e.actual)
 
     sealed trait InvalidTermValue[T] extends FireboxError:
-        def termName : String
+        def termName : LocalizedString
         def termValue: T
         given showT  : Show[T] = scala.compiletime.deferred
 
     given show_InvalidTermValue: [T: Show] => ShowUsingLocale[InvalidTermValue[T]] = showUsingLocale:
         case x: TermValueShouldBeDefined             =>
-            I18N.errors.term_should_be_defined(x.termName, "[none]")
+            I18N.errors.term_should_be_defined(x.termName.show, "[none]")
         case x: TermValueShouldBeGreaterOrEqThan[?]  =>
-            I18N.errors.term_should_be_greater_or_eq_than(x.termName, x.minValue.show, x.termValue.show)
+            I18N.errors.term_should_be_greater_or_eq_than(x.termName.show, x.minValue.show, x.termValue.show)
         case x: TermValueShouldBeGreaterThan[?]      =>
-            I18N.errors.term_should_be_greater_than(x.termName, x.minValue.show, x.termValue.show)
+            I18N.errors.term_should_be_greater_than(x.termName.show, x.minValue.show, x.termValue.show)
         case x: TermValueShouldBeLessOrEqThan[?]     =>
-            I18N.errors.term_should_be_less_or_eq_than(x.termName, x.maxValue.show, x.termValue.show)
+            I18N.errors.term_should_be_less_or_eq_than(x.termName.show, x.maxValue.show, x.termValue.show)
         case x: TermValueShouldBeLessThan[?]         =>
-            I18N.errors.term_should_be_less_than(x.termName, x.maxValue.show, x.termValue.show)
+            I18N.errors.term_should_be_less_than(x.termName.show, x.maxValue.show, x.termValue.show)
         case x: TermValueShouldBeBetweenInclusive[?] =>
-            I18N.errors.term_should_be_between_inclusive(x.termName, x.minValue.show, x.maxValue.show, x.termValue.show)
+            I18N.errors.term_should_be_between_inclusive(
+                x.termName.show,
+                x.minValue.show,
+                x.maxValue.show,
+                x.termValue.show
+            )
         case x: TermValueCustom[?]                   =>
-            x.message
+            x.message.show
 
     case class TermValueShouldBeDefined(
-        override val termName: String
+        override val termName: LocalizedString
     ) extends InvalidTermValue[Unit]:
         override val termValue: Unit       = ()
         override given showT  : Show[Unit] = Show.show(_ => "[none]")
 
     case class TermValueShouldBeGreaterOrEqThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         minValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeGreaterThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         minValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeLessOrEqThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         maxValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeLessThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         maxValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeBetweenInclusive[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         minValue              : T,
         maxValue              : T
@@ -322,9 +328,9 @@ object standard {
         override given showT: Show[T] = Show[T]
 
     case class TermValueCustom[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
-        val message           : String
+        val message           : LocalizedString
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 

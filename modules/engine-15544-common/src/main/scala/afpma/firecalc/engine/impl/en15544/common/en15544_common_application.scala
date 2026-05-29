@@ -49,7 +49,6 @@ import coulomb.ops.standard.all.{given}
 import coulomb.ops.algebra.all.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import scala.annotation.nowarn
-import io.taig.babel.Locales
 
 // import standard.dsl.CalculationF.compute
 
@@ -761,8 +760,8 @@ abstract class EN15544_V_2023_Common_Application
             Validated
                 .fromOption(
                     NonEmptyList.fromList(
-                        fc.internal_firebox_custom_constraints(firebox)(using Locales.en) :::
-                            fc.firebox_custom_constraints(firebox, fbCtx)(using Locales.en)
+                        fc.internal_firebox_custom_constraints(firebox) :::
+                            fc.firebox_custom_constraints(firebox, fbCtx)
                     ),
                     ()
                 )
