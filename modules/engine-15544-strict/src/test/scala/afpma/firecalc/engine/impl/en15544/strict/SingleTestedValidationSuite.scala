@@ -50,16 +50,19 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
         )
 
     private def stubSingleTestedDTO(
-        maxFuelMass                             : Double,
-        coMgNm3                                 : Option[Double] = None
+        maxFuelMass                               : Double,
+        coMgNm3                                   : Option[Double] = None,
+        fireboxDepth                              : Length         = 0.44.meters,
+        fireboxWidth                              : Length         = 0.42.meters,
+        fireboxHeight                             : Length         = 0.6.meters
     ): Firebox.SingleTested =
         Firebox.SingleTested(
             reference                              = "Test SingleTested",
             type_of_appliance                      = TypeOfAppliance.WoodLogs,
             test_standard                          = Firebox.TestStandard.EN_13229,
-            firebox_depth                          = 0.44.meters,
-            firebox_width                          = 0.42.meters,
-            firebox_height                         = 0.6.meters,
+            firebox_depth                          = fireboxDepth,
+            firebox_width                          = fireboxWidth,
+            firebox_height                         = fireboxHeight,
             ash_pit_height                         = 0.05.meters,
             is_glass_surface_ratio_below_one_fifth = true,
             glass_area                             = 0.25.squareMeters,
@@ -153,5 +156,21 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
                 LocalRegulations.fr.wood_logs
             )
             results.unmetCriterias should not be empty
+        }
+
+        // ── RemovedFireboxSizingConstraints dispatch ────────────────────
+
+        "narrow width (20cm < 23cm base min) still passes via RemovedFireboxSizingConstraints" in {
+            val app = loadApp(
+                buildEngineState(
+                    stubSingleTestedDTO (
+                        maxFuelMass  = 18.5,
+                        fireboxDepth = 0.44.meters,
+                        fireboxWidth = 0.20.meters
+                    ),
+                    stubStoveParams     (18.5)
+                )
+            )
+            app.validateResultsExceptEmissionsValues(Country.France).isValid shouldBe true
         }
     }

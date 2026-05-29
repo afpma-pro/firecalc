@@ -48,6 +48,28 @@ case class ConstraintContext(
  *
  * Each method returns a `Seq[Option[TermConstraint[T]]]` that is evaluated
  * and dispatched by the application layer.
+ *
+ * TODO(registry) — per-module firebox dispatch:
+ *
+ * Today `FireboxConstraintsResolver.resolve` (in impl.en15544.common) hard-codes
+ * a match over every subtype and summons each given individually. That couples
+ * `common` to all concrete fireboxes — the opposite of this typeclass's intent
+ * (`common` should know only the typeclass, never summon instances one by one).
+ *
+ * Target design:
+ *   - Each firebox lives in its own module and contributes its
+ *     `given FireboxConstraints[T]` plus a runtime type-test (e.g. a small
+ *     `FireboxConstraintsEntry` pairing a `ClassTag[T]`/`isInstanceOf` guard
+ *     with the instance).
+ *   - A registry (`List[FireboxConstraintsEntry]` / typemap) is assembled at the
+ *     composition root from the per-module contributions.
+ *   - `common` resolves `fc` by querying the registry by runtime type; it never
+ *     names a concrete subtype. Adding a firebox = registering an entry in its
+ *     own module, with zero edits to `common`.
+ *   - Trade-off: lose the sealed-match exhaustiveness check; mitigate with a
+ *     "no entry for firebox X" runtime error and a registry-completeness test.
+ *   - On completion, delete `FireboxConstraintsResolver` and drop the
+ *     `instances`→subtype coupling entirely.
  */
 trait FireboxConstraints[-F <: Firebox_15544]:
 

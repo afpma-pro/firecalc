@@ -303,7 +303,6 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
     override def firebox_custom_constraints(
         firebox: F,
         ctx    : FireboxConstraintContext
-    )(using Locale): List[FireboxError] =
-        Nil
+    )(using Locale): List[FireboxError] = Nil
 
 end FireboxConstraints_Strict

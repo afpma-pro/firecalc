@@ -157,9 +157,9 @@ abstract class EN15544_V_2023_Common_Application
     // private val en15544_inputs = inputs
     final lazy val firebox: Firebox_15544 = inputs.design.firebox
 
-    /** Type-safe constraints access via the Self-typed member. */
+    /** Type-safe constraints access via the resolver (dispatches to subtype instance). */
     protected lazy val fc: FireboxConstraints[firebox.Self] =
-        firebox.constraints
+        FireboxConstraintsResolver.resolve(firebox)
 
     /** Build the stove-level constraint context. */
     lazy val stoveConstraintContext: StoveConstraintContext =
