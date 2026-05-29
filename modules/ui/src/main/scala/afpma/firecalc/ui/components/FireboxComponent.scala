@@ -17,6 +17,7 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
@@ -26,12 +27,15 @@ import scala.scalajs.js.annotation.*
 import _root_.coulomb.policy.standard.given
 import afpma.laminar.form.Form
 import afpma.laminar.form.Form.as_HtmlElement
+import afpma.laminar.form.FormConfig
 import afpma.laminar.form.FormRenderer
 import afpma.laminar.form.daisyui.DaisyUIVertical
 import afpma.laminar.form.derivation.FormDerivation
 import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import io.scalaland.chimney.dsl.*
 import io.taig.babel.Locale
+
+import afpma.firecalc.ui.config.UIConfig
 
 case class FireboxComponent(
     v: Var[Firebox]
@@ -74,9 +78,21 @@ case class FireboxComponent(
 
     lazy val node =
         import vertical_form.given
+        val formConfig = FormConfig.default.withDisabledOptionIds(
+            Signal.fromValue {
+                val avail = UIConfig.uiAvailability
+                (List(
+                    avail.traditional    -> I18N.firebox_names.traditional,
+                    avail.ecolabeled     -> I18N.firebox_names.ecolabeled,
+                    avail.afpmaPrse      -> I18N.firebox_names.afpma_prse,
+                    avail.singleTested   -> I18N.firebox_names.single_tested,
+                    avail.door15aCatalog -> I18N.firebox_names.door_15a_firebox
+                ).collect { case (enabled, name) if !enabled => name }).toSet
+            }
+        )
         div(
             cls := "grid grid-flow-col grid-cols-3 grid-rows-2 gap-10",
-            div(cls := "row-span-2", v.as_HtmlElement, outputResults),
+            div(cls := "row-span-2", v.as_HtmlElement(formConfig), outputResults),
             children(nodeSeq_Ecolabeled_V1) <-- showEcolabeledV1Img,
             children(nodeSeq_Ecolabeled_V2) <-- showEcolabeledV2Img,
             children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg

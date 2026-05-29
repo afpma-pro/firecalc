@@ -323,6 +323,14 @@ object Main extends IOApp:
                     then "CORS policy: allowing all origins (default)"
                     else s"CORS policy: allowing origins ${paymentsConfig.corsAllowedOrigins.mkString(", ")}"
                 )
+                fa = paymentsConfig.fireboxAvailability
+                _              <- logger.info(
+                    s"firebox-availability: traditional=${if fa.traditional then "enabled" else "disabled"}, " +
+                        s"ecolabeled=${if fa.ecolabeled then "enabled" else "disabled"}, " +
+                        s"afpma-prse=${if fa.afpmaPrse then "enabled" else "disabled"}, " +
+                        s"single-tested=${if fa.singleTested then "enabled" else "disabled"}, " +
+                        s"door15a-catalog=${if fa.door15aCatalog then "enabled" else "disabled"}"
+                )
 
                 // Run migrations with configured database
                 _ <- Migrations.migrate[IO](s"jdbc:sqlite:${paymentsConfig.databaseConfig.path}")
@@ -616,7 +624,8 @@ object Main extends IOApp:
                             orderService,
                             paymentService,
                             emailService,
-                            productCopyConfig
+                            productCopyConfig,
+                            paymentsConfig.fireboxAvailability
                         )
 
                         _ <- IO.println("Setting up HTTP routes...")

@@ -166,6 +166,21 @@ payments {
     # Use ["*"] to allow all origins (NOT recommended for staging/production).
     # UPDATE THIS with your actual staging frontend URL.
     cors-allowed-origins = ["https://staging.firecalc.afpma.pro"]
+
+    # ---------------------------------------------------------------------
+    # Firebox Availability Switches
+    # ---------------------------------------------------------------------
+    # Controls which firebox types are available for purchase. Each switch
+    # defaults to true (enabled) when omitted. Omitting the entire block is
+    # the safe choice for upgrades — all types remain enabled.
+    # Valid keys: traditional, ecolabeled, afpma-prse, single-tested, door15a-catalog
+    firebox-availability {
+      traditional = true
+      ecolabeled = true
+      afpma-prse = true
+      single-tested = true
+      door15a-catalog = true
+    }
   }
 }
 

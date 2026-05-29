@@ -35,6 +35,7 @@ import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.config.UIConfig
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
 import afpma.firecalc.ui.models.schema.LocalStorageKeys
@@ -374,9 +375,13 @@ lazy val results_en15544_strict_sig: Signal[VNelMcalcErr[EN15544_Strict_Applicat
         // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .map: helper =>
-            scala.util.Try(helper.make_en15544_Strict_Application) match
-                case scala.util.Success(result) => result
-                case scala.util.Failure(e)      => Validated.invalidNel(UnexpectedDevError(e.getMessage))
+            val currentFirebox = helper.fcProj.firebox
+            if !UIConfig.uiAvailability.allows(currentFirebox) then
+                Validated.invalidNel(FireboxTypeDisabledError(currentFirebox.typeName))
+            else
+                scala.util.Try(helper.make_en15544_Strict_Application) match
+                    case scala.util.Success(result) => result
+                    case scala.util.Failure(e)      => Validated.invalidNel(UnexpectedDevError(e.getMessage))
 
 lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
     results_en15544_strict_sig

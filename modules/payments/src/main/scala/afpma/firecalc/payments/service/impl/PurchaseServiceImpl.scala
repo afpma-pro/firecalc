@@ -8,6 +8,8 @@ package afpma.firecalc.payments.service.impl
 import java.time.Instant
 import java.util.UUID
 
+import afpma.firecalc.domain.FireboxAvailability
+import afpma.firecalc.dto.all.{allows, typeName}
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.exceptions.*
@@ -32,13 +34,28 @@ class PurchaseServiceImpl[F[_]: Async](
     orderService       : OrderService[F],
     paymentService     : PaymentService[F],
     emailService       : EmailService[F],
-    productCopyConfig  : ProductCopyConfig
+    productCopyConfig  : ProductCopyConfig,
+    fireboxAvailability: FireboxAvailability
 )                                     (implicit logger: Logger[F])
     extends PurchaseService[F]:
 
     def createPurchaseIntent(request: CreatePurchaseIntentRequest): F[PurchaseToken] =
         for
             _ <- logger.info(s"Creating purchase intent for email: ${LogSanitizer.maskEmail(request.customer.email)}")
+
+            // Check disabled-firebox as the first business validation (zero side effects before this point)
+            _ <- request.productMetadata match
+                case Some(metadata) =>
+                    MetadataFireboxDecoder.extractFirebox(metadata) match
+                        case Some(firebox) =>
+                            if !fireboxAvailability.allows(firebox) then
+                                Async[F].raiseError(FireboxTypeDisabledException(firebox.typeName))
+                            else
+                                Async[F].unit
+                        case None =>
+                            Async[F].unit
+                case None =>
+                    Async[F].unit
 
             // Validate email address at API entry point
             validatedEmail <- EmailAddress.fromString(request.customer.email) match {

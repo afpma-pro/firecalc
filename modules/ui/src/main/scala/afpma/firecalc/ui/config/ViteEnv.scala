@@ -24,12 +24,22 @@ import scala.scalajs.js.annotation.JSImport
 @js.native
 @JSImport("/src/main/js/vite-env.js", JSImport.Namespace)
 private object ImportMetaEnv extends js.Any {
-    val VITE_BACKEND_PROTOCOL : String = js.native
-    val VITE_BACKEND_HOST     : String = js.native
-    val VITE_BACKEND_PORT     : String = js.native
-    val VITE_BACKEND_BASE_PATH: String = js.native
-    val VITE_CGUV_URL         : String = js.native
-    val MODE                  : String = js.native
+    val VITE_BACKEND_PROTOCOL            : String = js.native
+    val VITE_BACKEND_HOST                : String = js.native
+    val VITE_BACKEND_PORT                : String = js.native
+    val VITE_BACKEND_BASE_PATH           : String = js.native
+    val VITE_CGUV_URL                    : String = js.native
+    val VITE_FIREBOX_AVAIL_TRADITIONAL        : String = js.native
+    val VITE_FIREBOX_AVAIL_ECOLABELED         : String = js.native
+    val VITE_FIREBOX_AVAIL_AFPMA_PRSE         : String = js.native
+    val VITE_FIREBOX_AVAIL_SINGLE_TESTED      : String = js.native
+    val VITE_FIREBOX_AVAIL_DOOR15A_CATALOG    : String = js.native
+    val VITE_FIREBOX_AVAIL_TRADITIONAL_BACKEND    : String = js.native
+    val VITE_FIREBOX_AVAIL_ECOLABELED_BACKEND     : String = js.native
+    val VITE_FIREBOX_AVAIL_AFPMA_PRSE_BACKEND     : String = js.native
+    val VITE_FIREBOX_AVAIL_SINGLE_TESTED_BACKEND  : String = js.native
+    val VITE_FIREBOX_AVAIL_DOOR15A_CATALOG_BACKEND: String = js.native
+    val MODE                              : String = js.native
 }
 
 /**
@@ -69,6 +79,17 @@ object ViteEnv {
 
     /** URL to Conditions Générales de Vente (CGUV / Terms and Conditions of Sale) */
     def cguvUrl: String = ImportMetaEnv.VITE_CGUV_URL
+
+    def fireboxAvailTraditional       : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_TRADITIONAL
+    def fireboxAvailEcolabeled        : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_ECOLABELED
+    def fireboxAvailAfpmaPrse         : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_AFPMA_PRSE
+    def fireboxAvailSingleTested      : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_SINGLE_TESTED
+    def fireboxAvailDoor15aCatalog    : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_DOOR15A_CATALOG
+    def fireboxAvailTraditionalBackend   : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_TRADITIONAL_BACKEND
+    def fireboxAvailEcolabeledBackend    : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_ECOLABELED_BACKEND
+    def fireboxAvailAfpmaPrseBackend     : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_AFPMA_PRSE_BACKEND
+    def fireboxAvailSingleTestedBackend  : String = ImportMetaEnv.VITE_FIREBOX_AVAIL_SINGLE_TESTED_BACKEND
+    def fireboxAvailDoor15aCatalogBackend: String = ImportMetaEnv.VITE_FIREBOX_AVAIL_DOOR15A_CATALOG_BACKEND
 
     /**
      * Current build mode as a type-safe enum.

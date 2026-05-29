@@ -372,7 +372,8 @@ lazy val domain = crossProject(JVMPlatform, JSPlatform)
         version := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:48"),
         libraryDependencies ++= Seq(
-            "org.typelevel" %%% "kittens" % "3.5.0"
+            "org.typelevel" %%% "kittens" % "3.5.0",
+            "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
         )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))

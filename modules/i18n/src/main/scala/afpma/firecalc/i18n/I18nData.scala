@@ -539,7 +539,8 @@ object I18nData:
         parse_error                            : StringFormat1,
         value_out_of_range                     : StringFormat2,
         value_out_of_range_with_range          : StringFormat6,
-        missing_grid_point                     : StringFormat2
+        missing_grid_point                     : StringFormat2,
+        firebox_type_disabled                  : StringFormat1
     )
 
     case class Headers(

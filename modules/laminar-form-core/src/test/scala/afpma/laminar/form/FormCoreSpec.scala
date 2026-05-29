@@ -10,6 +10,8 @@ import utest.*
 import cats.data.Validated
 import cats.data.NonEmptyList
 
+import com.raquo.airstream.core.Signal
+
 // Test sealed trait for Defaultable derivation — must be top-level for Scala.js magnolia
 sealed trait TestColor
 case class TestRed(shade: Int)  extends TestColor
@@ -302,6 +304,27 @@ object FormCoreSpec extends TestSuite:
                 val fc      = FormConfig.default.withFieldName("old")
                 val updated = fc.updateFieldNameWith(_.map(_.toUpperCase))
                 assert(updated.fieldName == Some("OLD"))
+            }
+
+            test("disabledOptionIds defaults to empty-set signal") {
+                val fc  = FormConfig.default
+                val ids = fc.disabledOptionIds
+                assert(ids ne null)
+                assert(!fc.hasDisabledOptionIdsOverride)
+                assert(fc.isDefaultLike)
+            }
+
+            test("withDisabledOptionIds stores the given signal") {
+                val sig     = Signal.fromValue(Set("A", "B"))
+                val updated = FormConfig.default.withDisabledOptionIds(sig)
+                assert(updated.disabledOptionIds eq sig)
+                assert(updated.hasDisabledOptionIdsOverride)
+                assert(!updated.isDefaultLike)
+            }
+
+            test("fresh default-like config still counts as default-like") {
+                val fresh = FormConfig(fieldName = None)
+                assert(fresh.isDefaultLike)
             }
         }
 

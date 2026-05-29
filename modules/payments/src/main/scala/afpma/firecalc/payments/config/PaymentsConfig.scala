@@ -7,9 +7,12 @@ package afpma.firecalc.payments.config
 
 import java.time.ZoneId
 
+import afpma.firecalc.domain.FireboxAvailability
+
 case class PaymentsConfig(
     environment                 : String,
     productCatalog              : String,
+    fireboxAvailability         : FireboxAvailability = FireboxAvailability.AllEnabled,
     invoiceNumberPrefix         : String,
     invoiceNumberDigits         : Int,
     invoiceCounterStartingNumber: Int,

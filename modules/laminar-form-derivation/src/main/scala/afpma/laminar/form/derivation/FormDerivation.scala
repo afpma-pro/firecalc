@@ -51,6 +51,9 @@ object FormDerivation extends AutoDerivation[Form]:
 
     case class WrappedWithEphemeralId[A](id: Int, a: A)
 
+    private[derivation] def shouldUseOverwriteConfig(overwrite: FormConfig): Boolean =
+        !overwrite.isDefaultLike
+
     // =========================================================================
     // Magnolia join (case class derivation)
     // =========================================================================
@@ -119,15 +122,19 @@ object FormDerivation extends AutoDerivation[Form]:
                 _.typeclass.asInstanceOf[Form[A]]
             )
 
+            val subt_disabled_labels = config.disabledOptionIds
+
             renderSumTypeWithSelectAndOptions(
                 v,
                 var_subt_label_curr,
-                value_to_subt_label = fieldNameForSubtypeFromValue(sealedTrait),
-                select_field_label  = config.shownFieldName,
-                subt_defaultables   = subt_defaultables,
-                subt_labels         = subt_labels,
-                subt_typeclasses    = subt_typeclasses,
-                onSubtypeSwitch     = _onSubtypeSwitch
+                value_to_subt_label  = fieldNameForSubtypeFromValue(sealedTrait),
+                select_field_label   = config.shownFieldName,
+                subt_defaultables    = subt_defaultables,
+                subt_labels          = subt_labels,
+                subt_disabled_labels = subt_disabled_labels,
+                subt_typeclasses     = subt_typeclasses,
+                onSubtypeSwitch      = _onSubtypeSwitch,
+                parentConfig         = config
             )
 
     // =========================================================================
@@ -135,21 +142,24 @@ object FormDerivation extends AutoDerivation[Form]:
     // =========================================================================
 
     private def renderSumTypeWithSelectAndOptions[A](
-        variable           : Var[A],
-        var_subt_label_curr: Var[String],
-        value_to_subt_label: A => String,
-        select_field_label : Option[String],
-        subt_defaultables  : IArray[Defaultable[A]],
-        subt_labels        : IArray[String],
-        subt_typeclasses   : IArray[Form[A]],
-        onSubtypeSwitch    : Option[(A, A) => A]
+        variable            : Var[A],
+        var_subt_label_curr : Var[String],
+        value_to_subt_label : A => String,
+        select_field_label  : Option[String],
+        subt_defaultables   : IArray[Defaultable[A]],
+        subt_labels         : IArray[String],
+        subt_disabled_labels: Signal[Set[String]],
+        subt_typeclasses    : IArray[Form[A]],
+        onSubtypeSwitch     : Option[(A, A) => A],
+        parentConfig        : FormConfig
     )(using renderer: FormRenderer): HtmlElement =
         val a_init = variable.now()
 
         val selectNode = renderer.sumTypeSelect(
-            select_field_label,
-            var_subt_label_curr,
-            subt_labels
+            label           = select_field_label,
+            selected        = var_subt_label_curr,
+            options         = subt_labels,
+            disabledOptions = subt_disabled_labels,
         )
 
         val subt_forms_final: IArray[Form[A]] = subt_typeclasses
@@ -223,7 +233,7 @@ object FormDerivation extends AutoDerivation[Form]:
         val nodes = vars_subt
             .zip(subt_forms_final)
             .map: (var_subt, subt_form) =>
-                subt_form.render(var_subt, FormConfig.default)
+                subt_form.render(var_subt, parentConfig.withoutFieldName)
             .toIndexedSeq
 
         renderer
@@ -263,7 +273,7 @@ object FormDerivation extends AutoDerivation[Form]:
             .getOrElse(NameUtils.titleCase(param.label))
 
     private def formConfigFrom[A](caseClass: CaseClass[Form, A], overwrite: FormConfig): FormConfig =
-        if overwrite != FormConfig.default then overwrite
+        if shouldUseOverwriteConfig(overwrite) then overwrite
         else
             caseClass.annotations
                 .find(_.isInstanceOf[FormConfig])

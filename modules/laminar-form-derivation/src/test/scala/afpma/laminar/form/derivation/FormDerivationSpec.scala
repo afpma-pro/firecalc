@@ -475,6 +475,19 @@ object FormDerivationSpec extends TestSuite:
                 val form = FormDerivation.derived[Labelled]
                 assert(form.defaultable.default == Labelled(0.0))
             }
+
+            test("fresh default-like FormConfig is treated as no explicit overwrite") {
+                val overwrite = FormConfig(fieldName = None)
+
+                assert(overwrite.isDefaultLike)
+                assert(!FormDerivation.shouldUseOverwriteConfig(overwrite))
+            }
+
+            test("disabled-option override is treated as explicit overwrite") {
+                val overwrite = FormConfig.default.withDisabledOptionIds(com.raquo.airstream.core.Signal.fromValue(Set("X")))
+
+                assert(FormDerivation.shouldUseOverwriteConfig(overwrite))
+            }
         }
 
         // =====================================================================

@@ -8,6 +8,7 @@ package afpma.firecalc.engine
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.FireboxAvailabilityExtensions.localizedTypeName
 
 import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
@@ -125,6 +126,7 @@ object standard {
         case e: MecaFlu_Error               => e.show // Uses ShowUsingLocale[MecaFlu_Error]
         case e: IncrementalValidation_Error => e.show // Uses ShowUsingLocale[IncrementalValidation_Error]
         case e: ErrorsInOtherSectionType    => e.show // Uses ShowUsingLocale[ErrorsInOtherSectionType]
+        case e: FireboxTypeDisabledError    => e.show // Uses ShowUsingLocale[FireboxTypeDisabledError]
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
@@ -972,6 +974,13 @@ object standard {
                 I18N.incremental_validation.forbidden_element_position.forbidden_at_start(name)
             case ForbiddenAddElementAtEnd(_, name)   =>
                 I18N.incremental_validation.forbidden_element_position.forbidden_at_end(name)
+
+    // FireboxTypeDisabledError — circuit-breaker for UI-disabled firebox types
+    case class FireboxTypeDisabledError(typeName: String) extends MCalc_Error
+
+    object FireboxTypeDisabledError:
+        given ShowUsingLocale[FireboxTypeDisabledError] = showUsingLocale: e =>
+            I18N.errors.firebox_type_disabled(e.typeName.localizedTypeName)
 
     // ErrorsInOtherSectionType
     case object ErrorsInOtherSectionType extends MCalc_Error

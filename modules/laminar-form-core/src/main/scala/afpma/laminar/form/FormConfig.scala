@@ -7,6 +7,8 @@ package afpma.laminar.form
 
 import scala.annotation.StaticAnnotation
 
+import com.raquo.airstream.core.Signal
+
 import magnolia1.TypeInfo
 
 /** Annotation to override field name display in forms. */
@@ -20,8 +22,16 @@ class FieldName(val value: String) extends StaticAnnotation
 case class FormConfig(
     fieldName          : Option[String],
     fieldNamesForParams: Map[String, String] = Map(),
-    showFieldName      : Boolean             = true
+    showFieldName      : Boolean             = true,
+    disabledOptionIds  : Signal[Set[String]] = Signal.fromValue(Set.empty),
+    hasDisabledOptionIdsOverride: Boolean    = false
 ) extends StaticAnnotation:
+
+    def isDefaultLike: Boolean =
+        fieldName.isEmpty &&
+            fieldNamesForParams.isEmpty &&
+            showFieldName &&
+            !hasDisabledOptionIdsOverride
 
     def updateFieldNameWith(f: Option[String] => Option[String]): FormConfig =
         withFieldNameOpt(f(fieldName))
@@ -46,6 +56,9 @@ case class FormConfig(
 
     def withFieldNameForParam(paramLabel: String, paramFieldName: String): FormConfig =
         copy(fieldNamesForParams = fieldNamesForParams.updated(paramLabel, paramFieldName))
+
+    def withDisabledOptionIds(ids: Signal[Set[String]]): FormConfig =
+        copy(disabledOptionIds = ids, hasDisabledOptionIdsOverride = true)
 
 object FormConfig:
     val default: FormConfig = FormConfig(fieldName = None)

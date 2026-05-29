@@ -440,3 +440,14 @@ final case class ProductFireboxMismatchException(
         "productId" -> productId
     )
 }
+
+final case class FireboxTypeDisabledException(
+    typeName: String
+) extends PurchaseServiceError(
+        s"Firebox type '$typeName' is currently disabled for purchase"
+    ) {
+    override def errorCode: String = "firebox_type_disabled"
+    override def context: Map[String, String] = Map(
+        "firebox_type" -> typeName
+    )
+}

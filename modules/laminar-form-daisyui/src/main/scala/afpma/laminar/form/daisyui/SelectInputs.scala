@@ -8,6 +8,7 @@ package afpma.laminar.form.daisyui
 import cats.Show
 import cats.syntax.all.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
@@ -25,8 +26,9 @@ trait SelectInputs:
         show                 : A => String,
         makeId               : A => String,
         getById              : String => A,
-        asDisabled           : Var[Boolean] | Boolean = false,
-        selectCls            : String                 = "select"
+        asDisabled           : Var[Boolean] | Boolean  = false,
+        selectCls            : String                  = "select",
+        disabledOptions      : Signal[Set[A]]          = Var(Set.empty[A]).signal
     ) extends Component:
 
         private val id_option_list: Seq[(String, A)] =
@@ -40,7 +42,8 @@ trait SelectInputs:
             option(
                 show(o),
                 value <-- id_o_sig.map((id, _) => id),
-                defaultSelected <-- selectedVar.signal.map(sv => makeId(sv) == idx)
+                defaultSelected <-- selectedVar.signal.map(sv => makeId(sv) == idx),
+                disabled <-- disabledOptions.map(_.map(dopt => makeId(dopt)).contains(idx))
             )
 
         val node = select(
@@ -62,7 +65,8 @@ trait SelectInputs:
             selectedVar          : Var[A],
             labelAsDisabledOption: Option[String],
             options              : Seq[A],
-            selectCls            : String = "select"
+            selectCls            : String                 = "select",
+            disabledOptions      : Signal[Set[A]]         = Var(Set.empty[A]).signal
         ) =
             def getById(l: String): A =
                 options
@@ -75,7 +79,8 @@ trait SelectInputs:
                 show                  = Show[A].show,
                 makeId                = Show[A].show,
                 getById               = getById,
-                selectCls             = selectCls
+                selectCls             = selectCls,
+                disabledOptions       = disabledOptions
             )
 
         def single[A: Show](

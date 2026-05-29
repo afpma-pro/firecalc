@@ -8,6 +8,7 @@ package afpma.firecalc.payments.service
 import java.time.Instant
 import java.util.UUID
 
+import afpma.firecalc.domain.FireboxAvailability
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.email.AdminNotification
 import afpma.firecalc.payments.email.AuthenticationCodeEmail
@@ -620,7 +621,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val request = CreatePurchaseIntentRequest(
@@ -689,7 +691,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val request = CreatePurchaseIntentRequest(
@@ -731,7 +734,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val fileMetadata = FileDescriptionWithContent(
@@ -780,7 +784,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             // Setup: Create purchase intent first
@@ -852,7 +857,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             // Setup: Create purchase intent first
@@ -904,7 +910,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val verifyRequest = VerifyAndProcessRequest(
@@ -948,7 +955,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             // Setup: Create purchase intent
@@ -1005,7 +1013,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val invalidCustomer = testCustomerInfo.copy(
@@ -1053,7 +1062,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val invalidCustomer = testCustomerInfo.copy(
@@ -1100,7 +1110,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val fileMetadata = FileDescriptionWithContent(
@@ -1149,7 +1160,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val fileMetadata = FileDescriptionWithContent(
@@ -1190,7 +1202,8 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val fileMetadata = FileDescriptionWithContent(

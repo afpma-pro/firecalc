@@ -170,3 +170,7 @@ object all:
 
     // V6
     export afpma.firecalc.dto.v6.FireCalcYAML_V6
+
+    // Extension methods
+    export afpma.firecalc.dto.FireboxAvailabilityExtensions.allows
+    export afpma.firecalc.dto.FireboxAvailabilityExtensions.typeName

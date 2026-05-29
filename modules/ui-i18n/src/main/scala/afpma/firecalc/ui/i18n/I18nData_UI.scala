@@ -25,6 +25,7 @@ final case class I18nData_UI(
     details_columns      : DetailsColumns,
     direction_badge      : DirectionBadge,
     errors               : Errors,
+    firebox              : Firebox,
     footer               : Footer,
     global_error         : GlobalError,
     indicators           : Indicators,
@@ -330,6 +331,16 @@ case class Errors(
     value_gt_0              : StringFormat1,
     value_is_undefined      : String
 )
+
+final case class Firebox(
+    order_disabled: Firebox.OrderDisabled
+)
+
+object Firebox:
+    final case class OrderDisabled(
+        tooltip       : String,
+        error_message: String
+    )
 
 case class GlobalError(
     title          : String,

@@ -5,6 +5,8 @@
 
 package afpma.firecalc.ui.config
 
+import afpma.firecalc.domain.FireboxAvailability
+
 /**
  * Central configuration for the FireCalc UI application
  *
@@ -22,6 +24,35 @@ package afpma.firecalc.ui.config
  */
 object UIConfig {
 
+    def parseBool(key: String, s: String): Boolean =
+        if s == null || s.isEmpty then true
+        else if s == "true" then true
+        else if s == "false" then false
+        else
+            scala.scalajs.js.Dynamic.global.console.warn(s"VITE env var $key has unexpected value '$s', treating as true")
+            true
+
+    lazy val uiAvailability: FireboxAvailability = FireboxAvailability(
+        traditional    = parseBool("VITE_FIREBOX_AVAIL_TRADITIONAL", ViteEnv.fireboxAvailTraditional),
+        ecolabeled     = parseBool("VITE_FIREBOX_AVAIL_ECOLABELED", ViteEnv.fireboxAvailEcolabeled),
+        afpmaPrse      = parseBool("VITE_FIREBOX_AVAIL_AFPMA_PRSE", ViteEnv.fireboxAvailAfpmaPrse),
+        singleTested   = parseBool("VITE_FIREBOX_AVAIL_SINGLE_TESTED", ViteEnv.fireboxAvailSingleTested),
+        door15aCatalog = parseBool("VITE_FIREBOX_AVAIL_DOOR15A_CATALOG", ViteEnv.fireboxAvailDoor15aCatalog)
+    )
+
+    lazy val backendAvailability: FireboxAvailability = FireboxAvailability(
+        traditional    = parseBool("VITE_FIREBOX_AVAIL_TRADITIONAL_BACKEND", ViteEnv.fireboxAvailTraditionalBackend),
+        ecolabeled     = parseBool("VITE_FIREBOX_AVAIL_ECOLABELED_BACKEND", ViteEnv.fireboxAvailEcolabeledBackend),
+        afpmaPrse      = parseBool("VITE_FIREBOX_AVAIL_AFPMA_PRSE_BACKEND", ViteEnv.fireboxAvailAfpmaPrseBackend),
+        singleTested   = parseBool("VITE_FIREBOX_AVAIL_SINGLE_TESTED_BACKEND", ViteEnv.fireboxAvailSingleTestedBackend),
+        door15aCatalog = parseBool("VITE_FIREBOX_AVAIL_DOOR15A_CATALOG_BACKEND", ViteEnv.fireboxAvailDoor15aCatalogBackend)
+    )
+
+    private def logAvailability(label: String, fa: FireboxAvailability): Unit =
+        scala.scalajs.js.Dynamic.global.console.log(
+            s"$label — traditional=${fa.traditional} ecolabeled=${fa.ecolabeled} afpmaPrse=${fa.afpmaPrse} singleTested=${fa.singleTested} door15aCatalog=${fa.door15aCatalog}"
+        )
+
     /**
      * Constructs the base backend URL from environment configuration
      *
@@ -37,6 +68,9 @@ object UIConfig {
         scala.scalajs.js.Dynamic.global.console.log(s"  Host: ${ViteEnv.backendHost}"         )
         scala.scalajs.js.Dynamic.global.console.log(s"  Port: ${ViteEnv.backendPort}"         )
         scala.scalajs.js.Dynamic.global.console.log(s"  Base Path: ${ViteEnv.backendBasePath}")
+
+        logAvailability("UI availability", uiAvailability)
+        logAvailability("Backend availability", backendAvailability)
 
         val protocol = ViteEnv.backendProtocol
         val host     = ViteEnv.backendHost
