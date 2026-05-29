@@ -26,6 +26,7 @@ import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
 
 import cats.data.*
 import cats.implicits.toShow
+import cats.syntax.apply.*
 import cats.syntax.option.catsSyntaxOptionId
 import cats.syntax.validated.catsSyntaxValidatedId
 
@@ -85,7 +86,9 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
         v match
             case Validated.Valid(_)     => ().validNel[MCalc_Error]
             case Validated.Invalid(nel) =>
-                val filtered = nel.filterNot(_.isInstanceOf[FireboxTypeDisabledError])
+                val filtered = nel.toList.filterNot:
+                    case _: FireboxTypeDisabledError => true
+                    case _                           => false
                 if filtered.nonEmpty then NonEmptyList.fromListUnsafe(filtered).invalid
                 else ().validNel[MCalc_Error]
 
@@ -95,7 +98,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                 cited_constraints_validation_sig
                     .combineWithDistinct(firebox_custom_constraints_sig)
                     .map: (v1, v2) =>
-                        v1.andThen(_ => v2)
+                        v1 *> (v2: VNelMcalcErr[Unit])
             )
             .map: (avail, cons) =>
                 if avail then stripFireboxTypeDisabledErrors(cons)
