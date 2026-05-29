@@ -117,14 +117,14 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                         .map: (fb, typeAvail, all_cons, fb_press_avail) =>
                             val typeDisabledIcon =
                                 if !typeAvail then
-                                     Some(
-                                         DaisyUITooltip (
-                                             ttContent  = span(cls := "text-xs", I18N_UI.firebox.order_disabled.tooltip),
-                                             element    = span(cls := "text-warning", lucide.`triangle-alert`()),
-                                             ttStyle    = "tooltip-warning",
-                                             ttPosition = "tooltip-bottom"
-                                         ).node
-                                     )
+                                    Some(
+                                        DaisyUITooltip (
+                                            ttContent  = span(cls := "text-xs", I18N_UI.firebox.order_disabled.tooltip),
+                                            element    = span(cls := "text-warning", lucide.`triangle-alert`()),
+                                            ttStyle    = "tooltip-warning",
+                                            ttPosition = "tooltip-bottom"
+                                        ).node
+                                    )
                                 else None
 
                             val statusCons =
@@ -176,9 +176,13 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                             ).node
 
                             val allChildren =
-                                typeDisabledIcon.toList ++ List(statusCons, statusOther, p(FireboxComponent.showDimensionsSummary.show(fb)))
+                                typeDisabledIcon.toList ++ List(
+                                    statusCons,
+                                    statusOther,
+                                    p(FireboxComponent.showDimensionsSummary.show(fb))
+                                )
                             span(
-                                cls    := "flex flex-row gap-x-2",
+                                cls := "flex flex-row gap-x-2",
                                 children <-- Signal.fromValue(allChildren)
                             ).some
                     ,

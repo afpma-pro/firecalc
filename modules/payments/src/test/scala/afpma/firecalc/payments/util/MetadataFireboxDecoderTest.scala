@@ -213,7 +213,7 @@ object MetadataFireboxDecoderTest extends TestSuite:
                 mimeType = "application/x-yaml",
                 content  = "not-valid-base64!!!"
             )
-            val result = MetadataFireboxDecoder.extractFirebox(metadata)
+            val result   = MetadataFireboxDecoder.extractFirebox(metadata)
             assert(result.isEmpty)
         }
 

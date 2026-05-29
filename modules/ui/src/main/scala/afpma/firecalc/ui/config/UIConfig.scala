@@ -29,7 +29,8 @@ object UIConfig {
         else if s == "true" then true
         else if s == "false" then false
         else
-            scala.scalajs.js.Dynamic.global.console.warn(s"VITE env var $key has unexpected value '$s', treating as true")
+            scala.scalajs.js.Dynamic.global.console
+                .warn(s"VITE env var $key has unexpected value '$s', treating as true")
             true
 
     lazy val uiAvailability: FireboxAvailability = FireboxAvailability(
@@ -45,7 +46,8 @@ object UIConfig {
         ecolabeled     = parseBool("VITE_FIREBOX_AVAIL_ECOLABELED_BACKEND", ViteEnv.fireboxAvailEcolabeledBackend),
         afpmaPrse      = parseBool("VITE_FIREBOX_AVAIL_AFPMA_PRSE_BACKEND", ViteEnv.fireboxAvailAfpmaPrseBackend),
         singleTested   = parseBool("VITE_FIREBOX_AVAIL_SINGLE_TESTED_BACKEND", ViteEnv.fireboxAvailSingleTestedBackend),
-        door15aCatalog = parseBool("VITE_FIREBOX_AVAIL_DOOR15A_CATALOG_BACKEND", ViteEnv.fireboxAvailDoor15aCatalogBackend)
+        door15aCatalog =
+            parseBool("VITE_FIREBOX_AVAIL_DOOR15A_CATALOG_BACKEND", ViteEnv.fireboxAvailDoor15aCatalogBackend)
     )
 
     private def logAvailability(label: String, fa: FireboxAvailability): Unit =
@@ -69,7 +71,7 @@ object UIConfig {
         scala.scalajs.js.Dynamic.global.console.log(s"  Port: ${ViteEnv.backendPort}"         )
         scala.scalajs.js.Dynamic.global.console.log(s"  Base Path: ${ViteEnv.backendBasePath}")
 
-        logAvailability("UI availability", uiAvailability)
+        logAvailability("UI availability", uiAvailability          )
         logAvailability("Backend availability", backendAvailability)
 
         val protocol = ViteEnv.backendProtocol

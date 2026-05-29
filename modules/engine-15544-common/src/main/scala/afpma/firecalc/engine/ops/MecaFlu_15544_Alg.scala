@@ -45,7 +45,7 @@ object MecaFlu_15544_AppCtx:
         _zGeo        : z_geodetical_height,
         _shortSection: ShortSectionAlg
     ): MecaFlu_15544_AppCtx = new MecaFlu_15544_AppCtx:
-        def en15544     = _en15544
-        def loadQty     = _loadQty
-        def zGeo        = _zGeo
-        def shortSection= _shortSection
+        def en15544      = _en15544
+        def loadQty      = _loadQty
+        def zGeo         = _zGeo
+        def shortSection = _shortSection

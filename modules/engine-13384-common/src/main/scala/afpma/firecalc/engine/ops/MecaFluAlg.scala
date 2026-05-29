@@ -49,7 +49,7 @@ trait MecaFluAlg:
      */
     def makePipeSectionResult(
         ctx: MecaFluSectionContext[pipeDescr.PipeElDescr, Params]
-    )(using appCtx: MecaFluAppContext): SectionResult
+    )                        (using appCtx: MecaFluAppContext): SectionResult
 
     /**
      * Compute full pipe result using unified context object.
@@ -58,7 +58,7 @@ trait MecaFluAlg:
     def makePipeResult(
         ctx   : MecaFluPipeContext[pipeDescr.PipeElDescr],
         params: Params
-    )(using appCtx: MecaFluAppContext): Either[MecaFlu_Error, FullResult]
+    )                 (using appCtx: MecaFluAppContext): Either[MecaFlu_Error, FullResult]
 
 /** Base application context for MecaFlu operations. Sub-traits add standard-specific fields. */
 trait MecaFluAppContext

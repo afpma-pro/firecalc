@@ -338,7 +338,7 @@ final case class Firebox(
 
 object Firebox:
     final case class OrderDisabled(
-        tooltip       : String,
+        tooltip      : String,
         error_message: String
     )
 

@@ -15,17 +15,20 @@ class SubjectToLicenseFeeSpec extends AnyFlatSpec with Matchers:
 
     "Sku.isLicenseFeeProduct" should "return true for production license-fee product" in {
         Sku.isLicenseFeeProduct(
-            v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id) shouldBe true
+            v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+        ) shouldBe true
     }
 
     it should "return true for development license-fee product" in {
         Sku.isLicenseFeeProduct(
-            v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id) shouldBe true
+            v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+        ) shouldBe true
     }
 
     it should "return true for staging license-fee product" in {
         Sku.isLicenseFeeProduct(
-            v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id) shouldBe true
+            v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+        ) shouldBe true
     }
 
     it should "return false for base product" in {
@@ -57,13 +60,18 @@ class SubjectToLicenseFeeSpec extends AnyFlatSpec with Matchers:
         val unused = null.asInstanceOf[Firebox]
 
         SubjectToLicenseFee[Firebox.Ecolabeled].requiresLicenseFee(
-            unused.asInstanceOf[Firebox.Ecolabeled]) shouldBe true
+            unused.asInstanceOf[Firebox.Ecolabeled]
+        ) shouldBe true
         SubjectToLicenseFee[Firebox.Door15aFirebox_Catalog].requiresLicenseFee(
-            unused.asInstanceOf[Firebox.Door15aFirebox_Catalog]) shouldBe true
+            unused.asInstanceOf[Firebox.Door15aFirebox_Catalog]
+        ) shouldBe true
         SubjectToLicenseFee[Firebox.Traditional].requiresLicenseFee(
-            unused.asInstanceOf[Firebox.Traditional]) shouldBe false
+            unused.asInstanceOf[Firebox.Traditional]
+        ) shouldBe false
         SubjectToLicenseFee[Firebox.AFPMA_PRSE].requiresLicenseFee(
-            unused.asInstanceOf[Firebox.AFPMA_PRSE]) shouldBe false
+            unused.asInstanceOf[Firebox.AFPMA_PRSE]
+        ) shouldBe false
         SubjectToLicenseFee[Firebox.SingleTested].requiresLicenseFee(
-            unused.asInstanceOf[Firebox.SingleTested]) shouldBe false
+            unused.asInstanceOf[Firebox.SingleTested]
+        ) shouldBe false
     }

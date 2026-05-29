@@ -31,8 +31,8 @@ object v1:
 
         def isLicenseFeeProduct(productId: ProductId): Boolean =
             ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
-            || DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
-            || StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
+                || DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
+                || StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
 
     /** Typeclass: is this firebox type subject to an additional license fee? */
     trait SubjectToLicenseFee[-F <: Firebox]:
@@ -64,15 +64,15 @@ object v1:
 
     extension (firebox: Firebox)
         def requiresLicenseFee: Boolean = firebox match
-            case e: Firebox.Ecolabeled              =>
+            case e: Firebox.Ecolabeled             =>
                 SubjectToLicenseFee[Firebox.Ecolabeled].requiresLicenseFee(e)
-            case d: Firebox.Door15aFirebox_Catalog  =>
+            case d: Firebox.Door15aFirebox_Catalog =>
                 SubjectToLicenseFee[Firebox.Door15aFirebox_Catalog].requiresLicenseFee(d)
-            case t: Firebox.Traditional             =>
+            case t: Firebox.Traditional            =>
                 SubjectToLicenseFee[Firebox.Traditional].requiresLicenseFee(t)
-            case a: Firebox.AFPMA_PRSE              =>
+            case a: Firebox.AFPMA_PRSE             =>
                 SubjectToLicenseFee[Firebox.AFPMA_PRSE].requiresLicenseFee(a)
-            case s: Firebox.SingleTested            =>
+            case s: Firebox.SingleTested           =>
                 SubjectToLicenseFee[Firebox.SingleTested].requiresLicenseFee(s)
 
     case class OrderId(value: UUID) extends AnyVal

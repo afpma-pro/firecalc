@@ -111,11 +111,11 @@ object PurchaseServiceTypedExceptionTest extends TestSuite {
             val typeName = "Ecolabeled"
             val ex       = FireboxTypeDisabledException(typeName)
 
-            assert(ex.isInstanceOf[PurchaseServiceError]                     )
-            assert(ex.errorCode == "firebox_type_disabled"                   )
-            assert(ex.context.contains("firebox_type")                       )
-            assert(ex.context("firebox_type") == typeName                    )
-            assert(ex.getMessage.contains("Firebox type")                    )
+            assert(ex.isInstanceOf[PurchaseServiceError]                       )
+            assert(ex.errorCode == "firebox_type_disabled"                     )
+            assert(ex.context.contains("firebox_type")                         )
+            assert(ex.context("firebox_type") == typeName                      )
+            assert(ex.getMessage.contains("Firebox type")                      )
             assert(ex.getMessage.contains("is currently disabled for purchase"))
         }
 

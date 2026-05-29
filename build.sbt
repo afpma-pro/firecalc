@@ -371,8 +371,8 @@ lazy val domain = crossProject(JVMPlatform, JSPlatform)
         name    := "firecalc-domain",
         version := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:48"),
-        libraryDependencies ++= Seq(
-            "org.typelevel" %%% "kittens" % "3.5.0",
+        libraryDependencies ++= Seq  (
+            "org.typelevel" %%% "kittens"   % "3.5.0",
             "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
         )
     )
@@ -1451,19 +1451,19 @@ lazy val payments = (project in file("modules/payments"))
 
         // Merge strategy for conflicting files
         assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
-        libraryDependencies ++= Seq   (
-            "org.http4s"    %% "http4s-ember-server" % "0.23.30",
-            "org.http4s"    %% "http4s-ember-client" % "0.23.30",
-            "org.http4s"    %% "http4s-circe"        % "0.23.30",
-            "org.http4s"    %% "http4s-dsl"          % "0.23.30",
-            "org.http4s"    %% "http4s-scalatags"    % "0.25.2",
+        libraryDependencies ++= Seq    (
+            "org.http4s"    %% "http4s-ember-server"  % "0.23.30",
+            "org.http4s"    %% "http4s-ember-client"  % "0.23.30",
+            "org.http4s"    %% "http4s-circe"         % "0.23.30",
+            "org.http4s"    %% "http4s-dsl"           % "0.23.30",
+            "org.http4s"    %% "http4s-scalatags"     % "0.25.2",
             "io.circe"      %% "circe-generic"        % "0.14.14",
-            "io.circe"      %% "circe-literal"       % "0.14.14",
+            "io.circe"      %% "circe-literal"        % "0.14.14",
             "io.circe"      %% "circe-yaml-scalayaml" % "0.16.0",
-            "org.typelevel" %% "cats-effect"         % "3.6.1",
-            "ch.qos.logback" % "logback-classic"     % "1.5.18",
-            "org.typelevel" %% "log4cats-slf4j"      % "2.7.1",
-            "com.lihaoyi"   %% "scalatags"           % "0.13.1",
+            "org.typelevel" %% "cats-effect"          % "3.6.1",
+            "ch.qos.logback" % "logback-classic"      % "1.5.18",
+            "org.typelevel" %% "log4cats-slf4j"       % "2.7.1",
+            "com.lihaoyi"   %% "scalatags"            % "0.13.1",
 
             // transformers
             "io.scalaland" %% "chimney" % "1.8.2",

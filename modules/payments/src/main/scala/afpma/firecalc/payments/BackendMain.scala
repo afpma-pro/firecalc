@@ -151,8 +151,9 @@ object Main extends IOApp:
         pdfBytes         : Array[Byte],
         productCopyConfig: ProductCopyConfig
     ): InvoiceEmail = {
-        val copy = ProductCopyResolver.resolve(v1.Sku(context.product.sku), context.customer.language)(using productCopyConfig)
-        InvoiceEmail        (
+        val copy         =
+            ProductCopyResolver.resolve(v1.Sku(context.product.sku), context.customer.language)(using productCopyConfig)
+        InvoiceEmail(
             email         = EmailAddress.unsafeFromString(email),
             orderId       = context.order.id.value.toString,
             invoiceNumber = invoiceNumber,

@@ -108,17 +108,17 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
         ctx: MecaFluSectionContext[PipeElDescr, Params_13384]
     )(using appCtx: MecaFluAppContext): PipeSectionResult[PipeElDescr] =
         val ctx13384 = appCtx.asInstanceOf[MecaFlu_13384_AppCtx]
-        makePipeSectionResult(
-            gp                   = ctx.gasInPipeEl,
-            hafg                 = ctx13384.hafg,
-            hamf                 = ctx13384.hamf,
-            temp_start           = ctx.gasTempStart,
-            last_pipe_density    = ctx.lastPipeDensity,
-            last_pipe_velocity   = ctx.lastPipeVelocity,
-            last_AirSpaceDetailed= ctx.lastAirSpaceDetailed,
-            last_CrossSectionArea= ctx.lastCrossSectionArea,
-            last_InnerGeom       = ctx.lastInnerGeom,
-            prevO                = ctx.prevSectionResult
+        makePipeSectionResult                   (
+            gp                    = ctx.gasInPipeEl,
+            hafg                  = ctx13384.hafg,
+            hamf                  = ctx13384.hamf,
+            temp_start            = ctx.gasTempStart,
+            last_pipe_density     = ctx.lastPipeDensity,
+            last_pipe_velocity    = ctx.lastPipeVelocity,
+            last_AirSpaceDetailed = ctx.lastAirSpaceDetailed,
+            last_CrossSectionArea = ctx.lastCrossSectionArea,
+            last_InnerGeom        = ctx.lastInnerGeom,
+            prevO                 = ctx.prevSectionResult
         )(using ctx13384.en13384)
 
     override def makePipeResult(
@@ -127,8 +127,13 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
     )(using appCtx: MecaFluAppContext): Either[MecaFlu_Error, PipeResult] =
         val ctx13384 = appCtx.asInstanceOf[MecaFlu_13384_AppCtx]
         makePipeResult(
-            ctx.fullDescr, ctx13384.hafg, ctx13384.hamf,
-            ctx.gasTempStart, ctx.lastPipeDensity, ctx.lastPipeVelocity, ctx.gas
+            ctx.fullDescr,
+            ctx13384.hafg,
+            ctx13384.hamf,
+            ctx.gasTempStart,
+            ctx.lastPipeDensity,
+            ctx.lastPipeVelocity,
+            ctx.gas
         )(using params, ctx13384.en13384)
 
 private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(

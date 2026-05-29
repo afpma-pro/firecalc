@@ -103,9 +103,11 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
 
     private val feeProductPrice: BigDecimal =
         ViteEnv.buildMode match
-            case BuildMode.Development => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+            case BuildMode.Development =>
+                v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
             case BuildMode.Staging     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
-            case BuildMode.Production  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+            case BuildMode.Production  =>
+                v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
 
     private val licenseFeePrice: BigDecimal = feeProductPrice - baseProductPrice
 
@@ -160,20 +162,23 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
     ): EventStream[Either[OrderFlowError, CreatePurchaseIntentResponse]] =
         val billingInfo = billingInfoVar.now()
         val language: BillingLanguage = locale.transformInto[BillingLanguage]
-        val requiresFee = engineStateVar.now().firebox.requiresLicenseFee
-        val productId = (ViteEnv.buildMode, requiresFee) match
-            case (BuildMode.Development, true)  => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+        val requiresFee             = engineStateVar.now().firebox.requiresLicenseFee
+        val productId               = (ViteEnv.buildMode, requiresFee) match
+            case (BuildMode.Development, true ) =>
+                v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
             case (BuildMode.Development, false) => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.id
-            case (BuildMode.Staging, true)      => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
-            case (BuildMode.Staging, false)     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.id
-            case (BuildMode.Production, true)   => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
-            case (BuildMode.Production, false)  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case (BuildMode.Staging, true     ) =>
+                v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Staging, false    ) => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case (BuildMode.Production, true  ) =>
+                v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Production, false ) => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.id
         val billingInfoWithLanguage = BillingInfoWithLanguage.fromBillingInfoAndLanguage(
             billing_info = billingInfo,
             language     = language
         )
         val customerInfo: CustomerInfo = billingInfoWithLanguage.transformInto[CustomerInfo]
-        val currentProject = engineStateVar.now()
+        val currentProject          = engineStateVar.now()
         val productMetadataResult: Either[OrderFlowError, FileDescriptionWithContent] =
             convertProjectToBase64(currentProject) match
                 case Success(base64Content) =>
@@ -184,10 +189,10 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                             content  = base64Content
                         )
                     )
-                case Failure(error) =>
+                case Failure(error)         =>
                     val errorMsg = s"Failed to convert project to base64: ${error.getMessage}"
-                    dom.console.error(errorMsg)
-                    Left(OrderFlowGenericError(errorMsg))
+                    dom.console.error(errorMsg                       )
+                    Left             (OrderFlowGenericError(errorMsg))
         productMetadataResult match
             case Left(error) =>
                 return EventStream.fromValue(Left(error), emitOnce = true)
@@ -217,9 +222,9 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                                 decode[ErrorResponseEnvelope](responseText) match
                                     case Right(errorEnvelope) if errorEnvelope.error == "firebox_type_disabled" =>
                                         Left(OrderFlowBackendDisallowed(errorEnvelope.error))
-                                    case Right(errorEnvelope) =>
+                                    case Right(errorEnvelope)                                                   =>
                                         Left(OrderFlowGenericError(s"${errorEnvelope.error}: ${errorEnvelope.message}"))
-                                    case Left(decodeError)    =>
+                                    case Left(decodeError)                                                      =>
                                         Left(
                                             OrderFlowGenericError(
                                                 s"Failed to decode response : ${decodeError.getMessage}\n=> Response:\n'${responseText}'"
@@ -231,17 +236,17 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
 
     private def handlePurchaseCreateIntentResponse(): Observer[Either[OrderFlowError, CreatePurchaseIntentResponse]] =
         Observer[Either[OrderFlowError, CreatePurchaseIntentResponse]] {
-            case Right(response)    =>
-                pdf_report_ordering_var.update(
-                    _.copy(
+            case Right(response) =>
+                pdf_report_ordering_var.update         (
+                    _.copy      (
                         purchase_token       = Some(response.purchase_token),
                         validation_code_sent = true
                     )
                 )
                 create_purchase_intent_response_var.set(Some(Right(response)))
-            case Left(error) =>
+            case Left(error)     =>
                 create_purchase_intent_response_var.set(Some(Left(error)))
-                pdf_report_ordering_var.update(
+                pdf_report_ordering_var.update         (
                     _.copy(
                         validation_code_sent = false,
                         purchase_token       = None
@@ -427,7 +432,7 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                         // If payment_link is set, we're transitioning to the success modal
                         if (pdf_report_ordering_var.now().payment_link.isEmpty) {
                             pdf_report_ordering_var.set            (PDFReportOrderingState.init)
-                            create_purchase_intent_response_var.set(None)
+                            create_purchase_intent_response_var.set(None                       )
                             verify_and_process_response_var.set    (None                       )
                         }
                     }
@@ -453,26 +458,33 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                     br             (                                                                                   ),
                     p              (I18N_UI.pdf_ordering.modal.report.will_be_sent_to_email                            ),
                     br             (                                                                                   ),
-                    div            (cls := "space-y-1"                                                                   ,
-                        div            (cls := "flex justify-between text-sm"                                              ,
-                            span(I18N_UI.pdf_ordering.modal.report.line_name)                                               ,
-                            span(s"${baseProductPrice} EUR")                                                                )
+                    div            (
+                        cls          := "space-y-1",
+                        div(
+                            cls := "flex justify-between text-sm",
+                            span(I18N_UI.pdf_ordering.modal.report.line_name),
+                            span(s"${baseProductPrice} EUR"                 )
+                        )
                     ),
                     child <-- requiresLicenseFeeSignal.map { requiresFee =>
                         if requiresFee then
-                            div(cls := "space-y-1"                                                                   ,
-                                div(cls := "flex justify-between text-sm"                                              ,
-                                    span(I18N_UI.pdf_ordering.modal.license_fee.line_name)                               ,
-                                    span(s"${licenseFeePrice} EUR")                                                     )
+                            div(
+                                cls := "space-y-1",
+                                div(
+                                    cls := "flex justify-between text-sm",
+                                    span(I18N_UI.pdf_ordering.modal.license_fee.line_name),
+                                    span(s"${licenseFeePrice} EUR"                       )
+                                )
                             )
-                        else
-                            emptyNode
+                        else emptyNode
                     },
                     child <-- requiresLicenseFeeSignal.map { requiresFee =>
                         val total = if requiresFee then feeProductPrice else baseProductPrice
-                        div(cls := "flex justify-between font-bold border-t pt-2 mt-2"                                   ,
-                            span(I18N_UI.pdf_ordering.modal.total)                                                       ,
-                            span(s"$total EUR")                                                                         )
+                        div(
+                            cls := "flex justify-between font-bold border-t pt-2 mt-2",
+                            span(I18N_UI.pdf_ordering.modal.total),
+                            span(s"$total EUR"                   )
+                        )
                     },
                     br             (                                                                                   ),
                     ul             (
@@ -612,7 +624,6 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                             div(cls := "flex-1", ""        )
                         )
                     ),
-
                     orderButtonSection.node,
 
                     // Button + 6-digit code validation Input form
@@ -784,9 +795,9 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                             span (
                                 cls := "label-text text-base",
                                 I18N_UI.pdf_ordering.modal.emissions_warning.acknowledge_checkbox
-)
-            )
-        )
+                            )
+                        )
+                    )
                 ),
                 div(
                     cls := "modal-action flex gap-2",
@@ -824,7 +835,7 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                     val closeHandler: js.Function1[dom.Event, Unit] = _ => {
                         // Reset all state when success modal is closed
                         pdf_report_ordering_var.set            (PDFReportOrderingState.init)
-                        create_purchase_intent_response_var.set(None)
+                        create_purchase_intent_response_var.set(None                       )
                         verify_and_process_response_var.set    (None                       )
                     }
                     dialog.addEventListener("close", closeHandler)

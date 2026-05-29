@@ -11,8 +11,8 @@ import utest.*
 
 object FireboxAvailabilityConfigTest extends TestSuite {
 
-  private def envConfig(innerHocon: String) =
-    val full = s"""payments {
+    private def envConfig(innerHocon: String) =
+        val full = s"""payments {
                   |  environment = "development"
                   |  development {
                   |    product-catalog = "development"
@@ -26,79 +26,81 @@ object FireboxAvailabilityConfigTest extends TestSuite {
                   |    $innerHocon
                   |  }
                   |}""".stripMargin
-    ConfigFactory.parseString(full).resolve().getConfig("payments.development")
+        ConfigFactory.parseString(full).resolve().getConfig("payments.development")
 
-  val tests = Tests {
-    test("full block with mixed values") {
-      val cfg = envConfig(
-        """firebox-availability {
+    val tests = Tests {
+        test("full block with mixed values") {
+            val cfg = envConfig(
+                """firebox-availability {
           |  traditional = true
           |  ecolabeled = false
           |  afpma-prse = true
           |  single-tested = false
           |  door15a-catalog = true
           |}""".stripMargin
-      )
-      val fa = ConfigLoader.loadFireboxAvailability(cfg)
-      fa.traditional    ==> true
-      fa.ecolabeled     ==> false
-      fa.afpmaPrse      ==> true
-      fa.singleTested   ==> false
-      fa.door15aCatalog ==> true
-    }
+            )
+            val fa  = ConfigLoader.loadFireboxAvailability(cfg)
+            fa.traditional ==> true
+            fa.ecolabeled ==> false
+            fa.afpmaPrse ==> true
+            fa.singleTested ==> false
+            fa.door15aCatalog ==> true
+        }
 
-    test("block present but some keys missing defaults to true") {
-      val cfg = envConfig(
-        """firebox-availability {
+        test("block present but some keys missing defaults to true") {
+            val cfg = envConfig(
+                """firebox-availability {
           |  traditional = true
           |  ecolabeled = false
           |}""".stripMargin
-      )
-      val fa = ConfigLoader.loadFireboxAvailability(cfg)
-      fa.traditional    ==> true
-      fa.ecolabeled     ==> false
-      fa.afpmaPrse      ==> true
-      fa.singleTested   ==> true
-      fa.door15aCatalog ==> true
-    }
+            )
+            val fa  = ConfigLoader.loadFireboxAvailability(cfg)
+            fa.traditional ==> true
+            fa.ecolabeled ==> false
+            fa.afpmaPrse ==> true
+            fa.singleTested ==> true
+            fa.door15aCatalog ==> true
+        }
 
-    test("block entirely absent defaults to AllEnabled") {
-      val cfg = envConfig("")
-      val fa  = ConfigLoader.loadFireboxAvailability(cfg)
-      fa ==> FireboxAvailability.AllEnabled
-    }
+        test("block entirely absent defaults to AllEnabled") {
+            val cfg = envConfig("")
+            val fa  = ConfigLoader.loadFireboxAvailability(cfg)
+            fa ==> FireboxAvailability.AllEnabled
+        }
 
-    test("non-boolean value raises clear error") {
-      val cfg = envConfig(
-        """firebox-availability {
+        test("non-boolean value raises clear error") {
+            val cfg    = envConfig(
+                """firebox-availability {
           |  traditional = true
           |  ecolabeled = "not-a-boolean"
           |}""".stripMargin
-      )
-      val result = try {
-        ConfigLoader.loadFireboxAvailability(cfg)
-        None
-      } catch {
-        case e: IllegalArgumentException => Some(e)
-      }
-      assert(result.isDefined)
-      assert(result.get.getMessage.contains("firebox-availability.ecolabeled"))
-    }
+            )
+            val result =
+                try {
+                    ConfigLoader.loadFireboxAvailability(cfg)
+                    None
+                } catch {
+                    case e: IllegalArgumentException => Some(e)
+                }
+            assert(result.isDefined)
+            assert(result.get.getMessage.contains("firebox-availability.ecolabeled"))
+        }
 
-    test("non-boolean numeric value raises clear error") {
-      val cfg = envConfig(
-        """firebox-availability {
+        test("non-boolean numeric value raises clear error") {
+            val cfg    = envConfig(
+                """firebox-availability {
           |  traditional = 42
           |}""".stripMargin
-      )
-      val result = try {
-        ConfigLoader.loadFireboxAvailability(cfg)
-        None
-      } catch {
-        case e: IllegalArgumentException => Some(e)
-      }
-      assert(result.isDefined)
-      assert(result.get.getMessage.contains("firebox-availability.traditional"))
+            )
+            val result =
+                try {
+                    ConfigLoader.loadFireboxAvailability(cfg)
+                    None
+                } catch {
+                    case e: IllegalArgumentException => Some(e)
+                }
+            assert(result.isDefined)
+            assert(result.get.getMessage.contains("firebox-availability.traditional"))
+        }
     }
-  }
 }

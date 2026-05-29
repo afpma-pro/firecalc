@@ -50,11 +50,10 @@ class PurchaseServiceImpl[F[_]: Async](
                         case Some(firebox) =>
                             if !fireboxAvailability.allows(firebox) then
                                 Async[F].raiseError(FireboxTypeDisabledException(firebox.typeName))
-                            else
-                                Async[F].unit
-                        case None =>
+                            else Async[F].unit
+                        case None          =>
                             Async[F].unit
-                case None =>
+                case None           =>
                     Async[F].unit
 
             // Validate email address at API entry point
@@ -118,8 +117,8 @@ class PurchaseServiceImpl[F[_]: Async](
                 case Some(metadata) =>
                     MetadataFireboxDecoder.extractFirebox(metadata) match
                         case Some(firebox) =>
-                            val locale      = request.customer.language.toLocale
-                            val i18nErrors  = I18N_Payments(using locale).errors
+                            val locale       = request.customer.language.toLocale
+                            val i18nErrors   = I18N_Payments(using locale).errors
                             val requiresFee  = firebox.requiresLicenseFee
                             val isFeeProduct = v1.Sku.isLicenseFeeProduct(request.productId)
 
@@ -137,11 +136,10 @@ class PurchaseServiceImpl[F[_]: Async](
                                         i18nErrors.product_firebox_mismatch_fee_not_required
                                     )
                                 )
-                            else
-                                Async[F].unit
-                        case None =>
+                            else Async[F].unit
+                        case None          =>
                             Async[F].unit
-                case None =>
+                case None           =>
                     Async[F].unit
 
             // Use the UUID-based method since we have the customer entity with its UUID
@@ -156,7 +154,9 @@ class PurchaseServiceImpl[F[_]: Async](
 
             isNewUser = customerOpt.isEmpty
 
-            productCopy = ProductCopyResolver.resolve(v1.Sku(product.sku), request.customer.language)(using productCopyConfig)
+            productCopy = ProductCopyResolver.resolve(v1.Sku(product.sku), request.customer.language)(using
+                productCopyConfig
+            )
 
             authCodeEmail = AuthenticationCodeEmail(
                 email       = EmailAddress.unsafeFromString(validatedEmail),

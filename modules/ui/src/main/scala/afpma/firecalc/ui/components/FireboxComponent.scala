@@ -81,7 +81,7 @@ case class FireboxComponent(
         val formConfig = FormConfig.default.withDisabledOptionIds(
             Signal.fromValue {
                 val avail = UIConfig.uiAvailability
-                (List(
+                (List   (
                     avail.traditional    -> I18N.firebox_names.traditional,
                     avail.ecolabeled     -> I18N.firebox_names.ecolabeled,
                     avail.afpmaPrse      -> I18N.firebox_names.afpma_prse,

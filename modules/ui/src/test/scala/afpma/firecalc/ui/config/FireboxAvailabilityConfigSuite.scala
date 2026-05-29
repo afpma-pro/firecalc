@@ -27,9 +27,9 @@ object FireboxAvailabilityConfigSuite extends TestSuite:
 
         test("parseBool — garbage string yields true") {
             assert(UIConfig.parseBool("key", "garbage"))
-            assert(UIConfig.parseBool("key", "maybe"))
-            assert(UIConfig.parseBool("key", "0"))
-            assert(UIConfig.parseBool("key", "FALSE"))
+            assert(UIConfig.parseBool("key", "maybe")  )
+            assert(UIConfig.parseBool("key", "0")      )
+            assert(UIConfig.parseBool("key", "FALSE")  )
         }
 
         test("FireboxAvailability — all \"true\" builds AllEnabled") {
@@ -44,7 +44,7 @@ object FireboxAvailabilityConfigSuite extends TestSuite:
         }
 
         test("FireboxAvailability — all \"false\" builds all disabled") {
-            val fa = FireboxAvailability(
+            val fa       = FireboxAvailability(
                 traditional    = UIConfig.parseBool("key", "false"),
                 ecolabeled     = UIConfig.parseBool("key", "false"),
                 afpmaPrse      = UIConfig.parseBool("key", "false"),

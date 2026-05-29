@@ -309,17 +309,17 @@ object FormCoreSpec extends TestSuite:
             test("disabledOptionIds defaults to empty-set signal") {
                 val fc  = FormConfig.default
                 val ids = fc.disabledOptionIds
-                assert(ids ne null)
+                assert(ids ne null                     )
                 assert(!fc.hasDisabledOptionIdsOverride)
-                assert(fc.isDefaultLike)
+                assert(fc.isDefaultLike                )
             }
 
             test("withDisabledOptionIds stores the given signal") {
                 val sig     = Signal.fromValue(Set("A", "B"))
                 val updated = FormConfig.default.withDisabledOptionIds(sig)
-                assert(updated.disabledOptionIds eq sig)
+                assert(updated.disabledOptionIds eq sig    )
                 assert(updated.hasDisabledOptionIdsOverride)
-                assert(!updated.isDefaultLike)
+                assert(!updated.isDefaultLike              )
             }
 
             test("fresh default-like config still counts as default-like") {

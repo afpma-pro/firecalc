@@ -98,10 +98,10 @@ trait FormRenderer:
     def sumTypeWrapper(selectNode: HtmlElement, subtypeNodes: Seq[HtmlElement]): HtmlElement
 
     def sumTypeSelect(
-        label             : Option[String],
-        selected          : Var[String],
-        options           : IArray[String],
-        disabledOptions   : Signal[Set[String]] = Signal.fromValue(Set.empty)
+        label          : Option[String],
+        selected       : Var[String],
+        options        : IArray[String],
+        disabledOptions: Signal[Set[String]] = Signal.fromValue(Set.empty)
     ): HtmlElement
 
     def sumTypeContentOnly(label: String, content: HtmlElement): HtmlElement

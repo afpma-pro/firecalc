@@ -18,7 +18,6 @@ import afpma.firecalc.engine.impl.en15544.common.FireboxConstraintsResolver
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.typedefs.*
 
 import io.taig.babel.Locale
@@ -30,7 +29,7 @@ import org.scalatest.matchers.should.Matchers
 class EcolabeledConstraintDispatchSuite extends AnyFreeSpec with Matchers:
 
     private def stubEcolabeledDTO(
-        heightOfFirstRowOfAirInjectors: Length = 10.cm
+        heightOfFirstRowOfAirInjectors: Length
     ): Firebox.Ecolabeled =
         Firebox.Ecolabeled(
             heat_output_reduced                     = HeatOutputReduced.HalfOfNominal.makeWithoutValue,

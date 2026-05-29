@@ -435,8 +435,8 @@ final case class ProductFireboxMismatchException(
 ) extends PurchaseServiceError(
         message
     ) {
-    override def errorCode: String = "PRODUCT_FIREBOX_MISMATCH"
-    override def context: Map[String, String] = Map(
+    override def errorCode: String              = "PRODUCT_FIREBOX_MISMATCH"
+    override def context  : Map[String, String] = Map(
         "productId" -> productId
     )
 }
@@ -446,8 +446,8 @@ final case class FireboxTypeDisabledException(
 ) extends PurchaseServiceError(
         s"Firebox type '$typeName' is currently disabled for purchase"
     ) {
-    override def errorCode: String = "firebox_type_disabled"
-    override def context: Map[String, String] = Map(
+    override def errorCode: String              = "firebox_type_disabled"
+    override def context  : Map[String, String] = Map(
         "firebox_type" -> typeName
     )
 }

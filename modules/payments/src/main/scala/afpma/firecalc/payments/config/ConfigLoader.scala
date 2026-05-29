@@ -192,7 +192,7 @@ object ConfigLoader:
                         )
                     }
                     .getOrElse(LoggingConfig()),
-                fireboxAvailability           = loadFireboxAvailability(envConfig),
+                fireboxAvailability          = loadFireboxAvailability(envConfig),
                 corsAllowedOrigins           = Try {
                     import scala.jdk.CollectionConverters.*
                     envConfig.getStringList("cors-allowed-origins").asScala.toList
@@ -207,14 +207,15 @@ object ConfigLoader:
             def tryBool(key: String): Boolean =
                 if faSection.hasPath(key) then
                     try faSection.getBoolean(key)
-                    catch case _: com.typesafe.config.ConfigException.WrongType =>
-                        val raw = faSection.getValue(key).unwrapped()
-                        throw new IllegalArgumentException(
-                            s"firebox-availability.$key: expected boolean, got '$raw' (${raw.getClass.getSimpleName})"
-                        )
+                    catch
+                        case _: com.typesafe.config.ConfigException.WrongType =>
+                            val raw = faSection.getValue(key).unwrapped()
+                            throw new IllegalArgumentException(
+                                s"firebox-availability.$key: expected boolean, got '$raw' (${raw.getClass.getSimpleName})"
+                            )
                 else true
 
-            FireboxAvailability(
+            FireboxAvailability   (
                 traditional    = tryBool("traditional"),
                 ecolabeled     = tryBool("ecolabeled"),
                 afpmaPrse      = tryBool("afpma-prse"),

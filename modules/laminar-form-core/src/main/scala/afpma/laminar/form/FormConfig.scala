@@ -20,11 +20,11 @@ class FieldName(val value: String) extends StaticAnnotation
  * Can also be used as an annotation on case class fields.
  */
 case class FormConfig(
-    fieldName          : Option[String],
-    fieldNamesForParams: Map[String, String] = Map(),
-    showFieldName      : Boolean             = true,
-    disabledOptionIds  : Signal[Set[String]] = Signal.fromValue(Set.empty),
-    hasDisabledOptionIdsOverride: Boolean    = false
+    fieldName                   : Option[String],
+    fieldNamesForParams         : Map[String, String] = Map(),
+    showFieldName               : Boolean             = true,
+    disabledOptionIds           : Signal[Set[String]] = Signal.fromValue(Set.empty),
+    hasDisabledOptionIdsOverride: Boolean             = false
 ) extends StaticAnnotation:
 
     def isDefaultLike: Boolean =

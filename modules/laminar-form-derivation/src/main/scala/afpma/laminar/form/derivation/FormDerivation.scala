@@ -124,7 +124,7 @@ object FormDerivation extends AutoDerivation[Form]:
 
             val subt_disabled_labels = config.disabledOptionIds
 
-            renderSumTypeWithSelectAndOptions(
+            renderSumTypeWithSelectAndOptions (
                 v,
                 var_subt_label_curr,
                 value_to_subt_label  = fieldNameForSubtypeFromValue(sealedTrait),
@@ -159,7 +159,7 @@ object FormDerivation extends AutoDerivation[Form]:
             label           = select_field_label,
             selected        = var_subt_label_curr,
             options         = subt_labels,
-            disabledOptions = subt_disabled_labels,
+            disabledOptions = subt_disabled_labels
         )
 
         val subt_forms_final: IArray[Form[A]] = subt_typeclasses
@@ -273,12 +273,12 @@ object FormDerivation extends AutoDerivation[Form]:
             .getOrElse(NameUtils.titleCase(param.label))
 
     private def formConfigFrom[A](caseClass: CaseClass[Form, A], overwrite: FormConfig): FormConfig =
-        if shouldUseOverwriteConfig(overwrite) then overwrite
+        if shouldUseOverwriteConfig(overwrite         ) then overwrite
         else
             caseClass.annotations
                 .find(_.isInstanceOf[FormConfig])
                 .map(_.asInstanceOf[FormConfig])
-                .getOrElse(FormConfig.default)
+                .getOrElse         (FormConfig.default)
 
     private def renderParam[A](
         caseClass: CaseClass[Form, A],

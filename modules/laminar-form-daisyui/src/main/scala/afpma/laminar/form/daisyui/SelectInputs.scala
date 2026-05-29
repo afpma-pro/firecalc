@@ -26,9 +26,9 @@ trait SelectInputs:
         show                 : A => String,
         makeId               : A => String,
         getById              : String => A,
-        asDisabled           : Var[Boolean] | Boolean  = false,
-        selectCls            : String                  = "select",
-        disabledOptions      : Signal[Set[A]]          = Var(Set.empty[A]).signal
+        asDisabled           : Var[Boolean] | Boolean = false,
+        selectCls            : String                 = "select",
+        disabledOptions      : Signal[Set[A]]         = Var(Set.empty[A]).signal
     ) extends Component:
 
         private val id_option_list: Seq[(String, A)] =
@@ -65,8 +65,8 @@ trait SelectInputs:
             selectedVar          : Var[A],
             labelAsDisabledOption: Option[String],
             options              : Seq[A],
-            selectCls            : String                 = "select",
-            disabledOptions      : Signal[Set[A]]         = Var(Set.empty[A]).signal
+            selectCls            : String         = "select",
+            disabledOptions      : Signal[Set[A]] = Var(Set.empty[A]).signal
         ) =
             def getById(l: String): A =
                 options

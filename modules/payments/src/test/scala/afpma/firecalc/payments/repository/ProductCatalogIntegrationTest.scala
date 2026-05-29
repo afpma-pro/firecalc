@@ -96,7 +96,7 @@ class ProductCatalogIntegrationTest extends TestSuite with TestDatabaseSetup {
                 // Then verify it was updated
                 retrieved <- productRepo.findById(productId)
             } yield {
-                assert(updated.sku == "test_updated")
+                assert(updated.sku == "test_updated"     )
                 assert(updated.price == BigDecimal(75.00))
                 assert(updated.active == false           )
 

@@ -62,16 +62,16 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
 
     val testProductCopyConfig: ProductCopyConfig = ProductCopyConfig(
         entries = Map(
-            "test" -> Map(
+            "test"                                              -> Map(
                 "default" -> ProductCopy(name = "Test Product", description = "Test product for unit tests")
             ),
-            "test_WITH_FIREBOX_LICENSE_FEE" -> Map(
+            "test_WITH_FIREBOX_LICENSE_FEE"                     -> Map(
                 "default" -> ProductCopy(name = "Test Product With Fee", description = "Test product for unit tests")
             ),
             "pdf_report_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE" -> Map(
                 "default" -> ProductCopy(name = "Report With Fee", description = "Report with firebox license")
             ),
-            "pdf_report_EN_15544_2023" -> Map(
+            "pdf_report_EN_15544_2023"                          -> Map(
                 "default" -> ProductCopy(name = "Report", description = "Calculation report")
             )
         )
@@ -1129,10 +1129,12 @@ object PurchaseServiceBusinessLogicTest extends TestSuite {
             val result = service.createPurchaseIntent(request).attempt.unsafeRunSync()
             result match {
                 case Left(ex: ProductFireboxMismatchException) =>
-                    assert(ex.errorCode == "PRODUCT_FIREBOX_MISMATCH")
+                    assert(ex.errorCode == "PRODUCT_FIREBOX_MISMATCH"            )
                     assert(ex.getMessage.contains("not subject to a license fee"))
                 case Left(other)                               =>
-                    throw new Exception(s"Expected ProductFireboxMismatchException but got ${other.getClass}: ${other.getMessage}")
+                    throw new Exception(
+                        s"Expected ProductFireboxMismatchException but got ${other.getClass}: ${other.getMessage}"
+                    )
                 case Right(_)                                  =>
                     throw new Exception("Expected ProductFireboxMismatchException but got success")
             }

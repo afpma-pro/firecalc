@@ -177,10 +177,12 @@ object PurchaseRoutesTest extends TestSuite {
             }
 
             // Assert JSON body shape
-            val json = resp.as[Json].unsafeRunSync()
+            val json   = resp.as[Json].unsafeRunSync()
             val cursor = json.hcursor
             assert(cursor.get[String]("error").contains("firebox_type_disabled"))
-            assert(cursor.get[String]("message").contains("Firebox type 'Ecolabeled' is currently disabled for purchase"))
+            assert(
+                cursor.get[String]("message").contains("Firebox type 'Ecolabeled' is currently disabled for purchase")
+            )
         }
 
         test("allowed firebox returns 200") {

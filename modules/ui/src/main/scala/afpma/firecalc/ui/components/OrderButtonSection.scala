@@ -22,18 +22,19 @@ import io.taig.babel.Locale
 
 sealed trait OrderFlowError
 case class OrderFlowBackendDisallowed(typeName: String) extends OrderFlowError
-case class OrderFlowGenericError(message: String) extends OrderFlowError
+case class OrderFlowGenericError(message: String)       extends OrderFlowError
 
 case class OrderButtonSection(
-    currentFireboxSig                   : Signal[Firebox_V4],
-    create_purchase_intent_response_var : Var[Option[Either[OrderFlowError, CreatePurchaseIntentResponse]]],
-    send_validation_code_btn_shown_sig  : Signal[Boolean],
-    send_validation_code_btn_active_sig : Signal[Boolean],
-    validation_code_sent_sig            : Signal[Boolean],
-    billing_email_sig                   : Signal[String],
-    onSendCode                          : () => EventStream[Either[OrderFlowError, CreatePurchaseIntentResponse]],
-    sendCodeResponseObserver            : Observer[Either[OrderFlowError, CreatePurchaseIntentResponse]]
-)(using Locale) extends Component:
+    currentFireboxSig                  : Signal[Firebox_V4],
+    create_purchase_intent_response_var: Var[Option[Either[OrderFlowError, CreatePurchaseIntentResponse]]],
+    send_validation_code_btn_shown_sig : Signal[Boolean],
+    send_validation_code_btn_active_sig: Signal[Boolean],
+    validation_code_sent_sig           : Signal[Boolean],
+    billing_email_sig                  : Signal[String],
+    onSendCode                         : () => EventStream[Either[OrderFlowError, CreatePurchaseIntentResponse]],
+    sendCodeResponseObserver           : Observer[Either[OrderFlowError, CreatePurchaseIntentResponse]]
+)                            (using Locale)
+    extends Component:
 
     private val backend_allows_firebox_sig: Signal[Boolean] =
         currentFireboxSig.map(UIConfig.backendAvailability.allows)
@@ -46,22 +47,23 @@ case class OrderButtonSection(
             .combineWith(backend_allows_firebox_sig)
             .map: (btn_active, response, backend_allows) =>
                 if !backend_allows then true
-                else response match
-                    case Some(Left(_)) => false
-                    case _             => !btn_active
+                else
+                    response match
+                        case Some(Left(_)) => false
+                        case _             => !btn_active
 
     private def hiddenUnless(bool_sig: Signal[Boolean]) = bool_sig.map(if (_) "" else "hidden")
 
     lazy val node =
-        DaisyUITooltip(
-            ttContent = div(
+        DaisyUITooltip (
+            ttContent  = div(
                 child <-- backend_allows_firebox_sig.map:
                     case false => span(I18N_UI.firebox.order_disabled.tooltip)
                     case true  => emptyNode
             ),
             ttPosition = "tooltip-bottom",
-            element = button(
-                cls          := "btn btn-block h-24 mt-6",
+            element    = button(
+                cls := "btn btn-block h-24 mt-6",
                 cls <-- hiddenUnless(send_validation_code_btn_shown_sig),
                 disabledAttr <-- isButtonDisabled,
                 onClick.flatMap(_ => onSendCode()) --> sendCodeResponseObserver,
@@ -93,13 +95,13 @@ case class OrderButtonSection(
                                             cls := "text-xl",
                                             I18N_UI.firebox.order_disabled.error_message
                                         )
-                                    case Some(Left(OrderFlowGenericError(msg))) =>
+                                    case Some(Left(OrderFlowGenericError(msg)))    =>
                                         p(
                                             cls := "text-xl",
                                             I18N_UI.pdf_ordering.modal.validation.error_prefix
                                                 .apply(msg)
                                         )
-                                    case _                    =>
+                                    case _                                         =>
                                         p(
                                             cls := "text-xl",
                                             (code_sent, btn_active) match
@@ -114,7 +116,7 @@ case class OrderButtonSection(
                                                         .apply(billing_email)
                                         )
                     ),
-                    div(cls := "flex-1", "")
+                    div(cls := "flex-1", ""        )
                 )
             )
         )
