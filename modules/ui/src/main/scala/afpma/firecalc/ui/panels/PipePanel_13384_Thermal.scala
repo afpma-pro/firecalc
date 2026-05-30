@@ -666,7 +666,17 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     lazy val grids = TagTreeMenu.Group(
         txt  = I18N.add_element.AddFlowResistance,
         next = List(
-            TagTreeMenu.Leaf[AddFlowResistance]("ζ")
+            TagTreeMenu.Modal[ThermalPipeDescr_13384]         (
+                txt          = I18N_UI.catalog.flow_resistance_presets,
+                modalContent = (onSelect) =>
+                    FlowResistanceCatalogSelectComponent(
+                        entriesSignal = flowResistancePresetsSignal,
+                        onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                            AddFlowResistance(e.name, e.zeta, e.cross_section)
+                        )
+                    ).node
+            ),
+            TagTreeMenu.Leaf[AddFlowResistance]               ("ζ")
         )
     )
 
