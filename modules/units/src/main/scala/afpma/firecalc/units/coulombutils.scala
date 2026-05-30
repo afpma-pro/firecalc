@@ -199,10 +199,7 @@ object coulombutils:
         given Conversion[QtyD[Meter], Roughness] = identity
         extension (r: Roughness) def unwrap: QtyD[Meter] = r
 
-    /**
-     * Length that accepts zero (>= 0). NOT strictly positive.
-     *
-     */
+    /** Length that accepts zero (>= 0). NOT strictly positive. */
     opaque type PosLength <: QtyD[Meter] = QtyD[Meter]
     object PosLength:
         given Conversion[QtyD[Meter], PosLength] = identity

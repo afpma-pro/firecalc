@@ -188,7 +188,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 )
             )
 
-    val vertical_form_PosLength_cm: DF[PosLength] = 
+    val vertical_form_PosLength_cm: DF[PosLength] =
         import vv.meter.valid_whenPositive
         import defaultable.qty_d.meter.zero
         given Form[QtyD[Meter]] = dual.given_dual_Length_cm.form()
@@ -351,8 +351,8 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 )
             )
 
-        given DF[Length] = vertical_form_Length_cm
-        given DF[PosLength] = vertical_form_PosLength_cm
+        given DF[Length]                     = vertical_form_Length_cm
+        given DF[PosLength]                  = vertical_form_PosLength_cm
         given DF[OutsideAirLocationInHeater] = FormDerivation.mk_AlwaysValid: (va, _) =>
             FieldsetLabelAndContent(
                 label = I18N.firebox.afpma_prse.outside_air_location_in_heater,

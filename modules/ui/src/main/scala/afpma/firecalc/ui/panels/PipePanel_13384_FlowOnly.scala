@@ -622,7 +622,17 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             TagTreeMenu.Leaf[AddElbows_2x45],
             TagTreeMenu.Leaf[AddElbows_3x30],
             TagTreeMenu.Leaf[AddElbows_4x22p5],
-            TagTreeMenu.Leaf[AddAngleAdjustable]
+            TagTreeMenu.Modal[FlowOnlyPipeDescr_13384]         (
+                txt          = I18N_UI.catalog.angle_presets_from_catalog,
+                modalContent = (onSelect) =>
+                    AnglePresetCatalogSelectComponent(
+                        entriesSignal = anglePresetsSignal,
+                        onSelect      = onSelect.contramap[AnglePresetCatalogEntry](e =>
+                            AddFlowOnlyPipeElement_13384.AddAngleAdjustable(e.reference, e.angle, e.zeta)
+                        )
+                    ).node
+            ),
+            TagTreeMenu.Leaf[AddAngleAdjustable]               (I18N_UI.catalog.custom_angle_bend)
         )
     )
 

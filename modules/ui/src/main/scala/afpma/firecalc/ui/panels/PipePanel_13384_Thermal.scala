@@ -15,11 +15,12 @@ import afpma.firecalc.i18n.implicits.given
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.Vec3
 
-import afpma.firecalc.ui.i18n.implicits.given
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
+import afpma.firecalc.ui.models.anglePresetsSignal
 import afpma.firecalc.ui.models.casingPresetsSignal
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
 import afpma.firecalc.ui.models.pipePresetsSignal
@@ -692,7 +693,18 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             TagTreeMenu.Leaf[AddSmoothCurve_60_Unsafe],
             TagTreeMenu.Leaf[AddElbows_2x45],
             TagTreeMenu.Leaf[AddElbows_3x30],
-            TagTreeMenu.Leaf[AddElbows_4x22p5]
+            TagTreeMenu.Leaf[AddElbows_4x22p5],
+            TagTreeMenu.Modal[ThermalPipeDescr_13384]         (
+                txt          = I18N_UI.catalog.angle_presets_from_catalog,
+                modalContent = (onSelect) =>
+                    AnglePresetCatalogSelectComponent(
+                        entriesSignal = anglePresetsSignal,
+                        onSelect      = onSelect.contramap[AnglePresetCatalogEntry](e =>
+                            AddThermalPipeElement_13384.AddAngleAdjustable(e.reference, e.angle, e.zeta)
+                        )
+                    ).node
+            ),
+            TagTreeMenu.Leaf[AddAngleAdjustable]              (I18N_UI.catalog.custom_angle_bend)
         )
     )
 

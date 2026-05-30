@@ -58,24 +58,26 @@ object I18nData_UI:
     )
 
     case class Catalog(
-        _self                  : String,
-        select_from_catalog    : String,
-        manager_title          : String,
-        download_section       : String,
-        afpma_catalog_page     : String,
-        loaded_entries         : String,
-        no_catalog_loaded      : String,
-        import_catalog_button  : String,
-        clear_all_button       : String,
-        door_15a_fireboxes     : String,
-        single_tested_fireboxes: String,
-        pipe_presets           : String,
-        casing_presets         : String,
-        flow_resistance_presets: String,
-        angle_presets          : String,
-        simple_pipe            : String,
-        lined_flue             : String,
-        errors                 : Catalog.Errors
+        _self                     : String,
+        select_from_catalog       : String,
+        manager_title             : String,
+        download_section          : String,
+        afpma_catalog_page        : String,
+        loaded_entries            : String,
+        no_catalog_loaded         : String,
+        import_catalog_button     : String,
+        clear_all_button          : String,
+        door_15a_fireboxes        : String,
+        single_tested_fireboxes   : String,
+        pipe_presets              : String,
+        casing_presets            : String,
+        flow_resistance_presets   : String,
+        angle_presets             : String,
+        angle_presets_from_catalog: String,
+        custom_angle_bend         : String,
+        simple_pipe               : String,
+        lined_flue                : String,
+        errors                    : Catalog.Errors
     )
 
     object Catalog:
