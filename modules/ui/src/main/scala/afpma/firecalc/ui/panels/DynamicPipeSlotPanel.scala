@@ -931,9 +931,9 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     .innerShapeAtPrefix(insertIdx)
                     .getOrElse(summon[D[SetInnerShape]].default.shape)
                 Seq(
+                    summon[D[AddSharpeAngle_0_to_180]].default,
                     SetInnerShape(prevShape),
-                    summon[D[AddSectionSlopped]].default,
-                    summon[D[AddSharpeAngle_0_to_180]].default
+                    summon[D[AddSectionSlopped]].default
                 )
             }
         )
