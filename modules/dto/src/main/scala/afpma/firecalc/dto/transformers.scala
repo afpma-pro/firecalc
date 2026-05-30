@@ -303,6 +303,15 @@ object transformers:
             .withFieldRenamed(_.reinforcement_bars_offset_in_corners, _.reinforcement_bars_offset_in_corners_R3)
             .buildTransformer
 
+    // V4->V5 AFPMA_PRSE: outside_air_inlet_lip changed from Length to PosLength
+    given Transformer[v4.Firebox_V3.AFPMA_PRSE, v5.Firebox_V4.AFPMA_PRSE] = {
+        import PosLength.given
+        Transformer
+            .define[v4.Firebox_V3.AFPMA_PRSE, v5.Firebox_V4.AFPMA_PRSE]
+            .withFieldComputed(_.outside_air_inlet_lip, src => src.outside_air_inlet_lip: PosLength)
+            .buildTransformer
+    }
+
     // ─── Top-level FireCalcYAML transformers (version bumping) ───────────────────
     //
     // IMPORTANT: Every cross-version FireCalcYAML transformer MUST include:

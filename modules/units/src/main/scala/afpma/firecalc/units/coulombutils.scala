@@ -199,6 +199,16 @@ object coulombutils:
         given Conversion[QtyD[Meter], Roughness] = identity
         extension (r: Roughness) def unwrap: QtyD[Meter] = r
 
+    /**
+     * Length that accepts zero (>= 0). NOT strictly positive.
+     *
+     */
+    opaque type PosLength <: QtyD[Meter] = QtyD[Meter]
+    object PosLength:
+        given Conversion[QtyD[Meter], PosLength] = identity
+        given Conversion[PosLength, QtyD[Meter]] = identity
+        extension (p: PosLength) def unwrap: QtyD[Meter] = p
+
     // %.2f
     type JoulesPerKilogramKelvin = QtyD[Joule / (Kilogram * Kelvin)]
     object JoulesPerKilogramKelvin:
