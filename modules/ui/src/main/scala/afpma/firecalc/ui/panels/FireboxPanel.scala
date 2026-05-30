@@ -73,7 +73,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
             .combineWithDistinct(
                 results_en15544_combustion_air_pipe
                     .combineWithDistinct(results_en15544_firebox_pipe)
-                    .map((vp1, vp2) => vp1.map(_.`ph-(pR+pu)`).andThen(_ => vp2.map(_.`ph-(pR+pu)`)))
+                    .map((vp1, vp2) => vp1.map(_.`ph-(pR+pu)`) *> vp2.map(_.`ph-(pR+pu)`))
             )
             .map: (avail, pressures) =>
                 if avail then pressures

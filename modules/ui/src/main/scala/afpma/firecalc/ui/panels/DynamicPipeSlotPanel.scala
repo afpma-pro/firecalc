@@ -30,6 +30,7 @@ import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
 import cats.Show
 import cats.data.Validated
 import cats.data.ValidatedNel
+import cats.syntax.apply.*
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
@@ -448,13 +449,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     .getOrElse(
                         Validated.invalidNel(FluePipeNotDefinedYet)
                     )
-                buildV
-                    .andThen(_ => pipeResultV)
-                    .andThen(_ => pressureV)
-                    .andThen(_ => velocityV)
-                    .andThen(_ => shapeV)
-                    .andThen(_ => citedV)
-                    .andThen(_ => buildV)
+                buildV *> pipeResultV *> pressureV *> velocityV *> shapeV *> citedV
 
     // ── Quadrion subtotal ────────────────────────────────────────
 
@@ -1305,11 +1300,7 @@ final case class DynamicThermalPipeSlotPanel(
                     .getOrElse(
                         Validated.invalidNel(ChimneyPipeNotDefinedYet)
                     )
-                buildV
-                    .andThen(_ => pipeResultV)
-                    .andThen(_ => pressureV)
-                    .andThen(_ => velocityV)
-                    .andThen(_ => buildV)
+                buildV *> pipeResultV *> pressureV *> velocityV
 
     // ── Quadrion subtotal ────────────────────────────────────────
 

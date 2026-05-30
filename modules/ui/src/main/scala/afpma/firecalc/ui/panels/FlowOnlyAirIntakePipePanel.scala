@@ -8,11 +8,15 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.engine.standard.VNelMcalcErr
+
 import afpma.firecalc.engine.models.AirIntakePipeT
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_13384
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.models.*
+
+import cats.syntax.apply.*
 
 import com.raquo.airstream.state.Var
 
@@ -36,7 +40,7 @@ final case class FlowOnlyAirIntakePipePanel()(using Locale, DisplayUnits) extend
 
     lazy val vnel_signal = air_intake_vnel_signal
         .combineWith(air_intake_pipe_vnel2_signal)
-        .map((v1, v2) => v1.andThen(_ => v2).andThen(_ => v1))
+        .map((v1, v2) => (v1: VNelMcalcErr[FlowOnlyAirIntakePipe_13384]) <* v2)
 
     lazy val elems_v: Var[Seq[FlowOnlyPipeDescr_13384]] = air_intake_incrdescr_var
 
