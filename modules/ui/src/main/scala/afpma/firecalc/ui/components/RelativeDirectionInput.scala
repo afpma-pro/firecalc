@@ -223,7 +223,7 @@ case class RelativeDirectionInput(
         // .composeChanges(_.take(1)) lets through at most 1 subsequent change.
         // Net effect: fires for initial value, plus up to 1 change (in case
         // context signals aren't ready at mount but arrive shortly after).
-        val initialSync =
+        val initialSync     =
             externalStSig
                 .composeChanges(_.take(1))
                 --> Observer[Option[(RelativeSide, Double)]] {
@@ -231,6 +231,22 @@ case class RelativeDirectionInput(
                         sideVar.set (side )
                         thetaVar.set(theta)
                     case None                => ()
+                }
+        // Mount-time forward init: write computed direction to absDirVar when it's None.
+        // `forwardSync` uses .changes and skips mount-time, so newly created direction-change
+        // elements (absDir=None) have correct UI state but no published absolute direction for
+        // 3D visualization. This one-time init bridges that gap.
+        val forwardInitSync =
+            localFdSig
+                .combineWith(absDirVar.signal)
+                .map {
+                    case (newFd, None) => newFd
+                    case _ => None
+                }
+                .composeChanges(_.take(1))
+                --> Observer[Option[AbsoluteDirection]] {
+                    case Some(fd) => absDirVar.set(Some(fd))
+                    case None     => ()
                 }
 
         div(
@@ -283,6 +299,7 @@ case class RelativeDirectionInput(
             ),
 
             // Sync binders
+            forwardInitSync,
             initialSync,
             forwardSync,
             reverseSync
