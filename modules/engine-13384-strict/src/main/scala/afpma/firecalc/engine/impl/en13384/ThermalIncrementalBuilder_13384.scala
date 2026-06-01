@@ -79,11 +79,22 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     override protected def isForbiddenAddElementAtStart(
         addElement: AddElement
-    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+    ): Boolean =
+        addElement match
+            case _: AddDirectionChange => true
+            case _ => false
 
     override protected def isForbiddenAddElementAtEnd(
         addElement: AddElement
-    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+    ): Boolean =
+        addElement match
+            case _: AddDirectionChange => true
+            case _ => false
+
+    override protected def isTrailingAllowed(setProp: SetProp): Boolean =
+        setProp match
+            case _: SetFinalPosition | _: SetInitialPosition => true
+            case _                                           => false
 
     override type PT <: PipeType_EN13384
 

@@ -85,6 +85,12 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         addElement: AddElement
     ): Boolean
 
+    /**
+     * Whether a SetProp is allowed to appear at the end of the descriptor
+     * sequence without a following AddElement. Default: false.
+     */
+    protected def isTrailingAllowed(setProp: SetProp): Boolean = false
+
     type ValidatedResult[A]    = ValidatedNel[IncrementalValidation_Error, A]
     type CtxValidatedResult[A] = PropsState ?=> ValidatedNel[IncrementalValidation_Error, A]
 
@@ -291,9 +297,13 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         val nextGeomOp = convStep.findNextAddElement
         nextGeomOp match
             case None      =>
-                val lastIncrDescr = convStep.allRemainingOps.lastOption
-                val lastElRef     = lastIncrDescr.map(x => s"'#${x._1}'")
-                AddElementMissingAfterSetProp(pt, lastElRef).invalidNel
+                val nonTrailing = convStep.allRemainingOps.collectFirst:
+                    case (id, sp: SetProp) if !isTrailingAllowed(sp) => id
+                nonTrailing match
+                    case Some(idIncr) =>
+                        AddElementMissingAfterSetProp(pt, Some(s"'#${idIncr}'")).invalidNel
+                    case None         =>
+                        (inIdsMapping, inPipe).validNel
             case Some(gop) =>
                 mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel =>
                     nel.foldLeft((inIdsMapping, inPipe)):
