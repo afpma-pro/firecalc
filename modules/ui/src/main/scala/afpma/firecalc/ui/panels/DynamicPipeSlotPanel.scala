@@ -535,28 +535,30 @@ final case class DynamicFlowOnlyPipeSlotPanel(
         )
 
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
-        welems_var.signal.map: elems =>
-            var frame: Option[PipeFrame] = None
-            val builder = Map.newBuilder[Int, PipeFrame]
-            for (idx, elem) <- elems do
-                elem match
-                    case SetInitialDirection(az, incl) =>
-                        val azDeg = AzimuthDirection.toDegrees(az)
-                        val elDeg = InclinationDirection.toDegrees(incl)
-                        frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                    case _                             => ()
-                frame.foreach(f => builder += (idx -> f))
-                elem match
-                    case dc: AddDirectionChange =>
-                        for
-                            f  <- frame
-                            fd <- dc.absDir
-                        do
-                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                            frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                    case _ => ()
-            builder.result()
+        welems_var.signal
+            .combineWithDistinct(slotInitialFrameSig(slotIndex))
+            .map: (elems, externalFrame) =>
+                var frame: Option[PipeFrame] = externalFrame
+                val builder = Map.newBuilder[Int, PipeFrame]
+                for (idx, elem) <- elems do
+                    elem match
+                        case SetInitialDirection(az, incl) =>
+                            val azDeg = AzimuthDirection.toDegrees(az)
+                            val elDeg = InclinationDirection.toDegrees(incl)
+                            frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
+                        case _                             => ()
+                    frame.foreach(f => builder += (idx -> f))
+                    elem match
+                        case dc: AddDirectionChange =>
+                            for
+                                f  <- frame
+                                fd <- dc.absDir
+                            do
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
+                        case _ => ()
+                builder.result()
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
