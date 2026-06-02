@@ -13,6 +13,7 @@ import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.models.geometry.Vec3
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
@@ -54,6 +55,30 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     private given thermalPropertyShow_13384: ThermalPropertyShow_13384 = ThermalPropertyShow_13384()
     import thermalPropertyShow_13384.given
 
+    protected given thermalElemExtractors_13384: FrameReplay.ElemExtractors[ThermalPipeDescr_13384] =
+        FrameReplay.ElemExtractors  (
+            asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
+            asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asInnerShape         = { case sis: SetInnerShape => sis.shape },
+            withDirChangeAbsDir  = (e, newAbsDir) =>
+                e match
+                    case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
+                    case _ => e,
+            withInitialDirection = (e, az, incl) =>
+                e match
+                    case x: SetInitialDirection => x.copy(azimuth = az, inclination = incl)
+                    case _ => e
+        )
+
     /**
      * Override to supply an inherited PipeFrame from the previous pipe.
      *  Defaults to no external frame (first pipe in a sequence, or direction tracking inactive).
@@ -71,27 +96,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         welems_var.signal
             .combineWithDistinct(externalInitialFrameSig)
             .map: (elems, externalFrame) =>
-                var frame: Option[PipeFrame] = externalFrame
-                val builder = Map.newBuilder[Int, PipeFrame]
-                for (idx, elem) <- elems do
-                    elem match
-                        case SetInitialDirection(az, incl) =>
-                            val azDeg = AzimuthDirection.toDegrees(az)
-                            val elDeg = InclinationDirection.toDegrees(incl)
-                            frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                        case _                             => ()
-                    frame.foreach(f => builder += (idx -> f))
-                    elem match
-                        case dc: AddDirectionChange =>
-                            for
-                                f  <- frame
-                                fd <- dc.absDir
-                            do
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                        case _ => ()
-                builder.result()
+                FrameReplay.replayFrameMap(elems, externalFrame)
 
     /**
      * Direction AFTER each element, keyed by element index. Used for the direction badge.

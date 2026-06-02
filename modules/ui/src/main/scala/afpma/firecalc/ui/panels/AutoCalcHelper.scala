@@ -38,7 +38,7 @@ object AutoCalcHelper:
     // ── ElemExtractors / replayFrame / lastShapeBefore ──────────────────
     // Moved to engine-kernel for headless testability; re-exported here for
     // backward compatibility of all UI call sites.
-    export FrameReplay.{ElemExtractors, replayFrame, lastShapeBefore}
+    export FrameReplay.{ElemExtractors, replayFrame, replayFrameMap, lastShapeBefore}
 
     // ── TargetBox ────────────────────────────────────────────────────────
 

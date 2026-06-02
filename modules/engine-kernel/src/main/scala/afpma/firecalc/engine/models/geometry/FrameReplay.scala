@@ -77,6 +77,51 @@ object FrameReplay:
         frame
 
     /**
+     * Replay SetInitialDirection and AddDirectionChange elements to compute
+     * the PipeFrame before every element, returning a map keyed by element index.
+     *
+     * Unlike `replayFrame` which targets a single index, this produces the full
+     * frame map needed by direction-badge UI components. The algorithm is
+     * identical to `replayFrame` but accumulates a map instead of a single value.
+     *
+     * Critical ordering: for each element the frame is recorded to the builder
+     * AFTER processing SetInitialDirection but BEFORE processing AddDirectionChange.
+     * This means the map entry for a direction-change element is the frame *before*
+     * the bend, which is what the direction badge ("direction entering this element")
+     * expects.
+     *
+     * @param elems        indexed element list
+     * @param initialFrame optional frame inherited from a preceding pipe slot
+     */
+    def replayFrameMap[E](elems: Seq[(Int, E)], initialFrame: Option[PipeFrame] = None)(using
+        ext: ElemExtractors[E]
+    ): Map[Int, PipeFrame] =
+        var frame: Option[PipeFrame] = initialFrame
+        val builder = Map.newBuilder[Int, PipeFrame]
+        for (idx, elem) <- elems do
+            ext.asInitialDirection
+                .lift(elem)
+                .foreach: (az, incl) =>
+                    frame = Some(
+                        PipeFrame.initial(
+                            Vec3.fromAzimuthElevation(
+                                AzimuthDirection.toDegrees    (az  ),
+                                InclinationDirection.toDegrees(incl)
+                            )
+                        )
+                    )
+            frame.foreach(f => builder += (idx -> f))
+            ext.asDirectionChange
+                .lift(elem)
+                .foreach: (angle, absDirOpt) =>
+                    for f <- frame; fd <- absDirOpt do
+                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                        frame = Some(
+                            f.applyBendForFinalDir(angle.toUnit[Degree].value, Vec3.fromAzimuthElevation(azDeg, elDeg))
+                        )
+        builder.result()
+
+    /**
      * Find the last PipeShape set before `beforeIdx`.
      *
      * @param beforeIdx  exclusive upper bound (use Int.MaxValue for "last in entire list")

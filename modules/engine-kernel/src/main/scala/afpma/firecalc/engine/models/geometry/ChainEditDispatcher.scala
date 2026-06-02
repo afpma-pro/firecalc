@@ -62,7 +62,8 @@ object ChainEditDispatcher:
     sealed trait InsertKind
     object InsertKind:
         /** New slot appended at end of chain. */
-        case object SlotLevel       extends InsertKind
+        case object SlotLevel extends InsertKind
+
         /** New descriptor element inserted within an existing slot. */
         case object DescriptorLevel extends InsertKind
 
@@ -162,6 +163,7 @@ object ChainEditDispatcher:
         private enum StructureDiff:
             /** Slot count and ordinals unchanged - element-level diff only. */
             case SameStructure
+
             /** One new slot appended at end of chain. */
             case SlotAppended(slotIdx: Int)
 
@@ -180,12 +182,10 @@ object ChainEditDispatcher:
         ): Option[StructureDiff] =
             val oldLen = oldSlots.length
             val newLen = newSlots.length
-            if newLen == oldLen then
-                Some(StructureDiff.SameStructure)
+            if newLen == oldLen then Some(StructureDiff.SameStructure       )
             else if newLen == oldLen + 1 && ordinalsMatch(oldSlots, newSlots, oldLen) then
-                Some(StructureDiff.SlotAppended(oldLen))
-            else
-                None // structural mismatch beyond what we can handle
+                Some                     (StructureDiff.SlotAppended(oldLen))
+            else None // structural mismatch beyond what we can handle
 
         /** Check that the first `len` slots have matching ordinals. */
         private def ordinalsMatch(
@@ -216,7 +216,7 @@ object ChainEditDispatcher:
                     findDirChangeWithAngle(newSlots(slotIdx), 0).toList.headOption match
                         case Some((elemIdx, angleDeg)) =>
                             Some(InsertEdit(ChainCoord(slotIdx, elemIdx), angleDeg, InsertKind.SlotLevel))
-                        case None => None
+                        case None                      => None
 
         /** Find direction-change elements in a slot with their index and deflection angle. */
         private def findDirChangeWithAngle(
@@ -259,7 +259,13 @@ object ChainEditDispatcher:
                     val inserted = newDescr(insertIdx)
                     ext.asDirectionChange.lift(inserted) match
                         case Some((angle, _)) =>
-                            Iterator.single(InsertEdit(ChainCoord(slotIdx, insertIdx), angle.toUnit[Degree].value, InsertKind.DescriptorLevel))
+                            Iterator.single(
+                                InsertEdit(
+                                    ChainCoord(slotIdx, insertIdx),
+                                    angle.toUnit[Degree].value,
+                                    InsertKind.DescriptorLevel
+                                )
+                            )
                         case None             => Iterator.empty
             else if oldDescr.length != newDescr.length then Iterator.empty
             else
@@ -368,7 +374,7 @@ object ChainEditDispatcher:
         ie      : InsertEdit
     ): Seq[PostFireboxPipeDescrSlot] =
         val frameBefore = ie.kind match
-            case InsertKind.SlotLevel =>
+            case InsertKind.SlotLevel       =>
                 // New slot appended - doesn't exist in preEdit, replay from chain start.
                 enteringFrameBeforeSlot(preEdit, ie.coord.slotIdx)
             case InsertKind.DescriptorLevel =>

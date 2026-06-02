@@ -137,13 +137,13 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         // Insert a new bend after "sortie foyer" (index 0 = roughness, 1 = innerShape,
         // 2 = setInitialDirection, 3 = setInitialPosition, 4 = addSectionHorizontal "sortie foyer")
-        val insertAt = 5 // right after the first section
-        val newBend = AddSharpeAngle_0_to_180(
-            name = "virage ajouté",
-            angle = 45.degrees,
+        val insertAt    = 5 // right after the first section
+        val newBend     = AddSharpeAngle_0_to_180(
+            name   = "virage ajouté",
+            angle  = 45.degrees,
             absDir = None
         )
-        val newDescr = flueDescr.patch(insertAt, Seq(newBend), 0)
+        val newDescr    = flueDescr.patch(insertAt, Seq(newBend), 0)
         val rawNewSlots = oldSlots.updated(flueSlotIdx, FlueSlot(newDescr))
 
         val edit = ChainEditDispatcher.detectEdit(oldSlots, rawNewSlots)
@@ -158,11 +158,11 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
         }
 
         "should set absDir on inserted element after dispatch" in {
-            val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
+            val ie         = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
             val finalSlots = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation)
-            val inserted = finalSlots(flueSlotIdx) match
+            val inserted   = finalSlots(flueSlotIdx) match
                 case FlueSlot(d) => d(insertAt).asInstanceOf[AddSharpeAngle_0_to_180]
-                case _ => fail("expected FlueSlot")
+                case _           => fail("expected FlueSlot")
             inserted.absDir.isDefined shouldBe true
         }
     }
@@ -182,19 +182,21 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         val newThermalSlot = ThermalFlueSlot {
             Seq[afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3](
-                SetRoughness(1.mm),
+                SetRoughness            (1.mm                      ),
                 SetInnerShape(afpma.firecalc.domain.PipeShape.Circle(20.cm)),
-                SetLayers(List(AppendLayerDescr.FromThermalResistanceUsingThickness(1.mm, SquareMeterKelvinPerWatt(0.44)))),
-                SetPipeLocation(PipeLocation.HeatedArea),
-                AddSectionVertical("section initiale", 100.mm),
-                AddSharpeAngle_0_to_90(
-                    name = "coude ajouté",
-                    angle = 90.degrees,
+                SetLayers    (
+                    List(AppendLayerDescr.FromThermalResistanceUsingThickness(1.mm, SquareMeterKelvinPerWatt(0.44)))
+                ),
+                SetPipeLocation         (PipeLocation.HeatedArea   ),
+                AddSectionVertical      ("section initiale", 100.mm),
+                AddSharpeAngle_0_to_90  (
+                    name   = "coude ajouté",
+                    angle  = 90.degrees,
                     absDir = Some(AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Down))
                 )
             )
         }
-        val rawNewSlots = oldSlots :+ newThermalSlot
+        val rawNewSlots    = oldSlots :+ newThermalSlot
 
         val edit = ChainEditDispatcher.detectEdit(oldSlots, rawNewSlots)
         edit.isDefined.shouldBe(true)
@@ -207,12 +209,12 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
         }
 
         "should set absDir and rotate downstream after dispatch" in {
-            val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
-            val finalSlots = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation)
+            val ie           = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
+            val finalSlots   = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation)
             val insertedSlot = finalSlots(ie.coord.slotIdx) match
                 case ThermalFlueSlot(d) => d
-                case _ => fail("expected ThermalFlueSlot")
-            val bend = insertedSlot(ie.coord.elemIdx).asInstanceOf[AddSharpeAngle_0_to_90]
+                case _                  => fail("expected ThermalFlueSlot")
+            val bend         = insertedSlot(ie.coord.elemIdx).asInstanceOf[AddSharpeAngle_0_to_90]
             bend.absDir.isDefined shouldBe true
         }
     }
