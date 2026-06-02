@@ -28,10 +28,10 @@ import coulomb.policy.standard.given
  *     apply(preEdit, newSlots, edit, strategy) => Seq[PostFireboxPipeDescrSlot]
  *
  * `preEdit` is the pristine baseline; `newSlots` is the raw user-written snapshot
- * (only the edited element is read from it — downstream is reconstructed from
+ * (only the edited element is read from it - downstream is reconstructed from
  * `preEdit` so strategy cycling is idempotent).
  *
- * Default is [[PropagationStrategy.RigidRotation]] — the only strategy that is
+ * Default is [[PropagationStrategy.RigidRotation]] - the only strategy that is
  * mathematically total across all chain shapes.
  */
 object ChainEditDispatcher:
@@ -58,14 +58,23 @@ object ChainEditDispatcher:
         newAbsDir: Option[AbsoluteDirection]
     ) extends ChainEdit
 
-    /** Direction-change element inserted into a descriptor. */
+    /** Kind of insertion - slot-level or descriptor-level. */
+    sealed trait InsertKind
+    object InsertKind:
+        /** New slot appended at end of chain. */
+        case object SlotLevel       extends InsertKind
+        /** New descriptor element inserted within an existing slot. */
+        case object DescriptorLevel extends InsertKind
+
+    /** Direction-change element inserted into a descriptor or slot. */
     case class InsertEdit(
         coord        : ChainCoord,
-        deflectionDeg: Double
+        deflectionDeg: Double,
+        kind         : InsertKind
     ) extends ChainEdit
 
     /**
-     * Sum type for chain-edit propagation. Currently has a single inhabitant — [[RigidRotation]] —
+     * Sum type for chain-edit propagation. Currently has a single inhabitant - [[RigidRotation]] -
      * which is the sole strategy surfaced to users. The scaffolding is retained so new strategies
      * can be added later as additional case objects without rewiring the [[Offer]] / toast signal
      * chain in the UI.
@@ -113,17 +122,13 @@ object ChainEditDispatcher:
     /**
      * Detect a single edit between old and new slot sequences.
      *
-     * Detection priority (Finding 5):
-     * 1. Slot-level insertion (new slot appended) — `detectSlotInsert`
-     * 2. Descriptor-level diff (same slots, element changes) — `scanSlot`/`scanDescr`
+     * Two-phase detection (Finding 5):
+     * 1. `ChainEditDetector.classifyStructure` — structural diff (same, slot appended)
+     * 2. `ChainEditDetector.detectFromStructure` — dispatch to appropriate detector
      *
-     * Slot-level insertion is checked first because it produces a structurally different
-     * sequence (N+1 slots) that descriptor-level scanning can't handle. Descriptor-level
-     * insertion (same slot, more descriptors) is handled by `scanDescr` as a special case
-     * within the element-by-element diff. Both paths produce `InsertEdit`.
-     *
-     * If additional edit types are added in the future, consider unifying detection into
-     * a single pass that produces all edits and lets the dispatcher handle them in order.
+     * Both slot-level and descriptor-level insertions produce `InsertEdit` with
+     * `InsertKind` distinguishing the source. The dispatcher uses this in `handleInsert`
+     * instead of integer-comparison heuristics.
      */
     def detectEdit(
         oldSlots: Seq[PostFireboxPipeDescrSlot],
@@ -144,44 +149,74 @@ object ChainEditDispatcher:
     /**
      * Detects edits by diffing old/new slot sequences.
      *
-     * Responsibilities:
-     * - Slot-level insertion detection (`detectSlotInsert`)
-     * - Descriptor-level diffing (`scanSlot`, `scanDescr`)
-     * - Direction-change element discovery (`findDirChangeWithAngle`)
+     * Two-phase detection (Finding 5):
+     * 1. `classifyStructure` - determine structural change (same, slot appended)
+     * 2. `detectFromStructure` - dispatch to appropriate detector based on structure
      *
      * Returns `Option[ChainEdit]`; the dispatcher (`ChainEditDispatcher`) applies
      * propagation strategies to the detected edit.
      */
     private object ChainEditDetector:
 
+        /** Structural classification of the diff between old/new slot sequences. */
+        private enum StructureDiff:
+            /** Slot count and ordinals unchanged - element-level diff only. */
+            case SameStructure
+            /** One new slot appended at end of chain. */
+            case SlotAppended(slotIdx: Int)
+
         def detectEdit(
             oldSlots: Seq[PostFireboxPipeDescrSlot],
             newSlots: Seq[PostFireboxPipeDescrSlot]
         ): Option[ChainEdit] =
-            detectSlotInsert(oldSlots, newSlots)
-                .orElse:
-                    if oldSlots.length == newSlots.length then
-                        oldSlots
-                            .zip(newSlots)
-                            .iterator
-                            .zipWithIndex
-                            .flatMap { case ((o, n), i) => scanSlot(i, o, n) }
-                            .nextOption()
-                    else None
+            classifyStructure(oldSlots, newSlots).flatMap(structure =>
+                detectFromStructure(structure, oldSlots, newSlots)
+            )
 
-        /** Detect single-slot insertion and return InsertEdit for direction-change elements. */
-        private def detectSlotInsert(
+        /** Phase 1: classify the structural change between slot sequences. */
+        private def classifyStructure(
             oldSlots: Seq[PostFireboxPipeDescrSlot],
             newSlots: Seq[PostFireboxPipeDescrSlot]
-        ): Option[ChainEdit] =
-            if newSlots.length != oldSlots.length + 1 then None
-            else if oldSlots.map(_.ordinal) != newSlots.init.map(_.ordinal) then None
+        ): Option[StructureDiff] =
+            val oldLen = oldSlots.length
+            val newLen = newSlots.length
+            if newLen == oldLen then
+                Some(StructureDiff.SameStructure)
+            else if newLen == oldLen + 1 && ordinalsMatch(oldSlots, newSlots, oldLen) then
+                Some(StructureDiff.SlotAppended(oldLen))
             else
-                val insertSlotIdx = oldSlots.length
-                findDirChangeWithAngle(newSlots(insertSlotIdx), 0).toList.headOption match
-                    case Some((elemIdx, angleDeg)) =>
-                        Some(InsertEdit(ChainCoord(insertSlotIdx, elemIdx), angleDeg))
-                    case None                      => None
+                None // structural mismatch beyond what we can handle
+
+        /** Check that the first `len` slots have matching ordinals. */
+        private def ordinalsMatch(
+            oldSlots: Seq[PostFireboxPipeDescrSlot],
+            newSlots: Seq[PostFireboxPipeDescrSlot],
+            len     : Int
+        ): Boolean =
+            oldSlots.iterator.zip(newSlots.iterator).take(len).forall((o, n) => o.ordinal == n.ordinal)
+
+        /** Phase 2: detect edits based on classified structure. */
+        private def detectFromStructure(
+            structure: StructureDiff,
+            oldSlots : Seq[PostFireboxPipeDescrSlot],
+            newSlots : Seq[PostFireboxPipeDescrSlot]
+        ): Option[ChainEdit] =
+            structure match
+                case StructureDiff.SameStructure =>
+                    // Element-level diff within existing slots.
+                    oldSlots
+                        .zip(newSlots)
+                        .iterator
+                        .zipWithIndex
+                        .flatMap { case ((o, n), i) => scanSlot(i, o, n) }
+                        .nextOption()
+
+                case StructureDiff.SlotAppended(slotIdx) =>
+                    // New slot appended - look for direction-change in the new slot.
+                    findDirChangeWithAngle(newSlots(slotIdx), 0).toList.headOption match
+                        case Some((elemIdx, angleDeg)) =>
+                            Some(InsertEdit(ChainCoord(slotIdx, elemIdx), angleDeg, InsertKind.SlotLevel))
+                        case None => None
 
         /** Find direction-change elements in a slot with their index and deflection angle. */
         private def findDirChangeWithAngle(
@@ -217,14 +252,14 @@ object ChainEditDispatcher:
             ext: FrameReplay.ElemExtractors[E]
         ): Iterator[ChainEdit] =
             if newDescr.length == oldDescr.length + 1 then
-                // Single-element insertion: find insertion point by locating first mismatch.
+                // Single-element insertion within existing slot.
                 val insertIdx = oldDescr.zip(newDescr).indexWhere((o, n) => o != n)
                 if insertIdx < 0 then Iterator.empty
                 else
                     val inserted = newDescr(insertIdx)
                     ext.asDirectionChange.lift(inserted) match
                         case Some((angle, _)) =>
-                            Iterator.single(InsertEdit(ChainCoord(slotIdx, insertIdx), angle.toUnit[Degree].value))
+                            Iterator.single(InsertEdit(ChainCoord(slotIdx, insertIdx), angle.toUnit[Degree].value, InsertKind.DescriptorLevel))
                         case None             => Iterator.empty
             else if oldDescr.length != newDescr.length then Iterator.empty
             else
@@ -243,7 +278,7 @@ object ChainEditDispatcher:
 
     // ── Stages ─────────────────────────────────────────────────────────
 
-    /** Splice `newSlots(coord).elem(coord)` into `preEdit` — pristine downstream guaranteed. */
+    /** Splice `newSlots(coord).elem(coord)` into `preEdit` - pristine downstream guaranteed. */
     private def patchEdited(
         preEdit : Seq[PostFireboxPipeDescrSlot],
         newSlots: Seq[PostFireboxPipeDescrSlot],
@@ -323,17 +358,22 @@ object ChainEditDispatcher:
      * using the default relative side (Right) matching RelativeDirectionInput's default.
      * Sets absDir on the inserted element and delegates downstream rotation to
      * [[rotateDownstream]] (Finding 3).
+     *
+     * Finding 5: uses `InsertKind` to distinguish slot-level from descriptor-level
+     * insertions instead of the `slotIdx >= preEdit.length` heuristic.
      */
     private def handleInsert(
         preEdit : Seq[PostFireboxPipeDescrSlot],
         newSlots: Seq[PostFireboxPipeDescrSlot],
         ie      : InsertEdit
     ): Seq[PostFireboxPipeDescrSlot] =
-        // For slot-level insertions, the slot is new and doesn't exist in preEdit.
-        // For descriptor-level insertions, the slot exists in both; use incomingFrameAt.
-        val frameBefore =
-            if ie.coord.slotIdx >= preEdit.length then enteringFrameBeforeSlot(preEdit, ie.coord.slotIdx)
-            else incomingFrameAt                                              (preEdit, ie.coord        )
+        val frameBefore = ie.kind match
+            case InsertKind.SlotLevel =>
+                // New slot appended - doesn't exist in preEdit, replay from chain start.
+                enteringFrameBeforeSlot(preEdit, ie.coord.slotIdx)
+            case InsertKind.DescriptorLevel =>
+                // Element inserted within existing slot - use incoming frame at that element.
+                incomingFrameAt(preEdit, ie.coord)
         frameBefore match
             case Some(frame) =>
                 val targetVec  = frame.relativeTarget(

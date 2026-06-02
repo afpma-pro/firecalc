@@ -7,10 +7,12 @@ package afpma.firecalc.ui.panels
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180
+import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.*
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
@@ -119,6 +121,121 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
                 abs.azimuth.shouldBe                    (Some(AzimuthDirection.Right))
                 inclinationDeg(abs.inclination).shouldBe(45.0 +- 0.5                 )
         }
+    }
+
+    // ── Scenario 2: descriptor-level insertion (Finding 5) ──
+
+    "scenario 2: insert a 45° bend into existing FlueSlot" - {
+
+        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+
+        val (flueSlotIdx, flueDescr) = oldSlots.zipWithIndex
+            .collectFirst { case (FlueSlot(d), i) =>
+                (i, d)
+            }
+            .getOrElse(fail("no FlueSlot in example project"))
+
+        // Insert a new bend after "sortie foyer" (index 0 = roughness, 1 = innerShape,
+        // 2 = setInitialDirection, 3 = setInitialPosition, 4 = addSectionHorizontal "sortie foyer")
+        val insertAt = 5 // right after the first section
+        val newBend = AddSharpeAngle_0_to_180(
+            name = "virage ajouté",
+            angle = 45.degrees,
+            absDir = None
+        )
+        val newDescr = flueDescr.patch(insertAt, Seq(newBend), 0)
+        val rawNewSlots = oldSlots.updated(flueSlotIdx, FlueSlot(newDescr))
+
+        val edit = ChainEditDispatcher.detectEdit(oldSlots, rawNewSlots)
+        edit.isDefined.shouldBe(true)
+
+        "should detect InsertEdit with DescriptorLevel kind" in {
+            val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
+            ie.kind shouldBe ChainEditDispatcher.InsertKind.DescriptorLevel
+            ie.coord.slotIdx shouldBe flueSlotIdx
+            ie.coord.elemIdx shouldBe insertAt
+            ie.deflectionDeg shouldBe 45.0
+        }
+
+        "should set absDir on inserted element after dispatch" in {
+            val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
+            val finalSlots = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation)
+            val inserted = finalSlots(flueSlotIdx) match
+                case FlueSlot(d) => d(insertAt).asInstanceOf[AddSharpeAngle_0_to_180]
+                case _ => fail("expected FlueSlot")
+            inserted.absDir.isDefined shouldBe true
+        }
+    }
+
+    // ── Scenario 3: slot-level insertion (Finding 5) ──
+
+    "scenario 3: append a new ThermalFlueSlot with a direction-change element" - {
+
+        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+
+        // Create a new ThermalFlueSlot with a bend using case classes directly.
+        // Minimal set of elements — just enough for the detector to find the direction change.
+        import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.*
+        import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.*
+        import afpma.firecalc.dto.common.PipeLocation
+        import afpma.firecalc.dto.common.AppendLayerDescr
+
+        val newThermalSlot = ThermalFlueSlot {
+            Seq[afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3](
+                SetRoughness(1.mm),
+                SetInnerShape(afpma.firecalc.domain.PipeShape.Circle(20.cm)),
+                SetLayers(List(AppendLayerDescr.FromThermalResistanceUsingThickness(1.mm, SquareMeterKelvinPerWatt(0.44)))),
+                SetPipeLocation(PipeLocation.HeatedArea),
+                AddSectionVertical("section initiale", 100.mm),
+                AddSharpeAngle_0_to_90(
+                    name = "coude ajouté",
+                    angle = 90.degrees,
+                    absDir = Some(AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Down))
+                )
+            )
+        }
+        val rawNewSlots = oldSlots :+ newThermalSlot
+
+        val edit = ChainEditDispatcher.detectEdit(oldSlots, rawNewSlots)
+        edit.isDefined.shouldBe(true)
+
+        "should detect InsertEdit with SlotLevel kind" in {
+            val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
+            ie.kind shouldBe ChainEditDispatcher.InsertKind.SlotLevel
+            ie.coord.slotIdx shouldBe oldSlots.length
+            ie.deflectionDeg shouldBe 90.0
+        }
+
+        "should set absDir and rotate downstream after dispatch" in {
+            val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
+            val finalSlots = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation)
+            val insertedSlot = finalSlots(ie.coord.slotIdx) match
+                case ThermalFlueSlot(d) => d
+                case _ => fail("expected ThermalFlueSlot")
+            val bend = insertedSlot(ie.coord.elemIdx).asInstanceOf[AddSharpeAngle_0_to_90]
+            bend.absDir.isDefined shouldBe true
+        }
+    }
+
+    // ── Scenario 4: structural mismatch returns None ──
+
+    "scenario 4: structural mismatch (slot removed) returns None" - {
+
+        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+        val newSlots = oldSlots.init // remove last slot
+
+        val edit = ChainEditDispatcher.detectEdit(oldSlots, newSlots)
+        edit shouldBe None
+    }
+
+    "scenario 5: same-slot ordinal mismatch returns None" - {
+
+        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+        // Replace first slot with a different type (ordinal mismatch)
+        val newSlots = oldSlots.updated(0, ConnectorSlot(Seq.empty)) :+ ConnectorSlot(Seq.empty)
+
+        val edit = ChainEditDispatcher.detectEdit(oldSlots, newSlots)
+        edit shouldBe None
     }
 
 end ChainEditDispatcherScenarioSuite
