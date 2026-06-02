@@ -58,6 +58,12 @@ object ChainEditDispatcher:
         newAbsDir: Option[AbsoluteDirection]
     ) extends ChainEdit
 
+    /** Direction-change element inserted into a descriptor. */
+    case class InsertEdit(
+        coord        : ChainCoord,
+        deflectionDeg: Double
+    ) extends ChainEdit
+
     /**
      * Sum type for chain-edit propagation. Currently has a single inhabitant — [[RigidRotation]] —
      * which is the sole strategy surfaced to users. The scaffolding is retained so new strategies
@@ -90,28 +96,40 @@ object ChainEditDispatcher:
         edit    : ChainEdit,
         strategy: PropagationStrategy
     ): Seq[PostFireboxPipeDescrSlot] =
-        val patched = patchEdited(preEdit, newSlots, edit.coord)
-        // Edit-site invariant: on an AngleEdit the edited element's absDir is ALWAYS
-        // recomputed from (new_angle + current_(side,θ) + frame). Strategy only governs
-        // downstream. (`posePreserveIfAngle` is a no-op on DirectionEdit.)
-        val posed   = posePreserveIfAngle(patched, edit)
-        strategy match
-            case RigidRotation => rigidRotateDownstream(preEdit, posed, edit.coord)
+        edit match
+            case ie: InsertEdit =>
+                handleInsert(preEdit, newSlots, ie)
+            case _ =>
+                val patched = patchEdited(preEdit, newSlots, edit.coord)
+                // Edit-site invariant: on an AngleEdit the edited element's absDir is ALWAYS
+                // recomputed from (new_angle + current_(side,θ) + frame). Strategy only governs
+                // downstream. (`posePreserveIfAngle` is a no-op on DirectionEdit.)
+                val posed   = posePreserveIfAngle(patched, edit)
+                strategy match
+                    case RigidRotation => rigidRotateDownstream(preEdit, posed, edit.coord)
 
-    // ── Detection ──────────────────────────────────────────────────────
+    // ── Detection entry point ──────────────────────────────────────────
 
+    /**
+     * Detect a single edit between old and new slot sequences.
+     *
+     * Detection priority (Finding 5):
+     * 1. Slot-level insertion (new slot appended) — `detectSlotInsert`
+     * 2. Descriptor-level diff (same slots, element changes) — `scanSlot`/`scanDescr`
+     *
+     * Slot-level insertion is checked first because it produces a structurally different
+     * sequence (N+1 slots) that descriptor-level scanning can't handle. Descriptor-level
+     * insertion (same slot, more descriptors) is handled by `scanDescr` as a special case
+     * within the element-by-element diff. Both paths produce `InsertEdit`.
+     *
+     * If additional edit types are added in the future, consider unifying detection into
+     * a single pass that produces all edits and lets the dispatcher handle them in order.
+     */
     def detectEdit(
         oldSlots: Seq[PostFireboxPipeDescrSlot],
         newSlots: Seq[PostFireboxPipeDescrSlot]
     ): Option[ChainEdit] =
-        if oldSlots.length != newSlots.length then None
-        else
-            oldSlots
-                .zip(newSlots)
-                .iterator
-                .zipWithIndex
-                .flatMap { case ((o, n), i) => scanSlot(i, o, n) }
-                .nextOption()
+        ChainEditDetector.detectEdit(oldSlots, newSlots)
 
     def downstreamPinCount(slots: Seq[PostFireboxPipeDescrSlot], coord: ChainCoord): Int =
         if coord.slotIdx < 0 || coord.slotIdx >= slots.length then 0
@@ -120,6 +138,108 @@ object ChainEditDispatcher:
                 val lb = if sIdx == coord.slotIdx then coord.elemIdx else -1
                 acc + slots(sIdx).pinCount(lb)
             }
+
+    // ── ChainEditDetector (Finding 2: separation of detection from dispatch) ──
+
+    /**
+     * Detects edits by diffing old/new slot sequences.
+     *
+     * Responsibilities:
+     * - Slot-level insertion detection (`detectSlotInsert`)
+     * - Descriptor-level diffing (`scanSlot`, `scanDescr`)
+     * - Direction-change element discovery (`findDirChangeWithAngle`)
+     *
+     * Returns `Option[ChainEdit]`; the dispatcher (`ChainEditDispatcher`) applies
+     * propagation strategies to the detected edit.
+     */
+    private object ChainEditDetector:
+
+        def detectEdit(
+            oldSlots: Seq[PostFireboxPipeDescrSlot],
+            newSlots: Seq[PostFireboxPipeDescrSlot]
+        ): Option[ChainEdit] =
+            detectSlotInsert(oldSlots, newSlots)
+                .orElse:
+                    if oldSlots.length == newSlots.length then
+                        oldSlots
+                            .zip(newSlots)
+                            .iterator
+                            .zipWithIndex
+                            .flatMap { case ((o, n), i) => scanSlot(i, o, n) }
+                            .nextOption()
+                    else None
+
+        /** Detect single-slot insertion and return InsertEdit for direction-change elements. */
+        private def detectSlotInsert(
+            oldSlots: Seq[PostFireboxPipeDescrSlot],
+            newSlots: Seq[PostFireboxPipeDescrSlot]
+        ): Option[ChainEdit] =
+            if newSlots.length != oldSlots.length + 1 then None
+            else if oldSlots.map(_.ordinal) != newSlots.init.map(_.ordinal) then None
+            else
+                val insertSlotIdx = oldSlots.length
+                findDirChangeWithAngle(newSlots(insertSlotIdx), 0).toList.headOption match
+                    case Some((elemIdx, angleDeg)) =>
+                        Some(InsertEdit(ChainCoord(insertSlotIdx, elemIdx), angleDeg))
+                    case None                      => None
+
+        /** Find direction-change elements in a slot with their index and deflection angle. */
+        private def findDirChangeWithAngle(
+            slot   : PostFireboxPipeDescrSlot,
+            fromIdx: Int
+        ): Iterator[(Int, Double)] =
+            def scan[E](d: Seq[E])(using ext: FrameReplay.ElemExtractors[E]): Iterator[(Int, Double)] =
+                d.iterator.zipWithIndex.collect {
+                    case (elem, idx) if idx >= fromIdx =>
+                        ext.asDirectionChange.lift(elem).map { (angle, _) =>
+                            (idx, angle.toUnit[Degree].value)
+                        }
+                }.flatten
+            slot match
+                case FlueSlot(d)        => scan(d)
+                case ThermalFlueSlot(d) => scan(d)
+                case ConnectorSlot(d)   => scan(d)
+                case ChimneySlot(d)     => scan(d)
+
+        private def scanSlot(
+            slotIdx: Int,
+            oldSlot: PostFireboxPipeDescrSlot,
+            newSlot: PostFireboxPipeDescrSlot
+        ): Iterator[ChainEdit] =
+            (oldSlot, newSlot) match
+                case (FlueSlot(o), FlueSlot(n)              ) => scanDescr[FlowOnlyPipeDescr_15544](slotIdx, o, n)
+                case (ThermalFlueSlot(o), ThermalFlueSlot(n)) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
+                case (ConnectorSlot(o), ConnectorSlot(n)    ) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
+                case (ChimneySlot(o), ChimneySlot(n)        ) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
+                case _ => Iterator.empty
+
+        private def scanDescr[E](slotIdx: Int, oldDescr: Seq[E], newDescr: Seq[E])(using
+            ext: FrameReplay.ElemExtractors[E]
+        ): Iterator[ChainEdit] =
+            if newDescr.length == oldDescr.length + 1 then
+                // Single-element insertion: find insertion point by locating first mismatch.
+                val insertIdx = oldDescr.zip(newDescr).indexWhere((o, n) => o != n)
+                if insertIdx < 0 then Iterator.empty
+                else
+                    val inserted = newDescr(insertIdx)
+                    ext.asDirectionChange.lift(inserted) match
+                        case Some((angle, _)) =>
+                            Iterator.single(InsertEdit(ChainCoord(slotIdx, insertIdx), angle.toUnit[Degree].value))
+                        case None             => Iterator.empty
+            else if oldDescr.length != newDescr.length then Iterator.empty
+            else
+                oldDescr.iterator.zip(newDescr.iterator).zipWithIndex.flatMap { case ((o, n), eIdx) =>
+                    val coord = ChainCoord(slotIdx, eIdx)
+                    (ext.asDirectionChange.lift(o), ext.asDirectionChange.lift(n)) match
+                        case (Some((oldAng, oldAbs)), Some((newAng, newAbs))) =>
+                            if oldAng != newAng then
+                                oldAbs.map                    (oa =>
+                                    AngleEdit(coord, oldAng.toUnit[Degree].value, newAng.toUnit[Degree].value, oa)
+                                )
+                            else if oldAbs != newAbs then Some(DirectionEdit(coord, oldAbs, newAbs))
+                            else None
+                        case _ => None
+                }
 
     // ── Stages ─────────────────────────────────────────────────────────
 
@@ -153,6 +273,7 @@ object ChainEditDispatcher:
                         )
                     case None    => slots
             case _ : DirectionEdit => slots
+            case _ : InsertEdit    => slots
 
     /**
      * Rigid-rotate downstream pins by the rotation carrying pre-edit outgoing → post-edit outgoing.
@@ -171,25 +292,86 @@ object ChainEditDispatcher:
             (exitDirection(preEdit, coord), exitDirection(current, coord)) match
                 case (Some(oldDir), Some(newDir)) =>
                     val (axis, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
-                    if math.abs(angleRad) < 1e-9 then current
-                    else
-                        current.zipWithIndex.map { (slot, sIdx) =>
-                            if sIdx < coord.slotIdx then slot
-                            else slot.rotatePins(lowerBound(sIdx, coord), axis, angleRad)
-                        }
+                    rotateDownstream(current, coord.slotIdx, coord.elemIdx, axis, angleRad)
                 case _ => current
 
-    // ── Slot-level primitives (polymorphic dispatch collapsed into extensions) ─
+    /**
+     * Shared downstream rotation helper (Finding 3).
+     *
+     * Rotates all pins from `startSlotIdx` onward by `(axis, angleRad)`.
+     * At the start slot, only pins at index >= `startElemLb` are rotated;
+     * in subsequent slots all pins are rotated.
+     */
+    private def rotateDownstream(
+        slots       : Seq[PostFireboxPipeDescrSlot],
+        startSlotIdx: Int,
+        startElemLb : Int,
+        axis        : Vec3,
+        angleRad    : Double
+    ): Seq[PostFireboxPipeDescrSlot] =
+        if math.abs(angleRad) < 1e-9 then slots
+        else
+            slots.zipWithIndex.map { (slot, sIdx) =>
+                if sIdx < startSlotIdx then slot
+                else slot.rotatePins(if sIdx == startSlotIdx then startElemLb else -1, axis, angleRad)
+            }
+
+    /**
+     * Handle insertion of a direction-change element.
+     *
+     * Computes the target direction from the frame before the insertion point,
+     * using the default relative side (Right) matching RelativeDirectionInput's default.
+     * Sets absDir on the inserted element and delegates downstream rotation to
+     * [[rotateDownstream]] (Finding 3).
+     */
+    private def handleInsert(
+        preEdit : Seq[PostFireboxPipeDescrSlot],
+        newSlots: Seq[PostFireboxPipeDescrSlot],
+        ie      : InsertEdit
+    ): Seq[PostFireboxPipeDescrSlot] =
+        // For slot-level insertions, the slot is new and doesn't exist in preEdit.
+        // For descriptor-level insertions, the slot exists in both; use incomingFrameAt.
+        val frameBefore =
+            if ie.coord.slotIdx >= preEdit.length then enteringFrameBeforeSlot(preEdit, ie.coord.slotIdx)
+            else incomingFrameAt                                              (preEdit, ie.coord        )
+        frameBefore match
+            case Some(frame) =>
+                val targetVec  = frame.relativeTarget(
+                    PipeFrame.RelativeSide.Right,
+                    0.0,
+                    ie.deflectionDeg
+                )
+                val targetDir  = targetVec.toAbsoluteDirection
+                val withAbsDir = newSlots.updated(
+                    ie.coord.slotIdx,
+                    newSlots(ie.coord.slotIdx).withAbsDirAt(ie.coord.elemIdx, Some(targetDir))
+                )
+                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(targetDir)
+                val newExitDir = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                val (axis, angleRad) = PipeChainRotation.rotationBetween(frame.direction, newExitDir)
+                rotateDownstream(withAbsDir, ie.coord.slotIdx, ie.coord.elemIdx + 1, axis, angleRad)
+            case None        => newSlots
+
+    // ── Slot-level primitives (polymorphic dispatch collapsed into extensions) ──
 
     private def indexed[E](d: Seq[E]): Seq[(Int, E)] = d.zipWithIndex.map(_.swap)
-
-    private def lowerBound(sIdx: Int, coord: ChainCoord): Int =
-        if sIdx == coord.slotIdx then coord.elemIdx else -1
 
     private def enteringFrames(slots: Seq[PostFireboxPipeDescrSlot]): Vector[Option[PipeFrame]] =
         slots.foldLeft(Vector(Option.empty[PipeFrame])) { (acc, slot) =>
             acc :+ slot.replay(acc.last)
         }
+
+    /** Frame entering the slot at `slotIdx` (before any element in that slot). */
+    private def enteringFrameBeforeSlot(
+        slots  : Seq[PostFireboxPipeDescrSlot],
+        slotIdx: Int
+    ): Option[PipeFrame] =
+        if slotIdx <= 0 then None
+        else
+            // Finding 4: replaced mutation-based while loop with foldLeft
+            slots.take(math.min(slotIdx, slots.length)).foldLeft(Option.empty[PipeFrame]) { (frame, slot) =>
+                slot.replay(frame, upTo = Int.MaxValue)
+            }
 
     private def incomingFrameAt(slots: Seq[PostFireboxPipeDescrSlot], coord: ChainCoord): Option[PipeFrame] =
         slots(coord.slotIdx).replay(enteringFrames(slots)(coord.slotIdx), upTo = coord.elemIdx - 1)
@@ -248,37 +430,5 @@ object ChainEditDispatcher:
                 case ThermalFlueSlot(d) => ThermalFlueSlot(set(d))
                 case ConnectorSlot(d)   => ConnectorSlot  (set(d))
                 case ChimneySlot(d)     => ChimneySlot    (set(d))
-
-    // ── Detection ──────────────────────────────────────────────────────
-
-    private def scanSlot(
-        slotIdx: Int,
-        oldSlot: PostFireboxPipeDescrSlot,
-        newSlot: PostFireboxPipeDescrSlot
-    ): Iterator[ChainEdit] =
-        (oldSlot, newSlot) match
-            case (FlueSlot(o), FlueSlot(n)              ) => scanDescr[FlowOnlyPipeDescr_15544](slotIdx, o, n)
-            case (ThermalFlueSlot(o), ThermalFlueSlot(n)) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
-            case (ConnectorSlot(o), ConnectorSlot(n)    ) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
-            case (ChimneySlot(o), ChimneySlot(n)        ) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
-            case _ => Iterator.empty
-
-    private def scanDescr[E](slotIdx: Int, oldDescr: Seq[E], newDescr: Seq[E])(using
-        ext: FrameReplay.ElemExtractors[E]
-    ): Iterator[ChainEdit] =
-        if oldDescr.length != newDescr.length then Iterator.empty
-        else
-            oldDescr.iterator.zip(newDescr.iterator).zipWithIndex.flatMap { case ((o, n), eIdx) =>
-                val coord = ChainCoord(slotIdx, eIdx)
-                (ext.asDirectionChange.lift(o), ext.asDirectionChange.lift(n)) match
-                    case (Some((oldAng, oldAbs)), Some((newAng, newAbs))) =>
-                        if oldAng != newAng then
-                            oldAbs.map                    (oa =>
-                                AngleEdit(coord, oldAng.toUnit[Degree].value, newAng.toUnit[Degree].value, oa)
-                            )
-                        else if oldAbs != newAbs then Some(DirectionEdit(coord, oldAbs, newAbs))
-                        else None
-                    case _ => None
-            }
 
 end ChainEditDispatcher

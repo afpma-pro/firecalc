@@ -6,8 +6,6 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.AbsoluteDirection
-import afpma.firecalc.dto.all.AzimuthDirection
-import afpma.firecalc.dto.all.InclinationDirection
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.Vec3
@@ -105,16 +103,6 @@ case class DirectionBadgeComponent(
         val (azDeg, elDeg) = dir.toAzimuthElevation
         afpma.firecalc.ui.instances.DirectionFormat.compact(azDeg, elDeg)
 
-    /** Convert a Vec3 direction to a AbsoluteDirection by snapping to named enum cases. */
-    private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
-        val (az, el) = v.toAzimuthElevation
-        val incl = InclinationDirection.fromDegrees(el)
-        incl match
-            case InclinationDirection.Up | InclinationDirection.Down =>
-                new AbsoluteDirection(None, incl)
-            case _                                                   =>
-                AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
-
     private def tooltipContent: HtmlElement =
         val i18n = I18N_UI.direction_badge
         div(
@@ -208,7 +196,7 @@ case class DirectionBadgeComponent(
                     ul(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
                         presets.map: (cardinalVec, _) =>
-                            val fd  = vec3ToAbsoluteDirection(cardinalVec)
+                            val fd  = cardinalVec.toAbsoluteDirection
                             val lbl = translateCardinal(cardinalVec.toDisplayString)
                             li(
                                 a(

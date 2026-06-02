@@ -6,8 +6,6 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.AbsoluteDirection
-import afpma.firecalc.dto.all.AzimuthDirection
-import afpma.firecalc.dto.all.InclinationDirection
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipeFrame.RelativeSide
@@ -98,22 +96,13 @@ case class RelativeDirectionInput(
             case _ =>
                 allSides.map(s => sideLabel(s) -> s)
 
-    private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
-        val (az, el) = v.toAzimuthElevation
-        val incl = InclinationDirection.fromDegrees(el)
-        incl match
-            case InclinationDirection.Up | InclinationDirection.Down =>
-                new AbsoluteDirection(None, incl)
-            case _                                                   =>
-                AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
-
     private def computeFinalDir(
         side   : RelativeSide,
         theta  : Double,
         frame  : PipeFrame,
         deflDeg: Double
     ): Option[AbsoluteDirection] =
-        Some(vec3ToAbsoluteDirection(frame.relativeTarget(side, theta, deflDeg)))
+        Some(frame.relativeTarget(side, theta, deflDeg).toAbsoluteDirection)
 
     private def recoverSideTheta(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): (RelativeSide, Double) =
         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
@@ -223,7 +212,7 @@ case class RelativeDirectionInput(
         // .composeChanges(_.take(1)) lets through at most 1 subsequent change.
         // Net effect: fires for initial value, plus up to 1 change (in case
         // context signals aren't ready at mount but arrive shortly after).
-        val initialSync     =
+        val initialSync =
             externalStSig
                 .composeChanges(_.take(1))
                 --> Observer[Option[(RelativeSide, Double)]] {
@@ -232,23 +221,6 @@ case class RelativeDirectionInput(
                         thetaVar.set(theta)
                     case None                => ()
                 }
-        // Mount-time forward init: write computed direction to absDirVar when it's None.
-        // `forwardSync` uses .changes and skips mount-time, so newly created direction-change
-        // elements (absDir=None) have correct UI state but no published absolute direction for
-        // 3D visualization. This one-time init bridges that gap.
-        val forwardInitSync =
-            localFdSig
-                .combineWith(absDirVar.signal)
-                .map {
-                    case (newFd, None) => newFd
-                    case _ => None
-                }
-                .composeChanges(_.take(1))
-                --> Observer[Option[AbsoluteDirection]] {
-                    case Some(fd) => absDirVar.set(Some(fd))
-                    case None     => ()
-                }
-
         div(
             cls := "flex flex-row items-end gap-2 mt-1",
 
@@ -299,7 +271,6 @@ case class RelativeDirectionInput(
             ),
 
             // Sync binders
-            forwardInitSync,
             initialSync,
             forwardSync,
             reverseSync

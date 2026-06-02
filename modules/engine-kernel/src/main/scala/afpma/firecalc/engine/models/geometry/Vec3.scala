@@ -5,6 +5,10 @@
 
 package afpma.firecalc.engine.models.geometry
 
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
+
 /**
  * 3D unit vector (dimensionless Double components).
  * Coordinate system (facing the stove):
@@ -106,6 +110,16 @@ case class Vec3(x: Double, y: Double, z: Double):
     /** Format a Double with 1 decimal place, locale-independent (no java.text dependency). */
     private def fmtD1(d: Double): String =
         BigDecimal(d).setScale(1, BigDecimal.RoundingMode.HALF_UP).toString()
+
+    /** Convert this vector to an AbsoluteDirection by snapping to named enum cases. */
+    def toAbsoluteDirection: AbsoluteDirection =
+        val (azDeg, elDeg) = toAzimuthElevation
+        val incl = InclinationDirection.fromDegrees(elDeg)
+        incl match
+            case InclinationDirection.Up | InclinationDirection.Down =>
+                new AbsoluteDirection(None, incl)
+            case _                                                   =>
+                AbsoluteDirection(AzimuthDirection.fromDegrees(azDeg), incl)
 
 object Vec3:
     // Use lazy val for Scala.js initialization order safety
