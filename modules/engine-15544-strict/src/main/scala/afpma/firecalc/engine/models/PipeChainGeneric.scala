@@ -7,8 +7,12 @@ package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 
+import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers
 import afpma.firecalc.engine.models.geometry.PipeFrame
+
+import cats.data.Validated
 
 /**
  * Builds a Vector[SlotBuildResult] from a sequence of PostFireboxPipeDescrSlot,
@@ -26,8 +30,29 @@ object PipeChainGeneric:
      * @return a vector of SlotBuildResult, one per slot, in the same order
      */
     def build(slots: Seq[PostFireboxPipeDescrSlot]): Vector[SlotBuildResult] =
+        build(slots, initialDirection = None)
+
+    /**
+     * Build all pipe slots with frame chaining, seeding the first slot's
+     * initial frame from the wrapper-level initial direction.
+     *
+     * After V7 migration, post-firebox pipes store initial direction at the
+     * `PostFireboxPipes` wrapper level rather than inside descriptor sequences.
+     * This overload converts the wrapper-level direction to a PipeFrame and
+     * seeds the fold so the first pipe receives it as its external initial frame,
+     * preventing spurious `GeometryWithoutInitialDirection` validation errors.
+     *
+     * @param slots the ordered post-firebox pipe descriptor slots
+     * @param initialDirection wrapper-level initial direction (V7 PostFireboxPipes)
+     * @return a vector of SlotBuildResult, one per slot, in the same order
+     */
+    def build(
+        slots           : Seq[PostFireboxPipeDescrSlot],
+        initialDirection: Option[PostFireboxInitialDirection]
+    ): Vector[SlotBuildResult] =
+        val initialFrame: Option[PipeFrame] = initialDirection.map(PostFireboxFrameHelpers.toPipeFrame)
         slots
-            .foldLeft((Vector.empty[SlotBuildResult], Option.empty[PipeFrame])):
+            .foldLeft((Vector.empty[SlotBuildResult], initialFrame)):
                 case ((results, prevFrame), slot) =>
                     val result = buildSlot(slot, prevFrame)
                     (results :+ result, result.finalFrame.orElse(prevFrame))
@@ -42,6 +67,13 @@ object PipeChainGeneric:
             case ThermalFlueSlot(descr) => buildThermalFlue(descr, prevFrame)
             case ConnectorSlot(descr)   => buildThermal(ConnectorPipeT, "Connector", descr, prevFrame)
             case ChimneySlot(descr)     => buildThermal(ChimneyPipeT, "Chimney", descr, prevFrame)
+
+    /**
+     * Build a pass-through slot that preserves the previous frame without
+     * contributing a real pipe. Used by NoFlueSlot (Plan B) for empty-head topologies.
+     */
+    def buildPassThroughSlot(prevFrame: Option[PipeFrame]): SlotBuildResult =
+        SlotBuildResult(FluePipeT, "NoFlue", Validated.validNel(()), Validated.validNel((_: Int) => None), prevFrame)
 
     // ── FlowOnly 15544 flue ─────────────────────────────────────────────
 

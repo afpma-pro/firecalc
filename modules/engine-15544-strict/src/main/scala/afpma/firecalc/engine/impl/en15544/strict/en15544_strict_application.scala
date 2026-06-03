@@ -41,16 +41,21 @@ import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
+import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
 
 object EN15544_Strict_Application:
     def make(
         f: EN15544_V_2023_Formulas_Alg
     )(
-        i       : Inputs_15544_Strict,
-        pfbSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty
+        i: Inputs_15544_Strict,
+        pfbSlots   : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty,
+        initialDir : Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None,
+        initialPos : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
     ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
-        override lazy val inputs              : Inputs_15544                                        = i
-        override lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = pfbSlots
+        override lazy val inputs                   : Inputs_15544                                        = i
+        override lazy val postFireboxPipeSlots     : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = pfbSlots
+        override def    postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = initialDir
+        override def    postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = initialPos
     }
 
 sealed abstract class EN15544_Strict_Application(
@@ -307,11 +312,14 @@ sealed abstract class EN15544_Strict_Application(
                     en15544.en13384_heatingAppliance_massFlows
                 )
 
+                val initialFrame: Option[PipeFrame] =
+                    en15544.postFireboxInitialDirection.map(toPipeFrame)
+
                 // Build PipeSlot for each flue region slot, threading prevFrame through
                 // the fold accumulator (no mutable state).
                 val slotsV: VNelMcalcErr[(Vector[PipeSlot], Option[PipeFrame])] =
                     flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], Option[PipeFrame])]](
-                        Validated.validNel((Vector.empty, None))
+                        Validated.validNel((Vector.empty, initialFrame))
                     ) { (accV, slot) =>
                         accV.andThen { case (acc, prevFrame) =>
                             slot match
@@ -456,7 +464,7 @@ sealed abstract class EN15544_Strict_Application(
                                 case Some(descr) =>
                                     val flueResult = FluePipe_Module_15544.incremental
                                         .define(descr*)
-                                        .toFullDescrWithExternalInitialFrame(None)
+                                        .toFullDescrWithExternalInitialFrame(initialFrame)
                                     val fdResult: FluePipe_Module_15544.FullDescrResult =
                                         flueResult.map((ids, fd, _) => (ids, fd))
                                     FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult) match

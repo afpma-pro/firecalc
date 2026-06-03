@@ -49,7 +49,10 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     // Slot-indexed build results from PipeChainGeneric. Used by the UI for
     // position tracking, per-slot IdsMapping, and final PipeFrame extraction.
     val slotBuildResults: Vector[SlotBuildResult] =
-        PipeChainGeneric.build(fcProj.post_firebox_pipes.slots)
+        PipeChainGeneric.build(
+            fcProj.post_firebox_pipes.slots,
+            Some(fcProj.post_firebox_pipes.initialDirection)
+        )
 
     import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
@@ -141,6 +144,8 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             val stoveParams                     = fcProj.stove_params
             val airIntakePipe                   = self.airIntakePipe
             override def postFireboxPipeSlots   = normalizedPostFireboxSlots
+            override def postFireboxInitialDirection = Some(fcProj.post_firebox_pipes.initialDirection)
+            override def postFireboxInitialPosition  = Some(fcProj.post_firebox_pipes.initialPosition)
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
         fb match

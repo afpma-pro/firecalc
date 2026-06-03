@@ -31,6 +31,7 @@ import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.en13384.mkforEN13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
 
 import scala.annotation.nowarn
 
@@ -43,11 +44,15 @@ object EN15544_MCE_Application:
         bs845: BS845_Alg,
         wComb: WoodCombustionAlg
     )(
-        i       : models.en15544.Inputs_15544_MCE,
-        pfbSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty
+        i: models.en15544.Inputs_15544_MCE,
+        pfbSlots   : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty,
+        initialDir : Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None,
+        initialPos : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
     ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb) {
-        override lazy val inputs              : models.en15544.Inputs_15544_MCE                     = i
-        override lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = pfbSlots
+        override lazy val inputs                   : models.en15544.Inputs_15544_MCE                     = i
+        override lazy val postFireboxPipeSlots     : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = pfbSlots
+        override def    postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = initialDir
+        override def    postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = initialPos
     }
 
 abstract class EN15544_MCE_Application(
@@ -392,11 +397,14 @@ abstract class EN15544_MCE_Application(
                             en15544_mce.en13384_heatingAppliance_massFlows
                         )
 
+                        val initialFrame: Option[PipeFrame] =
+                            en15544_mce.postFireboxInitialDirection.map(toPipeFrame)
+
                         // Build a PipeSlot for each flue region slot, threading prevFrame
                         // through the fold accumulator (no mutable state).
                         val slotsV: VNelMcalcErr[(Vector[PipeSlot], Option[PipeFrame])] =
                             flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], Option[PipeFrame])]](
-                                Validated.validNel((Vector.empty, None))
+                                Validated.validNel((Vector.empty, initialFrame))
                             ) { (accV, slot) =>
                                 accV.andThen { case (acc, prevFrame) =>
                                     slot match
@@ -547,7 +555,7 @@ abstract class EN15544_MCE_Application(
                                         case Some(descr) =>
                                             val (fdResult, _) =
                                                 FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithFinalFrame(descr, None)
+                                                    .mkPipeFromIncrDescrWithFinalFrame(descr, initialFrame)
                                             FluePipe_Module_13384.FullDescrResult.extractPipe(
                                                 fdResult
                                             ) match
