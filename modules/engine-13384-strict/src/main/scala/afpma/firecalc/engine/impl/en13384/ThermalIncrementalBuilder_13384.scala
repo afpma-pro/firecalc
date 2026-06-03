@@ -75,6 +75,32 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override type SetProp    = SetThermalPipeProp_13384
     override type AddElement = AddThermalPipeElement_13384
 
+    /**
+     * Wrapper-level initial direction (V7).
+     * When defined, seeds the initial/current frame in mkInitPropsState.
+     * Replaces descriptor-level SetInitialDirection after V6→V7 migration.
+     */
+    protected var wrapperInitialDirection: Option[PostFireboxInitialDirection] = None
+
+    /**
+     * Set wrapper-level initial direction.
+     * @param dir the initial direction
+     * @return this builder (for chaining)
+     */
+    def withInitialDirection(dir: PostFireboxInitialDirection): this.type =
+        wrapperInitialDirection = Some(dir)
+        this
+
+    /**
+     * Set wrapper-level initial position.
+     * Position tracking is handled by PositionTracker, not PropsState.
+     * @param pos the initial position (ignored)
+     * @return this builder (for chaining)
+     */
+    @deprecated("Position tracking is handled by PositionTracker", "v7")
+    def withInitialPosition(pos: PostFireboxInitialPosition): this.type =
+        this // no-op: position tracking moved to PositionTracker
+
     extension (addElement: AddElement) override def name: String = addElement.name
 
     override protected def isForbiddenAddElementAtStart(
@@ -92,9 +118,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             case _ => false
 
     override protected def isTrailingAllowed(setProp: SetProp): Boolean =
-        setProp match
-            case _: SetFinalPosition | _: SetInitialPosition => true
-            case _                                           => false
+        false
 
     override type PT <: PipeType_EN13384
 
@@ -135,10 +159,24 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     extension (piDescr: PipeIncrDescr) override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
-        ThermalPropsState_13384(
-            // by default, use non concentric air ducts (see EN 13384 7.8.1)
-            ductType = Some(DuctType.NonConcentricDuctsHighThermalResistance)
-        )
+        val initDir = wrapperInitialDirection
+        initDir match
+            case Some(dir) =>
+                val dirVec = Vec3.fromAzimuthElevation(
+                    AzimuthDirection.toDegrees    (dir.azimuth    ),
+                    InclinationDirection.toDegrees(dir.inclination)
+                )
+                val frame  = PipeFrame.initial(dirVec)
+                ThermalPropsState_13384    (
+                    ductType     = Some(DuctType.NonConcentricDuctsHighThermalResistance),
+                    initialFrame = Some(frame),
+                    currentFrame = Some(frame)
+                )
+            case None      =>
+                ThermalPropsState_13384(
+                    // by default, use non concentric air ducts (see EN 13384 7.8.1)
+                    ductType = Some(DuctType.NonConcentricDuctsHighThermalResistance)
+                )
 
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
@@ -273,21 +311,21 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             atom: SetProp
         ): ValidatedNel[IncrementalValidation_Error, PropsState] =
             atom match
-                case SetInnerShape(g)                          =>
+                case SetInnerShape(g)            =>
                     vState.map(_.modify(_.innerShape).setTo(g.some))
-                case SetOuterShape(g)                          =>
+                case SetOuterShape(g)            =>
                     vState.map(_.modify(_.outer_shape).setTo(g.some))
-                case SetThickness(t)                           =>
+                case SetThickness(t)             =>
                     vState andThen: v =>
                         v.innerShape match
                             case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
                             case Some(ig) =>
                                 v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
-                case SetRoughness(r)                           =>
+                case SetRoughness(r)             =>
                     vState.map(_.modify(_.roughness).setTo(r.some))
-                case SetMaterial(lm)                           =>
+                case SetMaterial(lm)             =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                case SetLayer(e, lambda)                       =>
+                case SetLayer(e, lambda)         =>
                     val vGeom = vState.andThen(_.getValidated(_.innerShape, LayerRequiresSectionGeometry(pt)))
                     vGeom.andThen: geom =>
                         vState.map(
@@ -296,7 +334,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape) // also update outer geometry using thickness of layer
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
-                case SetLayers(ldescrs)                        =>
+                case SetLayers(ldescrs)          =>
                     val vGeom = vState.andThen(_.getValidated(_.innerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
@@ -306,28 +344,21 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape) // also update outer geometry using thickness of layer
                                 .setTo(ldescrs.compute_outer_shape(geom).some)
                         )
-                case SetAirSpaceAfterLayers(asp)               =>
+                case SetAirSpaceAfterLayers(asp) =>
                     vState.map(_.modify(_.airSpace_afterLayers).setTo(asp.some))
-                case SetPipeLocation(loc)                      =>
+                case SetPipeLocation(loc)        =>
                     vState.map(_.modify(_.pipeLoc).setTo(loc.some))
-                case SetDuctType(duct)                         =>
+                case SetDuctType(duct)           =>
                     vState.map(_.modify(_.ductType).setTo(duct.some))
-                case SetNumberOfFlows(nf)                      =>
+                case SetNumberOfFlows(nf)        =>
                     vState.map(_.modify(_.nFlows).setTo(nf.some))
-                case SetInitialDirection(azimuth, inclination) =>
-                    val dir   = Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees    (azimuth    ),
-                        InclinationDirection.toDegrees(inclination)
-                    )
-                    val frame = PipeFrame.initial(dir)
-                    vState.map(
-                        _.copy(
-                            initialFrame = Some(frame),
-                            currentFrame = Some(frame)
-                        )
-                    )
-                case _: SetInitialPosition => vState
-                case _: SetFinalPosition => vState
+                // V7: wrapper-level initial direction/position replaces descriptor-level elements
+                case _: SetInitialDirection =>
+                    vState // ignored — use withInitialDirection()
+                case _: SetInitialPosition =>
+                    vState // ignored — use withInitialPosition()
+                case _: SetFinalPosition =>
+                    vState // ignored — stripped by V6→V7 migration; not part of V7 post-firebox schema
                 case SetPropertiesInBatch(_, _, _) =>
                     throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
                 case _: LinedFlue =>
@@ -416,12 +447,15 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def material(lm: Material_13384) =
         SetMaterial(lm)
 
+    @deprecated("Use withInitialDirection(PostFireboxInitialDirection) instead", "v7")
     def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
         SetInitialDirection(azimuth, inclination)
 
+    @deprecated("Use withInitialPosition(PostFireboxInitialPosition) instead", "v7")
     def setInitialPosition(x: Length, y: Length, z: Length) =
         SetInitialPosition(x, y, z)
 
+    @deprecated("No longer supported; position tracking is handled by PositionTracker", "v7")
     def setFinalPosition(x: Length, y: Length, z: Length) =
         SetFinalPosition(x, y, z)
 

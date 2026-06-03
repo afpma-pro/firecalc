@@ -13,6 +13,7 @@ import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
 
 import scala.util.Failure
 import scala.util.Success
@@ -75,21 +76,30 @@ object FireCalcYAMLMigrations:
     def migrateV5ToV6(v5: FireCalcYAML_V5): FireCalcYAML_V6 =
         v5.transformInto[FireCalcYAML_V6]
 
+    def migrateV6ToV7(v6: FireCalcYAML_V6): FireCalcYAML_V7 =
+        v6.transformInto[FireCalcYAML_V7]
+
     def upgradeToCurrent(dto: Any): Either[Throwable, FireCalcYAML] =
         dto match
+            case fcv7: FireCalcYAML_V7 =>
+                Right(fcv7)
             case fcv6: FireCalcYAML_V6 =>
-                Right(fcv6)
+                Right(migrateV6ToV7(fcv6))
             case fcv5: FireCalcYAML_V5 =>
-                Right(migrateV5ToV6(fcv5))
+                Right((migrateV5ToV6 andThen migrateV6ToV7)(fcv5))
             case fcv4: FireCalcYAML_V4 =>
-                Right((migrateV4ToV5 andThen migrateV5ToV6)(fcv4))
+                Right((migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7)(fcv4))
             case fcv3: FireCalcYAML_V3 =>
-                Right((migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)(fcv3))
+                Right((migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7)(fcv3))
             case fcv2: FireCalcYAML_V2 =>
-                Right((migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)(fcv2))
+                Right(
+                    (migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7)(
+                        fcv2
+                    )
+                )
             case fcv1: FireCalcYAML_V1 =>
                 Right(
-                    (migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6)(
+                    (migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7)(
                         fcv1
                     )
                 )
@@ -130,34 +140,44 @@ object FireCalcYAMLMigrations:
             case Some(1)       =>
                 // V1→V2 always had a correct transformer — no corrupted V1-marker files exist
                 decodeV1(json).map(
-                    migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6
+                    migrateV1ToV2 andThen migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7
                 )
             case Some(2)       =>
                 decodeWithFallback(
                     json,
                     2,
                     decodeV2,
-                    migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6,
+                    migrateV2ToV3 andThen migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7,
                     3,
                     decodeV3,
-                    migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6
+                    migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7
                 )
             case Some(3)       =>
                 decodeWithFallback(
                     json,
                     3,
                     decodeV3,
-                    migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6,
+                    migrateV3ToV4 andThen migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7,
                     4,
                     decodeV4,
-                    migrateV4ToV5 andThen migrateV5ToV6
+                    migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7
                 )
             case Some(4)       =>
-                decodeWithFallback(json, 4, decodeV4, migrateV4ToV5 andThen migrateV5ToV6, 5, decodeV5, migrateV5ToV6)
+                decodeWithFallback(
+                    json,
+                    4,
+                    decodeV4,
+                    migrateV4ToV5 andThen migrateV5ToV6 andThen migrateV6ToV7,
+                    5,
+                    decodeV5,
+                    migrateV5ToV6 andThen migrateV6ToV7
+                )
             case Some(5)       =>
-                decodeWithFallback(json, 5, decodeV5, migrateV5ToV6, 6, decodeV6, identity)
+                decodeWithFallback(json, 5, decodeV5, migrateV5ToV6 andThen migrateV6ToV7, 6, decodeV6, migrateV6ToV7)
             case Some(6)       =>
-                decodeV6(json)
+                decodeV6(json).map(migrateV6ToV7)
+            case Some(7)       =>
+                decodeV7(json)
             case Some(version) =>
                 Left(s"Unknown FireCalcYAML version: $version")
 
@@ -235,6 +255,11 @@ object FireCalcYAMLMigrations:
     private def decodeV6(json: Json): Either[String, FireCalcYAML_V6] =
         import FireCalcYAML_V6.decoder
         json.as[FireCalcYAML_V6].left.map(e => s"Failed to decode V6: ${e.getMessage()}")
+
+    /** Decode V7 from JSON using FireCalcYAML_V7 decoder. */
+    private def decodeV7(json: Json): Either[String, FireCalcYAML_V7] =
+        import FireCalcYAML_V7.decoder
+        json.as[FireCalcYAML_V7].left.map(e => s"Failed to decode V7: ${e.getMessage()}")
 
     /** Try-based wrapper for decodeAndMigrate for Scala.js compatibility. */
     def decodeAndMigrateTry(yaml: String): Try[FireCalcYAML] =

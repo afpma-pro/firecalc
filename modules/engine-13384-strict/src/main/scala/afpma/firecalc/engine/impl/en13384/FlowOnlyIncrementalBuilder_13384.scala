@@ -65,6 +65,32 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override type SetProp    = SetFlowOnlyPipeProp_13384
     override type AddElement = AddFlowOnlyPipeElement_13384
 
+    /**
+     * Wrapper-level initial direction (V7).
+     * When defined, seeds the initial/current frame in mkInitPropsState.
+     * Replaces descriptor-level SetInitialDirection after V6→V7 migration.
+     */
+    protected var wrapperInitialDirection: Option[PostFireboxInitialDirection] = None
+
+    /**
+     * Set wrapper-level initial direction.
+     * @param dir the initial direction
+     * @return this builder (for chaining)
+     */
+    def withInitialDirection(dir: PostFireboxInitialDirection): this.type =
+        wrapperInitialDirection = Some(dir)
+        this
+
+    /**
+     * Set wrapper-level initial position.
+     * Position tracking is handled by PositionTracker, not PropsState.
+     * @param pos the initial position (ignored)
+     * @return this builder (for chaining)
+     */
+    @deprecated("Position tracking is handled by PositionTracker", "v7")
+    def withInitialPosition(pos: PostFireboxInitialPosition): this.type =
+        this // no-op: position tracking moved to PositionTracker
+
     extension (addElement: AddElement) override def name: String = addElement.name
 
     override protected def isForbiddenAddElementAtStart(
@@ -82,9 +108,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             case _ => false
 
     override protected def isTrailingAllowed(setProp: SetProp): Boolean =
-        setProp match
-            case _: SetFinalPosition | _: SetInitialPosition => true
-            case _                                           => false
+        false
 
     override type PT <: PipeType_EN13384
 
@@ -125,7 +149,20 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     extension (piDescr: PipeIncrDescr) override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
-        FlowOnlyPropsState_13384()
+        val initDir = wrapperInitialDirection
+        initDir match
+            case Some(dir) =>
+                val dirVec = Vec3.fromAzimuthElevation(
+                    AzimuthDirection.toDegrees    (dir.azimuth    ),
+                    InclinationDirection.toDegrees(dir.inclination)
+                )
+                val frame  = PipeFrame.initial(dirVec)
+                FlowOnlyPropsState_13384(
+                    initialFrame = Some(frame),
+                    currentFrame = Some(frame)
+                )
+            case None      =>
+                FlowOnlyPropsState_13384()
 
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
@@ -249,28 +286,21 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep.allSetPropsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (_, atom)) =>
                 atom match
-                    case SetInnerShape(g)                          =>
+                    case SetInnerShape(g)     =>
                         vState.map(_.modify(_.innerShape).setTo(g.some))
-                    case SetRoughness(r)                           =>
+                    case SetRoughness(r)      =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
-                    case SetMaterial(lm)                           =>
+                    case SetMaterial(lm)      =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                    case SetNumberOfFlows(nf)                      =>
+                    case SetNumberOfFlows(nf) =>
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
-                    case SetInitialDirection(azimuth, inclination) =>
-                        val dir   = Vec3.fromAzimuthElevation(
-                            AzimuthDirection.toDegrees    (azimuth    ),
-                            InclinationDirection.toDegrees(inclination)
-                        )
-                        val frame = PipeFrame.initial(dir)
-                        vState.map(
-                            _.copy(
-                                initialFrame = Some(frame),
-                                currentFrame = Some(frame)
-                            )
-                        )
-                    case _: SetInitialPosition => vState
-                    case _: SetFinalPosition => vState
+                    // V7: wrapper-level initial direction/position replaces descriptor-level elements
+                    case _: SetInitialDirection =>
+                        vState // ignored — use withInitialDirection()
+                    case _: SetInitialPosition =>
+                        vState // ignored — use withInitialPosition()
+                    case _: SetFinalPosition =>
+                        vState // ignored — stripped by V6→V7 migration; not part of V7 post-firebox schema
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
@@ -286,12 +316,15 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     def material(lm: Material_13384) =
         SetMaterial(lm)
 
+    @deprecated("Use withInitialDirection(PostFireboxInitialDirection) instead", "v7")
     def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
         SetInitialDirection(azimuth, inclination)
 
+    @deprecated("Use withInitialPosition(PostFireboxInitialPosition) instead", "v7")
     def setInitialPosition(x: Length, y: Length, z: Length) =
         SetInitialPosition(x, y, z)
 
+    @deprecated("No longer supported; position tracking is handled by PositionTracker", "v7")
     def setFinalPosition(x: Length, y: Length, z: Length) =
         SetFinalPosition(x, y, z)
 

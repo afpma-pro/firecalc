@@ -27,6 +27,7 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.instances.V7FormInstances
 import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
@@ -188,6 +189,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         aa                    : AA,
         sig                   : Signal[(Int, AA, XtraOutputs)],
         isProperty            : Boolean,
+        controls              : Boolean                                                                = true,
         extra                 : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
         badgeFinalDirVar      : Var[AA] => Option[Var[Option[AbsoluteDirection]]]                      = (_: Var[AA]) => None,
         afterBadge            : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
@@ -262,7 +264,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     cls <-- vizHighlightSignal(i)
                 )
 
-                val incrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, propertyWrapper, Some(span()))
+                val incrNode =
+                    if controls then renderIdWithIncrDescr[AA](i, (i, aa), sig, propertyWrapper, Some(span()))
+                    else propertyWrapper
                 (incrNode, Seq.empty)
 
             case _ =>
@@ -282,7 +286,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     header_and_node.amend(cls := "ml-[20px]")
                     summary_node.amend   (cls := "ml-[20px]")
                 summary_node.amend(cls := s"$pipeTypeCls $sectionCls")
-                val incrNode          = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
+                val incrNode          =
+                    if controls then renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
+                    else header_and_node
 
                 given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
                 given Show[Pressure]          = Show.show(v => "%.1f Pa".format(v.value))
@@ -326,6 +332,109 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             td(complexIncrNode),
             children(detailed_columns) <-- expertModeOn
         )
+
+    /**
+     * Render a fixed (non-movable, non-deletable) element.
+     * Used for wrapper-level fields (e.g. PostFireboxInitialDirection/Position)
+     * that live outside the slot descriptor sequence.
+     *
+     * Simplified version of renderElemTyped: no delete/move/duplicate controls,
+     * no renderIdWithIncrDescr, no XtraOutputs signal, no viz highlighting.
+     * Note: cannot delegate to renderElemTyped because renderFixedElem accepts
+     * arbitrary types (AA) while renderElemTyped requires AA <: Elem.
+     */
+    protected def renderFixedElem[AA](
+        title       : String,
+        v           : Var[AA],
+        isProperty  : Boolean          = true,
+        propertyShow: Option[Show[AA]] = None,
+        extra       : HtmlElement      = span()
+    )(using DF[AA]): HtmlElement =
+        val formNode = div(
+            cls := "flex flex-row justify-start items-end gap-2",
+            div(cls := "flex-none", v.as_HtmlElement),
+            extra
+        )
+
+        propertyShow match
+            case Some(show) if isProperty =>
+                lazy val dialogNode: HtmlElement = dialogTag(
+                    cls := "modal",
+                    div (
+                        cls := "modal-box w-11/12 max-w-5xl",
+                        h3 (cls := "font-bold text-lg mb-4", title),
+                        formNode,
+                        div(
+                            cls := "modal-action",
+                            button(
+                                cls := "btn btn-sm btn-primary",
+                                I18N_UI.buttons.close,
+                                onClick --> { _ =>
+                                    dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
+                                }
+                            )
+                        )
+                    ),
+                    form(method := "dialog", cls := "modal-backdrop", button("close"))
+                )
+
+                val compactNode = div(
+                    cls := "cursor-pointer py-1",
+                    span(
+                        cls := "underline decoration-dashed decoration-base-content/50 hover:decoration-base-content",
+                        text <-- v.signal.map(a => s"$title: ${show.show(a)}")
+                    ),
+                    onClick --> { _ =>
+                        dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
+                    }
+                )
+
+                tr(
+                    td(
+                        div(
+                            wrapLine(title, compactNode, isProperty = true),
+                            dialogNode
+                        ).amend(cls := pipeTypeCls)
+                    )
+                )
+            case _                        =>
+                tr(
+                    td(
+                        div(
+                            wrapLine(title, formNode, isProperty)
+                        ).amend(cls := pipeTypeCls)
+                    )
+                )
+
+    /**
+     * Render V7 wrapper elements (PostFireboxInitialDirection/Position) for the first slot.
+     * Extracted to avoid duplication between flow-only and thermal panels.
+     *
+     * @param isFirstSlot  whether this panel renders the first post-firebox slot
+     * @param elems        the rendered element rows for the descriptor sequence
+     * @return             wrapper elements prepended when isFirstSlot, otherwise unchanged
+     */
+    protected def renderV7WrapperElems(isFirstSlot: Boolean)(elems: Seq[HtmlElement]): Seq[HtmlElement] =
+        if isFirstSlot then
+            import afpma.firecalc.ui.models.{postFireboxInitialDir_var, postFireboxInitialPos_var}
+            val v7         = V7FormInstances()
+            import v7.given
+            val fixedElems = Seq[HtmlElement](
+                renderFixedElem[PostFireboxInitialDirection]       (
+                    title        = I18N.set_prop.PostFireboxInitialDirection,
+                    v            = postFireboxInitialDir_var,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[PostFireboxInitialDirection]])
+                ),
+                renderFixedElem[PostFireboxInitialPosition]        (
+                    title        = I18N.set_prop.PostFireboxInitialPosition,
+                    v            = postFireboxInitialPos_var,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[PostFireboxInitialPosition]])
+                )
+            )
+            fixedElems ++ elems
+        else elems
 
     def wrapLine(
         title         : String,
@@ -414,8 +523,29 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     protected lazy val panelOpened: Var[Boolean] = panelOpenedVar(vizFieldsetIdPrefix)
 
+    /**
+     * Warning signal for this panel. Override to activate warnings.
+     * Default: deactivated (no warning icon shown).
+     */
+    protected def warningVnelSig: Signal[ValidatedNel[PanelStatusHelper.PanelWarning, Unit]] =
+        Signal.fromValue(Validated.Valid(()))
+
+    /** Warning icon element: `circle-alert` with tooltip when invalid, invisible span when valid. */
+    def warningIcon =
+        warningVnelSig.map:
+            case Validated.Invalid(_) =>
+                DaisyUITooltip (
+                    ttContent  = p(cls := "text-xs", I18N_UI.direction_badge.direction_incompatible_warning),
+                    element    = span(cls := "text-primary", lucide.`circle-alert`),
+                    ttStyle    = PanelStatusHelper.tooltipStyleClsNameForWarnings,
+                    ttPosition = "tooltip-bottom"
+                ).node
+            case Validated.Valid(_)   => span(cls := "invisible")
+
     protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
-        statusIcon.map(n => Some(div(n)))
+        statusIcon
+            .combineWithDistinct(warningIcon)
+            .map((err, warn) => Some(div(cls := "flex items-center gap-1", err, warn)))
 
     /** Optional prefix element rendered before the title in the accordion header. */
     protected def accordionTitlePrefix: Option[HtmlElement] = None

@@ -66,7 +66,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     private given flowOnlyPropertyShow_13384: FlowOnlyPropertyShow_13384 = FlowOnlyPropertyShow_13384()
     import flowOnlyPropertyShow_13384.given
 
-    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+    protected lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal.map: elems =>
             var frame: Option[PipeFrame] = None
             val builder = Map.newBuilder[Int, PipeFrame]

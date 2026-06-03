@@ -44,6 +44,7 @@ object SetFlowOnlyPipeProp_15544_V1:
     ) extends SetFlowOnlyPipeProp_15544_V1
 
     @Transl(I(_.set_prop.SetInitialDirection))
+    @deprecated("Use PostFireboxInitialDirection on PostFireboxPipes instead. Will be removed in V8.", "V7")
     case class SetInitialDirection(
         @Transl(I(_.terms.azimuth))
         azimuth    : Angle,

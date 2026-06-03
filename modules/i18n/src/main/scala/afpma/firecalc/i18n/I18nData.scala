@@ -789,6 +789,8 @@ object I18nData:
         SetInitialDirection              : String,
         SetInitialPosition               : String,
         SetFinalPosition                 : String,
+        PostFireboxInitialDirection      : String,
+        PostFireboxInitialPosition       : String,
         LinedFlue                        : String,
         LinedFlue_liner                  : String,
         LinedFlue_casing                 : String,

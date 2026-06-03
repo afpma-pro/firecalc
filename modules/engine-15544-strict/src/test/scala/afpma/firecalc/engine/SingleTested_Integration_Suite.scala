@@ -16,7 +16,10 @@ import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
 import afpma.firecalc.dto.v4.TypeOfAppliance
-import afpma.firecalc.dto.v6.FireCalcYAML_V6
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
+import afpma.firecalc.dto.v7.PostFireboxPipes
+import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.v7.PostFireboxInitialPosition
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 
@@ -104,8 +107,8 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         AddThermalPipeElement_13384_V3.AddSectionVertical("sortie de toit", 60.0.cm          )
     )
 
-    private val project: FireCalcYAML = FireCalcYAML_V6(
-        version                        = FireCalcYAML_V6.VERSION,
+    private val project: FireCalcYAML = FireCalcYAML_V7(
+        version                        = FireCalcYAML_V7.VERSION,
         locale                         = Locale(Languages.Fr, None),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -127,10 +130,14 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         ),
         air_intake_descr               = Seq.empty,
         firebox                        = singleTestedFirebox,
-        post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot     (fluePipeDescr     ),
-            PostFireboxPipeDescrSlot.ConnectorSlot(connectorPipeDescr),
-            PostFireboxPipeDescrSlot.ChimneySlot  (chimneyPipeDescr  )
+        post_firebox_pipes             = PostFireboxPipes(
+            initialDirection = PostFireboxInitialDirection.default,
+            initialPosition  = PostFireboxInitialPosition(0.m, 0.m, 0.m),
+            slots            = Seq(
+                PostFireboxPipeDescrSlot.FlueSlot     (fluePipeDescr     ),
+                PostFireboxPipeDescrSlot.ConnectorSlot(connectorPipeDescr),
+                PostFireboxPipeDescrSlot.ChimneySlot  (chimneyPipeDescr  )
+            )
         )
     )
 
@@ -150,13 +157,13 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
 
     "SingleTested YAML round-trip then EN15544 strict" should
         "produce a valid application after encode → decode" in {
-            val yamlTry = FireCalcYAML_V6.encodeToYaml(project)
+            val yamlTry = FireCalcYAML_V7.encodeToYaml(project)
             withClue(s"Encoding failed: ${yamlTry.failed.toOption}\n") {
                 yamlTry.isSuccess `shouldBe` true
             }
             val yaml    = yamlTry.get
 
-            val decodedTry = FireCalcYAML_V6.decodeFromYaml(yaml)
+            val decodedTry = FireCalcYAML_V7.decodeFromYaml(yaml)
             withClue(s"Decoding failed: ${decodedTry.failed.toOption}\nYAML:\n$yaml\n") {
                 decodedTry.isSuccess `shouldBe` true
             }

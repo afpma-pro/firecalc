@@ -171,6 +171,12 @@ object all:
     // V6
     export afpma.firecalc.dto.v6.FireCalcYAML_V6
 
+    // V7
+    export afpma.firecalc.dto.v7.FireCalcYAML_V7
+    export afpma.firecalc.dto.v7.PostFireboxPipes
+    export afpma.firecalc.dto.v7.PostFireboxInitialDirection
+    export afpma.firecalc.dto.v7.PostFireboxInitialPosition
+
     // Extension methods
     export afpma.firecalc.dto.FireboxAvailabilityExtensions.allows
     export afpma.firecalc.dto.FireboxAvailabilityExtensions.typeName

@@ -5,20 +5,28 @@
 
 package afpma.firecalc.ui.panels
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.all.AbsoluteDirection
+import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_13384.AddDirectionChange
 
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.standard.VNelMcalcErr
-
 import afpma.firecalc.engine.models.AirIntakePipeT
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_13384
+import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.models.*
 
-import cats.syntax.apply.*
+import cats.data.*
+import cats.syntax.all.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
+
+import _root_.coulomb.*
+import _root_.coulomb.policy.standard.given
 
 import io.taig.babel.Locale
 
@@ -55,5 +63,20 @@ final case class FlowOnlyAirIntakePipePanel()(using Locale, DisplayUnits) extend
     lazy val air_intake_pipe_quadrions_sig = makeQuadrionSubtotalForSingle(results_en15544_outputs)(_.airIntake)
 
     override lazy val quadrionSubtotal_sig = air_intake_pipe_quadrions_sig
+
+    // ── Direction-incompatible warning ─────────────────────────────
+
+    override protected def warningVnelSig: Signal[ValidatedNel[PanelStatusHelper.PanelWarning, Unit]] =
+        PanelStatusHelper.directionWarningSignal   (
+            elemsSignal    = welems_var.signal,
+            framesSignal   = frameBeforeByIdx,
+            isIncompatible = (_, elem, frame) =>
+                elem match
+                    case (_, dc: AddDirectionChange) if dc.absDir.isDefined =>
+                        val (az, el) = AbsoluteDirection.toAzimuthElevationDeg(dc.absDir.get)
+                        val target = Vec3.fromAzimuthElevation(az, el)
+                        !frame.isReachable(target, dc.angle.toUnit[Degree].value)
+                    case _ => false
+        )
 
 end FlowOnlyAirIntakePipePanel

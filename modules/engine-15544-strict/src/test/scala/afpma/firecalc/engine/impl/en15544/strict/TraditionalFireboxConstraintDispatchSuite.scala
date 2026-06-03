@@ -7,8 +7,12 @@ package afpma.firecalc.engine.impl.en15544.strict
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.FireCalcYAML_V6
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
+import afpma.firecalc.dto.v7.PostFireboxPipes
+import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.v7.PostFireboxInitialPosition
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
@@ -49,8 +53,8 @@ class TraditionalFireboxConstraintDispatchSuite extends AnyFreeSpec with Matcher
     private def buildEngineState(
         firebox                            : Firebox.Traditional,
         stoveParams                        : StoveParams
-    ): FireCalcYAML_V6 =
-        FireCalcYAML_V6(
+    ): FireCalcYAML_V7 =
+        FireCalcYAML_V7(
             locale                         = Locale(Languages.Fr),
             display_units                  = DisplayUnits.SI,
             standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -63,14 +67,18 @@ class TraditionalFireboxConstraintDispatchSuite extends AnyFreeSpec with Matcher
             stove_params                   = stoveParams,
             air_intake_descr               = ExampleProject_15544.conduit_air_descr,
             firebox                        = firebox,
-            post_firebox_pipes             = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
-                PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
-                PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+            post_firebox_pipes             = PostFireboxPipes(
+                initialDirection = PostFireboxInitialDirection.default,
+                initialPosition  = PostFireboxInitialPosition(0.m, 0.m, 0.m),
+                slots            = Seq(
+                    PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
+                    PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
+                    PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+                )
             )
         )
 
-    private def loadApp(yaml: FireCalcYAML_V6): EN15544_Strict_Application =
+    private def loadApp(yaml: FireCalcYAML): EN15544_Strict_Application =
         val loader = FireCalcYAML_Loader(yaml)
         val appV   = loader.make_en15544_Strict_Application
         appV.isValid shouldBe true

@@ -49,7 +49,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     // Slot-indexed build results from PipeChainGeneric. Used by the UI for
     // position tracking, per-slot IdsMapping, and final PipeFrame extraction.
     val slotBuildResults: Vector[SlotBuildResult] =
-        PipeChainGeneric.build(fcProj.post_firebox_pipes)
+        PipeChainGeneric.build(fcProj.post_firebox_pipes.slots)
 
     import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
@@ -94,7 +94,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                     // topology validator.
                     slots
 
-    private lazy val normalizedPostFireboxSlots = normalizePostFireboxSlots(fcProj.post_firebox_pipes)
+    private lazy val normalizedPostFireboxSlots = normalizePostFireboxSlots(fcProj.post_firebox_pipes.slots)
 
     // TODO(Phase4/Phase5): Surface a `PostFireboxChain_V3` projection alongside
     // the flat `normalizedPostFireboxSlots` once downstream engine consumers

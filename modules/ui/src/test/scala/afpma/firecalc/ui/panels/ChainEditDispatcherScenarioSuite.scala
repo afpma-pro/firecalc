@@ -12,7 +12,6 @@ import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180
-import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.*
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
@@ -78,7 +77,8 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     "scenario 1: change 'virage avant descente' angle from 90° to 45°" - {
 
-        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots = oldPipes.slots
 
         val (flueSlotIdx, flueDescr) = oldSlots.zipWithIndex
             .collectFirst { case (FlueSlot(d), i) =>
@@ -127,7 +127,8 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     "scenario 2: insert a 45° bend into existing FlueSlot" - {
 
-        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots = oldPipes.slots
 
         val (flueSlotIdx, flueDescr) = oldSlots.zipWithIndex
             .collectFirst { case (FlueSlot(d), i) =>
@@ -151,10 +152,10 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         "should detect InsertEdit with DescriptorLevel kind" in {
             val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
-            ie.kind shouldBe ChainEditDispatcher.InsertKind.DescriptorLevel
-            ie.coord.slotIdx shouldBe flueSlotIdx
-            ie.coord.elemIdx shouldBe insertAt
-            ie.deflectionDeg shouldBe 45.0
+            ie.kind `shouldBe` ChainEditDispatcher.InsertKind.DescriptorLevel
+            ie.coord.slotIdx `shouldBe` flueSlotIdx
+            ie.coord.elemIdx `shouldBe` insertAt
+            ie.deflectionDeg `shouldBe` 45.0
         }
 
         "should set absDir on inserted element after dispatch" in {
@@ -163,7 +164,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
             val inserted   = finalSlots(flueSlotIdx) match
                 case FlueSlot(d) => d(insertAt).asInstanceOf[AddSharpeAngle_0_to_180]
                 case _           => fail("expected FlueSlot")
-            inserted.absDir.isDefined shouldBe true
+            inserted.absDir.isDefined `shouldBe` true
         }
     }
 
@@ -171,7 +172,8 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     "scenario 3: append a new ThermalFlueSlot with a direction-change element" - {
 
-        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots = oldPipes.slots
 
         // Create a new ThermalFlueSlot with a bend using case classes directly.
         // Minimal set of elements — just enough for the detector to find the direction change.
@@ -203,9 +205,9 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         "should detect InsertEdit with SlotLevel kind" in {
             val ie = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
-            ie.kind shouldBe ChainEditDispatcher.InsertKind.SlotLevel
-            ie.coord.slotIdx shouldBe oldSlots.length
-            ie.deflectionDeg shouldBe 90.0
+            ie.kind `shouldBe` ChainEditDispatcher.InsertKind.SlotLevel
+            ie.coord.slotIdx `shouldBe` oldSlots.length
+            ie.deflectionDeg `shouldBe` 90.0
         }
 
         "should set absDir and rotate downstream after dispatch" in {
@@ -215,7 +217,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
                 case ThermalFlueSlot(d) => d
                 case _                  => fail("expected ThermalFlueSlot")
             val bend         = insertedSlot(ie.coord.elemIdx).asInstanceOf[AddSharpeAngle_0_to_90]
-            bend.absDir.isDefined shouldBe true
+            bend.absDir.isDefined `shouldBe` true
         }
     }
 
@@ -223,21 +225,23 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     "scenario 4: structural mismatch (slot removed) returns None" - {
 
-        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots = oldPipes.slots
         val newSlots = oldSlots.init // remove last slot
 
         val edit = ChainEditDispatcher.detectEdit(oldSlots, newSlots)
-        edit shouldBe None
+        edit `shouldBe` None
     }
 
     "scenario 5: same-slot ordinal mismatch returns None" - {
 
-        val oldSlots = EngineState.example_projet_15544.post_firebox_pipes
+        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots = oldPipes.slots
         // Replace first slot with a different type (ordinal mismatch)
         val newSlots = oldSlots.updated(0, ConnectorSlot(Seq.empty)) :+ ConnectorSlot(Seq.empty)
 
         val edit = ChainEditDispatcher.detectEdit(oldSlots, newSlots)
-        edit shouldBe None
+        edit `shouldBe` None
     }
 
 end ChainEditDispatcherScenarioSuite

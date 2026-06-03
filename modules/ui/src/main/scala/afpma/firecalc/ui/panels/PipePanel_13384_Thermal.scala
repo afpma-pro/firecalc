@@ -9,6 +9,8 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
+import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.v7.PostFireboxInitialPosition
 
 import afpma.firecalc.i18n.implicits.given
 
@@ -45,6 +47,15 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     type In = ThermalPipeDescr_13384
 
     import hastranslations.given
+
+    /** Is this the first slot (index 0)? Override in child to return true for slot 0. */
+    protected def isSlotZero: Boolean = false
+
+    /** Extra node factory for SetInitialDirection elements. Default: no-op. */
+    protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement = _ => span()
+
+    /** Extra node factory for SetInitialPosition elements. Default: no-op. */
+    protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement = _ => span()
 
     private val pipeCat   = summon[CatalogCategory[SetPropertiesInBatch]]
     private val casingCat = summon[CatalogCategory[CasingPreset]]
@@ -92,7 +103,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      *  When `externalInitialFrameSig` provides a frame, that frame seeds the
      *  computation for pipes that have no `SetInitialDirection` of their own.
      */
-    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+    protected lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal
             .combineWithDistinct(externalInitialFrameSig)
             .map: (elems, externalFrame) =>
@@ -193,9 +204,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      *
      * Default: no-op (returns an empty span).
      */
-    protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
-        (_: Var[SetInitialPosition]) => span()
-
     /**
      * Extension hook for SetInitialDirection: returns an `extra` node factory for the element
      * at `idx`. Called once per element lifetime (stable split key). Concrete panels may
@@ -203,9 +211,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      *
      * Default: no-op (returns an empty span).
      */
-    protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement =
-        (_: Var[SetInitialDirection]) => span()
-
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
             .splitMatchSeq(_._1)
@@ -357,52 +362,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     sig,
                     isProperty   = true,
                     propertyShow = Some(summon[Show[SetDuctType]])
-                )
-            }
-            .handleCase[
-                (Int, ThermalPipeDescr_13384, XtraOutputs),
-                (Int, SetInitialDirection, XtraOutputs   ),
-                HtmlElement
-            ] { case (i, aa: SetInitialDirection, x) =>
-                (i, aa, x)
-            } { (iaax, sig) =>
-                renderElemTyped[SetInitialDirection]  (
-                    iaax._1,
-                    I18N.set_prop.SetInitialDirection,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    extra        = initialDirectionExtraFn(iaax._1),
-                    propertyShow = Some(summon[Show[SetInitialDirection]])
-                )
-            }
-            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetInitialPosition, XtraOutputs), HtmlElement] {
-                case (i, aa: SetInitialPosition, x) => (i, aa, x)
-            } { (iaax, sig) =>
-                // Auto-calc hook — overridable by concrete panels (see
-                // `DynamicThermalPipeSlotPanel` which supplies a firebox-boundary
-                // auto-calc button when this ConnectorSlot is the first head-region
-                // slot in a Connector-first chain — plan issue U2).
-                renderElemTyped[SetInitialPosition]  (
-                    iaax._1,
-                    I18N.set_prop.SetInitialPosition,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]]),
-                    extra        = initialPositionExtraFn(iaax._1)
-                )
-            }
-            .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
-                case (i, aa: SetFinalPosition, x) => (i, aa, x)
-            } { (iaax, sig) =>
-                renderElemTyped[SetFinalPosition]  (
-                    iaax._1,
-                    I18N.set_prop.SetFinalPosition,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[SetFinalPosition]])
                 )
             }
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, SetNumberOfFlows, XtraOutputs), HtmlElement] {
@@ -634,7 +593,42 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddPressureDiff, XtraOutputs), HtmlElement] {
                 case (i, aa: AddPressureDiff, x) => (i, aa, x)
             } { (_, _) => throw new Exception("ERROR: AddPressureDiff not implemented.") }
+            .handleCase[
+                (Int, ThermalPipeDescr_13384, XtraOutputs),
+                (Int, SetInitialDirection, XtraOutputs   ),
+                HtmlElement
+            ] { case (i, aa: SetInitialDirection, x) =>
+                (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialDirection]  (
+                    iaax._1,
+                    I18N.set_prop.SetInitialDirection,
+                    iaax._2,
+                    sig,
+                    isProperty   = true,
+                    extra        = initialDirectionExtraFn(iaax._1),
+                    propertyShow = Some(summon[Show[SetInitialDirection]])
+                )
+            }
+            .handleCase[
+                (Int, ThermalPipeDescr_13384, XtraOutputs),
+                (Int, SetInitialPosition, XtraOutputs    ),
+                HtmlElement
+            ] { case (i, aa: SetInitialPosition, x) =>
+                (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInitialPosition]  (
+                    iaax._1,
+                    I18N.set_prop.SetInitialPosition,
+                    iaax._2,
+                    sig,
+                    isProperty   = true,
+                    extra        = initialPositionExtraFn(iaax._1),
+                    propertyShow = Some(summon[Show[SetInitialPosition]])
+                )
+            }
             .toSignal
+            .map(renderV7WrapperElems(isSlotZero))
 
     import defaultable_13384.incr_descr_en13384.given
 
@@ -729,14 +723,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         txt  = I18N.set_prop._self,
         next = List(
             TagTreeMenu.Group (
-                txt  = I18N.set_prop._position_and_direction,
-                next = List(
-                    TagTreeMenu.Leaf[SetInitialPosition],
-                    TagTreeMenu.Leaf[SetInitialDirection],
-                    TagTreeMenu.Leaf[SetFinalPosition]
-                )
-            ),
-            TagTreeMenu.Group (
                 txt  = I18N.set_prop._material_and_roughness,
                 next = List(
                     TagTreeMenu.Leaf[SetMaterial],
@@ -816,3 +802,5 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             )
         )
     )
+
+end PipePanel_13384_Thermal

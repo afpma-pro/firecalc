@@ -9,7 +9,10 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.FireCalcYAML_V6
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
+import afpma.firecalc.dto.v7.PostFireboxPipes
+import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.v7.PostFireboxInitialPosition
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
@@ -30,7 +33,7 @@ object EngineState:
     // given Decoder[AppState] = FireCalcYAML.decoder
     // given Encoder[AppState] = FireCalcYAML.encoder
 
-    lazy val example_projet_15544: EngineState = FireCalcYAML_V6(
+    lazy val example_projet_15544: EngineState = FireCalcYAML_V7(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -45,14 +48,18 @@ object EngineState:
         firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional](using
             FireboxTransformers.transformer_inv_TraditionalFirebox_Standard
         ),
-        post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
-            PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
-            PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+        post_firebox_pipes             = PostFireboxPipes(
+            initialDirection = PostFireboxInitialDirection.default,
+            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
+            slots            = Seq(
+                PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
+                PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
+                PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+            )
         )
     )
 
-    lazy val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V6(
+    lazy val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V7(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -67,14 +74,18 @@ object EngineState:
         firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.Ecolabeled](using
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
-        post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
-            PostFireboxPipeDescrSlot.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
-            PostFireboxPipeDescrSlot.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )
+        post_firebox_pipes             = PostFireboxPipes(
+            initialDirection = PostFireboxInitialDirection.default,
+            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
+            slots            = Seq(
+                PostFireboxPipeDescrSlot.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
+                PostFireboxPipeDescrSlot.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
+                PostFireboxPipeDescrSlot.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )
+            )
         )
     )
 
-    lazy val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V6(
+    lazy val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V7(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -89,14 +100,18 @@ object EngineState:
         firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.Ecolabeled](using
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
-        post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
-            PostFireboxPipeDescrSlot.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
-            PostFireboxPipeDescrSlot.ChimneySlot  (CasPratique_15544_FDIM_EX_03.conduit_fumees_descr      )
+        post_firebox_pipes             = PostFireboxPipes(
+            initialDirection = PostFireboxInitialDirection.default,
+            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
+            slots            = Seq(
+                PostFireboxPipeDescrSlot.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
+                PostFireboxPipeDescrSlot.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
+                PostFireboxPipeDescrSlot.ChimneySlot  (CasPratique_15544_FDIM_EX_03.conduit_fumees_descr      )
+            )
         )
     )
 
-    lazy val empty: EngineState = FireCalcYAML_V6(
+    lazy val empty: EngineState = FireCalcYAML_V7(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -105,14 +120,18 @@ object EngineState:
         stove_params                   = StoveParamsUI.default_StoveParams.default,
         air_intake_descr               = Seq.empty,
         firebox                        = defaultable.firebox_traditional_empty.default,
-        post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot     (Seq.empty),
-            PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-            PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+        post_firebox_pipes             = PostFireboxPipes(
+            initialDirection = PostFireboxInitialDirection.default,
+            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
+            slots            = Seq(
+                PostFireboxPipeDescrSlot.FlueSlot     (Seq.empty),
+                PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
+                PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+            )
         )
     )
 
-    lazy val minimal: EngineState = FireCalcYAML_V6(
+    lazy val minimal: EngineState = FireCalcYAML_V7(
         locale                         = Locale(Languages.Fr),
         display_units                  = DisplayUnits.SI,
         standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -121,55 +140,61 @@ object EngineState:
         stove_params                   = StoveParamsUI.default_StoveParams.default,
         air_intake_descr               = Seq.empty,
         firebox                        = defaultable.firebox_traditional_minimal.default,
-        post_firebox_pipes             = Seq(
-            PostFireboxPipeDescrSlot.FlueSlot {
-                import FluePipe_Module_15544.*
-                Seq(
-                    roughness              (3.mm                                                        ),
-                    innerShape(rectangle(18.cm, 18.cm)),
-                    setInitialDirection    (
-                        azimuth     = AzimuthDirection.Right,
-                        inclination = InclinationDirection.Horizontal
-                    ), // Right
-                    setInitialPosition     ((+33.0 / 2).cm, (33.0 / 2 - 18.0 / 2).cm, (52 - 18.0 / 2).cm),
-                    addSectionHorizontal   ("sortie de foyer", 30.cm                                    ),
-                    addSharpAngle_90deg    (
-                        "vers descente",
-                        absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
-                    ), // Down
-                    addSectionVertical     ("descente", -100.cm                                         ),
-                    addSharpAngle_90deg    (
-                        "vers section horizontale",
-                        absDir      = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
-                    ), // Right
-                    addSectionHorizontal   ("section horizontale", 200.cm                               ),
-                    addSharpAngle_90deg    (
-                        "vers remontée",
-                        absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
-                    ), // Up
-                    addSectionVertical     ("remontée", 200.cm                                          )
-                )
-            },
-            PostFireboxPipeDescrSlot.ConnectorSlot {
-                import ConnectorPipe_Module.*
-                Seq (
-                    roughness (Material_13384.WeldedSteel()),
-                    innerShape(circle(20.cm)               ),
-                    layer             (e = 1.mm, tr = SquareMeterKelvinPerWatt(0.44)),
-                    pipeLocation      (PipeLocation.HeatedArea                      ),
-                    addSectionVertical("connecteur", 5.cm                           )
-                )
-            },
-            PostFireboxPipeDescrSlot.ChimneySlot {
-                import ChimneyPipe_Module.*
-                Seq (
-                    roughness (Material_13384.WeldedSteel()),
-                    innerShape(circle(200.mm)              ),
-                    layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
-                    pipeLocation      (PipeLocation.HeatedArea                       ),
-                    addSectionVertical("conduit double peau isolé.", 6.m             )
-                )
-            }
+        post_firebox_pipes             = PostFireboxPipes(
+            initialDirection = PostFireboxInitialDirection(
+                azimuth     = AzimuthDirection.Right,
+                inclination = InclinationDirection.Horizontal
+            ),
+            initialPosition  = PostFireboxInitialPosition(
+                x = (+33.0 / 2).cm,
+                y = (33.0 / 2 - 18.0 / 2).cm,
+                z = (52 - 18.0 / 2).cm
+            ),
+            slots            = Seq(
+                PostFireboxPipeDescrSlot.FlueSlot {
+                    import FluePipe_Module_15544.*
+                    Seq(
+                        roughness           (3.mm                         ),
+                        innerShape(rectangle(18.cm, 18.cm)),
+                        addSectionHorizontal("sortie de foyer", 30.cm     ),
+                        addSharpAngle_90deg (
+                            "vers descente",
+                            absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+                        ), // Down
+                        addSectionVertical  ("descente", -100.cm          ),
+                        addSharpAngle_90deg (
+                            "vers section horizontale",
+                            absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                        ), // Right
+                        addSectionHorizontal("section horizontale", 200.cm),
+                        addSharpAngle_90deg (
+                            "vers remontée",
+                            absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                        ), // Up
+                        addSectionVertical  ("remontée", 200.cm           )
+                    )
+                },
+                PostFireboxPipeDescrSlot.ConnectorSlot {
+                    import ConnectorPipe_Module.*
+                    Seq (
+                        roughness (Material_13384.WeldedSteel()),
+                        innerShape(circle(20.cm)               ),
+                        layer             (e = 1.mm, tr = SquareMeterKelvinPerWatt(0.44)),
+                        pipeLocation      (PipeLocation.HeatedArea                      ),
+                        addSectionVertical("connecteur", 5.cm                           )
+                    )
+                },
+                PostFireboxPipeDescrSlot.ChimneySlot {
+                    import ChimneyPipe_Module.*
+                    Seq (
+                        roughness (Material_13384.WeldedSteel()),
+                        innerShape(circle(200.mm)              ),
+                        layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
+                        pipeLocation      (PipeLocation.HeatedArea                       ),
+                        addSectionVertical("conduit double peau isolé.", 6.m             )
+                    )
+                }
+            )
         )
     )
 

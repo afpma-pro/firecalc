@@ -9,6 +9,7 @@ import cats.data.Validated.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.units.coulombutils.*
 
@@ -42,15 +43,17 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     "returns proper pipe" in {
                         given NbOfFlows = 1.flow
                         val d0          = 100.mm
-                        val p           =
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection    (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Horizontal
-                                ),
                                 innerShape(square(d0)),
-                                roughness              (2.mm             ),
-                                addSectionHorizontal   ("first", 2.meters)
+                                roughness           (2.mm             ),
+                                addSectionHorizontal("first", 2.meters)
                             )
 
                         val vRepr = p.toFullDescr().map(_._2)
@@ -81,12 +84,14 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     "returns proper pipe" in {
                         given NbOfFlows = 1.flow
                         val a           = 100.mm
-                        val p           =
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection      (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Horizontal
-                                ), // Rear
                                 innerShape(square(a)),
                                 roughness                (2.mm              ),
                                 addSectionHorizontal     ("first", 2.meters ),
@@ -128,20 +133,22 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     }
                 }
 
-                "case direction-tracked : SetInitialDirection(vertical up) + addSectionSlopped" - {
+                "case direction-tracked : initial direction vertical up + addSectionSlopped" - {
 
                     "elevation_gain is auto-computed from direction (should be 2m for 2m vertical section)" in {
                         // given NbOfFlows = 1.flow
                         val d0 = 100.mm
-                        val p  =
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Up
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection    (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Up
-                                ),
                                 innerShape(circle(d0)),
-                                roughness              (2.mm          ),
-                                addSectionSlopped      ("s1", 2.meters)
+                                roughness        (2.mm          ),
+                                addSectionSlopped("s1", 2.meters)
                             )
 
                         val vRepr = p.toFullDescr().map(_._2)
@@ -160,12 +167,14 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     "returns proper pipe" in {
                         given NbOfFlows = 1.flow
                         val diam        = 20.cm
-                        val p           =
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection      (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Horizontal
-                                ), // Rear
                                 innerShape(circle(diam)),
                                 roughness                (2.mm                     ),
                                 addSectionHorizontal     ("straight-0", 50.cm      ),

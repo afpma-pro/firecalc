@@ -196,9 +196,11 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
         .map: descr =>
             PositionTracker.computeFlowOnly13384(
                 descr,
-                externalFrame = None,
-                startPoint    = Vec3(0, 0, 0),
-                finalPoint    = Some(Vec3(0, 0, -1.0))
+                initialDirection = PostFireboxInitialDirection.default,
+                initialPosition  = PostFireboxInitialPosition(0.m, 0.m, 0.m),
+                externalFrame    = None,
+                startPoint       = Vec3(0, 0, 0),
+                finalPoint       = Some(Vec3(0, 0, -1.0))
             )
         .distinct
 
@@ -208,6 +210,7 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
 import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.dto.v4.endsWithSingularFlowResistance
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.{PostFireboxInitialDirection, PostFireboxInitialPosition}
 import afpma.firecalc.engine.models.ChimneyPipe_Module
 import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
@@ -220,8 +223,18 @@ import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
  * and trigger re-computation of all derived signals.
  */
 lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot]] =
-    engineStateVar.zoomLazy(_.post_firebox_pipes): (g, x) =>
-        g.copy(post_firebox_pipes = x)
+    engineStateVar.zoomLazy(_.post_firebox_pipes.slots): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(slots = x))
+
+/** Wrapper-level initial direction for the post-firebox pipe chain. */
+lazy val postFireboxInitialDir_var: Var[PostFireboxInitialDirection] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialDirection): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialDirection = x))
+
+/** Wrapper-level initial position for the post-firebox pipe chain. */
+lazy val postFireboxInitialPos_var: Var[PostFireboxInitialPosition] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialPosition): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialPosition = x))
 
 /**
  * App-wide Var for the post-firebox rotation offer toast.
@@ -285,26 +298,55 @@ def slotInitialFrameSig(idx: Int): Signal[Option[PipeFrame]] =
 
 lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
     postFireboxSlots_var.signal
-        .combineWith(slotFinalFrames_sig, firebox_var.signal)
-        .map: (slots, frames, firebox) =>
-            val fbHeightM = firebox.firebox_height.value
+        .combineWith(
+            slotFinalFrames_sig,
+            firebox_var.signal,
+            postFireboxInitialDir_var.signal,
+            postFireboxInitialPos_var.signal
+        )
+        .map: (slots, frames, firebox, initialDir, initialPos) =>
+            val fbHeightM  = firebox.firebox_height.value
+            // Slot 0 starts at the wrapper's initialPosition; fallback to firebox height + 1
+            val slot0Start =
+                if slots.isEmpty then Vec3(0, 0, fbHeightM + 1.0                                     )
+                else Vec3                 (initialPos.x.value, initialPos.y.value, initialPos.z.value)
             slots.zipWithIndex
-                .foldLeft((Vector.empty[PipePositionResult], Vec3(0, 0, fbHeightM + 1.0))):
+                .foldLeft((Vector.empty[PipePositionResult], slot0Start)):
                     case ((results, startPoint), (slot, idx)) =>
                         val prevFrame = if idx == 0 then None else frames.lift(idx - 1).flatten
                         val pos       = slot match
                             case PostFireboxPipeDescrSlot.FlueSlot(descr)        =>
                                 PositionTracker.computeFlowOnly15544(
                                     descr,
-                                    externalFrame = prevFrame,
-                                    startPoint    = startPoint
+                                    initialDirection = initialDir,
+                                    initialPosition  = initialPos,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
                                 )
                             case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
-                                PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
+                                PositionTracker.computeThermal13384(
+                                    descr,
+                                    initialDirection = initialDir,
+                                    initialPosition  = initialPos,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
+                                )
                             case PostFireboxPipeDescrSlot.ConnectorSlot(descr)   =>
-                                PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
+                                PositionTracker.computeThermal13384(
+                                    descr,
+                                    initialDirection = initialDir,
+                                    initialPosition  = initialPos,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
+                                )
                             case PostFireboxPipeDescrSlot.ChimneySlot(descr)     =>
-                                PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
+                                PositionTracker.computeThermal13384(
+                                    descr,
+                                    initialDirection = initialDir,
+                                    initialPosition  = initialPos,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
+                                )
                         (results :+ pos, pos.finalPoint)
                 ._1
         .distinct

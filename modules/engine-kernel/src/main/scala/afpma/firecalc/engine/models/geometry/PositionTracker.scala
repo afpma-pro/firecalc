@@ -1,6 +1,6 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ * Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
  */
 
 package afpma.firecalc.engine.models.geometry
@@ -13,36 +13,28 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
+import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+
 import coulomb.*
 import coulomb.policy.standard.given
 
 object PositionTracker:
 
-    private sealed trait PositionOverride
-    private case class InitialOverride(pos: Vec3) extends PositionOverride
-    private case class FinalOverride(pos: Vec3)   extends PositionOverride
-
     private def toVec3(x: Length, y: Length, z: Length): Vec3 =
         Vec3(x.toUnit[Meter].value, y.toUnit[Meter].value, z.toUnit[Meter].value)
 
     /**
-     * Scan a descriptor sequence for SetInitialPosition / SetFinalPosition.
-     * The last positional instruction (by index) wins; the two are mutually exclusive.
-     * Returns the effective (startPoint, finalPoint) to use.
+     * Scan a descriptor sequence for SetFinalPosition (the last one wins).
+     * Returns the effective finalPoint to use.
      */
-    private def resolvePositionOverrides[A](
+    private def resolveFinalPosition[A](
         elems     : Seq[A],
-        startPoint: Vec3,
         finalPoint: Option[Vec3]
     )(
-        extract: PartialFunction[(A, Int), (PositionOverride, Int)]
-    ): (Vec3, Option[Vec3]) =
-        val positionOverride: Option[PositionOverride] =
-            elems.zipWithIndex.collect(extract).maxByOption(_._2).map(_._1)
-        positionOverride match
-            case Some(InitialOverride(pos)) => (pos, None             )
-            case Some(FinalOverride(pos))   => (startPoint, Some(pos) )
-            case None                       => (startPoint, finalPoint)
+        extract: PartialFunction[(A, Int), (Vec3, Int)]
+    ): Option[Vec3] =
+        elems.zipWithIndex.collect(extract).maxByOption(_._2).map(_._1).orElse(finalPoint)
 
     /** Apply the final-position translate post-processing if needed. */
     private def applyFinalTranslate(result: PipePositionResult, effectiveFinal: Option[Vec3]): PipePositionResult =
@@ -53,35 +45,36 @@ object PositionTracker:
             case None         => result
 
     def computeFlowOnly13384(
-        elems        : Seq[FlowOnlyPipeDescr_13384],
-        externalFrame: Option[PipeFrame],
-        startPoint   : Vec3,
-        finalPoint   : Option[Vec3] = None
+        elems           : Seq[FlowOnlyPipeDescr_13384],
+        initialDirection: PostFireboxInitialDirection,
+        initialPosition : PostFireboxInitialPosition,
+        externalFrame   : Option[PipeFrame],
+        startPoint      : Vec3,
+        finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
         import SetFlowOnlyPipeProp_13384_V3.*
         import AddFlowOnlyPipeElement_13384_V3.*
 
-        val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
-            case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
-            case (SetFinalPosition(x, y, z), idx  ) => (FinalOverride(toVec3(x, y, z)), idx  )
+        val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
+            (toVec3(x, y, z), idx)
         }
 
-        var frame            : Option[PipeFrame] = externalFrame
-        var currentPosition  : Vec3              = effectiveStart
+        var frame            : Option[PipeFrame] = externalFrame.orElse(
+            Some(
+                PipeFrame.initial(
+                    Vec3.fromAzimuthElevation(
+                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
+                        InclinationDirection.toDegrees(initialDirection.inclination)
+                    )
+                )
+            )
+        )
+        var currentPosition  : Vec3              = startPoint
         var currentInnerShape: Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
         for (elem, idx) <- elems.zipWithIndex do
             elem match
-                case SetInitialDirection(az, incl)                                  =>
-                    frame = Some(
-                        PipeFrame.initial(
-                            Vec3.fromAzimuthElevation(
-                                AzimuthDirection.toDegrees    (az  ),
-                                InclinationDirection.toDegrees(incl)
-                            )
-                        )
-                    )
                 case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
                 case dc: AddDirectionChange =>
@@ -166,35 +159,36 @@ object PositionTracker:
         applyFinalTranslate(result, effectiveFinal)
 
     def computeFlowOnly15544(
-        elems        : Seq[FlowOnlyPipeDescr_15544],
-        externalFrame: Option[PipeFrame],
-        startPoint   : Vec3,
-        finalPoint   : Option[Vec3] = None
+        elems           : Seq[FlowOnlyPipeDescr_15544],
+        initialDirection: PostFireboxInitialDirection,
+        initialPosition : PostFireboxInitialPosition,
+        externalFrame   : Option[PipeFrame],
+        startPoint      : Vec3,
+        finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
         import SetFlowOnlyPipeProp_15544_V3.*
         import AddFlowOnlyPipeElement_15544_V3.*
 
-        val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
-            case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
-            case (SetFinalPosition(x, y, z), idx  ) => (FinalOverride(toVec3(x, y, z)), idx  )
+        val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
+            (toVec3(x, y, z), idx)
         }
 
-        var frame            : Option[PipeFrame] = externalFrame
-        var currentPosition  : Vec3              = effectiveStart
+        var frame            : Option[PipeFrame] = externalFrame.orElse(
+            Some(
+                PipeFrame.initial(
+                    Vec3.fromAzimuthElevation(
+                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
+                        InclinationDirection.toDegrees(initialDirection.inclination)
+                    )
+                )
+            )
+        )
+        var currentPosition  : Vec3              = startPoint
         var currentInnerShape: Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
         for (elem, idx) <- elems.zipWithIndex do
             elem match
-                case SetInitialDirection(az, incl)                                  =>
-                    frame = Some(
-                        PipeFrame.initial(
-                            Vec3.fromAzimuthElevation(
-                                AzimuthDirection.toDegrees    (az  ),
-                                InclinationDirection.toDegrees(incl)
-                            )
-                        )
-                    )
                 case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
                 case dc: AddDirectionChange =>
@@ -279,35 +273,36 @@ object PositionTracker:
         applyFinalTranslate(result, effectiveFinal)
 
     def computeThermal13384(
-        elems        : Seq[ThermalPipeDescr_13384],
-        externalFrame: Option[PipeFrame],
-        startPoint   : Vec3,
-        finalPoint   : Option[Vec3] = None
+        elems           : Seq[ThermalPipeDescr_13384],
+        initialDirection: PostFireboxInitialDirection,
+        initialPosition : PostFireboxInitialPosition,
+        externalFrame   : Option[PipeFrame],
+        startPoint      : Vec3,
+        finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
         import SetThermalPipeProp_13384_V3.*
         import AddThermalPipeElement_13384_V3.*
 
-        val (effectiveStart, effectiveFinal) = resolvePositionOverrides(elems, startPoint, finalPoint) {
-            case (SetInitialPosition(x, y, z), idx) => (InitialOverride(toVec3(x, y, z)), idx)
-            case (SetFinalPosition(x, y, z), idx  ) => (FinalOverride(toVec3(x, y, z)), idx  )
+        val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
+            (toVec3(x, y, z), idx)
         }
 
-        var frame            : Option[PipeFrame] = externalFrame
-        var currentPosition  : Vec3              = effectiveStart
+        var frame            : Option[PipeFrame] = externalFrame.orElse(
+            Some(
+                PipeFrame.initial(
+                    Vec3.fromAzimuthElevation(
+                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
+                        InclinationDirection.toDegrees(initialDirection.inclination)
+                    )
+                )
+            )
+        )
+        var currentPosition  : Vec3              = startPoint
         var currentInnerShape: Option[PipeShape] = None
         val segments = Seq.newBuilder[PipeSegmentPosition]
 
         for (elem, idx) <- elems.zipWithIndex do
             elem match
-                case SetInitialDirection(az, incl)                                  =>
-                    frame = Some(
-                        PipeFrame.initial(
-                            Vec3.fromAzimuthElevation(
-                                AzimuthDirection.toDegrees    (az  ),
-                                InclinationDirection.toDegrees(incl)
-                            )
-                        )
-                    )
                 case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
                 case SetPropertiesInBatch(_, props, _)                              =>
