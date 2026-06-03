@@ -551,6 +551,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                 case (i, aa: AddPressureDiff, x) => (i, aa, x)
             } { (_, _) => throw new Exception("ERROR: AddPressureDiff not implemented.") }
             .toSignal
+            .map(e => interleaveInsertSeparators(e, startIdx = 0))
 
     import FlowOnlyDefaultable_13384.given
 

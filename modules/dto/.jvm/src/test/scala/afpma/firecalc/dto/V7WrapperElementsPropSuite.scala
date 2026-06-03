@@ -10,8 +10,6 @@ import afpma.firecalc.dto.v7.{PostFireboxInitialDirection, PostFireboxInitialPos
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.units.coulombutils.*
 
-import coulomb.syntax.*
-
 import org.scalacheck.Gen
 import org.scalactic.anyvals.PosInt
 import org.scalatest.freespec.AnyFreeSpec
@@ -65,7 +63,8 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             PostFireboxPipeDescrSlot.FlueSlot       (Seq.empty),
             PostFireboxPipeDescrSlot.ThermalFlueSlot(Seq.empty),
             PostFireboxPipeDescrSlot.ConnectorSlot  (Seq.empty),
-            PostFireboxPipeDescrSlot.ChimneySlot    (Seq.empty)
+            PostFireboxPipeDescrSlot.ChimneySlot    (Seq.empty),
+            PostFireboxPipeDescrSlot.NoFlueSlot
         )
 
     private val genPipes: Gen[PostFireboxPipes] =

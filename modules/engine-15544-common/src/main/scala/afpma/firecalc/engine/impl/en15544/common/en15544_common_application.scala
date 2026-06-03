@@ -453,6 +453,8 @@ abstract class EN15544_V_2023_Common_Application
                                                 case _                     =>
                                                     PipeSlot.noop(ChimneyPipeT, "Chimney")
                                             (acc :+ pipeSlot, prevFrame) // chimney doesn't update frame
+                                        case NoFlueSlot             =>
+                                            (acc :+ PipeSlot.noop(NoFluePipeT, "NoFlue"), prevFrame)
                             }
 
                         // Seed Stage 2 with the UpstreamState derived from the LAST Stage 1 result.
@@ -500,15 +502,14 @@ abstract class EN15544_V_2023_Common_Application
 
         lazy val connector_PipeResult: VNelMcalcErr[PipeResult] =
             postFireboxPipeResults.andThen { pfb =>
-                val lastFluePipeIdx = pfb.lastIndexWhere(_._1 == FluePipeT)
-                val candidateIdx    = lastFluePipeIdx + 1
-                if candidateIdx >= 0 && candidateIdx < pfb.size - 1 then
+                val candidateIdx = pfb.size - 2
+                if candidateIdx >= 0 && candidateIdx < pfb.size then
                     val (pt, pr) = pfb(candidateIdx)
                     if pt == ConnectorPipeT then Validated.validNel(pr)
                     else
                         Validated.invalidNel(
                             UnexpectedDevError(
-                                s"connector_PipeResult: slot after flue region is $pt, not ConnectorPipeT"
+                                s"connector_PipeResult: slot before chimney is $pt, not ConnectorPipeT"
                             )
                         )
                 else
@@ -732,18 +733,16 @@ abstract class EN15544_V_2023_Common_Application
                     case None               =>
                         ().validNel // no min defined, so we're good
 
-        private def validateLzMinConstraint(): VNelMcalcErr[Unit] =
-            conceptualFlueRegionPipeResults.andThen: rs =>
-                val totalLen = rs.foldLeft(0.0.m)(_ + _.lengthSum)
-                L_Z_min match
-                    case Validated.Valid(lzMin) =>
-                        if totalLen.value >= lzMin.unwrap.value then ().validNel
-                        else FluePipeLengthBelowMinimum(totalLen, lzMin.unwrap).invalidNel
-                    case Validated.Invalid(_)   => ().validNel // can't check if L_Z_min computation failed
+        lazy val fluePipeLengthBelowMinimumWarning: Option[FluePipeLengthBelowMinimum] =
+            (conceptualFlueRegionPipeResults.toOption, L_Z_min.toOption) match
+                case (Some(rs), Some(lzMin)) =>
+                    val totalLen = rs.foldLeft(0.0.m)(_ + _.lengthSum)
+                    if totalLen.value >= lzMin.unwrap.value then None
+                    else Some(FluePipeLengthBelowMinimum(totalLen, lzMin.unwrap))
+                case _ => None
 
         lazy val validateCitedConstraints: VNelMcalcErr[Unit] =
-            val base = citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
-            base.andThen(_ => validateLzMinConstraint())
+            citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
 
         lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit] =
             val fbCtx = FireboxConstraintContext(

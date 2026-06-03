@@ -312,6 +312,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         def validateSeasonalEfficiency(countryCode: Country): VNelMcalcErr[Unit]
         lazy val validateCitedConstraints          : VNelMcalcErr[Unit]
         lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit]
+        lazy val fluePipeLengthBelowMinimumWarning : Option[FluePipeLengthBelowMinimum]
     end AtParams
 
     // ─── Pre-built AtParams instances ───────────────────────────────────

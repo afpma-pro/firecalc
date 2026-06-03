@@ -49,6 +49,7 @@ final case class DynamicThermalPipeSlotPanel(
         case FluePipeT      => "pipe-type-flue"
         case ConnectorPipeT => "pipe-type-connector"
         case ChimneyPipeT   => "pipe-type-chimney"
+        case NoFluePipeT    => "pipe-type-no-flue"
         case _              => s"pipe-type-slot-$slotIndex"
 
     override protected def ownsVizElement(id: VizElementId): Boolean = id match

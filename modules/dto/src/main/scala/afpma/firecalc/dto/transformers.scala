@@ -457,6 +457,8 @@ object transformers:
                             (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
                         case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
                             (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
+                        case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                            (PostFireboxInitialDirection.default, None)
 
                 val initialPos = initialPosOpt.getOrElse(PostFireboxInitialPosition(0.cm, 0.cm, 0.cm))
 
@@ -470,6 +472,8 @@ object transformers:
                         PostFireboxPipeDescrSlot.ConnectorSlot(stripDeprecatedThermal13384(d))
                     case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
                         PostFireboxPipeDescrSlot.ChimneySlot(stripDeprecatedThermal13384(d))
+                    case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                        PostFireboxPipeDescrSlot.NoFlueSlot
 
                 PostFireboxPipes(initialDir, initialPos, strippedSlots)
 

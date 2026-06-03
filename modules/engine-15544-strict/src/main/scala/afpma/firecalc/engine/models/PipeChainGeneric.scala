@@ -67,13 +67,14 @@ object PipeChainGeneric:
             case ThermalFlueSlot(descr) => buildThermalFlue(descr, prevFrame)
             case ConnectorSlot(descr)   => buildThermal(ConnectorPipeT, "Connector", descr, prevFrame)
             case ChimneySlot(descr)     => buildThermal(ChimneyPipeT, "Chimney", descr, prevFrame)
-
-    /**
-     * Build a pass-through slot that preserves the previous frame without
-     * contributing a real pipe. Used by NoFlueSlot (Plan B) for empty-head topologies.
-     */
-    def buildPassThroughSlot(prevFrame: Option[PipeFrame]): SlotBuildResult =
-        SlotBuildResult(FluePipeT, "NoFlue", Validated.validNel(()), Validated.validNel((_: Int) => None), prevFrame)
+            case NoFlueSlot             =>
+                SlotBuildResult(
+                    NoFluePipeT,
+                    "NoFlue",
+                    Validated.validNel(()              ),
+                    Validated.validNel((_: Int) => None),
+                    prevFrame
+                )
 
     // ── FlowOnly 15544 flue ─────────────────────────────────────────────
 
@@ -118,6 +119,14 @@ object PipeChainGeneric:
         pipeType match
             case ConnectorPipeT => buildConnector(descr, prevFrame)
             case ChimneyPipeT   => buildChimney(descr, prevFrame)
+            case NoFluePipeT    =>
+                SlotBuildResult(
+                    NoFluePipeT,
+                    "NoFlue",
+                    Validated.validNel(()              ),
+                    Validated.validNel((_: Int) => None),
+                    prevFrame
+                )
             case other          =>
                 throw new IllegalArgumentException(s"Unexpected thermal pipe type: $other")
 

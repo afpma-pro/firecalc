@@ -433,8 +433,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     propertyShow = Some(summon[Show[PostFireboxInitialPosition]])
                 )
             )
-            fixedElems ++ elems
-        else elems
+            interleaveInsertSeparators(fixedElems ++ elems, startIdx = fixedElems.size)
+        else interleaveInsertSeparators(elems, startIdx = 0)
 
     def wrapLine(
         title         : String,
@@ -674,12 +674,22 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             )
         )
 
-    protected def interleaveInsertSeparators(rows: Seq[HtmlElement]): Seq[HtmlElement] =
+    protected def interleaveInsertSeparators(
+        rows    : Seq[HtmlElement],
+        startIdx: Int
+    ): Seq[HtmlElement] =
+        def emptyOrMakeInsertSeparatorRow(i: Int) =
+            if (i >= startIdx) mkInsertSeparatorRow(i - startIdx)
+            else span()
         if rows.isEmpty then rows
         else
-            rows.head +: rows.tail.zipWithIndex.flatMap { case (row, i) =>
-                mkInsertSeparatorRow(i + 1) :: row :: Nil
-            }
+            val tailParts =
+                if rows.tail.isEmpty then Seq(emptyOrMakeInsertSeparatorRow(1))
+                else
+                    rows.tail.zipWithIndex.flatMap { case (row, i) =>
+                        emptyOrMakeInsertSeparatorRow(i + 1) :: row :: Nil
+                    }
+            emptyOrMakeInsertSeparatorRow(0) +: rows.head +: tailParts
 
     lazy val content = div(
         cls := "py-4 gap-2",
@@ -690,9 +700,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 // table start
                 table(
                     cls := "table table-xs table-pin-cols",
-
-                    // table rows with insert separators between them
-                    children <-- rendered_elems_sig.map(interleaveInsertSeparators)
+                    children <-- rendered_elems_sig
                 )
             ),
             div(cls := "flex-none", TagTreeMenuComponent(tagTreeMenu, command_bus.writer, elems_size_v).node),

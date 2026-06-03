@@ -44,15 +44,15 @@ object EN15544_MCE_Application:
         bs845: BS845_Alg,
         wComb: WoodCombustionAlg
     )(
-        i: models.en15544.Inputs_15544_MCE,
-        pfbSlots   : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty,
-        initialDir : Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None,
-        initialPos : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
+        i         : models.en15544.Inputs_15544_MCE,
+        pfbSlots  : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]       = Seq.empty,
+        initialDir: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None,
+        initialPos: Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
     ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb) {
-        override lazy val inputs                   : models.en15544.Inputs_15544_MCE                     = i
-        override lazy val postFireboxPipeSlots     : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = pfbSlots
-        override def    postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = initialDir
-        override def    postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = initialPos
+        override lazy val inputs                : models.en15544.Inputs_15544_MCE                           = i
+        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]       = pfbSlots
+        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = initialDir
+        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = initialPos
     }
 
 abstract class EN15544_MCE_Application(
@@ -504,6 +504,12 @@ abstract class EN15544_MCE_Application(
                                                     "ChimneySlot in flue region (unreachable)"
                                                 )
                                             )
+                                        case NoFlueSlot             =>
+                                            Validated.invalidNel(
+                                                NotYetSupportedInFlueRegion(
+                                                    "NoFlueSlot in flue region (unreachable)"
+                                                )
+                                            )
                                 }
                             }
 
@@ -534,6 +540,7 @@ abstract class EN15544_MCE_Application(
                                     case ConnectorSlot(_)                 => true
                                     case FlueSlot(_) | ThermalFlueSlot(_) => false
                                     case ChimneySlot(_)                   => false
+                                    case NoFlueSlot                       => false
                                 }
 
                             val seedPipeResult: VNelMcalcErr[PipeResult] =

@@ -78,24 +78,20 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         slots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]
     ): Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] =
         if slots.isEmpty then slots
-        else if slots.last match { case ChimneySlot(_) => false; case _ => true } then
-            // No chimney as the last slot — leave the grammar validator to report
-            // `MissingChimney`. Any insertion here would paper over the error.
-            slots
         else
-            val lastIdx    = slots.size - 1
-            val preChimney = slots.take(lastIdx) // everything before the chimney
-            preChimney.lastOption match
-                case Some(FlueSlot(_)) | Some(ThermalFlueSlot(_)) =>
-                    // Head ends with a Flue and chimney follows directly → the
-                    // YAML simply omitted the terminal connector. Insert empty.
-                    preChimney ++ Seq(ConnectorSlot(Seq.empty)) ++ Seq(slots.last)
-                case _                                            =>
-                    // Either the terminal slot is already a ConnectorSlot
-                    // (correctly shaped), or the pre-chimney is something else
-                    // (e.g. empty, ends with connector, etc.) — surface via the
-                    // topology validator.
-                    slots
+            val slots0 = slots match
+                case ConnectorSlot(_) +: ChimneySlot(_) +: Nil =>
+                    PostFireboxPipeDescrSlot.NoFlueSlot +: slots
+                case _                                         => slots
+            if slots0.last match { case ChimneySlot(_) => false; case _ => true } then slots0
+            else
+                val lastIdx    = slots0.size - 1
+                val preChimney = slots0.take(lastIdx)
+                preChimney.lastOption match
+                    case Some(FlueSlot(_)) | Some(ThermalFlueSlot(_)) =>
+                        preChimney ++ Seq(ConnectorSlot(Seq.empty)) ++ Seq(slots0.last)
+                    case _                                            =>
+                        slots0
 
     private lazy val normalizedPostFireboxSlots = normalizePostFireboxSlots(fcProj.post_firebox_pipes.slots)
 
@@ -114,6 +110,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         PostFireboxPipeChain.validated(
             normalizedPostFireboxSlots.map { slot =>
                 slot match
+                    case NoFlueSlot         => PipeSlot.noop(NoFluePipeT, "NoFlue")
                     case FlueSlot(_)        => PipeSlot.noop(FluePipeT, "Flue")
                     case ThermalFlueSlot(_) => PipeSlot.noop(FluePipeT, "Flue")
                     case ConnectorSlot(_)   => PipeSlot.noop(ConnectorPipeT, "Connector")
@@ -135,15 +132,15 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     ): StoveProjectDescr_15544_Strict_Alg =
         new v0_2024_10_strict.Firebox_15544_Strict_Alg with v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg:
             type FB = F
-            val firebox                         = fb
-            protected val toCombustionAirPipeTC = cap
-            protected val toFireboxPipeTC       = fbp
-            val language                        = fcProj.locale.language
-            override val project                = fcProj.project_description
-            val localConditions                 = fcProj.local_conditions
-            val stoveParams                     = fcProj.stove_params
-            val airIntakePipe                   = self.airIntakePipe
-            override def postFireboxPipeSlots   = normalizedPostFireboxSlots
+            val firebox                              = fb
+            protected val toCombustionAirPipeTC      = cap
+            protected val toFireboxPipeTC            = fbp
+            val language                             = fcProj.locale.language
+            override val project                     = fcProj.project_description
+            val localConditions                      = fcProj.local_conditions
+            val stoveParams                          = fcProj.stove_params
+            val airIntakePipe                        = self.airIntakePipe
+            override def postFireboxPipeSlots        = normalizedPostFireboxSlots
             override def postFireboxInitialDirection = Some(fcProj.post_firebox_pipes.initialDirection)
             override def postFireboxInitialPosition  = Some(fcProj.post_firebox_pipes.initialPosition)
 

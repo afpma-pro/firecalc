@@ -10,6 +10,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.models.ChimneyPipeT
 import afpma.firecalc.engine.models.ConnectorPipeT
 import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.NoFluePipeT
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.standard.VNelMcalcErr
@@ -74,6 +75,7 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                                             case FluePipeT      => "Flue"
                                             case ConnectorPipeT => "Connector"
                                             case ChimneyPipeT   => "Chimney"
+                                            case NoFluePipeT    => "No Flue"
                                             case _              => "Pipe"
                                         (s"Slot$i:$ptName", Validated.validNel(pr))
                                     }
@@ -130,6 +132,7 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                         case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) => d.size
                         case PostFireboxPipeDescrSlot.ConnectorSlot(d)   => d.size
                         case PostFireboxPipeDescrSlot.ChimneySlot(d)     => d.size
+                        case PostFireboxPipeDescrSlot.NoFlueSlot         => 0
                     }
                     .getOrElse(0)
                 val reverseMap = (0 until descrCount).flatMap { descrIdx =>

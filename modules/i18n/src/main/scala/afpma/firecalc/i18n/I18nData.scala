@@ -756,7 +756,8 @@ object I18nData:
         firebox       : String,
         connector     : String,
         channel       : String,
-        chimney       : String
+        chimney       : String,
+        no_flue       : String
     )
 
     case class ProjectDescription(
@@ -1075,8 +1076,7 @@ object I18nData:
 
     case class CountryNames(
         france  : String,
-        belgique: String,
-        autriche: String
+        belgique: String
     )
 
     case class BuilderErrors(

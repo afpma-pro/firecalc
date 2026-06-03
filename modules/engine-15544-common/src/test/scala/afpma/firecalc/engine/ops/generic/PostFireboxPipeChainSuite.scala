@@ -14,9 +14,10 @@ import org.scalatest.matchers.should.Matchers
 
 class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
 
-    private def flue(label: String = "Flue"     ) = PipeSlot.noop(FluePipeT, label)
-    private def conn(label: String = "Connector") = PipeSlot.noop(ConnectorPipeT, label)
-    private def chim(label: String = "Chimney"  ) = PipeSlot.noop(ChimneyPipeT, label)
+    private def flue  (label: String = "Flue"     ) = PipeSlot.noop(FluePipeT, label)
+    private def conn  (label: String = "Connector") = PipeSlot.noop(ConnectorPipeT, label)
+    private def chim  (label: String = "Chimney"  ) = PipeSlot.noop(ChimneyPipeT, label)
+    private def noFlue(label: String = "NoFlue"   ) = PipeSlot.noop(NoFluePipeT, label)
 
     "PostFireboxPipeChain.validated" - {
 
@@ -257,6 +258,15 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
         "all accessors for connector-only + chimney (empty head region)" in {
             val Valid(chain) = PostFireboxPipeChain.validated(
                 Vector(conn("C"), chim("CH"))
+            ): @unchecked
+            chain.fluePipeRegion shouldBe empty
+            chain.connectorSlot.map(_.label) shouldBe Some("C")
+            chain.chimneySlot.label shouldBe "CH"
+        }
+
+        "all accessors for [NoFlueSlot, Connector, Chimney] topology" in {
+            val Valid(chain) = PostFireboxPipeChain.validated(
+                Vector(noFlue("NoFlue"), conn("C"), chim("CH"))
             ): @unchecked
             chain.fluePipeRegion shouldBe empty
             chain.connectorSlot.map(_.label) shouldBe Some("C")

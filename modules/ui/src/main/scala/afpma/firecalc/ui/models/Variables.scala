@@ -347,6 +347,8 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
+                            case PostFireboxPipeDescrSlot.NoFlueSlot             =>
+                                PipePositionResult(Seq.empty, startPoint, None)
                         (results :+ pos, pos.finalPoint)
                 ._1
         .distinct

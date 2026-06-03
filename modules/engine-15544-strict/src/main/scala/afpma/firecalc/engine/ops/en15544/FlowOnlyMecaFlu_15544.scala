@@ -480,6 +480,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                         // FluePipeT` for flue pipe elements. Nothing to return as
                         // "identity" in that case — plan issue E2.
                         en15544.t_fluepipe(totalLengthUntil(elem))
+            case NoFluePipeT        =>
+                QtyDAtPosition.constant(tempStartOverride.getOrElse(en15544.t_BR)).atPos
             case _                  =>
                 throw new Exception(s"${elem.fullRef}: could not determine 'temperature' for gas '$gas'")
 

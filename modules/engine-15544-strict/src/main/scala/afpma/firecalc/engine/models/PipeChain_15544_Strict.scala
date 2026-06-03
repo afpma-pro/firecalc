@@ -11,6 +11,7 @@ import afpma.firecalc.dto.v6.ChimneySlot_V3
 import afpma.firecalc.dto.v6.ConnectorSlot_V3
 import afpma.firecalc.dto.v6.FlueSlot_V3
 import afpma.firecalc.dto.v6.HeadSlot_V3
+import afpma.firecalc.dto.v6.NoFlueSlot_V3
 import afpma.firecalc.dto.v6.PostFireboxChain_V3
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
@@ -91,7 +92,9 @@ object PipeChain_15544_Strict:
      */
     def toChain(d: Descriptors): PostFireboxChain_V3 =
         PostFireboxChain_V3    (
-            head     = Vector[HeadSlot_V3](FlueSlot_V3(d.flue)),
+            head     =
+                if d.flue.isEmpty then Vector[HeadSlot_V3](NoFlueSlot_V3)
+                else Vector[HeadSlot_V3](FlueSlot_V3(d.flue)),
             terminal = ConnectorSlot_V3(d.connector),
             chimney  = ChimneySlot_V3(d.chimney)
         )

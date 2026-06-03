@@ -111,9 +111,9 @@ object MecaFluOps:
      */
     def whenGasType[A](pt: PipeType)(ifCombustionAir: => A, ifFlueGas: => A): A =
         pt match
-            case AirIntakePipeT | CombustionAirPipeT                      =>
+            case AirIntakePipeT | CombustionAirPipeT                                    =>
                 ifCombustionAir
-            case FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT =>
+            case FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT | NoFluePipeT =>
                 ifFlueGas
 
     // ============================================

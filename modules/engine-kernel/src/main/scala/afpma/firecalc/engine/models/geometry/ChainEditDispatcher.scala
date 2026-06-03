@@ -235,6 +235,7 @@ object ChainEditDispatcher:
                 case ThermalFlueSlot(d) => scan(d)
                 case ConnectorSlot(d)   => scan(d)
                 case ChimneySlot(d)     => scan(d)
+                case NoFlueSlot         => Iterator.empty
 
         private def scanSlot(
             slotIdx: Int,
@@ -452,12 +453,14 @@ object ChainEditDispatcher:
             case ThermalFlueSlot(d) => FrameReplay.replayFrame(indexed(d), upTo, init)
             case ConnectorSlot(d)   => FrameReplay.replayFrame(indexed(d), upTo, init)
             case ChimneySlot(d)     => FrameReplay.replayFrame(indexed(d), upTo, init)
+            case NoFlueSlot         => init
 
         private def pinCount(lb: Int): Int = slot match
             case FlueSlot(d)        => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
             case ThermalFlueSlot(d) => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
             case ConnectorSlot(d)   => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
             case ChimneySlot(d)     => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
+            case NoFlueSlot         => 0
 
         private def rotatePins(lb: Int, axis: Vec3, angleRad: Double): PostFireboxPipeDescrSlot =
             def rw[E](d: Seq[E])(using FrameReplay.ElemExtractors[E]): Seq[E] =
@@ -467,6 +470,7 @@ object ChainEditDispatcher:
                 case ThermalFlueSlot(d) => ThermalFlueSlot(rw(d))
                 case ConnectorSlot(d)   => ConnectorSlot  (rw(d))
                 case ChimneySlot(d)     => ChimneySlot    (rw(d))
+                case NoFlueSlot         => NoFlueSlot
 
         private def withAbsDirAt(eIdx: Int, newAbs: Option[AbsoluteDirection]): PostFireboxPipeDescrSlot =
             def set[E](d: Seq[E])(using ext: FrameReplay.ElemExtractors[E]): Seq[E] =
@@ -476,5 +480,6 @@ object ChainEditDispatcher:
                 case ThermalFlueSlot(d) => ThermalFlueSlot(set(d))
                 case ConnectorSlot(d)   => ConnectorSlot  (set(d))
                 case ChimneySlot(d)     => ChimneySlot    (set(d))
+                case NoFlueSlot         => NoFlueSlot
 
 end ChainEditDispatcher

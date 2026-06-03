@@ -12,6 +12,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.models.ChimneyPipeT
 import afpma.firecalc.engine.models.ConnectorPipeT
 import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.NoFluePipeT
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.Vec3
@@ -169,6 +170,7 @@ final case class Viz3DPanel()(using Locale) extends Component:
                                     case _: PostFireboxPipeDescrSlot.ConnectorSlot   =>
                                         (ConnectorPipeT, displayNames.connector)
                                     case _: PostFireboxPipeDescrSlot.ChimneySlot     => (ChimneyPipeT, displayNames.chimney)
+                                    case PostFireboxPipeDescrSlot.NoFlueSlot => (NoFluePipeT, I18N.pipe_type.no_flue)
                                 val pos               = slotPositions.lift(idx).getOrElse(emptyPos)
                                 (pt: PipeType, s"Slot$idx", displayName, pos)
                             .toVector

@@ -24,7 +24,7 @@ trait v0_2024_10_labo_members extends v0_2024_10_mce_members:
         val kindOfWood = KindOfWood.HardWood
 
         override def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None
-        override def postFireboxInitialPosition: Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition] = None
+        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
 
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Labo_Application] = en15544_inputsVNel.map:
             i =>
@@ -35,7 +35,10 @@ trait v0_2024_10_labo_members extends v0_2024_10_mce_members:
                 )(labcond)
                 val wComb = new WoodCombustionImpl
                 EN15544_Labo_Application.make(f, bs845, wComb, labcond)(
-                    i, postFireboxPipeSlots, postFireboxInitialDirection, postFireboxInitialPosition
+                    i,
+                    postFireboxPipeSlots,
+                    postFireboxInitialDirection,
+                    postFireboxInitialPosition
                 )
 
     trait SimpleStoveProjectDescrFr_15544_Labo_Alg

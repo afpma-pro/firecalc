@@ -149,7 +149,7 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
             pci.PCI_sur_brut(net_calorific_value_of_dry_wood, wood.humidity)
 
         def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None
-        def postFireboxInitialPosition: Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition] = None
+        def postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
 
         // TODO: rename to en15544_appl
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_MCE_Application] = en15544_inputsVNel.map: i =>
@@ -160,7 +160,10 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
             )
             val wComb                = new WoodCombustionImpl
             EN15544_MCE_Application.make(en15544_mce_formulas, bs845, wComb)(
-                i, postFireboxPipeSlots, postFireboxInitialDirection, postFireboxInitialPosition
+                i,
+                postFireboxPipeSlots,
+                postFireboxInitialDirection,
+                postFireboxInitialPosition
             )
 
     trait SimpleStoveProjectDescrFr_15544_MCE_Alg

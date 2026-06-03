@@ -9,8 +9,6 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
 
 import afpma.firecalc.i18n.implicits.given
 
@@ -626,6 +624,15 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     extra        = initialPositionExtraFn(iaax._1),
                     propertyShow = Some(summon[Show[SetInitialPosition]])
                 )
+            }
+            .handleCase[
+                (Int, ThermalPipeDescr_13384, XtraOutputs),
+                (Int, SetFinalPosition, XtraOutputs      ),
+                HtmlElement
+            ] { case (i, incr: SetFinalPosition, x) =>
+                (i, incr, x)
+            } { (_, _) =>
+                span()
             }
             .toSignal
             .map(renderV7WrapperElems(isSlotZero))

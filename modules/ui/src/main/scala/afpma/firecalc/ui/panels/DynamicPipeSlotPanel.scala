@@ -79,6 +79,8 @@ object DynamicPipeSlotPanel:
                 )
             case PostFireboxPipeDescrSlot.ChimneySlot(_)     =>
                 DynamicThermalPipeSlotPanel(slotIndex, ChimneyPipeT, I18N.panels.chimney_pipe, slotControlsNode)
+            case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                throw new IllegalArgumentException("NoFlueSlot must be handled by PostFireboxPipePanels directly")
 
     // ── Auto-calc visibility predicates (pure, testable) ─────────
     //

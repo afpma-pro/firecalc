@@ -451,10 +451,10 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
                         .getOrElse(throw new Exception(s"expecting 'gas_temp_mean' to be defined for '$e'"))
                         .toUnit[Kelvin]
                 fd.pipeType match
-                    case AirIntakePipeT | CombustionAirPipeT => en13384.T_mB_calc(tms)
-                    case FireboxPipeT | FluePipeT            => en13384.T_m_calc(tms)
-                    case ConnectorPipeT                      => en13384.T_mV_calc(tms)
-                    case ChimneyPipeT                        => en13384.T_m_calc(tms)
+                    case AirIntakePipeT | CombustionAirPipeT    => en13384.T_mB_calc(tms)
+                    case FireboxPipeT | FluePipeT | NoFluePipeT => en13384.T_m_calc(tms)
+                    case ConnectorPipeT                         => en13384.T_mV_calc(tms)
+                    case ChimneyPipeT                           => en13384.T_m_calc(tms)
         }
 
     final val elements       : Vector[PipeSectionResult[?]]          = _out.elements
