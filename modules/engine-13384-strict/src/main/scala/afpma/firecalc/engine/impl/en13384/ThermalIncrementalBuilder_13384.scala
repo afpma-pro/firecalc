@@ -311,21 +311,21 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             atom: SetProp
         ): ValidatedNel[IncrementalValidation_Error, PropsState] =
             atom match
-                case SetInnerShape(g)            =>
+                case SetInnerShape(g)              =>
                     vState.map(_.modify(_.innerShape).setTo(g.some))
-                case SetOuterShape(g)            =>
+                case SetOuterShape(g)              =>
                     vState.map(_.modify(_.outer_shape).setTo(g.some))
-                case SetThickness(t)             =>
+                case SetThickness(t)               =>
                     vState andThen: v =>
                         v.innerShape match
                             case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
                             case Some(ig) =>
                                 v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
-                case SetRoughness(r)             =>
+                case SetRoughness(r)               =>
                     vState.map(_.modify(_.roughness).setTo(r.some))
-                case SetMaterial(lm)             =>
+                case SetMaterial(lm)               =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                case SetLayer(e, lambda)         =>
+                case SetLayer(e, lambda)           =>
                     val vGeom = vState.andThen(_.getValidated(_.innerShape, LayerRequiresSectionGeometry(pt)))
                     vGeom.andThen: geom =>
                         vState.map(
@@ -334,7 +334,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape) // also update outer geometry using thickness of layer
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
-                case SetLayers(ldescrs)          =>
+                case SetLayers(ldescrs)            =>
                     val vGeom = vState.andThen(_.getValidated(_.innerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
@@ -344,17 +344,26 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape) // also update outer geometry using thickness of layer
                                 .setTo(ldescrs.compute_outer_shape(geom).some)
                         )
-                case SetAirSpaceAfterLayers(asp) =>
+                case SetAirSpaceAfterLayers(asp)   =>
                     vState.map(_.modify(_.airSpace_afterLayers).setTo(asp.some))
-                case SetPipeLocation(loc)        =>
+                case SetPipeLocation(loc)          =>
                     vState.map(_.modify(_.pipeLoc).setTo(loc.some))
-                case SetDuctType(duct)           =>
+                case SetDuctType(duct)             =>
                     vState.map(_.modify(_.ductType).setTo(duct.some))
-                case SetNumberOfFlows(nf)        =>
+                case SetNumberOfFlows(nf)          =>
                     vState.map(_.modify(_.nFlows).setTo(nf.some))
-                // V7: wrapper-level initial direction/position replaces descriptor-level elements
-                case _: SetInitialDirection =>
-                    vState // ignored — use withInitialDirection()
+                // V7: wrapper-level direction (wrapperInitialDirection) takes priority;
+                // descriptor-level SetInitialDirection is honoured as a fallback for
+                // legacy callers (test fixtures, non-migrated descriptors).
+                case SetInitialDirection(az, incl) =>
+                    if vState.toOption.exists(_.initialFrame.isDefined) then vState
+                    else
+                        val dirVec = Vec3.fromAzimuthElevation(
+                            AzimuthDirection.toDegrees    (az  ),
+                            InclinationDirection.toDegrees(incl)
+                        )
+                        val frame  = PipeFrame.initial(dirVec)
+                        vState.map(_.copy(initialFrame = Some(frame), currentFrame = Some(frame)))
                 case _: SetInitialPosition =>
                     vState // ignored — use withInitialPosition()
                 case _: SetFinalPosition =>

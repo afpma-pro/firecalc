@@ -11,8 +11,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -611,6 +609,15 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     sig,
                     isProperty = false
                 )
+            }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, SetFinalPosition, XtraOutputs       ),
+                HtmlElement
+            ] { case (i, incr: SetFinalPosition, x) =>
+                (i, incr, x)
+            } { (_, _) =>
+                span()
             }
             .toSignal
             .map(renderV7WrapperElems(slotIndex == 0))

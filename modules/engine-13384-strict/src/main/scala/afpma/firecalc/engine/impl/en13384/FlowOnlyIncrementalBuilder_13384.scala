@@ -286,17 +286,26 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep.allSetPropsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (_, atom)) =>
                 atom match
-                    case SetInnerShape(g)     =>
+                    case SetInnerShape(g)              =>
                         vState.map(_.modify(_.innerShape).setTo(g.some))
-                    case SetRoughness(r)      =>
+                    case SetRoughness(r)               =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
-                    case SetMaterial(lm)      =>
+                    case SetMaterial(lm)               =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                    case SetNumberOfFlows(nf) =>
+                    case SetNumberOfFlows(nf)          =>
                         vState.map(_.modify(_.nFlows).setTo(nf.some))
-                    // V7: wrapper-level initial direction/position replaces descriptor-level elements
-                    case _: SetInitialDirection =>
-                        vState // ignored — use withInitialDirection()
+                    // V7: wrapper-level direction (wrapperInitialDirection) takes priority;
+                    // descriptor-level SetInitialDirection is honoured as a fallback for
+                    // legacy callers (test fixtures, non-migrated descriptors).
+                    case SetInitialDirection(az, incl) =>
+                        if vState.toOption.exists(_.initialFrame.isDefined) then vState
+                        else
+                            val dirVec = Vec3.fromAzimuthElevation(
+                                AzimuthDirection.toDegrees    (az  ),
+                                InclinationDirection.toDegrees(incl)
+                            )
+                            val frame  = PipeFrame.initial(dirVec)
+                            vState.map(_.copy(initialFrame = Some(frame), currentFrame = Some(frame)))
                     case _: SetInitialPosition =>
                         vState // ignored — use withInitialPosition()
                     case _: SetFinalPosition =>
