@@ -208,8 +208,16 @@ object FormDerivation extends AutoDerivation[Form]:
                     if newIdx >= 0 then
                         val newDefault  = vars_subt(newIdx).now()
                         val transformed = transform(prevValue, newDefault)
-                        if transformed != newDefault
-                        then vars_subt(newIdx).set(transformed)
+                        // Write directly to `variable` so external observers
+                        // (like image panels) always receive the new subtype,
+                        // even when `transformed == newDefault` (e.g. switching
+                        // back to a previously-visited subtype whose cached
+                        // value equals the current var content — Airstream
+                        // deduplicates equal values on `.changes`).
+                        _isExternalUpdate = true
+                        vars_subt(newIdx).set(transformed)
+                        variable.set         (transformed)
+                        _isExternalUpdate = false
             }
         }
 

@@ -47,34 +47,28 @@ case class FireboxComponent(
 
     import FireboxComponent.*
 
-    val showEcolabeledV1Img = firebox_var.signal.map:
-        case eco: Firebox.Ecolabeled if eco.version == Left("Version 1") => true
-        case _ => false
-
-    val showEcolabeledV2Img = firebox_var.signal.map:
-        case eco: Firebox.Ecolabeled if eco.version == Right("Version 2") => true
-        case _ => false
-
-    val showAFPMAPRSEImg = firebox_var.signal.map:
-        case _: Firebox.AFPMA_PRSE => true
-        case _ => false
-
-    val nodeSeq_Ecolabeled_V1 = Seq(
+    private def ecolabeledV1Nodes = Seq(
         div(cls := "col-span-2 justify-center align-center", ecolabeled_v1_side_img),
         div(cls := "row-span-1", ecolabeled_front_img                              ),
         div(cls := "row-span-1", ecolabeled_top_img                                )
     )
 
-    val nodeSeq_Ecolabeled_V2 = Seq(
+    private def ecolabeledV2Nodes = Seq(
         div(cls := "col-span-2 justify-center align-center", ecolabeled_v2_side_img),
         div(cls := "row-span-1", ecolabeled_front_img                              ),
         div(cls := "row-span-1", ecolabeled_top_img                                )
     )
 
-    val nodeSeq_AFPMAPRSE = Seq(
+    private def afpmaPrseNodes = Seq(
         div(cls := "row-span-1 col-span-1", afpma_prse_side_img),
         div(cls := "row-span-1 col-span-1", afpma_prse_top_img )
     )
+
+    val fireboxImages_sig: Signal[Seq[HtmlElement]] = firebox_var.signal.map:
+        case eco: Firebox.Ecolabeled if eco.version == Left("Version 1")  => ecolabeledV1Nodes
+        case eco: Firebox.Ecolabeled if eco.version == Right("Version 2") => ecolabeledV2Nodes
+        case _  : Firebox.AFPMA_PRSE                                      => afpmaPrseNodes
+        case _ => Seq.empty
 
     lazy val node =
         import vertical_form.given
@@ -93,9 +87,7 @@ case class FireboxComponent(
         div(
             cls := "grid grid-flow-col grid-cols-3 grid-rows-2 gap-10",
             div(cls := "row-span-2", v.as_HtmlElement(formConfig), outputResults),
-            children(nodeSeq_Ecolabeled_V1) <-- showEcolabeledV1Img,
-            children(nodeSeq_Ecolabeled_V2) <-- showEcolabeledV2Img,
-            children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg
+            children <-- fireboxImages_sig
         )
 
     val DISABLED_TRUE_SIG = Var(true).signal
