@@ -163,7 +163,8 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
                 i,
                 postFireboxPipeSlots,
                 postFireboxInitialDirection,
-                postFireboxInitialPosition
+                postFireboxInitialPosition,
+                airIntakeDescriptors
             )
 
     trait SimpleStoveProjectDescrFr_15544_MCE_Alg

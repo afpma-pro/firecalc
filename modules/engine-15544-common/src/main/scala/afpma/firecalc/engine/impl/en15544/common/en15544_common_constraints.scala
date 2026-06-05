@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.models.geometry.DirectionReachability
 import afpma.firecalc.dto.all.Country
 
 /**
@@ -116,10 +117,19 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
             )
         )
 
+    def validateDirectionReachability(): VNel[Unit] =
+        val initialFrame = en15544.postFireboxInitialDirection.map(PostFireboxFrameHelpers.toPipeFrame)
+        val pfbErrors    = DirectionReachability.checkPostFireboxChain(en15544.postFireboxPipeSlots, initialFrame)
+        val airErrors    = DirectionReachability.checkAirIntakeChain(en15544.airIntakeDescriptors)
+        val allErrors    = pfbErrors ++ airErrors
+        if allErrors.isEmpty then Valid(())
+        else Invalid(NonEmptyList.fromListUnsafe(allErrors))
+
     final def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit] =
         val ap = atDraftMin_LoadNominal
         List(
-            validateFluePipeShape(),
+            validateFluePipeShape        (),
+            validateDirectionReachability(),
             ap.validateVelocitiesInPipes,
             ap.validatePressureRequirements_EN15544,
             ap.validateChimneyWallTempIsAboveCondensationTemp,

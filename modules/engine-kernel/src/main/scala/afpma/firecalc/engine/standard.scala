@@ -147,6 +147,11 @@ object standard {
     case object InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType  extends Inputs_Error
     case object InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType extends Inputs_Error
     case object StoveParamsSizingInputMissing                                  extends Inputs_Error
+    case class IncompatibleDirectionInPipe(
+        pipeLabel   : String,
+        slotIndex   : Int,
+        elementIndex: Int
+    ) extends Inputs_Error
 
     object Inputs_Error:
         given ShowUsingLocale[Inputs_Error] = showUsingLocale:
@@ -156,6 +161,12 @@ object standard {
                 I18N.inputs_error.invald_type_of_appliance.wood_logs_incompatible_with_pellets_fuel_type
             case e: StoveParamsSizingInputMissing.type                                  =>
                 I18N.inputs_error.stove_params_sizing_input_missing
+            case e: IncompatibleDirectionInPipe                                         =>
+                I18N.inputs_error.incompatible_direction_in_pipe(
+                    e.pipeLabel,
+                    e.slotIndex.toString,
+                    e.elementIndex.toString
+                )
 
     // EN 15544
 

@@ -9,6 +9,7 @@ import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
 import afpma.firecalc.engine.standard.HasSectionTypError
+import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 import afpma.firecalc.engine.standard.MCalc_Error
 
 import cats.data.*
@@ -61,9 +62,11 @@ object PanelStatusHelper:
                     else ().validNel
 
     private def clsNameForErrors(errs: NonEmptyList[MCalc_Error])(prefix: String): String =
-        errs match
-            case NonEmptyList(ErrorsInOtherSectionType, _) => s"${prefix}warning" // "text-warning" or "tooltip-warning"
-            case NonEmptyList(head, tail)                  => s"${prefix}error"   // "text-error" or "tooltip-error"
+        val isWarning = errs.toList.forall:
+            case ErrorsInOtherSectionType => true
+            case _: IncompatibleDirectionInPipe => true
+            case _ => false
+        if isWarning then s"${prefix}warning" else s"${prefix}error"
 
     def textClsNameFoErrors(errs: NonEmptyList[MCalc_Error]): String =
         clsNameForErrors(errs)(prefix = "text-")

@@ -143,6 +143,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             override def postFireboxPipeSlots        = normalizedPostFireboxSlots
             override def postFireboxInitialDirection = Some(fcProj.post_firebox_pipes.initialDirection)
             override def postFireboxInitialPosition  = Some(fcProj.post_firebox_pipes.initialPosition)
+            override def airIntakeDescriptors        = fcProj.air_intake_descr
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
         fb match

@@ -84,7 +84,8 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
                     i,
                     postFireboxPipeSlots,
                     postFireboxInitialDirection,
-                    postFireboxInitialPosition
+                    postFireboxInitialPosition,
+                    airIntakeDescriptors
                 )
 
     trait SimpleStoveProjectDescrFr_15544_Strict_Alg

@@ -622,7 +622,8 @@ object I18nData:
 
     case class Inputs_Error(
         invald_type_of_appliance         : Inputs_Error.InvalidTypeOfAppliance,
-        stove_params_sizing_input_missing: String
+        stove_params_sizing_input_missing: String,
+        incompatible_direction_in_pipe   : StringFormat3
     )
 
     object Inputs_Error:
