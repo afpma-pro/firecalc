@@ -228,13 +228,10 @@ final case class DynamicThermalPipeSlotPanel(
             shape <- shapeOpt
         yield
             val fb  = firebox_var.now()
-            val box = AutoCalcHelper.TargetBox(
-                centerX   = 0.0,
-                centerY   = 0.0,
-                halfWidth = fb.firebox_width.value / 2.0,
-                halfDepth = fb.firebox_depth.value / 2.0,
-                bottomZ   = 0.0,
-                height    = fb.firebox_height.value
+            val box = AutoCalcHelper.fireboxTargetBox(
+                fb.firebox_width.value,
+                fb.firebox_depth.value,
+                fb.firebox_height.value
             )
             val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
             SetInitialPosition(x.m, y.m, z.m)

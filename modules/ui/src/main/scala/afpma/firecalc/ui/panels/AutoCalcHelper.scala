@@ -7,6 +7,8 @@ package afpma.firecalc.ui.panels
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.{AzimuthDirection, InclinationDirection}
+
 import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.Vec3
@@ -141,6 +143,63 @@ object AutoCalcHelper:
             // Ray-box intersection: entry point where dir aims at center
             val (x, y) = rayIntersectBoxSurface(dir, box)
             (x, y, z)
+
+    // ── Firebox helpers ───────────────────────────────────────────────
+
+    /**
+     * Build a TargetBox from firebox dimensions (raw meters).
+     * Eliminates repetition of the TargetBox construction at all call sites.
+     */
+    def fireboxTargetBox(widthM: Double, depthM: Double, heightM: Double): TargetBox =
+        TargetBox  (
+            centerX   = 0.0,
+            centerY   = 0.0,
+            halfWidth = widthM / 2.0,
+            halfDepth = depthM / 2.0,
+            bottomZ   = 0.0,
+            height    = heightM
+        )
+
+    /** Convert a V7 wrapper-level initial direction to a PipeFrame. */
+    def wrapperDirectionToFrame(dir: PostFireboxInitialDirection): PipeFrame =
+        PipeFrame.initial(
+            Vec3.fromAzimuthElevation(
+                AzimuthDirection.toDegrees    (dir.azimuth    ),
+                InclinationDirection.toDegrees(dir.inclination)
+            )
+        )
+
+    /**
+     * Extract the first inner shape from the first slot in a post-firebox chain.
+     * Matches both FlueSlot and ThermalPipeDescr slots. Returns None for NoFlueSlot
+     * or when no SetInnerShape is present in the first slot's descriptors.
+     */
+    def firstInnerShapeIn(slot: Seq[PostFireboxPipeDescrSlot]): Option[PipeShape] =
+        slot.headOption.flatMap(firstInnerShapeInSlot)
+
+    /**
+     * Check if the first slot has any SetInnerShape element.
+     * Used reactively to determine auto-calc button enabled state.
+     */
+    def firstSlotHasInnerShape(slots: Seq[PostFireboxPipeDescrSlot]): Boolean =
+        firstInnerShapeIn(slots).isDefined
+
+    private def firstInnerShapeInSlot(slot: PostFireboxPipeDescrSlot): Option[PipeShape] =
+        slot match
+            case PostFireboxPipeDescrSlot.FlueSlot(descr)        =>
+                descr.collectFirst:
+                    case sis: SetFlowOnlyPipeProp_15544.SetInnerShape => sis.shape
+            case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
+                descr.collectFirst:
+                    case sis: SetThermalPipeProp_13384.SetInnerShape => sis.shape
+            case PostFireboxPipeDescrSlot.ConnectorSlot(descr)   =>
+                descr.collectFirst:
+                    case sis: SetThermalPipeProp_13384.SetInnerShape => sis.shape
+            case PostFireboxPipeDescrSlot.ChimneySlot(descr)     =>
+                descr.collectFirst:
+                    case sis: SetThermalPipeProp_13384.SetInnerShape => sis.shape
+            case PostFireboxPipeDescrSlot.NoFlueSlot             =>
+                None
 
     // ── Reactive UI helpers ──────────────────────────────────────────────
 

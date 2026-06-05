@@ -346,14 +346,15 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     protected def renderFixedElem[AA](
         title       : String,
         v           : Var[AA],
-        isProperty  : Boolean          = true,
-        propertyShow: Option[Show[AA]] = None,
-        extra       : HtmlElement      = span()
+        isProperty  : Boolean                = true,
+        propertyShow: Option[Show[AA]]       = None,
+        extra       : Var[AA] => HtmlElement = (_: Var[AA]) => span()
     )(using DF[AA]): HtmlElement =
-        val formNode = div(
+        val extraNode = extra(v)
+        val formNode  = div(
             cls := "flex flex-row justify-start items-end gap-2",
             div(cls := "flex-none", v.as_HtmlElement),
-            extra
+            extraNode
         )
 
         propertyShow match
@@ -410,15 +411,43 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
      * Render V7 wrapper elements (PostFireboxInitialDirection/Position) for the first slot.
      * Extracted to avoid duplication between flow-only and thermal panels.
      *
+     * The auto-calc button for PostFireboxInitialPosition is wired directly here
+     * using shared AutoCalcHelper methods. No override ceremony needed in subclasses.
+     *
      * @param isFirstSlot  whether this panel renders the first post-firebox slot
      * @param elems        the rendered element rows for the descriptor sequence
      * @return             wrapper elements prepended when isFirstSlot, otherwise unchanged
      */
     protected def renderV7WrapperElems(isFirstSlot: Boolean)(elems: Seq[HtmlElement]): Seq[HtmlElement] =
         if isFirstSlot then
-            import afpma.firecalc.ui.models.{postFireboxInitialDir_var, postFireboxInitialPos_var}
-            val v7         = V7FormInstances()
+            import afpma.firecalc.ui.models.{
+                postFireboxInitialDir_var,
+                postFireboxInitialPos_var,
+                postFireboxSlots_var,
+                firebox_var
+            }
+            val v7 = V7FormInstances()
             import v7.given
+
+            val wrapperPositionAutoCalc: Var[PostFireboxInitialPosition] => HtmlElement =
+                val statusSig = AutoCalcHelper.mkStatusSig(
+                    hasFrameSig = Signal.fromValue(true), // wrapper direction always available
+                    hasShapeSig = postFireboxSlots_var.signal.map(AutoCalcHelper.firstSlotHasInnerShape)
+                )
+                val compute   = () =>
+                    for shape <- AutoCalcHelper.firstInnerShapeIn(postFireboxSlots_var.now())
+                    yield
+                        val fb    = firebox_var.now()
+                        val frame = AutoCalcHelper.wrapperDirectionToFrame(postFireboxInitialDir_var.now())
+                        val box   = AutoCalcHelper.fireboxTargetBox(
+                            fb.firebox_width.value,
+                            fb.firebox_depth.value,
+                            fb.firebox_height.value
+                        )
+                        val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
+                        PostFireboxInitialPosition(x.m, y.m, z.m)
+                AutoCalcHelper.autoCalcButton[PostFireboxInitialPosition](statusSig, compute)
+
             val fixedElems = Seq[HtmlElement](
                 renderFixedElem[PostFireboxInitialDirection]       (
                     title        = I18N.set_prop.PostFireboxInitialDirection,
@@ -430,7 +459,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     title        = I18N.set_prop.PostFireboxInitialPosition,
                     v            = postFireboxInitialPos_var,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[PostFireboxInitialPosition]])
+                    propertyShow = Some(summon[Show[PostFireboxInitialPosition]]),
+                    extra        = wrapperPositionAutoCalc
                 )
             )
             interleaveInsertSeparators(fixedElems ++ elems, startIdx = fixedElems.size)
