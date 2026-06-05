@@ -77,6 +77,10 @@ object PositionTracker:
             elem match
                 case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
+                case SetInitialDirection(az, incl)                                  =>
+                    val azDeg = AzimuthDirection.toDegrees(az)
+                    val elDeg = InclinationDirection.toDegrees(incl)
+                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
                 case dc: AddDirectionChange =>
                     for
                         f  <- frame
@@ -153,7 +157,8 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _                                                              => ()
+                case _: SetFlowOnlyPipeProp_13384_V3 => ()
+                case _: AddFlowOnlyPipeElement_13384_V3 => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
@@ -191,6 +196,10 @@ object PositionTracker:
             elem match
                 case SetInnerShape(shape)                                           =>
                     currentInnerShape = Some(shape)
+                case SetInitialDirection(az, incl)                                  =>
+                    val azDeg = AzimuthDirection.toDegrees(az)
+                    val elDeg = InclinationDirection.toDegrees(incl)
+                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
                 case dc: AddDirectionChange =>
                     for
                         f  <- frame
@@ -267,7 +276,8 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _                                                              => ()
+                case _: SetFlowOnlyPipeProp_15544_V3 => ()
+                case _: AddFlowOnlyPipeElement_15544_V3 => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
@@ -313,6 +323,10 @@ object PositionTracker:
                     liner.props
                         .collectFirst { case SetInnerShape(shape) => shape }
                         .foreach(shape => currentInnerShape = Some(shape))
+                case SetInitialDirection(az, incl)                                  =>
+                    val azDeg = AzimuthDirection.toDegrees(az)
+                    val elDeg = InclinationDirection.toDegrees(incl)
+                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
                 case dc: AddDirectionChange =>
                     for
                         f  <- frame
@@ -389,7 +403,8 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _                                                              => ()
+                case _: SetThermalPipeProp_13384_V3 => ()
+                case _: AddThermalPipeElement_13384_V3 => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
