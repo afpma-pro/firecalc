@@ -237,6 +237,23 @@ object ChainEditDispatcher:
                 case ChimneySlot(d)     => scan(d)
                 case NoFlueSlot         => Iterator.empty
 
+        /** Find direction-change elements in a descriptor range [fromIdx, untilIdx) with their index and deflection angle. */
+        private def findDirChangeWithIndexFrom[E](
+            descr   : Seq[E],
+            fromIdx : Int,
+            untilIdx: Int
+        )(using ext: FrameReplay.ElemExtractors[E]): Seq[(Int, Double)] =
+            descr.iterator.zipWithIndex
+                .drop(fromIdx)
+                .take(untilIdx - fromIdx)
+                .collect { case (elem, idx) =>
+                    ext.asDirectionChange.lift(elem).map { (angle, _) =>
+                        (idx, angle.toUnit[Degree].value)
+                    }
+                }
+                .flatten
+                .toSeq
+
         private def scanSlot(
             slotIdx: Int,
             oldSlot: PostFireboxPipeDescrSlot,
@@ -252,23 +269,14 @@ object ChainEditDispatcher:
         private def scanDescr[E](slotIdx: Int, oldDescr: Seq[E], newDescr: Seq[E])(using
             ext: FrameReplay.ElemExtractors[E]
         ): Iterator[ChainEdit] =
-            if newDescr.length == oldDescr.length + 1 then
-                // Single-element insertion within existing slot.
+            if newDescr.length > oldDescr.length then
+                // Element insertion(s) within existing slot (single or multi-element, e.g. shortcut).
                 val insertIdx = oldDescr.zip(newDescr).indexWhere((o, n) => o != n)
-                if insertIdx < 0 then Iterator.empty
-                else
-                    val inserted = newDescr(insertIdx)
-                    ext.asDirectionChange.lift(inserted) match
-                        case Some((angle, _)) =>
-                            Iterator.single(
-                                InsertEdit(
-                                    ChainCoord(slotIdx, insertIdx),
-                                    angle.toUnit[Degree].value,
-                                    InsertKind.DescriptorLevel
-                                )
-                            )
-                        case None             => Iterator.empty
-            else if oldDescr.length != newDescr.length then Iterator.empty
+                val startIdx  = if insertIdx < 0 then oldDescr.length else insertIdx
+                val endIdx    = startIdx + (newDescr.length - oldDescr.length)
+                findDirChangeWithIndexFrom(newDescr, startIdx, endIdx).map { case (idx, angleDeg) =>
+                    InsertEdit(ChainCoord(slotIdx, idx), angleDeg, InsertKind.DescriptorLevel)
+                }.iterator
             else
                 oldDescr.iterator.zip(newDescr.iterator).zipWithIndex.flatMap { case ((o, n), eIdx) =>
                     val coord = ChainCoord(slotIdx, eIdx)
