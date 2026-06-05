@@ -20,6 +20,20 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     private val emptyConnector = ConnectorSlot(Seq.empty)
     private val emptyChimney   = ChimneySlot(Seq.empty)
 
+    private def thermalPipeDescr(
+        name : String,
+        flows: Option[NbOfFlows] = None
+    ): Seq[ThermalPipeDescr_13384_V3] =
+        import afpma.firecalc.dto.v3.Material_13384_V2
+        flows.map(SetThermalPipeProp_13384_V3.SetNumberOfFlows.apply).toSeq ++ Seq[ThermalPipeDescr_13384_V3](
+            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
+            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
+            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384_V3.AddSectionVertical(name, 100.cm                     )
+        )
+
     "PipeChainGeneric.build" should "produce 3 SlotBuildResults for standard topology" in {
         val results = PipeChainGeneric.build(Seq(emptyFlue, emptyConnector, emptyChimney))
         results.size shouldBe 3
@@ -485,6 +499,109 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         // Flue 2: property indices don't map
         fn1(0) shouldBe None
         fn1(1) shouldBe None
+    }
+
+    it should "inherit flow count from flow-only flue into connector and chimney" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetNumberOfFlows   (2.flows                                       ),
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("flue", 100.cm                                )
+        )
+
+        val results = PipeChainGeneric.build(
+            Seq(
+                FlueSlot(flueDescr),
+                ConnectorSlot(thermalPipeDescr("connector")),
+                ChimneySlot  (thermalPipeDescr("chimney")  )
+            )
+        )
+
+        results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
+    }
+
+    it should "inherit flow count from thermal flue into connector and chimney" in {
+        val thermalFlueDescr =
+            Seq[ThermalPipeDescr_13384_V3](
+                SetThermalPipeProp_13384_V3.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+            ) ++ thermalPipeDescr("flue", flows = Some(2.flows))
+
+        val results = PipeChainGeneric.build(
+            Seq(
+                ThermalFlueSlot(thermalFlueDescr),
+                ConnectorSlot(thermalPipeDescr("connector")),
+                ChimneySlot  (thermalPipeDescr("chimney")  )
+            )
+        )
+
+        results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
+    }
+
+    it should "let an explicit next-slot flow count override the inherited value" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetNumberOfFlows   (2.flows                                       ),
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("flue", 100.cm                                )
+        )
+
+        val results = PipeChainGeneric.build(
+            Seq(
+                FlueSlot(flueDescr),
+                ConnectorSlot(thermalPipeDescr("connector", flows = Some(3.flows))),
+                ChimneySlot  (thermalPipeDescr("chimney")                         )
+            )
+        )
+
+        results.map(_.finalNFlows) shouldBe Vector(2.flows, 3.flows, 3.flows)
+    }
+
+    it should "inherit the terminal flow count from a slot, not the first element flow count" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetNumberOfFlows   (2.flows                                       ),
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("flue-1", 100.cm                              ),
+            SetNumberOfFlows   (3.flows                                       ),
+            AddSectionVertical ("flue-2", 100.cm                              )
+        )
+
+        val results = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), ConnectorSlot(thermalPipeDescr("connector")))
+        )
+
+        results.map(_.finalNFlows) shouldBe Vector(3.flows, 3.flows)
+    }
+
+    it should "preserve inherited flow count through an empty connector" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+            SetNumberOfFlows   (2.flows                                       ),
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness       (1.mm                                          ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddSectionVertical ("flue", 100.cm                                )
+        )
+
+        val results = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), ConnectorSlot(Seq.empty), ChimneySlot(thermalPipeDescr("chimney")))
+        )
+
+        results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
     }
 
 end PipeChainGenericSuite

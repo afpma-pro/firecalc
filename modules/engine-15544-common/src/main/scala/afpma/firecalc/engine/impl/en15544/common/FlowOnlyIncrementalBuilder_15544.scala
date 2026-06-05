@@ -158,10 +158,16 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
         s.currentFrame
 
+    override protected def currentNFlowsFromPropsState(s: PropsState): Option[NbOfFlows] =
+        Some(stateOps.getNFlows(s))
+
     override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
         // Only apply if the pipe itself did not already define an initial direction
         if s.initialFrame.isDefined then s
         else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
+    override protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState =
+        s.copy(nFlows = Some(nFlows))
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],

@@ -77,21 +77,33 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
     ): FullDescrResult =
+        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed.fromFrame(externalInitialFrame))
+
+    def mkPipeFromIncrDescr(
+        incrSeq: Seq[ThermalPipeDescr_13384],
+        seed   : PipeBuildSeed
+    ): FullDescrResult =
         if (incrSeq.isEmpty) (IdsMapping.empty, Without).validNel[IncrementalValidation_Error]
         else
             incremental
                 .define(incrSeq*)
-                .toFullDescrWithExternalInitialFrame(externalInitialFrame)
+                .toFullDescrWithSeed(seed)
                 .map((ids, fd, _) => (ids, fd))
 
     def mkPipeFromIncrDescrWithFinalFrame(
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame] = None
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
-        if (incrSeq.isEmpty)
-            ((IdsMapping.empty, Without).validNel[IncrementalValidation_Error], externalInitialFrame.validNel)
+        val (fdResult, seedV) = mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed.fromFrame(externalInitialFrame))
+        (fdResult, seedV.map(_.frame))
+
+    def mkPipeFromIncrDescrWithSeed(
+        incrSeq: Seq[ThermalPipeDescr_13384],
+        seed   : PipeBuildSeed
+    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, PipeBuildSeed]) =
+        if (incrSeq.isEmpty) ((IdsMapping.empty, Without).validNel[IncrementalValidation_Error], seed.validNel)
         else
-            val result = incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame)
+            val result = incremental.define(incrSeq*).toFullDescrWithSeed(seed)
             (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
 
     type PipeCanBe = FullDescr | Without
@@ -126,10 +138,14 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
     ): FullDescrResult =
-        incremental
-            .define(incrSeq*)
-            .toFullDescrWithExternalInitialFrame(externalInitialFrame)
-            .map((ids, fd, _) => (ids, fd))
+        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed.fromFrame(externalInitialFrame))._1
+
+    def mkPipeFromIncrDescr(
+        incrSeq: Seq[ThermalPipeDescr_13384],
+        seed   : PipeBuildSeed
+    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, PipeBuildSeed]) =
+        val result = incremental.define(incrSeq*).toFullDescrWithSeed(seed)
+        (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
 
     /**
      * Inner cross-section at the chimney's terminal end.

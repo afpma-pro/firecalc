@@ -343,7 +343,7 @@ abstract class EN15544_V_2023_Common_Application
         // Pipe results — abstract (provided by strict/MCE subclasses)
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
         lazy val firebox_PipeResult      : VNelMcalcErr[PipeResult]
-        protected def flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], Option[PipeFrame])]
+        protected def flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], PipeBuildSeed)]
 
         /**
          * Stage 2 of the two-stage split.
@@ -361,7 +361,7 @@ abstract class EN15544_V_2023_Common_Application
             import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
             val pfbSlots = en15544.postFireboxPipeSlots
             // Resolve Stage 1 first, then resolve HA givens for Stage 2.
-            flueRegionPipeResults.andThen { case (stage1Results, stage1LastFrame) =>
+            flueRegionPipeResults.andThen { case (stage1Results, stage1Seed) =>
                 (
                     en15544.en13384_heatingAppliance_powers,
                     en15544.en13384_heatingAppliance_efficiency,
@@ -377,7 +377,7 @@ abstract class EN15544_V_2023_Common_Application
                             en15544.en13384_heatingAppliance_massFlows
                         )
 
-                        // Use stage1LastFrame directly — no re-trace needed.
+                        // Use stage1Seed directly — no re-trace needed.
                         val lastFluePipeSlotIdx = pfbSlots.lastIndexWhere {
                             case FlueSlot(_) | ThermalFlueSlot(_) => true
                             case _                                => false
@@ -386,75 +386,73 @@ abstract class EN15544_V_2023_Common_Application
 
                         // Build Stage 2 PipeSlots (connector + chimney; no FluePipeT allowed here).
                         // Thread prevFrame through foldLeft — no mutable state.
-                        val (stage2PipeSlots, _): (Vector[PipeSlot], Option[PipeFrame]) =
-                            stage2Slots.foldLeft((Vector.empty[PipeSlot], stage1LastFrame)) {
-                                case ((acc, prevFrame), slot) =>
-                                    slot match
-                                        case FlueSlot(_)            =>
-                                            // Defensive: FluePipeT after the last FluePipeT is impossible.
-                                            (acc :+ PipeSlot.noop(FluePipeT, "Flue"), prevFrame)
-                                        case ThermalFlueSlot(descr) =>
-                                            val (fdResult, ffV) =
-                                                FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                            val newFrame        = ffV.toOption.flatten.orElse(prevFrame)
-                                            val pipeV           =
-                                                FluePipe_Module_13384.FullDescrResult.extractPipe(fdResult)
-                                            val pipeSlot        = pipeV match
+                        val (stage2PipeSlots, _): (Vector[PipeSlot], PipeBuildSeed) =
+                            stage2Slots.foldLeft((Vector.empty[PipeSlot], stage1Seed)) { case ((acc, seed), slot) =>
+                                slot match
+                                    case FlueSlot(_)            =>
+                                        // Defensive: FluePipeT after the last FluePipeT is impossible.
+                                        (acc :+ PipeSlot.noop(FluePipeT, "Flue"), seed)
+                                    case ThermalFlueSlot(descr) =>
+                                        val (fdResult, nextSeedV) =
+                                            FluePipe_Module_13384
+                                                .mkPipeFromIncrDescrWithSeed(descr, seed)
+                                        val nextSeed              = nextSeedV.getOrElse(seed)
+                                        val pipeV                 =
+                                            FluePipe_Module_13384.FullDescrResult.extractPipe(fdResult)
+                                        val pipeSlot              = pipeV match
+                                            case Validated.Valid(pipe) =>
+                                                tcThermal13384.mkSlot(
+                                                    FluePipeT,
+                                                    "Flue",
+                                                    FlueGas,
+                                                    FluePipe_Module_13384.unwrap(pipe)
+                                                )
+                                            case _                     =>
+                                                PipeSlot.noop(FluePipeT, "Flue")
+                                        (acc :+ pipeSlot, nextSeed)
+                                    case ConnectorSlot(descr)   =>
+                                        if descr.isEmpty then (acc :+ PipeSlot.noop(ConnectorPipeT, "Connector"), seed)
+                                        else
+                                            val (fdResult, nextSeedV) =
+                                                ConnectorPipe_Module
+                                                    .mkPipeFromIncrDescrWithSeed(descr, seed)
+                                            val nextSeed              = nextSeedV.getOrElse(seed)
+                                            val pipeV                 =
+                                                ConnectorPipe_Module.FullDescrResult.extractPipe(fdResult)
+                                            val pipeSlot              = pipeV match
                                                 case Validated.Valid(pipe) =>
-                                                    tcThermal13384.mkSlot(
-                                                        FluePipeT,
-                                                        "Flue",
-                                                        FlueGas,
-                                                        FluePipe_Module_13384.unwrap(pipe)
+                                                    ConnectorPipe_Module.foldPipeCanBe(pipe)  (
+                                                        onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
+                                                        onFullDescr = fd =>
+                                                            tcThermal13384.mkSlot(
+                                                                ConnectorPipeT,
+                                                                "Connector",
+                                                                FlueGas,
+                                                                ConnectorPipe_Module.unwrap(fd)
+                                                            )
                                                     )
                                                 case _                     =>
-                                                    PipeSlot.noop(FluePipeT, "Flue")
-                                            (acc :+ pipeSlot, newFrame)
-                                        case ConnectorSlot(descr)   =>
-                                            if descr.isEmpty then
-                                                (acc :+ PipeSlot.noop(ConnectorPipeT, "Connector"), prevFrame)
-                                            else
-                                                val (fdResult, ffV) =
-                                                    ConnectorPipe_Module
-                                                        .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                                val newFrame        = ffV.toOption.flatten.orElse(prevFrame)
-                                                val pipeV           =
-                                                    ConnectorPipe_Module.FullDescrResult.extractPipe(fdResult)
-                                                val pipeSlot        = pipeV match
-                                                    case Validated.Valid(pipe) =>
-                                                        ConnectorPipe_Module.foldPipeCanBe(pipe)  (
-                                                            onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
-                                                            onFullDescr = fd =>
-                                                                tcThermal13384.mkSlot(
-                                                                    ConnectorPipeT,
-                                                                    "Connector",
-                                                                    FlueGas,
-                                                                    ConnectorPipe_Module.unwrap(fd)
-                                                                )
-                                                        )
-                                                    case _                     =>
-                                                        PipeSlot.noop(ConnectorPipeT, "Connector")
-                                                (acc :+ pipeSlot, newFrame)
-                                        case ChimneySlot(descr)     =>
-                                            val chimneyFrame = prevFrame
-                                            val fdResult     = ChimneyPipe_Module
-                                                .mkPipeFromIncrDescr(descr, chimneyFrame)
-                                            val pipeV        =
-                                                ChimneyPipe_Module.FullDescrResult.extractPipe(fdResult)
-                                            val pipeSlot     = pipeV match
-                                                case Validated.Valid(pipe) =>
-                                                    tcThermal13384.mkSlot(
-                                                        ChimneyPipeT,
-                                                        "Chimney",
-                                                        FlueGas,
-                                                        ChimneyPipe_Module.unwrap(pipe)
-                                                    )
-                                                case _                     =>
-                                                    PipeSlot.noop(ChimneyPipeT, "Chimney")
-                                            (acc :+ pipeSlot, prevFrame) // chimney doesn't update frame
-                                        case NoFlueSlot             =>
-                                            (acc :+ PipeSlot.noop(NoFluePipeT, "NoFlue"), prevFrame)
+                                                    PipeSlot.noop(ConnectorPipeT, "Connector")
+                                            (acc :+ pipeSlot, nextSeed)
+                                    case ChimneySlot(descr)     =>
+                                        val (fdResult, nextSeedV) = ChimneyPipe_Module
+                                            .mkPipeFromIncrDescr(descr, seed)
+                                        val nextSeed              = nextSeedV.getOrElse(seed)
+                                        val pipeV                 =
+                                            ChimneyPipe_Module.FullDescrResult.extractPipe(fdResult)
+                                        val pipeSlot              = pipeV match
+                                            case Validated.Valid(pipe) =>
+                                                tcThermal13384.mkSlot(
+                                                    ChimneyPipeT,
+                                                    "Chimney",
+                                                    FlueGas,
+                                                    ChimneyPipe_Module.unwrap(pipe)
+                                                )
+                                            case _                     =>
+                                                PipeSlot.noop(ChimneyPipeT, "Chimney")
+                                        (acc :+ pipeSlot, nextSeed)
+                                    case NoFlueSlot             =>
+                                        (acc :+ PipeSlot.noop(NoFluePipeT, "NoFlue"), seed)
                             }
 
                         // Seed Stage 2 with the UpstreamState derived from the LAST Stage 1 result.

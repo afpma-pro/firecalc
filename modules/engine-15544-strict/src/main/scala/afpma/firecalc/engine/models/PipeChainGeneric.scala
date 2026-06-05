@@ -10,7 +10,6 @@ import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers
-import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import cats.data.Validated
 
@@ -50,111 +49,108 @@ object PipeChainGeneric:
         slots           : Seq[PostFireboxPipeDescrSlot],
         initialDirection: Option[PostFireboxInitialDirection]
     ): Vector[SlotBuildResult] =
-        val initialFrame: Option[PipeFrame] = initialDirection.map(PostFireboxFrameHelpers.toPipeFrame)
+        val initialSeed = PipeBuildSeed.fromFrame(initialDirection.map(PostFireboxFrameHelpers.toPipeFrame))
         slots
-            .foldLeft((Vector.empty[SlotBuildResult], initialFrame)):
-                case ((results, prevFrame), slot) =>
-                    val result = buildSlot(slot, prevFrame)
-                    (results :+ result, result.finalFrame.orElse(prevFrame))
+            .foldLeft((Vector.empty[SlotBuildResult], initialSeed)):
+                case ((results, seed), slot) =>
+                    val result = buildSlot(slot, seed)
+                    (results :+ result, result.nextSeed)
             ._1
 
     private def buildSlot(
-        slot     : PostFireboxPipeDescrSlot,
-        prevFrame: Option[PipeFrame]
+        slot: PostFireboxPipeDescrSlot,
+        seed: PipeBuildSeed
     ): SlotBuildResult =
         slot match
-            case FlueSlot(descr)        => buildFlue15544(descr, prevFrame)
-            case ThermalFlueSlot(descr) => buildThermalFlue(descr, prevFrame)
-            case ConnectorSlot(descr)   => buildThermal(ConnectorPipeT, "Connector", descr, prevFrame)
-            case ChimneySlot(descr)     => buildThermal(ChimneyPipeT, "Chimney", descr, prevFrame)
+            case FlueSlot(descr)        => buildFlue15544(descr, seed)
+            case ThermalFlueSlot(descr) => buildThermalFlue(descr, seed)
+            case ConnectorSlot(descr)   => buildThermal(ConnectorPipeT, "Connector", descr, seed)
+            case ChimneySlot(descr)     => buildThermal(ChimneyPipeT, "Chimney", descr, seed)
             case NoFlueSlot             =>
                 SlotBuildResult(
                     NoFluePipeT,
                     "NoFlue",
                     Validated.validNel(()              ),
                     Validated.validNel((_: Int) => None),
-                    prevFrame
+                    seed
                 )
 
     // ── FlowOnly 15544 flue ─────────────────────────────────────────────
 
     private def buildFlue15544(
-        descr    : Seq[FluePipe_Module_15544.incremental.IncrDescr],
-        prevFrame: Option[PipeFrame]
+        descr: Seq[FluePipe_Module_15544.incremental.IncrDescr],
+        seed : PipeBuildSeed
     ): SlotBuildResult =
         import FluePipe_Module_15544.FullDescrResult.given
-        import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
+        import FluePipe_Module_15544.toFullDescrWithSeed
         val flueResult = FluePipe_Module_15544.incremental
             .define(descr*)
-            .toFullDescrWithExternalInitialFrame(prevFrame)
+            .toFullDescrWithSeed(seed)
         val fullDescrResult: FluePipe_Module_15544.FullDescrResult = flueResult.map((ids, fd, _) => (ids, fd))
         val pipe       = FluePipe_Module_15544.FullDescrResult.extractPipe(fullDescrResult)
         val mappingsV  = FluePipe_Module_15544.FullDescrResult.extractIdsMapping(fullDescrResult)
         val mappingFn  = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
-        val finalFrame = flueResult.map(_._3).toOption.flatten
-        SlotBuildResult(FluePipeT, "Flue", pipe, mappingFn, finalFrame)
+        val nextSeed   = flueResult.map(_._3).getOrElse(seed)
+        SlotBuildResult(FluePipeT, "Flue", pipe, mappingFn, nextSeed)
 
     // ── Thermal 13384 flue (MCE variant, accepts external frame) ────────
 
     private def buildThermalFlue(
-        descr    : Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
-        prevFrame: Option[PipeFrame]
+        descr: Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
+        seed : PipeBuildSeed
     ): SlotBuildResult =
-        val (fullDescrResult, finalFrameV) =
-            FluePipe_Module_13384.mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-        val pipe                           = FluePipe_Module_13384.FullDescrResult.extractPipe(fullDescrResult)
-        val mappingsV                      = FluePipe_Module_13384.FullDescrResult.extractIdsMapping(fullDescrResult)
-        val mappingFn                      = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
-        val finalFrame                     = finalFrameV.toOption.flatten
-        SlotBuildResult(FluePipeT, "Flue", pipe, mappingFn, finalFrame)
+        val (fullDescrResult, nextSeedV) =
+            FluePipe_Module_13384.mkPipeFromIncrDescrWithSeed(descr, seed)
+        val pipe                         = FluePipe_Module_13384.FullDescrResult.extractPipe(fullDescrResult)
+        val mappingsV                    = FluePipe_Module_13384.FullDescrResult.extractIdsMapping(fullDescrResult)
+        val mappingFn                    = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
+        val nextSeed                     = nextSeedV.getOrElse(seed)
+        SlotBuildResult(FluePipeT, "Flue", pipe, mappingFn, nextSeed)
 
     // ── Thermal 13384 (connector / chimney) ─────────────────────────────
 
     private def buildThermal(
-        pipeType : PipeType,
-        label    : String,
-        descr    : Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
-        prevFrame: Option[PipeFrame]
+        pipeType: PipeType,
+        label   : String,
+        descr   : Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
+        seed    : PipeBuildSeed
     ): SlotBuildResult =
         pipeType match
-            case ConnectorPipeT => buildConnector(descr, prevFrame)
-            case ChimneyPipeT   => buildChimney(descr, prevFrame)
+            case ConnectorPipeT => buildConnector(descr, seed)
+            case ChimneyPipeT   => buildChimney(descr, seed)
             case NoFluePipeT    =>
                 SlotBuildResult(
                     NoFluePipeT,
                     "NoFlue",
                     Validated.validNel(()              ),
                     Validated.validNel((_: Int) => None),
-                    prevFrame
+                    seed
                 )
             case other          =>
                 throw new IllegalArgumentException(s"Unexpected thermal pipe type: $other")
 
     private def buildConnector(
-        descr    : Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
-        prevFrame: Option[PipeFrame]
+        descr: Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
+        seed : PipeBuildSeed
     ): SlotBuildResult =
-        val (fullDescrResult, finalFrameV) =
-            ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-        val pipe                           = ConnectorPipe_Module.FullDescrResult.extractPipe(fullDescrResult)
-        val mappingsV                      = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(fullDescrResult)
-        val mappingFn                      = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
-        val finalFrame                     = finalFrameV.toOption.flatten
-        SlotBuildResult(ConnectorPipeT, "Connector", pipe, mappingFn, finalFrame)
+        val (fullDescrResult, nextSeedV) =
+            ConnectorPipe_Module.mkPipeFromIncrDescrWithSeed(descr, seed)
+        val pipe                         = ConnectorPipe_Module.FullDescrResult.extractPipe(fullDescrResult)
+        val mappingsV                    = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(fullDescrResult)
+        val mappingFn                    = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
+        val nextSeed                     = nextSeedV.getOrElse(seed)
+        SlotBuildResult(ConnectorPipeT, "Connector", pipe, mappingFn, nextSeed)
 
     private def buildChimney(
-        descr    : Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
-        prevFrame: Option[PipeFrame]
+        descr: Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
+        seed : PipeBuildSeed
     ): SlotBuildResult =
-        // ChimneyPipe_Module doesn't have mkPipeFromIncrDescrWithFinalFrame,
-        // but it does have mkPipeFromIncrDescr with externalInitialFrame.
-        // We build and extract, but no final frame is needed (chimney is terminal).
-        val fullDescrResult =
-            ChimneyPipe_Module.mkPipeFromIncrDescr(descr, prevFrame)
-        val pipe            = ChimneyPipe_Module.FullDescrResult.extractPipe(fullDescrResult)
-        val mappingsV       = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(fullDescrResult)
-        val mappingFn       = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
-        // No final frame for chimney (it's terminal in the chain)
-        SlotBuildResult(ChimneyPipeT, "Chimney", pipe, mappingFn, None)
+        val (fullDescrResult, nextSeedV) =
+            ChimneyPipe_Module.mkPipeFromIncrDescr(descr, seed)
+        val pipe                         = ChimneyPipe_Module.FullDescrResult.extractPipe(fullDescrResult)
+        val mappingsV                    = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(fullDescrResult)
+        val mappingFn                    = mappingsV.map(m => (i: Int) => m.getUnsafe(i).map(_.unwrap.unwrap))
+        val nextSeed                     = nextSeedV.getOrElse(seed)
+        SlotBuildResult(ChimneyPipeT, "Chimney", pipe, mappingFn, nextSeed)
 
 end PipeChainGeneric

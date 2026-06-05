@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.alg
 
+import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
@@ -121,12 +122,17 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr]
         def toFullDescr(): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr)] =
-            buildFrom(piDescr, externalInitialFrame = None).map((ids, fd, _) => (ids, fd))
+            buildFrom(piDescr, PipeBuildSeed.default).map((ids, fd, _) => (ids, fd))
 
         /** Like toFullDescr(), but also returns the final PipeFrame (if direction tracking was active). */
         def toFullDescrWithFinalFrame()
             : ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
-            buildFrom(piDescr, externalInitialFrame = None)
+            buildFrom(piDescr, PipeBuildSeed.default).map((ids, fd, nextSeed) => (ids, fd, nextSeed.frame))
+
+        def toFullDescrWithSeed(
+            seed: PipeBuildSeed
+        ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, PipeBuildSeed)] =
+            buildFrom(piDescr, seed)
 
         /**
          * Like toFullDescr(), but seeds the initial direction from an external frame
@@ -136,11 +142,12 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         def toFullDescrWithExternalInitialFrame(
             externalInitialFrame: Option[PipeFrame]
         ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
-            buildFrom(piDescr, externalInitialFrame)
+            buildFrom(piDescr, PipeBuildSeed.fromFrame(externalInitialFrame))
+                .map((ids, fd, nextSeed) => (ids, fd, nextSeed.frame))
 
         /** Returns the PropsState after folding only the first n descriptors — used to prefill UI fields at insert position. */
         def propsStateAtPrefix(n: Int): ValidatedResult[PropsState] =
-            foldFromInit(piDescr, piDescr.listIncrDescr().take(n), externalInitialFrame = None).map(_._3)
+            foldFromInit(piDescr, piDescr.listIncrDescr().take(n), PipeBuildSeed.default).map(_._3)
 
     /**
      * Fold the given ops vector starting from the initial PropsState / PipeFullDescr / empty IdsMapping.
@@ -148,12 +155,13 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      * Callers wrap this with boundary / post-build validation as appropriate.
      */
     private def foldFromInit(
-        piDescr             : PipeIncrDescr,
-        ops                 : Vector[Id_IncrDescr],
-        externalInitialFrame: Option[PipeFrame]
+        piDescr: PipeIncrDescr,
+        ops    : Vector[Id_IncrDescr],
+        seed   : PipeBuildSeed
     ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
         val iPropsState0 = mkInitPropsState(piDescr)
-        val iPropsState  = externalInitialFrame.fold(iPropsState0)(applyExternalFrame(iPropsState0, _))
+        val iPropsState1 = applyExternalNFlows(iPropsState0, seed.nFlows)
+        val iPropsState  = seed.frame.fold(iPropsState1)(applyExternalFrame(iPropsState1, _))
         buildIncrDescr(
             mkInitPipeFullDescr(piDescr),
             IdsMapping.empty,
@@ -163,15 +171,21 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         )
 
     private def buildFrom(
-        piDescr             : PipeIncrDescr,
-        externalInitialFrame: Option[PipeFrame]
-    ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
+        piDescr: PipeIncrDescr,
+        seed   : PipeBuildSeed
+    ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, PipeBuildSeed)] =
         val iListIncrDescr = piDescr.listIncrDescr()
         validateBoundaryElements(iListIncrDescr) *>
-            foldFromInit(piDescr, iListIncrDescr, externalInitialFrame)
+            foldFromInit(piDescr, iListIncrDescr, seed)
                 .andThen: (ids, fd, finalState) =>
                     postBuildValidation(iListIncrDescr, finalState) *>
-                        (ids, fd, currentFrameFromPropsState(finalState)).validNel
+                        (ids, fd, nextSeedFromFinalState(seed, finalState)).validNel
+
+    private def nextSeedFromFinalState(seed: PipeBuildSeed, finalState: PropsState): PipeBuildSeed =
+        PipeBuildSeed (
+            frame  = currentFrameFromPropsState(finalState).orElse(seed.frame),
+            nFlows = currentNFlowsFromPropsState(finalState).getOrElse(seed.nFlows)
+        )
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
 
@@ -188,6 +202,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      * Concrete builders that support direction tracking override this.
      */
     protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] = None
+
+    protected def currentNFlowsFromPropsState(s: PropsState): Option[NbOfFlows] = None
 
     /**
      * Hook for post-build validation. Called after all incremental descriptions have been
@@ -207,6 +223,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      * Concrete builders that support direction tracking override this.
      */
     protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState = s
+
+    protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState = s
 
     extension (propsState: PropsState) {
 

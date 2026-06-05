@@ -51,19 +51,21 @@ object PipeChain_15544_MCE:
 
     def build(d: Descriptors): Built =
         // Flue pipe → capture final frame
-        val (fluePipeResult, flueFinalFrameV) =
-            FluePipe_Module_13384.mkPipeFromIncrDescrWithFinalFrame(d.flue)
-        val flueFinalFrame                    = flueFinalFrameV.toOption.flatten
+        val initialSeed                 = PipeBuildSeed.default
+        val (fluePipeResult, flueSeedV) =
+            FluePipe_Module_13384.mkPipeFromIncrDescrWithSeed(d.flue, initialSeed)
+        val flueSeed                    = flueSeedV.getOrElse(initialSeed)
+        val flueFinalFrame              = flueSeed.frame
 
         // Connector pipe with flue's final frame → capture final frame
-        val (connectorPipeResult, connectorFinalFrameV) =
-            ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(d.connector, flueFinalFrame)
-        val connectorFinalFrame                         = connectorFinalFrameV.toOption.flatten
+        val (connectorPipeResult, connectorSeedV) =
+            ConnectorPipe_Module.mkPipeFromIncrDescrWithSeed(d.connector, flueSeed)
+        val connectorSeed                         = connectorSeedV.getOrElse(flueSeed)
+        val connectorFinalFrame                   = connectorSeed.frame
 
         // Chimney pipe with connector's final frame, falling back to flue's frame
-        val chimneyExternalFrame = connectorFinalFrame.orElse(flueFinalFrame)
-        val chimneyPipeResult    =
-            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, chimneyExternalFrame)
+        val chimneyPipeResult =
+            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorSeed)._1
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 

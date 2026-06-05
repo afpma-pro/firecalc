@@ -369,14 +369,20 @@ abstract class EN15544_MCE_Application(
          * rejected — MCE uses thermal flue pipes exclusively. `ChimneySlot` inside the flue region
          * is defensively rejected (unreachable: chimney is always terminal).
          */
-        override protected lazy val flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], Option[PipeFrame])] =
+        override protected lazy val flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], PipeBuildSeed)] =
             import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
             val pfbSlots            = en15544_mce.postFireboxPipeSlots
             val lastFluePipeSlotIdx = pfbSlots.lastIndexWhere {
                 case FlueSlot(_) | ThermalFlueSlot(_) => true
                 case _                                => false
             }
-            if lastFluePipeSlotIdx < 0 then Validated.validNel((Vector.empty[PipeResult], None))
+            if lastFluePipeSlotIdx < 0 then
+                Validated.validNel(
+                    (
+                        Vector.empty[PipeResult],
+                        PipeBuildSeed.fromFrame(en15544_mce.postFireboxInitialDirection.map(toPipeFrame))
+                    )
+                )
             else
                 val flueRegionSlots = pfbSlots.take(lastFluePipeSlotIdx + 1)
                 given Params_13384  = p
@@ -399,24 +405,23 @@ abstract class EN15544_MCE_Application(
                             en15544_mce.en13384_heatingAppliance_massFlows
                         )
 
-                        val initialFrame: Option[PipeFrame] =
-                            en15544_mce.postFireboxInitialDirection.map(toPipeFrame)
+                        val initialSeed =
+                            PipeBuildSeed.fromFrame(en15544_mce.postFireboxInitialDirection.map(toPipeFrame))
 
-                        // Build a PipeSlot for each flue region slot, threading prevFrame
+                        // Build a PipeSlot for each flue region slot, threading descriptor seed
                         // through the fold accumulator (no mutable state).
-                        val slotsV: VNelMcalcErr[(Vector[PipeSlot], Option[PipeFrame])] =
-                            flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], Option[PipeFrame])]](
-                                Validated.validNel((Vector.empty, initialFrame))
+                        val slotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
+                            flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
+                                Validated.validNel((Vector.empty, initialSeed))
                             ) { (accV, slot) =>
-                                accV.andThen { case (acc, prevFrame) =>
+                                accV.andThen { case (acc, seed) =>
                                     slot match
                                         case ThermalFlueSlot(descr) =>
-                                            val (fdResult, ffV) =
+                                            val (fdResult, nextSeedV) =
                                                 FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithFinalFrame(descr, prevFrame)
-                                            val newFrame        =
-                                                ffV.toOption.flatten.orElse(prevFrame)
-                                            val pipeV           =
+                                                    .mkPipeFromIncrDescrWithSeed(descr, seed)
+                                            val nextSeed              = nextSeedV.getOrElse(seed)
+                                            val pipeV                 =
                                                 FluePipe_Module_13384.FullDescrResult
                                                     .extractPipe(fdResult)
                                             pipeV match
@@ -429,12 +434,12 @@ abstract class EN15544_MCE_Application(
                                                                 FlueGas,
                                                                 FluePipe_Module_13384.unwrap(pipe)
                                                             ),
-                                                            newFrame
+                                                            nextSeed
                                                         )
                                                     )
                                                 case _                     =>
                                                     Validated.validNel(
-                                                        (acc :+ PipeSlot.noop(FluePipeT, "Flue"), newFrame)
+                                                        (acc :+ PipeSlot.noop(FluePipeT, "Flue"), nextSeed)
                                                     )
                                         case ConnectorSlot(descr)   =>
                                             if descr.isEmpty then
@@ -442,19 +447,15 @@ abstract class EN15544_MCE_Application(
                                                     (
                                                         acc :+ PipeSlot
                                                             .noop(ConnectorPipeT, "Connector"),
-                                                        prevFrame
+                                                        seed
                                                     )
                                                 )
                                             else
-                                                val (fdResult, ffV) =
+                                                val (fdResult, nextSeedV) =
                                                     ConnectorPipe_Module
-                                                        .mkPipeFromIncrDescrWithFinalFrame(
-                                                            descr,
-                                                            prevFrame
-                                                        )
-                                                val newFrame        =
-                                                    ffV.toOption.flatten.orElse(prevFrame)
-                                                val pipeV           =
+                                                        .mkPipeFromIncrDescrWithSeed(descr, seed)
+                                                val nextSeed              = nextSeedV.getOrElse(seed)
+                                                val pipeV                 =
                                                     ConnectorPipe_Module.FullDescrResult
                                                         .extractPipe(fdResult)
                                                 pipeV match
@@ -477,7 +478,7 @@ abstract class EN15544_MCE_Application(
                                                                     )
                                                             )
                                                         Validated.validNel(
-                                                            (acc :+ connectorSlot, newFrame)
+                                                            (acc :+ connectorSlot, nextSeed)
                                                         )
                                                     case _                     =>
                                                         Validated.validNel(
@@ -486,7 +487,7 @@ abstract class EN15544_MCE_Application(
                                                                     ConnectorPipeT,
                                                                     "Connector"
                                                                 ),
-                                                                newFrame
+                                                                nextSeed
                                                             )
                                                         )
                                         case FlueSlot(_)            =>
@@ -515,7 +516,7 @@ abstract class EN15544_MCE_Application(
                                 }
                             }
 
-                        slotsV.andThen { case (slots, lastFrame) =>
+                        slotsV.andThen { case (slots, lastSeed) =>
                             // Seed UpstreamState density/velocity for the first head
                             // slot's en13384_pg (pressure-gain) calculation.
                             //
@@ -564,7 +565,7 @@ abstract class EN15544_MCE_Application(
                                         case Some(descr) =>
                                             val (fdResult, _) =
                                                 FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithFinalFrame(descr, initialFrame)
+                                                    .mkPipeFromIncrDescrWithSeed(descr, initialSeed)
                                             FluePipe_Module_13384.FullDescrResult.extractPipe(
                                                 fdResult
                                             ) match
@@ -621,7 +622,7 @@ abstract class EN15544_MCE_Application(
                                 }
                             }
                             folded match
-                                case Right((_, results)) => Validated.validNel((results, lastFrame))
+                                case Right((_, results)) => Validated.validNel((results, lastSeed))
                                 case Left(err)           => Validated.invalidNel(err)
                         }
 
