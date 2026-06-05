@@ -258,7 +258,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             ] { case (i, aa: SetNumberOfFlows, x) => (i, aa, x) } { (iaax, sig) =>
                 renderElemTyped[SetNumberOfFlows]  (
                     iaax._1,
-                    I18N.set_prop.SetNumberOfFlows,
+                    I18N.set_prop.SetNumberOfFlows_fieldName,
                     iaax._2,
                     sig,
                     isProperty   = true,

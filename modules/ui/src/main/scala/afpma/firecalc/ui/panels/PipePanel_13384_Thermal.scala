@@ -367,7 +367,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             } { (iaax, sig) =>
                 renderElemTyped[SetNumberOfFlows]  (
                     iaax._1,
-                    I18N.set_prop.SetNumberOfFlows,
+                    I18N.set_prop.SetNumberOfFlows_fieldName,
                     iaax._2,
                     sig,
                     isProperty   = true,

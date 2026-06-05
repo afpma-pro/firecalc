@@ -424,7 +424,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
             } { (iix, sig) =>
                 renderElemTyped[SetNumberOfFlows]  (
                     iix._1,
-                    I18N.set_prop.SetNumberOfFlows,
+                    I18N.set_prop.SetNumberOfFlows_fieldName,
                     iix._2,
                     sig,
                     isProperty   = true,
