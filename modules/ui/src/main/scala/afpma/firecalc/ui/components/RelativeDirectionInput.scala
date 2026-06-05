@@ -212,14 +212,23 @@ case class RelativeDirectionInput(
         // .composeChanges(_.take(1)) lets through at most 1 subsequent change.
         // Net effect: fires for initial value, plus up to 1 change (in case
         // context signals aren't ready at mount but arrive shortly after).
+        //
+        // Also handles freshly-inserted elements whose absDir is None (e.g.
+        // air-intake pipe which bypasses ChainEditDispatcher): when externalStSig
+        // is None because absDir is unset, fall back to the computed default
+        // (side=Right, theta=0) and write it to absDirVar so the badge shows
+        // the actual outgoing direction instead of falling back to the incoming one.
         val initialSync =
             externalStSig
-                .composeChanges(_.take(1))
-                --> Observer[Option[(RelativeSide, Double)]] {
-                    case Some((side, theta)) =>
+                .composeChanges(identity)
+                .withCurrentValueOf(localFdSig)
+                .withCurrentValueOf(absDirVar.signal)
+                --> Observer[(Option[(RelativeSide, Double)], Option[AbsoluteDirection], Option[AbsoluteDirection])] {
+                    case (Some((side, theta)), _, _) =>
                         sideVar.set (side )
                         thetaVar.set(theta)
-                    case None                => ()
+                    case (None, localFd, curAbsDir ) =>
+                        if curAbsDir.isEmpty then localFd.foreach(fd => absDirVar.set(Some(fd)))
                 }
         div(
             cls := "flex flex-row items-end gap-2 mt-1",

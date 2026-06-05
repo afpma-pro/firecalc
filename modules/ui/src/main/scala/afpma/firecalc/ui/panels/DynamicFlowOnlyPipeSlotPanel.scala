@@ -294,9 +294,15 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                                         // the user actually pinned. The badge's isCompatibleSig already
                                         // marks unreachable pins with a warning; let users see their
                                         // pin instead of the projection.
-                                        dc.absDir.map: fd =>
-                                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                            idx -> Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                        // When absDir is None (freshly inserted element), fall back
+                                        // to the incoming frame direction — mirrors thermal panel.
+                                        val dir = dc.absDir match
+                                            case Some(fd) =>
+                                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            case None     =>
+                                                frameBefore.direction
+                                        Some(idx -> dir)
                                     case _ : AddFlowOnlyPipeElement_15544 =>
                                         Some(idx -> frameBefore.direction)
                                     case _ => None

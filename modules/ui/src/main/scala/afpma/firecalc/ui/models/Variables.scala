@@ -287,12 +287,27 @@ lazy val slotFinalFrames_sig: Signal[Vector[Option[PipeFrame]]] =
     slotBuildResults_sig.map(_.map(_.finalFrame))
 
 /**
- * The initial frame for slot at index `idx`: None for slot 0,
- * otherwise the final frame of the previous slot.
+ * The initial frame for slot at index `idx`: derived from the V7 wrapper-level
+ * `postFireboxInitialDir_var` for slot 0, otherwise the final frame of the previous slot.
+ *
+ * Slot 0 has no preceding slot, so the frame must come from the wrapper direction —
+ * the same value the engine uses (`PipeChainGeneric.build` / `wrapperInitialDirection`).
+ * Previously this returned `Signal.fromValue(None)`, which left `frameBefore` permanently
+ * empty for the first slot, causing the direction badge to render `emptyNode` for every
+ * element with `absDir = None`.
  */
 def slotInitialFrameSig(idx: Int): Signal[Option[PipeFrame]] =
-    if idx <= 0 then Signal.fromValue(None                                  )
-    else slotFinalFrames_sig.map     (frames => frames.lift(idx - 1).flatten)
+    if idx <= 0 then
+        postFireboxInitialDir_var.signal.map: dir =>
+            Some(
+                PipeFrame.initial(
+                    Vec3.fromAzimuthElevation(
+                        AzimuthDirection.toDegrees    (dir.azimuth    ),
+                        InclinationDirection.toDegrees(dir.inclination)
+                    )
+                )
+            )
+    else slotFinalFrames_sig.map(frames => frames.lift(idx - 1).flatten)
 
 // ── Slot-indexed position tracking ───────────────────────────────
 
