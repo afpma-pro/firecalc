@@ -53,6 +53,7 @@ object I18nData_UI:
         menu                      : String,
         order_pdf_report          : String,
         redo                      : String,
+        switch_dimensions         : String,
         undo                      : String,
         units                     : String
     )

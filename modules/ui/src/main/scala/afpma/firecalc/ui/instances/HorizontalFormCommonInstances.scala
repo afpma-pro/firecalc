@@ -122,8 +122,30 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_PipeShape_Rectangle: DisplayUnits => Locale => Form[PipeShape.Rectangle] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form()
-        autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
+        given Form[QtyD[Meter]]                = given_dual_Length_mm_cm.form()
+        val autoDerived                        = autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
+        val d                                  = autoDerived.defaultable
+        given ValidateVar[PipeShape.Rectangle] = autoDerived.validateVar
+        Form.makeFor[PipeShape.Rectangle](d): (v, fc) =>
+            (_: FormRenderer) ?=>
+                import com.raquo.laminar.api.L.*
+                import afpma.firecalc.ui.icons.lucide
+                import afpma.firecalc.ui.i18n.implicits.I18N_UI
+                div(
+                    cls := "flex flex-row flex-wrap items-end gap-2",
+                    autoDerived.render(v, fc),
+                    button            (
+                        cls := "btn btn-xs btn-outline",
+                        tpe := "button",
+                        lucide.`arrows-left-right`(w = 14, h = 14, stroke_width = 1.5),
+                        I18N_UI.buttons.switch_dimensions,
+                        onClick --> { _ =>
+                            val r       = v.now()
+                            val swapped = PipeShape.Rectangle(r.b, r.a)
+                            v.set(swapped)
+                        }
+                    )
+                )
 
     given horizontal_form_PipeShape: DisplayUnits => Locale => Form[PipeShape] =
         autoDeriveAndOverwriteFieldNames[PipeShape]
