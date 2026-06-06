@@ -17,6 +17,8 @@ import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.PropagationStrategy.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 
 import afpma.firecalc.ui.models.EngineState
 
@@ -43,16 +45,24 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
      * Drive the dispatcher end-to-end against a raw user edit using RigidRotation.
      *
      *  1. `detectEdit(oldSlots, rawNewSlots)` — locate the edited element.
-     *  2. `ChainEditDispatcher(oldSlots, rawNewSlots, edit, RigidRotation)` — apply strategy.
+     *  2. `ChainEditDispatcher(..., RigidRotation, initialFrame)` — apply strategy with the fixture's
+     *     initial frame.
      */
     private def simulateAngleEditAndRotate(
-        oldSlots   : Seq[PostFireboxPipeDescrSlot],
-        rawNewSlots: Seq[PostFireboxPipeDescrSlot]
+        oldSlots    : Seq[PostFireboxPipeDescrSlot],
+        rawNewSlots : Seq[PostFireboxPipeDescrSlot],
+        initialFrame: Option[PipeFrame]
     ): Seq[PostFireboxPipeDescrSlot] =
         val edit = ChainEditDispatcher
             .detectEdit(oldSlots, rawNewSlots)
             .getOrElse(fail("detectEdit failed to spot the angle change"))
-        ChainEditDispatcher(oldSlots, rawNewSlots, edit, RigidRotation)
+        ChainEditDispatcher(oldSlots, rawNewSlots, edit, RigidRotation, initialFrame)
+
+    private def exampleInitialFrame: Option[PipeFrame] =
+        val initialDir = EngineState.example_projet_15544.post_firebox_pipes.initialDirection
+        val azDeg      = AzimuthDirection.toDegrees(initialDir.azimuth)
+        val elDeg      = InclinationDirection.toDegrees(initialDir.inclination)
+        Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
 
     /** Find a direction-change element in a FlueSlot by its display name. */
     private def findFlueBend(slot: PostFireboxPipeDescrSlot, name: String): AddSharpeAngle_0_to_180 =
@@ -77,8 +87,9 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     "scenario 1: change 'virage avant descente' angle from 90° to 45°" - {
 
-        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
-        val oldSlots = oldPipes.slots
+        val oldPipes     = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots     = oldPipes.slots
+        val initialFrame = exampleInitialFrame
 
         val (flueSlotIdx, flueDescr) = oldSlots.zipWithIndex
             .collectFirst { case (FlueSlot(d), i) =>
@@ -100,7 +111,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
         )
         val rawNewSlots = oldSlots.updated(flueSlotIdx, FlueSlot(editedDescr))
 
-        val finalSlots = simulateAngleEditAndRotate(oldSlots, rawNewSlots)
+        val finalSlots = simulateAngleEditAndRotate(oldSlots, rawNewSlots, initialFrame)
 
         "'arrière banc' direction should be (Right, inclination ≈ -45°)" in {
             // 'arrière banc' is a section — its direction is the outgoing direction of the
@@ -127,8 +138,9 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     "scenario 2: insert a 45° bend into existing FlueSlot" - {
 
-        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
-        val oldSlots = oldPipes.slots
+        val oldPipes     = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots     = oldPipes.slots
+        val initialFrame = exampleInitialFrame
 
         val (flueSlotIdx, flueDescr) = oldSlots.zipWithIndex
             .collectFirst { case (FlueSlot(d), i) =>
@@ -158,13 +170,16 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
             ie.deflectionDeg `shouldBe` 45.0
         }
 
-        "should set absDir on inserted element after dispatch" in {
+        "should set the expected absDir on inserted element after dispatch" in {
             val ie         = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
-            val finalSlots = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation)
+            val finalSlots = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation, initialFrame)
             val inserted   = finalSlots(flueSlotIdx) match
                 case FlueSlot(d) => d(insertAt).asInstanceOf[AddSharpeAngle_0_to_180]
                 case _           => fail("expected FlueSlot")
-            inserted.absDir.isDefined `shouldBe` true
+            val abs        = inserted.absDir.getOrElse(fail("absDir missing"))
+            withClue(s"full absDir = $abs:"):
+                abs.azimuth.shouldBe                    (Some(AzimuthDirection.Right))
+                inclinationDeg(abs.inclination).shouldBe(-45.0 +- 0.5                )
         }
     }
 
@@ -172,8 +187,9 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     "scenario 3: append a new ThermalFlueSlot with a direction-change element" - {
 
-        val oldPipes = EngineState.example_projet_15544.post_firebox_pipes
-        val oldSlots = oldPipes.slots
+        val oldPipes     = EngineState.example_projet_15544.post_firebox_pipes
+        val oldSlots     = oldPipes.slots
+        val initialFrame = exampleInitialFrame
 
         // Create a new ThermalFlueSlot with a bend using case classes directly.
         // Minimal set of elements — just enough for the detector to find the direction change.
@@ -212,7 +228,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         "should set absDir and rotate downstream after dispatch" in {
             val ie           = edit.get.asInstanceOf[ChainEditDispatcher.InsertEdit]
-            val finalSlots   = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation)
+            val finalSlots   = ChainEditDispatcher(oldSlots, rawNewSlots, ie, RigidRotation, initialFrame)
             val insertedSlot = finalSlots(ie.coord.slotIdx) match
                 case ThermalFlueSlot(d) => d
                 case _                  => fail("expected ThermalFlueSlot")
