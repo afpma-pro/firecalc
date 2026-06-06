@@ -7,10 +7,14 @@ package afpma.firecalc.dto.v7
 
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 
-import afpma.firecalc.units.coulombutils.Length
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
 import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3
+import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
+import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
 
 import io.circe.Decoder
 import io.circe.Encoder
@@ -73,5 +77,115 @@ final case class PostFireboxPipes(
 )
 
 object PostFireboxPipes:
+    // ── Sanitizer: strip V7-forbidden legacy descriptor elements ────────
+
+    private val defaultInitialPosition: PostFireboxInitialPosition =
+        PostFireboxInitialPosition(0.cm, 0.cm, 0.cm)
+
+    private def extractInitialDirectionFlowOnly(
+        descr: Seq[FlowOnlyPipeDescr_15544_V3]
+    ): PostFireboxInitialDirection =
+        descr
+            .collectFirst:
+                case SetFlowOnlyPipeProp_15544_V3.SetInitialDirection(az, incl) =>
+                    PostFireboxInitialDirection(az, incl)
+            .getOrElse(PostFireboxInitialDirection.default)
+
+    private def extractInitialPositionFlowOnly(
+        descr: Seq[FlowOnlyPipeDescr_15544_V3]
+    ): Option[PostFireboxInitialPosition] =
+        descr.collectFirst:
+            case SetFlowOnlyPipeProp_15544_V3.SetInitialPosition(x, y, z) =>
+                PostFireboxInitialPosition(x, y, z)
+
+    private def extractInitialDirectionThermal(
+        descr: Seq[ThermalPipeDescr_13384_V3]
+    ): PostFireboxInitialDirection =
+        descr
+            .collectFirst:
+                case SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl) =>
+                    PostFireboxInitialDirection(az, incl)
+            .getOrElse(PostFireboxInitialDirection.default)
+
+    private def extractInitialPositionThermal(
+        descr: Seq[ThermalPipeDescr_13384_V3]
+    ): Option[PostFireboxInitialPosition] =
+        descr.collectFirst:
+            case SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z) =>
+                PostFireboxInitialPosition(x, y, z)
+
+    private def extractInitialFrame(
+        slot: PostFireboxPipeDescrSlot
+    ): (PostFireboxInitialDirection, Option[PostFireboxInitialPosition]) =
+        slot match
+            case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
+                (extractInitialDirectionFlowOnly(d), extractInitialPositionFlowOnly(d))
+            case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
+                (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
+            case PostFireboxPipeDescrSlot.ConnectorSlot(d)   =>
+                (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
+            case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
+                (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
+            case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                (PostFireboxInitialDirection.default, None)
+
+    private[dto] def stripDeprecatedFlowOnly15544(
+        descr: Seq[FlowOnlyPipeDescr_15544_V3]
+    ): Seq[FlowOnlyPipeDescr_15544_V3] =
+        descr.filterNot:
+            case _: SetFlowOnlyPipeProp_15544_V3.SetInitialDirection => true
+            case _: SetFlowOnlyPipeProp_15544_V3.SetInitialPosition  => true
+            case _: SetFlowOnlyPipeProp_15544_V3.SetFinalPosition    => true
+            case _ => false
+
+    private[dto] def stripDeprecatedThermal13384(
+        descr: Seq[ThermalPipeDescr_13384_V3]
+    ): Seq[ThermalPipeDescr_13384_V3] =
+        descr.filterNot:
+            case _: SetThermalPipeProp_13384_V3.SetInitialDirection => true
+            case _: SetThermalPipeProp_13384_V3.SetInitialPosition  => true
+            case _: SetThermalPipeProp_13384_V3.SetFinalPosition    => true
+            case _ => false
+
+    def sanitizeSlot(slot: PostFireboxPipeDescrSlot): PostFireboxPipeDescrSlot =
+        slot match
+            case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
+                PostFireboxPipeDescrSlot.FlueSlot(stripDeprecatedFlowOnly15544(d))
+            case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
+                PostFireboxPipeDescrSlot.ThermalFlueSlot(stripDeprecatedThermal13384(d))
+            case PostFireboxPipeDescrSlot.ConnectorSlot(d)   =>
+                PostFireboxPipeDescrSlot.ConnectorSlot(stripDeprecatedThermal13384(d))
+            case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
+                PostFireboxPipeDescrSlot.ChimneySlot(stripDeprecatedThermal13384(d))
+            case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                PostFireboxPipeDescrSlot.NoFlueSlot
+
+    def sanitize(pipes: PostFireboxPipes): PostFireboxPipes =
+        pipes.copy(slots = pipes.slots.map(sanitizeSlot))
+
+    def hasDeprecatedPostFireboxElement(slot: PostFireboxPipeDescrSlot): Boolean =
+        sanitizeSlot(slot) != slot
+
+    // ── Construction helpers ──────────────────────────────────────────
+
+    def clean(
+        initialDirection: PostFireboxInitialDirection,
+        initialPosition : PostFireboxInitialPosition,
+        slots           : Seq[PostFireboxPipeDescrSlot]
+    ): PostFireboxPipes =
+        sanitize(PostFireboxPipes(initialDirection, initialPosition, slots))
+
+    def fromLegacySlots(slots: Seq[PostFireboxPipeDescrSlot]): PostFireboxPipes =
+        slots.headOption match
+            case None            =>
+                PostFireboxPipes(PostFireboxInitialDirection.default, defaultInitialPosition, Seq.empty)
+            case Some(firstSlot) =>
+                val (initialDirection, initialPosition) = extractInitialFrame(firstSlot)
+                sanitize(PostFireboxPipes(initialDirection, initialPosition.getOrElse(defaultInitialPosition), slots))
+
+    // ── Codecs (sanitizing decoder, plain encoder) ─────────────────────
+
+    private val rawDecoder: Decoder[PostFireboxPipes] = semiauto.deriveDecoder
+
     given Encoder[PostFireboxPipes] = semiauto.deriveEncoder
-    given Decoder[PostFireboxPipes] = semiauto.deriveDecoder
+    given Decoder[PostFireboxPipes] = rawDecoder.map(PostFireboxPipes.sanitize)

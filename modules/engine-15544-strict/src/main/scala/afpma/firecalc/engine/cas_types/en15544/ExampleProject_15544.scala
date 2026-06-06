@@ -79,47 +79,47 @@ object ExampleProject_15544
     val accumulateur_descr =
         import FluePipe_Module_15544.*
         Seq(
-            roughness           (3.mm),
+            roughness           (3.mm                   ),
             innerShape(rectangle(251.mm, 230.mm)),
             // setInitialDirection (azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left
             // setInitialPosition  (-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
-            addSectionHorizontal("sortie foyer", 317.mm                    ),
+            addSectionHorizontal("sortie foyer", 317.mm ),
             addSharpAngle_90deg (
                 "virage avant descente",
                 AbsoluteDirection(None, InclinationDirection.Down)
             ), // Down
             innerShape(rectangle(251.mm, 220.mm)),
-            addSectionVertical  ("descente", -815.mm                       ),
+            addSectionVertical  ("descente", -815.mm    ),
             addSharpAngle_90deg (
                 "virage avant banc avant",
                 AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
             ), // Left
             innerShape(rectangle(220.mm, 240.mm)),
-            addSectionHorizontal("banc avant", 1792.mm                     ),
+            addSectionHorizontal("banc avant", 1792.mm  ),
             addSharpAngle_90deg (
                 "virage avant bout du banc",
                 AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
             ), // Rear
             innerShape(rectangle(200.mm, 240.mm)),
-            addSectionHorizontal("bout du banc", 437.mm                    ),
+            addSectionHorizontal("bout du banc", 437.mm ),
             addSharpAngle_90deg (
                 "virage avant banc arrière",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
             ), // Right
             innerShape(rectangle(190.mm, 240.mm)),
-            addSectionHorizontal("arrière banc", 2073.mm                   ),
+            addSectionHorizontal("arrière banc", 2073.mm),
             addSharpAngle_90deg (
                 "virage avant vers remontée",
                 AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
             ), // Rear
             innerShape(rectangle(210.mm, 240.mm)),
-            addSectionHorizontal("vers remontée", 437.mm                   ),
+            addSectionHorizontal("vers remontée", 437.mm),
             addSharpAngle_90deg (
                 "virage avant remontée",
                 AbsoluteDirection(None, InclinationDirection.Up)
             ), // Up
             innerShape(rectangle(210.mm, 220.mm)),
-            addSectionVertical  ("remontée", 980.mm                        )
+            addSectionVertical  ("remontée", 980.mm     )
         )
 
     val fluePipeDescr = accumulateur_descr

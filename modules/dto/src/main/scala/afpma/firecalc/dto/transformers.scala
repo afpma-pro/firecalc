@@ -371,62 +371,6 @@ object transformers:
 
     import afpma.firecalc.dto.v7.*
 
-    /** Strip SetInitialDirection, SetInitialPosition, SetFinalPosition from a FlowOnly descriptor seq. */
-    private def stripDeprecatedFlowOnly15544(
-        descr: Seq[FlowOnlyPipeDescr_15544_V3]
-    ): Seq[FlowOnlyPipeDescr_15544_V3] =
-        descr.filterNot:
-            case _: SetFlowOnlyPipeProp_15544_V3.SetInitialDirection => true
-            case _: SetFlowOnlyPipeProp_15544_V3.SetInitialPosition  => true
-            case _: SetFlowOnlyPipeProp_15544_V3.SetFinalPosition    => true
-            case _ => false
-
-    /** Strip SetInitialDirection, SetInitialPosition, SetFinalPosition from a Thermal descriptor seq. */
-    private def stripDeprecatedThermal13384(
-        descr: Seq[ThermalPipeDescr_13384_V3]
-    ): Seq[ThermalPipeDescr_13384_V3] =
-        descr.filterNot:
-            case _: SetThermalPipeProp_13384_V3.SetInitialDirection => true
-            case _: SetThermalPipeProp_13384_V3.SetInitialPosition  => true
-            case _: SetThermalPipeProp_13384_V3.SetFinalPosition    => true
-            case _ => false
-
-    /** Extract SetInitialDirection from a FlowOnly descriptor seq, or default. */
-    private def extractInitialDirectionFlowOnly(
-        descr: Seq[FlowOnlyPipeDescr_15544_V3]
-    ): PostFireboxInitialDirection =
-        descr
-            .collectFirst:
-                case SetFlowOnlyPipeProp_15544_V3.SetInitialDirection(az, incl) =>
-                    PostFireboxInitialDirection(az, incl)
-            .getOrElse(PostFireboxInitialDirection.default)
-
-    /** Extract SetInitialPosition from a FlowOnly descriptor seq. */
-    private def extractInitialPositionFlowOnly(
-        descr: Seq[FlowOnlyPipeDescr_15544_V3]
-    ): Option[PostFireboxInitialPosition] =
-        descr.collectFirst:
-            case SetFlowOnlyPipeProp_15544_V3.SetInitialPosition(x, y, z) =>
-                PostFireboxInitialPosition(x, y, z)
-
-    /** Extract SetInitialDirection from a Thermal descriptor seq, or default. */
-    private def extractInitialDirectionThermal(
-        descr: Seq[ThermalPipeDescr_13384_V3]
-    ): PostFireboxInitialDirection =
-        descr
-            .collectFirst:
-                case SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl) =>
-                    PostFireboxInitialDirection(az, incl)
-            .getOrElse(PostFireboxInitialDirection.default)
-
-    /** Extract SetInitialPosition from a Thermal descriptor seq. */
-    private def extractInitialPositionThermal(
-        descr: Seq[ThermalPipeDescr_13384_V3]
-    ): Option[PostFireboxInitialPosition] =
-        descr.collectFirst:
-            case SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z) =>
-                PostFireboxInitialPosition(x, y, z)
-
     /**
      * Normalize a V6 slot vector into a V7 PostFireboxPipes wrapper.
      *
@@ -437,45 +381,7 @@ object transformers:
     private[dto] def normalizeToPostFireboxPipes(
         slots: Seq[PostFireboxPipeDescrSlot]
     ): PostFireboxPipes =
-        slots.headOption match
-            case None            =>
-                // Empty slot vector — use defaults, no slots to strip
-                PostFireboxPipes(
-                    initialDirection = PostFireboxInitialDirection.default,
-                    initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
-                    slots            = Seq.empty
-                )
-            case Some(firstSlot) =>
-                // Extract initial dir/pos from the first slot
-                val (initialDir: PostFireboxInitialDirection, initialPosOpt: Option[PostFireboxInitialPosition]) =
-                    firstSlot match
-                        case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
-                            (extractInitialDirectionFlowOnly(d), extractInitialPositionFlowOnly(d))
-                        case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
-                            (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
-                        case PostFireboxPipeDescrSlot.ConnectorSlot(d)   =>
-                            (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
-                        case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
-                            (extractInitialDirectionThermal(d), extractInitialPositionThermal(d))
-                        case PostFireboxPipeDescrSlot.NoFlueSlot         =>
-                            (PostFireboxInitialDirection.default, None)
-
-                val initialPos = initialPosOpt.getOrElse(PostFireboxInitialPosition(0.cm, 0.cm, 0.cm))
-
-                // Strip deprecated elements from all slots
-                val strippedSlots = slots.map:
-                    case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
-                        PostFireboxPipeDescrSlot.FlueSlot(stripDeprecatedFlowOnly15544(d))
-                    case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
-                        PostFireboxPipeDescrSlot.ThermalFlueSlot(stripDeprecatedThermal13384(d))
-                    case PostFireboxPipeDescrSlot.ConnectorSlot(d)   =>
-                        PostFireboxPipeDescrSlot.ConnectorSlot(stripDeprecatedThermal13384(d))
-                    case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
-                        PostFireboxPipeDescrSlot.ChimneySlot(stripDeprecatedThermal13384(d))
-                    case PostFireboxPipeDescrSlot.NoFlueSlot         =>
-                        PostFireboxPipeDescrSlot.NoFlueSlot
-
-                PostFireboxPipes(initialDir, initialPos, strippedSlots)
+        PostFireboxPipes.fromLegacySlots(slots)
 
     given Transformer[FireCalcYAML_V6, FireCalcYAML_V7] =
         Transformer

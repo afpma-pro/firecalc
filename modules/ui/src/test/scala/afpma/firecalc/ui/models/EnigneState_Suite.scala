@@ -12,6 +12,7 @@ import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to
 import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+import afpma.firecalc.dto.v7.PostFireboxPipes
 import afpma.firecalc.units.coulombutils.*
 
 import io.circe.*
@@ -31,6 +32,26 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
             .getOrElse(fail(s"Bend '$name' not found"))
 
     "EngineState" - {
+
+        "V7 post-firebox invariant" - {
+
+            val allStates: List[(String, EngineState)] = List(
+                "example_projet_15544"                 -> EngineState.example_projet_15544,
+                "init_as_CasType_15544_C3"             -> EngineState.init_as_CasType_15544_C3,
+                "init_as_CasPratique_15544_FDIM_EX_03" -> EngineState.init_as_CasPratique_15544_FDIM_EX_03,
+                "empty"                                -> EngineState.empty,
+                "minimal"                              -> EngineState.minimal
+            )
+
+            allStates.foreach { (name, state) =>
+                s"$name has clean post_firebox_pipes.slots" in {
+                    val slots = state.post_firebox_pipes.slots
+                    slots.foreach { slot =>
+                        PostFireboxPipes.hasDeprecatedPostFireboxElement(slot) shouldBe false
+                    }
+                }
+            }
+        }
 
         "encoding to JSON" - {
 

@@ -48,7 +48,7 @@ object EngineState:
         firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional](using
             FireboxTransformers.transformer_inv_TraditionalFirebox_Standard
         ),
-        post_firebox_pipes             = PostFireboxPipes(
+        post_firebox_pipes             = PostFireboxPipes.clean(
             initialDirection = PostFireboxInitialDirection(
                 azimuth     = AzimuthDirection.Left,
                 inclination = InclinationDirection.Horizontal
@@ -77,10 +77,8 @@ object EngineState:
         firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.Ecolabeled](using
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
-        post_firebox_pipes             = PostFireboxPipes(
-            initialDirection = PostFireboxInitialDirection.default,
-            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
-            slots            = Seq(
+        post_firebox_pipes             = PostFireboxPipes.fromLegacySlots(
+            Seq(
                 PostFireboxPipeDescrSlot.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
                 PostFireboxPipeDescrSlot.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )
@@ -103,10 +101,8 @@ object EngineState:
         firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.Ecolabeled](using
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
-        post_firebox_pipes             = PostFireboxPipes(
-            initialDirection = PostFireboxInitialDirection.default,
-            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
-            slots            = Seq(
+        post_firebox_pipes             = PostFireboxPipes.fromLegacySlots(
+            Seq(
                 PostFireboxPipeDescrSlot.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
                 PostFireboxPipeDescrSlot.ChimneySlot  (CasPratique_15544_FDIM_EX_03.conduit_fumees_descr      )
@@ -123,7 +119,7 @@ object EngineState:
         stove_params                   = StoveParamsUI.default_StoveParams.default,
         air_intake_descr               = Seq.empty,
         firebox                        = defaultable.firebox_traditional_empty.default,
-        post_firebox_pipes             = PostFireboxPipes(
+        post_firebox_pipes             = PostFireboxPipes.clean(
             initialDirection = PostFireboxInitialDirection.default,
             initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
             slots            = Seq(
@@ -143,7 +139,7 @@ object EngineState:
         stove_params                   = StoveParamsUI.default_StoveParams.default,
         air_intake_descr               = Seq.empty,
         firebox                        = defaultable.firebox_traditional_minimal.default,
-        post_firebox_pipes             = PostFireboxPipes(
+        post_firebox_pipes             = PostFireboxPipes.clean(
             initialDirection = PostFireboxInitialDirection(
                 azimuth     = AzimuthDirection.Right,
                 inclination = InclinationDirection.Horizontal

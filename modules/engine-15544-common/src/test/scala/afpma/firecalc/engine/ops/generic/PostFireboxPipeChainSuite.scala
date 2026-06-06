@@ -17,7 +17,7 @@ class PostFireboxPipeChainSuite extends AnyFreeSpec with Matchers:
     private def flue  (label: String = "Flue"     ) = PipeSlot.noop(FluePipeT, label)
     private def conn  (label: String = "Connector") = PipeSlot.noop(ConnectorPipeT, label)
     private def chim  (label: String = "Chimney"  ) = PipeSlot.noop(ChimneyPipeT, label)
-    private def noFlue(label: String = "NoFlue"   ) = PipeSlot.noop(NoFluePipeT, label)
+    private def noFlue(label: String              ) = PipeSlot.noop(NoFluePipeT, label)
 
     "PostFireboxPipeChain.validated" - {
 

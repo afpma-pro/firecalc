@@ -46,12 +46,16 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         FlowOnlyAirIntakePipe_Module_13384.extractIdsMapping(airIntakePipeResult)
 
     // ── Post-firebox topology ────────────────────────────────────────────
+    // Defensive sanitization: ensure V7 wrapper fields are the only source of truth
+    // even when called with directly-constructed V7 values that bypass decode.
+    private val cleanPostFireboxPipes = afpma.firecalc.dto.v7.PostFireboxPipes.sanitize(fcProj.post_firebox_pipes)
+
     // Slot-indexed build results from PipeChainGeneric. Used by the UI for
     // position tracking, per-slot IdsMapping, and final PipeFrame extraction.
     val slotBuildResults: Vector[SlotBuildResult] =
         PipeChainGeneric.build(
-            fcProj.post_firebox_pipes.slots,
-            Some(fcProj.post_firebox_pipes.initialDirection)
+            cleanPostFireboxPipes.slots,
+            Some(cleanPostFireboxPipes.initialDirection)
         )
 
     import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
@@ -93,7 +97,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                     case _                                            =>
                         slots0
 
-    private lazy val normalizedPostFireboxSlots = normalizePostFireboxSlots(fcProj.post_firebox_pipes.slots)
+    private lazy val normalizedPostFireboxSlots = normalizePostFireboxSlots(cleanPostFireboxPipes.slots)
 
     // TODO(Phase4/Phase5): Surface a `PostFireboxChain_V3` projection alongside
     // the flat `normalizedPostFireboxSlots` once downstream engine consumers
@@ -141,8 +145,8 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             val stoveParams                          = fcProj.stove_params
             val airIntakePipe                        = self.airIntakePipe
             override def postFireboxPipeSlots        = normalizedPostFireboxSlots
-            override def postFireboxInitialDirection = Some(fcProj.post_firebox_pipes.initialDirection)
-            override def postFireboxInitialPosition  = Some(fcProj.post_firebox_pipes.initialPosition)
+            override def postFireboxInitialDirection = Some(cleanPostFireboxPipes.initialDirection)
+            override def postFireboxInitialPosition  = Some(cleanPostFireboxPipes.initialPosition)
             override def airIntakeDescriptors        = fcProj.air_intake_descr
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
