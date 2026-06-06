@@ -122,15 +122,17 @@ object GraphDataConverter:
     private val RegistreAirPressureColor = "#FAAF4C"
 
     // Background band colors (matching 3D viz pipe group palette, ~12% opacity)
-    private val BandColors: Map[String, String] = Map(
-        "Air Intake"     -> "rgba(17, 153, 255, 0.12)", // Blue #19F
-        "Combustion Air" -> "rgba(88, 184, 255, 0.12)", // Light Blue #58B8FF
-        "Registre d'air" -> "rgba(88, 184, 255, 0.12)", // Same as Combustion Air
-        "Firebox"        -> "rgba(188, 33, 50, 0.12)",  // Red #BC2132
-        "Flue"           -> "rgba(238, 102, 34, 0.12)", // Orange #E62
-        "Connector"      -> "rgba(245, 147, 49, 0.20)", // OrangeYellow #F59331 (higher opacity to differentiate from Flue)
-        "Chimney"        -> "rgba(255, 220, 56, 0.12)"  // Yellow #FFDC38
-    )
+    private val BandColors: Map[String, String] =
+        val opa = 0.24
+        Map    (
+            "Air Intake"     -> s"rgba(17, 153, 255, $opa)", // Blue #19F
+            "Combustion Air" -> s"rgba(88, 184, 255, $opa)", // Light Blue #58B8FF
+            "Registre d'air" -> s"rgba(88, 184, 255, $opa)", // Same as Combustion Air
+            "Firebox"        -> s"rgba(188, 33, 50, $opa)", // Red #BC2132
+            "Flue"           -> s"rgba(238, 102, 34, $opa)", // Orange #E62
+            "Connector"      -> s"rgba(245, 147, 49, $opa)", // OrangeYellow #F59331 (higher opacity to differentiate from Flue)
+            "Chimney"        -> s"rgba(255, 220, 56, $opa)" // Yellow #FFDC38
+        )
 
     /** Resolve band color for a pipe name, handling slot-indexed names like "Slot0:Flue". */
     private def bandColorFor(pipeName: String): String = pipeName match
