@@ -106,11 +106,14 @@ object GraphDataConverter:
         if neighbor.exists(isDirectionChange) then neighborName.toVector
         else (currentName ++ neighborName).toVector
 
-    /** Floor min / ceil max to the nearest multiple of `step`; empty input → (0, 0). */
+    /** Floor min / ceil max to `step`; empty, non-finite, or flat input gets a non-zero span. */
     private def niceRange(ys: Vector[Double], step: Double): (Double, Double) =
-        val mn = ys.minOption.getOrElse(0.0)
-        val mx = ys.maxOption.getOrElse(0.0)
-        (math.floor(mn / step) * step, math.ceil(mx / step) * step)
+        val finiteYs = ys.filter(_.isFinite)
+        val mn       = finiteYs.minOption.getOrElse(0.0)
+        val mx       = finiteYs.maxOption.getOrElse(0.0)
+        val lo       = math.floor(mn / step) * step
+        val hi       = math.ceil(mx / step) * step
+        if lo == hi then (lo - step, hi + step) else (lo, hi)
 
     // Series colors
     private object GraphSeriesColors:
@@ -316,7 +319,7 @@ object GraphDataConverter:
             // aligns on every multiple of 5. Right axis (temperature): floor/ceil to 25 and
             // carry the tick count of the left primary grid so the two axes' horizontal
             // gridlines coincide 1:1 across the chart.
-            val (leftMin, leftMax) = niceRange((pressPoints ++ velocityPoints ++ elevPoints).map(_.y), 5.0)
+            val (leftMin, leftMax) = niceRange((pressPoints ++ velocityPoints ++ elevPoints).map(_.y), 2.0)
             val (tempMin, tempMax) = niceRange(tempPoints.map(_.y), 25.0)
             val primaryTickCount = ((leftMax - leftMin) / 5.0).toInt + 1
             val tempStepSize: Double =
