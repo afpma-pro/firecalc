@@ -24,7 +24,6 @@ import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.std.{Wood => _, *}
 import afpma.firecalc.engine.models.en13384.typedefs.*
-import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.ops.PipeWithGasFlowOps
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.ops.en13384.forThermal13384

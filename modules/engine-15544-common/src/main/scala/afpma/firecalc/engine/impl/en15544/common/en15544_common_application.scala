@@ -33,7 +33,6 @@ import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scal
 import afpma.firecalc.engine.models.en16510.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
-import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}

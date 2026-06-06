@@ -46,6 +46,7 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
     val adFront: AbsoluteDirection = absDir(Front, Horizontal)
     val adLeft : AbsoluteDirection = absDir(Left, Horizontal)
     val adRear : AbsoluteDirection = absDir(Rear, Horizontal)
+    val adDown : AbsoluteDirection = AbsoluteDirection(None, Down)
 
     // A FlueSlot element that is a direction-change (pinned)
     def bend(angleDeg: Double, pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V3 =
@@ -196,6 +197,31 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
                 d.length shouldBe 1
                 d(0) should not equal pre(1).asInstanceOf[ChimneySlot].descr(0)
             case _              => fail("Expected ChimneySlot at idx 1")
+    }
+
+    it should "use supplied initial frame when preserving a first-slot angle edit" in {
+        val pre  = simpleFlue(bend(90.0, Some(adDown)))
+        val newS = simpleFlue(bend(45.0, Some(adDown)))
+        val edit = ChainEditDispatcher
+            .detectEdit(pre, newS)
+            .getOrElse(fail("detectEdit failed to spot the angle change"))
+
+        val result = ChainEditDispatcher(
+            pre,
+            newS,
+            edit,
+            RigidRotation,
+            initialFrame = Some(PipeFrame.initial(Vec3.Right))
+        )
+
+        val resultDescr = result(0).asInstanceOf[FlueSlot].descr
+        val resultBend  = resultDescr(0).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+        val abs         = resultBend.absDir.getOrElse(fail("absDir missing"))
+
+        abs.azimuth shouldBe Some(Right)
+        abs.inclination match
+            case InclinationDirection.Custom(angle) => angle.value.shouldBe(-45.0 +- 0.5)
+            case other                              => fail(s"expected custom -45° inclination, got $other")
     }
 
     // ── apply + DirectionEdit tests ─────────────────────────────────────

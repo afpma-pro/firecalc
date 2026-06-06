@@ -101,22 +101,23 @@ object ChainEditDispatcher:
     // ── Entry point ────────────────────────────────────────────────────
 
     def apply(
-        preEdit : Seq[PostFireboxPipeDescrSlot],
-        newSlots: Seq[PostFireboxPipeDescrSlot],
-        edit    : ChainEdit,
-        strategy: PropagationStrategy
+        preEdit     : Seq[PostFireboxPipeDescrSlot],
+        newSlots    : Seq[PostFireboxPipeDescrSlot],
+        edit        : ChainEdit,
+        strategy    : PropagationStrategy,
+        initialFrame: Option[PipeFrame] = None
     ): Seq[PostFireboxPipeDescrSlot] =
         edit match
             case ie: InsertEdit =>
-                handleInsert(preEdit, newSlots, ie)
+                handleInsert(preEdit, newSlots, ie, initialFrame)
             case _ =>
                 val patched = patchEdited(preEdit, newSlots, edit.coord)
                 // Edit-site invariant: on an AngleEdit the edited element's absDir is ALWAYS
                 // recomputed from (new_angle + current_(side,θ) + frame). Strategy only governs
                 // downstream. (`posePreserveIfAngle` is a no-op on DirectionEdit.)
-                val posed   = posePreserveIfAngle(patched, edit)
+                val posed   = posePreserveIfAngle(patched, edit, initialFrame)
                 strategy match
-                    case RigidRotation => rigidRotateDownstream(preEdit, posed, edit.coord)
+                    case RigidRotation => rigidRotateDownstream(preEdit, posed, edit.coord, initialFrame)
 
     // ── Detection entry point ──────────────────────────────────────────
 
@@ -304,12 +305,13 @@ object ChainEditDispatcher:
         else preEdit.updated(s, patchSlotElem(preEdit(s), newSlots(s), coord.elemIdx))
 
     private def posePreserveIfAngle(
-        slots: Seq[PostFireboxPipeDescrSlot],
-        edit : ChainEdit
+        slots       : Seq[PostFireboxPipeDescrSlot],
+        edit        : ChainEdit,
+        initialFrame: Option[PipeFrame]
     ): Seq[PostFireboxPipeDescrSlot] =
         edit match
             case ae: AngleEdit     =>
-                incomingFrameAt(slots, ae.coord) match
+                incomingFrameAt(slots, ae.coord, initialFrame) match
                     case Some(f) =>
                         val newAbs = PipeChainRotation.preserveRelativePoseOnAngleChange(
                             f,
@@ -333,13 +335,14 @@ object ChainEditDispatcher:
      * the chimney boundary would break frame continuity and leave any chimney pin unreachable.
      */
     private def rigidRotateDownstream(
-        preEdit: Seq[PostFireboxPipeDescrSlot],
-        current: Seq[PostFireboxPipeDescrSlot],
-        coord  : ChainCoord
+        preEdit     : Seq[PostFireboxPipeDescrSlot],
+        current     : Seq[PostFireboxPipeDescrSlot],
+        coord       : ChainCoord,
+        initialFrame: Option[PipeFrame]
     ): Seq[PostFireboxPipeDescrSlot] =
         if coord.slotIdx < 0 || coord.slotIdx >= current.length then current
         else
-            (exitDirection(preEdit, coord), exitDirection(current, coord)) match
+            (exitDirection(preEdit, coord, initialFrame), exitDirection(current, coord, initialFrame)) match
                 case (Some(oldDir), Some(newDir)) =>
                     val (axis, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
                     rotateDownstream(current, coord.slotIdx, coord.elemIdx, axis, angleRad)
@@ -378,17 +381,18 @@ object ChainEditDispatcher:
      * insertions instead of the `slotIdx >= preEdit.length` heuristic.
      */
     private def handleInsert(
-        preEdit : Seq[PostFireboxPipeDescrSlot],
-        newSlots: Seq[PostFireboxPipeDescrSlot],
-        ie      : InsertEdit
+        preEdit     : Seq[PostFireboxPipeDescrSlot],
+        newSlots    : Seq[PostFireboxPipeDescrSlot],
+        ie          : InsertEdit,
+        initialFrame: Option[PipeFrame]
     ): Seq[PostFireboxPipeDescrSlot] =
         val frameBefore = ie.kind match
             case InsertKind.SlotLevel       =>
                 // New slot appended - doesn't exist in preEdit, replay from chain start.
-                enteringFrameBeforeSlot(preEdit, ie.coord.slotIdx)
+                enteringFrameBeforeSlot(preEdit, ie.coord.slotIdx, initialFrame)
             case InsertKind.DescriptorLevel =>
                 // Element inserted within existing slot - use incoming frame at that element.
-                incomingFrameAt(preEdit, ie.coord)
+                incomingFrameAt(preEdit, ie.coord, initialFrame)
         frameBefore match
             case Some(frame) =>
                 val targetVec  = frame.relativeTarget(
@@ -411,28 +415,42 @@ object ChainEditDispatcher:
 
     private def indexed[E](d: Seq[E]): Seq[(Int, E)] = d.zipWithIndex.map(_.swap)
 
-    private def enteringFrames(slots: Seq[PostFireboxPipeDescrSlot]): Vector[Option[PipeFrame]] =
-        slots.foldLeft(Vector(Option.empty[PipeFrame])) { (acc, slot) =>
+    private def enteringFrames(
+        slots       : Seq[PostFireboxPipeDescrSlot],
+        initialFrame: Option[PipeFrame]
+    ): Vector[Option[PipeFrame]] =
+        slots.foldLeft(Vector(initialFrame)) { (acc, slot) =>
             acc :+ slot.replay(acc.last)
         }
 
     /** Frame entering the slot at `slotIdx` (before any element in that slot). */
     private def enteringFrameBeforeSlot(
-        slots  : Seq[PostFireboxPipeDescrSlot],
-        slotIdx: Int
+        slots       : Seq[PostFireboxPipeDescrSlot],
+        slotIdx     : Int,
+        initialFrame: Option[PipeFrame]
     ): Option[PipeFrame] =
-        if slotIdx <= 0 then None
+        if slotIdx <= 0 then initialFrame
         else
             // Finding 4: replaced mutation-based while loop with foldLeft
-            slots.take(math.min(slotIdx, slots.length)).foldLeft(Option.empty[PipeFrame]) { (frame, slot) =>
+            slots.take(math.min(slotIdx, slots.length)).foldLeft(initialFrame) { (frame, slot) =>
                 slot.replay(frame, upTo = Int.MaxValue)
             }
 
-    private def incomingFrameAt(slots: Seq[PostFireboxPipeDescrSlot], coord: ChainCoord): Option[PipeFrame] =
-        slots(coord.slotIdx).replay(enteringFrames(slots)(coord.slotIdx), upTo = coord.elemIdx - 1)
+    private def incomingFrameAt(
+        slots       : Seq[PostFireboxPipeDescrSlot],
+        coord       : ChainCoord,
+        initialFrame: Option[PipeFrame]
+    ): Option[PipeFrame] =
+        slots(coord.slotIdx).replay(enteringFrames(slots, initialFrame)(coord.slotIdx), upTo = coord.elemIdx - 1)
 
-    private def exitDirection(slots: Seq[PostFireboxPipeDescrSlot], coord: ChainCoord): Option[Vec3] =
-        slots(coord.slotIdx).replay(enteringFrames(slots)(coord.slotIdx), upTo = coord.elemIdx).map(_.direction)
+    private def exitDirection(
+        slots       : Seq[PostFireboxPipeDescrSlot],
+        coord       : ChainCoord,
+        initialFrame: Option[PipeFrame]
+    ): Option[Vec3] =
+        slots(coord.slotIdx)
+            .replay(enteringFrames(slots, initialFrame)(coord.slotIdx), upTo = coord.elemIdx)
+            .map(_.direction)
 
     private def patchSlotElem(
         oldS: PostFireboxPipeDescrSlot,

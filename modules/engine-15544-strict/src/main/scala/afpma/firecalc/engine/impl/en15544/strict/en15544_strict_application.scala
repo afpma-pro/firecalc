@@ -38,7 +38,6 @@ import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.en15544.forFlowOnly15544
 import afpma.firecalc.engine.alg.en13384.Params_13384
-import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame

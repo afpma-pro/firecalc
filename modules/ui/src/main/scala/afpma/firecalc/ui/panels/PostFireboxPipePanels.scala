@@ -11,6 +11,8 @@ import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.ops.generic.TopologyError
 
 import afpma.firecalc.ui.*
@@ -443,13 +445,24 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     // preservation (so the new angle + computed absDir remain geometrically consistent)
     // and then trigger the downstream rotation offer via the standard flow.
 
-    // `prevSnapshot` is Option so the FIRST emit (browser reload, project load, initial mount)
-    // primes the baseline without triggering any offer. Only subsequent edits with a real prior
-    // baseline can produce an Offer. Suppresses false positives on non-user-driven changes.
+    // `prevSnapshot` is initialized from the current slots because `.changes` below skips the
+    // current value. Without this, the first real user edit after mount would only prime the
+    // baseline and would not trigger angle/direction propagation.
     // `lastDispatcherWrite_var` is shared with AppToasts so strategy re-dispatches from the
     // toast can suppress EVERY echo (debounced + binder roundtrip + normalization) until a
     // genuinely different snapshot arrives.
-    private var prevSnapshot: Option[Seq[PostFireboxPipeDescrSlot]] = None
+    private var prevSnapshot: Option[Seq[PostFireboxPipeDescrSlot]] = Some(postFireboxSlots_var.now())
+
+    private def currentInitialFrame: Option[PipeFrame] =
+        val dir = postFireboxInitialDir_var.now()
+        Some(
+            PipeFrame.initial(
+                Vec3.fromAzimuthElevation(
+                    AzimuthDirection.toDegrees    (dir.azimuth    ),
+                    InclinationDirection.toDegrees(dir.inclination)
+                )
+            )
+        )
 
     private def handleSlotSnapshot(newSnapshot: Seq[PostFireboxPipeDescrSlot]): Unit =
         // Value-based suppression: ANY echo of the last dispatcher-written state (first debounced
@@ -468,8 +481,9 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                             // (`rotateOffer_var`) is left alone intentionally — the scaffolding stays
                             // wired so a future multi-strategy landing just re-enables a `set(Some(Offer))`
                             // here without re-plumbing `AppToasts`.
-                            val strategy  = ChainEditDispatcher.defaultStrategy(edit)
-                            val rewritten = ChainEditDispatcher(prev, newSnapshot, edit, strategy)
+                            val strategy     = ChainEditDispatcher.defaultStrategy(edit)
+                            val initialFrame = currentInitialFrame
+                            val rewritten    = ChainEditDispatcher(prev, newSnapshot, edit, strategy, initialFrame)
                             lastDispatcherWrite_var.set(Some(rewritten))
                             postFireboxSlots_var.set   (rewritten      )
                             prevSnapshot = Some(rewritten)
