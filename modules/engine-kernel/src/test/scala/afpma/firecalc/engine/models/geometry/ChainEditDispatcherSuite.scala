@@ -53,8 +53,11 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         FDElem15.AddSharpeAngle_0_to_180("b", angleDeg.degrees, pin)
 
     // A FlueSlot element that is NOT a direction change (plain section)
+    def sectionNamed(name: String): FlowOnlyPipeDescr_15544_V3 =
+        FDElem15.AddSectionSlopped(name, 1.0.meters)
+
     def section(): FlowOnlyPipeDescr_15544_V3 =
-        FDElem15.AddSectionSlopped("s", 1.0.meters)
+        sectionNamed("s")
 
     def initDir(az: AzimuthDirection, incl: InclinationDirection): FlowOnlyPipeDescr_15544_V3 =
         FDProp15.SetInitialDirection(az, incl)
@@ -134,6 +137,31 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         ChainEditDispatcher.detectEdit(old, upd) match
             case Some(_: AngleEdit) => succeed
             case other              => fail(s"Expected AngleEdit, got $other")
+    }
+
+    it should "detect descriptor-level insertion when multiple elements are inserted together" in {
+        val old = simpleFlue(
+            initDir     (Rear, Horizontal),
+            sectionNamed("before"        ),
+            sectionNamed("after"         )
+        )
+        val upd = simpleFlue(
+            initDir     (Rear, Horizontal   ),
+            sectionNamed("before"           ),
+            bend        (45.0, Some(adRight)),
+            sectionNamed("middle"           ),
+            sectionNamed("after"            )
+        )
+
+        ChainEditDispatcher.detectEdit(old, upd) shouldBe Some(
+            InsertEdit(ChainCoord(slotIdx = 0, elemIdx = 2), deflectionDeg = 45.0, InsertKind.DescriptorLevel)
+        )
+    }
+
+    it should "return None when an appended slot contains no direction change" in {
+        val old = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))
+        val upd = old :+ ConnectorSlot(Seq.empty)
+        ChainEditDispatcher.detectEdit(old, upd) shouldBe None
     }
 
     // ── apply + AngleEdit tests ─────────────────────────────────────────
@@ -222,6 +250,50 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         abs.inclination match
             case InclinationDirection.Custom(angle) => angle.value.shouldBe(-45.0 +- 0.5)
             case other                              => fail(s"expected custom -45° inclination, got $other")
+    }
+
+    it should "rotate chimney pins through a NoFlueSlot gap" in {
+        val pre  = Seq(
+            FlueSlot   (Seq(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))),
+            NoFlueSlot,
+            ChimneySlot(Seq(chimneyBend(45.0, Some(adFront)))                    )
+        )
+        val newS = Seq(
+            FlueSlot   (Seq(initDir(Rear, Horizontal), bend(45.0, Some(adRight)))),
+            NoFlueSlot,
+            ChimneySlot(Seq(chimneyBend(45.0, Some(adFront)))                    )
+        )
+        val edit = AngleEdit(coord0_1, oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
+
+        val result = ChainEditDispatcher(pre, newS, edit, RigidRotation)
+
+        result(1) shouldBe NoFlueSlot
+        result(2) match
+            case ChimneySlot(d) =>
+                d.length shouldBe 1
+                d(0) should not equal pre(2).asInstanceOf[ChimneySlot].descr(0)
+            case _              => fail("Expected ChimneySlot at idx 2")
+    }
+
+    it should "return raw new slots when descriptor insertion has no incoming frame" in {
+        val pre  = simpleFlue(
+            sectionNamed("before"),
+            sectionNamed("after" )
+        )
+        val newS = simpleFlue(
+            sectionNamed("before"  ),
+            bend        (45.0, None),
+            sectionNamed("after"   )
+        )
+        val edit = ChainEditDispatcher
+            .detectEdit(pre, newS)
+            .getOrElse(fail("detectEdit failed to spot the insertion"))
+
+        val result = ChainEditDispatcher(pre, newS, edit, RigidRotation)
+
+        result shouldBe newS
+        val inserted = result(0).asInstanceOf[FlueSlot].descr(1).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+        inserted.absDir shouldBe None
     }
 
     // ── apply + DirectionEdit tests ─────────────────────────────────────
