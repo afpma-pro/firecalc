@@ -49,8 +49,11 @@ object EngineState:
             FireboxTransformers.transformer_inv_TraditionalFirebox_Standard
         ),
         post_firebox_pipes             = PostFireboxPipes(
-            initialDirection = PostFireboxInitialDirection.default,
-            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
+            initialDirection = PostFireboxInitialDirection(
+                azimuth     = AzimuthDirection.Left,
+                inclination = InclinationDirection.Horizontal
+            ), // Left,
+            initialPosition  = PostFireboxInitialPosition(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
             slots            = Seq(
                 PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),

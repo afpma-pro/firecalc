@@ -81,12 +81,12 @@ object ExampleProject_15544
         Seq(
             roughness           (3.mm),
             innerShape(rectangle(251.mm, 230.mm)),
-            setInitialDirection (azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left
-            setInitialPosition  (-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
+            // setInitialDirection (azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left
+            // setInitialPosition  (-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
             addSectionHorizontal("sortie foyer", 317.mm                    ),
             addSharpAngle_90deg (
                 "virage avant descente",
-                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Down)
+                AbsoluteDirection(None, InclinationDirection.Down)
             ), // Down
             innerShape(rectangle(251.mm, 220.mm)),
             addSectionVertical  ("descente", -815.mm                       ),
@@ -116,7 +116,7 @@ object ExampleProject_15544
             addSectionHorizontal("vers remontée", 437.mm                   ),
             addSharpAngle_90deg (
                 "virage avant remontée",
-                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                AbsoluteDirection(None, InclinationDirection.Up)
             ), // Up
             innerShape(rectangle(210.mm, 220.mm)),
             addSectionVertical  ("remontée", 980.mm                        )
@@ -139,7 +139,7 @@ object ExampleProject_15544
             addSectionSlopped         ("conduit simple peau 2", 707.mm               ),
             addSharpAngle_30deg_unsafe(
                 "coude angle vif 30°",
-                AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)
+                AbsoluteDirection(None, InclinationDirection.Up)
             ), // towards Up
             addSectionVertical        ("conduit simple peau 2", 241.mm               )
         )

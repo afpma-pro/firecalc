@@ -452,6 +452,10 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     // toast can suppress EVERY echo (debounced + binder roundtrip + normalization) until a
     // genuinely different snapshot arrives.
     private var prevSnapshot: Option[Seq[PostFireboxPipeDescrSlot]] = Some(postFireboxSlots_var.now())
+    private var prevProject : EngineState                           = engineStateVar.now()
+
+    private def sameProjectAsideFromSlots(a: EngineState, b: EngineState): Boolean =
+        a.copy(post_firebox_pipes = a.post_firebox_pipes.copy(slots = b.post_firebox_pipes.slots)) == b
 
     private def currentInitialFrame: Option[PipeFrame] =
         val dir = postFireboxInitialDir_var.now()
@@ -465,10 +469,14 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         )
 
     private def handleSlotSnapshot(newSnapshot: Seq[PostFireboxPipeDescrSlot]): Unit =
+        val currentProject = engineStateVar.now()
+        if !sameProjectAsideFromSlots(currentProject, prevProject) then
+            prevProject  = currentProject
+            prevSnapshot = Some(newSnapshot)
         // Value-based suppression: ANY echo of the last dispatcher-written state (first debounced
         // emit, subsequent bidirsync roundtrips, normalize passes) is absorbed. Only a snapshot
         // that truly differs from the last dispatcher write can produce a new offer.
-        if lastDispatcherWrite_var.now().contains(newSnapshot) then prevSnapshot = Some(newSnapshot)
+        else if lastDispatcherWrite_var.now().contains(newSnapshot) then prevSnapshot = Some(newSnapshot)
         else
             prevSnapshot match
                 case None       =>
@@ -506,6 +514,12 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         ,
         // Angle-edit detection: debounced observer on slot snapshots.
         // Debounce collapses rapid keystroke updates into a single committed value.
+        // Full-project changes (nav example load / file open) only reset the comparison baseline;
+        // they must not be interpreted as user edits or their stored absDir pins may be rewritten.
+        engineStateVar.signal.changes --> Observer[EngineState]: project =>
+            if !sameProjectAsideFromSlots(project, prevProject) then
+                prevProject  = project
+                prevSnapshot = Some(project.post_firebox_pipes.slots),
         postFireboxSlots_var.signal.changes.debounce(300) --> Observer[Seq[PostFireboxPipeDescrSlot]](
             handleSlotSnapshot
         ),

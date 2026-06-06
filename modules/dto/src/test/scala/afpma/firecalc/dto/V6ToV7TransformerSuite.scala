@@ -6,10 +6,15 @@
 package afpma.firecalc.dto
 
 import afpma.firecalc.dto.v4.*
+import afpma.firecalc.dto.v5.Firebox_V4
 import afpma.firecalc.dto.v6.*
 import afpma.firecalc.dto.v7.*
+import afpma.firecalc.dto.common.*
 
 import afpma.firecalc.units.coulombutils.*
+
+import io.taig.babel.Language
+import io.taig.babel.Locale
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -97,6 +102,38 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             case _: SetThermalPipeProp_13384_V3.SetInitialPosition  => true
             case _: SetThermalPipeProp_13384_V3.SetFinalPosition    => true
             case _ => false
+
+    private def minimalFirebox: Firebox_V4 =
+        Firebox_V4.Traditional                  (
+            heat_output_reduced                   = HeatOutputReduced.NotDefined,
+            firebox_depth                         = 40.cm,
+            firebox_width                         = 50.cm,
+            firebox_height                        = 60.cm,
+            height_of_lowest_opening              = 10.cm,
+            pressure_loss_coefficient_from_door   = 0.5.unitless,
+            total_air_intake_surface_area_on_door = 100.cm2,
+            glass_width                           = 30.cm,
+            glass_height                          = 40.cm
+        )
+
+    private def minimalV6(slots: Seq[PostFireboxPipeDescrSlot]): FireCalcYAML_V6 =
+        FireCalcYAML_V6                       (
+            version                        = FireCalcYAML_V6.VERSION,
+            locale                         = Locale(Language("en")),
+            display_units                  = DisplayUnits.SI,
+            standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+            project_description            = ProjectDescr("TEST-V6", "2026-06-06", Country.France),
+            local_conditions               = LocalConditions.default,
+            stove_params                   = StoveParams.fromMaxLoadAndStoragePeriod(
+                maximum_load   = 20.kg,
+                heating_cycle  = 12.hours,
+                min_efficiency = 80.percent,
+                facing_type    = FacingType.WithoutAirGap
+            ),
+            air_intake_descr               = Seq.empty,
+            firebox                        = minimalFirebox,
+            post_firebox_pipes             = slots
+        )
 
     // ─── Tests ──────────────────────────────────────────────────────
 
@@ -427,6 +464,46 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
                     hasDeprecatedThermal(d) shouldBe false
                     d.contains(SetThermalPipeProp_13384_V3.SetRoughness(0.3.mm)) shouldBe true
                 case other                                       => fail(s"Expected ThermalFlueSlot, got $other")
+        }
+    }
+
+    "FireCalcYAML_V6 to FireCalcYAML_V7 migration" - {
+
+        "moves initial direction and position to PostFireboxPipes and removes deprecated post-firebox state" in {
+            val v6       = minimalV6(
+                Seq (
+                    flowOnlySlot (
+                        Seq(
+                            flowOnlyInitialDir                                  (AzimuthDirection.Left, InclinationDirection.Horizontal),
+                            flowOnlyInitialPos                                  (-21.cm, 9.cm, 63.cm                                   ),
+                            AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("sortie foyer", 317.mm                                )
+                        )
+                    ),
+                    connectorSlot(
+                        Seq(
+                            thermalInitialDir(AzimuthDirection.Front, InclinationDirection.Up),
+                            thermalInitialPos(1.cm, 2.cm, 3.cm                               )
+                        )
+                    )
+                )
+            )
+            val migrated = FireCalcYAMLMigrations.migrateV6ToV7(v6)
+
+            migrated.post_firebox_pipes.initialDirection shouldBe PostFireboxInitialDirection(
+                AzimuthDirection.Left,
+                InclinationDirection.Horizontal
+            )
+            migrated.post_firebox_pipes.initialPosition shouldBe PostFireboxInitialPosition(-21.cm, 9.cm, 63.cm)
+
+            migrated.post_firebox_pipes.slots(0) match
+                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
+                    hasDeprecatedFlowOnly(d) shouldBe false
+                case other                                => fail(s"Expected FlueSlot, got $other")
+
+            migrated.post_firebox_pipes.slots(1) match
+                case PostFireboxPipeDescrSlot.ConnectorSlot(d) =>
+                    hasDeprecatedThermal(d) shouldBe false
+                case other                                     => fail(s"Expected ConnectorSlot, got $other")
         }
     }
 
