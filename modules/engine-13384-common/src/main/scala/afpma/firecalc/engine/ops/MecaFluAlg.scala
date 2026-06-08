@@ -4,14 +4,12 @@
  */
 
 package afpma.firecalc.engine.ops
-import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
-import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
 import cats.syntax.all.*
@@ -115,54 +113,6 @@ object MecaFluOps:
                 ifCombustionAir
             case FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT | NoFluePipeT =>
                 ifFlueGas
-
-    // ============================================
-    // Cross-Section Area Computation
-    // ============================================
-
-    /**
-     * Compute cross-section area for a pipe element using type-specific extractors.
-     * This pattern is common across all MecaFlu implementations.
-     *
-     * @param lastCrossSectionArea Previous element's cross-section (for singular elements)
-     * @param elementRef String reference for error messages
-     * @param pipeType The pipe type for error context
-     * @param getStraightArea Extractor: returns Some(area) if straight section, None otherwise
-     * @param getSectionChangeAreas Extractor: returns Some((fromArea, toArea)) if section change
-     * @param getSingularCrossSection Extractor: returns cross-section if explicitly specified on singular element
-     * @return Either an error or the cross-section area at Start|End positions
-     */
-    def computeCrossSectionArea(
-        lastCrossSectionArea: Option[Area],
-        elementRef          : String,
-        pipeType            : PipeType
-    )(
-        getStraightArea        : => Option[Area],
-        getSectionChangeAreas  : => Option[(Area, Area)],
-        getSingularCrossSection: => Option[Area]
-    ): Either[MecaFlu_Error, PositionOpX[Start | End, Area]] =
-        getStraightArea match
-            case Some(area) =>
-                QtyDAtPosition.constantAtStartEnd(area).asRight.map(_.atPos)
-            case None       =>
-                getSectionChangeAreas match
-                    case Some((fromArea, toArea)) =>
-                        QtyDAtPosition.from(start = fromArea, end = toArea).asRight.map(_.atPos)
-                    case None                     =>
-                        getSingularCrossSection match
-                            case Some(crossSection) =>
-                                QtyDAtPosition.constantAtStartEnd(crossSection).asRight.map(_.atPos)
-                            case None               =>
-                                lastCrossSectionArea match
-                                    case Some(lastArea) =>
-                                        QtyDAtPosition.constantAtStartEnd(lastArea).asRight.map(_.atPos)
-                                    case None           =>
-                                        MecaFlu_Error
-                                            .CouldNotDetermineCrossSectionArea(
-                                                s"$elementRef: could not determine 'cross section area' !!",
-                                                pipeType
-                                            )
-                                            .asLeft
 
     // ============================================
     // Error Handling Helpers

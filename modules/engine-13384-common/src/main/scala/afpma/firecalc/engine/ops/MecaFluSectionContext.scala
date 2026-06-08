@@ -11,7 +11,6 @@ case class MecaFluSectionContext[PipeEl <: Matchable, Params](
     lastPipeDensity     : Option[Density],
     lastPipeVelocity    : Option[FlowVelocity],
     lastAirSpaceDetailed: Option[AirSpaceDetailed_V2],
-    lastCrossSectionArea: Option[Area],
     lastInnerGeom       : Option[PipeShape],
     prevSectionResult   : Option[PipeSectionResult[PipeEl]]
 )
@@ -27,7 +26,6 @@ object MecaFluSectionContext:
             lastPipeDensity      = None,
             lastPipeVelocity     = None,
             lastAirSpaceDetailed = None,
-            lastCrossSectionArea = None,
             lastInnerGeom        = None,
             prevSectionResult    = None
         )
@@ -41,7 +39,6 @@ object MecaFluSectionContext:
             gasInPipeEl          = nextGip,
             gasTempStart         = section.gas_temp_end,
             lastAirSpaceDetailed = section.air_space_detailed.orElse(ctx.lastAirSpaceDetailed),
-            lastCrossSectionArea = Some(section.crossSectionArea_end),
             lastInnerGeom        = Some(section.innerShape_end),
             prevSectionResult    = Some(section)
         )
@@ -55,7 +52,6 @@ object MecaFluSectionContext:
             gasInPipeEl          = nextGip,
             gasTempStart         = section.gas_temp_end,
             lastAirSpaceDetailed = section.air_space_detailed.orElse(ctx.lastAirSpaceDetailed),
-            lastCrossSectionArea = Some(section.crossSectionArea_end),
             lastInnerGeom        = Some(section.innerShape_end),
             prevSectionResult    = Some(section)
         )

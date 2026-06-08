@@ -5,31 +5,22 @@
 
 package afpma.firecalc.engine.ops
 
-import afpma.firecalc.units.coulombutils.TCelsius
-import afpma.firecalc.units.coulombutils.conversions.*
-
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.models.FlueGas
 import afpma.firecalc.engine.models.FluePipeT
-import afpma.firecalc.engine.models.FluePipe_Module_15544
 import afpma.firecalc.engine.models.FluePipe_Module_15544.*
-import afpma.firecalc.engine.models.Gas
-import afpma.firecalc.engine.models.GasInPipeEl
 import afpma.firecalc.engine.models.LoadQty
 import afpma.firecalc.engine.models.NamedPipeElDescrG
+import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange
-import afpma.firecalc.engine.ops.PositionOp
 import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
 
-import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
-
-import cats.syntax.all.*
 
 import io.taig.babel.Locale
 import io.taig.babel.Locales
@@ -76,30 +67,6 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
     "MecaFlu_EN15544" - {
 
         "on FluePipe" - {
-
-            "computing result on section should work" in {
-                val first = channel_pipe_elems.elems.head
-                val gip   =
-                    GasInPipeEl[NamedPipeElDescrG[FluePipe_Module_15544.El], Gas, DraftCondition](FlueGas, first, p)
-                val gas_temp: PositionOp[TCelsius] = QtyDAtPosition
-                    .from (
-                        start  = 550.degreesCelsius,
-                        middle = 500.degreesCelsius,
-                        end    = 450.degreesCelsius
-                    )
-                    .atPos
-                // val next = channel_pipe_elems.elems.tail.head
-                FlowOnlyMecaFlu_15544.makePipeSectionResult(
-                    gip,
-                    nominal,
-                    None,
-                    None,
-                    2.m_per_s.some,
-                    1.kg_per_m3.some,
-                    gas_temp
-                )(using en15544)
-                succeed
-            }
 
             "computing result on pipe should work" in {
                 val pr = FlowOnlyMecaFlu_15544.makePipeResult(

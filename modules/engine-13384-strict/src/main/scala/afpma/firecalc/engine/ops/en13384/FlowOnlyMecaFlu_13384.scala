@@ -49,14 +49,13 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
     override type FullResult    = PipeResult
 
     def makePipeSectionResult(
-        gp                   : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
-        hafg                 : HeatingAppliance.FlueGas,
-        hamf                 : HeatingAppliance.MassFlows,
-        temp_start           : TCelsius,
-        last_pipe_velocity   : Option[FlowVelocity],
-        last_CrossSectionArea: Option[Area],
-        last_InnerGeom       : Option[PipeShape],
-        prevO                : Option[PipeSectionResult[PipeElDescr]]
+        gp                : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
+        hafg              : HeatingAppliance.FlueGas,
+        hamf              : HeatingAppliance.MassFlows,
+        temp_start        : TCelsius,
+        last_pipe_velocity: Option[FlowVelocity],
+        last_InnerGeom    : Option[PipeShape],
+        prevO             : Option[PipeSectionResult[PipeElDescr]]
     )(using alg: EN13384_1_A1_2019_Application_Alg): PipeSectionResult[PipeElDescr] =
         new FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
             gp,
@@ -64,7 +63,6 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
             hamf,
             temp_start,
             last_pipe_velocity,
-            last_CrossSectionArea,
             last_InnerGeom,
             prevO
         ) {
@@ -96,15 +94,14 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
         ctx: MecaFluSectionContext[PipeElDescr, Params_13384]
     )(using appCtx: MecaFluAppContext): PipeSectionResult[PipeElDescr] =
         val ctx13384 = appCtx.asInstanceOf[MecaFlu_13384_AppCtx]
-        makePipeSectionResult                   (
-            gp                    = ctx.gasInPipeEl,
-            hafg                  = ctx13384.hafg,
-            hamf                  = ctx13384.hamf,
-            temp_start            = ctx.gasTempStart,
-            last_pipe_velocity    = ctx.lastPipeVelocity,
-            last_CrossSectionArea = ctx.lastCrossSectionArea,
-            last_InnerGeom        = ctx.lastInnerGeom,
-            prevO                 = ctx.prevSectionResult
+        makePipeSectionResult                (
+            gp                 = ctx.gasInPipeEl,
+            hafg               = ctx13384.hafg,
+            hamf               = ctx13384.hamf,
+            temp_start         = ctx.gasTempStart,
+            last_pipe_velocity = ctx.lastPipeVelocity,
+            last_InnerGeom     = ctx.lastInnerGeom,
+            prevO              = ctx.prevSectionResult
         )(using ctx13384.en13384)
 
     override def makePipeResult(
@@ -122,14 +119,13 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
         )(using params, ctx13384.en13384)
 
 private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
-    gp                   : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
-    hafg                 : HeatingAppliance.FlueGas,
-    hamf                 : HeatingAppliance.MassFlows,
-    temp_start           : TCelsius,
-    last_pipe_velocity   : Option[FlowVelocity], // careful: last PIPE value, not last PIPE SECTION
-    last_CrossSectionArea: Option[Area],
-    last_InnerGeom       : Option[PipeShape],
-    prevO                : Option[PipeSectionResult[PipeElDescr]]
+    gp                : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
+    hafg              : HeatingAppliance.FlueGas,
+    hamf              : HeatingAppliance.MassFlows,
+    temp_start        : TCelsius,
+    last_pipe_velocity: Option[FlowVelocity], // careful: last PIPE value, not last PIPE SECTION
+    last_InnerGeom    : Option[PipeShape],
+    prevO             : Option[PipeSectionResult[PipeElDescr]]
 ) extends PipeSectionResult[PipeElDescr]:
 
     val dynamicFrictionCoeff_13384 = DynamicFrictionCoeff_13384()(using gp.pipeEl.typ)
@@ -173,23 +169,11 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
             .innerShape(oPrevGeom = last_InnerGeom)
             .getOrElse(throw new Exception(s"${curr.fullRef}: could not determine inner geometry"))
 
-    val crossSectionAreaE: Either[MecaFlu_Error, PositionOpX[Start | End, Area]] =
-        MecaFluOps.computeCrossSectionArea(last_CrossSectionArea, curr.fullRef, curr.typ)        (
-            getStraightArea         = curr.el match { case s: StraightSection => Some(s.innerShape.area); case _ => None },
-            getSectionChangeAreas   = curr.el match {
-                case s: SectionDecrease => Some((s.from.area, s.to.area))
-                case s: SectionIncrease => Some((s.from.area, s.to.area))
-                case _ => None
-            },
-            getSingularCrossSection = curr.el match {
-                case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
-                case PressureDiff(_, Some(crossSection))           => Some(crossSection)
-                case _                                             => None
-            }
-        )
-
-    val crossSectionArea: PositionOpX[Start | End, Area] =
-        crossSectionAreaE.fold(MecaFluOps.throwMecaFluError, identity)
+    val crossSectionArea: PositionOp[Area] =
+        Position.summon match
+            case Position.Start  => innerShape(using Start).area
+            case Position.Middle => innerShape(using Middle).area
+            case Position.End    => innerShape(using End).area
 
     given PipeType = gp.pipeEl.typ
 
@@ -242,9 +226,6 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
             ifFlueGas       = en13384.ρ_m(temperature)
         )
 
-    val crossSectionArea_middle =
-        (crossSectionArea(using Start) + crossSectionArea(using End)) / 2.0
-
     // val volumeFlow: PositionOp[VolumeFlow] =
     //     massFlow / density
 
@@ -252,7 +233,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
         en13384.w_m_calc(crossSectionArea, massFlow, density)
 
     val flowVelocity_middle =
-        en13384.w_m_calc(crossSectionArea_middle, massFlow, density(using Middle))
+        en13384.w_m_calc(crossSectionArea(using Middle), massFlow, density(using Middle))
 
     val elevation_gain = curr.el match
         case el: StraightSection         =>
@@ -265,7 +246,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     override val density_middle = density(using Middle).some
 
     val en13384_flowVelocity_mean: Velocity =
-        val cross_sect_mean = crossSectionArea_middle // __INTERPRETATION__
+        val cross_sect_mean = crossSectionArea(using Middle) // __INTERPRETATION__
         en13384.w_m_calc(cross_sect_mean, massFlow, d_mean)
 
     val temperature_for_pr_pu_pd: TKelvin      = temp_mean
@@ -415,10 +396,9 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
     private val _out =
 
         val initS = MapState(
-            gas_temp_start        = temp_start,
-            last_CrossSectionArea = None,
-            last_InnerGeom        = None,
-            prevO                 = None
+            gas_temp_start = temp_start,
+            last_InnerGeom = None,
+            prevO          = None
         )
 
         val (_, results) = fd.elements.mapAccumulate(initS) { (st, elem) =>
@@ -430,15 +410,13 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
                 hamf,
                 st.gas_temp_start,
                 last_pipe_velocity,
-                last_CrossSectionArea,
                 last_InnerGeom,
                 prevO
             )
             val nextS: MapState = st.copy(
-                gas_temp_start        = psr.gas_temp_end,
-                last_CrossSectionArea = psr.crossSectionArea_end.some,
-                last_InnerGeom        = psr.innerShape_end.some,
-                prevO                 = psr.some
+                gas_temp_start = psr.gas_temp_end,
+                last_InnerGeom = psr.innerShape_end.some,
+                prevO          = psr.some
             )
             (nextS, psr)
         }
@@ -485,8 +463,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
 
 object FlowOnlyMecaFlu_13384_PipeResult_Impl:
     private case class MapState(
-        gas_temp_start       : TCelsius,
-        last_CrossSectionArea: Option[Area],
-        last_InnerGeom       : Option[PipeShape],
-        prevO                : Option[PipeSectionResult[PipeElDescr]]
+        gas_temp_start: TCelsius,
+        last_InnerGeom: Option[PipeShape],
+        prevO         : Option[PipeSectionResult[PipeElDescr]]
     )

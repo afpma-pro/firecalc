@@ -140,7 +140,6 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     last_pipe_density     = 0.393.kg_per_m3.some, // for PG calculation
                     last_pipe_velocity    = 5.24.m_per_s.some, // for PG calculation
                     last_AirSpaceDetailed = None,
-                    last_CrossSectionArea = None,
                     last_InnerGeom        = None,
                     prevO                 = None
                 )(using en13384)
