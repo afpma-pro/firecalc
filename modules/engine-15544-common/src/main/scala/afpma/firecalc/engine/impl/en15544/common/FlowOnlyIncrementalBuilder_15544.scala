@@ -20,7 +20,7 @@ import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_15544_Inst
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.*
 import afpma.firecalc.engine.impl.common.instances.ElementFactory_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.FlowResistanceDSL_15544_Instances.given
-import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.FlowOnlyPropsState_15544
+import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.*
 import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_15544_Instance.given
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_15544_Instances.given
 import afpma.firecalc.engine.models.*
@@ -37,6 +37,7 @@ import cats.Show
 import cats.data.*
 import cats.syntax.all.*
 
+import coulomb.*
 import coulomb.policy.standard.given
 
 import scala.annotation.targetName
@@ -48,6 +49,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
     import AddFlowOnlyPipeElement_15544.*
     import SetFlowOnlyPipeProp_15544.*
+    import FlowOnlyPipeTrackingOp_15544.*
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.hasInnerShapeAtPos
@@ -66,6 +68,10 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     override type IncrDescr  = FlowOnlyPipeDescr_15544
     override type SetProp    = SetFlowOnlyPipeProp_15544
     override type AddElement = AddFlowOnlyPipeElement_15544
+
+    override type PreElementOp      = FlowOnlyPreElementOp_15544
+    override type ChannelTopologyOp = FlowOnlyChannelTopologyOp_15544
+    override type PipeTrackingOp    = FlowOnlyPipeTrackingOp_15544
 
     /**
      * Wrapper-level initial direction (V7).
@@ -109,7 +115,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
             case _: AddDirectionChange => true
             case _ => false
 
-    override protected def isTrailingAllowed(setProp: SetProp): Boolean =
+    override protected def isTrailingAllowed(preOp: PreElementOp): Boolean =
         false
 
     override type PT <: PipeType_EN15544
@@ -241,13 +247,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                             dirBeforePreviousDC = st.dirBeforePreviousDC,
                             currentFrame        = st.currentFrame
                         )
-                    directionChange15544.make(op).asNonEmptyList
+                    directionChange15544.make(op).map(dc => NonEmptyList.one((elIdx, None, dc)))
 
                 case op: AddSectionShapeChange =>
                     given SectionGeometryChangeCtx_15544 =
                         SectionGeometryChangeCtx_15544(
                             stateOps.getInnerShape(st),
-                            convStep.allSetPropsUntilNextAddElement.exists {
+                            convStep.allPreElementOpsUntilNextAddElement.exists {
                                 case (_, _: SetInnerShape) => true
                                 case _ => false
                             },
@@ -303,21 +309,54 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
-        convStep.allSetPropsUntilNextAddElement
-            .foldLeft(propsState.validNel) { case (vState, (_, setPropOp)) =>
-                setPropOp match
-                    case SetInnerShape(g)              =>
-                        vState.map(_.modify(_.geometry).setTo(g.some))
-                    case SetRoughness(r)               =>
+        convStep.allPreElementOpsUntilNextAddElement
+            .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
+                op match
+                    case SetInnerShape(g)                                           =>
+                        vState.andThen { st =>
+                            val nextState = st.copy(geometry = g.some, pendingFlowAreaCheck = None)
+                            st.pendingFlowAreaCheck match
+                                case None        => nextState.validNel
+                                case Some(check) =>
+                                    val beforeTotalArea = totalFlowArea(check.beforeShape, check.beforeFlows)
+                                    val afterTotalArea  = totalFlowArea(g, check.afterFlows)
+                                    if approximatelySameArea(beforeTotalArea, afterTotalArea) then nextState.validNel
+                                    else
+                                        FlowTransitionChangesTotalCrossSection     (
+                                            transition      = check.transition.toString.toLowerCase,
+                                            beforeTotalArea = beforeTotalArea.show,
+                                            afterTotalArea  = afterTotalArea.show,
+                                            beforeFlows     = check.beforeFlows,
+                                            afterFlows      = check.afterFlows,
+                                            sectionTyp      = pt
+                                        ).invalidNel
+                        }
+                    case SetRoughness(r)                                            =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
-                    case SetMaterial(lm)               =>
+                    case SetMaterial(lm)                                            =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                    case SetNumberOfFlows(nf)          =>
-                        vState.map(_.modify(_.nFlows).setTo(nf.some))
-                    // V7: wrapper-level direction (wrapperInitialDirection) takes priority;
-                    // descriptor-level SetInitialDirection is honoured as a fallback for
-                    // legacy callers (test fixtures, non-migrated descriptors).
-                    case SetInitialDirection(az, incl) =>
+                    case FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(nf)       =>
+                        vState.andThen { st =>
+                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                st.copy              (
+                                    nFlows               = nf.some,
+                                    pendingFlowAreaCheck = st.geometry
+                                        .filter(_ => st.nFlows.exists(_ != nf))
+                                        .zip(st.nFlows)
+                                        .map { case (beforeShape, beforeFlows) =>
+                                            PendingFlowAreaCheck(
+                                                beforeShape = beforeShape,
+                                                beforeFlows = beforeFlows,
+                                                afterFlows  = nf,
+                                                transition  =
+                                                    if nf > beforeFlows then FlowAreaTransition.Split
+                                                    else FlowAreaTransition.Merge
+                                            )
+                                        }
+                                ).validNel
+                            )
+                        }
+                    case FlowOnlyPipeTrackingOp_15544.SetInitialDirection(az, incl) =>
                         if vState.toOption.exists(_.initialFrame.isDefined) then vState
                         else
                             val dirVec = Vec3.fromAzimuthElevation(
@@ -326,11 +365,20 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                             )
                             val frame  = PipeFrame.initial(dirVec)
                             vState.map(_.copy(initialFrame = Some(frame), currentFrame = Some(frame)))
-                    case _: SetInitialPosition =>
-                        vState // ignored — use withInitialPosition()
-                    case _: SetFinalPosition =>
-                        vState // ignored — stripped by V6→V7 migration; not part of V7 post-firebox schema
+                    case _: FlowOnlyPipeTrackingOp_15544.SetInitialPosition =>
+                        vState
+                    case _: FlowOnlyPipeTrackingOp_15544.SetFinalPosition =>
+                        vState
             }
+
+    private def totalFlowArea(shape: PipeShape, nFlows: NbOfFlows): Area =
+        shape.area * nFlows.asQty
+
+    private def approximatelySameArea(a: Area, b: Area): Boolean =
+        val av  = a.toUnit[Meter ^ 2].value
+        val bv  = b.toUnit[Meter ^ 2].value
+        val tol = math.max(math.abs(av), math.abs(bv)) * 1e-9 + 1e-12
+        math.abs(av - bv) <= tol
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
     object ElementFactory extends ElementFactoryModule
@@ -441,13 +489,15 @@ object FlowOnlyIncrementalBuilder_15544:
     def makeFor[PType <: PipeType_EN15544](using
         ptype: PType,
         tt1  : TypeTest[FlowOnlyPipeDescr_15544, SetFlowOnlyPipeProp_15544],
-        tt2  : TypeTest[FlowOnlyPipeDescr_15544, AddFlowOnlyPipeElement_15544]
+        tt2  : TypeTest[FlowOnlyPipeDescr_15544, AddFlowOnlyPipeElement_15544],
+        tt3  : TypeTest[FlowOnlyPipeDescr_15544, FlowOnlyPreElementOp_15544]
     ): FlowOnlyIncrementalBuilder_15544 {
         type PT = PType
     } =
         new FlowOnlyIncrementalBuilder_15544:
-            override given typeTestSetProp   : TypeTest[IncrDescr, SetProp]    = tt1
-            override given typeTestAddElement: TypeTest[IncrDescr, AddElement] = tt2
+            override given typeTestSetProp     : TypeTest[IncrDescr, SetProp]      = tt1
+            override given typeTestAddElement  : TypeTest[IncrDescr, AddElement]   = tt2
+            override given typeTestPreElementOp: TypeTest[IncrDescr, PreElementOp] = tt3
             type PT = PType
             given pt: PT = ptype
 

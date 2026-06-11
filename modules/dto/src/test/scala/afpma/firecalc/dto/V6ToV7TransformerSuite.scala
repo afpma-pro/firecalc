@@ -85,22 +85,22 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
     // ─── Helpers ───────────────────────────────────────────────────
 
-    private def hasDeprecatedFlowOnly(
-        d: Seq[FlowOnlyPipeDescr_15544_V3]
+// V7 helper functions: tracking ops are preserved as PipeTrackingOp, not stripped
+    private def hasTrackingFlowOnlyV7(
+        d: Seq[FlowOnlyPipeDescr_15544_V4]
     ): Boolean =
         d.exists:
-            case _: SetFlowOnlyPipeProp_15544_V3.SetInitialDirection => true
-            case _: SetFlowOnlyPipeProp_15544_V3.SetInitialPosition  => true
-            case _: SetFlowOnlyPipeProp_15544_V3.SetFinalPosition    => true
+            case _: FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection => true
+            case _: FlowOnlyPipeTrackingOp_15544_V4.SetInitialPosition  => true
+            case _: FlowOnlyPipeTrackingOp_15544_V4.SetFinalPosition    => true
             case _ => false
-
-    private def hasDeprecatedThermal(
-        d: Seq[ThermalPipeDescr_13384_V3]
+    private def hasTrackingThermalV7(
+        d: Seq[ThermalPipeDescr_13384_V4]
     ): Boolean =
         d.exists:
-            case _: SetThermalPipeProp_13384_V3.SetInitialDirection => true
-            case _: SetThermalPipeProp_13384_V3.SetInitialPosition  => true
-            case _: SetThermalPipeProp_13384_V3.SetFinalPosition    => true
+            case _: ThermalPipeTrackingOp_13384_V4.SetInitialDirection => true
+            case _: ThermalPipeTrackingOp_13384_V4.SetInitialPosition  => true
+            case _: ThermalPipeTrackingOp_13384_V4.SetFinalPosition    => true
             case _ => false
 
     private def minimalFirebox: Firebox_V4 =
@@ -161,9 +161,9 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             result.slots.size shouldBe 3
 
             result.slots(0) match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    hasDeprecatedFlowOnly(d) shouldBe false
-                case other                                => fail(s"Expected FlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                   => fail(s"Expected FlueSlot, got $other")
         }
 
         "extracts initial direction and position from first thermal slot" in {
@@ -187,9 +187,9 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             result.initialPosition shouldBe PostFireboxInitialPosition(5.cm, 15.cm, 25.cm)
 
             result.slots(0) match
-                case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
-                    hasDeprecatedThermal(d) shouldBe false
-                case other                                       => fail(s"Expected ThermalFlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
+                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
         }
 
         "uses default direction when initial direction is missing" in {
@@ -288,19 +288,19 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             )
 
             result.slots(0) match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    hasDeprecatedFlowOnly(d) shouldBe false
-                case other                                => fail(s"Expected FlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                   => fail(s"Expected FlueSlot, got $other")
 
             result.slots(1) match
-                case PostFireboxPipeDescrSlot.ConnectorSlot(d) =>
-                    hasDeprecatedThermal(d) shouldBe false
-                case other                                     => fail(s"Expected ConnectorSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
+                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                        => fail(s"Expected ConnectorSlot, got $other")
 
             result.slots(2) match
-                case PostFireboxPipeDescrSlot.ChimneySlot(d) =>
-                    hasDeprecatedThermal(d) shouldBe false
-                case other                                   => fail(s"Expected ChimneySlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.ChimneySlot(d) =>
+                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                      => fail(s"Expected ChimneySlot, got $other")
         }
 
         "strips SetFinalPosition from all slots" in {
@@ -321,14 +321,14 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             )
 
             result.slots(0) match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    hasDeprecatedFlowOnly(d) shouldBe false
-                case other                                => fail(s"Expected FlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                   => fail(s"Expected FlueSlot, got $other")
 
             result.slots(1) match
-                case PostFireboxPipeDescrSlot.ConnectorSlot(d) =>
-                    hasDeprecatedThermal(d) shouldBe false
-                case other                                     => fail(s"Expected ConnectorSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
+                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                        => fail(s"Expected ConnectorSlot, got $other")
         }
 
         "handles connector-first chain (connector as first slot)" in {
@@ -391,11 +391,19 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             )
 
             result.slots(0) match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    d.contains(roughness) shouldBe true
-                    d.contains(section) shouldBe true
-                    d.size shouldBe 2
-                case other                                => fail(s"Expected FlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    // V7 preserves tracking ops + migrated V3→V4 elements
+                    d.size shouldBe 3
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.SetRoughness(r) => r == 0.5.mm
+                        case _                                                                  => false
+                    ) shouldBe true
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal(n, l) =>
+                            n == "my-section" && l == 150.cm
+                        case _                                                                                => false
+                    ) shouldBe true
+                case other                                   => fail(s"Expected FlueSlot, got $other")
         }
 
         "extracts from first slot even when later slots have initial elements" in {
@@ -423,14 +431,14 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             result.initialPosition shouldBe PostFireboxInitialPosition(10.cm, 20.cm, 30.cm)
 
             result.slots(0) match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    hasDeprecatedFlowOnly(d) shouldBe false
-                case other                                => fail(s"Expected FlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                   => fail(s"Expected FlueSlot, got $other")
 
             result.slots(1) match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    hasDeprecatedFlowOnly(d) shouldBe false
-                case other                                => fail(s"Expected FlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                   => fail(s"Expected FlueSlot, got $other")
         }
 
         "handles mixed flow-only and thermal slots" in {
@@ -460,10 +468,151 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             result.initialPosition shouldBe PostFireboxInitialPosition(10.cm, 20.cm, 30.cm)
 
             result.slots(1) match
-                case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
-                    hasDeprecatedThermal(d) shouldBe false
-                    d.contains(SetThermalPipeProp_13384_V3.SetRoughness(0.3.mm)) shouldBe true
-                case other                                       => fail(s"Expected ThermalFlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
+                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetRoughness(r) => r == 0.3.mm
+                        case _                                                                 => false
+                    ) shouldBe true
+                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
+        }
+        "top-level flow-only SetNumberOfFlows survives migration as ChannelTopologyOp" in {
+            val result = transformers.normalizeToPostFireboxPipes(
+                Seq(
+                    flowOnlySlot(
+                        Seq(SetFlowOnlyPipeProp_15544_V3.SetNumberOfFlows(NbOfFlows(2)))
+                    )
+                )
+            )
+            result.slots(0) match
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4.SetNumberOfFlows(n) =>
+                            n == NbOfFlows(2)
+                        case _                                                                            => false
+                    ) shouldBe true
+                case other                                   => fail(s"Expected FlueSlot, got $other")
+        }
+        "top-level thermal SetNumberOfFlows survives migration as ThermalChannelTopologyOp" in {
+            val result = transformers.normalizeToPostFireboxPipes(
+                Seq(
+                    thermalSlot(
+                        Seq(SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)))
+                    )
+                )
+            )
+            result.slots(0) match
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.ThermalChannelTopologyOp_13384_V4.SetNumberOfFlows(n) =>
+                            n == NbOfFlows(2)
+                        case _                                                                           => false
+                    ) shouldBe true
+                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
+        }
+        "SetNumberOfFlows inside SetPropertiesInBatch.props is removed, sibling properties remain" in {
+            val batch  = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
+                "batch1",
+                Seq   (
+                    SetThermalPipeProp_13384_V3.SetInnerShape   (PipeShape.Circle(20.cm)),
+                    SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)           )
+                )
+            )
+            val result = transformers.normalizeToPostFireboxPipes(
+                Seq(thermalSlot(Seq(batch)))
+            )
+            result.slots(0) match
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetPropertiesInBatch(name, props, _) =>
+                            name == "batch1" &&
+                            {
+                                val hasInnerShape = props.collectFirst {
+                                    case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetInnerShape(shape)
+                                        if shape == PipeShape.Circle(20.cm) =>
+                                        ()
+                                }.isDefined
+                                hasInnerShape
+                            }
+                        case _                                                                                      => false
+                    ) shouldBe true
+                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
+        }
+        "SetNumberOfFlows inside LinedFlue.liner.props is removed, sibling liner properties remain" in {
+            val liner  = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
+                "liner-batch",
+                Seq   (
+                    SetThermalPipeProp_13384_V3.SetInnerShape   (PipeShape.Circle(20.cm)),
+                    SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)           )
+                )
+            )
+            val casing = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
+                "casing-batch",
+                Seq(SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(30.cm)))
+            )
+            val lined  = SetThermalPipeProp_13384_V3.LinedFlue(
+                "my-lined",
+                liner,
+                AirSpaceDetailed_V2.WithoutAirSpace_V2,
+                casing
+            )
+            val result = transformers.normalizeToPostFireboxPipes(
+                Seq(thermalSlot(Seq(lined)))
+            )
+            result.slots(0) match
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.LinedFlue(name, liner, _, _) =>
+                            name == "my-lined" &&
+                            {
+                                val hasInnerShape = liner.props.collectFirst {
+                                    case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetInnerShape(shape)
+                                        if shape == PipeShape.Circle(20.cm) =>
+                                        ()
+                                }.isDefined
+                                hasInnerShape
+                            }
+                        case _                                                                              => false
+                    ) shouldBe true
+                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
+        }
+        "SetNumberOfFlows inside LinedFlue.casing.props is removed, sibling casing properties remain" in {
+            val liner  = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
+                "liner-batch",
+                Seq(SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(20.cm)))
+            )
+            val casing = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
+                "casing-batch",
+                Seq   (
+                    SetThermalPipeProp_13384_V3.SetInnerShape   (PipeShape.Circle(30.cm)),
+                    SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)           )
+                )
+            )
+            val lined  = SetThermalPipeProp_13384_V3.LinedFlue(
+                "my-lined",
+                liner,
+                AirSpaceDetailed_V2.WithoutAirSpace_V2,
+                casing
+            )
+            val result = transformers.normalizeToPostFireboxPipes(
+                Seq(thermalSlot(Seq(lined)))
+            )
+            result.slots(0) match
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
+                    (d.exists:
+                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.LinedFlue(name, _, _, casing) =>
+                            name == "my-lined" &&
+                            {
+                                val hasInnerShape = casing.props.collectFirst {
+                                    case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetInnerShape(shape)
+                                        if shape == PipeShape.Circle(30.cm) =>
+                                        ()
+                                }.isDefined
+                                hasInnerShape
+                            }
+                        case _                                                                               => false
+                    ) shouldBe true
+                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
         }
     }
 
@@ -496,14 +645,37 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
             migrated.post_firebox_pipes.initialPosition shouldBe PostFireboxInitialPosition(-21.cm, 9.cm, 63.cm)
 
             migrated.post_firebox_pipes.slots(0) match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    hasDeprecatedFlowOnly(d) shouldBe false
-                case other                                => fail(s"Expected FlueSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                   => fail(s"Expected FlueSlot, got $other")
 
             migrated.post_firebox_pipes.slots(1) match
-                case PostFireboxPipeDescrSlot.ConnectorSlot(d) =>
-                    hasDeprecatedThermal(d) shouldBe false
-                case other                                     => fail(s"Expected ConnectorSlot, got $other")
+                case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
+                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                case other                                        => fail(s"Expected ConnectorSlot, got $other")
+        }
+        "air_intake_descr is migrated to V7 flow-only 13384 type" in {
+            val v6       = minimalV6(
+                Seq(
+                    flowOnlySlot(
+                        Seq(
+                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
+                            flowOnlyInitialPos(10.cm, 20.cm, 30.cm                            )
+                        )
+                    ),
+                    connectorSlot(Seq.empty)
+                )
+            ).copy(
+                air_intake_descr = Seq(
+                    SetFlowOnlyPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(20.cm))
+                )
+            )
+            val migrated = FireCalcYAMLMigrations.migrateV6ToV7(v6)
+            (migrated.air_intake_descr.exists:
+                case afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.SetInnerShape(shape) =>
+                    shape == PipeShape.Circle(20.cm)
+                case _                                                                       => false
+            ) shouldBe true
         }
     }
 

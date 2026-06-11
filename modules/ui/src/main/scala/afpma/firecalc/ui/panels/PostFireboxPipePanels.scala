@@ -6,7 +6,8 @@
 package afpma.firecalc.ui.panels
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -55,7 +56,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Default content for new slots ────────────────────────────
 
-    private def defaultFlueContent: Seq[FlowOnlyPipeDescr_15544_V3] =
+    private def defaultFlueContent: Seq[FlowOnlyPipeDescr_15544_V4] =
         Seq(
             summon[D[SetFlowOnlyPipeProp_15544.SetMaterial]].default,
             summon[D[SetFlowOnlyPipeProp_15544.SetInnerShape]].default
@@ -67,15 +68,15 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
      * Ensure the slot vector always ends with `..., ConnectorSlot, ChimneySlot`.
      * Mirrors `FireCalcYAML_Loader.normalizePostFireboxSlots` at the UI level.
      */
-    private def normalizeSlots(slots: Seq[PostFireboxPipeDescrSlot]): Seq[PostFireboxPipeDescrSlot] =
+    private def normalizeSlots(slots: Seq[PostFireboxPipeDescrSlot_V7]): Seq[PostFireboxPipeDescrSlot_V7] =
         if slots.size < 2 then slots // degenerate — let topology error surface
         else
             val chimney = slots.last
             chimney match
-                case _: PostFireboxPipeDescrSlot.ChimneySlot =>
+                case _: PostFireboxPipeDescrSlot_V7.ChimneySlot =>
                     slots.init.lastOption match
-                        case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => slots // already normalized
-                        case _                                               => slots.init :+ PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty) :+ chimney
+                        case Some(_: PostFireboxPipeDescrSlot_V7.ConnectorSlot) => slots // already normalized
+                        case _                                                  => slots.init :+ PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty) :+ chimney
                 case _ => slots // no chimney at end — degenerate, let topology error surface
 
     // ── Slot mutation helpers ────────────────────────────────────
@@ -84,12 +85,12 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     private val structureVersion: Var[Int] = Var(0)
 
     /** Insert a slot into the flue region (before the fixed trailing connector + chimney). */
-    private def addSlotToFlueRegion(slot: PostFireboxPipeDescrSlot): Unit =
+    private def addSlotToFlueRegion(slot: PostFireboxPipeDescrSlot_V7): Unit =
         postFireboxSlots_var.update: slots =>
             val normalized     = normalizeSlots(slots)
             val fixedZoneStart = (normalized.size - 2).max(0)
             val (flueRegion, fixedZone) = normalized.splitAt(fixedZoneStart)
-            val cleanedFlueRegion = flueRegion.filter(_ != PostFireboxPipeDescrSlot.NoFlueSlot)
+            val cleanedFlueRegion = flueRegion.filter(_ != PostFireboxPipeDescrSlot_V7.NoFlueSlot)
             cleanedFlueRegion ++ Seq(slot) ++ fixedZone
         structureVersion.update(_ + 1)
 
@@ -102,12 +103,12 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 val remaining         = normalized.zipWithIndex.collect { case (s, i) if i != idx => s }
                 val newFixedZoneStart = (remaining.size - 2).max(0)
                 val newFlueRegion     = remaining.take(newFixedZoneStart)
-                val hasFlue           = newFlueRegion.exists(_.isInstanceOf[PostFireboxPipeDescrSlot.FlueSlot]) ||
-                    newFlueRegion.exists(_.isInstanceOf[PostFireboxPipeDescrSlot.ThermalFlueSlot])
-                val hasNoFlue         = newFlueRegion.exists(_ == PostFireboxPipeDescrSlot.NoFlueSlot)
+                val hasFlue           = newFlueRegion.exists(_.isInstanceOf[PostFireboxPipeDescrSlot_V7.FlueSlot]) ||
+                    newFlueRegion.exists(_.isInstanceOf[PostFireboxPipeDescrSlot_V7.ThermalFlueSlot])
+                val hasNoFlue         = newFlueRegion.exists(_ == PostFireboxPipeDescrSlot_V7.NoFlueSlot)
                 if !hasFlue && !hasNoFlue then
                     val newFixedZone = remaining.drop(newFixedZoneStart)
-                    PostFireboxPipeDescrSlot.NoFlueSlot +: newFixedZone
+                    PostFireboxPipeDescrSlot_V7.NoFlueSlot +: newFixedZone
                 else remaining
         structureVersion.update(_ + 1)
 
@@ -140,13 +141,13 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             cls := "btn btn-xs btn-outline btn-primary",
             lucide.plus,
             span(cls := "ml-1", I18N.panels.channel_pipe),
-            onClick --> { _ => addSlotToFlueRegion(PostFireboxPipeDescrSlot.FlueSlot(defaultFlueContent)) }
+            onClick --> { _ => addSlotToFlueRegion(PostFireboxPipeDescrSlot_V7.FlueSlot(defaultFlueContent)) }
         ),
         button(
             cls := "btn btn-xs btn-outline btn-secondary",
             lucide.plus,
             span(cls := "ml-1", I18N.panels.connector_pipe),
-            onClick --> { _ => addSlotToFlueRegion(PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty)) }
+            onClick --> { _ => addSlotToFlueRegion(PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty)) }
         ),
         div   (cls := "flex-1"),
         // Head-region length display — plan issue U3. Shows Σ(head pipe lengths).
@@ -176,8 +177,8 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                 val headIndices        = DynamicPipeSlotPanel.computeHeadRegionIndices(normalized)
                 val hasConnectorInHead = headIndices.exists: i =>
                     normalized.lift(i) match
-                        case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => true
-                        case _                                               => false
+                        case Some(_: PostFireboxPipeDescrSlot_V7.ConnectorSlot) => true
+                        case _                                                  => false
                 resultsV match
                     case Validated.Valid(_) if headIndices.isEmpty =>
                         span()
@@ -242,7 +243,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             .combineWithDistinct(headRegionLengthsSig, lZMinSig)
             .map: (slots, lengthsOpt, lzMinOpt) =>
                 val normalized = normalizeSlots(slots)
-                val hasNoFlue  = normalized.contains(PostFireboxPipeDescrSlot.NoFlueSlot)
+                val hasNoFlue  = normalized.contains(PostFireboxPipeDescrSlot_V7.NoFlueSlot)
                 if hasNoFlue then None
                 else
                     for
@@ -281,7 +282,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
 
     // ── Per-slot controls (remove, move up/down) ─────────────────
 
-    private def slotControls(idx: Int, totalSlots: Int, slot: PostFireboxPipeDescrSlot): HtmlElement =
+    private def slotControls(idx: Int, totalSlots: Int, slot: PostFireboxPipeDescrSlot_V7): HtmlElement =
         val fixedZoneStart = (totalSlots - 2).max(0)
         val isInFlueRegion = idx < fixedZoneStart
 
@@ -406,7 +407,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
      *
      * Layout: [flue region panels] [toolbar] [trailing connector panel] [chimney panel]
      */
-    private def buildPanels(slots: Seq[PostFireboxPipeDescrSlot]): HtmlElement =
+    private def buildPanels(slots: Seq[PostFireboxPipeDescrSlot_V7]): HtmlElement =
         val normalized        = normalizeSlots(slots)
         val fixedZoneStart    = (normalized.size - 2).max(0)
         val headRegionIdxs    = DynamicPipeSlotPanel.computeHeadRegionIndices(normalized)
@@ -414,11 +415,11 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         div(
             normalized.zipWithIndex.flatMap: (slot, idx) =>
                 slot match
-                    case PostFireboxPipeDescrSlot.NoFlueSlot =>
+                    case PostFireboxPipeDescrSlot_V7.NoFlueSlot =>
                         val panel = buildNoFlueSlotPanel
                         if idx == fixedZoneStart then Seq(toolbar, panel)
                         else Seq                         (panel         )
-                    case _                                   =>
+                    case _                                      =>
                         val controls =
                             if idx >= fixedZoneStart then None
                             else Some(slotControls(idx, normalized.size, slot))
@@ -451,8 +452,8 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     // `lastDispatcherWrite_var` is shared with AppToasts so strategy re-dispatches from the
     // toast can suppress EVERY echo (debounced + binder roundtrip + normalization) until a
     // genuinely different snapshot arrives.
-    private var prevSnapshot: Option[Seq[PostFireboxPipeDescrSlot]] = Some(postFireboxSlots_var.now())
-    private var prevProject : EngineState                           = engineStateVar.now()
+    private var prevSnapshot: Option[Seq[PostFireboxPipeDescrSlot_V7]] = Some(postFireboxSlots_var.now())
+    private var prevProject : EngineState                              = engineStateVar.now()
 
     private def sameProjectAsideFromSlots(a: EngineState, b: EngineState): Boolean =
         a.copy(post_firebox_pipes = a.post_firebox_pipes.copy(slots = b.post_firebox_pipes.slots)) == b
@@ -468,7 +469,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             )
         )
 
-    private def handleSlotSnapshot(newSnapshot: Seq[PostFireboxPipeDescrSlot]): Unit =
+    private def handleSlotSnapshot(newSnapshot: Seq[PostFireboxPipeDescrSlot_V7]): Unit =
         val currentProject = engineStateVar.now()
         if !sameProjectAsideFromSlots(currentProject, prevProject) then
             prevProject  = currentProject
@@ -520,7 +521,7 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
             if !sameProjectAsideFromSlots(project, prevProject) then
                 prevProject  = project
                 prevSnapshot = Some(project.post_firebox_pipes.slots),
-        postFireboxSlots_var.signal.changes.debounce(300) --> Observer[Seq[PostFireboxPipeDescrSlot]](
+        postFireboxSlots_var.signal.changes.debounce(300) --> Observer[Seq[PostFireboxPipeDescrSlot_V7]](
             handleSlotSnapshot
         ),
         child.maybe <-- topologyWarning,

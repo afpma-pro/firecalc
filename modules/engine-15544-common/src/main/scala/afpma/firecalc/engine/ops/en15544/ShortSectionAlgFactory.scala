@@ -42,7 +42,8 @@ object ShortSectionAlgFactory:
                         // so α3 = α1
                         dc01.angleN1
                     case Some(dc12) => dc12.angleN2.getOrElse(throw new Exception("bad validation (TOFIX by @dev)")),
-                angleN2 = None
+                angleN2        = None,
+                effectiveShape = dc01.effectiveShape
             )
             val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
             val ζα3_v       = flowOnlyDFC.whenRegularFor(dc02)

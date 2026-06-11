@@ -10,6 +10,8 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
+import afpma.firecalc.dto.all.ThermalChannelTopologyOp_13384.*
+import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
 
 import afpma.firecalc.i18n.implicits.given
 

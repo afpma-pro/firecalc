@@ -208,8 +208,8 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
 // Slot-indexed reactive state for dynamic N-pipe UI.
 
 import afpma.firecalc.dto.common.PipeShape
-import afpma.firecalc.dto.v4.endsWithSingularFlowResistance
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.endsWithSingularFlowResistance
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.{PostFireboxInitialDirection, PostFireboxInitialPosition}
 import afpma.firecalc.engine.models.ChimneyPipe_Module
 import afpma.firecalc.engine.models.SlotBuildResult
@@ -222,7 +222,7 @@ import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
  * Mutations here (add/remove/reorder/edit) propagate through engineStateVar
  * and trigger re-computation of all derived signals.
  */
-lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot]] =
+lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot_V7]] =
     engineStateVar.zoomLazy(_.post_firebox_pipes.slots): (g, x) =>
         g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(slots = x))
 
@@ -260,7 +260,7 @@ lazy val rotateOffer_var: Var[Option[afpma.firecalc.engine.models.geometry.Chain
  * into an arbitrary number of echoes (300ms debounced snapshot + ~200ms bidirsync
  * roundtrip + possible normalize pass). A single boolean would only absorb the first.
  */
-lazy val lastDispatcherWrite_var: Var[Option[Seq[PostFireboxPipeDescrSlot]]] = Var(None)
+lazy val lastDispatcherWrite_var: Var[Option[Seq[PostFireboxPipeDescrSlot_V7]]] = Var(None)
 
 // ── Slot-indexed build results ───────────────────────────────────
 
@@ -330,7 +330,7 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                     case ((results, startPoint), (slot, idx)) =>
                         val prevFrame = if idx == 0 then None else frames.lift(idx - 1).flatten
                         val pos       = slot match
-                            case PostFireboxPipeDescrSlot.FlueSlot(descr)        =>
+                            case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        =>
                                 PositionTracker.computeFlowOnly15544(
                                     descr,
                                     initialDirection = initialDir,
@@ -338,7 +338,7 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
-                            case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
+                            case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) =>
                                 PositionTracker.computeThermal13384(
                                     descr,
                                     initialDirection = initialDir,
@@ -346,7 +346,7 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
-                            case PostFireboxPipeDescrSlot.ConnectorSlot(descr)   =>
+                            case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)   =>
                                 PositionTracker.computeThermal13384(
                                     descr,
                                     initialDirection = initialDir,
@@ -354,7 +354,7 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
-                            case PostFireboxPipeDescrSlot.ChimneySlot(descr)     =>
+                            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     =>
                                 PositionTracker.computeThermal13384(
                                     descr,
                                     initialDirection = initialDir,
@@ -362,7 +362,7 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
-                            case PostFireboxPipeDescrSlot.NoFlueSlot             =>
+                            case PostFireboxPipeDescrSlot_V7.NoFlueSlot             =>
                                 PipePositionResult(Seq.empty, startPoint, None)
                         (results :+ pos, pos.finalPoint)
                 ._1
@@ -389,7 +389,7 @@ lazy val chimneyEndCapInputs_sig: Signal[Option[(PipePositionResult, PipeShape)]
         .map: (slots, positions) =>
             val lastChimneyIdxOpt = slots.zipWithIndex
                 .collect:
-                    case (s: PostFireboxPipeDescrSlot.ChimneySlot, i) => (s, i)
+                    case (s: PostFireboxPipeDescrSlot_V7.ChimneySlot, i) => (s, i)
                 .lastOption
             for
                 (slot, idx) <- lastChimneyIdxOpt
@@ -695,10 +695,10 @@ lazy val door15aFireboxesSignal: Signal[Seq[Firebox.Door15aFirebox_Catalog]] =
 lazy val singleTestedFireboxesSignal: Signal[Seq[Firebox.SingleTested]] =
     catalogStateVar.signal.map(_.single_tested_fireboxes.values.toSeq)
 
-lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384.SetPropertiesInBatch]] =
     catalogStateVar.signal.map(_.pipe_presets.values.toSeq)
 
-lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384.SetPropertiesInBatch]] =
     catalogStateVar.signal.map(_.casing_presets.values.toSeq)
 
 lazy val flowResistancePresetsSignal: Signal[Seq[FlowResistanceCatalogEntry]] =

@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.panels
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.domain.{AzimuthDirection, InclinationDirection}
 
@@ -26,7 +27,7 @@ import io.taig.babel.Locale
  *
  * Used by:
  *   - DynamicFlowOnlyPipeSlotPanel — firebox boundary, rendered only on the
- *     first `PostFireboxPipeDescrSlot.FlueSlot`. The "first flue slot" check is
+ *     first `PostFireboxPipeDescrSlot_V7.FlueSlot`. The "first flue slot" check is
  *     reactive over `postFireboxSlots_var`, so if the user reorders slots
  *     (e.g. moves a ConnectorSlot above the flue region), the button migrates
  *     to whichever FlueSlot is now topologically first.
@@ -174,31 +175,31 @@ object AutoCalcHelper:
      * Matches both FlueSlot and ThermalPipeDescr slots. Returns None for NoFlueSlot
      * or when no SetInnerShape is present in the first slot's descriptors.
      */
-    def firstInnerShapeIn(slot: Seq[PostFireboxPipeDescrSlot]): Option[PipeShape] =
+    def firstInnerShapeIn(slot: Seq[PostFireboxPipeDescrSlot_V7]): Option[PipeShape] =
         slot.headOption.flatMap(firstInnerShapeInSlot)
 
     /**
      * Check if the first slot has any SetInnerShape element.
      * Used reactively to determine auto-calc button enabled state.
      */
-    def firstSlotHasInnerShape(slots: Seq[PostFireboxPipeDescrSlot]): Boolean =
+    def firstSlotHasInnerShape(slots: Seq[PostFireboxPipeDescrSlot_V7]): Boolean =
         firstInnerShapeIn(slots).isDefined
 
-    private def firstInnerShapeInSlot(slot: PostFireboxPipeDescrSlot): Option[PipeShape] =
+    private def firstInnerShapeInSlot(slot: PostFireboxPipeDescrSlot_V7): Option[PipeShape] =
         slot match
-            case PostFireboxPipeDescrSlot.FlueSlot(descr)        =>
+            case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        =>
                 descr.collectFirst:
                     case sis: SetFlowOnlyPipeProp_15544.SetInnerShape => sis.shape
-            case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
+            case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) =>
                 descr.collectFirst:
                     case sis: SetThermalPipeProp_13384.SetInnerShape => sis.shape
-            case PostFireboxPipeDescrSlot.ConnectorSlot(descr)   =>
+            case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)   =>
                 descr.collectFirst:
                     case sis: SetThermalPipeProp_13384.SetInnerShape => sis.shape
-            case PostFireboxPipeDescrSlot.ChimneySlot(descr)     =>
+            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     =>
                 descr.collectFirst:
                     case sis: SetThermalPipeProp_13384.SetInnerShape => sis.shape
-            case PostFireboxPipeDescrSlot.NoFlueSlot             =>
+            case PostFireboxPipeDescrSlot_V7.NoFlueSlot             =>
                 None
 
     // ── Reactive UI helpers ──────────────────────────────────────────────

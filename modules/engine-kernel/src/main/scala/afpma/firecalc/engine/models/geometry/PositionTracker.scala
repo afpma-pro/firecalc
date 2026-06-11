@@ -52,8 +52,9 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
-        import SetFlowOnlyPipeProp_13384_V3.*
-        import AddFlowOnlyPipeElement_13384_V3.*
+        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
+        import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_13384_V4.*
 
         val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
             (toVec3(x, y, z), idx)
@@ -157,8 +158,7 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _: SetFlowOnlyPipeProp_13384_V3 => ()
-                case _: AddFlowOnlyPipeElement_13384_V3 => ()
+                case _: FlowOnlyPipeDescr_13384 => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
@@ -171,8 +171,9 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
-        import SetFlowOnlyPipeProp_15544_V3.*
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
+        import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4.*
 
         val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
             (toVec3(x, y, z), idx)
@@ -276,8 +277,7 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _: SetFlowOnlyPipeProp_15544_V3 => ()
-                case _: AddFlowOnlyPipeElement_15544_V3 => ()
+                case _: FlowOnlyPipeDescr_15544 => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)
@@ -290,8 +290,9 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
-        import SetThermalPipeProp_13384_V3.*
-        import AddThermalPipeElement_13384_V3.*
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
+        import afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4.*
 
         val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
             (toVec3(x, y, z), idx)
@@ -403,8 +404,7 @@ object PositionTracker:
                         frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                     )
                     currentPosition = endPt
-                case _: SetThermalPipeProp_13384_V3 => ()
-                case _: AddThermalPipeElement_13384_V3 => ()
+                case _: ThermalPipeDescr_13384 => ()
 
         val result = PipePositionResult(segments.result(), currentPosition, frame)
         applyFinalTranslate(result, effectiveFinal)

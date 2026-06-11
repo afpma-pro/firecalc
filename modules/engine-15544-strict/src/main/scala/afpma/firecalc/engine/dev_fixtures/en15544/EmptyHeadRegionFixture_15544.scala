@@ -8,9 +8,8 @@ package afpma.firecalc.engine.dev_fixtures.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as EP4
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -142,31 +141,29 @@ object EmptyHeadRegionFixture_15544
     //   - conceptualFluePipeResult (falls back to firebox_PipeResult)
     //   - t_F                    (falls back to firebox_PipeResult.gas_temp_end)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot] =
-        import ConnectorPipe_Module as CPM
-        import ChimneyPipe_Module as CHPM
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
         Seq(
             // Slot 0 — ConnectorSlot: short vertical steel connector
-            PostFireboxPipeDescrSlot.ConnectorSlot(
+            PostFireboxPipeDescrSlot_V7.ConnectorSlot(
                 Seq (
-                    CPM.roughness (Material_13384.WeldedSteel()),
-                    CPM.innerShape(circle(130.mm)              ),
-                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-                    CPM.pipeLocation      (PipeLocation.HeatedArea                     ),
-                    CPM.addSectionVertical("C-buse", 5.cm                              )
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(130.mm)              ),
+                    SP4.SetLayer          (2.mm, WattsPerMeterKelvin(0.0)),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea       ),
+                    EP4.AddSectionVertical("C-buse", 5.cm                )
                 )
             ),
             // Slot 1 — ChimneySlot: insulated chimney
-            PostFireboxPipeDescrSlot.ChimneySlot  (
+            PostFireboxPipeDescrSlot_V7.ChimneySlot  (
                 Seq(
-                    CHPM.roughness         (1.mm                                           ),
-                    CHPM.innerShape(circle(130.mm)),
-                    CHPM.layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.260)),
-                    CHPM.pipeLocation      (PipeLocation.HeatedArea                        ),
-                    CHPM.addSectionVertical("CH-etage", 90.cm                              ),
-                    CHPM.pipeLocation      (PipeLocation.OutsideOrExterior                 ),
-                    CHPM.addSectionVertical("CH-sortie de toit", 60.cm                     ),
-                    CHPM.addFlowResistance ("CH-element terminal", 1.461.unitless: ζ)
+                    SP4.SetRoughness      (1.mm                                          ),
+                    SP4.SetInnerShape(circle(130.mm)),
+                    SP4.SetLayer          (26.mm, WattsPerMeterKelvin(0.260)             ),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea                       ),
+                    EP4.AddSectionVertical("CH-etage", 90.cm                             ),
+                    SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior                ),
+                    EP4.AddSectionVertical("CH-sortie de toit", 60.cm                    ),
+                    EP4.AddFlowResistance ("CH-element terminal", 1.461.unitless: ζ, None)
                 )
             )
         )

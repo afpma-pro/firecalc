@@ -7,6 +7,15 @@ package afpma.firecalc.dto.v4
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.domain.{
+    IsDirectionChange,
+    IsLengthBearingPipeElement,
+    IsPressureDiff,
+    IsSectionGeometryChange,
+    IsSingularFlowResistance,
+    SetsInnerShape,
+    SetsNumberOfFlows
+}
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.*
@@ -24,6 +33,7 @@ object SetFlowOnlyPipeProp_13384_V3:
         @Transl(I(_.terms.pipe_shape._self))
         shape: PipeShape
     ) extends SetFlowOnlyPipeProp_13384_V3
+        with SetsInnerShape
 
     @Transl(I(_.set_prop.SetRoughness))
     case class SetRoughness(
@@ -42,6 +52,7 @@ object SetFlowOnlyPipeProp_13384_V3:
         @Transl(I(_.set_prop.SetNumberOfFlows_fieldName))
         n_flows: NbOfFlows
     ) extends SetFlowOnlyPipeProp_13384_V3
+        with SetsNumberOfFlows
 
     @Transl(I(_.set_prop.SetInitialDirection))
     @deprecated("Use PostFireboxInitialDirection on PostFireboxPipes instead. Will be removed in V8.", "V7")
@@ -80,6 +91,7 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.terms.length))
         length: Length
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     @Transl(I(_.add_element.AddSectionSlopped))
     case class AddSectionSloppedForceManualElevationGain(
@@ -90,6 +102,7 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     /**
      * Legacy section type — treated as `AddSectionSlopped(name, length = horizontal_length)` by the engine.
@@ -104,6 +117,7 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.terms.horizontal_length))
         horizontal_length: Length
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     /**
      * Legacy section type — treated as `AddSectionSlopped(name, length = elevation_gain)` by the engine.
@@ -118,6 +132,7 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     sealed abstract class AddDirectionChange(
         @Transl(I(_.terms.name))
@@ -127,6 +142,7 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.terms.absolute_direction))
         val absDir: Option[AbsoluteDirection] = None
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsDirectionChange
 
     @Transl(I(_.add_element.AddAngleAdjustable))
     case class AddAngleAdjustable(
@@ -252,6 +268,7 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.terms.pipe_shape._self))
         val to_shape: PipeShape
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsSectionGeometryChange
 
     @Transl(I(_.add_element.AddSectionDecrease))
     case class AddSectionDecrease(
@@ -279,6 +296,7 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.add_element.cross_section))
         cross_section: OptionOfEither[AreaInCm2, PipeShape] // Option[Either[L, R]] has issues when serializing via circe, so custom type with custom encoder/decoder as a workaround
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsSingularFlowResistance
 
     case class AddPressureDiff(
         @Transl(I(_.terms.name))
@@ -286,3 +304,4 @@ object AddFlowOnlyPipeElement_13384_V3:
         @Transl(I(_.terms.pressure_difference))
         pressure_difference: Pressure
     ) extends AddFlowOnlyPipeElement_13384_V3
+        with IsPressureDiff

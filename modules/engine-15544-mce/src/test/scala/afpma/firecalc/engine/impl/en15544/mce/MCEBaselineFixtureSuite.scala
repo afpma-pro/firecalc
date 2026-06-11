@@ -30,12 +30,18 @@ class MCEBaselineFixtureSuite extends AnyFreeSpec with Matchers:
 
         "mixes in WithPipeChain_15544_MCE and produces a 3-slot postFireboxPipeSlots at the descriptor level" in {
             val slots = MCEBaselineFixture_15544.postFireboxPipeSlots
-            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
             slots should not be empty
             slots.size shouldBe 3
-            slots(0) shouldBe a[ThermalFlueSlot]
-            slots(1) shouldBe a[ConnectorSlot]
-            slots(2) shouldBe a[ChimneySlot]
+            slots(0) match
+                case ThermalFlueSlot(_) => ()
+                case other              => fail(s"Expected ThermalFlueSlot, got $other")
+            slots(1) match
+                case ConnectorSlot(_) => ()
+                case other            => fail(s"Expected ConnectorSlot, got $other")
+            slots(2) match
+                case ChimneySlot(_) => ()
+                case other          => fail(s"Expected ChimneySlot, got $other")
         }
 
         "drives the MCE chain-aware Stage 1 path (flueRegionPipeResults non-empty branch)" in {

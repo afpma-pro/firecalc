@@ -9,6 +9,8 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
+import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
 import afpma.firecalc.ui.displayUnits
 

@@ -26,6 +26,8 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
 
     import AddFlowOnlyPipeElement_15544.*
     import SetFlowOnlyPipeProp_15544.*
+    import FlowOnlyChannelTopologyOp_15544.*
+    import FlowOnlyPipeTrackingOp_15544.*
 
     // import defaultable.given
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()

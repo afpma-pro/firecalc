@@ -117,7 +117,7 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
      */
     private def buildPipeIdxToDescrIdx(
         postFireboxPipes: Vector[(String, VNelMcalcErr[PipeResult])],
-        slots           : Seq[PostFireboxPipeDescrSlot],
+        slots           : Seq[PostFireboxPipeDescrSlot_V7],
         slotResults     : Vector[SlotBuildResult]
     ): Map[String, Map[Int, Int]] =
         postFireboxPipes.zipWithIndex.flatMap { case ((pipeName, _), slotIdx) =>
@@ -128,11 +128,11 @@ final case class GraphPanel()(using Locale, DisplayUnits) extends Component:
                 val descrCount = slots
                     .lift(slotIdx)
                     .map {
-                        case PostFireboxPipeDescrSlot.FlueSlot(d)        => d.size
-                        case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) => d.size
-                        case PostFireboxPipeDescrSlot.ConnectorSlot(d)   => d.size
-                        case PostFireboxPipeDescrSlot.ChimneySlot(d)     => d.size
-                        case PostFireboxPipeDescrSlot.NoFlueSlot         => 0
+                        case PostFireboxPipeDescrSlot_V7.FlueSlot(d)        => d.size
+                        case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) => d.size
+                        case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d)   => d.size
+                        case PostFireboxPipeDescrSlot_V7.ChimneySlot(d)     => d.size
+                        case PostFireboxPipeDescrSlot_V7.NoFlueSlot         => 0
                     }
                     .getOrElse(0)
                 val reverseMap = (0 until descrCount).flatMap { descrIdx =>

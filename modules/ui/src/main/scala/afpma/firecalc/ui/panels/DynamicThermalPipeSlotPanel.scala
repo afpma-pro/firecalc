@@ -8,7 +8,7 @@ package afpma.firecalc.ui.panels
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -123,20 +123,22 @@ final case class DynamicThermalPipeSlotPanel(
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] =
         postFireboxSlots_var.zoomLazy(slots =>
             slots.lift(slotIndex) match
-                case Some(PostFireboxPipeDescrSlot.ThermalFlueSlot(d)) => d
-                case Some(PostFireboxPipeDescrSlot.ConnectorSlot(d))   => d
-                case Some(PostFireboxPipeDescrSlot.ChimneySlot(d))     => d
-                case _                                                 => Seq.empty
+                case Some(PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d)) => d
+                case Some(PostFireboxPipeDescrSlot_V7.ConnectorSlot(d))   => d
+                case Some(PostFireboxPipeDescrSlot_V7.ChimneySlot(d))     => d
+                case _                                                    => Seq.empty
         )((slots, descr) =>
             slots.zipWithIndex.map { case (s, i) =>
                 if i != slotIndex then s
                 else
                     s match
-                        case PostFireboxPipeDescrSlot.ThermalFlueSlot(_) =>
-                            PostFireboxPipeDescrSlot.ThermalFlueSlot(descr)
-                        case PostFireboxPipeDescrSlot.ConnectorSlot(_)   => PostFireboxPipeDescrSlot.ConnectorSlot(descr)
-                        case PostFireboxPipeDescrSlot.ChimneySlot(_)     => PostFireboxPipeDescrSlot.ChimneySlot(descr)
-                        case other                                       => other // shouldn't happen
+                        case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(_) =>
+                            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr)
+                        case PostFireboxPipeDescrSlot_V7.ConnectorSlot(_)   =>
+                            PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)
+                        case PostFireboxPipeDescrSlot_V7.ChimneySlot(_)     =>
+                            PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)
+                        case other                                          => other // shouldn't happen
             }
         )
 
@@ -144,8 +146,6 @@ final case class DynamicThermalPipeSlotPanel(
         slotInitialFrameSig(slotIndex)
 
     // ── Auto-calc: firebox-boundary for Connector-first head chains (plan U2) ──
-
-    import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 
     private def mkOnInitialDirectionCommit_thermal(
         elemIdx: Int

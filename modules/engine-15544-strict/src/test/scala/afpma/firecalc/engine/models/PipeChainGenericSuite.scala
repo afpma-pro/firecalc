@@ -8,8 +8,8 @@ package afpma.firecalc.engine.models
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -23,15 +23,14 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     private def thermalPipeDescr(
         name : String,
         flows: Option[NbOfFlows] = None
-    ): Seq[ThermalPipeDescr_13384_V3] =
-        import afpma.firecalc.dto.v3.Material_13384_V2
-        flows.map(SetThermalPipeProp_13384_V3.SetNumberOfFlows.apply).toSeq ++ Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-            AddThermalPipeElement_13384_V3.AddSectionVertical(name, 100.cm                     )
+    ): Seq[ThermalPipeDescr_13384] =
+        flows.map(ThermalChannelTopologyOp_13384.SetNumberOfFlows.apply).toSeq ++ Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical(name, 100.cm                     )
         )
 
     "PipeChainGeneric.build" should "produce 3 SlotBuildResults for standard topology" in {
@@ -82,7 +81,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "produce non-empty results with actual descriptors" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
@@ -104,23 +104,23 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frames: flue's final frame feeds connector's build" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.v3.Material_13384_V2
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // Flue with direction → produces a final frame
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
             AddSectionVertical ("sec1", 100.cm                                )
         )
         // Connector with minimal thermal config — no initial direction, relies on flue's frame
-        val connDescr = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec1", 100.cm                   )
+        val connDescr = Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical("sec1", 100.cm                   )
         )
         val results   = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), ConnectorSlot(connDescr), emptyChimney))
 
@@ -135,9 +135,10 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "carry frame through empty intermediate slot (V5 migration regression)" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // Flue with direction → produces a final frame
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
@@ -217,22 +218,23 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frames through 3+ flue slots with actual descriptors" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // First flue: sets direction and adds a vertical section
-        val flueDescr1 = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr1 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
             AddSectionVertical ("sec1", 100.cm                                )
         )
         // Second flue: no initial direction, relies on frame from first flue
-        val flueDescr2 = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr2 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness      (1.mm         ),
             AddSectionVertical("sec2", 80.cm)
         )
         // Third flue: also relies on inherited frame
-        val flueDescr3 = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr3 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness      (1.mm         ),
             AddSectionVertical("sec3", 60.cm)
@@ -258,32 +260,32 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frame from FlueSlot through ThermalFlueSlot to ConnectorSlot" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.v3.Material_13384_V2
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // EN15544 flue with direction → produces a final frame
-        val flueDescr        = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr        = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
             AddSectionVertical ("sec1", 100.cm                                )
         )
         // EN13384 thermal flue — no initial direction, inherits frame from EN15544 flue
-        val thermalFlueDescr = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec2", 80.cm                    )
+        val thermalFlueDescr = Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical("sec2", 80.cm                    )
         )
         // Connector — inherits frame from thermal flue
-        val connDescr        = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec3", 50.cm                    )
+        val connDescr        = Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical("sec3", 50.cm                    )
         )
         val results          = PipeChainGeneric.build(
             Seq(FlueSlot(flueDescr), ThermalFlueSlot(thermalFlueDescr), ConnectorSlot(connDescr), emptyChimney)
@@ -305,9 +307,10 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "propagate frame across empty flue slot in multi-flue chain" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // First flue with direction → produces a final frame
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
@@ -371,27 +374,26 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     // ── V6 frame chaining through thermal flue slots with actual descriptors ──
 
     it should "chain frames through multiple ThermalFlueSlots with actual descriptors" in {
-        import afpma.firecalc.dto.v3.Material_13384_V2
 
         // First thermal flue sets direction via initial frame from previous slot = None,
         // but has its own descriptors with a vertical section
-        val thermalFlueDescr1 = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)             ),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                                          ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea                       ),
-            SetThermalPipeProp_13384_V3.SetInitialDirection  (AzimuthDirection.Rear, InclinationDirection.Up),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec1", 100.cm                                )
+        val thermalFlueDescr1 = Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer              (2.0.mm, WattsPerMeterKelvin(50.0)             ),
+            SetThermalPipeProp_13384.SetRoughness          (1.mm                                          ),
+            SetThermalPipeProp_13384.SetPipeLocation       (PipeLocation.HeatedArea                       ),
+            ThermalPipeTrackingOp_13384.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddThermalPipeElement_13384.AddSectionVertical ("sec1", 100.cm                                )
         )
         // Second thermal flue inherits frame
-        val thermalFlueDescr2 = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec2", 80.cm                    )
+        val thermalFlueDescr2 = Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical("sec2", 80.cm                    )
         )
         val results           = PipeChainGeneric.build(
             Seq(ThermalFlueSlot(thermalFlueDescr1), ThermalFlueSlot(thermalFlueDescr2), emptyChimney)
@@ -411,32 +413,32 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frame across 4 mixed slots: FlueSlot + ThermalFlueSlot + ThermalFlueSlot + ChimneySlot" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.v3.Material_13384_V2
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // EN15544 flue with direction
-        val flueDescr         = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr         = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
             AddSectionVertical ("sec1", 100.cm                                )
         )
         // First EN13384 thermal flue — inherits frame from EN15544 flue
-        val thermalFlueDescr1 = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec2", 80.cm                    )
+        val thermalFlueDescr1 = Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical("sec2", 80.cm                    )
         )
         // Second EN13384 thermal flue — inherits frame from first thermal flue
-        val thermalFlueDescr2 = Seq[ThermalPipeDescr_13384_V3](
-            SetThermalPipeProp_13384_V3.SetInnerShape(Circle(150.mm)                 ),
-            SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-            SetThermalPipeProp_13384_V3.SetRoughness         (1.mm                             ),
-            SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-            AddThermalPipeElement_13384_V3.AddSectionVertical("sec3", 60.cm                    )
+        val thermalFlueDescr2 = Seq[ThermalPipeDescr_13384](
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical("sec3", 60.cm                    )
         )
         val results           = PipeChainGeneric.build(
             Seq(
@@ -465,15 +467,16 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "produce independent idsMappingFn per slot in multi-flue topology" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // Two flues with sections at different indices within their descriptor sequences
-        val flueDescr1 = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr1 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
             SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
             AddSectionVertical ("sec1", 100.cm                                )
         )
-        val flueDescr2 = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr2 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
             SetRoughness      (1.mm         ),
             AddSectionVertical("sec2", 80.cm)
@@ -504,8 +507,10 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "inherit flow count from flow-only flue into connector and chimney" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows   (2.flows                                       ),
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),
@@ -525,10 +530,17 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     }
 
     it should "inherit flow count from thermal flue into connector and chimney" in {
-        val thermalFlueDescr =
-            Seq[ThermalPipeDescr_13384_V3](
-                SetThermalPipeProp_13384_V3.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
-            ) ++ thermalPipeDescr("flue", flows = Some(2.flows))
+        // Put SetNumberOfFlows before SetInitialDirection so the split check sees no frame yet
+        val thermalFlueDescr = Seq[ThermalPipeDescr_13384](
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows(2.flows                                       ),
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer              (2.0.mm, WattsPerMeterKelvin(50.0)             ),
+            SetThermalPipeProp_13384.SetRoughness          (1.mm                                          ),
+            SetThermalPipeProp_13384.SetPipeLocation       (PipeLocation.HeatedArea                       ),
+            ThermalPipeTrackingOp_13384.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
+            AddThermalPipeElement_13384.AddSectionVertical ("flue", 100.cm                                )
+        )
 
         val results = PipeChainGeneric.build(
             Seq(
@@ -544,13 +556,16 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "let an explicit next-slot flow count override the inherited value" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
-            SetNumberOfFlows   (2.flows                                       ),
+        // Use Horizontal so the connector's split (2→3) isn't blocked by validateSplitNotOnAscending
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
+            SetNumberOfFlows   (2.flows                                               ),
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("flue", 100.cm                                )
+            SetRoughness       (1.mm                                                  ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
+            AddSectionVertical ("flue", 100.cm                                        )
         )
 
         val results = PipeChainGeneric.build(
@@ -567,15 +582,18 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "inherit the terminal flow count from a slot, not the first element flow count" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
-            SetNumberOfFlows   (2.flows                                       ),
+        // Use Horizontal direction so the split (2→3 flows) isn't blocked by validateSplitNotOnAscending
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
+            SetNumberOfFlows   (2.flows                                               ),
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("flue-1", 100.cm                              ),
-            SetNumberOfFlows   (3.flows                                       ),
-            AddSectionVertical ("flue-2", 100.cm                              )
+            SetRoughness       (1.mm                                                  ),
+            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
+            AddSectionVertical ("flue-1", 100.cm                                      ),
+            SetNumberOfFlows   (3.flows                                               ),
+            AddSectionVertical ("flue-2", 100.cm                                      )
         )
 
         val results = PipeChainGeneric.build(
@@ -588,8 +606,10 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "preserve inherited flow count through an empty connector" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        val flueDescr = Seq[FlowOnlyPipeDescr_15544_V3](
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows   (2.flows                                       ),
             SetInnerShape(Circle(150.mm)),
             SetRoughness       (1.mm                                          ),

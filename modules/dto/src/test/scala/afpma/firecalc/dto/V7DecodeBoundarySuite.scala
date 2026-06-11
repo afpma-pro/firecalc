@@ -6,8 +6,8 @@
 package afpma.firecalc.dto
 
 import afpma.firecalc.dto.v4.*
-import afpma.firecalc.dto.v6.*
 import afpma.firecalc.dto.v7.*
+import afpma.firecalc.dto.common.NbOfFlows
 
 import afpma.firecalc.units.coulombutils.*
 
@@ -24,48 +24,41 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
     private def flowOnlyInitialDir(
         az  : AzimuthDirection,
         incl: InclinationDirection
-    ): FlowOnlyPipeDescr_15544_V3 =
-        SetFlowOnlyPipeProp_15544_V3.SetInitialDirection(az, incl)
+    ): FlowOnlyPipeDescr_15544_V4 =
+        FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection(az, incl)
 
     private def flowOnlyInitialPos(
         x: Length,
         y: Length,
         z: Length
-    ): FlowOnlyPipeDescr_15544_V3 =
-        SetFlowOnlyPipeProp_15544_V3.SetInitialPosition(x, y, z)
-
-    private def flowOnlyFinalPos(
-        x: Length,
-        y: Length,
-        z: Length
-    ): FlowOnlyPipeDescr_15544_V3 =
-        SetFlowOnlyPipeProp_15544_V3.SetFinalPosition(x, y, z)
+    ): FlowOnlyPipeDescr_15544_V4 =
+        FlowOnlyPipeTrackingOp_15544_V4.SetInitialPosition(x, y, z)
 
     private def thermalInitialDir(
         az  : AzimuthDirection,
         incl: InclinationDirection
-    ): ThermalPipeDescr_13384_V3 =
-        SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl)
+    ): ThermalPipeDescr_13384_V4 =
+        ThermalPipeTrackingOp_13384_V4.SetInitialDirection(az, incl)
 
     private def thermalInitialPos(
         x: Length,
         y: Length,
         z: Length
-    ): ThermalPipeDescr_13384_V3 =
-        SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z)
+    ): ThermalPipeDescr_13384_V4 =
+        ThermalPipeTrackingOp_13384_V4.SetInitialPosition(x, y, z)
 
     private def thermalFinalPos(
         x: Length,
         y: Length,
         z: Length
-    ): ThermalPipeDescr_13384_V3 =
-        SetThermalPipeProp_13384_V3.SetFinalPosition(x, y, z)
+    ): ThermalPipeDescr_13384_V4 =
+        ThermalPipeTrackingOp_13384_V4.SetFinalPosition(x, y, z)
 
-    private def roughness(): FlowOnlyPipeDescr_15544_V3 =
-        SetFlowOnlyPipeProp_15544_V3.SetRoughness(3.mm)
+    private def roughness(): FlowOnlyPipeDescr_15544_V4 =
+        SetFlowOnlyPipeProp_15544_V4.SetRoughness(3.mm)
 
-    private def horizontalSection(name: String, length: Length): FlowOnlyPipeDescr_15544_V3 =
-        AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal(name, length)
+    private def horizontalSection(name: String, length: Length): FlowOnlyPipeDescr_15544_V4 =
+        AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal(name, length)
 
     private def wrapperDir(
         az  : AzimuthDirection,
@@ -89,14 +82,14 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
                 initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                 initialPosition  = wrapperPos(10.cm, 20.cm, 30.cm),
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot(
                         Seq(
                             roughness        (             ),
                             horizontalSection("test", 50.cm)
                         )
                     ),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
                 )
             )
             val json    = pipes.asJson
@@ -104,21 +97,21 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
             decoded shouldBe Right(pipes)
         }
 
-        "strips SetInitialDirection from FlueSlot" in {
+        "preserves SetInitialDirection and SetInitialPosition in FlueSlot" in {
+            // V7 preserves tracking ops as PipeTrackingOp, does not strip them
             val pipes   = PostFireboxPipes(
                 initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                 initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot(
                         Seq(
                             flowOnlyInitialDir(AzimuthDirection.Left, InclinationDirection.Up),
                             flowOnlyInitialPos(5.cm, 5.cm, 5.cm                              ),
-                            roughness         (                                              ),
                             horizontalSection ("test", 50.cm                                 )
                         )
                     ),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
                 )
             )
             val json    = pipes.asJson
@@ -128,94 +121,47 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
             result.initialDirection shouldBe wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal)
             result.initialPosition shouldBe wrapperPos(0.cm, 0.cm, 0.cm)
             result.slots.head match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    d.size shouldBe 2
-                    d.exists(_.isInstanceOf[SetFlowOnlyPipeProp_15544_V3.SetInitialDirection]) shouldBe false
-                    d.exists(_.isInstanceOf[SetFlowOnlyPipeProp_15544_V3.SetInitialPosition]) shouldBe false
-                case _                                    => fail("Expected FlueSlot")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    // V7 preserves tracking ops: SetInitialDirection + SetInitialPosition + AddSectionHorizontal
+                    d.size shouldBe 3
+                    d.exists(_.isInstanceOf[FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection]) shouldBe true
+                    d.exists(_.isInstanceOf[FlowOnlyPipeTrackingOp_15544_V4.SetInitialPosition]) shouldBe true
+                case _                                       => fail("Expected FlueSlot")
         }
 
-        "strips SetInitialPosition from FlueSlot" in {
+        "preserves thermal tracking elements from ConnectorSlot" in {
             val pipes   = PostFireboxPipes(
                 initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                 initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot(
-                        Seq(
-                            flowOnlyInitialPos(5.cm, 5.cm, 5.cm),
-                            roughness         (                )
-                        )
-                    ),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
-                )
-            )
-            val json    = pipes.asJson
-            val decoded = decode[PostFireboxPipes](json.noSpaces)
-            val result  = decoded.toOption.get
-            result.slots.head match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    d.exists(_.isInstanceOf[SetFlowOnlyPipeProp_15544_V3.SetInitialPosition]) shouldBe false
-                case _                                    => fail("Expected FlueSlot")
-        }
-
-        "strips SetFinalPosition from FlueSlot" in {
-            val pipes   = PostFireboxPipes(
-                initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
-                initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
-                slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot(
-                        Seq(
-                            flowOnlyFinalPos(100.cm, 200.cm, 300.cm),
-                            roughness       (                      )
-                        )
-                    ),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
-                )
-            )
-            val json    = pipes.asJson
-            val decoded = decode[PostFireboxPipes](json.noSpaces)
-            val result  = decoded.toOption.get
-            result.slots.head match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    d.exists(_.isInstanceOf[SetFlowOnlyPipeProp_15544_V3.SetFinalPosition]) shouldBe false
-                case _                                    => fail("Expected FlueSlot")
-        }
-
-        "strips thermal deprecated elements from ConnectorSlot" in {
-            val pipes   = PostFireboxPipes(
-                initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
-                initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
-                slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot     (Seq(roughness())),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq(roughness())),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(
                         Seq(
                             thermalInitialDir(AzimuthDirection.Left, InclinationDirection.Up),
                             thermalInitialPos(10.cm, 10.cm, 10.cm                           ),
                             thermalFinalPos  (50.cm, 50.cm, 50.cm                           )
                         )
                     ),
-                    PostFireboxPipeDescrSlot.ChimneySlot(Seq.empty)
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot(Seq.empty)
                 )
             )
             val json    = pipes.asJson
             val decoded = decode[PostFireboxPipes](json.noSpaces)
             val result  = decoded.toOption.get
             result.slots(1) match
-                case PostFireboxPipeDescrSlot.ConnectorSlot(d) =>
-                    d shouldBe empty
-                case _                                         => fail("Expected ConnectorSlot")
+                case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
+                    d.size > 0 shouldBe true // V7 preserves tracking ops
+                case _ => fail("Expected ConnectorSlot")
         }
 
-        "strips thermal deprecated elements from ChimneySlot" in {
+        "preserves thermal tracking elements from ChimneySlot" in {
             val pipes   = PostFireboxPipes(
                 initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                 initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot   (Seq(roughness())),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot   (Seq(roughness())),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot(
                         Seq(
                             thermalInitialDir(AzimuthDirection.Left, InclinationDirection.Up),
                             thermalFinalPos  (50.cm, 50.cm, 50.cm                           )
@@ -227,34 +173,34 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
             val decoded = decode[PostFireboxPipes](json.noSpaces)
             val result  = decoded.toOption.get
             result.slots(2) match
-                case PostFireboxPipeDescrSlot.ChimneySlot(d) =>
-                    d shouldBe empty
-                case _                                       => fail("Expected ChimneySlot")
+                case PostFireboxPipeDescrSlot_V7.ChimneySlot(d) =>
+                    d.size > 0 shouldBe true // V7 preserves tracking ops
+                case _ => fail("Expected ChimneySlot")
         }
 
-        "strips thermal deprecated elements from ThermalFlueSlot" in {
+        "preserves thermal tracking elements from ThermalFlueSlot" in {
             val pipes   = PostFireboxPipes(
                 initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                 initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.ThermalFlueSlot(
+                    PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
                         Seq(
                             thermalInitialDir(AzimuthDirection.Left, InclinationDirection.Up),
                             thermalInitialPos(10.cm, 10.cm, 10.cm                           ),
                             thermalFinalPos  (50.cm, 50.cm, 50.cm                           )
                         )
                     ),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
                 )
             )
             val json    = pipes.asJson
             val decoded = decode[PostFireboxPipes](json.noSpaces)
             val result  = decoded.toOption.get
             result.slots.head match
-                case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
-                    d shouldBe empty
-                case _                                           => fail("Expected ThermalFlueSlot")
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
+                    d.size > 0 shouldBe true // V7 preserves tracking ops
+                case _ => fail("Expected ThermalFlueSlot")
         }
 
         "preserves valid non-deprecated descriptor elements" in {
@@ -262,26 +208,26 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
                 initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                 initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot(
                         Seq(
                             flowOnlyInitialDir(AzimuthDirection.Left, InclinationDirection.Up),
                             roughness         (                                              ),
                             horizontalSection ("test", 50.cm                                 )
                         )
                     ),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
                 )
             )
             val json    = pipes.asJson
             val decoded = decode[PostFireboxPipes](json.noSpaces)
             val result  = decoded.toOption.get
             result.slots.head match
-                case PostFireboxPipeDescrSlot.FlueSlot(d) =>
-                    d.size shouldBe 2
-                    d.exists(_.isInstanceOf[SetFlowOnlyPipeProp_15544_V3.SetRoughness]) shouldBe true
-                    d.exists(_.isInstanceOf[AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal]) shouldBe true
-                case _                                    => fail("Expected FlueSlot")
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                    d.size shouldBe 3 // V7 preserves tracking ops: SetInitialDirection + SetRoughness + AddSectionHorizontal
+                    d.exists(_.isInstanceOf[SetFlowOnlyPipeProp_15544_V4.SetRoughness]) shouldBe true
+                    d.exists(_.isInstanceOf[AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal]) shouldBe true
+                case _                                       => fail("Expected FlueSlot")
         }
 
         "keeps wrapper fields unchanged" in {
@@ -291,14 +237,14 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
                 initialDirection = dir,
                 initialPosition  = pos,
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.FlueSlot(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot(
                         Seq(
                             flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                             flowOnlyInitialPos(999.cm, 999.cm, 999.cm                                 )
                         )
                     ),
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
                 )
             )
             val json    = pipes.asJson
@@ -313,14 +259,49 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
                 initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
                 initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
                 slots            = Seq(
-                    PostFireboxPipeDescrSlot.NoFlueSlot,
-                    PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                    PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                    PostFireboxPipeDescrSlot_V7.NoFlueSlot,
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
                 )
             )
             val json    = pipes.asJson
             val decoded = decode[PostFireboxPipes](json.noSpaces)
             decoded shouldBe Right(pipes)
+        }
+        "decodes top-level SetNumberOfFlows as ChannelTopologyOp" in {
+            val pipes   = PostFireboxPipes(
+                initialDirection = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                initialPosition  = wrapperPos(0.cm, 0.cm, 0.cm),
+                slots            = Seq(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot(
+                        Seq(
+                            FlowOnlyChannelTopologyOp_15544_V4.SetNumberOfFlows(NbOfFlows(2)),
+                            horizontalSection("test", 50.cm)
+                        )
+                    ),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
+                )
+            )
+            val json    = pipes.asJson
+            val decoded = decode[PostFireboxPipes](json.noSpaces)
+            decoded shouldBe Right(pipes)
+        }
+        "cannot decode SetNumberOfFlows inside SetPropertiesInBatch.props" in {
+            // SetNumberOfFlows is NOT a SetSingleProp in V7, so it cannot appear inside batch props.
+            // Construct JSON manually with SetNumberOfFlows in a batch's props array.
+            val malformedJson =
+                """{"initialDirection":{"azimuth":"Front","inclination":"Up"},"initialPosition":{"x":0,"y":0,"z":0},"slots":[{"ThermalFlueSlot":{"descr":[{"type":"SetPropertiesInBatch","batch_name":"test-batch","props":[{"type":"SetNumberOfFlows","n_flows":2}]}]}},{"ConnectorSlot":{"descr":[]}},{"ChimneySlot":{"descr":[]}}]}"""
+            val decoded       = decode[PostFireboxPipes](malformedJson)
+            decoded.isLeft shouldBe true
+        }
+        "cannot decode SetInitialDirection inside SetPropertiesInBatch.props" in {
+            // SetInitialDirection is a PipeTrackingOp, NOT a SetSingleProp in V7.
+            // It cannot appear inside batch props.
+            val malformedJson =
+                """{"initialDirection":{"azimuth":"Front","inclination":"Up"},"initialPosition":{"x":0,"y":0,"z":0},"slots":[{"ThermalFlueSlot":{"descr":[{"type":"SetPropertiesInBatch","batch_name":"test-batch","props":[{"type":"SetInitialDirection","azimuth":"Front","inclination":"Up"}]}]}},{"ConnectorSlot":{"descr":[]}},{"ChimneySlot":{"descr":[]}}]}"""
+            val decoded       = decode[PostFireboxPipes](malformedJson)
+            decoded.isLeft shouldBe true
         }
     }
 end V7DecodeBoundarySuite

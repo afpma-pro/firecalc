@@ -7,7 +7,6 @@ package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 import afpma.firecalc.dto.v7.{PostFireboxInitialDirection, PostFireboxInitialPosition}
 
@@ -36,7 +35,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 1: Single vertical section ────────────────────────────────────────
 
     "PositionTracker.computeFlowOnly15544" should "place end point at (0,0,1) for single vertical section" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val initialDir = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
         val elems      = Seq(
             AddSectionVertical("v", 1.0.meters)
@@ -55,7 +54,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 2: Single horizontal section with Rear initial direction ───────────
 
     it should "place end point at (0,2,0) for horizontal section with Rear direction" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val initialDir = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         val elems      = Seq(
             AddSectionHorizontal("h", 2.0.meters)
@@ -73,7 +72,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 3: Slopped section ─────────────────────────────────────────────────
 
     it should "place end point at (0,4,3) for slopped section (5m length, 3m elevation gain)" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val initialDir = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         val elems      = Seq(
             AddSectionSloppedForceManualElevationGain("s", 5.0.meters, 3.0.meters)
@@ -94,7 +93,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 4: Direction change + horizontal section ────────────────────────────
 
     it should "place end point at (2,0,0) after 90° bend (roll=90°) from Rear + horizontal section" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val initialDir = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         val elems      = Seq(
             AddSharpeAngle_0_to_180(
@@ -120,7 +119,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 5: Multiple sections — both follow frame (straight-section semantics) ─
 
     it should "accumulate straight sections: both Vertical and Horizontal follow frame" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         // Both AddSectionVertical and AddSectionHorizontal are legacy names treated as
         // straight sections that follow the current frame. With Rear horizontal frame:
         //   vertical(1m) goes Rear 1m → (0,1,0)
@@ -146,7 +145,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 6: Direction change mid-sequence via AddSharpeAngle ─────────────────
 
     it should "change direction mid-sequence via AddSharpeAngle: end at (1,1,0)" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val initialDir = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         val elems      = Seq(
             AddSectionHorizontal   ("h1", 1.0.meters), // goes Rear to (0,1,0)
@@ -172,7 +171,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 7: AddSectionHorizontal under Up frame follows frame (goes up) ───────
 
     it should "follow Up frame for AddSectionHorizontal (straight-section semantics)" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         // AddSectionHorizontal is a legacy name treated as a straight section that follows
         // the current frame. With a vertical (Up) frame, the section goes up too.
         val initialDir = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
@@ -210,7 +209,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 9: Negative elevation_gain ─────────────────────────────────────────
 
     it should "place end at (0,0,-2) for downward vertical section with length=2" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val initialDir = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
         val elems      = Seq(
             AddSectionVertical("down", -2.0.meters)
@@ -232,7 +231,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 10: AddSectionVertical follows post-bend frame direction ───────────
 
     it should "follow post-bend frame for AddSectionVertical (treated as straight section)" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         // Repro: vertical Up + 30° bend toward Rear/60° elevation + vertical (eg=3m).
         // Old behavior snapped the second vertical to +Z. New (straight-section) behavior:
         //   dir = (0, cos60°, sin60°) = (0, 0.5, 0.866)     — Rear-tilted-up
@@ -272,7 +271,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
     // ── Test 11: Chained computation ─────────────────────────────────────────────
 
     it should "chain flue and connector computations correctly" in {
-        import AddFlowOnlyPipeElement_15544_V3.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val flueDir    = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
         val connDir    = PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         // Flue pipe: 1m vertical from origin

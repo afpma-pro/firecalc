@@ -8,7 +8,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.PostFireboxPipes
 import afpma.firecalc.dto.v7.PostFireboxInitialDirection
@@ -55,9 +55,9 @@ object EngineState:
             ), // Left,
             initialPosition  = PostFireboxInitialPosition(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
             slots            = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
-                PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
-                PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+                PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
+                PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
+                PostFireboxPipeDescrSlot_V7.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
             )
         )
     )
@@ -79,9 +79,9 @@ object EngineState:
         ),
         post_firebox_pipes             = PostFireboxPipes.fromLegacySlots(
             Seq(
-                PostFireboxPipeDescrSlot.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
-                PostFireboxPipeDescrSlot.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
-                PostFireboxPipeDescrSlot.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )
+                PostFireboxPipeDescrSlot_V7.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
+                PostFireboxPipeDescrSlot_V7.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
+                PostFireboxPipeDescrSlot_V7.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )
             )
         )
     )
@@ -103,9 +103,9 @@ object EngineState:
         ),
         post_firebox_pipes             = PostFireboxPipes.fromLegacySlots(
             Seq(
-                PostFireboxPipeDescrSlot.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
-                PostFireboxPipeDescrSlot.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
-                PostFireboxPipeDescrSlot.ChimneySlot  (CasPratique_15544_FDIM_EX_03.conduit_fumees_descr      )
+                PostFireboxPipeDescrSlot_V7.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
+                PostFireboxPipeDescrSlot_V7.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
+                PostFireboxPipeDescrSlot_V7.ChimneySlot  (CasPratique_15544_FDIM_EX_03.conduit_fumees_descr      )
             )
         )
     )
@@ -123,9 +123,9 @@ object EngineState:
             initialDirection = PostFireboxInitialDirection.default,
             initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
             slots            = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot     (Seq.empty),
-                PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
+                PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
             )
         )
     )
@@ -150,7 +150,7 @@ object EngineState:
                 z = (52 - 18.0 / 2).cm
             ),
             slots            = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot {
+                PostFireboxPipeDescrSlot_V7.FlueSlot {
                     import FluePipe_Module_15544.*
                     Seq(
                         roughness           (3.mm                         ),
@@ -173,7 +173,7 @@ object EngineState:
                         addSectionVertical  ("remontée", 200.cm           )
                     )
                 },
-                PostFireboxPipeDescrSlot.ConnectorSlot {
+                PostFireboxPipeDescrSlot_V7.ConnectorSlot {
                     import ConnectorPipe_Module.*
                     Seq (
                         roughness (Material_13384.WeldedSteel()),
@@ -183,7 +183,7 @@ object EngineState:
                         addSectionVertical("connecteur", 5.cm                           )
                     )
                 },
-                PostFireboxPipeDescrSlot.ChimneySlot {
+                PostFireboxPipeDescrSlot_V7.ChimneySlot {
                     import ChimneyPipe_Module.*
                     Seq (
                         roughness (Material_13384.WeldedSteel()),

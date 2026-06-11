@@ -24,10 +24,9 @@ import io.taig.babel.Locale
  * - `PostFireboxPipes` enforces exactly one `initialDirection` and one
  *   `initialPosition` at the chain level, instead of embedding them as
  *   regular elements inside slot descriptors.
- * - `SetFinalPosition` elements are no longer part of the schema (stripped
- *   during V6→V7 migration).
- * - Slot descriptor types unchanged (FlowOnlyPipeDescr_15544_V3,
- *   ThermalPipeDescr_13384_V3).
+ * - Slot descriptor types upgraded to V4 (FlowOnlyPipeDescr_15544_V4,
+ *   FlowOnlyPipeDescr_13384_V4, ThermalPipeDescr_13384_V4).
+ * - `air_intake_descr` uses FlowOnlyPipeDescr_13384_V4.
  */
 final case class FireCalcYAML_V7(
     version                       : FireCalc_Version.V[7] = FireCalcYAML_V7.VERSION,
@@ -37,7 +36,7 @@ final case class FireCalcYAML_V7(
     project_description           : ProjectDescr,
     local_conditions              : LocalConditions,
     stove_params                  : StoveParams,
-    air_intake_descr              : Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3],
+    air_intake_descr              : Seq[FlowOnlyPipeDescr_13384_V4],
     firebox                       : afpma.firecalc.dto.v5.Firebox_V4,
     post_firebox_pipes            : PostFireboxPipes
 ) extends FireCalcYAML_Format

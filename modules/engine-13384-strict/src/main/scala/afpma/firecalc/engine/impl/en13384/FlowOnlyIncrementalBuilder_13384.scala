@@ -48,6 +48,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
+    import FlowOnlyPipeTrackingOp_13384.*
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.hasInnerShapeAtPos
@@ -64,6 +65,10 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override type IncrDescr  = FlowOnlyPipeDescr_13384
     override type SetProp    = SetFlowOnlyPipeProp_13384
     override type AddElement = AddFlowOnlyPipeElement_13384
+
+    override type PreElementOp      = FlowOnlyPreElementOp_13384
+    override type ChannelTopologyOp = FlowOnlyChannelTopologyOp_13384
+    override type PipeTrackingOp    = FlowOnlyPipeTrackingOp_13384
 
     /**
      * Wrapper-level initial direction (V7).
@@ -107,7 +112,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             case _: AddDirectionChange => true
             case _ => false
 
-    override protected def isTrailingAllowed(setProp: SetProp): Boolean =
+    override protected def isTrailingAllowed(preOp: PreElementOp): Boolean =
         false
 
     override type PT <: PipeType_EN13384
@@ -133,7 +138,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 convStep.allRemainingOps
                     .map(_._2)
                     .find:
-                        case _: SetProp                                                                       => false
+                        case _: PreElementOp                                                                  => false
                         case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain)               => true
                         case _: AddSectionHorizontal                                                          => true
                         case _: AddSectionVertical                                                            => true
@@ -232,7 +237,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 given SectionGeometryChangeCtx_13384 =
                     SectionGeometryChangeCtx_13384(
                         stateOps.getInnerShape(st),
-                        convStep.allSetPropsUntilNextAddElement.exists {
+                        convStep.allPreElementOpsUntilNextAddElement.exists {
                             case (_, _: SetInnerShape) => true
                             case _ => false
                         },
@@ -289,21 +294,21 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
-        convStep.allSetPropsUntilNextAddElement
-            .foldLeft(propsState.validNel) { case (vState, (_, atom)) =>
-                atom match
-                    case SetInnerShape(g)              =>
+        convStep.allPreElementOpsUntilNextAddElement
+            .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
+                op match
+                    case SetInnerShape(g)                                           =>
                         vState.map(_.modify(_.innerShape).setTo(g.some))
-                    case SetRoughness(r)               =>
+                    case SetRoughness(r)                                            =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
-                    case SetMaterial(lm)               =>
+                    case SetMaterial(lm)                                            =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                    case SetNumberOfFlows(nf)          =>
-                        vState.map(_.modify(_.nFlows).setTo(nf.some))
-                    // V7: wrapper-level direction (wrapperInitialDirection) takes priority;
-                    // descriptor-level SetInitialDirection is honoured as a fallback for
-                    // legacy callers (test fixtures, non-migrated descriptors).
-                    case SetInitialDirection(az, incl) =>
+                    case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf)       =>
+                        vState.andThen { st =>
+                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)) *>
+                                st.modify(_.nFlows).setTo(nf.some).validNel
+                        }
+                    case FlowOnlyPipeTrackingOp_13384.SetInitialDirection(az, incl) =>
                         if vState.toOption.exists(_.initialFrame.isDefined) then vState
                         else
                             val dirVec = Vec3.fromAzimuthElevation(
@@ -312,10 +317,10 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                             )
                             val frame  = PipeFrame.initial(dirVec)
                             vState.map(_.copy(initialFrame = Some(frame), currentFrame = Some(frame)))
-                    case _: SetInitialPosition =>
-                        vState // ignored — use withInitialPosition()
-                    case _: SetFinalPosition =>
-                        vState // ignored — stripped by V6→V7 migration; not part of V7 post-firebox schema
+                    case _: FlowOnlyPipeTrackingOp_13384.SetInitialPosition =>
+                        vState
+                    case _: FlowOnlyPipeTrackingOp_13384.SetFinalPosition =>
+                        vState
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
@@ -469,14 +474,16 @@ object FlowOnlyIncrementalBuilder_13384:
     def makeFor[PType <: PipeType_EN13384](using
         ptype: PType,
         tt1  : TypeTest[FlowOnlyPipeDescr_13384, SetFlowOnlyPipeProp_13384],
-        tt2  : TypeTest[FlowOnlyPipeDescr_13384, AddFlowOnlyPipeElement_13384]
+        tt2  : TypeTest[FlowOnlyPipeDescr_13384, AddFlowOnlyPipeElement_13384],
+        tt3  : TypeTest[FlowOnlyPipeDescr_13384, FlowOnlyPreElementOp_13384]
     ): FlowOnlyIncrementalBuilder_13384 {
         // type PipeElDescr    = PipeElDescr0
         type PT = PType
     } =
         new FlowOnlyIncrementalBuilder_13384:
-            override given typeTestSetProp   : TypeTest[IncrDescr, SetProp]    = tt1
-            override given typeTestAddElement: TypeTest[IncrDescr, AddElement] = tt2
+            override given typeTestSetProp     : TypeTest[IncrDescr, SetProp]      = tt1
+            override given typeTestAddElement  : TypeTest[IncrDescr, AddElement]   = tt2
+            override given typeTestPreElementOp: TypeTest[IncrDescr, PreElementOp] = tt3
             type PT = PType
             given pt: PT = ptype
 

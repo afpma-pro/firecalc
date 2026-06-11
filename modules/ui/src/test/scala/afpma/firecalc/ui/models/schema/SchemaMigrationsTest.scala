@@ -7,9 +7,9 @@ package afpma.firecalc.ui.models.schema
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3
-import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.units.coulombutils.meters
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.ui.instances.defaultable
@@ -491,31 +491,31 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
         // Verify each slot carries the correct payload (catches cross-wiring bugs)
         pipes.slots(0) match
-            case PostFireboxPipeDescrSlot.FlueSlot(descrs) =>
+            case PostFireboxPipeDescrSlot_V7.FlueSlot(descrs) =>
                 descrs should have size 1
                 descrs.head match
-                    case AddFlowOnlyPipeElement_15544_V3.AddSectionSlopped(_, length) =>
+                    case AddFlowOnlyPipeElement_15544_V4.AddSectionSlopped(_, length) =>
                         length `shouldBe` 1.0.meters
                     case other                                                        => fail(s"unexpected flue descriptor: $other")
-            case other                                     => fail(s"expected FlueSlot at index 0, got: $other")
+            case other                                        => fail(s"expected FlueSlot at index 0, got: $other")
 
         pipes.slots(1) match
-            case PostFireboxPipeDescrSlot.ConnectorSlot(descrs) =>
+            case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descrs) =>
                 descrs should have size 1
                 descrs.head match
-                    case AddThermalPipeElement_13384_V3.AddSectionSlopped(_, length) =>
+                    case AddThermalPipeElement_13384_V4.AddSectionSlopped(_, length) =>
                         length `shouldBe` 2.5.meters
                     case other                                                       => fail(s"unexpected connector descriptor: $other")
-            case other                                          => fail(s"expected ConnectorSlot at index 1, got: $other")
+            case other                                             => fail(s"expected ConnectorSlot at index 1, got: $other")
 
         pipes.slots(2) match
-            case PostFireboxPipeDescrSlot.ChimneySlot(descrs) =>
+            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descrs) =>
                 descrs should have size 1
                 descrs.head match
-                    case AddThermalPipeElement_13384_V3.AddSectionSlopped(_, length) =>
+                    case AddThermalPipeElement_13384_V4.AddSectionSlopped(_, length) =>
                         length `shouldBe` 5.0.meters
                     case other                                                       => fail(s"unexpected chimney descriptor: $other")
-            case other                                        => fail(s"expected ChimneySlot at index 2, got: $other")
+            case other                                           => fail(s"expected ChimneySlot at index 2, got: $other")
     }
 
     // ─── .fcalc file format: full AppStateSchema round-trip ─────────────────────

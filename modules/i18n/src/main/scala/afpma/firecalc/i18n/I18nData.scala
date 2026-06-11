@@ -971,21 +971,26 @@ object I18nData:
         )
 
         case class Prerequisites(
-            thickness_requires_inner_geometry         : String,
-            layer_requires_section_geometry           : String,
-            layers_require_inner_shape                : String,
-            direction_change_requires_section_geometry: String,
-            final_dir_without_initial_direction       : String,
-            geometry_without_initial_direction        : String
+            thickness_requires_inner_geometry                                 : String,
+            layer_requires_section_geometry                                   : String,
+            layers_require_inner_shape                                        : String,
+            direction_change_requires_section_geometry                        : String,
+            final_dir_without_initial_direction                               : String,
+            geometry_without_initial_direction                                : String,
+            flow_split_requires_inner_shape_before_direction_change           : StringFormat1,
+            flow_merge_requires_inner_shape_before_direction_change           : StringFormat1,
+            flow_merge_requires_length_bearing_section_before_direction_change: StringFormat1,
+            flow_split_forbidden_on_ascending_pipe                            : StringFormat1
         )
 
         case class Conflicts(
-            cannot_set_geometry_before_change      : String,
-            section_change_requires_circle         : StringFormat1,
-            flow_resistance_requires_geometry      : StringFormat1,
-            pressure_diff_requires_geometry        : StringFormat1,
-            flow_resistance_requires_geometry_15544: StringFormat1,
-            casing_too_small_for_liner             : StringFormat2
+            cannot_set_geometry_before_change          : String,
+            section_change_requires_circle             : StringFormat1,
+            flow_resistance_requires_geometry          : StringFormat1,
+            pressure_diff_requires_geometry            : StringFormat1,
+            flow_resistance_requires_geometry_15544    : StringFormat1,
+            casing_too_small_for_liner                 : StringFormat2,
+            flow_transition_changes_total_cross_section: StringFormat3
         )
 
         case class ForbiddenElementPosition(

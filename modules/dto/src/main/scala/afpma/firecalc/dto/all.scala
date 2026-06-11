@@ -120,29 +120,36 @@ object all:
     export afpma.firecalc.dto.v4.AirSpaceDetailed_V2 as AirSpaceDetailed
 
     export afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
-    export afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3 as ThermalPipeDescr_13384
+    export afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4 as ThermalPipeDescr_13384
+    export afpma.firecalc.dto.v7.ThermalPreElementOp_13384_V4 as ThermalPreElementOp_13384
     export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
-    export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3 as SetThermalPipeProp_13384
-    export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.extractInnerShape
-    export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.extractLayers
+    export afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SetThermalPipeProp_13384
+    export afpma.firecalc.dto.v7.ThermalChannelTopologyOp_13384_V4 as ThermalChannelTopologyOp_13384
+    export afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4 as ThermalPipeTrackingOp_13384
     export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
-    export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3 as AddThermalPipeElement_13384
+    export afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as AddThermalPipeElement_13384
 
     // FlowOnly 13384 V3
     export afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3
-    export afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3 as FlowOnlyPipeDescr_13384
+    export afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4 as FlowOnlyPipeDescr_13384
+    export afpma.firecalc.dto.v7.FlowOnlyPreElementOp_13384_V4 as FlowOnlyPreElementOp_13384
     export afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_13384_V3
-    export afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_13384_V3 as SetFlowOnlyPipeProp_13384
+    export afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4 as SetFlowOnlyPipeProp_13384
+    export afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_13384_V4 as FlowOnlyChannelTopologyOp_13384
+    export afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_13384_V4 as FlowOnlyPipeTrackingOp_13384
     export afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_13384_V3
-    export afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_13384_V3 as AddFlowOnlyPipeElement_13384
+    export afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4 as AddFlowOnlyPipeElement_13384
 
     // FlowOnly 15544 V3
     export afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
-    export afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3 as FlowOnlyPipeDescr_15544
+    export afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4 as FlowOnlyPipeDescr_15544
+    export afpma.firecalc.dto.v7.FlowOnlyPreElementOp_15544_V4 as FlowOnlyPreElementOp_15544
     export afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3
-    export afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3 as SetFlowOnlyPipeProp_15544
+    export afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4 as SetFlowOnlyPipeProp_15544
+    export afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4 as FlowOnlyChannelTopologyOp_15544
+    export afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4 as FlowOnlyPipeTrackingOp_15544
     export afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3
-    export afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3 as AddFlowOnlyPipeElement_15544
+    export afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4 as AddFlowOnlyPipeElement_15544
 
     export afpma.firecalc.dto.v4.MinLoad
     export afpma.firecalc.dto.v4.PolluantName
@@ -176,6 +183,7 @@ object all:
     export afpma.firecalc.dto.v7.PostFireboxPipes
     export afpma.firecalc.dto.v7.PostFireboxInitialDirection
     export afpma.firecalc.dto.v7.PostFireboxInitialPosition
+    export afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
     // Extension methods
     export afpma.firecalc.dto.FireboxAvailabilityExtensions.allows

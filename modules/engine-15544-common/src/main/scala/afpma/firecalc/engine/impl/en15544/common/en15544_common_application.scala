@@ -357,7 +357,7 @@ abstract class EN15544_V_2023_Common_Application
          * the LAST `PipeResult` of Stage 1 into the Stage 2 chain, and concatenates results.
          */
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
-            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
             val pfbSlots = en15544.postFireboxPipeSlots
             // Resolve Stage 1 first, then resolve HA givens for Stage 2.
             flueRegionPipeResults.andThen { case (stage1Results, stage1Seed) =>
@@ -803,14 +803,14 @@ abstract class EN15544_V_2023_Common_Application
         // Rectangle shape that must satisfy the 1:4 aspect-ratio constraint.
         val flueRegionShapes: Seq[PipeShape] =
             postFireboxPipeSlots.flatMap:
-                case PostFireboxPipeDescrSlot.FlueSlot(descr)        =>
+                case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        =>
                     descr.collect:
-                        case SetFlowOnlyPipeProp_15544_V3.SetInnerShape(shape)                 => shape
-                        case AddFlowOnlyPipeElement_15544_V3.AddSectionShapeChange(_, toShape) => toShape
-                case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
+                        case SetFlowOnlyPipeProp_15544.SetInnerShape(shape)                 => shape
+                        case AddFlowOnlyPipeElement_15544.AddSectionShapeChange(_, toShape) => toShape
+                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) =>
                     descr.collect:
-                        case SetThermalPipeProp_13384_V3.SetInnerShape(shape) => shape
-                case _                                               => Seq.empty
+                        case SetThermalPipeProp_13384.SetInnerShape(shape) => shape
+                case _                                                  => Seq.empty
         val checks =
             flueRegionShapes.zipWithIndex.map: (shape, idx) =>
                 shape match

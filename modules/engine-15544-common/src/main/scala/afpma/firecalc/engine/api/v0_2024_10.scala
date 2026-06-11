@@ -99,14 +99,14 @@ trait v0_2024_10_core extends v0_2024_10_13384_core:
          * Defaults to empty; override with the actual `post_firebox_pipes` from FireCalcYAML V6
          * to support arbitrary N-pipe topologies.
          */
-        def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty
+        def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = Seq.empty
 
         /**
          * Raw air intake pipe descriptors from the DTO (V3 format).
          * Used by direction-reachability validation to walk the air intake bend chain.
          * Defaults to empty for engine variants that do not model an air intake.
          */
-        def airIntakeDescriptors: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3] = Seq.empty
+        def airIntakeDescriptors: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4] = Seq.empty
 
         type EN15544_Alg <: EN15544_V_2023_Common_Application {
             type AirIntakePipe_Module_T     = self.AirIntakePipe_Module_T

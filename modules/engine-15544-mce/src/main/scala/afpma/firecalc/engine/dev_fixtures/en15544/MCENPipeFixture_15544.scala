@@ -11,7 +11,10 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as TP4
+import afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4
 
 import afpma.firecalc.engine.api.v0_2024_10_mce
 import afpma.firecalc.engine.models
@@ -186,57 +189,55 @@ object MCENPipeFixture_15544
     //   Slot 2 — ConnectorSlot: short steel connector (inherits Up frame)
     //   Slot 3 — ChimneySlot: insulated steel chimney (inherits Up frame)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot] =
-        import FluePipe_Module_13384.*
-        import ConnectorPipe_Module as CPM
-        import ChimneyPipe_Module as CHPM
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
         Seq(
             // Slot 0 — ThermalFlueSlot #1: horizontal exit from firebox + 90° turn upward
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(
+            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
                 Seq(
-                    setInitialDirection    (
+                    ThermalPipeTrackingOp_13384_V4.SetInitialDirection    (
                         azimuth     = AzimuthDirection.Right,
                         inclination = InclinationDirection.Horizontal
                     ),
-                    pipeLocation           (PipeLocation.HeatedArea    ),
-                    roughness              (3.mm                       ),
-                    innerShape(rectangle(11.1.cm, 15.3.cm)),
-                    layer                  (e = 1.cm, λ = 0.89.W_per_mK),
-                    addSectionHorizontal   ("F1-sortie foyer", 28.1.cm ),
-                    addSharpAngle_90deg    (
+                    SP4.SetPipeLocation                                   (PipeLocation.HeatedArea   ),
+                    SP4.SetRoughness                                      (3.mm                      ),
+                    SP4.SetInnerShape(rectangle(11.1.cm, 15.3.cm)),
+                    SP4.SetLayer                                          (1.cm, 0.89.W_per_mK       ),
+                    TP4.AddSectionHorizontal                              ("F1-sortie foyer", 28.1.cm),
+                    TP4.AddSharpeAngle_0_to_90                            (
                         "F1-virage 90 deg (-> Haut)",
-                        AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+                        90.degrees,
+                        Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up))
                     )
                 )
             ),
             // Slot 1 — ThermalFlueSlot #2: ascending vertical column (continues from Up frame)
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(
+            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
                 Seq(
-                    innerShape(rectangle(11.1.cm, 11.1.cm)),
-                    addSectionVertical("F2-colonne ascendante", 3.737.m)
+                    SP4.SetInnerShape(rectangle(11.1.cm, 11.1.cm)),
+                    TP4.AddSectionVertical("F2-colonne ascendante", 3.737.m)
                 )
             ),
             // Slot 2 — ConnectorSlot: short steel connector (inherits Up frame from Slot 1)
-            PostFireboxPipeDescrSlot.ConnectorSlot  (
+            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
                 Seq (
-                    CPM.roughness (Material_13384.WeldedSteel()),
-                    CPM.innerShape(circle(130.mm)              ),
-                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
-                    CPM.pipeLocation      (PipeLocation.HeatedArea                       ),
-                    CPM.addSectionVertical("C-buse", 6.cm                                )
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(130.mm)              ),
+                    SP4.SetLayer          (2.mm, WattsPerMeterKelvin(0.001)),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea         ),
+                    TP4.AddSectionVertical("C-buse", 6.cm                  )
                 )
             ),
             // Slot 3 — ChimneySlot: insulated steel chimney
-            PostFireboxPipeDescrSlot.ChimneySlot    (
+            PostFireboxPipeDescrSlot_V7.ChimneySlot    (
                 Seq (
-                    CHPM.roughness (Material_13384.WeldedSteel()),
-                    CHPM.innerShape(circle(130.mm)              ),
-                    CHPM.layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
-                    CHPM.pipeLocation      (PipeLocation.HeatedArea                         ),
-                    CHPM.addSectionVertical("CH-etage", 57.cm                               ),
-                    CHPM.pipeLocation      (PipeLocation.OutsideOrExterior                  ),
-                    CHPM.addSectionVertical("CH-sortie de toit", 93.cm                      ),
-                    CHPM.addFlowResistance ("CH-element terminal", 1.423.unitless: ζ)
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(130.mm)              ),
+                    SP4.SetLayer          (2.5.cm, WattsPerMeterKelvin(0.260)            ),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea                       ),
+                    TP4.AddSectionVertical("CH-etage", 57.cm                             ),
+                    SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior                ),
+                    TP4.AddSectionVertical("CH-sortie de toit", 93.cm                    ),
+                    TP4.AddFlowResistance ("CH-element terminal", 1.423.unitless: ζ, None)
                 )
             )
         )
@@ -392,77 +393,75 @@ object MCENPipeFixture_15544_CFCF
     // Exercises the Connector-first head seed path in
     // `en15544_mce_application.flueRegionPipeResults` (path (b)).
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot] =
-        import FluePipe_Module_13384.*
-        import ConnectorPipe_Module as CPM
-        import ChimneyPipe_Module as CHPM
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
         Seq  (
             // Slot 0 — ConnectorSlot #1: head connector (first slot, Connector-first)
-            PostFireboxPipeDescrSlot.ConnectorSlot  (
+            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
                 Seq (
-                    CPM.setInitialDirection    (
+                    ThermalPipeTrackingOp_13384_V4.SetInitialDirection    (
                         azimuth     = AzimuthDirection.Right,
                         inclination = InclinationDirection.Horizontal
                     ),
-                    CPM.roughness (Material_13384.WeldedSteel()),
-                    CPM.innerShape(circle(130.mm)              ),
-                    CPM.layer                  (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
-                    CPM.pipeLocation           (PipeLocation.HeatedArea                       ),
-                    CPM.addSectionHorizontal   ("C1-head-connector", 20.cm                    )
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(130.mm)              ),
+                    SP4.SetLayer                                          (2.mm, WattsPerMeterKelvin(0.001)),
+                    SP4.SetPipeLocation                                   (PipeLocation.HeatedArea         ),
+                    TP4.AddSectionHorizontal                              ("C1-head-connector", 20.cm      )
                 )
             ),
             // Slot 1 — ThermalFlueSlot #1: horizontal flue + 90° turn upward
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(
+            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
                 Seq(
-                    pipeLocation        (PipeLocation.HeatedArea    ),
-                    roughness           (3.mm                       ),
-                    innerShape(rectangle(11.1.cm, 15.3.cm)),
-                    layer               (e = 1.cm, λ = 0.89.W_per_mK),
-                    addSectionHorizontal("F1-sortie foyer", 28.1.cm ),
-                    addSharpAngle_90deg (
+                    SP4.SetPipeLocation       (PipeLocation.HeatedArea   ),
+                    SP4.SetRoughness          (3.mm                      ),
+                    SP4.SetInnerShape(rectangle(11.1.cm, 15.3.cm)),
+                    SP4.SetLayer              (1.cm, 0.89.W_per_mK       ),
+                    TP4.AddSectionHorizontal  ("F1-sortie foyer", 28.1.cm),
+                    TP4.AddSharpeAngle_0_to_90(
                         "F1-virage 90 deg (-> Haut)",
-                        AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+                        90.degrees,
+                        Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up))
                     )
                 )
             ),
             // Slot 2 — ConnectorSlot #2: interleaved head connector
-            PostFireboxPipeDescrSlot.ConnectorSlot  (
+            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
                 Seq (
-                    CPM.roughness (Material_13384.WeldedSteel()),
-                    CPM.innerShape(circle(130.mm)              ),
-                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
-                    CPM.pipeLocation      (PipeLocation.HeatedArea                       ),
-                    CPM.addSectionVertical("C2-interleaved", 15.cm                       )
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(130.mm)              ),
+                    SP4.SetLayer          (2.mm, WattsPerMeterKelvin(0.001)),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea         ),
+                    TP4.AddSectionVertical("C2-interleaved", 15.cm         )
                 )
             ),
             // Slot 3 — ThermalFlueSlot #2: ascending vertical column
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(
+            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
                 Seq(
-                    innerShape(rectangle(11.1.cm, 11.1.cm)),
-                    addSectionVertical("F2-colonne ascendante", 3.737.m)
+                    SP4.SetInnerShape(rectangle(11.1.cm, 11.1.cm)),
+                    TP4.AddSectionVertical("F2-colonne ascendante", 3.737.m)
                 )
             ),
             // Slot 4 — ConnectorSlot: terminal connector
-            PostFireboxPipeDescrSlot.ConnectorSlot  (
+            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
                 Seq (
-                    CPM.roughness (Material_13384.WeldedSteel()),
-                    CPM.innerShape(circle(130.mm)              ),
-                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
-                    CPM.pipeLocation      (PipeLocation.HeatedArea                       ),
-                    CPM.addSectionVertical("Cterm-buse", 6.cm                            )
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(130.mm)              ),
+                    SP4.SetLayer          (2.mm, WattsPerMeterKelvin(0.001)),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea         ),
+                    TP4.AddSectionVertical("Cterm-buse", 6.cm              )
                 )
             ),
             // Slot 5 — ChimneySlot: insulated steel chimney
-            PostFireboxPipeDescrSlot.ChimneySlot    (
+            PostFireboxPipeDescrSlot_V7.ChimneySlot    (
                 Seq (
-                    CHPM.roughness (Material_13384.WeldedSteel()),
-                    CHPM.innerShape(circle(130.mm)              ),
-                    CHPM.layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
-                    CHPM.pipeLocation      (PipeLocation.HeatedArea                         ),
-                    CHPM.addSectionVertical("CH-etage", 57.cm                               ),
-                    CHPM.pipeLocation      (PipeLocation.OutsideOrExterior                  ),
-                    CHPM.addSectionVertical("CH-sortie de toit", 93.cm                      ),
-                    CHPM.addFlowResistance ("CH-element terminal", 1.423.unitless: ζ)
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(130.mm)              ),
+                    SP4.SetLayer          (2.5.cm, WattsPerMeterKelvin(0.260)            ),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea                       ),
+                    TP4.AddSectionVertical("CH-etage", 57.cm                             ),
+                    SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior                ),
+                    TP4.AddSectionVertical("CH-sortie de toit", 93.cm                    ),
+                    TP4.AddFlowResistance ("CH-element terminal", 1.423.unitless: ζ, None)
                 )
             )
         )

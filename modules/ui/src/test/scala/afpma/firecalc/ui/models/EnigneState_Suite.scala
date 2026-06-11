@@ -8,8 +8,8 @@ package afpma.firecalc.ui.models
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
-import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 import afpma.firecalc.dto.v7.PostFireboxInitialPosition
 import afpma.firecalc.dto.v7.PostFireboxPipes
@@ -25,7 +25,7 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
 
     private def exampleFlueBend(name: String): AddSharpeAngle_0_to_180 =
         EngineState.example_projet_15544.post_firebox_pipes.slots
-            .collectFirst { case PostFireboxPipeDescrSlot.FlueSlot(descr) =>
+            .collectFirst { case PostFireboxPipeDescrSlot_V7.FlueSlot(descr) =>
                 descr.collectFirst { case bend: AddSharpeAngle_0_to_180 if bend.name == name => bend }
             }
             .flatten

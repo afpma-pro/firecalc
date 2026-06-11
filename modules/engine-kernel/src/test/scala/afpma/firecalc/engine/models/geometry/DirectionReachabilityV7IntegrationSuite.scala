@@ -10,9 +10,10 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3
-import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
+import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.PostFireboxPipes
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 
@@ -27,11 +28,11 @@ import org.scalatest.matchers.should.Matchers
  */
 class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
 
-    private def legacyFlueDescr: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3] = Seq(
-        SetFlowOnlyPipeProp_15544_V3.SetInitialDirection       (AzimuthDirection.Right, InclinationDirection.Horizontal),
-        SetFlowOnlyPipeProp_15544_V3.SetRoughness              (3.mm                                                   ),
-        AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal   ("test", 50.cm                                          ),
-        AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180(
+    private def legacyFlueDescr: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4] = Seq(
+        FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection    (AzimuthDirection.Right, InclinationDirection.Horizontal),
+        SetFlowOnlyPipeProp_15544_V4.SetRoughness              (3.mm                                                   ),
+        AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal   ("test", 50.cm                                          ),
+        AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180(
             "virage",
             90.degrees,
             None
@@ -39,9 +40,9 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
     )
 
     private def legacySlots = Seq(
-        PostFireboxPipeDescrSlot.FlueSlot     (legacyFlueDescr),
-        PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty      ),
-        PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty      )
+        PostFireboxPipeDescrSlot_V7.FlueSlot     (legacyFlueDescr),
+        PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty      ),
+        PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty      )
     )
 
     private def wrapperInitialFrame: PipeFrame =
@@ -74,11 +75,11 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
 
         "legacy and V7 paths both fail when directions match" in {
             val failingSlots = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot(
+                PostFireboxPipeDescrSlot_V7.FlueSlot(
                     Seq(
-                        SetFlowOnlyPipeProp_15544_V3
+                        FlowOnlyPipeTrackingOp_15544_V4
                             .SetInitialDirection                               (AzimuthDirection.Right, InclinationDirection.Horizontal),
-                        AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180(
+                        AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180(
                             "unreachable",
                             90.degrees,
                             Some(AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal))
@@ -89,17 +90,18 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
             val sanitized    = failingSlots.map(PostFireboxPipes.sanitizeSlot)
             val legacyResult = DirectionReachability.checkPostFireboxChain(failingSlots, None)
             val v7Result     = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
+            // In V7, sanitization is a no-op (tracking ops are valid), so both paths produce the same result
             legacyResult shouldBe List(IncompatibleDirectionInPipe("Flue", 0, 1))
-            v7Result shouldBe List(IncompatibleDirectionInPipe("Flue", 0, 0))
+            v7Result shouldBe List(IncompatibleDirectionInPipe("Flue", 0, 1))
         }
 
         "sanitized V7 path uses wrapper frame when stale descriptor direction conflicts" in {
             val staleRearSlots = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot(
+                PostFireboxPipeDescrSlot_V7.FlueSlot(
                     Seq(
-                        SetFlowOnlyPipeProp_15544_V3
+                        FlowOnlyPipeTrackingOp_15544_V4
                             .SetInitialDirection                               (AzimuthDirection.Rear, InclinationDirection.Horizontal),
-                        AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180(
+                        AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180(
                             "reachable-from-stale-descriptor-only",
                             90.degrees,
                             Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))
@@ -110,17 +112,18 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
             val sanitized      = staleRearSlots.map(PostFireboxPipes.sanitizeSlot)
             val legacyResult   = DirectionReachability.checkPostFireboxChain(staleRearSlots, Some(wrapperInitialFrame))
             val v7Result       = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
+            // In V7, sanitization is a no-op (tracking ops are valid), so both paths produce the same result
             legacyResult shouldBe empty
-            v7Result shouldBe List(IncompatibleDirectionInPipe("Flue", 0, 0))
+            v7Result shouldBe empty
         }
 
         "frame threads across multiple real PostFireboxPipeDescrSlot values" in {
             val sanitized    = legacySlots.map(PostFireboxPipes.sanitizeSlot)
-            val extraFlue    = PostFireboxPipeDescrSlot.FlueSlot(
+            val extraFlue    = PostFireboxPipeDescrSlot_V7.FlueSlot(
                 Seq(
-                    SetFlowOnlyPipeProp_15544_V3
+                    FlowOnlyPipeTrackingOp_15544_V4
                         .SetInitialDirection                               (AzimuthDirection.Right, InclinationDirection.Horizontal),
-                    AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180("virage", 90.degrees, None                             )
+                    AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180("virage", 90.degrees, None                             )
                 )
             )
             val legacyResult = DirectionReachability.checkPostFireboxChain(

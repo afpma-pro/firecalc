@@ -13,7 +13,7 @@ import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.PostFireboxPipes
 import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 import afpma.firecalc.dto.v7.PostFireboxInitialPosition
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544

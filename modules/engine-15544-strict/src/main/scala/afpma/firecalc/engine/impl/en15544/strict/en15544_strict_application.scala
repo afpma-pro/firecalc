@@ -47,16 +47,16 @@ object EN15544_Strict_Application:
         f: EN15544_V_2023_Formulas_Alg
     )(
         i             : Inputs_15544_Strict,
-        pfbSlots      : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]       = Seq.empty,
+        pfbSlots      : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]    = Seq.empty,
         initialDir    : Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None,
         initialPos    : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None,
-        airIntakeDescr: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3]     = Seq.empty
+        airIntakeDescr: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]     = Seq.empty
     ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
         override lazy val inputs                : Inputs_15544                                              = i
-        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]       = pfbSlots
+        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]    = pfbSlots
         override def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = initialDir
         override def postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = initialPos
-        override def airIntakeDescriptors       : Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3]     = airIntakeDescr
+        override def airIntakeDescriptors       : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]     = airIntakeDescr
     }
 
 sealed abstract class EN15544_Strict_Application(
@@ -288,7 +288,7 @@ sealed abstract class EN15544_Strict_Application(
          * Interleaved `ConnectorSlot` in the flue region is computed using Thermal 13384.
          */
         override protected lazy val flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], PipeBuildSeed)] =
-            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
             val pfbSlots            = en15544.postFireboxPipeSlots
             // Locate the last FluePipeT slot; the flue region is slots up to and including it.
             val lastFluePipeSlotIdx = pfbSlots.lastIndexWhere {
@@ -356,9 +356,10 @@ sealed abstract class EN15544_Strict_Application(
                                         case _                     =>
                                             Validated.validNel((acc :+ PipeSlot.noop(FluePipeT, "Flue"), nextSeed))
                                 case ThermalFlueSlot(descr) =>
+                                    val v4Descr               = descr
                                     val (fdResult, nextSeedV) =
                                         FluePipe_Module_13384
-                                            .mkPipeFromIncrDescrWithSeed(descr, seed)
+                                            .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
                                     val nextSeed              = nextSeedV.getOrElse(seed)
                                     val pipeV                 =
                                         FluePipe_Module_13384.FullDescrResult.extractPipe(fdResult)
@@ -378,14 +379,15 @@ sealed abstract class EN15544_Strict_Application(
                                         case _                     =>
                                             Validated.validNel((acc :+ PipeSlot.noop(FluePipeT, "Flue"), nextSeed))
                                 case ConnectorSlot(descr)   =>
-                                    if descr.isEmpty then
+                                    val v4Descr = descr
+                                    if v4Descr.isEmpty then
                                         Validated.validNel(
                                             (acc :+ PipeSlot.noop(ConnectorPipeT, "Connector"), seed)
                                         )
                                     else
                                         val (fdResult, nextSeedV) =
                                             ConnectorPipe_Module
-                                                .mkPipeFromIncrDescrWithSeed(descr, seed)
+                                                .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
                                         val nextSeed              = nextSeedV.getOrElse(seed)
                                         val pipeV                 =
                                             ConnectorPipe_Module.FullDescrResult.extractPipe(fdResult)

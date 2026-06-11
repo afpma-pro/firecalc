@@ -362,6 +362,195 @@ object transformers:
             )
             .buildTransformer
 
+    // ─── V4/V3 → V7 descriptor migration helpers ──────────────────────────
+    //
+    // Pattern-matching migrations at the schema boundary (V3 descriptor types
+    // in dto.v4 → V4 descriptor types in dto.v7).  These do NOT use Chimney.
+
+    def migrateFlowOnly15544DescrToV7(
+        descr: afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
+    ): Option[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4] =
+        import afpma.firecalc.dto.v4.{SetFlowOnlyPipeProp_15544_V3 => Prop3, AddFlowOnlyPipeElement_15544_V3 => El3}
+        import afpma.firecalc.dto.v7.{
+            SetFlowOnlyPipeProp_15544_V4 => Prop4,
+            AddFlowOnlyPipeElement_15544_V4 => El4,
+            FlowOnlyChannelTopologyOp_15544_V4 => Topo4,
+            FlowOnlyPipeTrackingOp_15544_V4 => Track4
+        }
+        descr match
+            case Prop3.SetInnerShape(shape)                             => Some(Prop4.SetInnerShape(shape)           )
+            case Prop3.SetRoughness(roughness)                          => Some(Prop4.SetRoughness(roughness)        )
+            case Prop3.SetMaterial(material)                            => Some(Prop4.SetMaterial(material)          )
+            case Prop3.SetNumberOfFlows(n)                              => Some(Topo4.SetNumberOfFlows(n)            )
+            case Prop3.SetInitialDirection(az, incl)                    => Some(Track4.SetInitialDirection(az, incl) )
+            case Prop3.SetInitialPosition(x, y, z)                      => Some(Track4.SetInitialPosition(x, y, z)   )
+            case Prop3.SetFinalPosition(x, y, z)                        => Some(Track4.SetFinalPosition(x, y, z)     )
+            case El3.AddSectionSlopped(n, l)                            => Some(El4.AddSectionSlopped(n, l)          )
+            case El3.AddSectionSloppedForceManualElevationGain(n, l, e) =>
+                Some(El4.AddSectionSloppedForceManualElevationGain(n, l, e))
+            case El3.AddSectionHorizontal(n, hl)                        => Some(El4.AddSectionHorizontal(n, hl)      )
+            case El3.AddSectionVertical(n, e)                           => Some(El4.AddSectionVertical(n, e)         )
+            case El3.AddSharpeAngle_0_to_180(n, a, ad)                  => Some(El4.AddSharpeAngle_0_to_180(n, a, ad))
+            case El3.AddCircularArc_60(n, ad)                           => Some(El4.AddCircularArc_60(n, ad)         )
+            case El3.AddSectionShapeChange(n, s)                        => Some(El4.AddSectionShapeChange(n, s)      )
+            case El3.AddFlowResistance(n, z, cs)                        => Some(El4.AddFlowResistance(n, z, cs)      )
+            case El3.AddPressureDiff(n, p)                              => Some(El4.AddPressureDiff(n, p)            )
+
+    def migrateFlowOnly13384DescrToV7(
+        descr: afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3
+    ): Option[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4] =
+        import afpma.firecalc.dto.v4.{SetFlowOnlyPipeProp_13384_V3 => Prop3, AddFlowOnlyPipeElement_13384_V3 => El3}
+        import afpma.firecalc.dto.v7.{
+            SetFlowOnlyPipeProp_13384_V4 => Prop4,
+            AddFlowOnlyPipeElement_13384_V4 => El4,
+            FlowOnlyChannelTopologyOp_13384_V4 => Topo4,
+            FlowOnlyPipeTrackingOp_13384_V4 => Track4
+        }
+        descr match
+            case Prop3.SetInnerShape(shape)                             => Some(Prop4.SetInnerShape(shape)                 )
+            case Prop3.SetRoughness(roughness)                          => Some(Prop4.SetRoughness(roughness)              )
+            case Prop3.SetMaterial(material)                            => Some(Prop4.SetMaterial(material)                )
+            case Prop3.SetNumberOfFlows(n)                              => Some(Topo4.SetNumberOfFlows(n)                  )
+            case Prop3.SetInitialDirection(az, incl)                    => Some(Track4.SetInitialDirection(az, incl)       )
+            case Prop3.SetInitialPosition(x, y, z)                      => Some(Track4.SetInitialPosition(x, y, z)         )
+            case Prop3.SetFinalPosition(x, y, z)                        => Some(Track4.SetFinalPosition(x, y, z)           )
+            case El3.AddSectionSlopped(n, l)                            => Some(El4.AddSectionSlopped(n, l)                )
+            case El3.AddSectionSloppedForceManualElevationGain(n, l, e) =>
+                Some(El4.AddSectionSloppedForceManualElevationGain(n, l, e))
+            case El3.AddSectionHorizontal(n, hl)                        => Some(El4.AddSectionHorizontal(n, hl)            )
+            case El3.AddSectionVertical(n, e)                           => Some(El4.AddSectionVertical(n, e)               )
+            case El3.AddAngleAdjustable(n, a, z, ad)                    => Some(El4.AddAngleAdjustable(n, a, z, ad)        )
+            case El3.AddSharpeAngle_0_to_90(n, a, ad)                   => Some(El4.AddSharpeAngle_0_to_90(n, a, ad)       )
+            case El3.AddSharpeAngle_0_to_90_Unsafe(n, a, ad)            => Some(El4.AddSharpeAngle_0_to_90_Unsafe(n, a, ad))
+            case El3.AddSmoothCurve_90(n, r, ad)                        => Some(El4.AddSmoothCurve_90(n, r, ad)            )
+            case El3.AddSmoothCurve_90_Unsafe(n, r, ad)                 => Some(El4.AddSmoothCurve_90_Unsafe(n, r, ad)     )
+            case El3.AddSmoothCurve_60(n, r, ad)                        => Some(El4.AddSmoothCurve_60(n, r, ad)            )
+            case El3.AddSmoothCurve_60_Unsafe(n, r, ad)                 => Some(El4.AddSmoothCurve_60_Unsafe(n, r, ad)     )
+            case El3.AddElbows_2x45(n, r, ad)                           => Some(El4.AddElbows_2x45(n, r, ad)               )
+            case El3.AddElbows_3x30(n, r, ad)                           => Some(El4.AddElbows_3x30(n, r, ad)               )
+            case El3.AddElbows_4x22p5(n, r, ad)                         => Some(El4.AddElbows_4x22p5(n, r, ad)             )
+            case El3.AddSectionDecrease(n, d)                           => Some(El4.AddSectionDecrease(n, d)               )
+            case El3.AddSectionIncrease(n, d)                           => Some(El4.AddSectionIncrease(n, d)               )
+            case El3.AddFlowResistance(n, z, cs)                        => Some(El4.AddFlowResistance(n, z, cs)            )
+            case El3.AddPressureDiff(n, p)                              => Some(El4.AddPressureDiff(n, p)                  )
+
+    private[dto] def migrateThermalSinglePropToV7(
+        prop: afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetSingleProp
+    ): Option[afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetSingleProp] =
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
+        prop match
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInnerShape(shape)       =>
+                Some(SP4.SetInnerShape(shape))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetOuterShape(shape)       =>
+                Some(SP4.SetOuterShape(shape))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetThickness(thickness)    =>
+                Some(SP4.SetThickness(thickness))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetRoughness(roughness)    =>
+                Some(SP4.SetRoughness(roughness))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetMaterial(material)      =>
+                Some(SP4.SetMaterial(material))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetLayer(t, lambda)        => Some(SP4.SetLayer(t, lambda))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetLayers(layers)          => Some(SP4.SetLayers(layers)  )
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetAirSpaceAfterLayers(as) =>
+                Some(SP4.SetAirSpaceAfterLayers(as))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPipeLocation(loc)       =>
+                Some(SP4.SetPipeLocation(loc))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetDuctType(duct)          => Some(SP4.SetDuctType(duct)  )
+            case _: afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetNumberOfFlows => None
+
+    private[dto] def migrateThermalBatchToV7(
+        batch: afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
+    ): afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetPropertiesInBatch =
+        afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetPropertiesInBatch(
+            batch.batch_name,
+            batch.props.flatMap(migrateThermalSinglePropToV7),
+            batch.image
+        )
+
+    def migrateThermal13384DescrToV7(
+        descr: afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
+    ): Option[afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4] =
+        import afpma.firecalc.dto.v7.{
+            SetThermalPipeProp_13384_V4 => SP4,
+            AddThermalPipeElement_13384_V4 => El4,
+            ThermalChannelTopologyOp_13384_V4 => Topo4,
+            ThermalPipeTrackingOp_13384_V4 => Track4
+        }
+        descr match
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch(batch_name, props, image)  =>
+                Some(SP4.SetPropertiesInBatch(batch_name, props.flatMap(migrateThermalSinglePropToV7), image))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.LinedFlue(batch_name, liner, air_space, casing) =>
+                Some(
+                    SP4.LinedFlue(
+                        batch_name,
+                        migrateThermalBatchToV7(liner ),
+                        air_space,
+                        migrateThermalBatchToV7(casing)
+                    )
+                )
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInnerShape(shape)                            =>
+                Some(SP4.SetInnerShape(shape))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetOuterShape(shape)                            =>
+                Some(SP4.SetOuterShape(shape))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetThickness(thickness)                         =>
+                Some(SP4.SetThickness(thickness))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetRoughness(roughness)                         =>
+                Some(SP4.SetRoughness(roughness))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetMaterial(material)                           =>
+                Some(SP4.SetMaterial(material))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetLayer(t, lambda)                             => Some(SP4.SetLayer(t, lambda))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetLayers(layers)                               => Some(SP4.SetLayers(layers)  )
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetAirSpaceAfterLayers(as)                      =>
+                Some(SP4.SetAirSpaceAfterLayers(as))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPipeLocation(loc)                            =>
+                Some(SP4.SetPipeLocation(loc))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetDuctType(duct)                               => Some(SP4.SetDuctType(duct)  )
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetNumberOfFlows(n)                             =>
+                Some(Topo4.SetNumberOfFlows(n))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl)                   =>
+                Some(Track4.SetInitialDirection(az, incl))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z)                     =>
+                Some(Track4.SetInitialPosition(x, y, z))
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetFinalPosition(x, y, z)                       =>
+                Some(Track4.SetFinalPosition(x, y, z))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionSlopped(n, l)                      =>
+                Some(El4.AddSectionSlopped(n, l))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
+                    .AddSectionSloppedForceManualElevationGain(n, l, e) =>
+                Some(El4.AddSectionSloppedForceManualElevationGain(n, l, e))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionHorizontal(n, hl)                  =>
+                Some(El4.AddSectionHorizontal(n, hl))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionVertical(n, e)                     =>
+                Some(El4.AddSectionVertical(n, e))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddAngleAdjustable(n, a, z, ad)              =>
+                Some(El4.AddAngleAdjustable(n, a, z, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSharpeAngle_0_to_90(n, a, ad)             =>
+                Some(El4.AddSharpeAngle_0_to_90(n, a, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSharpeAngle_0_to_90_Unsafe(n, a, ad)      =>
+                Some(El4.AddSharpeAngle_0_to_90_Unsafe(n, a, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_90(n, r, ad)                  =>
+                Some(El4.AddSmoothCurve_90(n, r, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_90_Unsafe(n, r, ad)           =>
+                Some(El4.AddSmoothCurve_90_Unsafe(n, r, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_60(n, r, ad)                  =>
+                Some(El4.AddSmoothCurve_60(n, r, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_60_Unsafe(n, r, ad)           =>
+                Some(El4.AddSmoothCurve_60_Unsafe(n, r, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_2x45(n, r, ad)                     =>
+                Some(El4.AddElbows_2x45(n, r, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_3x30(n, r, ad)                     =>
+                Some(El4.AddElbows_3x30(n, r, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_4x22p5(n, r, ad)                   =>
+                Some(El4.AddElbows_4x22p5(n, r, ad))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionDecrease(n, d)                     =>
+                Some(El4.AddSectionDecrease(n, d))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionIncrease(n, d)                     =>
+                Some(El4.AddSectionIncrease(n, d))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddFlowResistance(n, z, cs)                  =>
+                Some(El4.AddFlowResistance(n, z, cs))
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddPressureDiff(n, p)                        =>
+                Some(El4.AddPressureDiff(n, p))
+
     // ─── V6 to V7 Migration ───────────────────────────────────────────────
     //
     // Extract SetInitialDirection/SetInitialPosition from the first slot's
@@ -381,7 +570,85 @@ object transformers:
     private[dto] def normalizeToPostFireboxPipes(
         slots: Seq[PostFireboxPipeDescrSlot]
     ): PostFireboxPipes =
-        PostFireboxPipes.fromLegacySlots(slots)
+        def extractInitialDirectionV6(slot: PostFireboxPipeDescrSlot): PostFireboxInitialDirection =
+            slot match
+                case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3.SetInitialDirection(az, incl) =>
+                            PostFireboxInitialDirection(az, incl)
+                    }.getOrElse(PostFireboxInitialDirection.default)
+                case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl) =>
+                            PostFireboxInitialDirection(az, incl)
+                    }.getOrElse(PostFireboxInitialDirection.default)
+                case PostFireboxPipeDescrSlot.ConnectorSlot(d)   =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl) =>
+                            PostFireboxInitialDirection(az, incl)
+                    }.getOrElse(PostFireboxInitialDirection.default)
+                case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl) =>
+                            PostFireboxInitialDirection(az, incl)
+                    }.getOrElse(PostFireboxInitialDirection.default)
+                case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                    PostFireboxInitialDirection.default
+
+        def extractInitialPositionV6(slot: PostFireboxPipeDescrSlot): Option[PostFireboxInitialPosition] =
+            slot match
+                case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3.SetInitialPosition(x, y, z) =>
+                            PostFireboxInitialPosition(x, y, z)
+                    }
+                case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z) =>
+                            PostFireboxInitialPosition(x, y, z)
+                    }
+                case PostFireboxPipeDescrSlot.ConnectorSlot(d)   =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z) =>
+                            PostFireboxInitialPosition(x, y, z)
+                    }
+                case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
+                    d.collectFirst {
+                        case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z) =>
+                            PostFireboxInitialPosition(x, y, z)
+                    }
+                case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                    None
+
+        val defaultInitialPosition: PostFireboxInitialPosition =
+            PostFireboxInitialPosition(0.cm, 0.cm, 0.cm)
+
+        def convertSlot(s: PostFireboxPipeDescrSlot): PostFireboxPipeDescrSlot_V7 =
+            s match
+                case PostFireboxPipeDescrSlot.FlueSlot(d)        =>
+                    PostFireboxPipeDescrSlot_V7.FlueSlot(d.mapFilter(migrateFlowOnly15544DescrToV7))
+                case PostFireboxPipeDescrSlot.ThermalFlueSlot(d) =>
+                    PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d.mapFilter(migrateThermal13384DescrToV7))
+                case PostFireboxPipeDescrSlot.ConnectorSlot(d)   =>
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(d.mapFilter(migrateThermal13384DescrToV7))
+                case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot(d.mapFilter(migrateThermal13384DescrToV7))
+                case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+                    PostFireboxPipeDescrSlot_V7.NoFlueSlot
+
+        val convertedSlots = slots.map(convertSlot)
+
+        val initialDirection = slots
+            .collectFirst { case s if s != PostFireboxPipeDescrSlot.NoFlueSlot => s }
+            .map(extractInitialDirectionV6)
+            .getOrElse(PostFireboxInitialDirection.default)
+
+        val initialPosition = slots
+            .collectFirst { case s if s != PostFireboxPipeDescrSlot.NoFlueSlot => s }
+            .flatMap(extractInitialPositionV6)
+            .getOrElse(defaultInitialPosition)
+
+        PostFireboxPipes(initialDirection, initialPosition, convertedSlots)
 
     given Transformer[FireCalcYAML_V6, FireCalcYAML_V7] =
         Transformer
@@ -390,6 +657,10 @@ object transformers:
             .withFieldComputed(
                 _.post_firebox_pipes,
                 v6 => normalizeToPostFireboxPipes(v6.post_firebox_pipes)
+            )
+            .withFieldComputed(
+                _.air_intake_descr,
+                v6 => v6.air_intake_descr.mapFilter(migrateFlowOnly13384DescrToV7)
             )
             .withFieldComputed(
                 _.firebox,

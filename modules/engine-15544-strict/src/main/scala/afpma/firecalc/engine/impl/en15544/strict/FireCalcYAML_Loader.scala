@@ -58,7 +58,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             Some(cleanPostFireboxPipes.initialDirection)
         )
 
-    import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+    import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
 
     /**
@@ -79,13 +79,13 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
      *     validator — not be silently rewritten.
      */
     private def normalizePostFireboxSlots(
-        slots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]
-    ): Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] =
+        slots: Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]
+    ): Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] =
         if slots.isEmpty then slots
         else
             val slots0 = slots match
                 case ConnectorSlot(_) +: ChimneySlot(_) +: Nil =>
-                    PostFireboxPipeDescrSlot.NoFlueSlot +: slots
+                    PostFireboxPipeDescrSlot_V7.NoFlueSlot +: slots
                 case _                                         => slots
             if slots0.last match { case ChimneySlot(_) => false; case _ => true } then slots0
             else
@@ -102,10 +102,9 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     // TODO(Phase4/Phase5): Surface a `PostFireboxChain_V3` projection alongside
     // the flat `normalizedPostFireboxSlots` once downstream engine consumers
     // (15544 common/strict/mce application seed) and UI panels have migrated.
-    // For now, builders `PipeChain_15544_{Strict,MCE}.toChain` exist for
-    // engine-internal consumption; YAML → domain conversion continues to
-    // publish the flat seq via `postFireboxPipeSlots` to avoid a Phase-5-scoped
-    // UI rewrite leaking into Phase 3.
+    // YAML → domain conversion continues to publish the flat seq via
+    // `postFireboxPipeSlots` to avoid a Phase-5-scoped UI rewrite leaking into
+    // Phase 3.
 
     // Topology grammar validation (permissive — errors are exposed, not thrown).
     // HEAD_REGION may be empty (legal across all pipelines).

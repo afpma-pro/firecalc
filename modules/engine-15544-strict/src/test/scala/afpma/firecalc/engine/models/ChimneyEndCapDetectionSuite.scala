@@ -9,9 +9,9 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.PipeShape.Circle
-import afpma.firecalc.dto.v4.endsWithSingularFlowResistance
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.ChimneySlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.ConnectorSlot
+import afpma.firecalc.dto.v7.endsWithSingularFlowResistance
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.ChimneySlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.ConnectorSlot
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.dev_fixtures.en15544.v20241001.EmptyHeadRegionFixture_15544
@@ -45,7 +45,7 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
 
     private val slots = EmptyHeadRegionFixture_15544.postFireboxPipeSlots
 
-    private val chimneyDescr: Seq[ThermalPipeDescr_13384_V3] =
+    private val chimneyDescr: Seq[ThermalPipeDescr_13384] =
         slots
             .collectFirst { case ChimneySlot(d) => d }
             .getOrElse(fail("EmptyHeadRegionFixture_15544 has no ChimneySlot"))
@@ -78,7 +78,7 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
     "ChimneyPipe_Module.lastInnerShape" should
         "honour mid-pipe AddSectionDecrease — DTO fold would have returned the upstream shape" in {
             import ChimneyPipe_Module as CHPM
-            val syntheticChimney: Seq[ThermalPipeDescr_13384_V3] = Seq(
+            val syntheticChimney: Seq[ThermalPipeDescr_13384] = Seq(
                 CHPM.roughness         (1.mm                                           ),
                 CHPM.innerShape(circle(200.mm)),
                 CHPM.layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.260)),

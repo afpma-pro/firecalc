@@ -6,7 +6,7 @@
 package afpma.firecalc.ui.panels
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -38,7 +38,7 @@ object DynamicPipeSlotPanel:
      */
     def forSlot(
         slotIndex           : Int,
-        slot                : PostFireboxPipeDescrSlot,
+        slot                : PostFireboxPipeDescrSlot_V7,
         slotControlsNode    : Option[HtmlElement]            = None,
         headIdx             : Option[Int]                    = None,
         isLastInHeadRegion  : Boolean                        = false,
@@ -46,7 +46,7 @@ object DynamicPipeSlotPanel:
         lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
     )(using Locale, DisplayUnits): PipePanel =
         slot match
-            case PostFireboxPipeDescrSlot.FlueSlot(_)        =>
+            case PostFireboxPipeDescrSlot_V7.FlueSlot(_)        =>
                 DynamicFlowOnlyPipeSlotPanel(
                     slotIndex,
                     slotControlsNode,
@@ -55,7 +55,7 @@ object DynamicPipeSlotPanel:
                     headRegionLengthsSig,
                     lZMinSig
                 )
-            case PostFireboxPipeDescrSlot.ThermalFlueSlot(_) =>
+            case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(_) =>
                 DynamicThermalPipeSlotPanel(
                     slotIndex,
                     FluePipeT,
@@ -66,7 +66,7 @@ object DynamicPipeSlotPanel:
                     headRegionLengthsSig,
                     lZMinSig
                 )
-            case PostFireboxPipeDescrSlot.ConnectorSlot(_)   =>
+            case PostFireboxPipeDescrSlot_V7.ConnectorSlot(_)   =>
                 DynamicThermalPipeSlotPanel(
                     slotIndex,
                     ConnectorPipeT,
@@ -77,9 +77,9 @@ object DynamicPipeSlotPanel:
                     headRegionLengthsSig,
                     lZMinSig
                 )
-            case PostFireboxPipeDescrSlot.ChimneySlot(_)     =>
+            case PostFireboxPipeDescrSlot_V7.ChimneySlot(_)     =>
                 DynamicThermalPipeSlotPanel(slotIndex, ChimneyPipeT, I18N.panels.chimney_pipe, slotControlsNode)
-            case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+            case PostFireboxPipeDescrSlot_V7.NoFlueSlot         =>
                 throw new IllegalArgumentException("NoFlueSlot must be handled by PostFireboxPipePanels directly")
 
     // ── Auto-calc visibility predicates (pure, testable) ─────────
@@ -95,16 +95,16 @@ object DynamicPipeSlotPanel:
     // spinning up Laminar owners or reactive wiring.
 
     /** True iff `slotIndex == 0` AND the slot at index 0 is a `FlueSlot` or `ThermalFlueSlot`. */
-    def isFirstHeadSlotAndIsFlue(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
+    def isFirstHeadSlotAndIsFlue(slots: Seq[PostFireboxPipeDescrSlot_V7], slotIndex: Int): Boolean =
         slotIndex == 0 && (slots.lift(0) match
-            case Some(_: PostFireboxPipeDescrSlot.FlueSlot)        => true
-            case Some(_: PostFireboxPipeDescrSlot.ThermalFlueSlot) => true
+            case Some(_: PostFireboxPipeDescrSlot_V7.FlueSlot)        => true
+            case Some(_: PostFireboxPipeDescrSlot_V7.ThermalFlueSlot) => true
             case _ => false)
 
     /** True iff `slotIndex == 0` AND the slot at index 0 is a `ConnectorSlot`. */
-    def isFirstHeadSlotAndIsConnector(slots: Seq[PostFireboxPipeDescrSlot], slotIndex: Int): Boolean =
+    def isFirstHeadSlotAndIsConnector(slots: Seq[PostFireboxPipeDescrSlot_V7], slotIndex: Int): Boolean =
         slotIndex == 0 && (slots.lift(0) match
-            case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => true
+            case Some(_: PostFireboxPipeDescrSlot_V7.ConnectorSlot) => true
             case _ => false)
 
     // ── Head-region title / length-summary helpers (pure, testable) ──────
@@ -129,7 +129,7 @@ object DynamicPipeSlotPanel:
      *   `Some("{label} #{N}")` if in head region, `None` otherwise.
      */
     def numberedTitle(
-        slots             : Seq[PostFireboxPipeDescrSlot],
+        slots             : Seq[PostFireboxPipeDescrSlot_V7],
         slotIndex         : Int,
         channelPipeLabel  : String,
         connectorPipeLabel: String
@@ -139,8 +139,8 @@ object DynamicPipeSlotPanel:
             case -1      => None
             case headIdx =>
                 val label = slots.lift(slotIndex) match
-                    case Some(_: PostFireboxPipeDescrSlot.ConnectorSlot) => connectorPipeLabel
-                    case _                                               => channelPipeLabel
+                    case Some(_: PostFireboxPipeDescrSlot_V7.ConnectorSlot) => connectorPipeLabel
+                    case _                                                  => channelPipeLabel
                 Some(s"$label #${headIdx + 1}")
 
     /**
@@ -178,7 +178,7 @@ object DynamicPipeSlotPanel:
      *   Format key for `"Length: {0} (cum. {1}, min. {2})"` (3 args).
      */
     def lengthSummary(
-        slots                     : Seq[PostFireboxPipeDescrSlot],
+        slots                     : Seq[PostFireboxPipeDescrSlot_V7],
         slotIndex                 : Int,
         lengths                   : Option[Vector[Double]],
         lZMin                     : Option[Double],
@@ -270,10 +270,10 @@ object DynamicPipeSlotPanel:
 
     /**
      * Indices (within the full slot vector) that belong to the head region, in order.
-     *  Delegates to [[PostFireboxPipeDescrSlot.headRegionIndices]] — kept as a thin
+     *  Delegates to [[PostFireboxPipeDescrSlot_V7.headRegionIndices]] — kept as a thin
      *  alias for call-site brevity in this file.
      */
-    private[panels] def computeHeadRegionIndices(slots: Seq[PostFireboxPipeDescrSlot]): Vector[Int] =
-        PostFireboxPipeDescrSlot.headRegionIndices(slots)
+    private[panels] def computeHeadRegionIndices(slots: Seq[PostFireboxPipeDescrSlot_V7]): Vector[Int] =
+        PostFireboxPipeDescrSlot_V7.headRegionIndices(slots)
 
 end DynamicPipeSlotPanel

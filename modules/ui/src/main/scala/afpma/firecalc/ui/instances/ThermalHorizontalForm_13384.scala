@@ -29,6 +29,8 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
     import AddThermalPipeElement_13384.*
     import SetThermalPipeProp_13384.*
+    import ThermalChannelTopologyOp_13384.*
+    import ThermalPipeTrackingOp_13384.*
 
     // import defaultable.given
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()

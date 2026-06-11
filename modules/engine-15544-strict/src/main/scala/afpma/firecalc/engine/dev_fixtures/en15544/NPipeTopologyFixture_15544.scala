@@ -11,7 +11,11 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4 as FP4
+import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4 as EP4
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as TP4
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -233,75 +237,75 @@ object NPipeTopologyFixture_15544
     //   Slot 2 inherits "Right/Horizontal", ends "Left/Up" after bends
     //   Slot 3/4 inherit "Left/Up" (vertical)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot] =
-        import FluePipe_Module_15544.*
-        import ConnectorPipe_Module as CPM
-        import ChimneyPipe_Module as CHPM
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
         Seq     (
             // Slot 0 — FlueSlot #1: horizontal exit from firebox, then turn downward
-            PostFireboxPipeDescrSlot.FlueSlot     (
+            PostFireboxPipeDescrSlot_V7.FlueSlot     (
                 Seq(
-                    setInitialDirection    (
+                    FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection    (
                         azimuth     = AzimuthDirection.Right,
                         inclination = InclinationDirection.Horizontal
                     ),
-                    roughness              (3.mm                ),
-                    innerShape(rectangle(43.cm, 40.cm)),
-                    addSectionHorizontal   ("F1-Car. 1", 34.8.cm),
-                    addSharpAngle_90deg    (
+                    FP4.SetRoughness                                       (3.mm                ),
+                    FP4.SetInnerShape(rectangle(43.cm, 40.cm)),
+                    EP4.AddSectionHorizontal                               ("F1-Car. 1", 34.8.cm),
+                    EP4.AddSharpeAngle_0_to_180                            (
                         "F1-virage 90° (-> Bas)",
-                        AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)
+                        90.degrees,
+                        Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down))
                     )
                 )
             ),
             // Slot 1 — FlueSlot #2: descending vertical column (continues from Down)
-            PostFireboxPipeDescrSlot.FlueSlot     (
+            PostFireboxPipeDescrSlot_V7.FlueSlot     (
                 Seq(
-                    addSectionVertical  ("F2-Car. 2", -109.cm),
-                    addSectionVertical  ("F2-Car. 3", -244.cm),
-                    addSharpAngle_90deg (
+                    EP4.AddSectionVertical     ("F2-Car. 2", -109.cm),
+                    EP4.AddSectionVertical     ("F2-Car. 3", -244.cm),
+                    EP4.AddSharpeAngle_0_to_180(
                         "F2-virage 90° (-> Droite)",
-                        AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                        90.degrees,
+                        Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))
                     ),
-                    innerShape(rectangle(27.cm, 40.cm)),
-                    addSectionHorizontal("F2-Car. 4", 50.cm  ),
-                    addSharpAngle_90deg (
+                    FP4.SetInnerShape(rectangle(27.cm, 40.cm)),
+                    EP4.AddSectionHorizontal   ("F2-Car. 4", 50.cm  ),
+                    EP4.AddSharpeAngle_0_to_180(
                         "F2-virage 90° (-> Gauche montant)",
-                        AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
+                        90.degrees,
+                        Some(AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)         )
                     )
                 )
             ),
             // Slot 2 — FlueSlot #3: ascending vertical column back to top
-            PostFireboxPipeDescrSlot.FlueSlot     (
+            PostFireboxPipeDescrSlot_V7.FlueSlot     (
                 Seq(
-                    innerShape(rectangle(21.cm, 32.cm)),
-                    addSectionVertical("F3-Car. 10", 244.cm),
-                    addSectionVertical("F3-Car. 11", 128.cm)
+                    FP4.SetInnerShape(rectangle(21.cm, 32.cm)),
+                    EP4.AddSectionVertical("F3-Car. 10", 244.cm),
+                    EP4.AddSectionVertical("F3-Car. 11", 128.cm)
                 )
             ),
             // Slot 3 — ConnectorSlot: short vertical steel connector
-            PostFireboxPipeDescrSlot.ConnectorSlot(
+            PostFireboxPipeDescrSlot_V7.ConnectorSlot(
                 Seq (
-                    CPM.roughness (Material_13384.WeldedSteel()),
-                    CPM.innerShape(circle(25.cm)               ),
-                    CPM.layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.0)),
-                    CPM.pipeLocation      (PipeLocation.HeatedArea                     ),
-                    CPM.addSectionVertical("C-Car. 12", 5.cm                           )
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(25.cm)               ),
+                    SP4.SetLayer          (2.mm, WattsPerMeterKelvin(0.0)),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea       ),
+                    TP4.AddSectionVertical("C-Car. 12", 5.cm             )
                 )
             ),
             // Slot 4 — ChimneySlot: insulated chimney pipe
-            PostFireboxPipeDescrSlot.ChimneySlot  (
+            PostFireboxPipeDescrSlot_V7.ChimneySlot  (
                 Seq(
-                    CHPM.roughness         (1.mm                                          ),
-                    CHPM.innerShape(circle(250.mm)),
-                    CHPM.layer             (e = 26.mm, tr = SquareMeterKelvinPerWatt(0.44)),
-                    CHPM.pipeLocation      (PipeLocation.HeatedArea                       ),
-                    CHPM.addSectionVertical("CH-chauff.", 6.m                             ),
-                    CHPM.pipeLocation      (PipeLocation.UnheatedInside                   ),
-                    CHPM.addSectionVertical("CH-non-chauff", 30.cm                        ),
-                    CHPM.pipeLocation      (PipeLocation.OutsideOrExterior                ),
-                    CHPM.addSectionVertical("CH-ext.", 150.cm                             ),
-                    CHPM.addFlowResistance ("CH-element terminal", 1.48.unitless: ζ)
+                    SP4.SetRoughness      (1.mm                                         ),
+                    SP4.SetInnerShape(circle(250.mm)),
+                    SP4.SetLayer          (26.mm, WattsPerMeterKelvin(0.44)             ),
+                    SP4.SetPipeLocation   (PipeLocation.HeatedArea                      ),
+                    TP4.AddSectionVertical("CH-chauff.", 6.m                            ),
+                    SP4.SetPipeLocation   (PipeLocation.UnheatedInside                  ),
+                    TP4.AddSectionVertical("CH-non-chauff", 30.cm                       ),
+                    SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior               ),
+                    TP4.AddSectionVertical("CH-ext.", 150.cm                            ),
+                    TP4.AddFlowResistance ("CH-element terminal", 1.48.unitless: ζ, None)
                 )
             )
         )

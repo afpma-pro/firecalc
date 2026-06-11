@@ -7,6 +7,8 @@ package afpma.firecalc.ui.panels
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_13384.*
+import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_13384.*
 
 import afpma.firecalc.i18n.implicits.given
 

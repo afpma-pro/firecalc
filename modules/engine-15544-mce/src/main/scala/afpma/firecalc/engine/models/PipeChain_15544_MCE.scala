@@ -6,14 +6,8 @@
 package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v6.ChimneySlot_V3
-import afpma.firecalc.dto.v6.ConnectorSlot_V3
-import afpma.firecalc.dto.v6.HeadSlot_V3
-import afpma.firecalc.dto.v6.NoFlueSlot_V3
-import afpma.firecalc.dto.v6.PostFireboxChain_V3
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
-import afpma.firecalc.dto.v6.ThermalFlueSlot_V3
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -69,29 +63,11 @@ object PipeChain_15544_MCE:
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
-    /** Convert MCE descriptors to descriptor slots for generic topology processing. */
-    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot] =
+    /** Convert MCE descriptors to V7 descriptor slots for generic topology processing. */
+    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot_V7] =
         Vector(
             ThermalFlueSlot(d.flue     ),
             ConnectorSlot  (d.connector),
             ChimneySlot    (d.chimney  )
         )
-
-    /**
-     * Convert MCE descriptors to the structured post-firebox chain (plan issue B2).
-     *
-     * MCE models the flue as a thermal (EN 13384) pipe, so the head uses
-     * [[ThermalFlueSlot_V3]] rather than the flow-only [[afpma.firecalc.dto.v6.FlueSlot_V3]].
-     * The legacy single-flue head is preserved byte-identically — non-golden MCE dev
-     * fixtures already widen to multi-slot head via their own `toSlots` overrides.
-     */
-    def toChain(d: Descriptors): PostFireboxChain_V3 =
-        PostFireboxChain_V3    (
-            head     =
-                if d.flue.isEmpty then Vector[HeadSlot_V3](NoFlueSlot_V3)
-                else Vector[HeadSlot_V3](ThermalFlueSlot_V3(d.flue)),
-            terminal = ConnectorSlot_V3(d.connector),
-            chimney  = ChimneySlot_V3(d.chimney)
-        )
-
 end PipeChain_15544_MCE

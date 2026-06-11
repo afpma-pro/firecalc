@@ -49,7 +49,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
      * the flow-only default and fail at runtime in MCE mode with "FlueSlot in flue
      * region"). Made abstract to force explicit wiring.
      */
-    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]
+    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]
 
     /**
      * Wrapper-level initial direction for post-firebox pipes (V7).
@@ -70,7 +70,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
      * Used by direction-reachability validation to walk the air intake bend chain.
      * Defaults to empty for engine variants that do not model an air intake.
      */
-    def airIntakeDescriptors: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3] = Seq.empty
+    def airIntakeDescriptors: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4] = Seq.empty
 
     export EN15544_V_2023_Application_Alg.{ErrorGen}
 

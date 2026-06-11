@@ -10,7 +10,8 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
+import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -128,11 +129,11 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     lazy val elems_v: Var[Seq[FlowOnlyPipeDescr_15544]] =
         postFireboxSlots_var.zoomLazy(slots =>
             slots.lift(slotIndex) match
-                case Some(PostFireboxPipeDescrSlot.FlueSlot(d)) => d
-                case _                                          => Seq.empty
+                case Some(PostFireboxPipeDescrSlot_V7.FlueSlot(d)) => d
+                case _                                             => Seq.empty
         )((slots, descr) =>
             slots.zipWithIndex.map { case (s, i) =>
-                if i == slotIndex then PostFireboxPipeDescrSlot.FlueSlot(descr) else s
+                if i == slotIndex then PostFireboxPipeDescrSlot_V7.FlueSlot(descr) else s
             }
         )
 

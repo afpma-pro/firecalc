@@ -11,6 +11,8 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
 import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.ops.Position
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.units.coulombutils.*
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -122,7 +124,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 idx  = PipeIdx(1),
                                 typ  = FluePipeT,
                                 name = "turn left",
-                                el   = DirectionChange.AngleVifDe0A180(45.degrees)
+                                el   = DirectionChange.AngleVifDe0A180(45.degrees, effectiveShape = PipeShape.Square(a))
                             )
                         )
                         val second = elems(2).el.asInstanceOf[StraightSection]
@@ -130,6 +132,112 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         second.geometry.shouldBe               (PipeShape.Square(a))
                         second.roughness.shouldBe              (2.mm               )
                         second.elevation_gain.value.shouldEqual(0.0 +- 1e-10       )
+                    }
+                }
+
+                "case split + shape change + angle + straight" - {
+
+                    "stores the split branch geometry on the direction change" in {
+                        val width       = 18.cm
+                        val height      = 9.cm
+                        val branchShape = rectangle(width, height)
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (square(width)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
+                                innerShape               (branchShape                 ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val elems = p.toFullDescr().map(_._2).toOption.get.elems
+
+                        elems.map(_.name) `shouldBe` Vector(
+                            "descente",
+                            "vers section horizontale",
+                            "section horizontale"
+                        )
+                        elems(1).el `shouldBe` DirectionChange.AngleVifDe0A180(
+                            α              = 90.degrees,
+                            angleN2        = None,
+                            effectiveShape = branchShape
+                        )
+                        elems(1).el.innerShape(Some(square(width))).map(_(using Position.Middle)) `shouldBe` Some(
+                            branchShape
+                        )
+                    }
+
+                    "rejects split branch geometry that changes total cross-section" in {
+                        val width = 18.cm
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                                (
+                                innerShape                                      (square(width)          ),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                innerShape                                      (rectangle(width, 10.cm)),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result = p.toFullDescr()
+
+                        result.isValid `shouldBe` false
+                        val Invalid(errors) = result: @unchecked
+                        errors.toList.head shouldBe a[FlowTransitionChangesTotalCrossSection]
+                    }
+
+                    "rejects merge geometry that changes total cross-section" in {
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(18.cm, 9.cm)),
+                                roughness                (3.mm                        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)          ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)          ),
+                                innerShape                                      (square(20.cm)         ),
+                                addSectionHorizontal     ("apres merge", 1.meters     ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result = p.toFullDescr()
+
+                        result.isValid `shouldBe` false
+                        val Invalid(errors) = result: @unchecked
+                        errors.toList.head shouldBe a[FlowTransitionChangesTotalCrossSection]
                     }
                 }
 
@@ -211,7 +319,8 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                     idx  = PipeIdx(1),
                                     typ  = FluePipeT,
                                     name = "turn left",
-                                    el   = DirectionChange.AngleVifDe0A180(45.degrees)
+                                    el   = DirectionChange
+                                        .AngleVifDe0A180(45.degrees, effectiveShape = PipeShape.Circle(diam))
                                 ),
                                 NamedPipeElDescr (
                                     idx  = PipeIdx(2),
@@ -228,7 +337,11 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                     idx  = PipeIdx(3),
                                     typ  = FluePipeT,
                                     name = "turn left",
-                                    el   = DirectionChange.AngleVifDe0A180(45.degrees, angleN2 = Some(90.degrees))
+                                    el   = DirectionChange.AngleVifDe0A180(
+                                        45.degrees,
+                                        angleN2        = Some(90.degrees),
+                                        effectiveShape = PipeShape.Circle(diam)
+                                    )
                                 ),
                                 NamedPipeElDescr (
                                     idx  = PipeIdx(4),

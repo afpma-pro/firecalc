@@ -6,8 +6,8 @@
 package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -50,7 +50,7 @@ object PipeChain_13384:
         Built(connectorPipeResult, chimneyPipeResult, connectorFinalFrame)
 
     /** Convert V4 YAML fields to descriptor slots for generic topology processing. */
-    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot] =
+    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot_V7] =
         Vector(
             ConnectorSlot(d.connector),
             ChimneySlot  (d.chimney  )
@@ -61,7 +61,6 @@ object PipeChain_13384:
     // topology validator accepts (empty HEAD_REGION is legal everywhere). Phase 4
     // (physics seed — plan issue E4) must still decide whether to (a) promote the
     // connector to the head region, or (b) keep this builder strictly on the legacy
-    // flat `toSlots` path while 15544 migrates to `toChain`. No `toChain` method is
-    // emitted here intentionally.
+    // flat `toSlots` path.
 
 end PipeChain_13384

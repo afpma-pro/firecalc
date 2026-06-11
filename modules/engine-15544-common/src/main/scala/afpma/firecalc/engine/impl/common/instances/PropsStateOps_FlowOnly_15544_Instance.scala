@@ -27,13 +27,24 @@ object PropsStateOps_FlowOnly_15544_Instance:
      *   - dirBeforePreviousDC: direction BEFORE the previous bend, used to compute angleN2
      */
     case class FlowOnlyPropsState_15544(
-        geometry           : Option[PipeShape] = None,
-        roughness          : Option[Roughness] = None,
-        nFlows             : Option[NbOfFlows] = Some(1.flow),
-        initialFrame       : Option[PipeFrame] = None,
-        currentFrame       : Option[PipeFrame] = None,
-        dirBeforePreviousDC: Option[Vec3]      = None
+        geometry            : Option[PipeShape]            = None,
+        roughness           : Option[Roughness]            = None,
+        nFlows              : Option[NbOfFlows]            = Some(1.flow),
+        initialFrame        : Option[PipeFrame]            = None,
+        currentFrame        : Option[PipeFrame]            = None,
+        dirBeforePreviousDC : Option[Vec3]                 = None,
+        pendingFlowAreaCheck: Option[PendingFlowAreaCheck] = None
     )
+
+    case class PendingFlowAreaCheck(
+        beforeShape: PipeShape,
+        beforeFlows: NbOfFlows,
+        afterFlows : NbOfFlows,
+        transition : FlowAreaTransition
+    )
+
+    enum FlowAreaTransition:
+        case Split, Merge
 
     given flowOnlyPropsStateOps15544: PropsStateOps[FlowOnlyPropsState_15544] with
         def isValid(s: FlowOnlyPropsState_15544) =

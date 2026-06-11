@@ -10,8 +10,9 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
-
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetPropertiesInBatch
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as EP4
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
@@ -147,29 +148,28 @@ object ExampleProject_15544
     val connectorPipeDescr = conduit_raccordement_descr
 
     val conduit_fumees_descr =
-        import ChimneyPipe_Module.*
         Seq(
-            SetPropertiesInBatch(
+            SetPropertiesInBatch  (
                 batch_name = "POUJOULAT 200mm DPI",
                 Seq (
-                    roughness (Material_13384.WeldedSteel()),
-                    innerShape(circle(200.mm)              ),
-                    layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440))
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(200.mm)              ),
+                    SP4.SetLayer(2.5.cm, WattsPerMeterKelvin(0.440))
                 )
             ),
-            pipeLocation        (PipeLocation.HeatedArea            ),
-            addSectionVertical  ("intérieur", 550.mm                ),
-            pipeLocation        (PipeLocation.OutsideOrExterior     ), // plutot NON CHAUFFEE car combles ???
-            addSectionVertical  ("combles", 560.mm                  ),
-            pipeLocation        (PipeLocation.OutsideOrExterior     ),
-            addSectionVertical  ("extérieur", 900.mm                ),
-            pipeLocation        (PipeLocation.OutsideOrExterior     ),
-            addSectionVertical  (
+            SP4.SetPipeLocation   (PipeLocation.HeatedArea                  ),
+            EP4.AddSectionVertical("intérieur", 550.mm                      ),
+            SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior           ), // plutot NON CHAUFFEE car combles ???
+            EP4.AddSectionVertical("combles", 560.mm                        ),
+            SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior           ),
+            EP4.AddSectionVertical("extérieur", 900.mm                      ),
+            SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior           ),
+            EP4.AddSectionVertical(
                 "extérieur (ajout)",
                 400.mm
             ), // deviation from `formation V5 ex02_kachelofen` (40 cm added) to get proper pressure equilibrium
 
-            addFlowResistance   ("element terminal", 0.6.unitless: ζ)
+            EP4.AddFlowResistance ("element terminal", 0.6.unitless: ζ, None)
         )
 
     val chimneyPipeDescr = conduit_fumees_descr

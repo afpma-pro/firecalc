@@ -11,9 +11,9 @@ import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 
-import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3.AddSharpeAngle_0_to_180
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.PropagationStrategy.*
@@ -49,10 +49,10 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
      *     initial frame.
      */
     private def simulateAngleEditAndRotate(
-        oldSlots    : Seq[PostFireboxPipeDescrSlot],
-        rawNewSlots : Seq[PostFireboxPipeDescrSlot],
+        oldSlots    : Seq[PostFireboxPipeDescrSlot_V7],
+        rawNewSlots : Seq[PostFireboxPipeDescrSlot_V7],
         initialFrame: Option[PipeFrame]
-    ): Seq[PostFireboxPipeDescrSlot] =
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         val edit = ChainEditDispatcher
             .detectEdit(oldSlots, rawNewSlots)
             .getOrElse(fail("detectEdit failed to spot the angle change"))
@@ -65,7 +65,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
         Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
 
     /** Find a direction-change element in a FlueSlot by its display name. */
-    private def findFlueBend(slot: PostFireboxPipeDescrSlot, name: String): AddSharpeAngle_0_to_180 =
+    private def findFlueBend(slot: PostFireboxPipeDescrSlot_V7, name: String): AddSharpeAngle_0_to_180 =
         slot match
             case FlueSlot(descr) =>
                 descr
@@ -193,13 +193,13 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         // Create a new ThermalFlueSlot with a bend using case classes directly.
         // Minimal set of elements — just enough for the detector to find the direction change.
-        import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.*
-        import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.*
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
         import afpma.firecalc.dto.common.PipeLocation
         import afpma.firecalc.dto.common.AppendLayerDescr
 
         val newThermalSlot = ThermalFlueSlot {
-            Seq[afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3](
+            Seq[afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4](
                 SetRoughness            (1.mm                      ),
                 SetInnerShape(afpma.firecalc.domain.PipeShape.Circle(20.cm)),
                 SetLayers    (

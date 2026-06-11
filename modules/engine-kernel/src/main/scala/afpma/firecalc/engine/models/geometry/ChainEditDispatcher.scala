@@ -9,10 +9,10 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.domain.AbsoluteDirection
 
-import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
-import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
+import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import afpma.firecalc.engine.models.geometry.PipeDescrExtractors.given
 
@@ -25,7 +25,7 @@ import coulomb.policy.standard.given
  * (either [[AngleEdit]] or [[DirectionEdit]]). For each edit the dispatcher applies
  * one of four [[PropagationStrategy]] variants as a pure function:
  *
- *     apply(preEdit, newSlots, edit, strategy) => Seq[PostFireboxPipeDescrSlot]
+ *     apply(preEdit, newSlots, edit, strategy) => Seq[PostFireboxPipeDescrSlot_V7]
  *
  * `preEdit` is the pristine baseline; `newSlots` is the raw user-written snapshot
  * (only the edited element is read from it - downstream is reconstructed from
@@ -85,8 +85,8 @@ object ChainEditDispatcher:
         case object RigidRotation extends PropagationStrategy
 
     case class Offer(
-        preEditSlots   : Seq[PostFireboxPipeDescrSlot],
-        newSlots       : Seq[PostFireboxPipeDescrSlot],
+        preEditSlots   : Seq[PostFireboxPipeDescrSlot_V7],
+        newSlots       : Seq[PostFireboxPipeDescrSlot_V7],
         edit           : ChainEdit,
         appliedStrategy: PropagationStrategy,
         alternatives   : List[PropagationStrategy]
@@ -101,12 +101,12 @@ object ChainEditDispatcher:
     // ── Entry point ────────────────────────────────────────────────────
 
     def apply(
-        preEdit     : Seq[PostFireboxPipeDescrSlot],
-        newSlots    : Seq[PostFireboxPipeDescrSlot],
+        preEdit     : Seq[PostFireboxPipeDescrSlot_V7],
+        newSlots    : Seq[PostFireboxPipeDescrSlot_V7],
         edit        : ChainEdit,
         strategy    : PropagationStrategy,
         initialFrame: Option[PipeFrame] = None
-    ): Seq[PostFireboxPipeDescrSlot] =
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         edit match
             case ie: InsertEdit =>
                 handleInsert(preEdit, newSlots, ie, initialFrame)
@@ -133,12 +133,12 @@ object ChainEditDispatcher:
      * instead of integer-comparison heuristics.
      */
     def detectEdit(
-        oldSlots: Seq[PostFireboxPipeDescrSlot],
-        newSlots: Seq[PostFireboxPipeDescrSlot]
+        oldSlots: Seq[PostFireboxPipeDescrSlot_V7],
+        newSlots: Seq[PostFireboxPipeDescrSlot_V7]
     ): Option[ChainEdit] =
         ChainEditDetector.detectEdit(oldSlots, newSlots)
 
-    def downstreamPinCount(slots: Seq[PostFireboxPipeDescrSlot], coord: ChainCoord): Int =
+    def downstreamPinCount(slots: Seq[PostFireboxPipeDescrSlot_V7], coord: ChainCoord): Int =
         if coord.slotIdx < 0 || coord.slotIdx >= slots.length then 0
         else
             (coord.slotIdx until slots.length).foldLeft(0) { (acc, sIdx) =>
@@ -169,8 +169,8 @@ object ChainEditDispatcher:
             case SlotAppended(slotIdx: Int)
 
         def detectEdit(
-            oldSlots: Seq[PostFireboxPipeDescrSlot],
-            newSlots: Seq[PostFireboxPipeDescrSlot]
+            oldSlots: Seq[PostFireboxPipeDescrSlot_V7],
+            newSlots: Seq[PostFireboxPipeDescrSlot_V7]
         ): Option[ChainEdit] =
             classifyStructure(oldSlots, newSlots).flatMap(structure =>
                 detectFromStructure(structure, oldSlots, newSlots)
@@ -178,8 +178,8 @@ object ChainEditDispatcher:
 
         /** Phase 1: classify the structural change between slot sequences. */
         private def classifyStructure(
-            oldSlots: Seq[PostFireboxPipeDescrSlot],
-            newSlots: Seq[PostFireboxPipeDescrSlot]
+            oldSlots: Seq[PostFireboxPipeDescrSlot_V7],
+            newSlots: Seq[PostFireboxPipeDescrSlot_V7]
         ): Option[StructureDiff] =
             val oldLen = oldSlots.length
             val newLen = newSlots.length
@@ -190,8 +190,8 @@ object ChainEditDispatcher:
 
         /** Check that the first `len` slots have matching ordinals. */
         private def ordinalsMatch(
-            oldSlots: Seq[PostFireboxPipeDescrSlot],
-            newSlots: Seq[PostFireboxPipeDescrSlot],
+            oldSlots: Seq[PostFireboxPipeDescrSlot_V7],
+            newSlots: Seq[PostFireboxPipeDescrSlot_V7],
             len     : Int
         ): Boolean =
             oldSlots.iterator.zip(newSlots.iterator).take(len).forall((o, n) => o.ordinal == n.ordinal)
@@ -199,8 +199,8 @@ object ChainEditDispatcher:
         /** Phase 2: detect edits based on classified structure. */
         private def detectFromStructure(
             structure: StructureDiff,
-            oldSlots : Seq[PostFireboxPipeDescrSlot],
-            newSlots : Seq[PostFireboxPipeDescrSlot]
+            oldSlots : Seq[PostFireboxPipeDescrSlot_V7],
+            newSlots : Seq[PostFireboxPipeDescrSlot_V7]
         ): Option[ChainEdit] =
             structure match
                 case StructureDiff.SameStructure =>
@@ -221,7 +221,7 @@ object ChainEditDispatcher:
 
         /** Find direction-change elements in a slot with their index and deflection angle. */
         private def findDirChangeWithAngle(
-            slot   : PostFireboxPipeDescrSlot,
+            slot   : PostFireboxPipeDescrSlot_V7,
             fromIdx: Int
         ): Iterator[(Int, Double)] =
             def scan[E](d: Seq[E])(using ext: FrameReplay.ElemExtractors[E]): Iterator[(Int, Double)] =
@@ -257,14 +257,14 @@ object ChainEditDispatcher:
 
         private def scanSlot(
             slotIdx: Int,
-            oldSlot: PostFireboxPipeDescrSlot,
-            newSlot: PostFireboxPipeDescrSlot
+            oldSlot: PostFireboxPipeDescrSlot_V7,
+            newSlot: PostFireboxPipeDescrSlot_V7
         ): Iterator[ChainEdit] =
             (oldSlot, newSlot) match
-                case (FlueSlot(o), FlueSlot(n)              ) => scanDescr[FlowOnlyPipeDescr_15544](slotIdx, o, n)
-                case (ThermalFlueSlot(o), ThermalFlueSlot(n)) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
-                case (ConnectorSlot(o), ConnectorSlot(n)    ) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
-                case (ChimneySlot(o), ChimneySlot(n)        ) => scanDescr[ThermalPipeDescr_13384](slotIdx, o, n)
+                case (FlueSlot(o), FlueSlot(n)              ) => scanDescr[FlowOnlyPipeDescr_15544_V4](slotIdx, o, n)
+                case (ThermalFlueSlot(o), ThermalFlueSlot(n)) => scanDescr[ThermalPipeDescr_13384_V4](slotIdx, o, n)
+                case (ConnectorSlot(o), ConnectorSlot(n)    ) => scanDescr[ThermalPipeDescr_13384_V4](slotIdx, o, n)
+                case (ChimneySlot(o), ChimneySlot(n)        ) => scanDescr[ThermalPipeDescr_13384_V4](slotIdx, o, n)
                 case _ => Iterator.empty
 
         private def scanDescr[E](slotIdx: Int, oldDescr: Seq[E], newDescr: Seq[E])(using
@@ -296,19 +296,19 @@ object ChainEditDispatcher:
 
     /** Splice `newSlots(coord).elem(coord)` into `preEdit` - pristine downstream guaranteed. */
     private def patchEdited(
-        preEdit : Seq[PostFireboxPipeDescrSlot],
-        newSlots: Seq[PostFireboxPipeDescrSlot],
+        preEdit : Seq[PostFireboxPipeDescrSlot_V7],
+        newSlots: Seq[PostFireboxPipeDescrSlot_V7],
         coord   : ChainCoord
-    ): Seq[PostFireboxPipeDescrSlot] =
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         val s = coord.slotIdx
         if s < 0 || s >= preEdit.length || s >= newSlots.length then preEdit
         else preEdit.updated(s, patchSlotElem(preEdit(s), newSlots(s), coord.elemIdx))
 
     private def posePreserveIfAngle(
-        slots       : Seq[PostFireboxPipeDescrSlot],
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
         edit        : ChainEdit,
         initialFrame: Option[PipeFrame]
-    ): Seq[PostFireboxPipeDescrSlot] =
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         edit match
             case ae: AngleEdit     =>
                 incomingFrameAt(slots, ae.coord, initialFrame) match
@@ -335,11 +335,11 @@ object ChainEditDispatcher:
      * the chimney boundary would break frame continuity and leave any chimney pin unreachable.
      */
     private def rigidRotateDownstream(
-        preEdit     : Seq[PostFireboxPipeDescrSlot],
-        current     : Seq[PostFireboxPipeDescrSlot],
+        preEdit     : Seq[PostFireboxPipeDescrSlot_V7],
+        current     : Seq[PostFireboxPipeDescrSlot_V7],
         coord       : ChainCoord,
         initialFrame: Option[PipeFrame]
-    ): Seq[PostFireboxPipeDescrSlot] =
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         if coord.slotIdx < 0 || coord.slotIdx >= current.length then current
         else
             (exitDirection(preEdit, coord, initialFrame), exitDirection(current, coord, initialFrame)) match
@@ -356,12 +356,12 @@ object ChainEditDispatcher:
      * in subsequent slots all pins are rotated.
      */
     private def rotateDownstream(
-        slots       : Seq[PostFireboxPipeDescrSlot],
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
         startSlotIdx: Int,
         startElemLb : Int,
         axis        : Vec3,
         angleRad    : Double
-    ): Seq[PostFireboxPipeDescrSlot] =
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         if math.abs(angleRad) < 1e-9 then slots
         else
             slots.zipWithIndex.map { (slot, sIdx) =>
@@ -381,11 +381,11 @@ object ChainEditDispatcher:
      * insertions instead of the `slotIdx >= preEdit.length` heuristic.
      */
     private def handleInsert(
-        preEdit     : Seq[PostFireboxPipeDescrSlot],
-        newSlots    : Seq[PostFireboxPipeDescrSlot],
+        preEdit     : Seq[PostFireboxPipeDescrSlot_V7],
+        newSlots    : Seq[PostFireboxPipeDescrSlot_V7],
         ie          : InsertEdit,
         initialFrame: Option[PipeFrame]
-    ): Seq[PostFireboxPipeDescrSlot] =
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         val frameBefore = ie.kind match
             case InsertKind.SlotLevel       =>
                 // New slot appended - doesn't exist in preEdit, replay from chain start.
@@ -416,7 +416,7 @@ object ChainEditDispatcher:
     private def indexed[E](d: Seq[E]): Seq[(Int, E)] = d.zipWithIndex.map(_.swap)
 
     private def enteringFrames(
-        slots       : Seq[PostFireboxPipeDescrSlot],
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
         initialFrame: Option[PipeFrame]
     ): Vector[Option[PipeFrame]] =
         slots.foldLeft(Vector(initialFrame)) { (acc, slot) =>
@@ -425,7 +425,7 @@ object ChainEditDispatcher:
 
     /** Frame entering the slot at `slotIdx` (before any element in that slot). */
     private def enteringFrameBeforeSlot(
-        slots       : Seq[PostFireboxPipeDescrSlot],
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
         slotIdx     : Int,
         initialFrame: Option[PipeFrame]
     ): Option[PipeFrame] =
@@ -437,14 +437,14 @@ object ChainEditDispatcher:
             }
 
     private def incomingFrameAt(
-        slots       : Seq[PostFireboxPipeDescrSlot],
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
         coord       : ChainCoord,
         initialFrame: Option[PipeFrame]
     ): Option[PipeFrame] =
         slots(coord.slotIdx).replay(enteringFrames(slots, initialFrame)(coord.slotIdx), upTo = coord.elemIdx - 1)
 
     private def exitDirection(
-        slots       : Seq[PostFireboxPipeDescrSlot],
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
         coord       : ChainCoord,
         initialFrame: Option[PipeFrame]
     ): Option[Vec3] =
@@ -453,10 +453,10 @@ object ChainEditDispatcher:
             .map(_.direction)
 
     private def patchSlotElem(
-        oldS: PostFireboxPipeDescrSlot,
-        newS: PostFireboxPipeDescrSlot,
+        oldS: PostFireboxPipeDescrSlot_V7,
+        newS: PostFireboxPipeDescrSlot_V7,
         eIdx: Int
-    ): PostFireboxPipeDescrSlot =
+    ): PostFireboxPipeDescrSlot_V7 =
         def patch[E](o: Seq[E], n: Seq[E]): Seq[E] =
             if eIdx >= 0 && eIdx < o.length && eIdx < n.length then o.updated(eIdx, n(eIdx)) else o
         (oldS, newS) match
@@ -472,7 +472,7 @@ object ChainEditDispatcher:
      * case a one-liner delegating to a typed helper. The match stays (sum-type pattern is
      * irreducible) but call sites become `slot.replay(...)`, `slot.rotatePins(...)`, etc.
      */
-    extension (slot: PostFireboxPipeDescrSlot)
+    extension (slot: PostFireboxPipeDescrSlot_V7)
 
         private def replay(init: Option[PipeFrame], upTo: Int = Int.MaxValue): Option[PipeFrame] = slot match
             case FlueSlot(d)        => FrameReplay.replayFrame(indexed(d), upTo, init)
@@ -488,7 +488,7 @@ object ChainEditDispatcher:
             case ChimneySlot(d)     => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
             case NoFlueSlot         => 0
 
-        private def rotatePins(lb: Int, axis: Vec3, angleRad: Double): PostFireboxPipeDescrSlot =
+        private def rotatePins(lb: Int, axis: Vec3, angleRad: Double): PostFireboxPipeDescrSlot_V7 =
             def rw[E](d: Seq[E])(using FrameReplay.ElemExtractors[E]): Seq[E] =
                 PipeChainRotation.rewriteWithRotation(indexed(d), lb, d.length, axis, angleRad).map(_._2)
             slot match
@@ -498,7 +498,7 @@ object ChainEditDispatcher:
                 case ChimneySlot(d)     => ChimneySlot    (rw(d))
                 case NoFlueSlot         => NoFlueSlot
 
-        private def withAbsDirAt(eIdx: Int, newAbs: Option[AbsoluteDirection]): PostFireboxPipeDescrSlot =
+        private def withAbsDirAt(eIdx: Int, newAbs: Option[AbsoluteDirection]): PostFireboxPipeDescrSlot_V7 =
             def set[E](d: Seq[E])(using ext: FrameReplay.ElemExtractors[E]): Seq[E] =
                 d.zipWithIndex.map { (e, i) => if i == eIdx then ext.withDirChangeAbsDir(e, newAbs) else e }
             slot match

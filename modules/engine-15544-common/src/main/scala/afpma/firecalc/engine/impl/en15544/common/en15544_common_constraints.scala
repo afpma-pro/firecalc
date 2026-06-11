@@ -19,6 +19,7 @@ import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scal
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.models.geometry.DirectionReachability
+import afpma.firecalc.engine.models.geometry.PipeDescrExtractors.given
 import afpma.firecalc.dto.all.Country
 
 /**

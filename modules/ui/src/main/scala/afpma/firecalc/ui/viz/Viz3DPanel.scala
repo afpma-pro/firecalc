@@ -5,7 +5,7 @@
 
 package afpma.firecalc.ui.viz
 
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -165,12 +165,14 @@ final case class Viz3DPanel()(using Locale) extends Component:
                         slots.zipWithIndex
                             .map: (slot, idx) =>
                                 val (pt, displayName) = slot match
-                                    case _: PostFireboxPipeDescrSlot.FlueSlot        => (FluePipeT, displayNames.flue      )
-                                    case _: PostFireboxPipeDescrSlot.ThermalFlueSlot => (FluePipeT, displayNames.flue      )
-                                    case _: PostFireboxPipeDescrSlot.ConnectorSlot   =>
+                                    case _: PostFireboxPipeDescrSlot_V7.FlueSlot        => (FluePipeT, displayNames.flue)
+                                    case _: PostFireboxPipeDescrSlot_V7.ThermalFlueSlot =>
+                                        (FluePipeT, displayNames.flue)
+                                    case _: PostFireboxPipeDescrSlot_V7.ConnectorSlot   =>
                                         (ConnectorPipeT, displayNames.connector)
-                                    case _: PostFireboxPipeDescrSlot.ChimneySlot     => (ChimneyPipeT, displayNames.chimney)
-                                    case PostFireboxPipeDescrSlot.NoFlueSlot => (NoFluePipeT, I18N.pipe_type.no_flue)
+                                    case _: PostFireboxPipeDescrSlot_V7.ChimneySlot     =>
+                                        (ChimneyPipeT, displayNames.chimney)
+                                    case PostFireboxPipeDescrSlot_V7.NoFlueSlot => (NoFluePipeT, I18N.pipe_type.no_flue)
                                 val pos               = slotPositions.lift(idx).getOrElse(emptyPos)
                                 (pt: PipeType, s"Slot$idx", displayName, pos)
                             .toVector

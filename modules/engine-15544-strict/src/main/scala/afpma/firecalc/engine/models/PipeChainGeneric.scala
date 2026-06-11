@@ -5,9 +5,8 @@
 
 package afpma.firecalc.engine.models
 
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers
 
@@ -22,32 +21,9 @@ import cats.data.Validated
  */
 object PipeChainGeneric:
 
-    /**
-     * Build all pipe slots with frame chaining.
-     *
-     * @param slots the ordered post-firebox pipe descriptor slots
-     * @return a vector of SlotBuildResult, one per slot, in the same order
-     */
-    def build(slots: Seq[PostFireboxPipeDescrSlot]): Vector[SlotBuildResult] =
-        build(slots, initialDirection = None)
-
-    /**
-     * Build all pipe slots with frame chaining, seeding the first slot's
-     * initial frame from the wrapper-level initial direction.
-     *
-     * After V7 migration, post-firebox pipes store initial direction at the
-     * `PostFireboxPipes` wrapper level rather than inside descriptor sequences.
-     * This overload converts the wrapper-level direction to a PipeFrame and
-     * seeds the fold so the first pipe receives it as its external initial frame,
-     * preventing spurious `GeometryWithoutInitialDirection` validation errors.
-     *
-     * @param slots the ordered post-firebox pipe descriptor slots
-     * @param initialDirection wrapper-level initial direction (V7 PostFireboxPipes)
-     * @return a vector of SlotBuildResult, one per slot, in the same order
-     */
     def build(
-        slots           : Seq[PostFireboxPipeDescrSlot],
-        initialDirection: Option[PostFireboxInitialDirection]
+        slots           : Seq[PostFireboxPipeDescrSlot_V7],
+        initialDirection: Option[PostFireboxInitialDirection] = None
     ): Vector[SlotBuildResult] =
         val initialSeed = PipeBuildSeed.fromFrame(initialDirection.map(PostFireboxFrameHelpers.toPipeFrame))
         slots
@@ -58,15 +34,16 @@ object PipeChainGeneric:
             ._1
 
     private def buildSlot(
-        slot: PostFireboxPipeDescrSlot,
+        slot: PostFireboxPipeDescrSlot_V7,
         seed: PipeBuildSeed
     ): SlotBuildResult =
         slot match
-            case FlueSlot(descr)        => buildFlue15544(descr, seed)
-            case ThermalFlueSlot(descr) => buildThermalFlue(descr, seed)
-            case ConnectorSlot(descr)   => buildThermal(ConnectorPipeT, "Connector", descr, seed)
-            case ChimneySlot(descr)     => buildThermal(ChimneyPipeT, "Chimney", descr, seed)
-            case NoFlueSlot             =>
+            case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        => buildFlue15544(descr, seed)
+            case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) => buildThermalFlue(descr, seed)
+            case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)   =>
+                buildThermal(ConnectorPipeT, "Connector", descr, seed)
+            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     => buildThermal(ChimneyPipeT, "Chimney", descr, seed)
+            case PostFireboxPipeDescrSlot_V7.NoFlueSlot             =>
                 SlotBuildResult(
                     NoFluePipeT,
                     "NoFlue",
@@ -78,7 +55,7 @@ object PipeChainGeneric:
     // ── FlowOnly 15544 flue ─────────────────────────────────────────────
 
     private def buildFlue15544(
-        descr: Seq[FluePipe_Module_15544.incremental.IncrDescr],
+        descr: Seq[afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544],
         seed : PipeBuildSeed
     ): SlotBuildResult =
         import FluePipe_Module_15544.FullDescrResult.given

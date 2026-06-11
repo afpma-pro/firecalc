@@ -7,13 +7,13 @@ package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3 as FDElem15
-import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3 as TDElem13
-import afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3
-import afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3 as FDProp15
-import afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4 as FDElem15
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as TDElem13
+import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
+import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4
+import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.*
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.PropagationStrategy.*
@@ -30,7 +30,7 @@ import org.scalatest.matchers.should.*
  * Unit tests for ChainEditDispatcher — detectEdit, apply strategies, policy, and
  * downstreamPinCount.
  *
- * Fixture strategy: all slots use FlueSlot(Seq[FlowOnlyPipeDescr_15544_V3]) with
+ * Fixture strategy: all slots use FlueSlot(Seq[FlowOnlyPipeDescr_15544_V4]) with
  * SetInitialDirection to seed the frame and AddSharpeAngle_0_to_180 for direction-change
  * elements. The chain always ends with a ChimneySlot so the chimney scope boundary is
  * exercised correctly.
@@ -49,25 +49,25 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
     val adDown : AbsoluteDirection = AbsoluteDirection(None, Down)
 
     // A FlueSlot element that is a direction-change (pinned)
-    def bend(angleDeg: Double, pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V3 =
+    def bend(angleDeg: Double, pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V4 =
         FDElem15.AddSharpeAngle_0_to_180("b", angleDeg.degrees, pin)
 
     // A FlueSlot element that is NOT a direction change (plain section)
-    def sectionNamed(name: String): FlowOnlyPipeDescr_15544_V3 =
+    def sectionNamed(name: String): FlowOnlyPipeDescr_15544_V4 =
         FDElem15.AddSectionSlopped(name, 1.0.meters)
 
-    def section(): FlowOnlyPipeDescr_15544_V3 =
+    def section(): FlowOnlyPipeDescr_15544_V4 =
         sectionNamed("s")
 
-    def initDir(az: AzimuthDirection, incl: InclinationDirection): FlowOnlyPipeDescr_15544_V3 =
-        FDProp15.SetInitialDirection(az, incl)
+    def initDir(az: AzimuthDirection, incl: InclinationDirection): FlowOnlyPipeDescr_15544_V4 =
+        FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection(az, incl)
 
     /** A ChimneySlot/ConnectorSlot direction-change element (thermal variant). */
-    def chimneyBend(angleDeg: Double, pin: Option[AbsoluteDirection]): ThermalPipeDescr_13384_V3 =
+    def chimneyBend(angleDeg: Double, pin: Option[AbsoluteDirection]): ThermalPipeDescr_13384_V4 =
         TDElem13.AddSharpeAngle_0_to_90("cb", angleDeg.degrees, pin)
 
     /** Minimal chain: one FlueSlot + one ChimneySlot */
-    def simpleFlue(elems: FlowOnlyPipeDescr_15544_V3*): Seq[PostFireboxPipeDescrSlot] =
+    def simpleFlue(elems: FlowOnlyPipeDescr_15544_V4*): Seq[PostFireboxPipeDescrSlot_V7] =
         Seq(
             FlueSlot   (elems.toSeq),
             ChimneySlot(Seq.empty  )
@@ -75,16 +75,16 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     /** Chain with one FlueSlot + one ChimneySlot populated with thermal elements. */
     def flueAndChimney(
-        flueElems   : Seq[FlowOnlyPipeDescr_15544_V3],
-        chimneyElems: Seq[ThermalPipeDescr_13384_V3]
-    ): Seq[PostFireboxPipeDescrSlot] =
+        flueElems   : Seq[FlowOnlyPipeDescr_15544_V4],
+        chimneyElems: Seq[ThermalPipeDescr_13384_V4]
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         Seq(FlueSlot(flueElems), ChimneySlot(chimneyElems))
 
     /** Chain with two FlueSlots + ChimneySlot, giving cross-slot coord coverage */
     def twoSlotChain(
-        flue0Elems: Seq[FlowOnlyPipeDescr_15544_V3],
-        flue1Elems: Seq[FlowOnlyPipeDescr_15544_V3]
-    ): Seq[PostFireboxPipeDescrSlot] =
+        flue0Elems: Seq[FlowOnlyPipeDescr_15544_V4],
+        flue1Elems: Seq[FlowOnlyPipeDescr_15544_V4]
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
         Seq(
             FlueSlot   (flue0Elems),
             FlueSlot   (flue1Elems),
@@ -167,7 +167,7 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
     // ── apply + AngleEdit tests ─────────────────────────────────────────
 
     // Base chain: SetInitialDirection(Rear) + bend90(pinned Right) + bend90(pinned Front)
-    def baseChain3(): Seq[PostFireboxPipeDescrSlot] =
+    def baseChain3(): Seq[PostFireboxPipeDescrSlot_V7] =
         simpleFlue(
             initDir(Rear, Horizontal   ),
             bend   (90.0, Some(adRight)),
@@ -175,7 +175,7 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         )
 
     // Same chain but with the first bend's angle changed to 45°
-    def editedChain3(newAngle: Double = 45.0): Seq[PostFireboxPipeDescrSlot] =
+    def editedChain3(newAngle: Double = 45.0): Seq[PostFireboxPipeDescrSlot_V7] =
         simpleFlue(
             initDir(Rear, Horizontal       ),
             bend   (newAngle, Some(adRight)),

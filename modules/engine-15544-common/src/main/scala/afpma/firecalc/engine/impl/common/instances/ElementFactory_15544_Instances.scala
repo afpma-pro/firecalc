@@ -130,9 +130,9 @@ object ElementFactory_15544_Instances:
             ctx: DirectionChangeCtx_15544
         ) =
             ctx.getValidated(
-                _.geometry.map(_.dh),
+                _.geometry,
                 DirectionChangeRequiresSectionGeometry(ctx.pipeType)
-            ).map { _ =>
+            ).map { effectiveShape =>
                 // angleN2 = angle between direction BEFORE the previous bend and direction AFTER the current bend.
                 // The factory runs before updateStateAfterConversionStep, so currentFrame still holds
                 // the pre-bend frame. We must apply the current bend here to get the post-bend direction.
@@ -151,9 +151,9 @@ object ElementFactory_15544_Instances:
                 op match
                     case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(_, angle, _) =>
                         FlowOnlyPipeDescr_15544.DirectionChange
-                            .AngleVifDe0A180(angle, computedAngleN2)
+                            .AngleVifDe0A180(angle, computedAngleN2, effectiveShape)
                     case AddFlowOnlyPipeElement_15544.AddCircularArc_60(_, _)              =>
-                        FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60
+                        FlowOnlyPipeDescr_15544.DirectionChange.CircularArc60(effectiveShape)
             }
 
     // ========== Flow Resistance Factory ==========

@@ -42,7 +42,7 @@ class StrictNPipeThermalFixtureSuite extends AnyFreeSpec with Matchers:
 
         "overrides postFireboxPipeSlots with a 4-slot vector (FlueSlot, ThermalFlueSlot, ConnectorSlot, ChimneySlot)" in {
             val slots = StrictNPipeThermalFixture_15544.postFireboxPipeSlots
-            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
             slots.size shouldBe 4
             slots(0) shouldBe a[FlueSlot]
             slots(1) shouldBe a[ThermalFlueSlot]

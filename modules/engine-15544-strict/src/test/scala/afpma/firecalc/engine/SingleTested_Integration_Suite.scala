@@ -9,12 +9,11 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v3.Material_13384_V2
-import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 import afpma.firecalc.dto.v4.TypeOfAppliance
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.PostFireboxPipes
@@ -76,7 +75,7 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         )
 
     private val fluePipeDescr = Seq(
-        SetFlowOnlyPipeProp_15544.SetInitialDirection       (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+        FlowOnlyPipeTrackingOp_15544.SetInitialDirection    (AzimuthDirection.Rear, InclinationDirection.Horizontal),
         SetFlowOnlyPipeProp_15544.SetRoughness              (3.0.mm                                                ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 12.2.cm)),
         AddFlowOnlyPipeElement_15544.AddSectionHorizontal   ("sortie foyer", 28.1.cm                               ),
@@ -90,21 +89,21 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
     )
 
     private val connectorPipeDescr = Seq(
-        SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-        SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(130.0.mm)     ),
-        SetThermalPipeProp_13384_V3.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
-        SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea          ),
-        AddThermalPipeElement_13384_V3.AddSectionVertical("buse", 5.0.cm                   )
+        SetThermalPipeProp_13384_V4.SetMaterial  (Material_13384.WeldedSteel()),
+        SetThermalPipeProp_13384_V4.SetInnerShape(PipeShape.Circle(130.0.mm)  ),
+        SetThermalPipeProp_13384_V4.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+        SetThermalPipeProp_13384_V4.SetPipeLocation      (PipeLocation.HeatedArea          ),
+        AddThermalPipeElement_13384_V4.AddSectionVertical("buse", 5.0.cm                   )
     )
 
     private val chimneyPipeDescr = Seq(
-        SetThermalPipeProp_13384_V3.SetMaterial  (Material_13384_V2.WeldedSteel()),
-        SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(130.0.mm)     ),
-        SetThermalPipeProp_13384_V3.SetLayer             (26.0.mm, WattsPerMeterKelvin(0.260)),
-        SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.HeatedArea            ),
-        AddThermalPipeElement_13384_V3.AddSectionVertical("etage", 90.0.cm                   ),
-        SetThermalPipeProp_13384_V3.SetPipeLocation      (PipeLocation.OutsideOrExterior     ),
-        AddThermalPipeElement_13384_V3.AddSectionVertical("sortie de toit", 60.0.cm          )
+        SetThermalPipeProp_13384_V4.SetMaterial  (Material_13384.WeldedSteel()),
+        SetThermalPipeProp_13384_V4.SetInnerShape(PipeShape.Circle(130.0.mm)  ),
+        SetThermalPipeProp_13384_V4.SetLayer             (26.0.mm, WattsPerMeterKelvin(0.260)),
+        SetThermalPipeProp_13384_V4.SetPipeLocation      (PipeLocation.HeatedArea            ),
+        AddThermalPipeElement_13384_V4.AddSectionVertical("etage", 90.0.cm                   ),
+        SetThermalPipeProp_13384_V4.SetPipeLocation      (PipeLocation.OutsideOrExterior     ),
+        AddThermalPipeElement_13384_V4.AddSectionVertical("sortie de toit", 60.0.cm          )
     )
 
     private val project: FireCalcYAML = FireCalcYAML_V7(
@@ -134,9 +133,9 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
             initialDirection = PostFireboxInitialDirection.default,
             initialPosition  = PostFireboxInitialPosition(0.m, 0.m, 0.m),
             slots            = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot     (fluePipeDescr     ),
-                PostFireboxPipeDescrSlot.ConnectorSlot(connectorPipeDescr),
-                PostFireboxPipeDescrSlot.ChimneySlot  (chimneyPipeDescr  )
+                PostFireboxPipeDescrSlot_V7.FlueSlot     (fluePipeDescr     ),
+                PostFireboxPipeDescrSlot_V7.ConnectorSlot(connectorPipeDescr),
+                PostFireboxPipeDescrSlot_V7.ChimneySlot  (chimneyPipeDescr  )
             )
         )
     )

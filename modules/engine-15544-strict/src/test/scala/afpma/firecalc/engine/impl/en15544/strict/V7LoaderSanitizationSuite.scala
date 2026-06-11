@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.en15544.strict
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.models.geometry.Vec3
@@ -69,9 +69,9 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             facing_type    = FacingType.WithoutAirGap
         )
 
-    private def flueWithDeprecated(): Seq[FlowOnlyPipeDescr_15544_V3] = Seq(
-        SetFlowOnlyPipeProp_15544.SetInitialDirection    (AzimuthDirection.Rear, InclinationDirection.Horizontal),
-        SetFlowOnlyPipeProp_15544.SetInitialPosition     (10.cm, 20.cm, 30.cm                                   ),
+    private def flueWithDeprecated(): Seq[FlowOnlyPipeDescr_15544] = Seq(
+        FlowOnlyPipeTrackingOp_15544.SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal),
+        FlowOnlyPipeTrackingOp_15544.SetInitialPosition  (10.cm, 20.cm, 30.cm                                   ),
         SetFlowOnlyPipeProp_15544.SetRoughness           (3.mm                                                  ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.cm, 12.cm)),
         AddFlowOnlyPipeElement_15544.AddSectionHorizontal("sortie foyer", 30.cm                                 )
@@ -132,7 +132,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
                     slots            = Seq(
                         PostFireboxPipeDescrSlot.FlueSlot(
                             Seq(
-                                SetFlowOnlyPipeProp_15544.SetInitialDirection       (
+                                FlowOnlyPipeTrackingOp_15544.SetInitialDirection    (
                                     AzimuthDirection.Rear,
                                     InclinationDirection.Horizontal
                                 ),

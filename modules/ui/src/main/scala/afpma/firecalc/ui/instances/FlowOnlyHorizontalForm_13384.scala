@@ -28,6 +28,8 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
 
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
+    import FlowOnlyChannelTopologyOp_13384.*
+    import FlowOnlyPipeTrackingOp_13384.*
 
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
     import horizontal_form.{*, given}

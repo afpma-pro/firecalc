@@ -7,7 +7,7 @@ package afpma.firecalc.dto
 
 import afpma.firecalc.dto.v4.{AzimuthDirection, InclinationDirection}
 import afpma.firecalc.dto.v7.{PostFireboxInitialDirection, PostFireboxInitialPosition, PostFireboxPipes}
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.units.coulombutils.*
 
 import org.scalacheck.Gen
@@ -58,13 +58,13 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             z <- genCoord
         yield PostFireboxInitialPosition(x, y, z)
 
-    private val genAnySlot: Gen[PostFireboxPipeDescrSlot] =
+    private val genAnySlot: Gen[PostFireboxPipeDescrSlot_V7] =
         Gen.oneOf(
-            PostFireboxPipeDescrSlot.FlueSlot       (Seq.empty),
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(Seq.empty),
-            PostFireboxPipeDescrSlot.ConnectorSlot  (Seq.empty),
-            PostFireboxPipeDescrSlot.ChimneySlot    (Seq.empty),
-            PostFireboxPipeDescrSlot.NoFlueSlot
+            PostFireboxPipeDescrSlot_V7.FlueSlot       (Seq.empty),
+            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(Seq.empty),
+            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (Seq.empty),
+            PostFireboxPipeDescrSlot_V7.ChimneySlot    (Seq.empty),
+            PostFireboxPipeDescrSlot_V7.NoFlueSlot
         )
 
     private val genPipes: Gen[PostFireboxPipes] =

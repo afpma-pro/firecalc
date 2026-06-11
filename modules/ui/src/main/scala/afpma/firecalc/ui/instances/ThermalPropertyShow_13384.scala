@@ -9,6 +9,8 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
+import afpma.firecalc.dto.all.ThermalChannelTopologyOp_13384.*
+import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
 import afpma.firecalc.dto.common.PipeLocation.given
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2.given
 

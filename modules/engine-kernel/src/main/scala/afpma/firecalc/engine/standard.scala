@@ -7,6 +7,8 @@ package afpma.firecalc.engine
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.domain.NbOfFlows
+
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.FireboxAvailabilityExtensions.localizedTypeName
 
@@ -936,20 +938,53 @@ object standard {
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
     case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
     case class GeometryWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
+    case class FlowSplitRequiresInnerShapeBeforeDirectionChange(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
+    case class FlowMergeRequiresInnerShapeBeforeDirectionChange(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
+    case class FlowMergeRequiresLengthBearingSectionBeforeDirectionChange(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
+    case class FlowSplitForbiddenOnAscendingPipe(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
-            case _: ThicknessRequiresInnerGeometry         =>
+            case _: ThicknessRequiresInnerGeometry                             =>
                 I18N.incremental_validation.prerequisites.thickness_requires_inner_geometry
-            case _: LayerRequiresSectionGeometry           =>
+            case _: LayerRequiresSectionGeometry                               =>
                 I18N.incremental_validation.prerequisites.layer_requires_section_geometry
-            case _: LayersRequireInnerShape                => I18N.incremental_validation.prerequisites.layers_require_inner_shape
-            case _: DirectionChangeRequiresSectionGeometry =>
+            case _: LayersRequireInnerShape                                    => I18N.incremental_validation.prerequisites.layers_require_inner_shape
+            case _: DirectionChangeRequiresSectionGeometry                     =>
                 I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
-            case _: FinalDirWithoutInitialDirection        =>
+            case _: FinalDirWithoutInitialDirection                            =>
                 I18N.incremental_validation.prerequisites.final_dir_without_initial_direction
-            case _: GeometryWithoutInitialDirection        =>
+            case _: GeometryWithoutInitialDirection                            =>
                 I18N.incremental_validation.prerequisites.geometry_without_initial_direction
+            case e: FlowSplitRequiresInnerShapeBeforeDirectionChange           =>
+                I18N.incremental_validation.prerequisites.flow_split_requires_inner_shape_before_direction_change(
+                    e.directionChangeRef
+                )
+            case e: FlowMergeRequiresInnerShapeBeforeDirectionChange           =>
+                I18N.incremental_validation.prerequisites.flow_merge_requires_inner_shape_before_direction_change(
+                    e.directionChangeRef
+                )
+            case e: FlowMergeRequiresLengthBearingSectionBeforeDirectionChange =>
+                I18N.incremental_validation.prerequisites
+                    .flow_merge_requires_length_bearing_section_before_direction_change(
+                        e.directionChangeRef
+                    )
+            case e: FlowSplitForbiddenOnAscendingPipe                          =>
+                I18N.incremental_validation.prerequisites.flow_split_forbidden_on_ascending_pipe(
+                    e.directionChangeRef
+                )
 
     // Conflict errors
     sealed trait ConflictDetected extends IncrementalValidation_Error
@@ -961,6 +996,14 @@ object standard {
     case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
     case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
+    case class FlowTransitionChangesTotalCrossSection(
+        transition     : String,
+        beforeTotalArea: String,
+        afterTotalArea : String,
+        beforeFlows    : NbOfFlows,
+        afterFlows     : NbOfFlows,
+        sectionTyp     : PipeType
+    ) extends ConflictDetected
 
     object ConflictDetected:
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
@@ -978,6 +1021,12 @@ object standard {
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
             case CasingTooSmallForLiner(linerDh, casingDh, _)     =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
+            case e: FlowTransitionChangesTotalCrossSection =>
+                I18N.incremental_validation.conflicts.flow_transition_changes_total_cross_section(
+                    e.transition,
+                    e.beforeTotalArea,
+                    e.afterTotalArea
+                )
 
     // Forbidden element position errors
     sealed trait ForbiddenElementPosition extends IncrementalValidation_Error
