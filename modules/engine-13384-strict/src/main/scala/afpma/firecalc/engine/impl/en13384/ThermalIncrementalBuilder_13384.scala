@@ -31,6 +31,7 @@ import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
+import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.typeclasses.*
 
@@ -191,8 +192,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
         s.currentFrame
 
-    override protected def currentNFlowsFromPropsState(s: PropsState): Option[NbOfFlows] =
-        Some(stateOps.getNFlows(s))
+    override protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows =
+        stateOps.getNFlows(s)
 
     override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
         // Only apply if the pipe itself did not already define an initial direction
@@ -200,7 +201,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
 
     override protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState =
-        s.copy(nFlows = Some(nFlows))
+        s.copy(nFlows = nFlows)
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
@@ -325,7 +326,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         ): ValidatedNel[IncrementalValidation_Error, PropsState] =
             atom match
                 case SetInnerShape(g)            =>
-                    vState.map(_.modify(_.innerShape).setTo(g.some))
+                    vState.andThen { st =>
+                        FlowAreaConservation.validateSetInnerShape(st, g, pt)(using stateOps).toValidatedNel
+                    }
                 case SetOuterShape(g)            =>
                     vState.map(_.modify(_.outer_shape).setTo(g.some))
                 case SetThickness(t)             =>
@@ -371,8 +374,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         updateVNelState(vState)(prop)
                     case ThermalChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
-                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)) *>
-                                st.modify(_.nFlows).setTo(nf.some).validNel
+                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
+                            )
                         }
                     case ThermalPipeTrackingOp_13384.SetInitialDirection(az, incl) =>
                         if vState.toOption.exists(_.initialFrame.isDefined) then vState

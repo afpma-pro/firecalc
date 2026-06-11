@@ -122,6 +122,10 @@ object PipeShape:
     ) extends PipeShape:
         def area           : QtyD[(Meter ^ 2)] = (side * side)
         def perimeterWetted: QtyD[Meter]       = (side * 4.0 )
+    object Square:
+        def fromArea(area: Area) =
+            val equiv_side = math.sqrt(area.toUnit[Meter ^ 2].value).withUnit[Meter]
+            Square(equiv_side)
 
     @Transl(I(_.terms.pipe_shape.rectangle))
     case class Rectangle(

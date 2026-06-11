@@ -12,6 +12,7 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
+import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -175,8 +176,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
         s.currentFrame
 
-    override protected def currentNFlowsFromPropsState(s: PropsState): Option[NbOfFlows] =
-        Some(stateOps.getNFlows(s))
+    override protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows =
+        stateOps.getNFlows(s)
 
     override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
         // Only apply if the pipe itself did not already define an initial direction
@@ -184,7 +185,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
 
     override protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState =
-        s.copy(nFlows = Some(nFlows))
+        s.copy(nFlows = nFlows)
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
@@ -298,15 +299,18 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
                 op match
                     case SetInnerShape(g)                                           =>
-                        vState.map(_.modify(_.innerShape).setTo(g.some))
+                        vState.andThen { st =>
+                            FlowAreaConservation.validateSetInnerShape(st, g, pt)(using stateOps).toValidatedNel
+                        }
                     case SetRoughness(r)                                            =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
                     case SetMaterial(lm)                                            =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf)       =>
                         vState.andThen { st =>
-                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)) *>
-                                st.modify(_.nFlows).setTo(nf.some).validNel
+                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
+                            )
                         }
                     case FlowOnlyPipeTrackingOp_13384.SetInitialDirection(az, incl) =>
                         if vState.toOption.exists(_.initialFrame.isDefined) then vState

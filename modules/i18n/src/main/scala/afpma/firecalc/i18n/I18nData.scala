@@ -14,6 +14,8 @@ import io.taig.babel.StringFormat3
 import io.taig.babel.StringFormat4
 import io.taig.babel.StringFormat5
 import io.taig.babel.StringFormat6
+import io.taig.babel.StringFormat7
+import io.taig.babel.StringFormat8
 
 trait LocalizedAlg:
     val language: Language
@@ -984,13 +986,18 @@ object I18nData:
         )
 
         case class Conflicts(
-            cannot_set_geometry_before_change          : String,
-            section_change_requires_circle             : StringFormat1,
-            flow_resistance_requires_geometry          : StringFormat1,
-            pressure_diff_requires_geometry            : StringFormat1,
-            flow_resistance_requires_geometry_15544    : StringFormat1,
-            casing_too_small_for_liner                 : StringFormat2,
-            flow_transition_changes_total_cross_section: StringFormat3
+            cannot_set_geometry_before_change      : String,
+            section_change_requires_circle         : StringFormat1,
+            flow_resistance_requires_geometry      : StringFormat1,
+            pressure_diff_requires_geometry        : StringFormat1,
+            flow_resistance_requires_geometry_15544: StringFormat1,
+            casing_too_small_for_liner             : StringFormat2,
+            no_shape_before_split                  : String,
+            split                                  : String,
+            merge                                  : String,
+            flow_transition_area_rectangle         : StringFormat8,
+            flow_transition_area_square            : StringFormat7,
+            flow_transition_area_circle            : StringFormat7
         )
 
         case class ForbiddenElementPosition(

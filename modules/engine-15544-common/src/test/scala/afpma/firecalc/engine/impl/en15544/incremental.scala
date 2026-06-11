@@ -239,6 +239,192 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         val Invalid(errors) = result: @unchecked
                         errors.toList.head shouldBe a[FlowTransitionChangesTotalCrossSection]
                     }
+
+                    "split 20×10 cm → 2×10×10 cm: exact area conservation passes" in {
+                        // 20×10 = 200 cm² × 1 = 200 cm²  vs  10×10 = 100 cm² × 2 = 200 cm²
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(20.cm, 10.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                innerShape                                      (rectangle(10.cm, 10.cm)),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        p.toFullDescr().isValid `shouldBe` true
+                    }
+
+                    "split 20×10 cm → 2×10×9 cm: area too small fails with ExpectedDimRectangle" in {
+                        // 20×10 = 200 cm² × 1 = 200 cm²  vs  10×9 = 90 cm² × 2 = 180 cm²  (20 cm² short)
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(20.cm, 10.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                innerShape                                      (rectangle(10.cm, 9.cm) ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                                      = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                                             = result: @unchecked
+                        val err                                                         = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimRectangle]
+                        val ExpectedDimRectangle(_, _, _, expectedHeight, expectedArea) =
+                            err.expectedDimension: @unchecked
+                        expectedHeight.to_cm.value shouldBe (10.0 +- 0.1 )
+                        expectedArea.to_cm2.value shouldBe  (100.0 +- 0.1)
+                    }
+
+                    "split 20×10 cm → 2×10×9.99 cm: within 1 cm² tolerance passes" in {
+                        // 20×10 = 200 cm² × 1 = 200 cm²  vs  10×9.99 = 99.9 cm² × 2 = 199.8 cm²  (0.2 cm² short — within tolerance)
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                        (
+                                innerShape                                      (rectangle(20.cm, 10.cm)  ),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)             ),
+                                innerShape                                      (rectangle(10.cm, 9.99.cm)),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        p.toFullDescr().isValid `shouldBe` true
+                    }
+                    "split 18 cm square → 2×9 cm square: area too small fails (ExpectedDimSquare)" in {
+                        // 18×18 = 324 cm² × 1 = 324 cm²  vs  9×9 = 81 cm² × 2 = 162 cm²  (162 cm² short)
+                        // Expected area per flow = 324 / 2 = 162 cm², expected side = sqrt(162) ≈ 12.73 cm
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (square(18.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
+                                innerShape                                      (square(9.cm) ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                   = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                          = result               : @unchecked
+                        val err                                      = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimSquare]
+                        val ExpectedDimSquare(_, _, expectedSide, _) = err.expectedDimension: @unchecked
+                        expectedSide.to_cm.value shouldBe (12.73 +- 0.1)
+                    }
+                    "split D=18 cm circle → 2×D=9 cm circle: area too small fails (ExpectedDimCircle)" in {
+                        // π×(18/2)² = 254.47 cm² × 1 = 254.47 cm²  vs  π×(9/2)² = 63.62 cm² × 2 = 127.23 cm²  (127.23 cm² short)
+                        // Expected area per flow = 254.47 / 2 = 127.23 cm², expected diameter = sqrt(4×127.23/π) ≈ 12.73 cm
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (circle(18.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
+                                innerShape                                      (circle(9.cm) ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                       = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                              = result               : @unchecked
+                        val err                                          = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimCircle]
+                        val ExpectedDimCircle(_, _, expectedDiameter, _) = err.expectedDimension: @unchecked
+                        expectedDiameter.to_cm.value shouldBe (12.73 +- 0.1)
+                    }
+                    "merge 2×10×10 cm → 1×20×9 cm: area too small fails (ExpectedDimRectangle)" in {
+                        // 10×10 = 100 cm² × 2 = 200 cm²  vs  20×9 = 180 cm² × 1 = 180 cm²  (20 cm² short)
+                        // Expected area = 200 cm², expected height for 20×H = 200/20 = 10 cm
+                        builder.withInitialDirection(
+                            PostFireboxInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(10.cm, 10.cm)),
+                                roughness                (3.mm                        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)           ),
+                                innerShape                                      (rectangle(20.cm, 9.cm) ),
+                                addSectionHorizontal     ("apres merge", 1.meters     ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                                      = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                                             = result: @unchecked
+                        val err                                                         = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimRectangle]
+                        val ExpectedDimRectangle(_, _, _, expectedHeight, expectedArea) =
+                            err.expectedDimension: @unchecked
+                        expectedHeight.to_cm.value shouldBe (10.0 +- 0.1 )
+                        expectedArea.to_cm2.value shouldBe  (200.0 +- 0.1)
+                    }
                 }
 
                 "case direction-tracked : initial direction vertical up + addSectionSlopped" - {

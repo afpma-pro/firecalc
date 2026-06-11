@@ -14,6 +14,7 @@ import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
+import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_15544_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_15544_Instances.given
@@ -164,8 +165,8 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
     override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
         s.currentFrame
 
-    override protected def currentNFlowsFromPropsState(s: PropsState): Option[NbOfFlows] =
-        Some(stateOps.getNFlows(s))
+    override protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows =
+        stateOps.getNFlows(s)
 
     override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
         // Only apply if the pipe itself did not already define an initial direction
@@ -173,7 +174,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
 
     override protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState =
-        s.copy(nFlows = Some(nFlows))
+        s.copy(nFlows = nFlows)
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
@@ -314,22 +315,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                 op match
                     case SetInnerShape(g)                                           =>
                         vState.andThen { st =>
-                            val nextState = st.copy(geometry = g.some, pendingFlowAreaCheck = None)
-                            st.pendingFlowAreaCheck match
-                                case None        => nextState.validNel
-                                case Some(check) =>
-                                    val beforeTotalArea = totalFlowArea(check.beforeShape, check.beforeFlows)
-                                    val afterTotalArea  = totalFlowArea(g, check.afterFlows)
-                                    if approximatelySameArea(beforeTotalArea, afterTotalArea) then nextState.validNel
-                                    else
-                                        FlowTransitionChangesTotalCrossSection     (
-                                            transition      = check.transition.toString.toLowerCase,
-                                            beforeTotalArea = beforeTotalArea.show,
-                                            afterTotalArea  = afterTotalArea.show,
-                                            beforeFlows     = check.beforeFlows,
-                                            afterFlows      = check.afterFlows,
-                                            sectionTyp      = pt
-                                        ).invalidNel
+                            FlowAreaConservation.validateSetInnerShape(st, g, pt)(using stateOps).toValidatedNel
                         }
                     case SetRoughness(r)                                            =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
@@ -338,22 +324,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                     case FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(nf)       =>
                         vState.andThen { st =>
                             validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                st.copy              (
-                                    nFlows               = nf.some,
-                                    pendingFlowAreaCheck = st.geometry
-                                        .filter(_ => st.nFlows.exists(_ != nf))
-                                        .zip(st.nFlows)
-                                        .map { case (beforeShape, beforeFlows) =>
-                                            PendingFlowAreaCheck(
-                                                beforeShape = beforeShape,
-                                                beforeFlows = beforeFlows,
-                                                afterFlows  = nf,
-                                                transition  =
-                                                    if nf > beforeFlows then FlowAreaTransition.Split
-                                                    else FlowAreaTransition.Merge
-                                            )
-                                        }
-                                ).validNel
+                                FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
                             )
                         }
                     case FlowOnlyPipeTrackingOp_15544.SetInitialDirection(az, incl) =>
@@ -370,15 +341,6 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                     case _: FlowOnlyPipeTrackingOp_15544.SetFinalPosition =>
                         vState
             }
-
-    private def totalFlowArea(shape: PipeShape, nFlows: NbOfFlows): Area =
-        shape.area * nFlows.asQty
-
-    private def approximatelySameArea(a: Area, b: Area): Boolean =
-        val av  = a.toUnit[Meter ^ 2].value
-        val bv  = b.toUnit[Meter ^ 2].value
-        val tol = math.max(math.abs(av), math.abs(bv)) * 1e-9 + 1e-12
-        math.abs(av - bv) <= tol
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
     object ElementFactory extends ElementFactoryModule

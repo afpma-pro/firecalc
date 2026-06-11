@@ -278,7 +278,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     private def nextSeedFromFinalState(seed: PipeBuildSeed, finalState: PropsState): PipeBuildSeed =
         PipeBuildSeed (
             frame  = currentFrameFromPropsState(finalState).orElse(seed.frame),
-            nFlows = currentNFlowsFromPropsState(finalState).getOrElse(seed.nFlows)
+            nFlows = currentNFlowsFromPropsState(finalState)
         )
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
@@ -297,7 +297,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      */
     protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] = None
 
-    protected def currentNFlowsFromPropsState(s: PropsState): Option[NbOfFlows] = None
+    protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows = 1.flow
 
     /**
      * Validates that a flow split is not attempted on an ascending pipe.
@@ -313,7 +313,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     ): ValidatedResult[Unit] =
         if (
             splitOnAscending(
-                currentNFlows = currentNFlowsFromPropsState(state).getOrElse(1.flow),
+                currentNFlows = currentNFlowsFromPropsState(state),
                 newNFlows     = newNFlows,
                 direction     = currentFrameFromPropsState(state).map(_.direction)
             )

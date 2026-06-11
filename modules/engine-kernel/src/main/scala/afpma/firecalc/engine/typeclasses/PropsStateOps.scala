@@ -10,19 +10,28 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.PendingFlowAreaCheck
+import afpma.firecalc.domain.NbOfFlows
 
 import cats.data.ValidatedNel
 
 /**
- * Typeclass for operations on PropsState.
+ * Typeclass for read and write operations on PropsState.
  * Allows different state types to share common validation
  * patterns.
  */
 trait PropsStateOps[State]:
-    def isValid      (state: State): Boolean
-    def getInnerShape(state: State): Option[PipeShape]
-    def getRoughness (state: State): Option[Roughness]
-    def getNFlows    (state: State): NbOfFlows
+    // Read operations
+    def isValid                (state: State): Boolean
+    def getInnerShape          (state: State): Option[PipeShape]
+    def getRoughness           (state: State): Option[Roughness]
+    def getNFlows              (state: State): NbOfFlows
+    def getPendingFlowAreaCheck(state: State): Option[PendingFlowAreaCheck]
+
+    // Write operations
+    def setPendingFlowAreaCheck(state: State, check : Option[PendingFlowAreaCheck]): State
+    def setInnerShape          (state: State, shape : PipeShape                   ): State
+    def setNFlows              (state: State, nFlows: NbOfFlows                   ): State
 
     // Common validation helper
     extension (state: State)

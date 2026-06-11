@@ -19,6 +19,7 @@ import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.TermConstraintError
+import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.engine.models.en15544.PressureRequirement
 import afpma.firecalc.engine.models.gtypedefs.v
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
@@ -996,13 +997,49 @@ object standard {
     case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
     case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
+
+    /** No inner shape defined before a SetNumberOfFlows — area conservation cannot be checked. */
+    case class NoShapeBeforeSplit(sectionTyp: PipeType) extends ConflictDetected
+
+    // Expected dimension for informative error messages on flow split/merge area violations
+    sealed trait ExpectedDimension
+    case class ExpectedDimRectangle(
+        enteredWidth  : QtyD[Meter],
+        enteredHeight : QtyD[Meter],
+        enteredArea   : Area,
+        expectedHeight: QtyD[Meter],
+        expectedArea  : Area
+    ) extends ExpectedDimension
+    case class ExpectedDimSquare(
+        enteredSide : QtyD[Meter],
+        enteredArea : Area,
+        expectedSide: QtyD[Meter],
+        expectedArea: Area
+    ) extends ExpectedDimension
+    case class ExpectedDimCircle(
+        enteredDiameter : QtyD[Meter],
+        enteredArea     : Area,
+        expectedDiameter: QtyD[Meter],
+        expectedArea    : Area
+    ) extends ExpectedDimension
+
+    enum FlowAreaTransition:
+        case Split, Merge
+
+    case class PendingFlowAreaCheck(
+        beforeShape: PipeShape,
+        beforeFlows: NbOfFlows,
+        afterFlows : NbOfFlows,
+        transition : FlowAreaTransition
+    )
+
     case class FlowTransitionChangesTotalCrossSection(
-        transition     : String,
-        beforeTotalArea: String,
-        afterTotalArea : String,
-        beforeFlows    : NbOfFlows,
-        afterFlows     : NbOfFlows,
-        sectionTyp     : PipeType
+        transition       : FlowAreaTransition,
+        beforeTotalArea  : Area,
+        beforeFlows      : NbOfFlows,
+        afterFlows       : NbOfFlows,
+        expectedDimension: ExpectedDimension,
+        sectionTyp       : PipeType
     ) extends ConflictDetected
 
     object ConflictDetected:
@@ -1021,12 +1058,44 @@ object standard {
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
             case CasingTooSmallForLiner(linerDh, casingDh, _)     =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
+            case NoShapeBeforeSplit(_)                            =>
+                I18N.incremental_validation.conflicts.no_shape_before_split
             case e: FlowTransitionChangesTotalCrossSection =>
-                I18N.incremental_validation.conflicts.flow_transition_changes_total_cross_section(
-                    e.transition,
-                    e.beforeTotalArea,
-                    e.afterTotalArea
-                )
+                val transitionLabel = e.transition match
+                    case FlowAreaTransition.Split => I18N.incremental_validation.conflicts.split
+                    case FlowAreaTransition.Merge => I18N.incremental_validation.conflicts.merge
+                e.expectedDimension match
+                    case ExpectedDimRectangle(enteredWidth, enteredHeight, enteredArea, expectedHeight, expectedArea) =>
+                        I18N.incremental_validation.conflicts.flow_transition_area_rectangle(
+                            transitionLabel,
+                            s"${e.afterFlows.unwrap} flows",
+                            expectedArea.show,
+                            enteredWidth.show,
+                            enteredHeight.show,
+                            enteredArea.show,
+                            expectedHeight.show,
+                            expectedArea.show
+                        )
+                    case ExpectedDimSquare(enteredSide, enteredArea, expectedSide, expectedArea)                      =>
+                        I18N.incremental_validation.conflicts.flow_transition_area_square(
+                            transitionLabel,
+                            s"${e.afterFlows.unwrap} flows",
+                            expectedArea.show,
+                            enteredSide.show,
+                            enteredArea.show,
+                            expectedSide.show,
+                            expectedArea.show
+                        )
+                    case ExpectedDimCircle(enteredDiameter, enteredArea, expectedDiameter, expectedArea)              =>
+                        I18N.incremental_validation.conflicts.flow_transition_area_circle(
+                            transitionLabel,
+                            s"${e.afterFlows.unwrap} flows",
+                            expectedArea.show,
+                            enteredDiameter.show,
+                            enteredArea.show,
+                            expectedDiameter.show,
+                            expectedArea.show
+                        )
 
     // Forbidden element position errors
     sealed trait ForbiddenElementPosition extends IncrementalValidation_Error

@@ -10,7 +10,10 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.models.geometry.*
+import afpma.firecalc.engine.standard.PendingFlowAreaCheck
 import afpma.firecalc.engine.typeclasses.*
+
+import cats.syntax.option.*
 
 object PropsStateOps_Thermal_13384_Instance:
 
@@ -34,10 +37,11 @@ object PropsStateOps_Thermal_13384_Instance:
         airSpace_afterLayers: Option[AirSpaceDetailed]       = Some(AirSpaceDetailed.WithoutAirSpace_V2),
         pipeLoc             : Option[PipeLocation]           = None,
         ductType            : Option[DuctType]               = Some(DuctType.NonConcentricDuctsHighThermalResistance),
-        nFlows              : Option[NbOfFlows]              = Some(1.flow),
+        nFlows              : NbOfFlows                      = 1.flow,
         initialFrame        : Option[PipeFrame]              = None,
         currentFrame        : Option[PipeFrame]              = None,
-        dirBeforePreviousDC : Option[Vec3]                   = None
+        dirBeforePreviousDC : Option[Vec3]                   = None,
+        pendingFlowAreaCheck: Option[PendingFlowAreaCheck]   = None
     )
 
     given thermalPropsStateOps13384: ThermalPropsStateOps[ThermalPropsState_13384] with
@@ -49,17 +53,31 @@ object PropsStateOps_Thermal_13384_Instance:
                 s.layers.isDefined &&
                 s.airSpace_afterLayers.isDefined &&
                 s.pipeLoc.isDefined &&
-                s.ductType.isDefined &&
-                s.nFlows.isDefined
+                s.ductType.isDefined
 
         def getInnerShape(s: ThermalPropsState_13384) = s.innerShape
         def getRoughness (s: ThermalPropsState_13384) = s.roughness
 
         def getNFlows(s: ThermalPropsState_13384) =
-            s.nFlows.getOrElse(1.flow)
+            s.nFlows
 
         def getOuterShape(s: ThermalPropsState_13384) = s.outer_shape
         def getLayers    (s: ThermalPropsState_13384) = s.layers
         def getAirSpace  (s: ThermalPropsState_13384) = s.airSpace_afterLayers
         def getPipeLoc   (s: ThermalPropsState_13384) = s.pipeLoc
         def getDuctType  (s: ThermalPropsState_13384) = s.ductType
+
+        def getPendingFlowAreaCheck(state: ThermalPropsState_13384): Option[PendingFlowAreaCheck] =
+            state.pendingFlowAreaCheck
+
+        def setPendingFlowAreaCheck(
+            state: ThermalPropsState_13384,
+            check: Option[PendingFlowAreaCheck]
+        ): ThermalPropsState_13384 =
+            state.copy(pendingFlowAreaCheck = check)
+
+        def setInnerShape(state: ThermalPropsState_13384, shape: PipeShape): ThermalPropsState_13384 =
+            state.copy(innerShape = shape.some)
+
+        def setNFlows(state: ThermalPropsState_13384, nFlows: NbOfFlows): ThermalPropsState_13384 =
+            state.copy(nFlows = nFlows)
