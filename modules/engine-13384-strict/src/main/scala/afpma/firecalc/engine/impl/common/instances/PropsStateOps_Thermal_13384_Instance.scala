@@ -9,11 +9,10 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.ShapeState
 import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.PendingFlowAreaCheck
 import afpma.firecalc.engine.typeclasses.*
-
-import cats.syntax.option.*
 
 object PropsStateOps_Thermal_13384_Instance:
 
@@ -30,7 +29,7 @@ object PropsStateOps_Thermal_13384_Instance:
      *   - dirBeforePreviousDC: direction BEFORE the previous bend, used to compute angleN2
      */
     case class ThermalPropsState_13384(
-        innerShape          : Option[PipeShape]              = None,
+        shapeState          : ShapeState                     = ShapeState.Empty,
         outer_shape         : Option[PipeShape]              = None,
         roughness           : Option[Roughness]              = None,
         layers              : Option[List[AppendLayerDescr]] = None,
@@ -47,7 +46,7 @@ object PropsStateOps_Thermal_13384_Instance:
     given thermalPropsStateOps13384: ThermalPropsStateOps[ThermalPropsState_13384] with
         def isValid(s: ThermalPropsState_13384) =
             // Only check the core pipe properties, not the optional direction tracking fields
-            s.innerShape.isDefined &&
+            s.shapeState.shape.isDefined &&
                 s.outer_shape.isDefined &&
                 s.roughness.isDefined &&
                 s.layers.isDefined &&
@@ -55,7 +54,7 @@ object PropsStateOps_Thermal_13384_Instance:
                 s.pipeLoc.isDefined &&
                 s.ductType.isDefined
 
-        def getInnerShape(s: ThermalPropsState_13384) = s.innerShape
+        def getShapeState(s: ThermalPropsState_13384) = s.shapeState
         def getRoughness (s: ThermalPropsState_13384) = s.roughness
 
         def getNFlows(s: ThermalPropsState_13384) =
@@ -77,7 +76,15 @@ object PropsStateOps_Thermal_13384_Instance:
             state.copy(pendingFlowAreaCheck = check)
 
         def setInnerShape(state: ThermalPropsState_13384, shape: PipeShape): ThermalPropsState_13384 =
-            state.copy(innerShape = shape.some)
+            state.copy(shapeState = ShapeState.Set(shape))
 
         def setNFlows(state: ThermalPropsState_13384, nFlows: NbOfFlows): ThermalPropsState_13384 =
             state.copy(nFlows = nFlows)
+
+        def materialize(state: ThermalPropsState_13384): ThermalPropsState_13384 =
+            val result = state.shapeState match
+                case ShapeState.Set(shape) =>
+                    state.copy(shapeState = ShapeState.Materialized(shape))
+                case other                 =>
+                    state
+            result

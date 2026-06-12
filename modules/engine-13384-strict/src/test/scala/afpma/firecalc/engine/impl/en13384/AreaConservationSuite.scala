@@ -51,8 +51,10 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         descr.toFullDescr().isValid shouldBe true
     }
 
-    it should "return NoShapeBeforeSplit when SetNumberOfFlows is called without an inner shape" in {
-        // No inner shape set before SetNumberOfFlows — should produce NoShapeBeforeSplit error
+    it should "allow SetNumberOfFlows before SetInnerShape — sets nFlows without pending area check" in {
+        // SetNumberOfFlows before SetInnerShape is allowed: nFlows is set, but no
+        // PendingFlowAreaCheck is created (there's no "before" shape to check against).
+        // The build succeeds and the final nFlows is 2.
         given FluePipeT = FluePipeT
         val builder     = FlowOnlyIncrementalBuilder_13384
             .makeFor[FluePipeT]
@@ -63,9 +65,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(20.cm, 10.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters)
         )
-        result.toFullDescr().isValid shouldBe false
-        val errors      = result.toFullDescr().toEither.left.toOption.get
-        errors.head shouldBe a[NoShapeBeforeSplit]
+        result.toFullDescr().isValid shouldBe true
     }
 
     it should "reject SetInnerShape when area is NOT conserved (split 1→2)" in {
@@ -149,6 +149,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         val descr       = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(10.cm, 10.cm)),
             SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm                    ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters      ),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                     ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("before-merge", 1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                     ),
@@ -167,6 +168,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         val descr                                                       = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(10.cm, 10.cm)),
             SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm                    ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters      ),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                     ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("before-merge", 1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                     ),
@@ -210,9 +212,10 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             .withInitialDirection(ascendingDir)
         val descr       = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
         val result      = descr.toFullDescr()
         result.isValid shouldBe false

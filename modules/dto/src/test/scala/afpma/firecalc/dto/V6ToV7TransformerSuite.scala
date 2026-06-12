@@ -85,7 +85,7 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
     // ─── Helpers ───────────────────────────────────────────────────
 
-// V7 helper functions: tracking ops are preserved as PipeTrackingOp, not stripped
+// V7 helper functions: tracking ops are stripped from post-firebox slots during migration
     private def hasTrackingFlowOnlyV7(
         d: Seq[FlowOnlyPipeDescr_15544_V4]
     ): Boolean =
@@ -162,7 +162,7 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             result.slots(0) match
                 case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                   => fail(s"Expected FlueSlot, got $other")
         }
 
@@ -188,7 +188,7 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             result.slots(0) match
                 case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
         }
 
@@ -289,17 +289,17 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             result.slots(0) match
                 case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                   => fail(s"Expected FlueSlot, got $other")
 
             result.slots(1) match
                 case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                        => fail(s"Expected ConnectorSlot, got $other")
 
             result.slots(2) match
                 case PostFireboxPipeDescrSlot_V7.ChimneySlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                      => fail(s"Expected ChimneySlot, got $other")
         }
 
@@ -322,12 +322,12 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             result.slots(0) match
                 case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                   => fail(s"Expected FlueSlot, got $other")
 
             result.slots(1) match
                 case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                        => fail(s"Expected ConnectorSlot, got $other")
         }
 
@@ -392,8 +392,8 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             result.slots(0) match
                 case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    // V7 preserves tracking ops + migrated V3→V4 elements
-                    d.size shouldBe 3
+                    // tracking ops stripped, only migrated V3→V4 elements remain
+                    d.size shouldBe 2
                     (d.exists:
                         case afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.SetRoughness(r) => r == 0.5.mm
                         case _                                                                  => false
@@ -432,12 +432,12 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             result.slots(0) match
                 case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                   => fail(s"Expected FlueSlot, got $other")
 
             result.slots(1) match
                 case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                   => fail(s"Expected FlueSlot, got $other")
         }
 
@@ -469,7 +469,7 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             result.slots(1) match
                 case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                     (d.exists:
                         case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetRoughness(r) => r == 0.3.mm
                         case _                                                                 => false
@@ -646,12 +646,12 @@ class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
 
             migrated.post_firebox_pipes.slots(0) match
                 case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                   => fail(s"Expected FlueSlot, got $other")
 
             migrated.post_firebox_pipes.slots(1) match
                 case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe true // V7 preserves tracking ops
+                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
                 case other                                        => fail(s"Expected ConnectorSlot, got $other")
         }
         "air_intake_descr is migrated to V7 flow-only 13384 type" in {

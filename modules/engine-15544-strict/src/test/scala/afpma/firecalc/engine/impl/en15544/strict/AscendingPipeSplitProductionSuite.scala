@@ -30,9 +30,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_15544.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_15544.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_15544.SetRoughness           (1.mm         ),
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal("-", 0.cm    ),
             FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_15544.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_15544.AddSectionSlopped   ("s", 1.meters)
         )
         val result = descr.toFullDescr()
         result.isValid shouldBe false
@@ -52,9 +53,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_15544.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_15544.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_15544.SetRoughness           (1.mm         ),
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal("-", 0.cm    ),
             FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_15544.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_15544.AddSectionSlopped   ("s", 1.meters)
         )
         val result = descr.toFullDescr()
         if result.isValid then succeed
@@ -73,9 +75,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_15544.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_15544.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_15544.SetRoughness           (1.mm         ),
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal("-", 0.cm    ),
             FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_15544.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_15544.AddSectionSlopped   ("s", 1.meters)
         )
         val result = descr.toFullDescr()
         if result.isValid then succeed
@@ -94,9 +97,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_15544.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_15544.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_15544.SetRoughness           (1.mm         ),
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal("-", 0.cm    ),
             FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)           ),
-            AddFlowOnlyPipeElement_15544.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_15544.AddSectionSlopped   ("s", 1.meters)
         )
         val result = descr.toFullDescr()
         if result.isValid then succeed
@@ -108,9 +112,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = FlowOnlyIncrementalBuilder_15544.makeFor[FluePipeT]
         val descr       = builder.define(
             SetFlowOnlyPipeProp_15544.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_15544.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_15544.SetRoughness           (1.mm         ),
+            AddFlowOnlyPipeElement_15544.AddSectionHorizontal("-", 0.cm    ),
             FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_15544.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_15544.AddSectionSlopped   ("s", 1.meters)
         )
         val result      = descr.toFullDescr()
         // Should be invalid because geometry requires an initial direction

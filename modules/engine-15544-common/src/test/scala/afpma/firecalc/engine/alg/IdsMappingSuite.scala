@@ -141,7 +141,7 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
         fullDescr.elems.map(_.idx.unwrap) shouldBe Vector(0, 1, 2, 3)
 
         // Verify element names
-        fullDescr.elems.map(_.name) shouldBe Vector("section1", "angle1", "sect° geom change", "section2")
+        fullDescr.elems.map(_.name) shouldBe Vector("section1", "angle1", "section geometry change", "section2")
     }
 
     "geom-change: auto-inserted element" should "be detectable by absence from reverseMap" in {
@@ -152,5 +152,5 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
         // For each element in fullDescr, check if it's in the reverseMap
         val autoInserted = fullDescr.elems.filter(el => !reverseMap.contains(el.idx.unwrap))
         autoInserted.size shouldBe 1
-        autoInserted.head.name shouldBe "sect° geom change"
+        autoInserted.head.name shouldBe "section geometry change"
     }

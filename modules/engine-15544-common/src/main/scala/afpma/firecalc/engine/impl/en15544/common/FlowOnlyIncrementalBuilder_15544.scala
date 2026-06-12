@@ -32,6 +32,7 @@ import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
 import afpma.firecalc.engine.typeclasses.*
 
 import cats.Show
@@ -141,7 +142,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
 
         /** Inner geometry in effect after folding the first n descriptors — used by UI prefill. */
         def innerShapeAtPrefix(n: Int): Option[PipeShape] =
-            piDescr.propsStateAtPrefix(n).toOption.flatMap(_.geometry)
+            piDescr.propsStateAtPrefix(n).toOption.flatMap(stateOps.getInnerShape)
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
         val initDir = wrapperInitialDirection
@@ -235,32 +236,36 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                             case Some(prevInnerGeom) =>
                                 val sectGeomCh = SectionGeometryChange(from = prevInnerGeom, to = s.geometry)
                                 NonEmptyList(
-                                    (elIdx, Some("sect° geom change"), sectGeomCh),
-                                    (elIdx.incr(1), None, s                      ) :: Nil
+                                    (elIdx, Some("section geometry change"), sectGeomCh),
+                                    (elIdx.incr(1), None, s                            ) :: Nil
                                 ).validNel[IncrementalValidation_Error]
                     }
 
                 case op: AddDirectionChange =>
-                    given DirectionChangeCtx_15544 =
-                        DirectionChangeCtx_15544(
-                            stateOps.getInnerShape(st),
-                            pt,
-                            dirBeforePreviousDC = st.dirBeforePreviousDC,
-                            currentFrame        = st.currentFrame
-                        )
-                    directionChange15544.make(op).map(dc => NonEmptyList.one((elIdx, None, dc)))
+                    stateOps.validateMaterialized(st, Operation.AddDirectionChange, pt).andThen { _ =>
+                        given DirectionChangeCtx_15544 =
+                            DirectionChangeCtx_15544(
+                                stateOps.getInnerShape(st),
+                                pt,
+                                dirBeforePreviousDC = st.dirBeforePreviousDC,
+                                currentFrame        = st.currentFrame
+                            )
+                        directionChange15544.make(op).map(dc => NonEmptyList.one((elIdx, None, dc)))
+                    }
 
                 case op: AddSectionShapeChange =>
-                    given SectionGeometryChangeCtx_15544 =
-                        SectionGeometryChangeCtx_15544(
-                            stateOps.getInnerShape(st),
-                            convStep.allPreElementOpsUntilNextAddElement.exists {
-                                case (_, _: SetInnerShape) => true
-                                case _ => false
-                            },
-                            pt
-                        )
-                    sectionGeometryChange15544.make(op).asNonEmptyList
+                    stateOps.validateMaterialized(st, Operation.AddSectionShapeChange, pt).andThen { _ =>
+                        given SectionGeometryChangeCtx_15544 =
+                            SectionGeometryChangeCtx_15544(
+                                stateOps.getInnerShape(st),
+                                convStep.allPreElementOpsUntilNextAddElement.exists {
+                                    case (_, _: SetInnerShape) => true
+                                    case _ => false
+                                },
+                                pt
+                            )
+                        sectionGeometryChange15544.make(op).asNonEmptyList
+                    }
 
                 case op: AddFlowResistance =>
                     given FlowResistanceCtx_15544 =
@@ -280,12 +285,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _))                            => propsState.validNel
-            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
-            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
-            case Some(addDC: AddDirectionChange)                             =>
+            case None                                => propsState.validNel
+            case Some(
+                    _: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal |
+                    _: AddSectionVertical
+                ) =>
+                stateOps.materialize(propsState).validNel
+            case Some(addDC: AddDirectionChange)     =>
                 addDC.absDir match
                     case Some(fd) =>
                         propsState.currentFrame match
@@ -302,9 +308,10 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                                     .validNel
                             case None        => propsState.validNel
                     case None     => propsState.validNel
-            case Some(_ @AddFlowResistance(_, _, _))                         => propsState.validNel
-            case Some(_ @AddPressureDiff(_, _))                              => propsState.validNel
-            case Some(obj: AddSectionShapeChange)                            => propsState.modify(_.geometry).setTo(obj.to_shape.some).validNel
+            case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
+            case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
+            case Some(obj: AddSectionShapeChange)    =>
+                stateOps.setInnerShape(propsState, obj.to_shape).validNel
 
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
@@ -315,7 +322,12 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                 op match
                     case SetInnerShape(g)                                           =>
                         vState.andThen { st =>
-                            FlowAreaConservation.validateSetInnerShape(st, g, pt)(using stateOps).toValidatedNel
+                            stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
+                                FlowAreaConservation
+                                    .validateSetInnerShape(st, g, pt)(using stateOps)
+                                    .toValidatedNel
+                                    .map(s => stateOps.setInnerShape(s, g))
+                            }
                         }
                     case SetRoughness(r)                                            =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
@@ -323,9 +335,11 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg:
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(nf)       =>
                         vState.andThen { st =>
-                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
-                            )
+                            stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
+                                validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
+                                )
+                            }
                         }
                     case FlowOnlyPipeTrackingOp_15544.SetInitialDirection(az, incl) =>
                         if vState.toOption.exists(_.initialFrame.isDefined) then vState

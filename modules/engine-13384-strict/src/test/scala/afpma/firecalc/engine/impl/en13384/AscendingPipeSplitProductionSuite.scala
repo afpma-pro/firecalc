@@ -33,9 +33,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
         val result = descr.toFullDescr()
         result.isValid shouldBe false
@@ -55,9 +56,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
         val result = descr.toFullDescr()
         if result.isValid then succeed
@@ -76,9 +78,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
         val result = descr.toFullDescr()
         if result.isValid then succeed
@@ -97,9 +100,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             )
         val descr = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
         val result = descr.toFullDescr()
         if result.isValid then succeed
@@ -111,9 +115,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = FlowOnlyIncrementalBuilder_13384.makeFor[FluePipeT]
         val descr       = builder.define(
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
         val result      = descr.toFullDescr()
         result.isValid shouldBe false
@@ -139,6 +144,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
             SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
             SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
+            AddThermalPipeElement_13384.AddSectionSlopped("init", 0.1.meters            ),
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
@@ -164,6 +170,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
             SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
             SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
+            AddThermalPipeElement_13384.AddSectionSlopped("init", 0.1.meters            ),
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
@@ -188,6 +195,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
             SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
             SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
+            AddThermalPipeElement_13384.AddSectionSlopped("init", 0.1.meters            ),
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
@@ -212,6 +220,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
             SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
             SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
+            AddThermalPipeElement_13384.AddSectionSlopped("init", 0.1.meters            ),
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
@@ -229,6 +238,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
             SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
             SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
+            AddThermalPipeElement_13384.AddSectionSlopped("init", 0.1.meters            ),
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )

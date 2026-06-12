@@ -9,11 +9,10 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.ShapeState
 import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.PendingFlowAreaCheck
 import afpma.firecalc.engine.typeclasses.*
-
-import cats.syntax.option.*
 
 object PropsStateOps_FlowOnly_13384_Instance:
 
@@ -29,7 +28,7 @@ object PropsStateOps_FlowOnly_13384_Instance:
      *   - dirBeforePreviousDC: direction BEFORE the previous bend, used to compute angleN2
      */
     case class FlowOnlyPropsState_13384(
-        innerShape          : Option[PipeShape]            = None,
+        shapeState          : ShapeState                   = ShapeState.Empty,
         roughness           : Option[Roughness]            = None,
         nFlows              : NbOfFlows                    = 1.flow,
         initialFrame        : Option[PipeFrame]            = None,
@@ -40,10 +39,10 @@ object PropsStateOps_FlowOnly_13384_Instance:
 
     given flowOnlyPropsStateOps13384: PropsStateOps[FlowOnlyPropsState_13384] with
         def isValid(s: FlowOnlyPropsState_13384) =
-            s.innerShape.isDefined &&
+            s.shapeState.shape.isDefined &&
                 s.roughness.isDefined
 
-        def getInnerShape(s: FlowOnlyPropsState_13384) = s.innerShape
+        def getShapeState(s: FlowOnlyPropsState_13384) = s.shapeState
         def getRoughness (s: FlowOnlyPropsState_13384) = s.roughness
 
         def getNFlows(s: FlowOnlyPropsState_13384) =
@@ -59,7 +58,12 @@ object PropsStateOps_FlowOnly_13384_Instance:
             state.copy(pendingFlowAreaCheck = check)
 
         def setInnerShape(state: FlowOnlyPropsState_13384, shape: PipeShape): FlowOnlyPropsState_13384 =
-            state.copy(innerShape = shape.some)
+            state.copy(shapeState = ShapeState.Set(shape))
 
         def setNFlows(state: FlowOnlyPropsState_13384, nFlows: NbOfFlows): FlowOnlyPropsState_13384 =
             state.copy(nFlows = nFlows)
+
+        def materialize(state: FlowOnlyPropsState_13384): FlowOnlyPropsState_13384 =
+            state.shapeState match
+                case ShapeState.Set(shape) => state.copy(shapeState = ShapeState.Materialized(shape))
+                case _                     => state

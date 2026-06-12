@@ -6,12 +6,10 @@
 package afpma.firecalc.engine.impl.en13384
 
 import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
@@ -31,22 +29,18 @@ import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
 import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
+import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
 import afpma.firecalc.engine.typeclasses.*
-
 import cats.data.*
 import cats.syntax.all.*
-
 import coulomb.policy.standard.given
-
 import scala.annotation.targetName
 import scala.reflect.*
-
 import com.softwaremill.quicklens.*
 
 trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.*
-
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
     import FlowOnlyPipeTrackingOp_13384.*
@@ -57,8 +51,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.hasLength
     override given hasVerticalElev   : HasVerticalElev[PipeElDescr]    =
         afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.hasVerticalElev
-    // export afpma.firecalc.engine.models.en13384.pipedescr.showPipeElDescr
 
+    // export afpma.firecalc.engine.models.en13384.pipedescr.showPipeElDescr
     export afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.StraightSection
 
     override type PipeElDescr = afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.PipeElDescr
@@ -73,7 +67,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     /**
      * Wrapper-level initial direction (V7).
-     * When defined, seeds the initial/current frame in mkInitPropsState.
+     * When defined, seeds the initial/cur frame in mkInitPropsState.
      * Replaces descriptor-level SetInitialDirection after V6→V7 migration.
      */
     protected var wrapperInitialDirection: Option[PostFireboxInitialDirection] = None
@@ -139,11 +133,10 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 convStep.allRemainingOps
                     .map(_._2)
                     .find:
-                        case _: PreElementOp                                                                  => false
                         case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain)               => true
-                        case _: AddSectionHorizontal                                                          => true
-                        case _: AddSectionVertical                                                            => true
+                        case _: (AddSectionHorizontal | AddSectionVertical)                                   => true
                         case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => false
+                        case _: PreElementOp                                                                  => false
                     .map(_.asInstanceOf[AddElement])
             nextAddSectionsOps.headOption.flatMap:
                 case _ @AddSectionSlopped(_, l)                            => l.some
@@ -210,7 +203,9 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
         given NbOfFlows = summon[PropsState].nf
         val (idIncr, addElementOp) = id_addElementOp
-        val st = summon[PropsState]
+        val st             = summon[PropsState]
+        val elIdx          = PipeIdx(prevs.elems.size)
+        val prevInnerGeomO = prevs.lastInnerGeom
 
         val el = addElementOp match
             case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal |
@@ -225,26 +220,30 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 flowOnlyStraightSection13384.make(op)
 
             case op: AddDirectionChange =>
-                given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
-                    stateOps.getInnerShape(st),
-                    convStep.nextSectionLengthOpt,
-                    pt,
-                    dirBeforePreviousDC = st.dirBeforePreviousDC,
-                    currentFrame        = st.currentFrame
-                )
-                flowOnlyDirectionChange13384.make(op)
+                stateOps.validateMaterialized(st, Operation.AddDirectionChange, pt).andThen { _ =>
+                    given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
+                        stateOps.getInnerShape(st),
+                        convStep.nextSectionLengthOpt,
+                        pt,
+                        dirBeforePreviousDC = st.dirBeforePreviousDC,
+                        currentFrame        = st.currentFrame
+                    )
+                    flowOnlyDirectionChange13384.make(op)
+                }
 
             case op: AddSectionChange =>
-                given SectionGeometryChangeCtx_13384 =
-                    SectionGeometryChangeCtx_13384(
-                        stateOps.getInnerShape(st),
-                        convStep.allPreElementOpsUntilNextAddElement.exists {
-                            case (_, _: SetInnerShape) => true
-                            case _ => false
-                        },
-                        pt
-                    )
-                flowOnlySectionGeometryChange13384.make(op)
+                stateOps.validateMaterialized(st, Operation.AddSectionChange, pt).andThen { _ =>
+                    given SectionGeometryChangeCtx_13384 =
+                        SectionGeometryChangeCtx_13384(
+                            stateOps.getInnerShape(st),
+                            convStep.allPreElementOpsUntilNextAddElement.exists {
+                                case (_, _: SetInnerShape) => true
+                                case _ => false
+                            },
+                            pt
+                        )
+                    flowOnlySectionGeometryChange13384.make(op)
+                }
 
             case op: AddFlowResistance =>
                 given FlowResistanceCtx_13384 =
@@ -256,20 +255,32 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     FlowResistanceCtx_13384(stateOps.getInnerShape(st), pt)
                 flowOnlyPressureDiff13384.make(op)
 
-        val elIdx = PipeIdx(prevs.elems.size)
-        el.map(el => NonEmptyList.one((idIncr, el.named(elIdx, pt, addElementOp.name))))
+        el.andThen { s =>
+            AutoInsertionHelper_13384.maybeInsertSectionGeometryChange(
+                this,
+                s,
+                prevInnerGeomO,
+                stateOps.getInnerShape(st),
+                idIncr,
+                elIdx,
+                pt,
+                addElementOp.name,
+                SectionGeometryChange.make
+            )
+        }
 
     override protected def updateStateAfterConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _))                            => propsState.validNel
-            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
-            case Some(_ @AddSectionHorizontal(_, _))                         => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))                           => propsState.validNel
-            case Some(addDC: AddDirectionChange)                             =>
+            case None                                => propsState.validNel
+            case Some(
+                    _: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal |
+                    _: AddSectionVertical
+                ) =>
+                stateOps.materialize(propsState).validNel
+            case Some(addDC: AddDirectionChange)     =>
                 addDC.absDir match
                     case Some(fd) =>
                         propsState.currentFrame match
@@ -286,21 +297,27 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                     .validNel
                             case None        => propsState.validNel
                     case None     => propsState.validNel
-            case Some(_ @AddFlowResistance(_, _, _))                         => propsState.validNel
-            case Some(_ @AddPressureDiff(_, _))                              => propsState.validNel
-            case Some(op: AddSectionChange)                                  =>
-                propsState.modify(_.innerShape).setTo(op.to_shape.some).validNel
+            case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
+            case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
+            case Some(op: AddSectionChange)          =>
+                stateOps.setInnerShape(propsState, op.to_shape).validNel
 
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
+
         convStep.allPreElementOpsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
                 op match
                     case SetInnerShape(g)                                           =>
                         vState.andThen { st =>
-                            FlowAreaConservation.validateSetInnerShape(st, g, pt)(using stateOps).toValidatedNel
+                            stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
+                                FlowAreaConservation
+                                    .validateSetInnerShape(st, g, pt)(using stateOps)
+                                    .toValidatedNel
+                                    .map(s => stateOps.setInnerShape(s, g))
+                            }
                         }
                     case SetRoughness(r)                                            =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
@@ -308,9 +325,11 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf)       =>
                         vState.andThen { st =>
-                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
-                            )
+                            stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
+                                validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
+                                )
+                            }
                         }
                     case FlowOnlyPipeTrackingOp_13384.SetInitialDirection(az, incl) =>
                         if vState.toOption.exists(_.initialFrame.isDefined) then vState
@@ -336,7 +355,6 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         SetInnerShape(shape)
     def roughness(r: Roughness)      =
         SetRoughness(r)
-
     def material(lm: Material_13384) =
         SetMaterial(lm)
 
@@ -411,8 +429,10 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     //     name: String,
     //     to: PipeShape
     // ) = PipeUserModifier.Obj.AddSectionChange(name, to)
+
     def addSectionDecrease(name: String, toDiameter: QtyD[Meter]) = AddSectionDecrease(name, toDiameter)
     def addSectionIncrease(name: String, toDiameter: QtyD[Meter]) = AddSectionIncrease(name, toDiameter)
+
     // def addSectionDecreaseProgressive(name: String, toDiameter: QtyD[Meter], ɣ: QtyD[Degree]) =
     //     AddSectionDecreaseProgressive(name, toDiameter, ɣ)
 
@@ -480,10 +500,7 @@ object FlowOnlyIncrementalBuilder_13384:
         tt1  : TypeTest[FlowOnlyPipeDescr_13384, SetFlowOnlyPipeProp_13384],
         tt2  : TypeTest[FlowOnlyPipeDescr_13384, AddFlowOnlyPipeElement_13384],
         tt3  : TypeTest[FlowOnlyPipeDescr_13384, FlowOnlyPreElementOp_13384]
-    ): FlowOnlyIncrementalBuilder_13384 {
-        // type PipeElDescr    = PipeElDescr0
-        type PT = PType
-    } =
+    ): FlowOnlyIncrementalBuilder_13384.Aux[PType] =
         new FlowOnlyIncrementalBuilder_13384:
             override given typeTestSetProp     : TypeTest[IncrDescr, SetProp]      = tt1
             override given typeTestAddElement  : TypeTest[IncrDescr, AddElement]   = tt2

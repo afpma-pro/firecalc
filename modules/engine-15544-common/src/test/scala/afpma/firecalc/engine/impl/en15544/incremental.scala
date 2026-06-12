@@ -154,6 +154,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("descente", 1.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
                                 innerShape               (branchShape                 ),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
                                 addSharpAngle_0_to_180deg(
                                     "vers section horizontale",
                                     90.degrees,
@@ -166,15 +167,17 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
 
                         elems.map(_.name) `shouldBe` Vector(
                             "descente",
+                            "section geometry change",
+                            "branch-start",
                             "vers section horizontale",
                             "section horizontale"
                         )
-                        elems(1).el `shouldBe` DirectionChange.AngleVifDe0A180(
+                        elems(3).el `shouldBe` DirectionChange.AngleVifDe0A180(
                             α              = 90.degrees,
                             angleN2        = None,
                             effectiveShape = branchShape
                         )
-                        elems(1).el.innerShape(Some(square(width))).map(_(using Position.Middle)) `shouldBe` Some(
+                        elems(3).el.innerShape(Some(square(width))).map(_(using Position.Middle)) `shouldBe` Some(
                             branchShape
                         )
                     }
@@ -194,6 +197,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("descente", 1.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
                                 innerShape                                      (rectangle(width, 10.cm)),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
                                 addSharpAngle_0_to_180deg(
                                     "vers section horizontale",
                                     90.degrees,
@@ -220,8 +224,9 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                             builder.define                                      (
                                 innerShape                                      (rectangle(18.cm, 9.cm)),
                                 roughness                (3.mm                        ),
-                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)          ),
                                 addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)          ),
+                                addSectionHorizontal     ("branch", 0.5.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)          ),
                                 innerShape                                      (square(20.cm)         ),
                                 addSectionHorizontal     ("apres merge", 1.meters     ),
@@ -255,6 +260,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("descente", 1.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
                                 innerShape                                      (rectangle(10.cm, 10.cm)),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
                                 addSharpAngle_0_to_180deg(
                                     "vers section horizontale",
                                     90.degrees,
@@ -281,6 +287,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("descente", 1.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
                                 innerShape                                      (rectangle(10.cm, 9.cm) ),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
                                 addSharpAngle_0_to_180deg(
                                     "vers section horizontale",
                                     90.degrees,
@@ -315,6 +322,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("descente", 1.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)             ),
                                 innerShape                                      (rectangle(10.cm, 9.99.cm)),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
                                 addSharpAngle_0_to_180deg(
                                     "vers section horizontale",
                                     90.degrees,
@@ -341,6 +349,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("descente", 1.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
                                 innerShape                                      (square(9.cm) ),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
                                 addSharpAngle_0_to_180deg(
                                     "vers section horizontale",
                                     90.degrees,
@@ -402,6 +411,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                             builder.define                                      (
                                 innerShape                                      (rectangle(10.cm, 10.cm)),
                                 roughness                (3.mm                        ),
+                                addSectionHorizontal     ("initial", 0.1.meters       ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
                                 addSectionHorizontal     ("descente", 1.meters        ),
                                 FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)           ),

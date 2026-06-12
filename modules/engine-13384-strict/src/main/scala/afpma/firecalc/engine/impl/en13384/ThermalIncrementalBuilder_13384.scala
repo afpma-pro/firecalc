@@ -33,6 +33,7 @@ import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
 import afpma.firecalc.engine.typeclasses.*
 
 import cats.data.*
@@ -246,26 +247,30 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 thermalStraightSection13384.make(op)
 
             case op: AddDirectionChange =>
-                given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
-                    stateOps.getInnerShape(st),
-                    convStep.nextSectionLengthOpt,
-                    pt,
-                    dirBeforePreviousDC = st.dirBeforePreviousDC,
-                    currentFrame        = st.currentFrame
-                )
-                thermalDirectionChange13384.make(op)
+                stateOps.validateMaterialized(st, Operation.AddDirectionChange, pt).andThen { _ =>
+                    given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
+                        stateOps.getInnerShape(st),
+                        convStep.nextSectionLengthOpt,
+                        pt,
+                        dirBeforePreviousDC = st.dirBeforePreviousDC,
+                        currentFrame        = st.currentFrame
+                    )
+                    thermalDirectionChange13384.make(op)
+                }
 
             case op: AddSectionChange =>
-                given SectionGeometryChangeCtx_13384 =
-                    SectionGeometryChangeCtx_13384(
-                        stateOps.getInnerShape(st),
-                        convStep.allPreElementOpsUntilNextAddElement.exists {
-                            case (_, _: SetInnerShape) => true
-                            case _ => false
-                        },
-                        pt
-                    )
-                thermalSectionGeometryChange13384.make(op)
+                stateOps.validateMaterialized(st, Operation.AddSectionChange, pt).andThen { _ =>
+                    given SectionGeometryChangeCtx_13384 =
+                        SectionGeometryChangeCtx_13384(
+                            stateOps.getInnerShape(st),
+                            convStep.allPreElementOpsUntilNextAddElement.exists {
+                                case (_, _: SetInnerShape) => true
+                                case _ => false
+                            },
+                            pt
+                        )
+                    thermalSectionGeometryChange13384.make(op)
+                }
 
             case op: AddFlowResistance =>
                 given FlowResistanceCtx_13384 =
@@ -277,22 +282,35 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     FlowResistanceCtx_13384(stateOps.getInnerShape(st), pt)
                 thermalPressureDiff13384.make(op)
 
-        val elIdx = PipeIdx(prevs.elems.size)
-        el.map: el =>
-            NonEmptyList.one:
-                idIncr -> el.named(elIdx, pt, addElementOp.name)
+        val elIdx          = PipeIdx(prevs.elems.size)
+        val prevInnerGeomO = prevs.lastInnerGeom
+        el.andThen { s =>
+            AutoInsertionHelper_13384.maybeInsertSectionGeometryChange(
+                this,
+                s,
+                prevInnerGeomO,
+                stateOps.getInnerShape(st),
+                idIncr,
+                elIdx,
+                pt,
+                addElementOp.name,
+                SectionGeometryChange.make
+            )
+        }
 
     override protected def updateStateAfterConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
-        convStep.findNextAddElement.map(_._2) match
-            case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _))                            => propsState.validNel
-            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
-
-            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
+        val nextAdd = convStep.findNextAddElement
+        nextAdd.map(_._2) match
+            case None                                =>
+                propsState.validNel
+            case Some(
+                    _: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal |
+                    _: AddSectionVertical
+                ) =>
+                stateOps.materialize(propsState).validNel
             case Some(addDC: AddDirectionChange)     =>
                 // Update direction tracking if absDir is defined and we have a current frame
                 addDC.absDir match
@@ -311,10 +329,11 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                     .validNel
                             case None        => propsState.validNel
                     case None     => propsState.validNel
-            case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
+            case Some(_ @AddFlowResistance(_, _, _)) =>
+                propsState.validNel
             case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
             case Some(op: AddSectionChange)          =>
-                propsState.modify(_.innerShape).setTo(op.to_shape.some).validNel
+                stateOps.setInnerShape(propsState, op.to_shape).validNel
 
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
@@ -327,13 +346,18 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             atom match
                 case SetInnerShape(g)            =>
                     vState.andThen { st =>
-                        FlowAreaConservation.validateSetInnerShape(st, g, pt)(using stateOps).toValidatedNel
+                        stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
+                            FlowAreaConservation
+                                .validateSetInnerShape(st, g, pt)(using stateOps)
+                                .toValidatedNel
+                                .map(s => stateOps.setInnerShape(s, g))
+                        }
                     }
                 case SetOuterShape(g)            =>
                     vState.map(_.modify(_.outer_shape).setTo(g.some))
                 case SetThickness(t)             =>
                     vState andThen: v =>
-                        v.innerShape match
+                        stateOps.getInnerShape(v) match
                             case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
                             case Some(ig) =>
                                 v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
@@ -342,7 +366,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 case SetMaterial(lm)             =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                 case SetLayer(e, lambda)         =>
-                    val vGeom = vState.andThen(_.getValidated(_.innerShape, LayerRequiresSectionGeometry(pt)))
+                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayerRequiresSectionGeometry(pt)))
                     vGeom.andThen: geom =>
                         vState.map(
                             _.modify(_.layers)
@@ -351,7 +375,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
                 case SetLayers(ldescrs)          =>
-                    val vGeom = vState.andThen(_.getValidated(_.innerShape, LayersRequireInnerShape(pt)))
+                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
                         vState.map(
@@ -374,9 +398,11 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         updateVNelState(vState)(prop)
                     case ThermalChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
-                            validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
-                            )
+                            stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
+                                validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
+                                )
+                            }
                         }
                     case ThermalPipeTrackingOp_13384.SetInitialDirection(az, incl) =>
                         if vState.toOption.exists(_.initialFrame.isDefined) then vState

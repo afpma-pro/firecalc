@@ -6,6 +6,7 @@
 package afpma.firecalc.engine
 
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.units.coulombutils.given
 
 import afpma.firecalc.domain.NbOfFlows
 
@@ -1001,6 +1002,22 @@ object standard {
     /** No inner shape defined before a SetNumberOfFlows — area conservation cannot be checked. */
     case class NoShapeBeforeSplit(sectionTyp: PipeType) extends ConflictDetected
 
+    /** Shape was set but not yet materialized into a physical element. */
+    case class ShapeNotMaterialized(
+        sectionTyp: PipeType,
+        operation : ShapeNotMaterialized.Operation
+    ) extends ConflictDetected
+
+    object ShapeNotMaterialized:
+        enum Operation:
+            case SetInnerShape
+            case SetNumberOfFlows
+            case AddDirectionChange
+            case AddSectionChange
+            case AddSectionShapeChange
+            case AddFlowResistance
+            case AddPressureDiff
+
     // Expected dimension for informative error messages on flow split/merge area violations
     sealed trait ExpectedDimension
     case class ExpectedDimRectangle(
@@ -1060,6 +1077,16 @@ object standard {
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
             case NoShapeBeforeSplit(_)                            =>
                 I18N.incremental_validation.conflicts.no_shape_before_split
+            case e: ShapeNotMaterialized                   =>
+                val translatedOp = e.operation match
+                    case ShapeNotMaterialized.Operation.SetInnerShape         => I18N.set_prop.SetInnerShape
+                    case ShapeNotMaterialized.Operation.SetNumberOfFlows      => I18N.set_prop.SetNumberOfFlows
+                    case ShapeNotMaterialized.Operation.AddDirectionChange    => I18N.set_prop.AddDirectionChange
+                    case ShapeNotMaterialized.Operation.AddSectionChange      => I18N.set_prop.AddSectionChange
+                    case ShapeNotMaterialized.Operation.AddSectionShapeChange => I18N.add_element.AddSectionShapeChange
+                    case ShapeNotMaterialized.Operation.AddFlowResistance     => I18N.add_element.AddFlowResistance
+                    case ShapeNotMaterialized.Operation.AddPressureDiff       => I18N.add_element.AddPressureDiff
+                I18N.incremental_validation.conflicts.shape_not_materialized(translatedOp)
             case e: FlowTransitionChangesTotalCrossSection =>
                 val transitionLabel = e.transition match
                     case FlowAreaTransition.Split => I18N.incremental_validation.conflicts.split
@@ -1068,33 +1095,33 @@ object standard {
                     case ExpectedDimRectangle(enteredWidth, enteredHeight, enteredArea, expectedHeight, expectedArea) =>
                         I18N.incremental_validation.conflicts.flow_transition_area_rectangle(
                             transitionLabel,
-                            s"${e.afterFlows.unwrap} flows",
-                            expectedArea.show,
-                            enteredWidth.show,
-                            enteredHeight.show,
-                            enteredArea.show,
-                            expectedHeight.show,
-                            expectedArea.show
+                            s"${e.afterFlows.unwrap}",
+                            expectedArea.showP,
+                            enteredWidth.showP,
+                            enteredHeight.showP,
+                            enteredArea.showP,
+                            expectedHeight.showP,
+                            expectedArea.showP
                         )
                     case ExpectedDimSquare(enteredSide, enteredArea, expectedSide, expectedArea)                      =>
                         I18N.incremental_validation.conflicts.flow_transition_area_square(
                             transitionLabel,
-                            s"${e.afterFlows.unwrap} flows",
-                            expectedArea.show,
-                            enteredSide.show,
-                            enteredArea.show,
-                            expectedSide.show,
-                            expectedArea.show
+                            s"${e.afterFlows.unwrap}",
+                            expectedArea.showP,
+                            enteredSide.showP,
+                            enteredArea.showP,
+                            expectedSide.showP,
+                            expectedArea.showP
                         )
                     case ExpectedDimCircle(enteredDiameter, enteredArea, expectedDiameter, expectedArea)              =>
                         I18N.incremental_validation.conflicts.flow_transition_area_circle(
                             transitionLabel,
                             s"${e.afterFlows.unwrap} flows",
-                            expectedArea.show,
-                            enteredDiameter.show,
-                            enteredArea.show,
-                            expectedDiameter.show,
-                            expectedArea.show
+                            expectedArea.showP,
+                            enteredDiameter.showP,
+                            enteredArea.showP,
+                            expectedDiameter.showP,
+                            expectedArea.showP
                         )
 
     // Forbidden element position errors

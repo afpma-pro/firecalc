@@ -787,6 +787,8 @@ object I18nData:
         SetPipeLocation                  : String,
         SetDuctType                      : String,
         SetNumberOfFlows                 : String,
+        AddDirectionChange               : String,
+        AddSectionChange                 : String,
         SetNumberOfFlows_fieldName       : String,
         SetNumberOfFlows_NumberOfChannels: String,
         SetNumberOfFlows_Join            : String,
@@ -997,7 +999,8 @@ object I18nData:
             merge                                  : String,
             flow_transition_area_rectangle         : StringFormat8,
             flow_transition_area_square            : StringFormat7,
-            flow_transition_area_circle            : StringFormat7
+            flow_transition_area_circle            : StringFormat7,
+            shape_not_materialized                 : StringFormat1
         )
 
         case class ForbiddenElementPosition(

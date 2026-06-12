@@ -8,12 +8,13 @@ package afpma.firecalc.engine.typeclasses
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.domain.{NbOfFlows, PipeShape, ShapeState}
 
-import afpma.firecalc.engine.standard.IncrementalValidation_Error
-import afpma.firecalc.engine.standard.PendingFlowAreaCheck
-import afpma.firecalc.domain.NbOfFlows
+import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.standard.*
 
 import cats.data.ValidatedNel
+import cats.syntax.all.*
 
 /**
  * Typeclass for read and write operations on PropsState.
@@ -23,15 +24,57 @@ import cats.data.ValidatedNel
 trait PropsStateOps[State]:
     // Read operations
     def isValid                (state: State): Boolean
-    def getInnerShape          (state: State): Option[PipeShape]
+    def getShapeState          (state: State): ShapeState
     def getRoughness           (state: State): Option[Roughness]
     def getNFlows              (state: State): NbOfFlows
     def getPendingFlowAreaCheck(state: State): Option[PendingFlowAreaCheck]
+
+    // Derived read operations
+
+    /**
+     * Shape materialization grammar.
+     *
+     * A shape is "materialized" when it has been used in a length-bearing element
+     * (e.g., a section). Only then is it physically realized in the pipe descriptor.
+     *
+     * | Operation                       | Requires Materialized? | Why |
+     * |---------------------------------|------------------------|-----|
+     * | `AddFlowResistance`             | No                     | Shape Set is sufficient (reads from `cross_section` or context) |
+     * | `AddPressureDiff`               | No                     | Shape Set is sufficient (reads geometry from context) |
+     * | `AddDirectionChange`            | Yes                    | Needs geometry + length to compute position |
+     * | `AddSectionChange`              | Yes                    | Section changes need geometry materialized |
+     * | `AddSectionShapeChange`         | Yes                    | Section changes need geometry materialized |
+     * | `SetInnerShape`                 | Yes                    | Can't change shape without materializing the previous one first |
+     * | `SetNumberOfFlows`              | Yes                    | Flow count changes require the shape to have been used in a length-bearing element |
+     *
+     * Shape-independent SetProps (SetRoughness, SetMaterial, SetInitialDirection)
+     * never require materialization — they don't depend on the current shape.
+     */
+    def requiresMaterializedShape(state: State): Boolean =
+        getShapeState(state) match
+            case ShapeState.Set(_) => true
+            case _                 => false
+
+    def getInnerShape(state: State): Option[PipeShape] =
+        getShapeState(state).shape
 
     // Write operations
     def setPendingFlowAreaCheck(state: State, check : Option[PendingFlowAreaCheck]): State
     def setInnerShape          (state: State, shape : PipeShape                   ): State
     def setNFlows              (state: State, nFlows: NbOfFlows                   ): State
+    def materialize            (state: State                                      ): State
+
+    /**
+     * Validates if the operation requires a materialized shape.
+     * If not materialized, returns the corresponding error.
+     */
+    def validateMaterialized(
+        state: State,
+        op   : ShapeNotMaterialized.Operation,
+        pt   : PipeType
+    ): ValidatedNel[IncrementalValidation_Error, Unit] =
+        if requiresMaterializedShape(state) then ShapeNotMaterialized(pt, op).invalidNel
+        else ().validNel
 
     // Common validation helper
     extension (state: State)

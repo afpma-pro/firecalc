@@ -67,7 +67,7 @@ class GraphDataConverterSuite extends AnyFreeSpec with Matchers:
             val flue          = pipeResult(
                 section     (
                     id      = 1,
-                    name    = "sect° geom change",
+                    name    = "section geometry change",
                     typ     = FluePipeT,
                     lengthM = 1.0,
                     vStart  = 2.0,

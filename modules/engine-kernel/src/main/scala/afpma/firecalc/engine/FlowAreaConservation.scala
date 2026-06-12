@@ -94,7 +94,11 @@ object FlowAreaConservation:
         else
             ops.getInnerShape(st) match
                 case None              =>
-                    Left(NoShapeBeforeSplit(pt))
+                    // No shape yet — still set the nFlows value, but skip the
+                    // PendingFlowAreaCheck. There's no "before" shape to check
+                    // against; the area conservation check will happen when the
+                    // shape is set later (if it changes after nFlows is set).
+                    Right(ops.setNFlows(st, nf))
                 case Some(beforeShape) =>
                     val nextSt  = ops.setNFlows(st, nf)
                     val pending = Some(

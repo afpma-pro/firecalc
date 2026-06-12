@@ -374,17 +374,16 @@ object transformers:
         import afpma.firecalc.dto.v7.{
             SetFlowOnlyPipeProp_15544_V4 => Prop4,
             AddFlowOnlyPipeElement_15544_V4 => El4,
-            FlowOnlyChannelTopologyOp_15544_V4 => Topo4,
-            FlowOnlyPipeTrackingOp_15544_V4 => Track4
+            FlowOnlyChannelTopologyOp_15544_V4 => Topo4
         }
         descr match
             case Prop3.SetInnerShape(shape)                             => Some(Prop4.SetInnerShape(shape)           )
             case Prop3.SetRoughness(roughness)                          => Some(Prop4.SetRoughness(roughness)        )
             case Prop3.SetMaterial(material)                            => Some(Prop4.SetMaterial(material)          )
             case Prop3.SetNumberOfFlows(n)                              => Some(Topo4.SetNumberOfFlows(n)            )
-            case Prop3.SetInitialDirection(az, incl)                    => Some(Track4.SetInitialDirection(az, incl) )
-            case Prop3.SetInitialPosition(x, y, z)                      => Some(Track4.SetInitialPosition(x, y, z)   )
-            case Prop3.SetFinalPosition(x, y, z)                        => Some(Track4.SetFinalPosition(x, y, z)     )
+            case Prop3.SetInitialDirection(az, incl)                    => None // stripped — moved to PostFireboxPipes.initialDirection
+            case Prop3.SetInitialPosition(x, y, z)                      => None // stripped — moved to PostFireboxPipes.initialPosition
+            case Prop3.SetFinalPosition(x, y, z)                        => None // stripped — deprecated in V7
             case El3.AddSectionSlopped(n, l)                            => Some(El4.AddSectionSlopped(n, l)          )
             case El3.AddSectionSloppedForceManualElevationGain(n, l, e) =>
                 Some(El4.AddSectionSloppedForceManualElevationGain(n, l, e))
@@ -473,8 +472,7 @@ object transformers:
         import afpma.firecalc.dto.v7.{
             SetThermalPipeProp_13384_V4 => SP4,
             AddThermalPipeElement_13384_V4 => El4,
-            ThermalChannelTopologyOp_13384_V4 => Topo4,
-            ThermalPipeTrackingOp_13384_V4 => Track4
+            ThermalChannelTopologyOp_13384_V4 => Topo4
         }
         descr match
             case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch(batch_name, props, image)  =>
@@ -508,47 +506,47 @@ object transformers:
             case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetNumberOfFlows(n)                             =>
                 Some(Topo4.SetNumberOfFlows(n))
             case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl)                   =>
-                Some(Track4.SetInitialDirection(az, incl))
-            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z)                     =>
-                Some(Track4.SetInitialPosition(x, y, z))
-            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetFinalPosition(x, y, z)                       =>
-                Some(Track4.SetFinalPosition(x, y, z))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionSlopped(n, l)                      =>
+                None // stripped — moved to PostFireboxPipes.initialDirection
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z) =>
+                None // stripped — moved to PostFireboxPipes.initialPosition
+            case afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetFinalPosition(x, y, z) =>
+                None // stripped — deprecated in V7
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionSlopped(n, l)                 =>
                 Some(El4.AddSectionSlopped(n, l))
             case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
                     .AddSectionSloppedForceManualElevationGain(n, l, e) =>
                 Some(El4.AddSectionSloppedForceManualElevationGain(n, l, e))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionHorizontal(n, hl)                  =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionHorizontal(n, hl)             =>
                 Some(El4.AddSectionHorizontal(n, hl))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionVertical(n, e)                     =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionVertical(n, e)                =>
                 Some(El4.AddSectionVertical(n, e))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddAngleAdjustable(n, a, z, ad)              =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddAngleAdjustable(n, a, z, ad)         =>
                 Some(El4.AddAngleAdjustable(n, a, z, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSharpeAngle_0_to_90(n, a, ad)             =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSharpeAngle_0_to_90(n, a, ad)        =>
                 Some(El4.AddSharpeAngle_0_to_90(n, a, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSharpeAngle_0_to_90_Unsafe(n, a, ad)      =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSharpeAngle_0_to_90_Unsafe(n, a, ad) =>
                 Some(El4.AddSharpeAngle_0_to_90_Unsafe(n, a, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_90(n, r, ad)                  =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_90(n, r, ad)             =>
                 Some(El4.AddSmoothCurve_90(n, r, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_90_Unsafe(n, r, ad)           =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_90_Unsafe(n, r, ad)      =>
                 Some(El4.AddSmoothCurve_90_Unsafe(n, r, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_60(n, r, ad)                  =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_60(n, r, ad)             =>
                 Some(El4.AddSmoothCurve_60(n, r, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_60_Unsafe(n, r, ad)           =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSmoothCurve_60_Unsafe(n, r, ad)      =>
                 Some(El4.AddSmoothCurve_60_Unsafe(n, r, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_2x45(n, r, ad)                     =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_2x45(n, r, ad)                =>
                 Some(El4.AddElbows_2x45(n, r, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_3x30(n, r, ad)                     =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_3x30(n, r, ad)                =>
                 Some(El4.AddElbows_3x30(n, r, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_4x22p5(n, r, ad)                   =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddElbows_4x22p5(n, r, ad)              =>
                 Some(El4.AddElbows_4x22p5(n, r, ad))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionDecrease(n, d)                     =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionDecrease(n, d)                =>
                 Some(El4.AddSectionDecrease(n, d))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionIncrease(n, d)                     =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddSectionIncrease(n, d)                =>
                 Some(El4.AddSectionIncrease(n, d))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddFlowResistance(n, z, cs)                  =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddFlowResistance(n, z, cs)             =>
                 Some(El4.AddFlowResistance(n, z, cs))
-            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddPressureDiff(n, p)                        =>
+            case afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3.AddPressureDiff(n, p)                   =>
                 Some(El4.AddPressureDiff(n, p))
 
     // ─── V6 to V7 Migration ───────────────────────────────────────────────
