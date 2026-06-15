@@ -23,7 +23,6 @@ final case class I18nData_UI(
     default_element_names: DefaultElementNames,
     default_names        : DefaultNames,
     details_columns      : DetailsColumns,
-    direction_badge      : DirectionBadge,
     errors               : Errors,
     firebox              : Firebox,
     footer               : Footer,
@@ -254,39 +253,6 @@ object I18nData_UI:
         modified        : String,
         no_projects     : String,
         back_to_projects: String
-    )
-
-    case class DirectionBadge(
-        label                         : String,
-        tooltip_direction             : String,
-        tooltip_azimuth               : StringFormat1,
-        tooltip_elevation             : StringFormat1,
-        tooltip_roll                  : StringFormat1,
-        tooltip_convention_up         : String,
-        tooltip_convention_horizontal : String,
-        tooltip_convention_down       : String,
-        cardinal_up                   : String,
-        cardinal_down                 : String,
-        cardinal_rear                 : String,
-        cardinal_front                : String,
-        cardinal_right                : String,
-        cardinal_left                 : String,
-        cardinal_rear_right           : String,
-        cardinal_front_right          : String,
-        cardinal_front_left           : String,
-        cardinal_rear_left            : String,
-        relative_left                 : String,
-        relative_right                : String,
-        relative_up                   : String,
-        relative_down                 : String,
-        relative_theta                : String,
-        relative_dir_label            : String,
-        abs_dir_label                 : String,
-        direction_incompatible_warning: String,
-        cardinal_horizontal           : String,
-        custom_btn                    : String,
-        custom_dialog_title           : String,
-        custom_option                 : StringFormat1
     )
 
     case class Tooltips(

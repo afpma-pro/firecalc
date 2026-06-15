@@ -16,7 +16,7 @@ import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.ConnectorSlot
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.dev_fixtures.en15544.v20241001.EmptyHeadRegionFixture_15544
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import coulomb.policy.standard.given
 

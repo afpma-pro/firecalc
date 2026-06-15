@@ -138,35 +138,6 @@ object ThermalChannelTopologyOp_13384_V4:
     ) extends ThermalChannelTopologyOp_13384_V4
         with SetsNumberOfFlows
 
-sealed trait ThermalPipeTrackingOp_13384_V4 extends ThermalPreElementOp_13384_V4
-
-object ThermalPipeTrackingOp_13384_V4:
-
-    @Transl(I(_.set_prop.SetInitialDirection))
-    @deprecated("Use PostFireboxInitialDirection on PostFireboxPipes instead. Will be removed in V8.", "V7")
-    case class SetInitialDirection(
-        @Transl(I(_.terms.azimuth))
-        azimuth    : AzimuthDirection,
-        @Transl(I(_.terms.inclination))
-        inclination: InclinationDirection
-    ) extends ThermalPipeTrackingOp_13384_V4
-
-    @Transl(I(_.set_prop.SetInitialPosition))
-    @deprecated("Use PostFireboxInitialPosition on PostFireboxPipes instead. Will be removed in V8.", "V7")
-    case class SetInitialPosition(
-        @Transl(I(_.terms.x)) x: Length,
-        @Transl(I(_.terms.y)) y: Length,
-        @Transl(I(_.terms.z)) z: Length
-    ) extends ThermalPipeTrackingOp_13384_V4
-
-    @Transl(I(_.set_prop.SetFinalPosition))
-    @deprecated("Not supported in V7 post-firebox pipes. Use PositionTracker instead. Will be removed in V8.", "V7")
-    case class SetFinalPosition(
-        @Transl(I(_.terms.x)) x: Length,
-        @Transl(I(_.terms.y)) y: Length,
-        @Transl(I(_.terms.z)) z: Length
-    ) extends ThermalPipeTrackingOp_13384_V4
-
 sealed trait AddThermalPipeElement_13384_V4 extends ThermalPipeDescr_13384_V4:
     def name: String
 

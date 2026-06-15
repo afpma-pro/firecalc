@@ -8,8 +8,8 @@ package afpma.firecalc.ui.instances
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.common.Position3D
 
 import afpma.firecalc.ui.instances.ValidateVarCommonInstances
 
@@ -23,8 +23,8 @@ import io.taig.babel.Locale
 
 /**
  * Form and Show instances for V7 wrapper-level types.
- * PostFireboxInitialDirection/Position are the V7 equivalents of
- * SetInitialDirection/SetInitialPosition but live at the PostFireboxPipes
+ * PipeInitialDirection/Position are the V7 equivalents of
+ * SetInitialDirection/SetInitialPosition but live at the FramedPostFireboxPipes
  * wrapper level rather than inside slot descriptors.
  */
 class V7FormInstances(using du: DisplayUnits, loc: Locale):
@@ -35,11 +35,11 @@ class V7FormInstances(using du: DisplayUnits, loc: Locale):
 
     // ── Show instances ───────────────────────────────────────────
 
-    given Show[PostFireboxInitialDirection] = Show.show: d =>
+    given Show[PipeInitialDirection] = Show.show: d =>
         import afpma.firecalc.ui.instances.DirectionFormat
         DirectionFormat.compact(d.azimuth, d.inclination)(using loc)
 
-    given Show[PostFireboxInitialPosition] = Show.show: p =>
+    given Show[Position3D] = Show.show: p =>
         val x = p.x.toUnit[Meter].value
         val y = p.y.toUnit[Meter].value
         val z = p.z.toUnit[Meter].value
@@ -47,18 +47,18 @@ class V7FormInstances(using du: DisplayUnits, loc: Locale):
 
     // ── Form instances ───────────────────────────────────────────
 
-    given Form[PostFireboxInitialDirection] =
-        given Defaultable[PostFireboxInitialDirection] =
-            Defaultable(PostFireboxInitialDirection.default)
-        given ValidateVar[PostFireboxInitialDirection] =
-            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[PostFireboxInitialDirection]
-        Form.makeFor[PostFireboxInitialDirection](summon[Defaultable[PostFireboxInitialDirection]]): (variable, _) =>
+    given Form[PipeInitialDirection] =
+        given Defaultable[PipeInitialDirection] =
+            Defaultable(PipeInitialDirection.default)
+        given ValidateVar[PipeInitialDirection] =
+            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[PipeInitialDirection]
+        Form.makeFor[PipeInitialDirection](summon[Defaultable[PipeInitialDirection]]): (variable, _) =>
             val azVar   = variable.zoomLazy(_.azimuth)((d, az) => d.copy(azimuth = az))
             val inclVar = variable.zoomLazy(_.inclination)((d, incl) => d.copy(inclination = incl))
             renderInitialDirectionForm(azVar, inclVar)
 
-    given Form[PostFireboxInitialPosition] =
+    given Form[Position3D] =
         given Form[Length] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames[PostFireboxInitialPosition]
+        autoDeriveAndOverwriteFieldNames[Position3D]
 
 end V7FormInstances

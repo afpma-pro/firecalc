@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.units.coulombutils.*
@@ -19,13 +19,13 @@ import org.scalatest.matchers.should.Matchers
 class AreaConservationSuite extends AnyFlatSpec with Matchers:
 
     private val horizontalDir =
-        PostFireboxInitialDirection    (
+        PipeInitialDirection    (
             azimuth     = AzimuthDirection.Front,
             inclination = InclinationDirection.Horizontal
         )
 
     private val ascendingDir =
-        PostFireboxInitialDirection    (
+        PipeInitialDirection    (
             azimuth     = AzimuthDirection.Front,
             inclination = InclinationDirection.Up
         )

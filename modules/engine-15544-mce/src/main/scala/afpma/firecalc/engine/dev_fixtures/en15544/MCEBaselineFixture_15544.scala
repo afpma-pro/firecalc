@@ -100,6 +100,11 @@ object MCEBaselineFixture_15544
         facing_type    = FacingType.WithoutAirGap
     )
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+    override def postFireboxInitialPosition  = Some(Position3D.Origin)
+
     val fluegas_h2o_perc_vol_nominal = None
     val fluegas_h2o_perc_vol_lowest  = None
 
@@ -125,46 +130,40 @@ object MCEBaselineFixture_15544
     val fluePipeDescr =
         import FluePipe_Module_13384.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ),
-            pipeLocation           (PipeLocation.HeatedArea      ),
-            roughness              (3.mm                         ),
+            pipeLocation        (PipeLocation.HeatedArea      ),
+            roughness           (3.mm                         ),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
-            layer                  (e = 1.cm, λ = 0.89.W_per_mK  ),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm      ),
-            addSharpAngle_90deg    (
+            layer               (e = 1.cm, λ = 0.89.W_per_mK  ),
+            addSectionHorizontal("sortie foyer", 28.1.cm      ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.737.m)
+            addSectionVertical  ("colonne ascendante", 3.737.m)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.mm, tr                           = SquareMeterKelvinPerWatt(0.001)),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("buse", 6.cm                                                                  )
+            layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
+            pipeLocation      (PipeLocation.HeatedArea                       ),
+            addSectionVertical("buse", 6.cm                                  )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.5.cm, tr                         = SquareMeterKelvinPerWatt(0.260)),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("etage", 57.cm                                                                ),
-            pipeLocation       (PipeLocation.OutsideOrExterior                                                ),
-            addSectionVertical ("sortie de toit", 93.cm                                                       ),
-            addFlowResistance  ("element terminal", 1.423.unitless: ζ)
+            layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
+            pipeLocation      (PipeLocation.HeatedArea                         ),
+            addSectionVertical("etage", 57.cm                                  ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                  ),
+            addSectionVertical("sortie de toit", 93.cm                         ),
+            addFlowResistance ("element terminal", 1.423.unitless: ζ)
         )
 
 end MCEBaselineFixture_15544

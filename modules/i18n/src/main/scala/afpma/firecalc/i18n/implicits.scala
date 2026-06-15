@@ -26,6 +26,7 @@ def showUsingLocale[A](f: Locale ?=> A => String): ShowUsingLocale[A] =
 object implicits {
 
     // helpers so that inline is split and works (otherwise semiauto derivation of the big I18nData case class fails)
+    given Decoder[I18nData.DirectionBadge]                                                                       = deriveDecoder[I18nData.DirectionBadge]
     given Decoder[I18nData.AddElement]                                                                           = deriveDecoder[I18nData.AddElement]
     given Decoder[I18nData.Address]                                                                              = deriveDecoder[I18nData.Address]
     given Decoder[I18nData.AppendLayerDescr]                                                                     = deriveDecoder[I18nData.AppendLayerDescr]

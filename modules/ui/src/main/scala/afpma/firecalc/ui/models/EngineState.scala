@@ -10,9 +10,9 @@ import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
-import afpma.firecalc.dto.v7.PostFireboxPipes
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.common.Position3D
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
@@ -44,16 +44,16 @@ object EngineState:
         ),
         local_conditions               = ExampleProject_15544.localConditions,
         stove_params                   = ExampleProject_15544.stoveParams,
-        air_intake_descr               = ExampleProject_15544.conduit_air_descr,
+        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(ExampleProject_15544.conduit_air_descr),
         firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional](using
             FireboxTransformers.transformer_inv_TraditionalFirebox_Standard
         ),
-        post_firebox_pipes             = PostFireboxPipes.clean(
-            initialDirection = PostFireboxInitialDirection(
+        post_firebox_pipes             = FramedPostFireboxPipes.clean(
+            initialDirection = PipeInitialDirection(
                 azimuth     = AzimuthDirection.Left,
                 inclination = InclinationDirection.Horizontal
             ), // Left,
-            initialPosition  = PostFireboxInitialPosition(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
+            initialPosition  = Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
             slots            = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
@@ -73,11 +73,11 @@ object EngineState:
         ),
         local_conditions               = CasType_15544_C3.localConditions,
         stove_params                   = CasType_15544_C3.stoveParams,
-        air_intake_descr               = CasType_15544_C3.conduit_air_descr,
+        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(CasType_15544_C3.conduit_air_descr),
         firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.Ecolabeled](using
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
-        post_firebox_pipes             = PostFireboxPipes.fromLegacySlots(
+        post_firebox_pipes             = FramedPostFireboxPipes.fromLegacySlots(
             Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
@@ -97,11 +97,11 @@ object EngineState:
         ),
         local_conditions               = CasPratique_15544_FDIM_EX_03.localConditions,
         stove_params                   = CasPratique_15544_FDIM_EX_03.stoveParams,
-        air_intake_descr               = CasPratique_15544_FDIM_EX_03.conduit_air_descr,
+        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(CasPratique_15544_FDIM_EX_03.conduit_air_descr),
         firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.Ecolabeled](using
             FireboxTransformers.transformer_inv_Ecolabeled
         ),
-        post_firebox_pipes             = PostFireboxPipes.fromLegacySlots(
+        post_firebox_pipes             = FramedPostFireboxPipes.fromLegacySlots(
             Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
@@ -117,11 +117,11 @@ object EngineState:
         project_description            = ProjectDescr.empty, // Now only contains reference, date, country
         local_conditions               = LocalConditions.default,
         stove_params                   = StoveParamsUI.default_StoveParams.default,
-        air_intake_descr               = Seq.empty,
+        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
         firebox                        = defaultable.firebox_traditional_empty.default,
-        post_firebox_pipes             = PostFireboxPipes.clean(
-            initialDirection = PostFireboxInitialDirection.default,
-            initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
+        post_firebox_pipes             = FramedPostFireboxPipes.clean(
+            initialDirection = PipeInitialDirection.default,
+            initialPosition  = Position3D(0.cm, 0.cm, 0.cm),
             slots            = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
@@ -137,14 +137,14 @@ object EngineState:
         project_description            = ProjectDescr.empty, // Now only contains reference, date, country
         local_conditions               = LocalConditions.default,
         stove_params                   = StoveParamsUI.default_StoveParams.default,
-        air_intake_descr               = Seq.empty,
+        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
         firebox                        = defaultable.firebox_traditional_minimal.default,
-        post_firebox_pipes             = PostFireboxPipes.clean(
-            initialDirection = PostFireboxInitialDirection(
+        post_firebox_pipes             = FramedPostFireboxPipes.clean(
+            initialDirection = PipeInitialDirection(
                 azimuth     = AzimuthDirection.Right,
                 inclination = InclinationDirection.Horizontal
             ),
-            initialPosition  = PostFireboxInitialPosition(
+            initialPosition  = Position3D(
                 x = (+33.0 / 2).cm,
                 y = (33.0 / 2 - 18.0 / 2).cm,
                 z = (52 - 18.0 / 2).cm

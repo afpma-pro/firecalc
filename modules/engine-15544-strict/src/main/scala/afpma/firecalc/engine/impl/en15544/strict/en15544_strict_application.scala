@@ -47,16 +47,16 @@ object EN15544_Strict_Application:
         f: EN15544_V_2023_Formulas_Alg
     )(
         i             : Inputs_15544_Strict,
-        pfbSlots      : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]    = Seq.empty,
-        initialDir    : Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None,
-        initialPos    : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None,
-        airIntakeDescr: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]     = Seq.empty
+        pfbSlots      : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = Seq.empty,
+        initialDir    : Option[afpma.firecalc.dto.common.PipeInitialDirection] = None,
+        initialPos    : Option[afpma.firecalc.dto.common.Position3D]           = None,
+        airIntakeDescr: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = Seq.empty
     ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
-        override lazy val inputs                : Inputs_15544                                              = i
-        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]    = pfbSlots
-        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = initialDir
-        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = initialPos
-        override def airIntakeDescriptors       : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]     = airIntakeDescr
+        override lazy val inputs                : Inputs_15544                                           = i
+        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = pfbSlots
+        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = initialDir
+        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = initialPos
+        override def airIntakeDescriptors       : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = airIntakeDescr
     }
 
 sealed abstract class EN15544_Strict_Application(

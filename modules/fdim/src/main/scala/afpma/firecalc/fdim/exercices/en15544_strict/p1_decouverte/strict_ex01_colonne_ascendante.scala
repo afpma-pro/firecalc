@@ -62,48 +62,46 @@ object strict_ex01_colonne_ascendante
         ash_pit_height                   = 5.cm
     )
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ), // "Right"
-            roughness              (3.mm                         ),
+            roughness           (3.mm                         ),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm      ),
-            addSharpAngle_90deg    (
+            addSectionHorizontal("sortie foyer", 28.1.cm      ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ), // "Up"
 
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.737.m)
+            addSectionVertical  ("colonne ascendante", 3.737.m)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.mm, tr                           = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("buse", 6.cm                                                                  )
+            layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)), // TOFIX:
+            pipeLocation      (PipeLocation.HeatedArea                       ),
+            addSectionVertical("buse", 6.cm                                  )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.5.cm, tr                         = SquareMeterKelvinPerWatt(0.260)),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("etage", 57.cm                                                                ),
-            pipeLocation       (PipeLocation.OutsideOrExterior                                                ),
-            addSectionVertical ("sortie de toit", 93.cm                                                       ),
-            addFlowResistance  ("element terminal", 1.423.unitless: ζ)
+            layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
+            pipeLocation      (PipeLocation.HeatedArea                         ),
+            addSectionVertical("etage", 57.cm                                  ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                  ),
+            addSectionVertical("sortie de toit", 93.cm                         ),
+            addFlowResistance ("element terminal", 1.423.unitless: ζ)
         )
 
 end strict_ex01_colonne_ascendante

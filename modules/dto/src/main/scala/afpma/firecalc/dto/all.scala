@@ -125,7 +125,6 @@ object all:
     export afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3
     export afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SetThermalPipeProp_13384
     export afpma.firecalc.dto.v7.ThermalChannelTopologyOp_13384_V4 as ThermalChannelTopologyOp_13384
-    export afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4 as ThermalPipeTrackingOp_13384
     export afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
     export afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as AddThermalPipeElement_13384
 
@@ -136,7 +135,6 @@ object all:
     export afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_13384_V3
     export afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4 as SetFlowOnlyPipeProp_13384
     export afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_13384_V4 as FlowOnlyChannelTopologyOp_13384
-    export afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_13384_V4 as FlowOnlyPipeTrackingOp_13384
     export afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_13384_V3
     export afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4 as AddFlowOnlyPipeElement_13384
 
@@ -147,7 +145,6 @@ object all:
     export afpma.firecalc.dto.v4.SetFlowOnlyPipeProp_15544_V3
     export afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4 as SetFlowOnlyPipeProp_15544
     export afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4 as FlowOnlyChannelTopologyOp_15544
-    export afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4 as FlowOnlyPipeTrackingOp_15544
     export afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3
     export afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4 as AddFlowOnlyPipeElement_15544
 
@@ -180,9 +177,11 @@ object all:
 
     // V7
     export afpma.firecalc.dto.v7.FireCalcYAML_V7
-    export afpma.firecalc.dto.v7.PostFireboxPipes
-    export afpma.firecalc.dto.v7.PostFireboxInitialDirection
-    export afpma.firecalc.dto.v7.PostFireboxInitialPosition
+    export afpma.firecalc.dto.v7.FramedPostFireboxPipes
+    export afpma.firecalc.dto.v7.FramedAirIntakePipes
+    export afpma.firecalc.dto.common.PipeInitialDirection
+    export afpma.firecalc.dto.common.PipeInitialFrame
+    export afpma.firecalc.dto.common.Position3D
     export afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
     // Extension methods

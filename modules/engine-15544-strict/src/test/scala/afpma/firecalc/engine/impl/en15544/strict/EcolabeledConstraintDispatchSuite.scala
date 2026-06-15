@@ -10,9 +10,8 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
-import afpma.firecalc.dto.v7.PostFireboxPipes
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
@@ -83,12 +82,11 @@ class EcolabeledConstraintDispatchSuite extends AnyFreeSpec with Matchers:
             ),
             local_conditions               = CasType_15544_C3.localConditions,
             stove_params                   = stoveParams,
-            air_intake_descr               = CasType_15544_C3.conduit_air_descr,
+            air_intake_pipes               = FramedAirIntakePipes.fromLegacy(CasType_15544_C3.conduit_air_descr),
             firebox                        = firebox,
-            post_firebox_pipes             = PostFireboxPipes(
-                initialDirection = PostFireboxInitialDirection.default,
-                initialPosition  = PostFireboxInitialPosition(0.m, 0.m, 0.m),
-                slots            = Seq(
+            post_firebox_pipes             = FramedPostFireboxPipes(
+                PipeInitialFrame(PipeInitialDirection.default, Position3D(0.m, 0.m, 0.m)),
+                slots = Seq(
                     PostFireboxPipeDescrSlot.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
                     PostFireboxPipeDescrSlot.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
                     PostFireboxPipeDescrSlot.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )

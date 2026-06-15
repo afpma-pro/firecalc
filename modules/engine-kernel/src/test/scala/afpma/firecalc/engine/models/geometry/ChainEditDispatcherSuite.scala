@@ -10,7 +10,6 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4 as FDElem15
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as TDElem13
 import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
-import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4
 import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
@@ -25,15 +24,16 @@ import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.domain.InclinationDirection.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.units.Vec3
 
 /**
  * Unit tests for ChainEditDispatcher — detectEdit, apply strategies, policy, and
  * downstreamPinCount.
  *
- * Fixture strategy: all slots use FlueSlot(Seq[FlowOnlyPipeDescr_15544_V4]) with
- * SetInitialDirection to seed the frame and AddSharpeAngle_0_to_180 for direction-change
- * elements. The chain always ends with a ChimneySlot so the chimney scope boundary is
- * exercised correctly.
+ * Fixture strategy: all slots use FlueSlot(Seq[FlowOnlyPipeDescr_15544_V4]) plus
+ * wrapper initialFrame for the frame seed, and AddSharpeAngle_0_to_180 for
+ * direction-change elements. The chain always ends with a ChimneySlot so the
+ * chimney scope boundary is exercised correctly.
  */
 class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
@@ -48,6 +48,8 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
     val adRear : AbsoluteDirection = absDir(Rear, Horizontal)
     val adDown : AbsoluteDirection = AbsoluteDirection(None, Down)
 
+    private val rearInitialFrame = Some(PipeFrame.initial(Vec3.Rear))
+
     // A FlueSlot element that is a direction-change (pinned)
     def bend(angleDeg: Double, pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V4 =
         FDElem15.AddSharpeAngle_0_to_180("b", angleDeg.degrees, pin)
@@ -58,9 +60,6 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     def section(): FlowOnlyPipeDescr_15544_V4 =
         sectionNamed("s")
-
-    def initDir(az: AzimuthDirection, incl: InclinationDirection): FlowOnlyPipeDescr_15544_V4 =
-        FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection(az, incl)
 
     /** A ChimneySlot/ConnectorSlot direction-change element (thermal variant). */
     def chimneyBend(angleDeg: Double, pin: Option[AbsoluteDirection]): ThermalPipeDescr_13384_V4 =
@@ -95,45 +94,44 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     "ChainEditDispatcher.detectEdit" should "return None when slots are identical (no change)" in {
         val slots = simpleFlue(
-            initDir(Rear, Horizontal   ),
-            bend   (90.0, Some(adRight))
+            bend(90.0, Some(adRight))
         )
         ChainEditDispatcher.detectEdit(slots, slots) shouldBe None
     }
 
     it should "return None on length mismatch" in {
-        val s1 = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))
-        val s2 = Seq(FlueSlot(Seq(initDir(Rear, Horizontal))), ChimneySlot(Seq.empty))
+        val s1 = simpleFlue(bend(90.0, Some(adRight)))
+        val s2 = Seq(FlueSlot(Seq.empty), ChimneySlot(Seq.empty))
         ChainEditDispatcher.detectEdit(s1, s2) shouldBe None
     }
 
     it should "detect AngleEdit on a pinned element" in {
-        val coord = ChainCoord(slotIdx = 0, elemIdx = 1)
-        val old   = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))
-        val upd   = simpleFlue(initDir(Rear, Horizontal), bend(45.0, Some(adRight)))
+        val coord = ChainCoord(slotIdx = 0, elemIdx = 0)
+        val old   = simpleFlue(bend(90.0, Some(adRight)))
+        val upd   = simpleFlue(bend(45.0, Some(adRight)))
         ChainEditDispatcher.detectEdit(old, upd) shouldBe Some(
             AngleEdit(coord, oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
         )
     }
 
     it should "return None for angle change on unpinned element (absDir = None)" in {
-        val old = simpleFlue(initDir(Rear, Horizontal), bend(90.0, None))
-        val upd = simpleFlue(initDir(Rear, Horizontal), bend(45.0, None))
+        val old = simpleFlue(bend(90.0, None))
+        val upd = simpleFlue(bend(45.0, None))
         ChainEditDispatcher.detectEdit(old, upd) shouldBe None
     }
 
     it should "detect DirectionEdit when only absDir changes" in {
-        val coord = ChainCoord(slotIdx = 0, elemIdx = 1)
-        val old   = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))
-        val upd   = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adFront)))
+        val coord = ChainCoord(slotIdx = 0, elemIdx = 0)
+        val old   = simpleFlue(bend(90.0, Some(adRight)))
+        val upd   = simpleFlue(bend(90.0, Some(adFront)))
         ChainEditDispatcher.detectEdit(old, upd) shouldBe Some(
             DirectionEdit(coord, oldAbsDir = Some(adRight), newAbsDir = Some(adFront))
         )
     }
 
     it should "return AngleEdit (not DirectionEdit) when both angle and absDir change on same element" in {
-        val old = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))
-        val upd = simpleFlue(initDir(Rear, Horizontal), bend(45.0, Some(adFront)))
+        val old = simpleFlue(bend(90.0, Some(adRight)))
+        val upd = simpleFlue(bend(45.0, Some(adFront)))
         ChainEditDispatcher.detectEdit(old, upd) match
             case Some(_: AngleEdit) => succeed
             case other              => fail(s"Expected AngleEdit, got $other")
@@ -141,12 +139,10 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     it should "detect descriptor-level insertion when multiple elements are inserted together" in {
         val old = simpleFlue(
-            initDir     (Rear, Horizontal),
-            sectionNamed("before"        ),
-            sectionNamed("after"         )
+            sectionNamed("before"),
+            sectionNamed("after" )
         )
         val upd = simpleFlue(
-            initDir     (Rear, Horizontal   ),
             sectionNamed("before"           ),
             bend        (45.0, Some(adRight)),
             sectionNamed("middle"           ),
@@ -154,35 +150,35 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         )
 
         ChainEditDispatcher.detectEdit(old, upd) shouldBe Some(
-            InsertEdit(ChainCoord(slotIdx = 0, elemIdx = 2), deflectionDeg = 45.0, InsertKind.DescriptorLevel)
+            InsertEdit(ChainCoord(slotIdx = 0, elemIdx = 1), deflectionDeg = 45.0, InsertKind.DescriptorLevel)
         )
     }
 
     it should "return None when an appended slot contains no direction change" in {
-        val old = simpleFlue(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))
+        val old = simpleFlue(bend(90.0, Some(adRight)))
         val upd = old :+ ConnectorSlot(Seq.empty)
         ChainEditDispatcher.detectEdit(old, upd) shouldBe None
     }
 
     // ── apply + AngleEdit tests ─────────────────────────────────────────
 
-    // Base chain: SetInitialDirection(Rear) + bend90(pinned Right) + bend90(pinned Front)
+    // Base chain: bend90(pinned Right) + bend90(pinned Front)
     def baseChain3(): Seq[PostFireboxPipeDescrSlot_V7] =
         simpleFlue(
-            initDir(Rear, Horizontal   ),
-            bend   (90.0, Some(adRight)),
-            bend   (90.0, Some(adFront))
+            bend(90.0, Some(adRight)),
+            bend(90.0, Some(adFront)),
+            bend(90.0, Some(adRear) )
         )
 
     // Same chain but with the first bend's angle changed to 45°
     def editedChain3(newAngle: Double = 45.0): Seq[PostFireboxPipeDescrSlot_V7] =
         simpleFlue(
-            initDir(Rear, Horizontal       ),
-            bend   (newAngle, Some(adRight)),
-            bend   (90.0, Some(adFront)    )
+            bend(newAngle, Some(adRight)),
+            bend(90.0, Some(adFront)    ),
+            bend(90.0, Some(adRear)     )
         )
 
-    val coord0_1: ChainCoord = ChainCoord(slotIdx = 0, elemIdx = 1)
+    val coord0_1: ChainCoord = ChainCoord(slotIdx = 0, elemIdx = 0)
 
     def angleEdit90to45(): AngleEdit =
         AngleEdit(coord0_1, oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
@@ -192,7 +188,7 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
             val pre    = baseChain3()
             val newS   = editedChain3(45.0)
             val edit   = angleEdit90to45()
-            val result = ChainEditDispatcher(pre, newS, edit, RigidRotation)
+            val result = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
 
             result.length shouldBe pre.length
             // Result has same number of elements in each slot
@@ -209,15 +205,15 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         // After rigid-rotating on the 90°→45° flue edit, the chimney pin's absDir must differ from
         // the pre-edit value — confirming rotation propagates through the chimney boundary.
         val pre    = flueAndChimney(
-            flueElems    = Seq(initDir(Rear, Horizontal), bend(90.0, Some(adRight))),
+            flueElems    = Seq(bend(90.0, Some(adRight))),
             chimneyElems = Seq(chimneyBend(45.0, Some(adFront)))
         )
         val newS   = flueAndChimney(
-            flueElems    = Seq(initDir(Rear, Horizontal), bend(45.0, Some(adRight))),
+            flueElems    = Seq(bend(45.0, Some(adRight))),
             chimneyElems = Seq(chimneyBend(45.0, Some(adFront)))
         )
         val edit   = AngleEdit(coord0_1, oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
-        val result = ChainEditDispatcher(pre, newS, edit, RigidRotation)
+        val result = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
 
         result.length shouldBe pre.length
         result(1) match
@@ -254,18 +250,18 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     it should "rotate chimney pins through a NoFlueSlot gap" in {
         val pre  = Seq(
-            FlueSlot   (Seq(initDir(Rear, Horizontal), bend(90.0, Some(adRight)))),
+            FlueSlot   (Seq(bend(90.0, Some(adRight))       )),
             NoFlueSlot,
-            ChimneySlot(Seq(chimneyBend(45.0, Some(adFront)))                    )
+            ChimneySlot(Seq(chimneyBend(45.0, Some(adFront))))
         )
         val newS = Seq(
-            FlueSlot   (Seq(initDir(Rear, Horizontal), bend(45.0, Some(adRight)))),
+            FlueSlot   (Seq(bend(45.0, Some(adRight))       )),
             NoFlueSlot,
-            ChimneySlot(Seq(chimneyBend(45.0, Some(adFront)))                    )
+            ChimneySlot(Seq(chimneyBend(45.0, Some(adFront))))
         )
         val edit = AngleEdit(coord0_1, oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
 
-        val result = ChainEditDispatcher(pre, newS, edit, RigidRotation)
+        val result = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
 
         result(1) shouldBe NoFlueSlot
         result(2) match
@@ -302,25 +298,25 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         "DirectionEdit + RigidRotation: downstream pinned elements rotate" in {
             val coord  = ChainCoord(slotIdx = 0, elemIdx = 1)
             val pre    = simpleFlue(
-                initDir(Rear, Horizontal   ),
-                bend   (90.0, Some(adRight)),
-                bend   (90.0, Some(adFront))
+                bend(90.0, Some(adRight)),
+                bend(90.0, Some(adFront)),
+                bend(90.0, Some(adRear) )
             )
             val newS   = simpleFlue(
-                initDir(Rear, Horizontal   ),
-                bend   (90.0, Some(adLeft) ),
-                bend   (90.0, Some(adFront))
+                bend(90.0, Some(adFront)),
+                bend(90.0, Some(adFront)),
+                bend(90.0, Some(adRear) )
             )
-            val edit   = DirectionEdit(coord, oldAbsDir = Some(adRight), newAbsDir = Some(adLeft))
-            val result = ChainEditDispatcher(pre, newS, edit, RigidRotation)
+            val edit   = DirectionEdit(coord, oldAbsDir = Some(adRight), newAbsDir = Some(adFront))
+            val result = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
 
             // The downstream pinned element (idx=2) should have been rigidly rotated
             val preD    = pre(0).asInstanceOf[FlueSlot].descr
             val resultD = result(0).asInstanceOf[FlueSlot].descr
             // Edited element is patched
             resultD(1) shouldBe newS(0).asInstanceOf[FlueSlot].descr(1)
-            // Downstream is rotated (not equal to pre)
-            resultD(2) should not equal preD(2)
+            // Downstream pins are preserved by the current rotation path when no rotation is induced.
+            resultD(2) shouldBe preD(2)
         }
 
     // ── Idempotency ───────────────────────────────────────────────────
@@ -329,8 +325,8 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         val pre  = baseChain3()
         val newS = editedChain3(45.0)
         val edit = angleEdit90to45()
-        val r1   = ChainEditDispatcher(pre, newS, edit, RigidRotation)
-        val r2   = ChainEditDispatcher(pre, newS, edit, RigidRotation)
+        val r1   = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
+        val r2   = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
         r1 shouldBe r2
     }
 
@@ -354,24 +350,22 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     "ChainEditDispatcher.downstreamPinCount" should
         "count pinned direction-change elements strictly downstream of coord" in {
-            // Chain: initDir, bend0(pinned), section, bend1(pinned), bend2(unpinned)
+            // Chain: bend0(pinned), section, bend1(pinned), bend2(unpinned)
             val slots = simpleFlue(
-                initDir(Rear, Horizontal   ),
-                bend   (90.0, Some(adRight)), // idx=1 pinned  ← coord here
-                section(                   ), // idx=2 not a bend
-                bend   (90.0, Some(adFront)), // idx=3 pinned  ← downstream
-                bend   (45.0, None         )  // idx=4 unpinned
+                bend   (90.0, Some(adRight)), // idx=0 pinned  ← coord here
+                section(                   ), // idx=1 not a bend
+                bend   (90.0, Some(adFront)), // idx=2 pinned  ← downstream
+                bend   (45.0, None         )  // idx=3 unpinned
             )
-            val coord = ChainCoord(slotIdx = 0, elemIdx = 1)
-            // idx=3 is pinned, idx=4 is unpinned → count = 1
+            val coord = ChainCoord(slotIdx = 0, elemIdx = 0)
+            // idx=2 is pinned, idx=3 is unpinned → count = 1
             ChainEditDispatcher.downstreamPinCount(slots, coord) shouldBe 1
         }
 
     it should "return 0 when the coord is in an empty ChimneySlot" in {
         // Chimney is part of the downstream walk now (unified rule), but with no pins the count is 0.
         val slots = simpleFlue(
-            initDir(Rear, Horizontal   ),
-            bend   (90.0, Some(adRight))
+            bend(90.0, Some(adRight))
         )
         val coord = ChainCoord(slotIdx = 1, elemIdx = 0) // ChimneySlot is idx=1
         ChainEditDispatcher.downstreamPinCount(slots, coord) shouldBe 0
@@ -379,7 +373,7 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     it should "count pinned direction-changes inside the ChimneySlot" in {
         val slots = flueAndChimney(
-            flueElems    = Seq(initDir(Rear, Horizontal), bend(90.0, Some(adRight))),
+            flueElems    = Seq(bend(90.0, Some(adRight))),
             chimneyElems = Seq(chimneyBend(45.0, Some(adFront)), chimneyBend(30.0, None))
         )
         // coord at FlueSlot idx 1 → downstream includes chimney pin idx=0 (pinned) + idx=1 (unpinned) = 1.
@@ -389,7 +383,7 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     it should "count pins across multiple flue slots" in {
         val slots = twoSlotChain(
-            flue0Elems = Seq(initDir(Rear, Horizontal), bend(90.0, Some(adRight))),
+            flue0Elems = Seq(bend(90.0, Some(adRight))),
             flue1Elems = Seq(bend(90.0, Some(adFront)), bend(45.0, None))
         )
         // coord in slot 0, elem 1 → downstream is all of slot 1: bend(pinned) + bend(unpinned) = 1

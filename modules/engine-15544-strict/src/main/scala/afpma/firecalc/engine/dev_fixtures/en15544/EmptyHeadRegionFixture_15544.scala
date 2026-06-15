@@ -98,16 +98,16 @@ object EmptyHeadRegionFixture_15544
     // ── Legacy 3-pipe descriptors (required by WithPipeChain_15544_Strict) ────────
     // The postFireboxPipeSlots override below supersedes these.
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Up)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Up
-            ),
-            roughness              (3.mm                        ),
+            roughness         (3.mm                        ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.20.m)
+            addSectionVertical("colonne ascendante", 3.20.m)
         )
 
     val connectorPipeDescr =

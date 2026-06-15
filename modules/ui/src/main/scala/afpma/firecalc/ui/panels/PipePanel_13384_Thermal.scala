@@ -10,13 +10,12 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 import afpma.firecalc.dto.all.ThermalChannelTopologyOp_13384.*
-import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
 
 import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.FrameReplay
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
@@ -51,12 +50,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     /** Is this the first slot (index 0)? Override in child to return true for slot 0. */
     protected def isSlotZero: Boolean = false
 
-    /** Extra node factory for SetInitialDirection elements. Default: no-op. */
-    protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement = _ => span()
-
-    /** Extra node factory for SetInitialPosition elements. Default: no-op. */
-    protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement = _ => span()
-
     private val pipeCat   = summon[CatalogCategory[SetPropertiesInBatch]]
     private val casingCat = summon[CatalogCategory[CasingPreset]]
 
@@ -68,7 +61,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
 
     protected given thermalElemExtractors_13384: FrameReplay.ElemExtractors[ThermalPipeDescr_13384] =
         FrameReplay.ElemExtractors  (
-            asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
+            asInitialDirection   = PartialFunction.empty,
             asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
             asInnerShape         = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir  = (e, newAbsDir) =>
@@ -84,10 +77,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                     case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
                     case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
                     case _ => e,
-            withInitialDirection = (e, az, incl) =>
-                e match
-                    case x: SetInitialDirection => x.copy(azimuth = az, inclination = incl)
-                    case _ => e
+            withInitialDirection = (e, _, _) => e
         )
 
     /**
@@ -101,7 +91,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      *  This runs in the UI, independent of engine success, so direction labels
      *  are available even when the pipe has validation errors.
      *  When `externalInitialFrameSig` provides a frame, that frame seeds the
-     *  computation for pipes that have no `SetInitialDirection` of their own.
+     *  computation for pipes that have no initial direction of their own.
      */
     protected lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal
@@ -194,23 +184,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             elems.collectFirst:
                 case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
 
-    /**
-     * Hook for concrete panels to inject extra UI (e.g. an auto-calc button)
-     * next to the `SetInitialPosition` property editor.
-     *
-     * Used by `DynamicThermalPipeSlotPanel` to render a firebox-boundary
-     * auto-calc button on the first head-region ConnectorSlot when the head
-     * region has no FluePipe (plan issue U2 — Connector-first chains).
-     *
-     * Default: no-op (returns an empty span).
-     */
-    /**
-     * Extension hook for SetInitialDirection: returns an `extra` node factory for the element
-     * at `idx`. Called once per element lifetime (stable split key). Concrete panels may
-     * override to fire rotation-offer callbacks when the initial direction changes.
-     *
-     * Default: no-op (returns an empty span).
-     */
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
             .splitMatchSeq(_._1)
@@ -593,49 +566,6 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddPressureDiff, XtraOutputs), HtmlElement] {
                 case (i, aa: AddPressureDiff, x) => (i, aa, x)
             } { (_, _) => throw new Exception("ERROR: AddPressureDiff not implemented.") }
-            .handleCase[
-                (Int, ThermalPipeDescr_13384, XtraOutputs),
-                (Int, SetInitialDirection, XtraOutputs   ),
-                HtmlElement
-            ] { case (i, aa: SetInitialDirection, x) =>
-                (i, aa, x)
-            } { (iaax, sig) =>
-                renderElemTyped[SetInitialDirection]  (
-                    iaax._1,
-                    I18N.set_prop.SetInitialDirection,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    extra        = initialDirectionExtraFn(iaax._1),
-                    propertyShow = Some(summon[Show[SetInitialDirection]])
-                )
-            }
-            .handleCase[
-                (Int, ThermalPipeDescr_13384, XtraOutputs),
-                (Int, SetInitialPosition, XtraOutputs    ),
-                HtmlElement
-            ] { case (i, aa: SetInitialPosition, x) =>
-                (i, aa, x)
-            } { (iaax, sig) =>
-                renderElemTyped[SetInitialPosition]  (
-                    iaax._1,
-                    I18N.set_prop.SetInitialPosition,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    extra        = initialPositionExtraFn(iaax._1),
-                    propertyShow = Some(summon[Show[SetInitialPosition]])
-                )
-            }
-            .handleCase[
-                (Int, ThermalPipeDescr_13384, XtraOutputs),
-                (Int, SetFinalPosition, XtraOutputs      ),
-                HtmlElement
-            ] { case (i, incr: SetFinalPosition, x) =>
-                (i, incr, x)
-            } { (_, _) =>
-                span()
-            }
             .toSignal
             .map(renderV7WrapperElems(isSlotZero))
 

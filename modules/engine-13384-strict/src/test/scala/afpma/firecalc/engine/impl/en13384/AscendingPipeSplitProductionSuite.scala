@@ -26,7 +26,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = FlowOnlyIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Up
                 )
@@ -49,7 +49,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = FlowOnlyIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Down
                 )
@@ -71,7 +71,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = FlowOnlyIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Horizontal
                 )
@@ -93,7 +93,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = FlowOnlyIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Up
                 )
@@ -133,7 +133,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = ThermalIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Up
                 )
@@ -159,7 +159,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = ThermalIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Down
                 )
@@ -184,7 +184,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = ThermalIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Horizontal
                 )
@@ -209,7 +209,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         val builder     = ThermalIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(
-                PostFireboxInitialDirection    (
+                PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Up
                 )

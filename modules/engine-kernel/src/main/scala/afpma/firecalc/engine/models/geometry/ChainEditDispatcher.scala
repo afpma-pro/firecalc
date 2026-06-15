@@ -7,6 +7,7 @@ package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.domain.AbsoluteDirection
 
 import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
@@ -400,7 +401,7 @@ object ChainEditDispatcher:
                     0.0,
                     ie.deflectionDeg
                 )
-                val targetDir  = targetVec.toAbsoluteDirection
+                val targetDir  = AbsoluteDirection.fromVec3(targetVec)
                 val withAbsDir = newSlots.updated(
                     ie.coord.slotIdx,
                     newSlots(ie.coord.slotIdx).withAbsDirAt(ie.coord.elemIdx, Some(targetDir))

@@ -10,7 +10,6 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 import afpma.firecalc.dto.all.ThermalChannelTopologyOp_13384.*
-import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
 import afpma.firecalc.dto.common.PipeLocation.given
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2.given
 
@@ -52,8 +51,5 @@ class ThermalPropertyShow_13384(using DisplayUnits, Locale):
     given Show[SetPipeLocation]        = Show.show(s => s.pipe_location.show)
     given Show[SetDuctType]            = Show.show(s => s.duct.show)
     given Show[SetNumberOfFlows]       = Show.show(s => s.n_flows.show)
-    given Show[SetInitialDirection]    = Show.show(s => DirectionFormat.compact(s.azimuth, s.inclination))
-    given Show[SetInitialPosition]     = Show.show(s => showXYZ(s.x, s.y, s.z))
-    given Show[SetFinalPosition]       = Show.show(s => showXYZ(s.x, s.y, s.z))
 
 end ThermalPropertyShow_13384

@@ -20,8 +20,8 @@ import io.taig.babel.Locale
  *
  * Changes from V6:
  * - Replaces flat `post_firebox_pipes: Seq[PostFireboxPipeDescrSlot]` with
- *   `post_firebox_pipes: PostFireboxPipes` wrapper type.
- * - `PostFireboxPipes` enforces exactly one `initialDirection` and one
+ *   `post_firebox_pipes: FramedPostFireboxPipes` wrapper type.
+ * - `FramedPostFireboxPipes` enforces exactly one `initialDirection` and one
  *   `initialPosition` at the chain level, instead of embedding them as
  *   regular elements inside slot descriptors.
  * - Slot descriptor types upgraded to V4 (FlowOnlyPipeDescr_15544_V4,
@@ -36,9 +36,9 @@ final case class FireCalcYAML_V7(
     project_description           : ProjectDescr,
     local_conditions              : LocalConditions,
     stove_params                  : StoveParams,
-    air_intake_descr              : Seq[FlowOnlyPipeDescr_13384_V4],
+    air_intake_pipes              : FramedAirIntakePipes,
     firebox                       : afpma.firecalc.dto.v5.Firebox_V4,
-    post_firebox_pipes            : PostFireboxPipes
+    post_firebox_pipes            : FramedPostFireboxPipes
 ) extends FireCalcYAML_Format
 
 trait FireCalcYAML_V7_Module extends CustomYAMLEncoderDecoder[FireCalcYAML_V7]:

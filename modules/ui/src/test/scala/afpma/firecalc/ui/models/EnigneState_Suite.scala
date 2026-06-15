@@ -10,9 +10,9 @@ import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
-import afpma.firecalc.dto.v7.PostFireboxPipes
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.common.Position3D
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.units.coulombutils.*
 
 import io.circe.*
@@ -47,7 +47,7 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
                 s"$name has clean post_firebox_pipes.slots" in {
                     val slots = state.post_firebox_pipes.slots
                     slots.foreach { slot =>
-                        PostFireboxPipes.hasDeprecatedPostFireboxElement(slot) shouldBe false
+                        FramedPostFireboxPipes.hasDeprecatedPostFireboxElement(slot) shouldBe false
                     }
                 }
             }
@@ -71,16 +71,16 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
 
         "example project V7 post-firebox state" - {
 
-            "stores the original initial frame at PostFireboxPipes level" in {
+            "stores the original initial frame at FramedPostFireboxPipes level" in {
                 val pipes = EngineState.example_projet_15544.post_firebox_pipes
 
-                pipes.initialDirection.shouldBe(
-                    PostFireboxInitialDirection(
+                pipes.initialFrame.direction shouldBe (
+                    PipeInitialDirection(
                         AzimuthDirection.Left,
                         InclinationDirection.Horizontal
                     )
                 )
-                pipes.initialPosition.shouldBe (PostFireboxInitialPosition(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm))
+                pipes.initialFrame.position.shouldBe  (Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm))
             }
 
             "keeps vertical direction-change absDir pins as explicit azimuth None" in {

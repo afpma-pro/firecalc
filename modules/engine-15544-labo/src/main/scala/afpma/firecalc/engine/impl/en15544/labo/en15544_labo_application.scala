@@ -40,14 +40,14 @@ object EN15544_Labo_Application:
         labConditions: LabConditions
     )(
         i         : Inputs_15544_MCE,
-        pfbSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]    = Seq.empty,
-        initialDir: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None,
-        initialPos: Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
+        pfbSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = Seq.empty,
+        initialDir: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None,
+        initialPos: Option[afpma.firecalc.dto.common.Position3D]           = None
     ): EN15544_Labo_Application = new EN15544_Labo_Application(f, bs845, wComb)(labConditions) {
-        override lazy val inputs                : Inputs_15544_MCE                                          = i
-        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]    = pfbSlots
-        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = initialDir
-        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = initialPos
+        override lazy val inputs                : Inputs_15544_MCE                                       = i
+        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = pfbSlots
+        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = initialDir
+        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = initialPos
     }
 
     case class AmbiantAir_Temperatures(

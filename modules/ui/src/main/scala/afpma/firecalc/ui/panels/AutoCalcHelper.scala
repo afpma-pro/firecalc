@@ -12,7 +12,7 @@ import afpma.firecalc.domain.{AzimuthDirection, InclinationDirection}
 
 import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
@@ -162,7 +162,7 @@ object AutoCalcHelper:
         )
 
     /** Convert a V7 wrapper-level initial direction to a PipeFrame. */
-    def wrapperDirectionToFrame(dir: PostFireboxInitialDirection): PipeFrame =
+    def wrapperDirectionToFrame(dir: PipeInitialDirection): PipeFrame =
         PipeFrame.initial(
             Vec3.fromAzimuthElevation(
                 AzimuthDirection.toDegrees    (dir.azimuth    ),

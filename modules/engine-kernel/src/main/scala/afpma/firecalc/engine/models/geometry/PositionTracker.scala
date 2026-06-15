@@ -6,35 +6,172 @@
 package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.PipeShape
+import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+import afpma.firecalc.dto.v7.AirIntakePosition
 
 import coulomb.*
 import coulomb.policy.standard.given
 
 object PositionTracker:
 
-    private def toVec3(x: Length, y: Length, z: Length): Vec3 =
-        Vec3(x.toUnit[Meter].value, y.toUnit[Meter].value, z.toUnit[Meter].value)
+    /** Common commands used to unify different pipe descriptor types. */
+    private sealed trait PipeCommand
+    private case class CmdSetInnerShape(shape: PipeShape)                                  extends PipeCommand
+    private case class CmdDirectionChange(absDir: Option[AbsoluteDirection], angle: Angle) extends PipeCommand
+    private case class CmdSectionVertical(elevGain: Length)                                extends PipeCommand
+    private case class CmdSectionHorizontal(horizLen: Length)                              extends PipeCommand
+    private case class CmdSectionSlopped(length: Length)                                   extends PipeCommand
+    private case class CmdSectionSloppedForceManual(length: Length, elevGain: Length)      extends PipeCommand
+    private case object CmdNoOp                                                            extends PipeCommand
 
-    /**
-     * Scan a descriptor sequence for SetFinalPosition (the last one wins).
-     * Returns the effective finalPoint to use.
-     */
-    private def resolveFinalPosition[A](
-        elems     : Seq[A],
-        finalPoint: Option[Vec3]
-    )(
-        extract: PartialFunction[(A, Int), (Vec3, Int)]
-    ): Option[Vec3] =
-        elems.zipWithIndex.collect(extract).maxByOption(_._2).map(_._1).orElse(finalPoint)
+    private def mapFlowOnly13384(elem: FlowOnlyPipeDescr_13384): Seq[PipeCommand] =
+        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
+        elem match
+            case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
+            case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
+            case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
+            case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
+            case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
+                Seq(CmdSectionSloppedForceManual(length, elevGain))
+            case _                                                              => Seq(CmdNoOp)
+
+    private def mapFlowOnly15544(elem: FlowOnlyPipeDescr_15544): Seq[PipeCommand] =
+        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.*
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
+        elem match
+            case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
+            case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
+            case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
+            case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
+            case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
+                Seq(CmdSectionSloppedForceManual(length, elevGain))
+            case _                                                              => Seq(CmdNoOp)
+
+    private def mapThermal13384(elem: ThermalPipeDescr_13384): Seq[PipeCommand] =
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
+        elem match
+            case SetInnerShape(shape)                                           => Seq(CmdSetInnerShape(shape)       )
+            case SetPropertiesInBatch(_, props, _)                              =>
+                props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
+            case LinedFlue(_, liner, _, _)                                      =>
+                liner.props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
+            case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
+            case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
+            case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
+            case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
+                Seq(CmdSectionSloppedForceManual(length, elevGain))
+            case _                                                              => Seq(CmdNoOp)
+
+    private def computeGenericPipePositions[T](
+        elems                   : Seq[T],
+        map                     : T => Seq[PipeCommand],
+        initialDirection        : PipeInitialDirection,
+        externalFrame           : Option[PipeFrame],
+        startPoint              : Vec3,
+        currentInnerShapeInitial: Option[PipeShape] = None
+    ): PipePositionResult =
+
+        var frame            : Option[PipeFrame] = externalFrame.orElse(
+            Some(
+                PipeFrame.initial(
+                    Vec3.fromAzimuthElevation(
+                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
+                        InclinationDirection.toDegrees(initialDirection.inclination)
+                    )
+                )
+            )
+        )
+        var currentPosition  : Vec3              = startPoint
+        var currentInnerShape: Option[PipeShape] = currentInnerShapeInitial
+        val segments = Seq.newBuilder[PipeSegmentPosition]
+
+        for (elem, idx) <- elems.zipWithIndex do
+            for (cmd) <- map(elem) do
+                cmd match
+                    case CmdSetInnerShape(shape)           =>
+                        currentInnerShape = Some(shape)
+                    case CmdDirectionChange(absDir, angle) =>
+                        for
+                            f  <- frame
+                            fd <- absDir
+                        do
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            frame = Some(f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec))
+                    case c: (CmdSectionVertical | CmdSectionHorizontal) =>
+                        val l          = c match
+                            case CmdSectionVertical(eg)   => eg.toUnit[Meter].value
+                            case CmdSectionHorizontal(hl) => hl.toUnit[Meter].value
+                        val defaultDir = c match
+                            case CmdSectionVertical(_)   => Vec3.Up
+                            case CmdSectionHorizontal(_) => Vec3.Rear
+                        val base       = frame.map(_.direction).getOrElse(defaultDir)
+                        val dir        = if l < 0 then base * -1.0 else base
+                        val dist       = math.abs(l)
+                        val disp       = dir * dist
+                        val endPt      = currentPosition + disp
+                        segments += PipeSegmentPosition(
+                            elementIndex = idx,
+                            startPoint   = currentPosition,
+                            endPoint     = endPt,
+                            direction    = dir,
+                            length       = dist,
+                            innerShape   = currentInnerShape,
+                            frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                        )
+                        currentPosition = endPt
+                    case c: (CmdSectionSlopped | CmdSectionSloppedForceManual) =>
+                        val l     = c match
+                            case CmdSectionSlopped(len)               => len.toUnit[Meter].value
+                            case CmdSectionSloppedForceManual(len, _) => len.toUnit[Meter].value
+                        val eg    = c match
+                            case CmdSectionSlopped(_)                    => frame.map(f => l * f.direction.z).getOrElse(0.0)
+                            case CmdSectionSloppedForceManual(_, egGain) => egGain.toUnit[Meter].value
+                        val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
+                        val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
+                        val dir   = disp.normalized
+                        val endPt = currentPosition + disp
+                        segments += PipeSegmentPosition(
+                            elementIndex = idx,
+                            startPoint   = currentPosition,
+                            endPoint     = endPt,
+                            direction    = dir,
+                            length       = l,
+                            innerShape   = currentInnerShape,
+                            frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                        )
+                        currentPosition = endPt
+                    case CmdNoOp                           => ()
+
+        PipePositionResult(segments.result(), currentPosition, frame)
+
+    private def runPipeline[T](
+        elems           : Seq[T],
+        initialDirection: PipeInitialDirection,
+        externalFrame   : Option[PipeFrame],
+        startPoint      : Vec3,
+        finalPoint      : Option[Vec3],
+        map             : T => Seq[PipeCommand]
+    ): PipePositionResult =
+        val result = computeGenericPipePositions(
+            elems,
+            map,
+            initialDirection,
+            externalFrame,
+            startPoint
+        )
+        applyFinalTranslate(result, finalPoint)
 
     /** Apply the final-position translate post-processing if needed. */
     private def applyFinalTranslate(result: PipePositionResult, effectiveFinal: Option[Vec3]): PipePositionResult =
@@ -46,368 +183,73 @@ object PositionTracker:
 
     def computeFlowOnly13384(
         elems           : Seq[FlowOnlyPipeDescr_13384],
-        initialDirection: PostFireboxInitialDirection,
-        initialPosition : PostFireboxInitialPosition,
+        initialDirection: PipeInitialDirection,
+        initialPosition : Position3D,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
         import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
-        import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_13384_V4.*
 
-        val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
-            (toVec3(x, y, z), idx)
-        }
-
-        var frame            : Option[PipeFrame] = externalFrame.orElse(
-            Some(
-                PipeFrame.initial(
-                    Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
-                        InclinationDirection.toDegrees(initialDirection.inclination)
-                    )
-                )
-            )
+        runPipeline(
+            elems,
+            initialDirection,
+            externalFrame,
+            startPoint,
+            finalPoint,
+            mapFlowOnly13384
         )
-        var currentPosition  : Vec3              = startPoint
-        var currentInnerShape: Option[PipeShape] = None
-        val segments = Seq.newBuilder[PipeSegmentPosition]
-
-        for (elem, idx) <- elems.zipWithIndex do
-            elem match
-                case SetInnerShape(shape)                                           =>
-                    currentInnerShape = Some(shape)
-                case SetInitialDirection(az, incl)                                  =>
-                    val azDeg = AzimuthDirection.toDegrees(az)
-                    val elDeg = InclinationDirection.toDegrees(incl)
-                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                case dc: AddDirectionChange =>
-                    for
-                        f  <- frame
-                        fd <- dc.absDir
-                    do
-                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                        frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                case AddSectionVertical(_, elevGain)                                =>
-                    val eg    = elevGain.toUnit[Meter].value
-                    val base  = frame.map(_.direction).getOrElse(Vec3.Up)
-                    val dir   = if eg < 0 then base * -1.0 else base
-                    val l     = math.abs(eg)
-                    val disp  = dir * l
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionHorizontal(_, horizLen)                              =>
-                    val hl    = horizLen.toUnit[Meter].value
-                    val base  = frame.map(_.direction).getOrElse(Vec3.Rear)
-                    val dir   = if hl < 0 then base * -1.0 else base
-                    val l     = math.abs(hl)
-                    val disp  = dir * l
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionSlopped(_, length)                                   =>
-                    val l     = length.toUnit[Meter].value
-                    val eg    = frame.map(f => l * f.direction.z).getOrElse(0.0)
-                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
-                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
-                    val dir   = disp.normalized
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                    val l     = length.toUnit[Meter].value
-                    val eg    = elevGain.toUnit[Meter].value
-                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
-                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
-                    val dir   = disp.normalized
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case _: FlowOnlyPipeDescr_13384 => ()
-
-        val result = PipePositionResult(segments.result(), currentPosition, frame)
-        applyFinalTranslate(result, effectiveFinal)
 
     def computeFlowOnly15544(
         elems           : Seq[FlowOnlyPipeDescr_15544],
-        initialDirection: PostFireboxInitialDirection,
-        initialPosition : PostFireboxInitialPosition,
+        initialDirection: PipeInitialDirection,
+        initialPosition : Position3D,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
         import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.*
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
-        import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4.*
 
-        val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
-            (toVec3(x, y, z), idx)
-        }
-
-        var frame            : Option[PipeFrame] = externalFrame.orElse(
-            Some(
-                PipeFrame.initial(
-                    Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
-                        InclinationDirection.toDegrees(initialDirection.inclination)
-                    )
-                )
-            )
+        runPipeline(
+            elems,
+            initialDirection,
+            externalFrame,
+            startPoint,
+            finalPoint,
+            mapFlowOnly15544
         )
-        var currentPosition  : Vec3              = startPoint
-        var currentInnerShape: Option[PipeShape] = None
-        val segments = Seq.newBuilder[PipeSegmentPosition]
-
-        for (elem, idx) <- elems.zipWithIndex do
-            elem match
-                case SetInnerShape(shape)                                           =>
-                    currentInnerShape = Some(shape)
-                case SetInitialDirection(az, incl)                                  =>
-                    val azDeg = AzimuthDirection.toDegrees(az)
-                    val elDeg = InclinationDirection.toDegrees(incl)
-                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                case dc: AddDirectionChange =>
-                    for
-                        f  <- frame
-                        fd <- dc.absDir
-                    do
-                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                        frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                case AddSectionVertical(_, elevGain)                                =>
-                    val eg    = elevGain.toUnit[Meter].value
-                    val base  = frame.map(_.direction).getOrElse(Vec3.Up)
-                    val dir   = if eg < 0 then base * -1.0 else base
-                    val l     = math.abs(eg)
-                    val disp  = dir * l
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionHorizontal(_, horizLen)                              =>
-                    val hl    = horizLen.toUnit[Meter].value
-                    val base  = frame.map(_.direction).getOrElse(Vec3.Rear)
-                    val dir   = if hl < 0 then base * -1.0 else base
-                    val l     = math.abs(hl)
-                    val disp  = dir * l
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionSlopped(_, length)                                   =>
-                    val l     = length.toUnit[Meter].value
-                    val eg    = frame.map(f => l * f.direction.z).getOrElse(0.0)
-                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
-                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
-                    val dir   = disp.normalized
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                    val l     = length.toUnit[Meter].value
-                    val eg    = elevGain.toUnit[Meter].value
-                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
-                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
-                    val dir   = disp.normalized
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case _: FlowOnlyPipeDescr_15544 => ()
-
-        val result = PipePositionResult(segments.result(), currentPosition, frame)
-        applyFinalTranslate(result, effectiveFinal)
 
     def computeThermal13384(
         elems           : Seq[ThermalPipeDescr_13384],
-        initialDirection: PostFireboxInitialDirection,
-        initialPosition : PostFireboxInitialPosition,
+        initialDirection: PipeInitialDirection,
+        initialPosition : Position3D,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
         import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
         import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
-        import afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4.*
 
-        val effectiveFinal = resolveFinalPosition(elems, finalPoint) { case (SetFinalPosition(x, y, z), idx) =>
-            (toVec3(x, y, z), idx)
-        }
-
-        var frame            : Option[PipeFrame] = externalFrame.orElse(
-            Some(
-                PipeFrame.initial(
-                    Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
-                        InclinationDirection.toDegrees(initialDirection.inclination)
-                    )
-                )
-            )
+        runPipeline(
+            elems,
+            initialDirection,
+            externalFrame,
+            startPoint,
+            finalPoint,
+            mapThermal13384
         )
-        var currentPosition  : Vec3              = startPoint
-        var currentInnerShape: Option[PipeShape] = None
-        val segments = Seq.newBuilder[PipeSegmentPosition]
 
-        for (elem, idx) <- elems.zipWithIndex do
-            elem match
-                case SetInnerShape(shape)                                           =>
-                    currentInnerShape = Some(shape)
-                case SetPropertiesInBatch(_, props, _)                              =>
-                    props
-                        .collectFirst { case SetInnerShape(shape) => shape }
-                        .foreach(shape => currentInnerShape = Some(shape))
-                case LinedFlue(_, liner, _, _)                                      =>
-                    liner.props
-                        .collectFirst { case SetInnerShape(shape) => shape }
-                        .foreach(shape => currentInnerShape = Some(shape))
-                case SetInitialDirection(az, incl)                                  =>
-                    val azDeg = AzimuthDirection.toDegrees(az)
-                    val elDeg = InclinationDirection.toDegrees(incl)
-                    frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                case dc: AddDirectionChange =>
-                    for
-                        f  <- frame
-                        fd <- dc.absDir
-                    do
-                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                        frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                case AddSectionVertical(_, elevGain)                                =>
-                    val eg    = elevGain.toUnit[Meter].value
-                    val base  = frame.map(_.direction).getOrElse(Vec3.Up)
-                    val dir   = if eg < 0 then base * -1.0 else base
-                    val l     = math.abs(eg)
-                    val disp  = dir * l
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionHorizontal(_, horizLen)                              =>
-                    val hl    = horizLen.toUnit[Meter].value
-                    val base  = frame.map(_.direction).getOrElse(Vec3.Rear)
-                    val dir   = if hl < 0 then base * -1.0 else base
-                    val l     = math.abs(hl)
-                    val disp  = dir * l
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionSlopped(_, length)                                   =>
-                    val l     = length.toUnit[Meter].value
-                    val eg    = frame.map(f => l * f.direction.z).getOrElse(0.0)
-                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
-                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
-                    val dir   = disp.normalized
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                    val l     = length.toUnit[Meter].value
-                    val eg    = elevGain.toUnit[Meter].value
-                    val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
-                    val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
-                    val dir   = disp.normalized
-                    val endPt = currentPosition + disp
-                    segments += PipeSegmentPosition(
-                        elementIndex = idx,
-                        startPoint   = currentPosition,
-                        endPoint     = endPt,
-                        direction    = dir,
-                        length       = l,
-                        innerShape   = currentInnerShape,
-                        frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                    )
-                    currentPosition = endPt
-                case _: ThermalPipeDescr_13384 => ()
-
-        val result = PipePositionResult(segments.result(), currentPosition, frame)
-        applyFinalTranslate(result, effectiveFinal)
+    def calculateAutoCalcTarget(result: PipePositionResult, posMode: AirIntakePosition): Position3D =
+        posMode match
+            case AirIntakePosition.Initial(pos) => pos
+            case AirIntakePosition.Final(_)     =>
+                Position3D(
+                    result.finalPoint.x.meters,
+                    result.finalPoint.y.meters,
+                    result.finalPoint.z.meters
+                )
 
     private def horizontalDirection(frame: Option[PipeFrame]): Vec3 =
         frame match

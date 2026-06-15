@@ -14,7 +14,6 @@ import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
 import afpma.firecalc.dto.v7.ThermalChannelTopologyOp_13384_V4
-import afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4
 import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
 
 import org.scalacheck.Gen
@@ -152,36 +151,9 @@ trait SetThermalPipeProp_13384_V4_Generators
     def genSetNumberOfFlows_Thermal_V4: Gen[ThermalChannelTopologyOp_13384_V4.SetNumberOfFlows] =
         Gen.choose(1, 4).map(n => ThermalChannelTopologyOp_13384_V4.SetNumberOfFlows(NbOfFlows(n)))
 
-    // ── PipeTrackingOp (deprecated in V7) ───────────────────────────────
-
-    def genSetInitialDirection_Thermal_V4: Gen[ThermalPipeTrackingOp_13384_V4.SetInitialDirection] =
-        for
-            azimuth     <- Gen.oneOf(
-                afpma.firecalc.dto.v4.AzimuthDirection.Front,
-                afpma.firecalc.dto.v4.AzimuthDirection.Right,
-                afpma.firecalc.dto.v4.AzimuthDirection.Rear,
-                afpma.firecalc.dto.v4.AzimuthDirection.Left
-            )
-            inclination <- Gen.oneOf(
-                afpma.firecalc.dto.v4.InclinationDirection.Up,
-                afpma.firecalc.dto.v4.InclinationDirection.Down,
-                afpma.firecalc.dto.v4.InclinationDirection.Horizontal
-            )
-        yield ThermalPipeTrackingOp_13384_V4.SetInitialDirection(azimuth, inclination)
-
-    def genSetInitialPosition_Thermal_V4: Gen[ThermalPipeTrackingOp_13384_V4.SetInitialPosition] =
-        for
-            x <- Gen.choose(-10.0, 10.0).map(_.meters)
-            y <- Gen.choose(-10.0, 10.0).map(_.meters)
-            z <- Gen.choose(-10.0, 10.0).map(_.meters)
-        yield ThermalPipeTrackingOp_13384_V4.SetInitialPosition(x, y, z)
-
-    def genSetFinalPosition_Thermal_V4: Gen[ThermalPipeTrackingOp_13384_V4.SetFinalPosition] =
-        for
-            x <- Gen.choose(-10.0, 10.0).map(_.meters)
-            y <- Gen.choose(-10.0, 10.0).map(_.meters)
-            z <- Gen.choose(-10.0, 10.0).map(_.meters)
-        yield ThermalPipeTrackingOp_13384_V4.SetFinalPosition(x, y, z)
+    // ── PipeTrackingOp: removed in V7 (SetInitialDirection, SetInitialPosition, SetFinalPosition) ──
+    // These generators were removed because the corresponding descriptors no longer exist in V7.
+    // Initial direction/position now come from wrapper types (FramedPostFireboxPipes, FramedAirIntakePipes).
 
     // ── Composite: any SetThermalPipeProp_13384_V4 ──────────────────────
 

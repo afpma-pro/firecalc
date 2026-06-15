@@ -7,12 +7,12 @@ package afpma.firecalc.engine.alg
 
 import afpma.firecalc.dto.common.NbOfFlows
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.Vec3
 
 import cats.data.NonEmptyList
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import afpma.firecalc.units.Vec3
 
 class SplitOnAscendingSuite extends AnyFlatSpec with Matchers with IncrementalBuilderTestFixture:
 

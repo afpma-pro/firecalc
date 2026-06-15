@@ -12,6 +12,7 @@ import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
+import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
@@ -24,7 +25,6 @@ import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.gi
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
@@ -37,13 +37,13 @@ import coulomb.policy.standard.given
 import scala.annotation.targetName
 import scala.reflect.*
 import com.softwaremill.quicklens.*
+import afpma.firecalc.units.Vec3
 
-trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
+trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with FramedBuilderSupport:
 
     import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.*
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
-    import FlowOnlyPipeTrackingOp_13384.*
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.hasInnerShapeAtPos
@@ -63,33 +63,22 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     override type PreElementOp      = FlowOnlyPreElementOp_13384
     override type ChannelTopologyOp = FlowOnlyChannelTopologyOp_13384
-    override type PipeTrackingOp    = FlowOnlyPipeTrackingOp_13384
 
     /**
      * Wrapper-level initial direction (V7).
      * When defined, seeds the initial/cur frame in mkInitPropsState.
      * Replaces descriptor-level SetInitialDirection after V6→V7 migration.
      */
-    protected var wrapperInitialDirection: Option[PostFireboxInitialDirection] = None
+    protected var wrapperInitialDirection: Option[PipeInitialDirection] = None
 
     /**
      * Set wrapper-level initial direction.
      * @param dir the initial direction
      * @return this builder (for chaining)
      */
-    def withInitialDirection(dir: PostFireboxInitialDirection): this.type =
+    def withInitialDirection(dir: PipeInitialDirection): this.type =
         wrapperInitialDirection = Some(dir)
         this
-
-    /**
-     * Set wrapper-level initial position.
-     * Position tracking is handled by PositionTracker, not PropsState.
-     * @param pos the initial position (ignored)
-     * @return this builder (for chaining)
-     */
-    @deprecated("Position tracking is handled by PositionTracker", "v7")
-    def withInitialPosition(pos: PostFireboxInitialPosition): this.type =
-        this // no-op: position tracking moved to PositionTracker
 
     extension (addElement: AddElement) override def name: String = addElement.name
 
@@ -173,9 +162,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         stateOps.getNFlows(s)
 
     override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
-        // Only apply if the pipe itself did not already define an initial direction
-        if s.initialFrame.isDefined then s
-        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+        // External frame from seed always takes precedence — V7 enforces initial direction at wrapper level, not descriptor level.
+        s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
 
     override protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState =
         s.copy(nFlows = nFlows)
@@ -310,7 +298,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep.allPreElementOpsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
                 op match
-                    case SetInnerShape(g)                                           =>
+                    case SetInnerShape(g)                                     =>
                         vState.andThen { st =>
                             stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
                                 FlowAreaConservation
@@ -319,11 +307,11 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                     .map(s => stateOps.setInnerShape(s, g))
                             }
                         }
-                    case SetRoughness(r)                                            =>
+                    case SetRoughness(r)                                      =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
-                    case SetMaterial(lm)                                            =>
+                    case SetMaterial(lm)                                      =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                    case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf)       =>
+                    case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
                             stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
                                 validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
@@ -331,19 +319,6 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 )
                             }
                         }
-                    case FlowOnlyPipeTrackingOp_13384.SetInitialDirection(az, incl) =>
-                        if vState.toOption.exists(_.initialFrame.isDefined) then vState
-                        else
-                            val dirVec = Vec3.fromAzimuthElevation(
-                                AzimuthDirection.toDegrees    (az  ),
-                                InclinationDirection.toDegrees(incl)
-                            )
-                            val frame  = PipeFrame.initial(dirVec)
-                            vState.map(_.copy(initialFrame = Some(frame), currentFrame = Some(frame)))
-                    case _: FlowOnlyPipeTrackingOp_13384.SetInitialPosition =>
-                        vState
-                    case _: FlowOnlyPipeTrackingOp_13384.SetFinalPosition =>
-                        vState
             }
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
@@ -357,18 +332,6 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         SetRoughness(r)
     def material(lm: Material_13384) =
         SetMaterial(lm)
-
-    @deprecated("Use withInitialDirection(PostFireboxInitialDirection) instead", "v7")
-    def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
-        SetInitialDirection(azimuth, inclination)
-
-    @deprecated("Use withInitialPosition(PostFireboxInitialPosition) instead", "v7")
-    def setInitialPosition(x: Length, y: Length, z: Length) =
-        SetInitialPosition(x, y, z)
-
-    @deprecated("No longer supported; position tracking is handled by PositionTracker", "v7")
-    def setFinalPosition(x: Length, y: Length, z: Length) =
-        SetFinalPosition(x, y, z)
 
     // Delegate to ChannelsDSL typeclass
     def channelsSplit(n: Int) =

@@ -56,14 +56,14 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
      * Used to seed the first pipe's initial frame in flueRegionPipeResults folds.
      * Defaults to None for backward compatibility.
      */
-    def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None
+    def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None
 
     /**
      * Wrapper-level initial position for post-firebox pipes (V7).
      * Defaults to None for backward compatibility.
      * Threaded alongside direction for consistency; position is not used for frame seeding.
      */
-    def postFireboxInitialPosition: Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition] = None
+    def postFireboxInitialPosition: Option[afpma.firecalc.dto.common.Position3D] = None
 
     /**
      * Raw air intake pipe descriptors from the DTO.

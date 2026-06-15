@@ -20,6 +20,8 @@ import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.en13384.*
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 
@@ -128,64 +130,67 @@ object CasType_13384_C16
     // only number of 90° turn (x4), total length 2m35 and vertical length 0,35m
     val airIntakePipe = // "Tube Flexible en Inox"
         import AirIntakePipe_Module.*
-        define(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Front,
-                inclination = InclinationDirection.Horizontal
-            ), // Front
+        AirIntakePipe_Module.incremental
+            .withInitialDirection(
+                PipeInitialDirection    (
+                    azimuth     = AzimuthDirection.Front,
+                    inclination = InclinationDirection.Horizontal
+                )
+            )
+            .define(
+                pipeLocation(PipeLocation.HeatedArea), // to check
 
-            pipeLocation           (PipeLocation.HeatedArea), // to check
+                roughness(5.mm), // ConduitFlexibleInox = 5mm
 
-            roughness(5.mm), // ConduitFlexibleInox = 5mm
+                addFlowResistance              (
+                    "grille (ζ = 1.7)",
+                    zeta               = 1.7.unitless,
+                    hydraulic_diameter = 50.mm
+                ), // ajouté dans QC2 (cf hypothese général entrée d'air avec zeta = 1.7)
 
-            addFlowResistance              (
-                "grille (ζ = 1.7)",
-                zeta               = 1.7.unitless,
-                hydraulic_diameter = 50.mm
-            ), // ajouté dans QC2 (cf hypothese général entrée d'air avec zeta = 1.7)
-
-            innerShape(circle(50.mm)),
-            layer                          (e = 0.2.mm, tr = 0.0.m2_K_per_W),
-            addSectionHorizontal           ("hz", 25.cm                    ),
-            // turn right - final direction = 'Left'
-            addCoudeCourbe90               (
-                "coude 90° #1",
-                R                  = 50.mm,
-                absDir             = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
-            ),
-            addSectionHorizontal           ("hz", 50.cm                    ),
-            // turn left - final direction = 'Front'
-            addCoudeCourbe90               (
-                "coude 90° #2",
-                R                  = 50.mm,
-                absDir             = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
-            ),
-            addSectionHorizontal           ("hz", 50.cm                    ),
-            // turn upwards - final direction = 'Up'
-            addCoudeCourbe90               (
-                "coude 90° #3",
-                R                  = 50.mm,
-                absDir             = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)
-            ),
-            addSectionVertical             ("vertical", 35.cm              ),
-            // turn - final direction = 'Right'
-            addCoudeCourbe90               (
-                "coude 90° #4",
-                R                  = 50.mm,
-                absDir             = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
-            ),
-            addSectionHorizontal           ("hz", 50.cm                    ),
-            addSectionHorizontal           ("hz", 25.cm                    )
-        ).toFullDescr().extractPipe
+                innerShape(circle(50.mm)),
+                layer                          (e = 0.2.mm, tr = 0.0.m2_K_per_W),
+                addSectionHorizontal           ("hz", 25.cm                    ),
+                // turn right - final direction = 'Left'
+                addCoudeCourbe90               (
+                    "coude 90° #1",
+                    R                  = 50.mm,
+                    absDir             = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+                ),
+                addSectionHorizontal           ("hz", 50.cm                    ),
+                // turn left - final direction = 'Front'
+                addCoudeCourbe90               (
+                    "coude 90° #2",
+                    R                  = 50.mm,
+                    absDir             = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                ),
+                addSectionHorizontal           ("hz", 50.cm                    ),
+                // turn upwards - final direction = 'Up'
+                addCoudeCourbe90               (
+                    "coude 90° #3",
+                    R                  = 50.mm,
+                    absDir             = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)
+                ),
+                addSectionVertical             ("vertical", 35.cm              ),
+                // turn - final direction = 'Right'
+                addCoudeCourbe90               (
+                    "coude 90° #4",
+                    R                  = 50.mm,
+                    absDir             = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                ),
+                addSectionHorizontal           ("hz", 50.cm                    ),
+                addSectionHorizontal           ("hz", 25.cm                    )
+            )
+            .toFullDescr()
+            .extractPipe
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal), // Rear
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)              ),
-            layer              (e       = 1.mm, tr                           = 0.0.m2_K_per_W                 ),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
+            layer       (e = 1.mm, tr = 0.0.m2_K_per_W),
+            pipeLocation(PipeLocation.HeatedArea      ),
 
             // pb: sortie arrière sans longueur horizontale ???
             // car sinon impossible d'avoir un enchainement horizontal + coude 90 + dévoiement à 45°
@@ -230,3 +235,10 @@ object CasType_13384_C16
             addSectionVertical                         ("partie en extérieur", 2.93.m * 38.percent.asRatio      ),
             addRainCapEN13384_withHeightEquals2Diameter("element terminal"                                      )
         )
+
+    override val connectorInitialFrame: Option[PipeFrame] =
+        Some(PipeFrame.initial(Vec3.Rear))
+        // Horizontal rear exit → angles up via 90° elbow.
+        // Initial direction: Rear + Horizontal (confirmed by "sortie arrière" comment)
+        // TODO(azimuth-optional): Once PipeInitialDirection supports optional azimuth,
+        // this should become PipeInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal)

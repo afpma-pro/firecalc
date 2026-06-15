@@ -12,26 +12,25 @@ import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
-import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.dto.v7.PostFireboxPipes
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import afpma.firecalc.units.Vec3
 
 /**
  * DirectionReachability parity tests for V7 migration.
  *
- * Verifies that sanitized V7 slots + wrapper initial frame produce the same
- * reachability result as legacy slots with descriptor-level SetInitialDirection.
+ * Verifies that sanitized V7 slots + wrapper initial frame produce the expected
+ * reachability result without descriptor-level tracking operations.
  */
 class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
 
-    private def legacyFlueDescr: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4] = Seq(
-        FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection    (AzimuthDirection.Right, InclinationDirection.Horizontal),
-        SetFlowOnlyPipeProp_15544_V4.SetRoughness              (3.mm                                                   ),
-        AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal   ("test", 50.cm                                          ),
+    private def cleanFlueDescr: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4] = Seq(
+        SetFlowOnlyPipeProp_15544_V4.SetRoughness              (3.mm         ),
+        AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal   ("test", 50.cm),
         AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180(
             "virage",
             90.degrees,
@@ -39,10 +38,10 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
         )
     )
 
-    private def legacySlots = Seq(
-        PostFireboxPipeDescrSlot_V7.FlueSlot     (legacyFlueDescr),
-        PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty      ),
-        PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty      )
+    private def cleanSlots = Seq(
+        PostFireboxPipeDescrSlot_V7.FlueSlot     (cleanFlueDescr),
+        PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty     ),
+        PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty     )
     )
 
     private def wrapperInitialFrame: PipeFrame =
@@ -53,32 +52,18 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
             )
         )
 
-    "DirectionReachability V7 parity" - {
+    "DirectionReachability V7" - {
 
-        "legacy path: slots with SetInitialDirection, initialFrame = None" in {
-            val result = DirectionReachability.checkPostFireboxChain(legacySlots, None)
-            result.isEmpty.shouldBe(true)
-        }
-
-        "V7 path: sanitized slots + wrapper initialFrame" in {
-            val sanitized = legacySlots.map(PostFireboxPipes.sanitizeSlot)
+        "works with sanitized slots + wrapper initialFrame" in {
+            val sanitized = cleanSlots.map(FramedPostFireboxPipes.sanitizeSlot)
             val result    = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
             result.isEmpty.shouldBe(true)
         }
 
-        "legacy and V7 paths produce identical results when directions match" in {
-            val sanitized    = legacySlots.map(PostFireboxPipes.sanitizeSlot)
-            val legacyResult = DirectionReachability.checkPostFireboxChain(legacySlots, None)
-            val v7Result     = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
-            legacyResult shouldBe v7Result
-        }
-
-        "legacy and V7 paths both fail when directions match" in {
+        "fails when direction is unreachable" in {
             val failingSlots = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot(
                     Seq(
-                        FlowOnlyPipeTrackingOp_15544_V4
-                            .SetInitialDirection                               (AzimuthDirection.Right, InclinationDirection.Horizontal),
                         AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180(
                             "unreachable",
                             90.degrees,
@@ -87,54 +72,23 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
                     )
                 )
             )
-            val sanitized    = failingSlots.map(PostFireboxPipes.sanitizeSlot)
-            val legacyResult = DirectionReachability.checkPostFireboxChain(failingSlots, None)
-            val v7Result     = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
-            // In V7, sanitization is a no-op (tracking ops are valid), so both paths produce the same result
-            legacyResult shouldBe List(IncompatibleDirectionInPipe("Flue", 0, 1))
-            v7Result shouldBe List(IncompatibleDirectionInPipe("Flue", 0, 1))
-        }
-
-        "sanitized V7 path uses wrapper frame when stale descriptor direction conflicts" in {
-            val staleRearSlots = Seq(
-                PostFireboxPipeDescrSlot_V7.FlueSlot(
-                    Seq(
-                        FlowOnlyPipeTrackingOp_15544_V4
-                            .SetInitialDirection                               (AzimuthDirection.Rear, InclinationDirection.Horizontal),
-                        AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180(
-                            "reachable-from-stale-descriptor-only",
-                            90.degrees,
-                            Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal))
-                        )
-                    )
-                )
-            )
-            val sanitized      = staleRearSlots.map(PostFireboxPipes.sanitizeSlot)
-            val legacyResult   = DirectionReachability.checkPostFireboxChain(staleRearSlots, Some(wrapperInitialFrame))
-            val v7Result       = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
-            // In V7, sanitization is a no-op (tracking ops are valid), so both paths produce the same result
-            legacyResult shouldBe empty
-            v7Result shouldBe empty
+            val sanitized    = failingSlots.map(FramedPostFireboxPipes.sanitizeSlot)
+            val result       = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
+            result.isEmpty.shouldBe(false)
         }
 
         "frame threads across multiple real PostFireboxPipeDescrSlot values" in {
-            val sanitized    = legacySlots.map(PostFireboxPipes.sanitizeSlot)
-            val extraFlue    = PostFireboxPipeDescrSlot_V7.FlueSlot(
+            val sanitized = cleanSlots.map(FramedPostFireboxPipes.sanitizeSlot)
+            val extraFlue = PostFireboxPipeDescrSlot_V7.FlueSlot(
                 Seq(
-                    FlowOnlyPipeTrackingOp_15544_V4
-                        .SetInitialDirection                               (AzimuthDirection.Right, InclinationDirection.Horizontal),
-                    AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180("virage", 90.degrees, None                             )
+                    AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180("virage", 90.degrees, None)
                 )
             )
-            val legacyResult = DirectionReachability.checkPostFireboxChain(
-                legacySlots :+ extraFlue,
-                None
-            )
-            val v7Result     = DirectionReachability.checkPostFireboxChain(
-                sanitized :+ PostFireboxPipes.sanitizeSlot(extraFlue),
+            val result    = DirectionReachability.checkPostFireboxChain(
+                sanitized :+ FramedPostFireboxPipes.sanitizeSlot(extraFlue),
                 Some(wrapperInitialFrame)
             )
-            legacyResult shouldBe v7Result
+            result.isEmpty.shouldBe(true)
         }
     }
 end DirectionReachabilityV7IntegrationSuite

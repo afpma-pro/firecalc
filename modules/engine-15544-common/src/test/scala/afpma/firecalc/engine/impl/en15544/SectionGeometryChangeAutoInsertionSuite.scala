@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.en15544
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.SectionGeometryChange
 import afpma.firecalc.units.coulombutils.*
@@ -24,7 +24,7 @@ class SectionGeometryChangeAutoInsertionSuite extends AnyFlatSpec with Matchers:
         // Test 14: Auto-insertion in 15544 — SectionGeometryChange with correct from/to
         val builder = FluePipe_Module_15544.incremental
         builder.withInitialDirection(
-            PostFireboxInitialDirection    (
+            PipeInitialDirection    (
                 azimuth     = AzimuthDirection.Rear,
                 inclination = InclinationDirection.Horizontal
             )

@@ -60,35 +60,6 @@ object FlowOnlyChannelTopologyOp_13384_V4:
     ) extends FlowOnlyChannelTopologyOp_13384_V4
         with SetsNumberOfFlows
 
-sealed trait FlowOnlyPipeTrackingOp_13384_V4 extends FlowOnlyPreElementOp_13384_V4
-
-object FlowOnlyPipeTrackingOp_13384_V4:
-
-    @Transl(I(_.set_prop.SetInitialDirection))
-    @deprecated("Use PostFireboxInitialDirection on PostFireboxPipes instead. Will be removed in V8.", "V7")
-    case class SetInitialDirection(
-        @Transl(I(_.terms.azimuth))
-        azimuth    : AzimuthDirection,
-        @Transl(I(_.terms.inclination))
-        inclination: InclinationDirection
-    ) extends FlowOnlyPipeTrackingOp_13384_V4
-
-    @Transl(I(_.set_prop.SetInitialPosition))
-    @deprecated("Use PostFireboxInitialPosition on PostFireboxPipes instead. Will be removed in V8.", "V7")
-    case class SetInitialPosition(
-        @Transl(I(_.terms.x)) x: Length,
-        @Transl(I(_.terms.y)) y: Length,
-        @Transl(I(_.terms.z)) z: Length
-    ) extends FlowOnlyPipeTrackingOp_13384_V4
-
-    @Transl(I(_.set_prop.SetFinalPosition))
-    @deprecated("Not supported in V7 post-firebox pipes. Use PositionTracker instead. Will be removed in V8.", "V7")
-    case class SetFinalPosition(
-        @Transl(I(_.terms.x)) x: Length,
-        @Transl(I(_.terms.y)) y: Length,
-        @Transl(I(_.terms.z)) z: Length
-    ) extends FlowOnlyPipeTrackingOp_13384_V4
-
 sealed trait AddFlowOnlyPipeElement_13384_V4 extends FlowOnlyPipeDescr_13384_V4:
     def name: String
 

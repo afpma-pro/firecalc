@@ -48,6 +48,7 @@ final case class I18nData(
     en15544_errors                 : EN15544_Errors,
     topology_errors                : TopologyErrors,
     en16510                        : EN16510,
+    direction_badge                : DirectionBadge,
     errors                         : Errors,
     facing_type                    : FacingType,
     headers                        : Headers,
@@ -92,6 +93,40 @@ final case class I18nData(
 )
 
 object I18nData:
+
+    case class DirectionBadge(
+        label                         : String,
+        tooltip_direction             : String,
+        tooltip_azimuth               : StringFormat1,
+        tooltip_elevation             : StringFormat1,
+        tooltip_roll                  : StringFormat1,
+        tooltip_convention_up         : String,
+        tooltip_convention_horizontal : String,
+        tooltip_convention_down       : String,
+        cardinal_up                   : String,
+        cardinal_down                 : String,
+        cardinal_rear                 : String,
+        cardinal_front                : String,
+        cardinal_right                : String,
+        cardinal_left                 : String,
+        cardinal_rear_right           : String,
+        cardinal_front_right          : String,
+        cardinal_front_left           : String,
+        cardinal_rear_left            : String,
+        relative_left                 : String,
+        relative_right                : String,
+        relative_up                   : String,
+        relative_down                 : String,
+        relative_theta                : String,
+        relative_dir_label            : String,
+        abs_dir_label                 : String,
+        direction_incompatible_warning: String,
+        cardinal_horizontal           : String,
+        custom_btn                    : String,
+        custom_dialog_title           : String,
+        custom_option                 : StringFormat1,
+        az_el                         : StringFormat2
+    )
 
     case class AddElement(
         _self                              : String,
@@ -795,8 +830,8 @@ object I18nData:
         SetInitialDirection              : String,
         SetInitialPosition               : String,
         SetFinalPosition                 : String,
-        PostFireboxInitialDirection      : String,
-        PostFireboxInitialPosition       : String,
+        PipeInitialDirection             : String,
+        Position3D                       : String,
         LinedFlue                        : String,
         LinedFlue_liner                  : String,
         LinedFlue_casing                 : String,

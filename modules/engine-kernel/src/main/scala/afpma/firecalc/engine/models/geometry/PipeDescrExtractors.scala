@@ -20,10 +20,9 @@ object PipeDescrExtractors:
 
     given FrameReplay.ElemExtractors[FlowOnlyPipeDescr_13384] =
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_13384.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_13384.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_13384.*
         FrameReplay.ElemExtractors (
-            asInitialDirection  = { case SetInitialDirection(az, incl) => (az, incl) },
+            asInitialDirection  = PartialFunction.empty,
             asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
             asInnerShape        = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir = (e, newAbsDir) =>
@@ -43,10 +42,9 @@ object PipeDescrExtractors:
 
     given FrameReplay.ElemExtractors[FlowOnlyPipeDescr_15544] =
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         FrameReplay.ElemExtractors (
-            asInitialDirection  = { case SetInitialDirection(az, incl) => (az, incl) },
+            asInitialDirection  = PartialFunction.empty,
             asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
             asInnerShape        = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir = (e, newAbsDir) =>
@@ -58,10 +56,9 @@ object PipeDescrExtractors:
 
     given FrameReplay.ElemExtractors[ThermalPipeDescr_13384] =
         import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
-        import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
         import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
         FrameReplay.ElemExtractors (
-            asInitialDirection  = { case SetInitialDirection(az, incl) => (az, incl) },
+            asInitialDirection  = PartialFunction.empty,
             asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
             asInnerShape        = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir = (e, newAbsDir) =>

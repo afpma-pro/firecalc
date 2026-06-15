@@ -4,11 +4,11 @@
  */
 
 package afpma.firecalc.dto
-
-import afpma.firecalc.domain.FireboxAvailability
 import afpma.firecalc.dto.v5.Firebox_V4 as Firebox
+
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.domain.FireboxAvailability
 import io.taig.babel.Locale
 
 object FireboxAvailabilityExtensions:

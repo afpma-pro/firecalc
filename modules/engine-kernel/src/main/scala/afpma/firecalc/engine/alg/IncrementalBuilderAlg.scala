@@ -9,7 +9,8 @@ import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.all.NbOfFlows.*
 import afpma.firecalc.domain.{IsDirectionChange, IsLengthBearingPipeElement, SetsInnerShape, SetsNumberOfFlows}
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.{PipeFrame, Vec3}
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
 import afpma.firecalc.engine.standard.FlowMergeRequiresInnerShapeBeforeDirectionChange
 import afpma.firecalc.engine.standard.FlowMergeRequiresLengthBearingSectionBeforeDirectionChange

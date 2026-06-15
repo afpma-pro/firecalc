@@ -73,14 +73,13 @@ object CasType_15544_C2
         ash_pit_height                   = 5.cm
     )
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            // direction "Rear"
-            setInitialDirection      (
-                azimuth     = AzimuthDirection.Rear,
-                inclination = InclinationDirection.Horizontal
-            ), // "Rear"
             roughness                (3.mm              ),
             innerShape(rectangle(23.cm, 25.1.cm)),
             addSectionHorizontal     ("Car. 1", 31.7.cm ),

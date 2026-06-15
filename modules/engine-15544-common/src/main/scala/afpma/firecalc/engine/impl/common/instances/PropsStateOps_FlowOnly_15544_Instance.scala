@@ -13,6 +13,7 @@ import afpma.firecalc.domain.ShapeState
 import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.standard.PendingFlowAreaCheck
 import afpma.firecalc.engine.typeclasses.*
+import afpma.firecalc.units.Vec3
 
 object PropsStateOps_FlowOnly_15544_Instance:
 

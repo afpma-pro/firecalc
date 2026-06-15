@@ -11,7 +11,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
-import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -205,12 +204,12 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 
     // ── Frame tracking (UI-side, same as FluePipePanel) ──────────
 
-    import afpma.firecalc.engine.models.geometry.Vec3
+    import afpma.firecalc.units.Vec3
 
     // ── Auto-calc: firebox exit position (first flue slot only) ──
 
     private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544] = AutoCalcHelper.ElemExtractors(
-        asInitialDirection   = { case SetInitialDirection(az, incl) => (az, incl) },
+        asInitialDirection   = PartialFunction.empty,
         asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
         asInnerShape         = { case sis: SetInnerShape => sis.shape },
         withDirChangeAbsDir  = (e, newAbsDir) =>
@@ -218,10 +217,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 case x: AddSharpeAngle_0_to_180 => x.copy(absDir = newAbsDir)
                 case x: AddCircularArc_60       => x.copy(absDir = newAbsDir)
                 case _ => e,
-        withInitialDirection = (e, az, incl) =>
-            e match
-                case x: SetInitialDirection => x.copy(azimuth = az, inclination = incl)
-                case _ => e
+        withInitialDirection = (e, _, _) => e
     )
 
     /**
@@ -248,7 +244,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544]].asInnerShape.isDefinedAt(e))
         )
 
-    private def computeAutoPosition(posIdx: Int): Option[SetInitialPosition] =
+    private def computeAutoPosition(posIdx: Int): Option[Position3D] =
         val elems    = welems_var.now()
         val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
         val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
@@ -263,9 +259,9 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 fb.firebox_height.value
             )
             val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
-            SetInitialPosition(x.m, y.m, z.m)
+            Position3D(x.m, y.m, z.m)
 
-    private def autoCalcExtra(posIdx: Int): Var[SetInitialPosition] => HtmlElement =
+    private def autoCalcExtra(posIdx: Int): Var[Position3D] => HtmlElement =
         AutoCalcHelper.autoCalcButton(
             autoCalcStatusSig(posIdx),
             () => computeAutoPosition(posIdx)
@@ -346,17 +342,6 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     ): Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] =
         None
 
-    /**
-     * Build a callback for SetInitialDirection elements at `elemIdx`.
-     *
-     * Direction edits are now detected by the PostFireboxPipePanels observer via
-     * ChainEditDispatcher.detectEdit. Returns None; the observer handles the offer.
-     */
-    private def mkOnInitialDirectionCommit(
-        elemIdx: Int
-    ): Option[(AzimuthDirection, InclinationDirection, AzimuthDirection, InclinationDirection) => Unit] =
-        None
-
     private def relativeDirectionExtra[A <: AddDirectionChange](
         idx   : Int,
         getter: A => Option[AbsoluteDirection],
@@ -434,67 +419,6 @@ final case class DynamicFlowOnlyPipeSlotPanel(
             }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
-                (Int, SetInitialDirection, XtraOutputs    ),
-                HtmlElement
-            ] { case (i, incr: SetInitialDirection, x) =>
-                (i, incr, x)
-            } { (iix, sig) =>
-                val elemIdx = iix._1
-                val extraFn  : Var[SetInitialDirection] => HtmlElement = ev =>
-                    import com.raquo.laminar.api.L.*
-                    mkOnInitialDirectionCommit(elemIdx) match
-                        case None           => span()
-                        case Some(onCommit) =>
-                            var prevAz   = ev.now().azimuth
-                            var prevIncl = ev.now().inclination
-                            span(
-                                ev.signal.changes --> { sid =>
-                                    val oldAz   = prevAz
-                                    val oldIncl = prevIncl
-                                    prevAz   = sid.azimuth
-                                    prevIncl = sid.inclination
-                                    onCommit(oldAz, oldIncl, sid.azimuth, sid.inclination)
-                                }
-                            )
-                renderElemTyped[SetInitialDirection](
-                    elemIdx,
-                    I18N.set_prop.SetInitialDirection,
-                    iix._2,
-                    sig,
-                    isProperty   = true,
-                    extra        = extraFn,
-                    propertyShow = Some(summon[Show[SetInitialDirection]])
-                )
-            }
-            .handleCase[
-                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
-                (Int, SetInitialPosition, XtraOutputs     ),
-                HtmlElement
-            ] { case (i, incr: SetInitialPosition, x) =>
-                (i, incr, x)
-            } { (iix, sig) =>
-                // Auto-calc button only on the first HEAD_REGION slot (index 0) when it's a Flue —
-                // subsequent slots inherit their start position from the previous slot's endpoint.
-                // If the head chain starts with a Connector instead, the sibling predicate
-                // `isFirstHeadSlotAndIsConnectorSig` in the thermal panel takes over.
-                val extraFn  : Var[SetInitialPosition] => HtmlElement = ev =>
-                    div(
-                        child <-- isFirstHeadSlotAndIsFlueSig.map:
-                            case true  => autoCalcExtra(iix._1)(ev)
-                            case false => span()
-                    )
-                renderElemTyped[SetInitialPosition](
-                    iix._1,
-                    I18N.set_prop.SetInitialPosition,
-                    iix._2,
-                    sig,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]]),
-                    extra        = extraFn
-                )
-            }
-            .handleCase[
-                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
                 (Int, AddSectionSlopped, XtraOutputs      ),
                 HtmlElement
             ] { case (i, incr: AddSectionSlopped, x) =>
@@ -563,8 +487,12 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     onBadgeDirectionCommit = mkOnDirectionCommit(iix._1)
                 )
             }
-            .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, AddCircularArc_60, XtraOutputs), HtmlElement] {
-                case (i, incr: AddCircularArc_60, x) => (i, incr, x)
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
+                (Int, AddCircularArc_60, XtraOutputs      ),
+                HtmlElement
+            ] { case (i, incr: AddCircularArc_60, x) =>
+                (i, incr, x)
             } { (iix, sig) =>
                 renderElemTyped[AddCircularArc_60]            (
                     iix._1,
@@ -613,15 +541,6 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     sig,
                     isProperty = false
                 )
-            }
-            .handleCase[
-                (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
-                (Int, SetFinalPosition, XtraOutputs       ),
-                HtmlElement
-            ] { case (i, incr: SetFinalPosition, x) =>
-                (i, incr, x)
-            } { (_, _) =>
-                span()
             }
             .toSignal
             .map(renderV7WrapperElems(slotIndex == 0))

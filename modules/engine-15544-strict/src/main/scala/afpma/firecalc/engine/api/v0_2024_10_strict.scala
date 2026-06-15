@@ -75,8 +75,8 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
 
         override type EN15544_Alg = EN15544_Strict_Application
 
-        def postFireboxInitialDirection: Option[afpma.firecalc.dto.v7.PostFireboxInitialDirection] = None
-        def postFireboxInitialPosition : Option[afpma.firecalc.dto.v7.PostFireboxInitialPosition]  = None
+        def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None
+        def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = None
 
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Strict_Application] = en15544_inputsVNel.map:
             i =>

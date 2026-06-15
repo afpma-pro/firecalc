@@ -13,7 +13,7 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.ops.generic.TopologyError
 
 import afpma.firecalc.ui.*
@@ -383,12 +383,12 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         val v7          = V7FormInstances()
         import v7.given
         val pipeTypeCls = "pipe-type-no-flue"
-        val dirWidget   = renderV7PropertyModal[PostFireboxInitialDirection](
-            title = I18N.set_prop.PostFireboxInitialDirection,
+        val dirWidget   = renderV7PropertyModal[PipeInitialDirection](
+            title = I18N.set_prop.PipeInitialDirection,
             v     = postFireboxInitialDir_var
         )
-        val posWidget   = renderV7PropertyModal[PostFireboxInitialPosition](
-            title = I18N.set_prop.PostFireboxInitialPosition,
+        val posWidget   = renderV7PropertyModal[Position3D](
+            title = I18N.set_prop.Position3D,
             v     = postFireboxInitialPos_var
         )
         div(

@@ -11,7 +11,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 import afpma.firecalc.dto.all.ThermalChannelTopologyOp_13384.*
-import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
 
 import afpma.firecalc.i18n.implicits.given
 
@@ -63,15 +62,6 @@ object defaultable_13384:
             def default = SetPipeLocation(pipeLocation.default)
         given Defaultable[SetDuctType]:
             def default = SetDuctType(DuctType.NonConcentricDuctsHighThermalResistance)
-        given Defaultable[SetInitialDirection]:
-            def default = SetInitialDirection(
-                azimuth     = AzimuthDirection.Rear,
-                inclination = InclinationDirection.Up
-            )
-        given Defaultable[SetInitialPosition]:
-            def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
-        given Defaultable[SetFinalPosition]:
-            def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
         given Defaultable[SetNumberOfFlows]:
             def default = SetNumberOfFlows(divideFlowIn.default)
         given Locale => Defaultable[AddSectionSlopped]:

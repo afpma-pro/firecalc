@@ -14,7 +14,6 @@ import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as TP4
-import afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4
 
 import afpma.firecalc.engine.api.v0_2024_10_mce
 import afpma.firecalc.engine.models
@@ -108,6 +107,11 @@ object MCENPipeFixture_15544
         facing_type    = FacingType.WithoutAirGap
     )
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+    override def postFireboxInitialPosition  = Some(Position3D.Origin)
+
     val fluegas_h2o_perc_vol_nominal = None
     val fluegas_h2o_perc_vol_lowest  = None
 
@@ -133,46 +137,40 @@ object MCENPipeFixture_15544
     val fluePipeDescr =
         import FluePipe_Module_13384.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ),
-            pipeLocation           (PipeLocation.HeatedArea      ),
-            roughness              (3.mm                         ),
+            pipeLocation        (PipeLocation.HeatedArea      ),
+            roughness           (3.mm                         ),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
-            layer                  (e = 1.cm, λ = 0.89.W_per_mK  ),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm      ),
-            addSharpAngle_90deg    (
+            layer               (e = 1.cm, λ = 0.89.W_per_mK  ),
+            addSectionHorizontal("sortie foyer", 28.1.cm      ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.737.m)
+            addSectionVertical  ("colonne ascendante", 3.737.m)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.mm, tr                           = SquareMeterKelvinPerWatt(0.001)),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("buse", 6.cm                                                                  )
+            layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
+            pipeLocation      (PipeLocation.HeatedArea                       ),
+            addSectionVertical("buse", 6.cm                                  )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.5.cm, tr                         = SquareMeterKelvinPerWatt(0.260)),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("etage", 57.cm                                                                ),
-            pipeLocation       (PipeLocation.OutsideOrExterior                                                ),
-            addSectionVertical ("sortie de toit", 93.cm                                                       ),
-            addFlowResistance  ("element terminal", 1.423.unitless: ζ)
+            layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
+            pipeLocation      (PipeLocation.HeatedArea                         ),
+            addSectionVertical("etage", 57.cm                                  ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                  ),
+            addSectionVertical("sortie de toit", 93.cm                         ),
+            addFlowResistance ("element terminal", 1.423.unitless: ζ)
         )
 
     // ── 4-slot N-pipe override ────────────────────────────────────────────────────
@@ -194,16 +192,12 @@ object MCENPipeFixture_15544
             // Slot 0 — ThermalFlueSlot #1: horizontal exit from firebox + 90° turn upward
             PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
                 Seq(
-                    ThermalPipeTrackingOp_13384_V4.SetInitialDirection    (
-                        azimuth     = AzimuthDirection.Right,
-                        inclination = InclinationDirection.Horizontal
-                    ),
-                    SP4.SetPipeLocation                                   (PipeLocation.HeatedArea   ),
-                    SP4.SetRoughness                                      (3.mm                      ),
+                    SP4.SetPipeLocation       (PipeLocation.HeatedArea   ),
+                    SP4.SetRoughness          (3.mm                      ),
                     SP4.SetInnerShape(rectangle(11.1.cm, 15.3.cm)),
-                    SP4.SetLayer                                          (1.cm, 0.89.W_per_mK       ),
-                    TP4.AddSectionHorizontal                              ("F1-sortie foyer", 28.1.cm),
-                    TP4.AddSharpeAngle_0_to_90                            (
+                    SP4.SetLayer              (1.cm, 0.89.W_per_mK       ),
+                    TP4.AddSectionHorizontal  ("F1-sortie foyer", 28.1.cm),
+                    TP4.AddSharpeAngle_0_to_90(
                         "F1-virage 90 deg (-> Haut)",
                         90.degrees,
                         Some(AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up))
@@ -324,6 +318,11 @@ object MCENPipeFixture_15544_CFCF
         facing_type    = FacingType.WithoutAirGap
     )
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+    override def postFireboxInitialPosition  = Some(Position3D.Origin)
+
     val fluegas_h2o_perc_vol_nominal = None
     val fluegas_h2o_perc_vol_lowest  = None
 
@@ -347,46 +346,40 @@ object MCENPipeFixture_15544_CFCF
     val fluePipeDescr =
         import FluePipe_Module_13384.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ),
-            pipeLocation           (PipeLocation.HeatedArea      ),
-            roughness              (3.mm                         ),
+            pipeLocation        (PipeLocation.HeatedArea      ),
+            roughness           (3.mm                         ),
             innerShape(rectangle(11.1.cm, 15.3.cm)),
-            layer                  (e = 1.cm, λ = 0.89.W_per_mK  ),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm      ),
-            addSharpAngle_90deg    (
+            layer               (e = 1.cm, λ = 0.89.W_per_mK  ),
+            addSectionHorizontal("sortie foyer", 28.1.cm      ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.737.m)
+            addSectionVertical  ("colonne ascendante", 3.737.m)
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.mm, tr                           = SquareMeterKelvinPerWatt(0.001)),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("buse", 6.cm                                                                  )
+            layer             (e = 2.mm, tr = SquareMeterKelvinPerWatt(0.001)),
+            pipeLocation      (PipeLocation.HeatedArea                       ),
+            addSectionVertical("buse", 6.cm                                  )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
         Seq (
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up        ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(130.mm)              ),
-            layer              (e       = 2.5.cm, tr                         = SquareMeterKelvinPerWatt(0.260)),
-            pipeLocation       (PipeLocation.HeatedArea                                                       ),
-            addSectionVertical ("etage", 57.cm                                                                ),
-            pipeLocation       (PipeLocation.OutsideOrExterior                                                ),
-            addSectionVertical ("sortie de toit", 93.cm                                                       ),
-            addFlowResistance  ("element terminal", 1.423.unitless: ζ)
+            layer             (e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.260)),
+            pipeLocation      (PipeLocation.HeatedArea                         ),
+            addSectionVertical("etage", 57.cm                                  ),
+            pipeLocation      (PipeLocation.OutsideOrExterior                  ),
+            addSectionVertical("sortie de toit", 93.cm                         ),
+            addFlowResistance ("element terminal", 1.423.unitless: ζ)
         )
 
     // ── 6-slot N-pipe override: [C, F, C, F, Cterm, CH] ──────────────────
@@ -398,15 +391,11 @@ object MCENPipeFixture_15544_CFCF
             // Slot 0 — ConnectorSlot #1: head connector (first slot, Connector-first)
             PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
                 Seq (
-                    ThermalPipeTrackingOp_13384_V4.SetInitialDirection    (
-                        azimuth     = AzimuthDirection.Right,
-                        inclination = InclinationDirection.Horizontal
-                    ),
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),
-                    SP4.SetLayer                                          (2.mm, WattsPerMeterKelvin(0.001)),
-                    SP4.SetPipeLocation                                   (PipeLocation.HeatedArea         ),
-                    TP4.AddSectionHorizontal                              ("C1-head-connector", 20.cm      )
+                    SP4.SetLayer            (2.mm, WattsPerMeterKelvin(0.001)),
+                    SP4.SetPipeLocation     (PipeLocation.HeatedArea         ),
+                    TP4.AddSectionHorizontal("C1-head-connector", 20.cm      )
                 )
             ),
             // Slot 1 — ThermalFlueSlot #1: horizontal flue + 90° turn upward

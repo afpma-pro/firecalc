@@ -38,7 +38,6 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
     case class GrammarSetInnerShape(shape: PipeShape)      extends TestSetProp with SetsInnerShape
     case class GrammarSetRoughness(roughness: Length)      extends TestSetProp
     case class GrammarSetMaterial(material: String)        extends TestSetProp
-    case class GrammarSetInitialDirection(dir: String)     extends TestSetProp
     case class GrammarSetNumberOfFlows(n_flows: NbOfFlows) extends TestSetProp with SetsNumberOfFlows
 
     // ---- Test AddElement types ----
@@ -153,8 +152,6 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
                         case GrammarSetRoughness(_)      =>
                             vState // shape-independent
                         case GrammarSetMaterial(_) =>
-                            vState // shape-independent
-                        case GrammarSetInitialDirection(_) =>
                             vState // shape-independent
                         case GrammarSetNumberOfFlows(_) =>
                             vState.andThen { st =>
@@ -411,13 +408,14 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
         result.isValid shouldBe true
     }
 
-    it should "accept SetInnerShape then SetInitialDirection then section" in {
-        // Test 13: SetInnerShape → SetInitialDirection → AddSectionSlopped — accepted
+    it should "accept a sequence of properties before section" in {
+        // Test 13: SetInnerShape → SetRoughness → SetMaterial → AddSectionSlopped — accepted
         val builder = newBuilder
         val descr   = builder.define(
             GrammarSetInnerShape(PipeShape.Circle(100.mm)),
-            GrammarSetInitialDirection("up"          ),
-            GrammarSectionSlopped     ("s1", 1.meters)
+            GrammarSetRoughness  (2.mm          ),
+            GrammarSetMaterial   ("steel"       ),
+            GrammarSectionSlopped("s1", 1.meters)
         )
         val result  = descr.toFullDescr()
         result.isValid shouldBe true

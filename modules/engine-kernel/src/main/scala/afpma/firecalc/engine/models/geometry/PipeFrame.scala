@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.models.geometry
 
+import afpma.firecalc.units.Vec3
+
 /**
  * Local frame that rides along a pipe.
  * direction: unit vector in the direction of flow
@@ -48,9 +50,6 @@ case class PipeFrame(direction: Vec3, upRef: Vec3):
 
     /** Returns (azimuth, elevation) of direction in absolute coordinates (degrees) */
     def directionAsAbsolute: (Double, Double) = direction.toAzimuthElevation
-
-    /** Display string for UI using 3-tier cardinal logic */
-    def directionDisplayString: String = direction.toDisplayString
 
     /**
      * Compute the roll angle (degrees) such that `applyBend(deflectionDeg, roll)` produces `targetDir`.

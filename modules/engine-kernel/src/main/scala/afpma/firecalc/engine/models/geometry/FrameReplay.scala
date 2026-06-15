@@ -8,6 +8,7 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.PipeShape
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection

@@ -8,8 +8,10 @@ package afpma.firecalc.engine.models
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -32,6 +34,24 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
             AddThermalPipeElement_13384.AddSectionVertical(name, 100.cm                     )
         )
+
+    private val rearUpFrame = Some(
+        PipeFrame.initial(
+            Vec3.fromAzimuthElevation(
+                AzimuthDirection.toDegrees    (AzimuthDirection.Rear  ),
+                InclinationDirection.toDegrees(InclinationDirection.Up)
+            )
+        )
+    )
+
+    private val rearHorizontalFrame = Some(
+        PipeFrame.initial(
+            Vec3.fromAzimuthElevation(
+                AzimuthDirection.toDegrees    (AzimuthDirection.Rear          ),
+                InclinationDirection.toDegrees(InclinationDirection.Horizontal)
+            )
+        )
+    )
 
     "PipeChainGeneric.build" should "produce 3 SlotBuildResults for standard topology" in {
         val results = PipeChainGeneric.build(Seq(emptyFlue, emptyConnector, emptyChimney))
@@ -81,20 +101,21 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "produce non-empty results with actual descriptors" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
-        val results   = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), emptyConnector, emptyChimney))
+        val results   = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), emptyConnector, emptyChimney),
+            initialFrame = rearUpFrame
+        )
         results(0).pipe.isValid shouldBe true
-        // With actual descriptors + direction, the idsMappingFn should map index 3 (the AddSection) to a section result index
+        // With actual descriptors + direction, the idsMappingFn should map index 2 (the AddSection) to a section result index
         results(0).idsMappingFn.isValid shouldBe true
         val fn        = results(0).idsMappingFn.toOption.get
-        // Index 3 is the AddSectionVertical → should map to a section result
-        fn(3).isDefined shouldBe true
+        // Index 2 is the AddSectionVertical → should map to a section result
+        fn(2).isDefined shouldBe true
         // Properties (indices 0-2) shouldn't map to section results
         fn(0) shouldBe None
         // Final frame should be present (direction was set)
@@ -104,14 +125,12 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frames: flue's final frame feeds connector's build" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // Flue with direction → produces a final frame
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
         // Connector with minimal thermal config — no initial direction, relies on flue's frame
         val connDescr = Seq[ThermalPipeDescr_13384](
@@ -122,7 +141,10 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
             AddThermalPipeElement_13384.AddSectionVertical("sec1", 100.cm                   )
         )
-        val results   = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), ConnectorSlot(connDescr), emptyChimney))
+        val results   = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), ConnectorSlot(connDescr), emptyChimney),
+            initialFrame = rearUpFrame
+        )
 
         // Flue produced a final frame
         results(0).finalFrame.isDefined shouldBe true
@@ -135,17 +157,18 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "carry frame through empty intermediate slot (V5 migration regression)" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // Flue with direction → produces a final frame
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
         // Empty connector — simulates V5 project with no connector migrated to V6
-        val results   = PipeChainGeneric.build(Seq(FlueSlot(flueDescr), emptyConnector, emptyChimney))
+        val results   = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), emptyConnector, emptyChimney),
+            initialFrame = rearUpFrame
+        )
 
         // Flue produced a final frame
         results(0).finalFrame.isDefined shouldBe true
@@ -218,14 +241,12 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frames through 3+ flue slots with actual descriptors" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
-        // First flue: sets direction and adds a vertical section
+        // First flue: starts from wrapper frame and adds a vertical section
         val flueDescr1 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
         // Second flue: no initial direction, relies on frame from first flue
         val flueDescr2 = Seq[FlowOnlyPipeDescr_15544](
@@ -240,7 +261,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             AddSectionVertical("sec3", 60.cm)
         )
         val results    = PipeChainGeneric.build(
-            Seq(FlueSlot(flueDescr1), FlueSlot(flueDescr2), FlueSlot(flueDescr3), emptyChimney)
+            Seq(FlueSlot(flueDescr1), FlueSlot(flueDescr2), FlueSlot(flueDescr3), emptyChimney),
+            initialFrame = rearUpFrame
         )
 
         results.size shouldBe 4
@@ -260,14 +282,12 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frame from FlueSlot through ThermalFlueSlot to ConnectorSlot" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
-        // EN15544 flue with direction → produces a final frame
+        // EN15544 flue starts from wrapper frame → produces a final frame
         val flueDescr        = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
         // EN13384 thermal flue — no initial direction, inherits frame from EN15544 flue
         val thermalFlueDescr = Seq[ThermalPipeDescr_13384](
@@ -288,7 +308,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             AddThermalPipeElement_13384.AddSectionVertical("sec3", 50.cm                    )
         )
         val results          = PipeChainGeneric.build(
-            Seq(FlueSlot(flueDescr), ThermalFlueSlot(thermalFlueDescr), ConnectorSlot(connDescr), emptyChimney)
+            Seq(FlueSlot(flueDescr), ThermalFlueSlot(thermalFlueDescr), ConnectorSlot(connDescr), emptyChimney),
+            initialFrame = rearUpFrame
         )
 
         results.size shouldBe 4
@@ -307,19 +328,18 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "propagate frame across empty flue slot in multi-flue chain" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
-        // First flue with direction → produces a final frame
+        // First flue starts from wrapper frame → produces a final frame
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
         // Second flue is empty (e.g., placeholder in V6 multi-slot topology)
         // Third slot is chimney
         val results   = PipeChainGeneric.build(
-            Seq(FlueSlot(flueDescr), FlueSlot(Seq.empty), emptyChimney)
+            Seq(FlueSlot(flueDescr), FlueSlot(Seq.empty), emptyChimney),
+            initialFrame = rearUpFrame
         )
 
         results.size shouldBe 3
@@ -375,16 +395,14 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
 
     it should "chain frames through multiple ThermalFlueSlots with actual descriptors" in {
 
-        // First thermal flue sets direction via initial frame from previous slot = None,
-        // but has its own descriptors with a vertical section
+        // First thermal flue starts from wrapper frame and adds a vertical section
         val thermalFlueDescr1 = Seq[ThermalPipeDescr_13384](
             SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
             SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
-            SetThermalPipeProp_13384.SetLayer              (2.0.mm, WattsPerMeterKelvin(50.0)             ),
-            SetThermalPipeProp_13384.SetRoughness          (1.mm                                          ),
-            SetThermalPipeProp_13384.SetPipeLocation       (PipeLocation.HeatedArea                       ),
-            ThermalPipeTrackingOp_13384.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddThermalPipeElement_13384.AddSectionVertical ("sec1", 100.cm                                )
+            SetThermalPipeProp_13384.SetLayer             (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness         (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation      (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical("sec1", 100.cm                   )
         )
         // Second thermal flue inherits frame
         val thermalFlueDescr2 = Seq[ThermalPipeDescr_13384](
@@ -396,7 +414,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             AddThermalPipeElement_13384.AddSectionVertical("sec2", 80.cm                    )
         )
         val results           = PipeChainGeneric.build(
-            Seq(ThermalFlueSlot(thermalFlueDescr1), ThermalFlueSlot(thermalFlueDescr2), emptyChimney)
+            Seq(ThermalFlueSlot(thermalFlueDescr1), ThermalFlueSlot(thermalFlueDescr2), emptyChimney),
+            initialFrame = rearUpFrame
         )
 
         results.size shouldBe 3
@@ -413,14 +432,12 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "chain frame across 4 mixed slots: FlueSlot + ThermalFlueSlot + ThermalFlueSlot + ChimneySlot" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
-        // EN15544 flue with direction
+        // EN15544 flue starts from wrapper frame
         val flueDescr         = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
         // First EN13384 thermal flue — inherits frame from EN15544 flue
         val thermalFlueDescr1 = Seq[ThermalPipeDescr_13384](
@@ -446,7 +463,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
                 ThermalFlueSlot(thermalFlueDescr1),
                 ThermalFlueSlot(thermalFlueDescr2),
                 emptyChimney
-            )
+            ),
+            initialFrame = rearUpFrame
         )
 
         results.size shouldBe 4
@@ -467,14 +485,12 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "produce independent idsMappingFn per slot in multi-flue topology" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
 
         // Two flues with sections at different indices within their descriptor sequences
         val flueDescr1 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("sec1", 100.cm                                )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("sec1", 100.cm)
         )
         val flueDescr2 = Seq[FlowOnlyPipeDescr_15544](
             SetInnerShape(Circle(150.mm)),
@@ -482,7 +498,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             AddSectionVertical("sec2", 80.cm)
         )
         val results    = PipeChainGeneric.build(
-            Seq(FlueSlot(flueDescr1), FlueSlot(flueDescr2), emptyChimney)
+            Seq(FlueSlot(flueDescr1), FlueSlot(flueDescr2), emptyChimney),
+            initialFrame = rearUpFrame
         )
 
         // Both slots have valid mapping functions
@@ -491,8 +508,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         val fn0 = results(0).idsMappingFn.toOption.get
         val fn1 = results(1).idsMappingFn.toOption.get
 
-        // Flue 1: index 3 (AddSectionVertical) maps to a section
-        fn0(3).isDefined shouldBe true
+        // Flue 1: index 2 (AddSectionVertical) maps to a section
+        fn0(2).isDefined shouldBe true
         // Flue 1: property indices don't map
         fn0(0) shouldBe None
         fn0(1) shouldBe None
@@ -507,15 +524,14 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "inherit flow count from flow-only flue into connector and chimney" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
+        // Use horizontal pipe so flow split (2 flows) isn't blocked by FlowSplitForbiddenOnAscendingPipe
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
-            SetNumberOfFlows   (2.flows                                       ),
+            SetNumberOfFlows    (2.flows       ),
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("flue", 100.cm                                )
+            SetRoughness        (1.mm          ),
+            AddSectionHorizontal("flue", 100.cm)
         )
 
         val results = PipeChainGeneric.build(
@@ -523,23 +539,23 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
                 FlueSlot(flueDescr),
                 ConnectorSlot(thermalPipeDescr("connector")),
                 ChimneySlot  (thermalPipeDescr("chimney")  )
-            )
+            ),
+            initialFrame = rearHorizontalFrame
         )
 
         results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
     }
 
     it should "inherit flow count from thermal flue into connector and chimney" in {
-        // Put SetNumberOfFlows before SetInitialDirection so the split check sees no frame yet
+        // Use horizontal pipe so flow split (2 flows) isn't blocked by FlowSplitForbiddenOnAscendingPipe
         val thermalFlueDescr = Seq[ThermalPipeDescr_13384](
-            ThermalChannelTopologyOp_13384.SetNumberOfFlows(2.flows                                       ),
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows (2.flows                          ),
             SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
             SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
-            SetThermalPipeProp_13384.SetLayer              (2.0.mm, WattsPerMeterKelvin(50.0)             ),
-            SetThermalPipeProp_13384.SetRoughness          (1.mm                                          ),
-            SetThermalPipeProp_13384.SetPipeLocation       (PipeLocation.HeatedArea                       ),
-            ThermalPipeTrackingOp_13384.SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddThermalPipeElement_13384.AddSectionVertical ("flue", 100.cm                                )
+            SetThermalPipeProp_13384.SetLayer               (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness           (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation        (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionHorizontal("flue", 100.cm                   )
         )
 
         val results = PipeChainGeneric.build(
@@ -547,7 +563,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
                 ThermalFlueSlot(thermalFlueDescr),
                 ConnectorSlot(thermalPipeDescr("connector")),
                 ChimneySlot  (thermalPipeDescr("chimney")  )
-            )
+            ),
+            initialFrame = rearHorizontalFrame
         )
 
         results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
@@ -556,16 +573,14 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "let an explicit next-slot flow count override the inherited value" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
         // Use Horizontal so the connector's split (2→3) isn't blocked by validateSplitNotOnAscending
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
-            SetNumberOfFlows   (2.flows                                               ),
+            SetNumberOfFlows  (2.flows       ),
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                                  ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-            AddSectionVertical ("flue", 100.cm                                        )
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("flue", 100.cm)
         )
 
         val results = PipeChainGeneric.build(
@@ -573,7 +588,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
                 FlueSlot(flueDescr),
                 ConnectorSlot(thermalPipeDescr("connector", flows = Some(3.flows))),
                 ChimneySlot  (thermalPipeDescr("chimney")                         )
-            )
+            ),
+            initialFrame = rearHorizontalFrame
         )
 
         results.map(_.finalNFlows) shouldBe Vector(2.flows, 3.flows, 3.flows)
@@ -582,22 +598,21 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "inherit the terminal flow count from a slot, not the first element flow count" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
         // Use Horizontal direction so the split (2→3 flows) isn't blocked by validateSplitNotOnAscending
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
-            SetNumberOfFlows   (2.flows                                               ),
+            SetNumberOfFlows  (2.flows         ),
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                                  ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
-            AddSectionVertical ("flue-1", 100.cm                                      ),
-            SetNumberOfFlows   (3.flows                                               ),
-            AddSectionVertical ("flue-2", 100.cm                                      )
+            SetRoughness      (1.mm            ),
+            AddSectionVertical("flue-1", 100.cm),
+            SetNumberOfFlows  (3.flows         ),
+            AddSectionVertical("flue-2", 100.cm)
         )
 
         val results = PipeChainGeneric.build(
-            Seq(FlueSlot(flueDescr), ConnectorSlot(thermalPipeDescr("connector")))
+            Seq(FlueSlot(flueDescr), ConnectorSlot(thermalPipeDescr("connector"))),
+            initialFrame = rearHorizontalFrame
         )
 
         results.map(_.finalNFlows) shouldBe Vector(3.flows, 3.flows)
@@ -606,22 +621,97 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     it should "preserve inherited flow count through an empty connector" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
-        import afpma.firecalc.dto.all.FlowOnlyPipeTrackingOp_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
+        // Use horizontal pipe so flow split (2 flows) isn't blocked by FlowSplitForbiddenOnAscendingPipe
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
-            SetNumberOfFlows   (2.flows                                       ),
+            SetNumberOfFlows    (2.flows       ),
             SetInnerShape(Circle(150.mm)),
-            SetRoughness       (1.mm                                          ),
-            SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up),
-            AddSectionVertical ("flue", 100.cm                                )
+            SetRoughness        (1.mm          ),
+            AddSectionHorizontal("flue", 100.cm)
         )
 
         val results = PipeChainGeneric.build(
-            Seq(FlueSlot(flueDescr), ConnectorSlot(Seq.empty), ChimneySlot(thermalPipeDescr("chimney")))
+            Seq(FlueSlot(flueDescr), ConnectorSlot(Seq.empty), ChimneySlot(thermalPipeDescr("chimney"))),
+            initialFrame = rearHorizontalFrame
         )
 
         results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
+    }
+
+    // ── V7 FlowSplitForbiddenOnAscendingPipe negative tests ──────────────
+
+    it should "reject flow split on ascending pipe in flow-only flue (FlowSplitForbiddenOnAscendingPipe)" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
+
+        // Ascending pipe with SetNumberOfFlows(2.flows) — should be rejected, falling back to 1 flow
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
+            SetNumberOfFlows  (2.flows       ),
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("flue", 100.cm)
+        )
+
+        val results = PipeChainGeneric.build(
+            Seq(
+                FlueSlot(flueDescr),
+                ConnectorSlot(thermalPipeDescr("connector")),
+                ChimneySlot  (thermalPipeDescr("chimney")  )
+            ),
+            initialFrame = rearUpFrame
+        )
+
+        // Flow split forbidden on ascending pipe → falls back to 1 flow
+        results.map(_.finalNFlows) shouldBe Vector(1.flows, 1.flows, 1.flows)
+    }
+
+    it should "reject flow split on ascending pipe in thermal flue (FlowSplitForbiddenOnAscendingPipe)" in {
+        // Ascending pipe with SetNumberOfFlows(2.flows) — should be rejected, falling back to 1 flow
+        val thermalFlueDescr = Seq[ThermalPipeDescr_13384](
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows(2.flows                          ),
+            SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
+            SetThermalPipeProp_13384.SetMaterial  (Material_13384.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer              (2.0.mm, WattsPerMeterKelvin(50.0)),
+            SetThermalPipeProp_13384.SetRoughness          (1.mm                             ),
+            SetThermalPipeProp_13384.SetPipeLocation       (PipeLocation.HeatedArea          ),
+            AddThermalPipeElement_13384.AddSectionVertical ("flue", 100.cm                   )
+        )
+
+        val results = PipeChainGeneric.build(
+            Seq(
+                ThermalFlueSlot(thermalFlueDescr),
+                ConnectorSlot(thermalPipeDescr("connector")),
+                ChimneySlot  (thermalPipeDescr("chimney")  )
+            ),
+            initialFrame = rearUpFrame
+        )
+
+        // Flow split forbidden on ascending pipe → falls back to 1 flow
+        results.map(_.finalNFlows) shouldBe Vector(1.flows, 1.flows, 1.flows)
+    }
+
+    it should "reject flow split on ascending pipe through empty connector (FlowSplitForbiddenOnAscendingPipe)" in {
+        import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+        import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
+        import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
+
+        // Ascending pipe with SetNumberOfFlows(2.flows) — should be rejected, falling back to 1 flow
+        val flueDescr = Seq[FlowOnlyPipeDescr_15544](
+            SetNumberOfFlows  (2.flows       ),
+            SetInnerShape(Circle(150.mm)),
+            SetRoughness      (1.mm          ),
+            AddSectionVertical("flue", 100.cm)
+        )
+
+        val results = PipeChainGeneric.build(
+            Seq(FlueSlot(flueDescr), ConnectorSlot(Seq.empty), ChimneySlot(thermalPipeDescr("chimney"))),
+            initialFrame = rearUpFrame
+        )
+
+        // Flow split forbidden on ascending pipe → falls back to 1 flow
+        results.map(_.finalNFlows) shouldBe Vector(1.flows, 1.flows, 1.flows)
     }
 
 end PipeChainGenericSuite

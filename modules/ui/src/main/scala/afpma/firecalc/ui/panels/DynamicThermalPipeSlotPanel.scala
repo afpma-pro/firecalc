@@ -8,7 +8,6 @@ package afpma.firecalc.ui.panels
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.all.ThermalPipeTrackingOp_13384.*
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -154,24 +153,6 @@ final case class DynamicThermalPipeSlotPanel(
         // ChainEditDispatcher.detectEdit. No explicit offer construction needed here.
         None
 
-    override protected def initialDirectionExtraFn(idx: Int): Var[SetInitialDirection] => HtmlElement =
-        ev =>
-            import com.raquo.laminar.api.L.*
-            mkOnInitialDirectionCommit_thermal(idx) match
-                case None           => span()
-                case Some(onCommit) =>
-                    var prevAz   = ev.now().azimuth
-                    var prevIncl = ev.now().inclination
-                    span(
-                        ev.signal.changes --> { sid =>
-                            val oldAz   = prevAz
-                            val oldIncl = prevIncl
-                            prevAz   = sid.azimuth
-                            prevIncl = sid.inclination
-                            onCommit(oldAz, oldIncl, sid.azimuth, sid.inclination)
-                        }
-                    )
-
     /**
      * Reactive: is this slot the first HEAD_REGION slot (index 0) AND is it a
      * `ConnectorSlot`? In that case the auto-calc button (normally attached to
@@ -219,7 +200,7 @@ final case class DynamicThermalPipeSlotPanel(
         welems_var.signal.map: elems =>
             AutoCalcHelper.replayFrame(elems, posIdx)
 
-    private def computeConnectorAutoPosition(posIdx: Int): Option[SetInitialPosition] =
+    private def computeConnectorAutoPosition(posIdx: Int): Option[Position3D] =
         val elems    = welems_var.now()
         val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
         val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
@@ -234,21 +215,21 @@ final case class DynamicThermalPipeSlotPanel(
                 fb.firebox_height.value
             )
             val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
-            SetInitialPosition(x.m, y.m, z.m)
+            Position3D(x.m, y.m, z.m)
 
-    override protected def initialPositionExtraFn(idx: Int): Var[SetInitialPosition] => HtmlElement =
+    protected def initialPositionExtraFn(idx: Int): Var[Position3D] => HtmlElement =
         ev =>
             div(
                 child <-- isFirstHeadSlotAndIsConnectorSig.map:
                     case true  =>
-                        AutoCalcHelper.autoCalcButton[SetInitialPosition](
+                        AutoCalcHelper.autoCalcButton[Position3D](
                             connectorAutoCalcStatusSig(idx),
                             () => computeConnectorAutoPosition(idx)
                         )(ev)
                     case false => span(),
                 child <-- isFirstHeadSlotAndIsFlueSig.map:
                     case true  =>
-                        AutoCalcHelper.autoCalcButton[SetInitialPosition](
+                        AutoCalcHelper.autoCalcButton[Position3D](
                             connectorAutoCalcStatusSig(idx),
                             () => computeConnectorAutoPosition(idx)
                         )(ev)

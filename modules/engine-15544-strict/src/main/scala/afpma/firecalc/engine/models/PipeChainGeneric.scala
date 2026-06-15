@@ -5,10 +5,8 @@
 
 package afpma.firecalc.engine.models
 
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-
-import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers
+import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import cats.data.Validated
 
@@ -22,10 +20,10 @@ import cats.data.Validated
 object PipeChainGeneric:
 
     def build(
-        slots           : Seq[PostFireboxPipeDescrSlot_V7],
-        initialDirection: Option[PostFireboxInitialDirection] = None
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
+        initialFrame: Option[PipeFrame] = None
     ): Vector[SlotBuildResult] =
-        val initialSeed = PipeBuildSeed.fromFrame(initialDirection.map(PostFireboxFrameHelpers.toPipeFrame))
+        val initialSeed = PipeBuildSeed.fromFrame(initialFrame)
         slots
             .foldLeft((Vector.empty[SlotBuildResult], initialSeed)):
                 case ((results, seed), slot) =>

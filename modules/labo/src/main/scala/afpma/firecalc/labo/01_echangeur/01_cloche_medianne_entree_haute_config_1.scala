@@ -96,97 +96,96 @@ object `01_cloche_medianne_entree_haute_config_1`
 
     val airIntakePipe =
         import AirIntakePipe_Module.*
-        define(
-            setInitialDirection    (azimuth                                    = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // Up
-            addFlowResistance      ("grille", 1.2.unitless, hydraulic_diameter = 154.mm                                                      ),
-            pipeLocation           (Area.Exterieure                                                                                          ),
-            roughness              (Tube_PVC                                                                                                 ), // Tube PVC
-            innerShape(circle(154.mm)),
-            layer                  (e                                          = 2.mm, λ                            = 1.3.W_per_mK           ),
-            addSectionVertical     ("entrée verticale", 114.5.cm + 12.2.cm                                                                   ),
-            addCoudeCourbe90_unsafe(
-                "coude courbe 90° (R=12.2cm)",
-                12.2.cm,
-                absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
-            ), // Front (TOCHECK)
+        incremental
+            .withInitialDirection(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
+            .define(
+                addFlowResistance      ("grille", 1.2.unitless, hydraulic_diameter = 154.mm                ),
+                pipeLocation           (Area.Exterieure                                                    ),
+                roughness              (Tube_PVC                                                           ), // Tube PVC
+                innerShape(circle(154.mm)),
+                layer                  (e                                          = 2.mm, λ = 1.3.W_per_mK),
+                addSectionVertical     ("entrée verticale", 114.5.cm + 12.2.cm                             ),
+                addCoudeCourbe90_unsafe(
+                    "coude courbe 90° (R=12.2cm)",
+                    12.2.cm,
+                    absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                ), // Front (TOCHECK)
 
-            pipeLocation           (Area.NonChauffee                                                                                         ),
-            addSectionHorizontal   ("traversée mur", 62.8.cm                                                                                 ), // non cohérent sur sketchup
+                pipeLocation           (Area.NonChauffee                                                   ),
+                addSectionHorizontal   ("traversée mur", 62.8.cm                                           ), // non cohérent sur sketchup
 
-            addSectionHorizontal   ("horizontal en combles", 0.0.cm      ),
-            pipeLocation           (Area.DansLaPieceDuPoele              ),
-            addCoudeCourbe90_unsafe(
-                "vertical en combles",
-                12.2.cm,
-                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
-            ), // Down (TOCHECK)
+                addSectionHorizontal   ("horizontal en combles", 0.0.cm      ),
+                pipeLocation           (Area.DansLaPieceDuPoele              ),
+                addCoudeCourbe90_unsafe(
+                    "vertical en combles",
+                    12.2.cm,
+                    absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+                ), // Down (TOCHECK)
 
-            addSectionVertical     ("P01", -196.1.cm                     ),
-            addSectionVertical     ("anémomètre", -39.5.cm               ),
-            addSectionVertical     ("capteur humidité", -104.cm          ),
-            addSectionVertical     ("descente 4", -38.7.cm               ),
-            addCoudeCourbe90_unsafe(
-                "coude courbe 90° (R=12.2cm)",
-                12.2.cm,
-                absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
-            ), // Front (TOCHECK)
+                addSectionVertical     ("P01", -196.1.cm                     ),
+                addSectionVertical     ("anémomètre", -39.5.cm               ),
+                addSectionVertical     ("capteur humidité", -104.cm          ),
+                addSectionVertical     ("descente 4", -38.7.cm               ),
+                addCoudeCourbe90_unsafe(
+                    "coude courbe 90° (R=12.2cm)",
+                    12.2.cm,
+                    absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                ), // Front (TOCHECK)
 
-            addSectionHorizontal   ("avt clapet", 23.7.cm                ),
-            addFlowResistance      ("clapet zeta = 0.3!", 0.3.unitless: ζ),
-            addSectionHorizontal   ("P02!", 55.2.cm                      ),
-            addSectionHorizontal   ("final vers foyer", 63.8.cm          )
-        )
+                addSectionHorizontal   ("avt clapet", 23.7.cm                ),
+                addFlowResistance      ("clapet zeta = 0.3!", 0.3.unitless: ζ),
+                addSectionHorizontal   ("P02!", 55.2.cm                      ),
+                addSectionHorizontal   ("final vers foyer", 63.8.cm          )
+            )
             .toFullDescr()
             .extractPipe
 
     val combustionAirPipe =
         import CombustionAirPipe_Module_13384.*
-        define(
-            // addPressureDiff("dispositif de réglage d'air", 3.2.unitless: ζ), // ???
-            setInitialDirection       (
-                azimuth     = AzimuthDirection.Front,
-                inclination = InclinationDirection.Horizontal
-            ), // Front
+        incremental
+            .withInitialDirection(PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal))
+            .define(
+                // addPressureDiff("dispositif de réglage d'air", 3.2.unitless: ζ), // ???
 
-            pipeLocation              (Area.AirDansLePoele       ),
-            roughness (Material_13384.WeldedSteel()),
-            innerShape(rectangle(27.cm, 16.cm)     ),
-            layer                     (e = 1.cm, λ = 1.3.W_per_mK),
-            addSectionHorizontal      ("entrée P03 TC03", 18.cm  ),
-            addSharpAngle_90deg_unsafe(
-                "angle vif 90°",
-                absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
-            ), // Up
+                pipeLocation              (Area.AirDansLePoele       ),
+                roughness (Material_13384.WeldedSteel()),
+                innerShape(rectangle(27.cm, 16.cm)     ),
+                layer                     (e = 1.cm, λ = 1.3.W_per_mK),
+                addSectionHorizontal      ("entrée P03 TC03", 18.cm  ),
+                addSharpAngle_90deg_unsafe(
+                    "angle vif 90°",
+                    absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                ), // Up
 
-            innerShape(rectangle(36.cm, 36.cm)),
-            addSectionVertical        ("montée", 7.3.cm          ),
-            addSharpAngle_90deg_unsafe(
-                "angle vif 90°",
-                absDir      = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
-            ), // Left (TOCHECK / arbitrary)
+                innerShape(rectangle(36.cm, 36.cm)),
+                addSectionVertical        ("montée", 7.3.cm          ),
+                addSharpAngle_90deg_unsafe(
+                    "angle vif 90°",
+                    absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+                ), // Left (TOCHECK / arbitrary)
 
-            channelsSplit             (11                        ),
-            innerShape(rectangle(6.6.cm, 8.7.cm)),
-            addSectionHorizontal      ("sous sole", 25.cm        ),
-            addSharpAngle_90deg       (
-                "angle vif 90°",
-                absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
-            ), // Up
+                channelsSplit             (11                        ),
+                innerShape(rectangle(6.6.cm, 8.7.cm)),
+                addSectionHorizontal      ("sous sole", 25.cm        ),
+                addSharpAngle_90deg       (
+                    "angle vif 90°",
+                    absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                ), // Up
 
-            innerShape(rectangle(6.6.cm, 3.3.cm)),
-            addSectionVertical        ("montée", 27.3.cm         ),
-            addSharpAngle_90deg_unsafe(
-                "angle vif 90°",
-                absDir      = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
-            ), // Right (TOCHECK / arbitrary)
+                innerShape(rectangle(6.6.cm, 3.3.cm)),
+                addSectionVertical        ("montée", 27.3.cm         ),
+                addSharpAngle_90deg_unsafe(
+                    "angle vif 90°",
+                    absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+                ), // Right (TOCHECK / arbitrary)
 
-            innerShape(rectangle(26.4.cm, 1.8.cm)),
-            addSectionHorizontal      ("injecteurs", 2.cm        ),
-            innerShape(rectangle(31.6.cm, 1.cm)  ),
-            addSectionHorizontal      ("injecteurs", 2.cm        ),
-            innerShape(rectangle(37.2.cm, 0.4.cm)),
-            addSectionHorizontal      ("injecteurs", 1.5.cm      )
-        )
+                innerShape(rectangle(26.4.cm, 1.8.cm)),
+                addSectionHorizontal      ("injecteurs", 2.cm        ),
+                innerShape(rectangle(31.6.cm, 1.cm)  ),
+                addSectionHorizontal      ("injecteurs", 2.cm        ),
+                innerShape(rectangle(37.2.cm, 0.4.cm)),
+                addSectionHorizontal      ("injecteurs", 1.5.cm      )
+            )
             .toFullDescr()
             .extractPipe
 
@@ -194,65 +193,65 @@ object `01_cloche_medianne_entree_haute_config_1`
 
     val fireboxPipe =
         import FireboxPipe_Module_13384.*
-        define(
-            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // Up
-            pipeLocation       (Area.Foyer                                                            ),
-            roughness          (Refractory_Bricks                                                     ),
-            innerShape(rectangle(39.cm, 55.cm)),
-            layer              (e       = 1.cm, λ                            = 1.3.W_per_mK           ),
-            addSectionVertical ("foyer P05", 58.3.cm                                                  )
-        )
+        incremental
+            .withInitialDirection(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
+            .define(
+                pipeLocation      (Area.Foyer                ),
+                roughness         (Refractory_Bricks         ),
+                innerShape(rectangle(39.cm, 55.cm)),
+                layer             (e = 1.cm, λ = 1.3.W_per_mK),
+                addSectionVertical("foyer P05", 58.3.cm      )
+            )
             .toFullDescr()
             .extractPipe
 
     val firebox_output_temp = 785.degreesCelsius
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_13384.*
-        Seq(
-            setInitialDirection       (
-                azimuth     = AzimuthDirection.Left,
-                inclination = InclinationDirection.Horizontal
-            ), // Left (TOCHECK)
-
-            pipeLocation              (Area.Accumulateur                     ),
+        Seq (
+            pipeLocation                (Area.Accumulateur                     ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)               ),
-            layer                     (e = 3.cm, λ   = 1.3.W_per_mK          ),
-            addSectionHorizontal      ("sortie foyer", 11.cm                 ),
-            pipeLocation              (Area.DansLaPieceDuPoele               ),
-            layer                     (e = 2.5.cm, λ = 0.057.W_per_mK        ),
-            addSectionHorizontal      ("horizontal TC04", 30.5.cm            ),
-            addSectionHorizontal      ("horizontal vers échangeur", 30.9.cm  ),
-            roughness                 (Refractory_Bricks                     ),
-            pipeLocation              (Area.Accumulateur                     ),
-            layer                     (e = 3.cm, λ   = 1.3.W_per_mK          ),
+            layer                       (e = 3.cm, λ   = 1.3.W_per_mK          ),
+            addSectionHorizontal        ("sortie foyer", 11.cm                 ),
+            pipeLocation                (Area.DansLaPieceDuPoele               ),
+            layer                       (e = 2.5.cm, λ = 0.057.W_per_mK        ),
+            addSectionHorizontal        ("horizontal TC04", 30.5.cm            ),
+            addSectionHorizontal        ("horizontal vers échangeur", 30.9.cm  ),
+            roughness                   (Refractory_Bricks                     ),
+            pipeLocation                (Area.Accumulateur                     ),
+            layer                       (e = 3.cm, λ   = 1.3.W_per_mK          ),
             innerShape(rectangle(16.2.cm, 22.2.cm) ),
-            addSectionHorizontal      ("horizontal carneaux TC31", 34.3.cm   ),
-            addSectionHorizontal      ("horizontal milieu de cloche", 33.2.cm),
-            addCoudeCourbe90_unsafe   (
+            addSectionHorizontal        ("horizontal carneaux TC31", 34.3.cm   ),
+            addSectionHorizontal        ("horizontal milieu de cloche", 33.2.cm),
+            addCoudeCourbe90_unsafe     (
                 "coude courbe 90°",
-                R           = 30.cm,
-                absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+                R      = 30.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
             ), // Down
 
             innerShape(rectangle(55.4.cm, 55.5.cm)),
-            addSectionVertical        ("descente dans la cloche TC30", -11.cm),
-            addSectionVertical        ("descente dans la cloche", 77.cm      ),
-            addCoudeCourbe90_unsafe   (
+            addSectionVertical          ("descente dans la cloche TC30", -11.cm),
+            addSectionVertical          ("descente dans la cloche", 77.cm      ),
+            addCoudeCourbe90_unsafe     (
                 "coude courbe 90°",
-                R           = 30.cm,
-                absDir      = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+                R      = 30.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
             ), // Left (TOCHECK)
 
-            addSectionHorizontal      ("vers colonne", 28.7.cm               ),
-            addSharpAngle_90deg_unsafe(
+            addSectionHorizontal        ("vers colonne", 28.7.cm               ),
+            addSharpAngle_90deg_unsafe  (
                 "angle vif 90°",
-                absDir      = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
             ), // Up
 
-            addSectionVertical        ("colonne P09", 77.7.cm                ),
-            addSectionVertical        ("colonne", 113.7.cm                   )
+            addSectionVertical          ("colonne P09", 77.7.cm                ),
+            addSectionVertical          ("colonne", 113.7.cm                   )
         )
 
     val connectorPipeDescr =

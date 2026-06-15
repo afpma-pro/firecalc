@@ -5,10 +5,15 @@
 
 package afpma.firecalc.dto
 
-import afpma.firecalc.dto.v4.{AzimuthDirection, InclinationDirection}
-import afpma.firecalc.dto.v7.{PostFireboxInitialDirection, PostFireboxInitialPosition, PostFireboxPipes}
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.units.coulombutils.*
+
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.common.PipeInitialFrame
+import afpma.firecalc.dto.common.Position3D
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import org.scalacheck.Gen
 import org.scalactic.anyvals.PosInt
@@ -19,7 +24,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 /**
  * Property-based tests for V7 wrapper element types.
  *
- * Tests invariants on `PostFireboxInitialDirection` and `PostFireboxInitialPosition`
+ * Tests invariants on `PipeInitialDirection` and `Position3D`
  * that ensure geometric consistency: direction enums map to valid degree values,
  * position coordinates are valid lengths, and structural invariants hold.
  */
@@ -42,21 +47,21 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
                 Gen.choose(-90.0, 90.0).map(d => InclinationDirection.Custom(d.degrees)).sample.toList
         )
 
-    private val genInitialDirection: Gen[PostFireboxInitialDirection] =
+    private val genInitialDirection: Gen[PipeInitialDirection] =
         for
             az <- genAzimuth
             el <- genInclination
-        yield PostFireboxInitialDirection(az, el)
+        yield PipeInitialDirection(az, el)
 
     private val genCoord: Gen[Length] =
         Gen.choose(-500.0, 500.0).map(_.cm)
 
-    private val genInitialPosition: Gen[PostFireboxInitialPosition] =
+    private val genInitialPosition: Gen[Position3D] =
         for
             x <- genCoord
             y <- genCoord
             z <- genCoord
-        yield PostFireboxInitialPosition(x, y, z)
+        yield Position3D(x, y, z)
 
     private val genAnySlot: Gen[PostFireboxPipeDescrSlot_V7] =
         Gen.oneOf(
@@ -67,12 +72,12 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             PostFireboxPipeDescrSlot_V7.NoFlueSlot
         )
 
-    private val genPipes: Gen[PostFireboxPipes] =
+    private val genPipes: Gen[FramedPostFireboxPipes] =
         for
             dir   <- genInitialDirection
             pos   <- genInitialPosition
             slots <- Gen.nonEmptyListOf(genAnySlot)
-        yield PostFireboxPipes(dir, pos, slots)
+        yield FramedPostFireboxPipes(PipeInitialFrame(dir, pos), slots)
 
     // ── Direction degree-value properties ────────────────────────────
 
@@ -150,7 +155,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
     // ── Direction geometric properties ──────────────────────────────
 
-    "PostFireboxInitialDirection" - {
+    "PipeInitialDirection" - {
 
         "azimuth and inclination are never null" in
             forAll(genInitialDirection) { dir =>
@@ -160,30 +165,30 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
         "named azimuth + horizontal inclination has zero elevation" in
             forAll(Gen.oneOf(AzimuthDirection.namedCases)) { az =>
-                val dir = PostFireboxInitialDirection(az, InclinationDirection.Horizontal)
+                val dir = PipeInitialDirection(az, InclinationDirection.Horizontal)
                 InclinationDirection.toDegrees(dir.inclination) shouldBe 0.0
             }
 
         "Up inclination always has 90° elevation" in
             forAll(Gen.oneOf(AzimuthDirection.namedCases)) { az =>
-                val dir = PostFireboxInitialDirection(az, InclinationDirection.Up)
+                val dir = PipeInitialDirection(az, InclinationDirection.Up)
                 InclinationDirection.toDegrees(dir.inclination) shouldBe 90.0
             }
 
         "Down inclination always has -90° elevation" in
             forAll(Gen.oneOf(AzimuthDirection.namedCases)) { az =>
-                val dir = PostFireboxInitialDirection(az, InclinationDirection.Down)
+                val dir = PipeInitialDirection(az, InclinationDirection.Down)
                 InclinationDirection.toDegrees(dir.inclination) shouldBe -90.0
             }
 
         "default direction is Right + Horizontal" in {
-            PostFireboxInitialDirection.default.azimuth shouldBe AzimuthDirection.Right
-            PostFireboxInitialDirection.default.inclination shouldBe InclinationDirection.Horizontal
+            PipeInitialDirection.default.azimuth shouldBe AzimuthDirection.Right
+            PipeInitialDirection.default.inclination shouldBe InclinationDirection.Horizontal
         }
 
         "direction survives case equality check" in
             forAll(genInitialDirection) { dir =>
-                val copy = PostFireboxInitialDirection(dir.azimuth, dir.inclination)
+                val copy = PipeInitialDirection(dir.azimuth, dir.inclination)
                 copy shouldBe dir
             }
 
@@ -196,7 +201,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
     // ── Position properties ────────────────────────────────────────
 
-    "PostFireboxInitialPosition" - {
+    "Position3D" - {
 
         "coordinates are valid lengths with finite values" in
             forAll(genInitialPosition) { pos =>
@@ -206,7 +211,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             }
 
         "zero position has all zero coordinates" in {
-            val pos = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm)
+            val pos = Position3D(0.cm, 0.cm, 0.cm)
             pos.x.value shouldBe 0.0
             pos.y.value shouldBe 0.0
             pos.z.value shouldBe 0.0
@@ -214,7 +219,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
         "position survives case equality check" in
             forAll(genInitialPosition) { pos =>
-                val copy = PostFireboxInitialPosition(pos.x, pos.y, pos.z)
+                val copy = Position3D(pos.x, pos.y, pos.z)
                 copy shouldBe pos
             }
 
@@ -225,7 +230,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             }
 
         "negative coordinates are valid" in {
-            val pos = PostFireboxInitialPosition(-10.cm, -20.cm, -30.cm)
+            val pos = Position3D(-10.cm, -20.cm, -30.cm)
             pos.x.value shouldBe -0.1
             pos.y.value shouldBe -0.2
             pos.z.value shouldBe -0.3
@@ -233,25 +238,25 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
         "position coordinates preserve magnitude (cm → m conversion)" in
             forAll(Gen.choose(-500.0, 500.0), Gen.choose(-500.0, 500.0), Gen.choose(-500.0, 500.0)) { (x, y, z) =>
-                val pos = PostFireboxInitialPosition(x.cm, y.cm, z.cm)
+                val pos = Position3D(x.cm, y.cm, z.cm)
                 math.abs(pos.x.value - x / 100.0) should be < 1e-9
                 math.abs(pos.y.value - y / 100.0) should be < 1e-9
                 math.abs(pos.z.value - z / 100.0) should be < 1e-9
             }
     }
 
-    // ── PostFireboxPipes structural invariants ──────────────────────
+    // ── FramedPostFireboxPipes structural invariants ──────────────────────
 
-    "PostFireboxPipes" - {
+    "FramedPostFireboxPipes" - {
 
         "always has non-null initial direction" in
             forAll(genPipes) { pipes =>
-                pipes.initialDirection should not be null
+                pipes.initialFrame.direction should not be null
             }
 
         "always has non-null initial position" in
             forAll(genPipes) { pipes =>
-                pipes.initialPosition should not be null
+                pipes.initialFrame.position should not be null
             }
 
         "always has at least one slot" in
@@ -261,9 +266,8 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
         "survives case equality check" in
             forAll(genPipes) { pipes =>
-                val copy = PostFireboxPipes(
-                    pipes.initialDirection,
-                    pipes.initialPosition,
+                val copy = FramedPostFireboxPipes(
+                    PipeInitialFrame(pipes.initialFrame.direction, pipes.initialFrame.position),
                     pipes.slots
                 )
                 copy shouldBe pipes
@@ -271,9 +275,8 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
         "slot count is preserved through copy" in
             forAll(genPipes) { pipes =>
-                val copy = PostFireboxPipes(
-                    pipes.initialDirection,
-                    pipes.initialPosition,
+                val copy = FramedPostFireboxPipes(
+                    PipeInitialFrame(pipes.initialFrame.direction, pipes.initialFrame.position),
                     pipes.slots
                 )
                 copy.slots.size shouldBe pipes.slots.size

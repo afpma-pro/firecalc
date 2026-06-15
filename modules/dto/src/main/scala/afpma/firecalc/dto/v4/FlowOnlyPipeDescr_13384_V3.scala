@@ -55,7 +55,7 @@ object SetFlowOnlyPipeProp_13384_V3:
         with SetsNumberOfFlows
 
     @Transl(I(_.set_prop.SetInitialDirection))
-    @deprecated("Use PostFireboxInitialDirection on PostFireboxPipes instead. Will be removed in V8.", "V7")
+    @deprecated("Use PipeInitialDirection on FramedPostFireboxPipes instead. Will be removed in V8.", "V7")
     case class SetInitialDirection(
         @Transl(I(_.terms.azimuth))
         azimuth    : AzimuthDirection,
@@ -64,7 +64,7 @@ object SetFlowOnlyPipeProp_13384_V3:
     ) extends SetFlowOnlyPipeProp_13384_V3
 
     @Transl(I(_.set_prop.SetInitialPosition))
-    @deprecated("Use PostFireboxInitialPosition on PostFireboxPipes instead. Will be removed in V8.", "V7")
+    @deprecated("Use Position3D on FramedPostFireboxPipes instead. Will be removed in V8.", "V7")
     case class SetInitialPosition(
         @Transl(I(_.terms.x)) x: Length,
         @Transl(I(_.terms.y)) y: Length,

@@ -14,7 +14,7 @@ import afpma.firecalc.engine.models.NoFluePipeT
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.PipeSegmentPosition
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 

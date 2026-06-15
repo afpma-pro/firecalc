@@ -27,7 +27,6 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
     import AddFlowOnlyPipeElement_15544.*
     import SetFlowOnlyPipeProp_15544.*
     import FlowOnlyChannelTopologyOp_15544.*
-    import FlowOnlyPipeTrackingOp_15544.*
 
     // import defaultable.given
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
@@ -89,24 +88,6 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
         given Form[Int]       = FormDerivation.forInt
         given Form[NbOfFlows] = Form.formConversionOpaque[NbOfFlows, Int]
         autoDeriveAndOverwriteFieldNames[SetNumberOfFlows]
-
-    given horizontal_form_SetInitialDirection: Form[SetInitialDirection] =
-        given Defaultable[SetInitialDirection] =
-            Defaultable(SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
-        given ValidateVar[SetInitialDirection] =
-            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetInitialDirection]
-        Form.makeFor[SetInitialDirection](summon[Defaultable[SetInitialDirection]]): (variable, _) =>
-            val azVar   = variable.zoomLazy(_.azimuth)((sid, az) => sid.copy(azimuth = az))
-            val inclVar = variable.zoomLazy(_.inclination)((sid, incl) => sid.copy(inclination = incl))
-            horizontal_form.renderInitialDirectionForm(azVar, inclVar)
-
-    given horizontal_form_SetInitialPosition: Form[SetInitialPosition] =
-        given Form[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames[SetInitialPosition]
-
-    given horizontal_form_SetFinalPosition: Form[SetFinalPosition] =
-        given Form[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames[SetFinalPosition]
 
     // AddElement
 

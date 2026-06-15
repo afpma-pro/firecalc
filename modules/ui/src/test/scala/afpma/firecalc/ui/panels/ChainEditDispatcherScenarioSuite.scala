@@ -18,7 +18,7 @@ import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.PropagationStrategy.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.models.EngineState
 
@@ -59,7 +59,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
         ChainEditDispatcher(oldSlots, rawNewSlots, edit, RigidRotation, initialFrame)
 
     private def exampleInitialFrame: Option[PipeFrame] =
-        val initialDir = EngineState.example_projet_15544.post_firebox_pipes.initialDirection
+        val initialDir = EngineState.example_projet_15544.post_firebox_pipes.initialFrame.direction
         val azDeg      = AzimuthDirection.toDegrees(initialDir.azimuth)
         val elDeg      = InclinationDirection.toDegrees(initialDir.inclination)
         Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))

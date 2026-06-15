@@ -7,6 +7,7 @@ package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
@@ -25,17 +26,6 @@ object DirectionReachability:
         var frame    = initialFrame
         val failures = List.newBuilder[Int]
         for (idx, elem) <- elems do
-            ext.asInitialDirection
-                .lift(elem)
-                .foreach: (az, incl) =>
-                    frame = Some(
-                        PipeFrame.initial(
-                            Vec3.fromAzimuthElevation(
-                                AzimuthDirection.toDegrees    (az  ),
-                                InclinationDirection.toDegrees(incl)
-                            )
-                        )
-                    )
             ext.asDirectionChange
                 .lift(elem)
                 .foreach: (angle, absDirOpt) =>
@@ -85,9 +75,10 @@ object DirectionReachability:
             ._1
 
     def checkAirIntakeChain[D](
-        descr: Seq[D]
+        descr       : Seq[D],
+        initialFrame: Option[PipeFrame] = None
     )(using FrameReplay.ElemExtractors[D]): List[IncompatibleDirectionInPipe] =
         val indexed = descr.indices.zip(descr)
-        val (failures, _) = checkSlot(indexed, None)
+        val (failures, _) = checkSlot(indexed, initialFrame)
         failures.map(elemIdx => IncompatibleDirectionInPipe("AirIntake", -1, elemIdx))
 end DirectionReachability

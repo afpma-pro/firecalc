@@ -6,12 +6,13 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.AbsoluteDirection
+import afpma.firecalc.domain.toAbsoluteDirection
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipeFrame.RelativeSide
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
+import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
@@ -51,7 +52,7 @@ case class RelativeDirectionInput(
 
     /** Translate a RelativeSide to a localized label. */
     private def sideLabel(side: RelativeSide): String =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
         side match
             case RelativeSide.Right => i18n.relative_right
             case RelativeSide.Left  => i18n.relative_left
@@ -70,7 +71,7 @@ case class RelativeDirectionInput(
      * Otherwise, fall back to the static relative-label list.
      */
     private def optionsFor(frameOpt: Option[PipeFrame]): List[(String, RelativeSide)] =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
         frameOpt match
             case Some(f)
                 if math.abs(math.abs(f.direction.z) - 1.0) < 1e-6
@@ -135,7 +136,7 @@ case class RelativeDirectionInput(
             case _ => false
 
     lazy val node: HtmlElement =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
 
         // Derived signal: what AbsoluteDirection the current (side, theta, frame, deflection) produces.
         // Depends on all 4 inputs, but is only sampled (not subscribed) by the forward sync.

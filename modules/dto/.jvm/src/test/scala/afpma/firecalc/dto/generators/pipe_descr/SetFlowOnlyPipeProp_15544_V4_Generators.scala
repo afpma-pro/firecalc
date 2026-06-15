@@ -14,8 +14,6 @@ import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.*
 import afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4
-import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4
-
 import org.scalacheck.Gen
 
 /**
@@ -46,36 +44,9 @@ trait SetFlowOnlyPipeProp_15544_V4_Generators
     def genSetNumberOfFlows_FlowOnly_15544_V4: Gen[FlowOnlyChannelTopologyOp_15544_V4.SetNumberOfFlows] =
         Gen.choose(1, 4).map(n => FlowOnlyChannelTopologyOp_15544_V4.SetNumberOfFlows(NbOfFlows(n)))
 
-    // ── PipeTrackingOp (deprecated in V7) ───────────────────────────────
-
-    def genSetInitialDirection_FlowOnly_15544_V4: Gen[FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection] =
-        for
-            azimuth     <- Gen.oneOf(
-                afpma.firecalc.dto.v4.AzimuthDirection.Front,
-                afpma.firecalc.dto.v4.AzimuthDirection.Right,
-                afpma.firecalc.dto.v4.AzimuthDirection.Rear,
-                afpma.firecalc.dto.v4.AzimuthDirection.Left
-            )
-            inclination <- Gen.oneOf(
-                afpma.firecalc.dto.v4.InclinationDirection.Up,
-                afpma.firecalc.dto.v4.InclinationDirection.Down,
-                afpma.firecalc.dto.v4.InclinationDirection.Horizontal
-            )
-        yield FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection(azimuth, inclination)
-
-    def genSetInitialPosition_FlowOnly_15544_V4: Gen[FlowOnlyPipeTrackingOp_15544_V4.SetInitialPosition] =
-        for
-            x <- Gen.choose(-10.0, 10.0).map(_.meters)
-            y <- Gen.choose(-10.0, 10.0).map(_.meters)
-            z <- Gen.choose(-10.0, 10.0).map(_.meters)
-        yield FlowOnlyPipeTrackingOp_15544_V4.SetInitialPosition(x, y, z)
-
-    def genSetFinalPosition_FlowOnly_15544_V4: Gen[FlowOnlyPipeTrackingOp_15544_V4.SetFinalPosition] =
-        for
-            x <- Gen.choose(-10.0, 10.0).map(_.meters)
-            y <- Gen.choose(-10.0, 10.0).map(_.meters)
-            z <- Gen.choose(-10.0, 10.0).map(_.meters)
-        yield FlowOnlyPipeTrackingOp_15544_V4.SetFinalPosition(x, y, z)
+    // ── PipeTrackingOp: removed in V7 (SetInitialDirection, SetInitialPosition, SetFinalPosition) ──
+    // These generators were removed because the corresponding descriptors no longer exist in V7.
+    // Initial direction/position now come from wrapper types (FramedPostFireboxPipes, FramedAirIntakePipes).
 
     // ── Composite: any SetFlowOnlyPipeProp_15544_V4 ─────────────────────
 

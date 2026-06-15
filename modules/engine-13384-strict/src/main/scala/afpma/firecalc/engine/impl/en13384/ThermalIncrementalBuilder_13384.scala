@@ -7,14 +7,15 @@ package afpma.firecalc.engine.impl.en13384
 
 import algebra.instances.all.given
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
-
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
+import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -27,11 +28,9 @@ import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_I
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
-import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
-import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
 import afpma.firecalc.engine.typeclasses.*
@@ -62,7 +61,6 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     import AddThermalPipeElement_13384.*
     import SetThermalPipeProp_13384.*
     import ThermalChannelTopologyOp_13384.*
-    import ThermalPipeTrackingOp_13384.*
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.hasInnerShapeAtPos
@@ -82,33 +80,22 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     override type PreElementOp      = ThermalPreElementOp_13384
     override type ChannelTopologyOp = ThermalChannelTopologyOp_13384
-    override type PipeTrackingOp    = ThermalPipeTrackingOp_13384
 
     /**
      * Wrapper-level initial direction (V7).
      * When defined, seeds the initial/current frame in mkInitPropsState.
      * Replaces descriptor-level SetInitialDirection after V6→V7 migration.
      */
-    protected var wrapperInitialDirection: Option[PostFireboxInitialDirection] = None
+    protected var wrapperInitialDirection: Option[PipeInitialDirection] = None
 
     /**
      * Set wrapper-level initial direction.
      * @param dir the initial direction
      * @return this builder (for chaining)
      */
-    def withInitialDirection(dir: PostFireboxInitialDirection): this.type =
+    def withInitialDirection(dir: PipeInitialDirection): this.type =
         wrapperInitialDirection = Some(dir)
         this
-
-    /**
-     * Set wrapper-level initial position.
-     * Position tracking is handled by PositionTracker, not PropsState.
-     * @param pos the initial position (ignored)
-     * @return this builder (for chaining)
-     */
-    @deprecated("Position tracking is handled by PositionTracker", "v7")
-    def withInitialPosition(pos: PostFireboxInitialPosition): this.type =
-        this // no-op: position tracking moved to PositionTracker
 
     extension (addElement: AddElement) override def name: String = addElement.name
 
@@ -197,9 +184,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         stateOps.getNFlows(s)
 
     override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
-        // Only apply if the pipe itself did not already define an initial direction
-        if s.initialFrame.isDefined then s
-        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+        // External frame from seed always takes precedence — V7 enforces initial direction at wrapper level, not descriptor level.
+        s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
 
     override protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState =
         s.copy(nFlows = nFlows)
@@ -394,7 +380,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         convStep.allPreElementOpsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
                 op match
-                    case prop: SetSingleProp                                  =>
+                    case prop: SetSingleProp =>
                         updateVNelState(vState)(prop)
                     case ThermalChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
@@ -404,22 +390,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 )
                             }
                         }
-                    case ThermalPipeTrackingOp_13384.SetInitialDirection(az, incl) =>
-                        if vState.toOption.exists(_.initialFrame.isDefined) then vState
-                        else
-                            val dirVec = Vec3.fromAzimuthElevation(
-                                AzimuthDirection.toDegrees    (az  ),
-                                InclinationDirection.toDegrees(incl)
-                            )
-                            val frame  = PipeFrame.initial(dirVec)
-                            vState.map(_.copy(initialFrame = Some(frame), currentFrame = Some(frame)))
-                    case _   : ThermalPipeTrackingOp_13384.SetInitialPosition =>
-                        vState
-                    case _   : ThermalPipeTrackingOp_13384.SetFinalPosition   =>
-                        vState
                     case SetPropertiesInBatch(batch_name, props, _) =>
                         props.foldLeft(vState)(updateVNelState(_)(_))
-                    case lf: LinedFlue =>
+                    case lf  : LinedFlue     =>
                         expandLinedFlue(vState, lf, updateVNelState)
             }
 
@@ -494,18 +467,6 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     def material(lm: Material_13384) =
         SetMaterial(lm)
-
-    @deprecated("Use withInitialDirection(PostFireboxInitialDirection) instead", "v7")
-    def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
-        SetInitialDirection(azimuth, inclination)
-
-    @deprecated("Use withInitialPosition(PostFireboxInitialPosition) instead", "v7")
-    def setInitialPosition(x: Length, y: Length, z: Length) =
-        SetInitialPosition(x, y, z)
-
-    @deprecated("No longer supported; position tracking is handled by PositionTracker", "v7")
-    def setFinalPosition(x: Length, y: Length, z: Length) =
-        SetFinalPosition(x, y, z)
 
     def layer(e: Length, tr: SquareMeterKelvinPerWatt) =
         layers(AppendLayerDescr.FromThermalResistanceUsingThickness(e, tr))

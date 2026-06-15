@@ -104,22 +104,22 @@ object StrictInterleavedConnectorFixture_15544
     // These provide the fallback path used when postFireboxPipeSlots is not overridden.
     // The 5-slot override below supersedes the chain's default toSlots mapping.
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ),
-            roughness              (3.mm                        ),
+            roughness           (3.mm                        ),
             innerShape(rectangle(11.1.cm, 12.2.cm)),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm     ),
-            addSharpAngle_90deg    (
+            addSectionHorizontal("sortie foyer", 28.1.cm     ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.20.m)
+            addSectionVertical  ("colonne ascendante", 3.20.m)
         )
 
     val connectorPipeDescr =
@@ -167,14 +167,10 @@ object StrictInterleavedConnectorFixture_15544
             import FluePipe_Module_15544.*
             PostFireboxPipeDescrSlot_V7.FlueSlot(
                 Seq(
-                    setInitialDirection    (
-                        azimuth     = AzimuthDirection.Right,
-                        inclination = InclinationDirection.Horizontal
-                    ),
-                    roughness              (3.mm                      ),
+                    roughness           (3.mm                      ),
                     innerShape(rectangle(11.1.cm, 12.2.cm)),
-                    addSectionHorizontal   ("F1-sortie foyer", 28.1.cm),
-                    addSharpAngle_90deg    (
+                    addSectionHorizontal("F1-sortie foyer", 28.1.cm),
+                    addSharpAngle_90deg (
                         "F1-virage 90 deg (-> Haut)",
                         AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
                     )

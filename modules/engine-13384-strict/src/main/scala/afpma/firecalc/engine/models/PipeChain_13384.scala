@@ -37,10 +37,16 @@ object PipeChain_13384:
         def connectorPipeMappings = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(connectorPipeResult)
         def chimneyPipeMappings   = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(chimneyPipeResult)
 
-    def build(d: Descriptors): Built =
+    def build(
+        d                    : Descriptors,
+        connectorInitialFrame: Option[PipeFrame] = None
+    ): Built =
         // Connector pipe → capture final frame
         val (connectorPipeResult, connectorFinalFrameV) =
-            ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(d.connector)
+            ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(
+                d.connector,
+                externalInitialFrame = connectorInitialFrame
+            )
         val connectorFinalFrame                         = connectorFinalFrameV.toOption.flatten
 
         // Chimney pipe with connector's final frame

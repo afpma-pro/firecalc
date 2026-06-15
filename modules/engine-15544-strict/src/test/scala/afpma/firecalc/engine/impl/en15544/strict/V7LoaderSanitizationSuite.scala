@@ -8,10 +8,11 @@ package afpma.firecalc.engine.impl.en15544.strict
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale
@@ -69,17 +70,15 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             facing_type    = FacingType.WithoutAirGap
         )
 
-    private def flueWithDeprecated(): Seq[FlowOnlyPipeDescr_15544] = Seq(
-        FlowOnlyPipeTrackingOp_15544.SetInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal),
-        FlowOnlyPipeTrackingOp_15544.SetInitialPosition  (10.cm, 20.cm, 30.cm                                   ),
-        SetFlowOnlyPipeProp_15544.SetRoughness           (3.mm                                                  ),
+    private def flueClean(): Seq[FlowOnlyPipeDescr_15544] = Seq(
+        SetFlowOnlyPipeProp_15544.SetRoughness           (3.mm                 ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.cm, 12.cm)),
-        AddFlowOnlyPipeElement_15544.AddSectionHorizontal("sortie foyer", 30.cm                                 )
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal("sortie foyer", 30.cm)
     )
 
     "FireCalcYAML_Loader" - {
 
-        "sanitizes directly-constructed mixed V7 input" in {
+        "sanitizes V7 input" in {
             val mixed = FireCalcYAML_V7(
                 locale                         = Locale(Languages.Fr, None),
                 display_units                  = DisplayUnits.SI,
@@ -87,16 +86,18 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
                 project_description            = ProjectDescr("test", "", Country.France),
                 local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
                 stove_params                   = mkStoveParams,
-                air_intake_descr               = Seq.empty,
+                air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
                 firebox                        = mkSingleTested,
-                post_firebox_pipes             = PostFireboxPipes(
-                    initialDirection = PostFireboxInitialDirection(
-                        AzimuthDirection.Left,
-                        InclinationDirection.Horizontal
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialFrame(
+                        PipeInitialDirection(
+                            AzimuthDirection.Left,
+                            InclinationDirection.Horizontal
+                        ),
+                        Position3D          (0.cm, 0.cm, 0.cm)
                     ),
-                    initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
-                    slots            = Seq(
-                        PostFireboxPipeDescrSlot.FlueSlot(flueWithDeprecated()),
+                    slots = Seq(
+                        PostFireboxPipeDescrSlot.FlueSlot(flueClean()),
                         PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
                         PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
                     )
@@ -112,49 +113,6 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             result.isValid shouldBe true
         }
 
-        "wrapper direction wins when stale descriptor direction conflicts" in {
-            val wrapperLeft = PostFireboxInitialDirection(
-                AzimuthDirection.Left,
-                InclinationDirection.Horizontal
-            )
-            val conflicting = FireCalcYAML_V7(
-                locale                         = Locale(Languages.Fr, None),
-                display_units                  = DisplayUnits.SI,
-                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
-                project_description            = ProjectDescr("test", "", Country.France),
-                local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
-                stove_params                   = mkStoveParams,
-                air_intake_descr               = Seq.empty,
-                firebox                        = mkSingleTested,
-                post_firebox_pipes             = PostFireboxPipes(
-                    initialDirection = wrapperLeft,
-                    initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
-                    slots            = Seq(
-                        PostFireboxPipeDescrSlot.FlueSlot(
-                            Seq(
-                                FlowOnlyPipeTrackingOp_15544.SetInitialDirection    (
-                                    AzimuthDirection.Rear,
-                                    InclinationDirection.Horizontal
-                                ),
-                                SetFlowOnlyPipeProp_15544.SetRoughness              (3.mm),
-                                SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.cm, 12.cm)),
-                                AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
-                                    "turn-to-rear",
-                                    90.degrees,
-                                    Some(AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))
-                                )
-                            )
-                        ),
-                        PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
-                        PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
-                    )
-                )
-            )
-
-            val loader = FireCalcYAML_Loader(conflicting)
-            loader.slotBuildResults.head.finalFrame.map(_.direction) shouldBe Some(Vec3.Left)
-        }
-
         "empty slot vector is handled safely" in {
             val empty = FireCalcYAML_V7(
                 locale                         = Locale(Languages.Fr, None),
@@ -163,12 +121,11 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
                 project_description            = ProjectDescr("test", "", Country.France),
                 local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
                 stove_params                   = mkStoveParams,
-                air_intake_descr               = Seq.empty,
+                air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
                 firebox                        = mkSingleTested,
-                post_firebox_pipes             = PostFireboxPipes(
-                    initialDirection = PostFireboxInitialDirection.default,
-                    initialPosition  = PostFireboxInitialPosition(0.cm, 0.cm, 0.cm),
-                    slots            = Seq.empty
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialFrame(PipeInitialDirection.default, Position3D(0.cm, 0.cm, 0.cm)),
+                    slots = Seq.empty
                 )
             )
 

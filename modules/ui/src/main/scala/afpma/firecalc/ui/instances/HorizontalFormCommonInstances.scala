@@ -313,20 +313,19 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     given horizontal_form_AzimuthDirection: Locale => Form[AzimuthDirection] =
         import cats.Show
-        import afpma.firecalc.ui.i18n.implicits.I18N_UI
         given Show[AzimuthDirection]        = Show.show:
-            case AzimuthDirection.Rear       => I18N_UI.direction_badge.cardinal_rear
+            case AzimuthDirection.Rear       => I18N.direction_badge.cardinal_rear
             case AzimuthDirection.RearRight  =>
-                s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_right}"
-            case AzimuthDirection.Right      => I18N_UI.direction_badge.cardinal_right
+                s"${I18N.direction_badge.cardinal_rear}-${I18N.direction_badge.cardinal_right}"
+            case AzimuthDirection.Right      => I18N.direction_badge.cardinal_right
             case AzimuthDirection.FrontRight =>
-                s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_right}"
-            case AzimuthDirection.Front      => I18N_UI.direction_badge.cardinal_front
+                s"${I18N.direction_badge.cardinal_front}-${I18N.direction_badge.cardinal_right}"
+            case AzimuthDirection.Front      => I18N.direction_badge.cardinal_front
             case AzimuthDirection.FrontLeft  =>
-                s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_left}"
-            case AzimuthDirection.Left       => I18N_UI.direction_badge.cardinal_left
+                s"${I18N.direction_badge.cardinal_front}-${I18N.direction_badge.cardinal_left}"
+            case AzimuthDirection.Left       => I18N.direction_badge.cardinal_left
             case AzimuthDirection.RearLeft   =>
-                s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_left}"
+                s"${I18N.direction_badge.cardinal_rear}-${I18N.direction_badge.cardinal_left}"
             case AzimuthDirection.Custom(az) => s"${az.value}\u00b0"
         given Defaultable[AzimuthDirection] = Defaultable(AzimuthDirection.Rear)
         given ValidateVar[AzimuthDirection] =
@@ -338,11 +337,10 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     given horizontal_form_InclinationDirection: Locale => Form[InclinationDirection] =
         import cats.Show
-        import afpma.firecalc.ui.i18n.implicits.I18N_UI
         given Show[InclinationDirection]        = Show.show:
-            case InclinationDirection.Up         => I18N_UI.direction_badge.cardinal_up
-            case InclinationDirection.Down       => I18N_UI.direction_badge.cardinal_down
-            case InclinationDirection.Horizontal => I18N_UI.direction_badge.cardinal_horizontal
+            case InclinationDirection.Up         => I18N.direction_badge.cardinal_up
+            case InclinationDirection.Down       => I18N.direction_badge.cardinal_down
+            case InclinationDirection.Horizontal => I18N.direction_badge.cardinal_horizontal
             case InclinationDirection.Custom(el) => s"${el.value}\u00b0"
         given Defaultable[InclinationDirection] = Defaultable(InclinationDirection.Up)
         given ValidateVar[InclinationDirection] =
@@ -358,7 +356,6 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         inclVar: com.raquo.airstream.state.Var[InclinationDirection]
     )(using FormRenderer): com.raquo.laminar.api.L.HtmlElement =
         import com.raquo.laminar.api.L.*
-        import afpma.firecalc.ui.i18n.implicits.I18N_UI
         import afpma.firecalc.ui.components.CustomDirectionDialog
         import com.raquo.airstream.core.Observer
 
@@ -387,7 +384,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
                             option   (
                                 value    := "__custom__",
                                 selected := true,
-                                I18N_UI.direction_badge.custom_option(s"${a.value}°")
+                                I18N.direction_badge.custom_option(s"${a.value}°")
                             )
                         case _                              => emptyNode
                     ,
@@ -415,7 +412,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
                             option   (
                                 value    := "__custom__",
                                 selected := true,
-                                I18N_UI.direction_badge.custom_option(s"${a.value}°")
+                                I18N.direction_badge.custom_option(s"${a.value}°")
                             )
                         case _                          => emptyNode
                     ,
@@ -459,7 +456,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         val customBtn = button(
             cls := "btn btn-xs btn-outline",
             tpe := "button",
-            I18N_UI.direction_badge.custom_btn,
+            I18N.direction_badge.custom_btn,
             onClick --> { _ => dialog.open(azVar.now(), inclVar.now()) }
         )
 

@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SectionDecrease
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SectionIncrease
@@ -24,7 +24,7 @@ class SectionGeometryChangeAutoInsertionSuite extends AnyFlatSpec with Matchers:
     private def setupBuilder =
         val builder = ChimneyPipe_Module.incremental
         builder.withInitialDirection(
-            PostFireboxInitialDirection    (
+            PipeInitialDirection    (
                 azimuth     = AzimuthDirection.Rear,
                 inclination = InclinationDirection.Horizontal
             )

@@ -104,22 +104,22 @@ object StrictWithoutConnectorFixture_15544
     // These provide the fallback path used when postFireboxPipeSlots is not overridden.
     // The 3-slot override below supersedes the chain's default toSlots mapping.
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ),
-            roughness              (3.mm                        ),
+            roughness           (3.mm                        ),
             innerShape(rectangle(11.1.cm, 12.2.cm)),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm     ),
-            addSharpAngle_90deg    (
+            addSectionHorizontal("sortie foyer", 28.1.cm     ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.20.m)
+            addSectionVertical  ("colonne ascendante", 3.20.m)
         )
 
     val connectorPipeDescr =

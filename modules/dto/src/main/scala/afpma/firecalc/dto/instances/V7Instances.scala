@@ -12,21 +12,18 @@ import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
 import afpma.firecalc.dto.v7.FlowOnlyPreElementOp_15544_V4
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
 import afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4
-import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_15544_V4
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
 
 import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4
 import afpma.firecalc.dto.v7.FlowOnlyPreElementOp_13384_V4
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4
 import afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_13384_V4
-import afpma.firecalc.dto.v7.FlowOnlyPipeTrackingOp_13384_V4
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4
 
 import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
 import afpma.firecalc.dto.v7.ThermalPreElementOp_13384_V4
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 import afpma.firecalc.dto.v7.ThermalChannelTopologyOp_13384_V4
-import afpma.firecalc.dto.v7.ThermalPipeTrackingOp_13384_V4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
@@ -61,11 +58,6 @@ object V7Instances:
     given Encoder[FlowOnlyChannelTopologyOp_15544_V4] =
         semiauto.deriveEncoder[FlowOnlyChannelTopologyOp_15544_V4]
 
-    given Decoder[FlowOnlyPipeTrackingOp_15544_V4] =
-        semiauto.deriveDecoder[FlowOnlyPipeTrackingOp_15544_V4]
-    given Encoder[FlowOnlyPipeTrackingOp_15544_V4] =
-        semiauto.deriveEncoder[FlowOnlyPipeTrackingOp_15544_V4]
-
     given Decoder[FlowOnlyPreElementOp_15544_V4] =
         semiauto.deriveDecoder[FlowOnlyPreElementOp_15544_V4]
     given Encoder[FlowOnlyPreElementOp_15544_V4] =
@@ -92,11 +84,6 @@ object V7Instances:
         semiauto.deriveDecoder[FlowOnlyChannelTopologyOp_13384_V4]
     given Encoder[FlowOnlyChannelTopologyOp_13384_V4] =
         semiauto.deriveEncoder[FlowOnlyChannelTopologyOp_13384_V4]
-
-    given Decoder[FlowOnlyPipeTrackingOp_13384_V4] =
-        semiauto.deriveDecoder[FlowOnlyPipeTrackingOp_13384_V4]
-    given Encoder[FlowOnlyPipeTrackingOp_13384_V4] =
-        semiauto.deriveEncoder[FlowOnlyPipeTrackingOp_13384_V4]
 
     given Decoder[FlowOnlyPreElementOp_13384_V4] =
         semiauto.deriveDecoder[FlowOnlyPreElementOp_13384_V4]
@@ -143,11 +130,6 @@ object V7Instances:
         semiauto.deriveDecoder[ThermalChannelTopologyOp_13384_V4]
     given Encoder[ThermalChannelTopologyOp_13384_V4] =
         semiauto.deriveEncoder[ThermalChannelTopologyOp_13384_V4]
-
-    given Decoder[ThermalPipeTrackingOp_13384_V4] =
-        semiauto.deriveDecoder[ThermalPipeTrackingOp_13384_V4]
-    given Encoder[ThermalPipeTrackingOp_13384_V4] =
-        semiauto.deriveEncoder[ThermalPipeTrackingOp_13384_V4]
 
     given Decoder[ThermalPreElementOp_13384_V4] =
         semiauto.deriveDecoder[ThermalPreElementOp_13384_V4]
@@ -205,4 +187,4 @@ object V7Instances:
             )
     }
 
-// PostFireboxPipes codecs are in its companion object
+// FramedPostFireboxPipes codecs are in its companion object

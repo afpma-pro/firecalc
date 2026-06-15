@@ -1,682 +1,218 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
+ * Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
  */
 
 package afpma.firecalc.dto
 
+import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v4.*
-import afpma.firecalc.dto.v5.Firebox_V4
 import afpma.firecalc.dto.v6.*
 import afpma.firecalc.dto.v7.*
-import afpma.firecalc.dto.common.*
-
 import afpma.firecalc.units.coulombutils.*
-
-import io.taig.babel.Language
-import io.taig.babel.Locale
-
-import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class V6ToV7TransformerSuite extends AnyFreeSpec with Matchers:
+class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
+    import transformers.*
 
-    // ─── Helper factories ──────────────────────────────────────────
-
-    private def flowOnlySlot(
-        descr: Seq[FlowOnlyPipeDescr_15544_V3]
-    ): PostFireboxPipeDescrSlot =
-        PostFireboxPipeDescrSlot.FlueSlot(descr)
-
-    private def thermalSlot(
-        descr: Seq[ThermalPipeDescr_13384_V3]
-    ): PostFireboxPipeDescrSlot =
-        PostFireboxPipeDescrSlot.ThermalFlueSlot(descr)
-
-    private def connectorSlot(
-        descr: Seq[ThermalPipeDescr_13384_V3]
-    ): PostFireboxPipeDescrSlot =
-        PostFireboxPipeDescrSlot.ConnectorSlot(descr)
-
-    private def chimneySlot(
-        descr: Seq[ThermalPipeDescr_13384_V3]
-    ): PostFireboxPipeDescrSlot =
-        PostFireboxPipeDescrSlot.ChimneySlot(descr)
-
-    private def flowOnlyInitialDir(
-        az  : AzimuthDirection,
-        incl: InclinationDirection
-    ): FlowOnlyPipeDescr_15544_V3 =
-        SetFlowOnlyPipeProp_15544_V3.SetInitialDirection(az, incl)
-
-    private def flowOnlyInitialPos(
-        x: Length,
-        y: Length,
-        z: Length
-    ): FlowOnlyPipeDescr_15544_V3 =
-        SetFlowOnlyPipeProp_15544_V3.SetInitialPosition(x, y, z)
-
-    private def flowOnlyFinalPos(
-        x: Length,
-        y: Length,
-        z: Length
-    ): FlowOnlyPipeDescr_15544_V3 =
-        SetFlowOnlyPipeProp_15544_V3.SetFinalPosition(x, y, z)
-
-    private def thermalInitialDir(
-        az  : AzimuthDirection,
-        incl: InclinationDirection
-    ): ThermalPipeDescr_13384_V3 =
-        SetThermalPipeProp_13384_V3.SetInitialDirection(az, incl)
-
-    private def thermalInitialPos(
-        x: Length,
-        y: Length,
-        z: Length
-    ): ThermalPipeDescr_13384_V3 =
-        SetThermalPipeProp_13384_V3.SetInitialPosition(x, y, z)
-
-    private def thermalFinalPos(
-        x: Length,
-        y: Length,
-        z: Length
-    ): ThermalPipeDescr_13384_V3 =
-        SetThermalPipeProp_13384_V3.SetFinalPosition(x, y, z)
-
-    // ─── Helpers ───────────────────────────────────────────────────
-
-// V7 helper functions: tracking ops are stripped from post-firebox slots during migration
-    private def hasTrackingFlowOnlyV7(
-        d: Seq[FlowOnlyPipeDescr_15544_V4]
-    ): Boolean =
-        d.exists:
-            case _: FlowOnlyPipeTrackingOp_15544_V4.SetInitialDirection => true
-            case _: FlowOnlyPipeTrackingOp_15544_V4.SetInitialPosition  => true
-            case _: FlowOnlyPipeTrackingOp_15544_V4.SetFinalPosition    => true
-            case _ => false
-    private def hasTrackingThermalV7(
-        d: Seq[ThermalPipeDescr_13384_V4]
-    ): Boolean =
-        d.exists:
-            case _: ThermalPipeTrackingOp_13384_V4.SetInitialDirection => true
-            case _: ThermalPipeTrackingOp_13384_V4.SetInitialPosition  => true
-            case _: ThermalPipeTrackingOp_13384_V4.SetFinalPosition    => true
-            case _ => false
-
-    private def minimalFirebox: Firebox_V4 =
-        Firebox_V4.Traditional                  (
-            heat_output_reduced                   = HeatOutputReduced.NotDefined,
-            firebox_depth                         = 40.cm,
-            firebox_width                         = 50.cm,
-            firebox_height                        = 60.cm,
-            height_of_lowest_opening              = 10.cm,
-            pressure_loss_coefficient_from_door   = 0.5.unitless,
-            total_air_intake_surface_area_on_door = 100.cm2,
-            glass_width                           = 30.cm,
-            glass_height                          = 40.cm
+    "normalizeToFramedAirIntakePipes" should "use default direction when missing" in {
+        val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
+            AddFlowOnlyPipeElement_13384_V3.AddSectionHorizontal("test", 10.cm)
         )
+        val result = normalizeToFramedAirIntakePipes(descr)
+        result.initialDir shouldBe PipeInitialDirection.default
+    }
 
-    private def minimalV6(slots: Seq[PostFireboxPipeDescrSlot]): FireCalcYAML_V6 =
-        FireCalcYAML_V6                       (
-            version                        = FireCalcYAML_V6.VERSION,
-            locale                         = Locale(Language("en")),
-            display_units                  = DisplayUnits.SI,
-            standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
-            project_description            = ProjectDescr("TEST-V6", "2026-06-06", Country.France),
-            local_conditions               = LocalConditions.default,
-            stove_params                   = StoveParams.fromMaxLoadAndStoragePeriod(
-                maximum_load   = 20.kg,
-                heating_cycle  = 12.hours,
-                min_efficiency = 80.percent,
-                facing_type    = FacingType.WithoutAirGap
+    it should "use default position (Initial, 0,0,0) when missing" in {
+        val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
+            AddFlowOnlyPipeElement_13384_V3.AddSectionHorizontal("test", 10.cm)
+        )
+        val result = normalizeToFramedAirIntakePipes(descr)
+        result.position shouldBe AirIntakePosition.Initial(Position3D(0.cm, 0.cm, 0.cm))
+    }
+
+    it should "use last SetInitialDirection" in {
+        val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
+            SetFlowOnlyPipeProp_13384_V3.SetInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal),
+            SetFlowOnlyPipeProp_13384_V3.SetInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+        )
+        val result = normalizeToFramedAirIntakePipes(descr)
+        result.initialDir shouldBe PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+    }
+
+    it should "use last SetInitialPosition when no SetFinalPosition is present" in {
+        val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
+            SetFlowOnlyPipeProp_13384_V3.SetInitialPosition(10.cm, 20.cm, 30.cm),
+            SetFlowOnlyPipeProp_13384_V3.SetInitialPosition(40.cm, 50.cm, 60.cm)
+        )
+        val result = normalizeToFramedAirIntakePipes(descr)
+        result.position shouldBe AirIntakePosition.Initial(Position3D(40.cm, 50.cm, 60.cm))
+    }
+
+    it should "use last SetFinalPosition as the position (Final mode)" in {
+        val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
+            SetFlowOnlyPipeProp_13384_V3.SetInitialPosition(10.cm, 20.cm, 30.cm   ),
+            SetFlowOnlyPipeProp_13384_V3.SetFinalPosition  (100.cm, 200.cm, 300.cm),
+            SetFlowOnlyPipeProp_13384_V3.SetFinalPosition  (400.cm, 500.cm, 600.cm)
+        )
+        val result = normalizeToFramedAirIntakePipes(descr)
+        result.position shouldBe AirIntakePosition.Final(Position3D(400.cm, 500.cm, 600.cm))
+    }
+
+    it should "strip migration-only properties from descriptors" in {
+        val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
+            SetFlowOnlyPipeProp_13384_V3.SetInitialDirection    (AzimuthDirection.Right, InclinationDirection.Horizontal),
+            SetFlowOnlyPipeProp_13384_V3.SetInitialPosition     (10.cm, 10.cm, 10.cm                                    ),
+            SetFlowOnlyPipeProp_13384_V3.SetFinalPosition       (20.cm, 20.cm, 20.cm                                    ),
+            AddFlowOnlyPipeElement_13384_V3.AddSectionHorizontal("test", 10.cm                                          )
+        )
+        val result = normalizeToFramedAirIntakePipes(descr)
+        result.descr should have size 1
+        result.descr.head shouldBe AddFlowOnlyPipeElement_13384_V4.AddSectionHorizontal("test", 10.cm)
+    }
+
+    it should "handle empty descriptor sequence" in {
+        val result = normalizeToFramedAirIntakePipes(Seq.empty)
+        result.initialDir shouldBe PipeInitialDirection.default
+        result.position shouldBe AirIntakePosition.Initial(Position3D(0.cm, 0.cm, 0.cm))
+        result.descr shouldBe empty
+    }
+
+    it should "strip tracking properties from post-firebox slots" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.FlueSlot(
+                Seq(
+                    SetFlowOnlyPipeProp_15544_V3
+                        .SetInitialDirection                            (AzimuthDirection.Right, InclinationDirection.Horizontal),
+                    AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("test", 10.cm                                          )
+                )
+            )
+        )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.slots(0) match
+            case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
+                d should have size 1
+                d.head shouldBe AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal("test", 10.cm)
+            case _                                       => fail("Slot should be a FlueSlot")
+    }
+
+    it should "use default direction when first non-NoFlueSlot is missing it" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.FlueSlot(
+                Seq(
+                    AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("test", 10.cm)
+                )
+            )
+        )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.initialFrame.direction shouldBe PipeInitialDirection.default
+    }
+
+    it should "use default position when first non-NoFlueSlot is missing it" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.FlueSlot(
+                Seq(
+                    AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("test", 10.cm)
+                )
+            )
+        )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.initialFrame.position shouldBe Position3D(0.cm, 0.cm, 0.cm)
+    }
+
+    it should "use last SetInitialDirection in the first non-NoFlueSlot" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.FlueSlot(
+                Seq(
+                    SetFlowOnlyPipeProp_15544_V3
+                        .SetInitialDirection                        (AzimuthDirection.Right, InclinationDirection.Horizontal),
+                    SetFlowOnlyPipeProp_15544_V3.SetInitialDirection(
+                        AzimuthDirection.Front,
+                        InclinationDirection.Horizontal
+                    )
+                )
+            )
+        )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.initialFrame.direction shouldBe PipeInitialDirection(
+            AzimuthDirection.Front,
+            InclinationDirection.Horizontal
+        )
+    }
+
+    it should "use last SetInitialPosition in the first non-NoFlueSlot" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.FlueSlot(
+                Seq(
+                    SetFlowOnlyPipeProp_15544_V3.SetInitialPosition(10.cm, 20.cm, 30.cm),
+                    SetFlowOnlyPipeProp_15544_V3.SetInitialPosition(40.cm, 50.cm, 60.cm)
+                )
+            )
+        )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.initialFrame.position shouldBe Position3D(40.cm, 50.cm, 60.cm)
+    }
+
+    it should "skip NoFlueSlot when searching for initial frame" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.NoFlueSlot,
+            PostFireboxPipeDescrSlot.FlueSlot(
+                Seq(
+                    SetFlowOnlyPipeProp_15544_V3.SetInitialDirection(
+                        AzimuthDirection.Right,
+                        InclinationDirection.Horizontal
+                    )
+                )
+            )
+        )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.initialFrame.direction shouldBe PipeInitialDirection(
+            AzimuthDirection.Right,
+            InclinationDirection.Horizontal
+        )
+    }
+
+    it should "use defaults when all slots are NoFlueSlot" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.NoFlueSlot,
+            PostFireboxPipeDescrSlot.NoFlueSlot
+        )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.initialFrame.direction shouldBe PipeInitialDirection.default
+        result.initialFrame.position shouldBe Position3D(0.cm, 0.cm, 0.cm)
+    }
+
+    it should "handle empty slot sequence" in {
+        val result = normalizeToFramedPostFireboxPipes(Seq.empty)
+        result.initialFrame.direction shouldBe PipeInitialDirection.default
+        result.initialFrame.position shouldBe Position3D(0.cm, 0.cm, 0.cm)
+        result.slots shouldBe empty
+    }
+
+    it should "migrate slots correctly to V7" in {
+        val slots  = Seq[PostFireboxPipeDescrSlot](
+            PostFireboxPipeDescrSlot.FlueSlot     (
+                Seq(
+                    AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("flue", 10.cm)
+                )
             ),
-            air_intake_descr               = Seq.empty,
-            firebox                        = minimalFirebox,
-            post_firebox_pipes             = slots
+            PostFireboxPipeDescrSlot.ConnectorSlot(
+                Seq(
+                    AddThermalPipeElement_13384_V3.AddSectionVertical("conn", 5.cm)
+                )
+            )
         )
-
-    // ─── Tests ──────────────────────────────────────────────────────
-
-    "normalizeToPostFireboxPipes" - {
-
-        "extracts initial direction and position from first flow-only slot" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
-                            flowOnlyInitialPos(10.cm, 20.cm, 30.cm                            )
-                        )
-                    ),
-                    connectorSlot(Seq.empty),
-                    chimneySlot  (Seq.empty)
-                )
+        val result = normalizeToFramedPostFireboxPipes(slots)
+        result.slots should have size 2
+        result.slots(0) shouldBe PostFireboxPipeDescrSlot_V7.FlueSlot     (
+            Seq(
+                AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal("flue", 10.cm)
             )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Right,
-                InclinationDirection.Up
+        )
+        result.slots(1) shouldBe PostFireboxPipeDescrSlot_V7.ConnectorSlot(
+            Seq(
+                AddThermalPipeElement_13384_V4.AddSectionVertical("conn", 5.cm)
             )
-            result.initialPosition shouldBe PostFireboxInitialPosition(10.cm, 20.cm, 30.cm)
-            result.slots.size shouldBe 3
-
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-        }
-
-        "extracts initial direction and position from first thermal slot" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    thermalSlot(
-                        Seq(
-                            thermalInitialDir(AzimuthDirection.Front, InclinationDirection.Horizontal),
-                            thermalInitialPos(5.cm, 15.cm, 25.cm                                     )
-                        )
-                    ),
-                    connectorSlot(Seq.empty),
-                    chimneySlot  (Seq.empty)
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Front,
-                InclinationDirection.Horizontal
-            )
-            result.initialPosition shouldBe PostFireboxInitialPosition(5.cm, 15.cm, 25.cm)
-
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
-        }
-
-        "uses default direction when initial direction is missing" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialPos(10.cm, 20.cm, 30.cm)
-                        )
-                    ),
-                    connectorSlot(Seq.empty)
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection.default
-            result.initialPosition shouldBe PostFireboxInitialPosition(10.cm, 20.cm, 30.cm)
-        }
-
-        "uses zero position when initial position is missing" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Left, InclinationDirection.Down)
-                        )
-                    ),
-                    connectorSlot(Seq.empty)
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Left,
-                InclinationDirection.Down
-            )
-            result.initialPosition shouldBe PostFireboxInitialPosition(0.cm, 0.cm, 0.cm)
-        }
-
-        "uses defaults for both when neither initial element is present" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("sec", 100.cm)
-                        )
-                    ),
-                    connectorSlot(Seq.empty)
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection.default
-            result.initialPosition shouldBe PostFireboxInitialPosition(0.cm, 0.cm, 0.cm)
-        }
-
-        "handles empty slot vector without crashing" in {
-            val result = transformers.normalizeToPostFireboxPipes(Seq.empty)
-
-            result.initialDirection shouldBe PostFireboxInitialDirection.default
-            result.initialPosition shouldBe PostFireboxInitialPosition(0.cm, 0.cm, 0.cm)
-            result.slots shouldBe empty
-        }
-
-        "handles empty first slot descriptor" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot (Seq.empty),
-                    connectorSlot(Seq.empty)
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection.default
-            result.initialPosition shouldBe PostFireboxInitialPosition(0.cm, 0.cm, 0.cm)
-            result.slots.size shouldBe 2
-        }
-
-        "strips deprecated elements from ALL slots, not just first" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq (
-                    flowOnlySlot (
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
-                            flowOnlyInitialPos(10.cm, 20.cm, 30.cm                            )
-                        )
-                    ),
-                    connectorSlot(
-                        Seq(
-                            thermalInitialDir(AzimuthDirection.Front, InclinationDirection.Horizontal),
-                            thermalInitialPos(5.cm, 15.cm, 25.cm                                     )
-                        )
-                    ),
-                    chimneySlot  (
-                        Seq(
-                            thermalFinalPos(100.cm, 200.cm, 300.cm)
-                        )
-                    )
-                )
-            )
-
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-
-            result.slots(1) match
-                case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                        => fail(s"Expected ConnectorSlot, got $other")
-
-            result.slots(2) match
-                case PostFireboxPipeDescrSlot_V7.ChimneySlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                      => fail(s"Expected ChimneySlot, got $other")
-        }
-
-        "strips SetFinalPosition from all slots" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq (
-                    flowOnlySlot (
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
-                            flowOnlyFinalPos  (50.cm, 60.cm, 70.cm                            )
-                        )
-                    ),
-                    connectorSlot(
-                        Seq(
-                            thermalFinalPos(100.cm, 200.cm, 300.cm)
-                        )
-                    )
-                )
-            )
-
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-
-            result.slots(1) match
-                case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                        => fail(s"Expected ConnectorSlot, got $other")
-        }
-
-        "handles connector-first chain (connector as first slot)" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    connectorSlot(
-                        Seq(
-                            thermalInitialDir(AzimuthDirection.Rear, InclinationDirection.Up),
-                            thermalInitialPos(1.cm, 2.cm, 3.cm                              )
-                        )
-                    ),
-                    chimneySlot(Seq.empty)
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Rear,
-                InclinationDirection.Up
-            )
-            result.initialPosition shouldBe PostFireboxInitialPosition(1.cm, 2.cm, 3.cm)
-            result.slots.size shouldBe 2
-        }
-
-        "handles chimney-first chain" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    chimneySlot(
-                        Seq(
-                            thermalInitialDir(
-                                AzimuthDirection.Custom    (45.degrees),
-                                InclinationDirection.Custom(30.degrees)
-                            ),
-                            thermalInitialPos(100.cm, 200.cm, 300.cm)
-                        )
-                    )
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Custom    (45.degrees),
-                InclinationDirection.Custom(30.degrees)
-            )
-            result.initialPosition shouldBe PostFireboxInitialPosition(100.cm, 200.cm, 300.cm)
-        }
-
-        "preserves non-deprecated elements in slot descriptors" in {
-            val section   = AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("my-section", 150.cm)
-            val roughness = SetFlowOnlyPipeProp_15544_V3.SetRoughness(0.5.mm)
-
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
-                            roughness,
-                            section
-                        )
-                    )
-                )
-            )
-
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    // tracking ops stripped, only migrated V3→V4 elements remain
-                    d.size shouldBe 2
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.SetRoughness(r) => r == 0.5.mm
-                        case _                                                                  => false
-                    ) shouldBe true
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.AddSectionHorizontal(n, l) =>
-                            n == "my-section" && l == 150.cm
-                        case _                                                                                => false
-                    ) shouldBe true
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-        }
-
-        "extracts from first slot even when later slots have initial elements" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
-                            flowOnlyInitialPos(10.cm, 20.cm, 30.cm                            )
-                        )
-                    ),
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Left, InclinationDirection.Down),
-                            flowOnlyInitialPos(99.cm, 88.cm, 77.cm                             )
-                        )
-                    )
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Right,
-                InclinationDirection.Up
-            )
-            result.initialPosition shouldBe PostFireboxInitialPosition(10.cm, 20.cm, 30.cm)
-
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-
-            result.slots(1) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-        }
-
-        "handles mixed flow-only and thermal slots" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
-                            flowOnlyInitialPos(10.cm, 20.cm, 30.cm                            )
-                        )
-                    ),
-                    thermalSlot (
-                        Seq(
-                            thermalInitialDir                       (AzimuthDirection.Front, InclinationDirection.Horizontal),
-                            thermalInitialPos                       (5.cm, 15.cm, 25.cm                                     ),
-                            SetThermalPipeProp_13384_V3.SetRoughness(0.3.mm                                                 )
-                        )
-                    ),
-                    chimneySlot(Seq.empty)
-                )
-            )
-
-            result.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Right,
-                InclinationDirection.Up
-            )
-            result.initialPosition shouldBe PostFireboxInitialPosition(10.cm, 20.cm, 30.cm)
-
-            result.slots(1) match
-                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetRoughness(r) => r == 0.3.mm
-                        case _                                                                 => false
-                    ) shouldBe true
-                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
-        }
-        "top-level flow-only SetNumberOfFlows survives migration as ChannelTopologyOp" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    flowOnlySlot(
-                        Seq(SetFlowOnlyPipeProp_15544_V3.SetNumberOfFlows(NbOfFlows(2)))
-                    )
-                )
-            )
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4.SetNumberOfFlows(n) =>
-                            n == NbOfFlows(2)
-                        case _                                                                            => false
-                    ) shouldBe true
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-        }
-        "top-level thermal SetNumberOfFlows survives migration as ThermalChannelTopologyOp" in {
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(
-                    thermalSlot(
-                        Seq(SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)))
-                    )
-                )
-            )
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.ThermalChannelTopologyOp_13384_V4.SetNumberOfFlows(n) =>
-                            n == NbOfFlows(2)
-                        case _                                                                           => false
-                    ) shouldBe true
-                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
-        }
-        "SetNumberOfFlows inside SetPropertiesInBatch.props is removed, sibling properties remain" in {
-            val batch  = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
-                "batch1",
-                Seq   (
-                    SetThermalPipeProp_13384_V3.SetInnerShape   (PipeShape.Circle(20.cm)),
-                    SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)           )
-                )
-            )
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(thermalSlot(Seq(batch)))
-            )
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetPropertiesInBatch(name, props, _) =>
-                            name == "batch1" &&
-                            {
-                                val hasInnerShape = props.collectFirst {
-                                    case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetInnerShape(shape)
-                                        if shape == PipeShape.Circle(20.cm) =>
-                                        ()
-                                }.isDefined
-                                hasInnerShape
-                            }
-                        case _                                                                                      => false
-                    ) shouldBe true
-                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
-        }
-        "SetNumberOfFlows inside LinedFlue.liner.props is removed, sibling liner properties remain" in {
-            val liner  = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
-                "liner-batch",
-                Seq   (
-                    SetThermalPipeProp_13384_V3.SetInnerShape   (PipeShape.Circle(20.cm)),
-                    SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)           )
-                )
-            )
-            val casing = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
-                "casing-batch",
-                Seq(SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(30.cm)))
-            )
-            val lined  = SetThermalPipeProp_13384_V3.LinedFlue(
-                "my-lined",
-                liner,
-                AirSpaceDetailed_V2.WithoutAirSpace_V2,
-                casing
-            )
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(thermalSlot(Seq(lined)))
-            )
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.LinedFlue(name, liner, _, _) =>
-                            name == "my-lined" &&
-                            {
-                                val hasInnerShape = liner.props.collectFirst {
-                                    case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetInnerShape(shape)
-                                        if shape == PipeShape.Circle(20.cm) =>
-                                        ()
-                                }.isDefined
-                                hasInnerShape
-                            }
-                        case _                                                                              => false
-                    ) shouldBe true
-                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
-        }
-        "SetNumberOfFlows inside LinedFlue.casing.props is removed, sibling casing properties remain" in {
-            val liner  = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
-                "liner-batch",
-                Seq(SetThermalPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(20.cm)))
-            )
-            val casing = SetThermalPipeProp_13384_V3.SetPropertiesInBatch(
-                "casing-batch",
-                Seq   (
-                    SetThermalPipeProp_13384_V3.SetInnerShape   (PipeShape.Circle(30.cm)),
-                    SetThermalPipeProp_13384_V3.SetNumberOfFlows(NbOfFlows(2)           )
-                )
-            )
-            val lined  = SetThermalPipeProp_13384_V3.LinedFlue(
-                "my-lined",
-                liner,
-                AirSpaceDetailed_V2.WithoutAirSpace_V2,
-                casing
-            )
-            val result = transformers.normalizeToPostFireboxPipes(
-                Seq(thermalSlot(Seq(lined)))
-            )
-            result.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d) =>
-                    (d.exists:
-                        case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.LinedFlue(name, _, _, casing) =>
-                            name == "my-lined" &&
-                            {
-                                val hasInnerShape = casing.props.collectFirst {
-                                    case afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetInnerShape(shape)
-                                        if shape == PipeShape.Circle(30.cm) =>
-                                        ()
-                                }.isDefined
-                                hasInnerShape
-                            }
-                        case _                                                                               => false
-                    ) shouldBe true
-                case other                                          => fail(s"Expected ThermalFlueSlot, got $other")
-        }
+        )
     }
-
-    "FireCalcYAML_V6 to FireCalcYAML_V7 migration" - {
-
-        "moves initial direction and position to PostFireboxPipes and removes deprecated post-firebox state" in {
-            val v6       = minimalV6(
-                Seq (
-                    flowOnlySlot (
-                        Seq(
-                            flowOnlyInitialDir                                  (AzimuthDirection.Left, InclinationDirection.Horizontal),
-                            flowOnlyInitialPos                                  (-21.cm, 9.cm, 63.cm                                   ),
-                            AddFlowOnlyPipeElement_15544_V3.AddSectionHorizontal("sortie foyer", 317.mm                                )
-                        )
-                    ),
-                    connectorSlot(
-                        Seq(
-                            thermalInitialDir(AzimuthDirection.Front, InclinationDirection.Up),
-                            thermalInitialPos(1.cm, 2.cm, 3.cm                               )
-                        )
-                    )
-                )
-            )
-            val migrated = FireCalcYAMLMigrations.migrateV6ToV7(v6)
-
-            migrated.post_firebox_pipes.initialDirection shouldBe PostFireboxInitialDirection(
-                AzimuthDirection.Left,
-                InclinationDirection.Horizontal
-            )
-            migrated.post_firebox_pipes.initialPosition shouldBe PostFireboxInitialPosition(-21.cm, 9.cm, 63.cm)
-
-            migrated.post_firebox_pipes.slots(0) match
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(d) =>
-                    hasTrackingFlowOnlyV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                   => fail(s"Expected FlueSlot, got $other")
-
-            migrated.post_firebox_pipes.slots(1) match
-                case PostFireboxPipeDescrSlot_V7.ConnectorSlot(d) =>
-                    hasTrackingThermalV7(d) shouldBe false // tracking ops stripped from post-firebox slots
-                case other                                        => fail(s"Expected ConnectorSlot, got $other")
-        }
-        "air_intake_descr is migrated to V7 flow-only 13384 type" in {
-            val v6       = minimalV6(
-                Seq(
-                    flowOnlySlot(
-                        Seq(
-                            flowOnlyInitialDir(AzimuthDirection.Right, InclinationDirection.Up),
-                            flowOnlyInitialPos(10.cm, 20.cm, 30.cm                            )
-                        )
-                    ),
-                    connectorSlot(Seq.empty)
-                )
-            ).copy(
-                air_intake_descr = Seq(
-                    SetFlowOnlyPipeProp_13384_V3.SetInnerShape(PipeShape.Circle(20.cm))
-                )
-            )
-            val migrated = FireCalcYAMLMigrations.migrateV6ToV7(v6)
-            (migrated.air_intake_descr.exists:
-                case afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.SetInnerShape(shape) =>
-                    shape == PipeShape.Circle(20.cm)
-                case _                                                                       => false
-            ) shouldBe true
-        }
-    }
-
-end V6ToV7TransformerSuite

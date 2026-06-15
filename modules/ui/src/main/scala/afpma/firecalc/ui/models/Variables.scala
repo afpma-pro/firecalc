@@ -12,6 +12,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.FireCalc_Version.<
+import afpma.firecalc.dto.common.toVec3
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
@@ -53,7 +54,7 @@ import com.raquo.airstream.web.WebStorageVar
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
-import coulomb.ops.standard.all.given
+import coulomb.policy.standard.given
 
 import scala.util.*
 
@@ -169,7 +170,9 @@ val stove_params_max_load_var: Var[Option[Mass]] =
     )
 
 val air_intake_incrdescr_var =
-    engineStateVar.zoomLazy(_.air_intake_descr)((g, x) => g.copy(air_intake_descr = x))
+    engineStateVar.zoomLazy(_.air_intake_pipes.descr)((g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(descr = x))
+    )
 
 // EngineStateHelper
 
@@ -189,18 +192,23 @@ val firebox_var =
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
+import afpma.firecalc.dto.v7.FramedAirIntakePipes
 
 lazy val airintake_positions_sig: Signal[PipePositionResult] =
-    air_intake_incrdescr_var.signal
-        .map: descr =>
+    engineStateVar.signal
+        .map: engine =>
+            val framed = engine.air_intake_pipes
+            val pos3D  = framed.rawPosition
+            val (startPt, finalPt) = framed.positionPoints
+
             PositionTracker.computeFlowOnly13384(
-                descr,
-                initialDirection = PostFireboxInitialDirection.default,
-                initialPosition  = PostFireboxInitialPosition(0.m, 0.m, 0.m),
+                framed.descr,
+                initialDirection = framed.initialDir,
+                initialPosition  = pos3D,
                 externalFrame    = None,
-                startPoint       = Vec3(0, 0, 0),
-                finalPoint       = Some(Vec3(0, 0, -1.0))
+                startPoint       = startPt,
+                finalPoint       = finalPt
             )
         .distinct
 
@@ -210,7 +218,7 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
 import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.dto.v7.endsWithSingularFlowResistance
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.dto.v7.{PostFireboxInitialDirection, PostFireboxInitialPosition}
+import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
 import afpma.firecalc.engine.models.ChimneyPipe_Module
 import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
@@ -227,14 +235,18 @@ lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot_V7]] =
         g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(slots = x))
 
 /** Wrapper-level initial direction for the post-firebox pipe chain. */
-lazy val postFireboxInitialDir_var: Var[PostFireboxInitialDirection] =
-    engineStateVar.zoomLazy(_.post_firebox_pipes.initialDirection): (g, x) =>
-        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialDirection = x))
+lazy val postFireboxInitialDir_var: Var[PipeInitialDirection] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialFrame.direction): (g, x) =>
+        g.copy(post_firebox_pipes =
+            g.post_firebox_pipes.copy(initialFrame = PipeInitialFrame(x, g.post_firebox_pipes.initialFrame.position))
+        )
 
 /** Wrapper-level initial position for the post-firebox pipe chain. */
-lazy val postFireboxInitialPos_var: Var[PostFireboxInitialPosition] =
-    engineStateVar.zoomLazy(_.post_firebox_pipes.initialPosition): (g, x) =>
-        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialPosition = x))
+lazy val postFireboxInitialPos_var: Var[Position3D] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialFrame.position): (g, x) =>
+        g.copy(post_firebox_pipes =
+            g.post_firebox_pipes.copy(initialFrame = PipeInitialFrame(g.post_firebox_pipes.initialFrame.direction, x))
+        )
 
 /**
  * App-wide Var for the post-firebox rotation offer toast.
@@ -323,8 +335,8 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
             val fbHeightM  = firebox.firebox_height.value
             // Slot 0 starts at the wrapper's initialPosition; fallback to firebox height + 1
             val slot0Start =
-                if slots.isEmpty then Vec3(0, 0, fbHeightM + 1.0                                     )
-                else Vec3                 (initialPos.x.value, initialPos.y.value, initialPos.z.value)
+                if slots.isEmpty then Vec3(0, 0, fbHeightM + 1.0)
+                else initialPos.toVec3
             slots.zipWithIndex
                 .foldLeft((Vector.empty[PipePositionResult], slot0Start)):
                     case ((results, startPoint), (slot, idx)) =>

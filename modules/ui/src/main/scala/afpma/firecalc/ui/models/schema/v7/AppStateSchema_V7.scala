@@ -20,7 +20,7 @@ import io.circe.generic.semiauto
  *
  * ## Changes from V6:
  * - engine_state upgraded from FireCalcYAML_V6 to FireCalcYAML_V7
- *   (V7 wraps post_firebox_pipes in PostFireboxPipes with
+ *   (V7 wraps post_firebox_pipes in FramedPostFireboxPipes with
  *   initialDirection and initialPosition at the wrapper level)
  *
  * ## Components:

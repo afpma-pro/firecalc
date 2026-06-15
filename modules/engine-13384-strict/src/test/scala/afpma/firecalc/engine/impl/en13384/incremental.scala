@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v4.{AzimuthDirection, InclinationDirection}
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -47,7 +47,7 @@ class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with Incr
                     val p =
                         builder
                             .withInitialDirection(
-                                PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+                                PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
                             )
                             .define(
                                 innerShape(square(d0)),

@@ -15,9 +15,9 @@ import afpma.firecalc.dto.generators.pipe_descr.SetFlowOnlyPipeProp_15544_V4_Gen
 import afpma.firecalc.dto.generators.pipe_descr.SetThermalPipeProp_13384_V4_Generators
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.dto.v7.PostFireboxPipes
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.v7.{FramedAirIntakePipes, AirIntakePosition}
+import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
 
 import org.scalacheck.Gen
 
@@ -25,7 +25,7 @@ import org.scalacheck.Gen
  * FireCalcYAML_V7_Generators
  *
  * Generates complete FireCalcYAML_V7 instances with a `post_firebox_pipes` field that
- * uses the V7 `PostFireboxPipes` wrapper type with `PostFireboxPipeDescrSlot_V7` slots.
+ * uses the V7 `FramedPostFireboxPipes` wrapper type with `PostFireboxPipeDescrSlot_V7` slots.
  *
  * The generator only produces topologies that are valid according to the grammar
  * enforced by `PostFireboxPipeChain.validated`:
@@ -41,9 +41,9 @@ trait FireCalcYAML_V7_Generators
     with SetFlowOnlyPipeProp_15544_V4_Generators
     with SetThermalPipeProp_13384_V4_Generators:
 
-    // ── PostFireboxInitialDirection / Position ──────────────────────────
+    // ── PipeInitialDirection / Position ──────────────────────────
 
-    def genPostFireboxInitialDirection: Gen[PostFireboxInitialDirection] =
+    def genPipeInitialDirection: Gen[PipeInitialDirection] =
         for
             azimuth     <- Gen.oneOf(
                 afpma.firecalc.dto.v4.AzimuthDirection.Front,
@@ -56,14 +56,27 @@ trait FireCalcYAML_V7_Generators
                 afpma.firecalc.dto.v4.InclinationDirection.Down,
                 afpma.firecalc.dto.v4.InclinationDirection.Horizontal
             )
-        yield PostFireboxInitialDirection(azimuth, inclination)
+        yield PipeInitialDirection(azimuth, inclination)
 
-    def genPostFireboxInitialPosition: Gen[PostFireboxInitialPosition] =
+    def genPosition3D: Gen[Position3D] =
         for
             x <- Gen.choose(-10.0, 10.0).map(_.meters)
             y <- Gen.choose(-10.0, 10.0).map(_.meters)
             z <- Gen.choose(-10.0, 10.0).map(_.meters)
-        yield PostFireboxInitialPosition(x, y, z)
+        yield Position3D(x, y, z)
+
+    def genAirIntakePosition: Gen[AirIntakePosition] =
+        Gen.oneOf(
+            genPosition3D.map(AirIntakePosition.Initial.apply),
+            genPosition3D.map(AirIntakePosition.Final.apply  )
+        )
+
+    def genFramedAirIntakePipes: Gen[FramedAirIntakePipes] =
+        for
+            initialDir <- genPipeInitialDirection
+            position   <- genAirIntakePosition
+            descr      <- genFlowOnlyPipeDescr_13384_V4_Seq
+        yield FramedAirIntakePipes(initialDir, position, descr)
 
     // ── Slot generators ─────────────────────────────────────────────────
 
@@ -82,15 +95,15 @@ trait FireCalcYAML_V7_Generators
     def genAnyFlueSlot: Gen[PostFireboxPipeDescrSlot_V7] =
         Gen.oneOf(genFlueSlot, genThermalFlueSlot)
 
-    // ── PostFireboxPipes generator ──────────────────────────────────────
+    // ── FramedPostFireboxPipes generator ──────────────────────────────────────
 
-    def genPostFireboxPipesN(n: Int): Gen[PostFireboxPipes] =
+    def genFramedPostFireboxPipesN(n: Int): Gen[FramedPostFireboxPipes] =
         require(n >= 1 && n <= 8, s"n must be in [1,8], got $n")
         for
-            initialDirection <- genPostFireboxInitialDirection
-            initialPosition  <- genPostFireboxInitialPosition
+            initialDirection <- genPipeInitialDirection
+            initialPosition  <- genPosition3D
             slots            <- genSlotsN(n)
-        yield PostFireboxPipes(initialDirection, initialPosition, slots)
+        yield FramedPostFireboxPipes(PipeInitialFrame(initialDirection, initialPosition), slots)
 
     def genSlotsN(n: Int): Gen[Seq[PostFireboxPipeDescrSlot_V7]] =
         require(n >= 1 && n <= 8, s"n must be in [1,8], got $n")
@@ -119,8 +132,8 @@ trait FireCalcYAML_V7_Generators
                     yield flues ++ Seq(chimney)
                 )
 
-    def genPostFireboxPipes: Gen[PostFireboxPipes] =
-        Gen.choose(1, 8).flatMap(genPostFireboxPipesN)
+    def genFramedPostFireboxPipes: Gen[FramedPostFireboxPipes] =
+        Gen.choose(1, 8).flatMap(genFramedPostFireboxPipesN)
 
     // ── Complete FireCalcYAML_V7 ────────────────────────────────────────
 
@@ -132,9 +145,9 @@ trait FireCalcYAML_V7_Generators
             projectDescr     <- genProjectDescr
             localConditions  <- genLocalConditions
             stoveParams      <- genStoveParams
-            airIntake        <- genFlowOnlyPipeDescr_13384_V4_Seq
+            airIntakePipes   <- genFramedAirIntakePipes
             firebox          <- genFirebox_V4
-            postFireboxPipes <- genPostFireboxPipes
+            postFireboxPipes <- genFramedPostFireboxPipes
         yield FireCalcYAML_V7                       (
             version                        = FireCalcYAML_V7.VERSION,
             locale                         = locale,
@@ -143,7 +156,7 @@ trait FireCalcYAML_V7_Generators
             project_description            = projectDescr,
             local_conditions               = localConditions,
             stove_params                   = stoveParams,
-            air_intake_descr               = airIntake,
+            air_intake_pipes               = airIntakePipes,
             firebox                        = firebox,
             post_firebox_pipes             = postFireboxPipes
         )

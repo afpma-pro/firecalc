@@ -16,9 +16,8 @@ import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 import afpma.firecalc.dto.v4.TypeOfAppliance
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
-import afpma.firecalc.dto.v7.PostFireboxPipes
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialPosition
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 
@@ -75,17 +74,16 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         )
 
     private val fluePipeDescr = Seq(
-        FlowOnlyPipeTrackingOp_15544.SetInitialDirection    (AzimuthDirection.Rear, InclinationDirection.Horizontal),
-        SetFlowOnlyPipeProp_15544.SetRoughness              (3.0.mm                                                ),
+        SetFlowOnlyPipeProp_15544.SetRoughness              (3.0.mm                      ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 12.2.cm)),
-        AddFlowOnlyPipeElement_15544.AddSectionHorizontal   ("sortie foyer", 28.1.cm                               ),
+        AddFlowOnlyPipeElement_15544.AddSectionHorizontal   ("sortie foyer", 28.1.cm     ),
         AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(
             "virage 90 deg",
             90.0.degrees,
             None
         ),
         SetFlowOnlyPipeProp_15544.SetInnerShape(PipeShape.Rectangle(11.1.cm, 11.1.cm)),
-        AddFlowOnlyPipeElement_15544.AddSectionVertical     ("colonne ascendante", 3.20.m                          )
+        AddFlowOnlyPipeElement_15544.AddSectionVertical     ("colonne ascendante", 3.20.m)
     )
 
     private val connectorPipeDescr = Seq(
@@ -127,12 +125,11 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
             min_efficiency = 78.percent,
             facing_type    = FacingType.WithoutAirGap
         ),
-        air_intake_descr               = Seq.empty,
+        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
         firebox                        = singleTestedFirebox,
-        post_firebox_pipes             = PostFireboxPipes(
-            initialDirection = PostFireboxInitialDirection.default,
-            initialPosition  = PostFireboxInitialPosition(0.m, 0.m, 0.m),
-            slots            = Seq(
+        post_firebox_pipes             = FramedPostFireboxPipes(
+            PipeInitialFrame(PipeInitialDirection.default, Position3D(0.m, 0.m, 0.m)),
+            slots = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (fluePipeDescr     ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(connectorPipeDescr),
                 PostFireboxPipeDescrSlot_V7.ChimneySlot  (chimneyPipeDescr  )

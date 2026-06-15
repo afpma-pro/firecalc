@@ -18,7 +18,7 @@ import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
@@ -335,7 +335,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     /**
      * Render a fixed (non-movable, non-deletable) element.
-     * Used for wrapper-level fields (e.g. PostFireboxInitialDirection/Position)
+     * Used for wrapper-level fields (e.g. PipeInitialDirection/Position)
      * that live outside the slot descriptor sequence.
      *
      * Simplified version of renderElemTyped: no delete/move/duplicate controls,
@@ -408,10 +408,10 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 )
 
     /**
-     * Render V7 wrapper elements (PostFireboxInitialDirection/Position) for the first slot.
+     * Render V7 wrapper elements (PipeInitialDirection/Position) for the first slot.
      * Extracted to avoid duplication between flow-only and thermal panels.
      *
-     * The auto-calc button for PostFireboxInitialPosition is wired directly here
+     * The auto-calc button for Position3D is wired directly here
      * using shared AutoCalcHelper methods. No override ceremony needed in subclasses.
      *
      * @param isFirstSlot  whether this panel renders the first post-firebox slot
@@ -429,7 +429,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             val v7 = V7FormInstances()
             import v7.given
 
-            val wrapperPositionAutoCalc: Var[PostFireboxInitialPosition] => HtmlElement =
+            val wrapperPositionAutoCalc: Var[Position3D] => HtmlElement =
                 val statusSig = AutoCalcHelper.mkStatusSig(
                     hasFrameSig = Signal.fromValue(true), // wrapper direction always available
                     hasShapeSig = postFireboxSlots_var.signal.map(AutoCalcHelper.firstSlotHasInnerShape)
@@ -445,21 +445,21 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                             fb.firebox_height.value
                         )
                         val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
-                        PostFireboxInitialPosition(x.m, y.m, z.m)
-                AutoCalcHelper.autoCalcButton[PostFireboxInitialPosition](statusSig, compute)
+                        Position3D(x.m, y.m, z.m)
+                AutoCalcHelper.autoCalcButton[Position3D](statusSig, compute)
 
             val fixedElems = Seq[HtmlElement](
-                renderFixedElem[PostFireboxInitialDirection]       (
-                    title        = I18N.set_prop.PostFireboxInitialDirection,
+                renderFixedElem[PipeInitialDirection]       (
+                    title        = I18N.set_prop.PipeInitialDirection,
                     v            = postFireboxInitialDir_var,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[PostFireboxInitialDirection]])
+                    propertyShow = Some(summon[Show[PipeInitialDirection]])
                 ),
-                renderFixedElem[PostFireboxInitialPosition]        (
-                    title        = I18N.set_prop.PostFireboxInitialPosition,
+                renderFixedElem[Position3D]                 (
+                    title        = I18N.set_prop.Position3D,
                     v            = postFireboxInitialPos_var,
                     isProperty   = true,
-                    propertyShow = Some(summon[Show[PostFireboxInitialPosition]]),
+                    propertyShow = Some(summon[Show[Position3D]]),
                     extra        = wrapperPositionAutoCalc
                 )
             )
@@ -565,7 +565,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         warningVnelSig.map:
             case Validated.Invalid(_) =>
                 DaisyUITooltip (
-                    ttContent  = p(cls := "text-xs", I18N_UI.direction_badge.direction_incompatible_warning),
+                    ttContent  = p(cls := "text-xs", I18N.direction_badge.direction_incompatible_warning),
                     element    = span(cls := "text-primary", lucide.`circle-alert`),
                     ttStyle    = PanelStatusHelper.tooltipStyleClsNameForWarnings,
                     ttPosition = "tooltip-bottom"

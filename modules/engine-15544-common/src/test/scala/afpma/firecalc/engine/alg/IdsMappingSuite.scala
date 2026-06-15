@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.dto.common.PipeInitialDirection
 
 import afpma.firecalc.engine.models.FluePipe_Module_15544
 import FluePipe_Module_15544.*
@@ -52,7 +52,7 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
 
     private lazy val simpleResult: FluePipe_Module_15544.FullDescrResult = {
         FluePipe_Module_15544.incremental.withInitialDirection            (
-            PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+            PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         )
         FluePipe_Module_15544.incremental.define(simpleDescr*).toFullDescr()
     }
@@ -106,7 +106,7 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
 
     private lazy val geomChangeResult: FluePipe_Module_15544.FullDescrResult = {
         FluePipe_Module_15544.incremental.withInitialDirection                (
-            PostFireboxInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+            PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         )
         FluePipe_Module_15544.incremental.define(geomChangeDescr*).toFullDescr()
     }

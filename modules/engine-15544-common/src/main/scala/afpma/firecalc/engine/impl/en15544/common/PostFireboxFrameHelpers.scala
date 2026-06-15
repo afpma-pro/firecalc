@@ -4,13 +4,14 @@
  */
 package afpma.firecalc.engine.impl.en15544.common
 
-import afpma.firecalc.dto.v7.PostFireboxInitialDirection
+import afpma.firecalc.units.Vec3
+
+import afpma.firecalc.dto.common.PipeInitialDirection
+
+import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
-
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
 
 /**
  * Shared helpers for converting V7 wrapper-level post-firebox pipe metadata
@@ -23,7 +24,7 @@ object PostFireboxFrameHelpers:
      * Convert a V7 wrapper-level initial direction to a PipeFrame.
      * Shared by PipeChainGeneric and application classes for seeding folds.
      */
-    def toPipeFrame(dir: PostFireboxInitialDirection): PipeFrame =
+    def toPipeFrame(dir: PipeInitialDirection): PipeFrame =
         PipeFrame.initial(
             Vec3.fromAzimuthElevation(
                 AzimuthDirection.toDegrees    (dir.azimuth    ),

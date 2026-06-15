@@ -10,6 +10,7 @@ import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.engine.impl.en13384.EN13384_FlowOnlyAirIntake_Assembly
 import afpma.firecalc.engine.impl.en13384.EN13384_ThermalAirIntake_Assembly
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.ValidatedNel
@@ -50,8 +51,23 @@ trait v0_2024_10_13384_strict_members extends v0_2024_10_13384_core:
         def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
         def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
+        /**
+         * Initial frame for the connector pipe.
+         * For purely vertical connectors (e.g. C2), use `PipeFrame.initial(Vec3.Up)`.
+         * For horizontal-then-vertical (e.g. C16), use `PipeFrame.initial(Vec3.Rear)`.
+         *
+         * TODO(azimuth-optional): This should eventually come from `PipeInitialDirection` with
+         * optional azimuth (azimuth: Option[AzimuthDirection]). Purely vertical pipes have no
+         * meaningful azimuth — the DirectionBadgeComponent added optional azimuth for better UI
+         * modeling. Implement optional azimuth in PipeInitialDirection so that vertical pipes
+         * can express azimuth = None instead of requiring a meaningless azimuth value.
+         * See: .scratch/remove-init-descr-in-V7-migration/ISSUES.md Issue 1
+         */
+        def connectorInitialFrame: Option[PipeFrame]
+
         private lazy val pipeChain = PipeChain_13384.build(
-            PipeChain_13384.Descriptors(connectorPipeDescr, chimneyPipeDescr)
+            PipeChain_13384.Descriptors(connectorPipeDescr, chimneyPipeDescr),
+            connectorInitialFrame
         )
 
         override lazy val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe] =
