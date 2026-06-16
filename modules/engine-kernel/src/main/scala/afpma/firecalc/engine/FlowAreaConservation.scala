@@ -80,17 +80,14 @@ object FlowAreaConservation:
      * No-op guard: if nFlows already equals the requested value, returns state unchanged
      * (preserves any existing pendingFlowAreaCheck). This prevents silent cancellation of
      * pending checks from redundant SetNumberOfFlows calls (e.g., UI re-renders).
-     *
-     * Returns Left(NoShapeBeforeSplit) if no inner shape is defined before the split/merge,
-     * since area conservation cannot be checked without a reference shape.
      */
     def computeSetNFlows[S](
         st: S,
         nf: NbOfFlows,
         pt: PipeType
-    )(using ops: PropsStateOps[S]): Either[NoShapeBeforeSplit, S] =
+    )(using ops: PropsStateOps[S]): S =
         val currentFlows = ops.getNFlows(st)
-        if currentFlows == nf then Right(st) // no-op — preserve pendingFlowAreaCheck
+        if currentFlows == nf then st // no-op — preserve pendingFlowAreaCheck
         else
             ops.getInnerShape(st) match
                 case None              =>
@@ -98,7 +95,7 @@ object FlowAreaConservation:
                     // PendingFlowAreaCheck. There's no "before" shape to check
                     // against; the area conservation check will happen when the
                     // shape is set later (if it changes after nFlows is set).
-                    Right(ops.setNFlows(st, nf))
+                    ops.setNFlows(st, nf)
                 case Some(beforeShape) =>
                     val nextSt  = ops.setNFlows(st, nf)
                     val pending = Some(
@@ -111,7 +108,7 @@ object FlowAreaConservation:
                                 else FlowAreaTransition.Merge
                         )
                     )
-                    Right(ops.setPendingFlowAreaCheck(nextSt, pending))
+                    ops.setPendingFlowAreaCheck(nextSt, pending)
 
     /**
      * Centralized SetInnerShape validation with area conservation check.

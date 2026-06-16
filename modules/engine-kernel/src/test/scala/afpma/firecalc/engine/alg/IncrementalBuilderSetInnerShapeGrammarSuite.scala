@@ -310,6 +310,22 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
         errors.head shouldBe a[ShapeNotMaterialized]
     }
 
+    it should "reject merge SetInnerShape then SetNumberOfFlows(1) without materialization" in {
+        // Test 6b: SetInnerShape → SetNumberOfFlows(2) → SetNumberOfFlows(1) without materialization.
+        // The merge to 1 flow is blocked by the materialized-shape guard.
+        val builder = newBuilder
+        val descr   = builder.define(
+            GrammarSetInnerShape   (PipeShape.Circle(100.mm)),
+            GrammarSetNumberOfFlows(NbOfFlows(2)            ),
+            GrammarSetNumberOfFlows(NbOfFlows(1)            ),
+            GrammarSectionSlopped("s1", 1.meters)
+        )
+        val result  = descr.toFullDescr()
+        result.isValid shouldBe false
+        val errors  = result.toEither.left.toOption.get
+        errors.head shouldBe a[ShapeNotMaterialized]
+    }
+
     it should "reject SetInnerShape then AddDirectionChange" in {
         // Test 7: SetInnerShape → AddDirectionChange — rejected
         val builder = newBuilder

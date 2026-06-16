@@ -85,6 +85,50 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
 
+    it should "reject merge 2→1 when shape is set but not materialized" in {
+        // SetInnerShape → SetNumberOfFlows(2) → SetNumberOfFlows(1) without a length-bearing
+        // element in between: the merge to 1 flow is blocked by the materialized-shape guard.
+        given FluePipeT = FluePipeT
+        val builder     = FlowOnlyIncrementalBuilder_15544
+            .makeFor[FluePipeT]
+            .withInitialDirection(
+                PipeInitialDirection    (
+                    azimuth     = AzimuthDirection.Front,
+                    inclination = InclinationDirection.Horizontal
+                )
+            )
+        val descr = builder.define(
+            SetFlowOnlyPipeProp_15544.SetInnerShape         (PipeShape.Circle(20.cm)),
+            SetFlowOnlyPipeProp_15544.SetRoughness(1.mm),
+            // no length-bearing element → shape stays in ShapeState.Set
+            FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+            FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)           )
+        )
+        val result = descr.toFullDescr()
+        result.isValid shouldBe false
+        val errors = result.toEither.left.toOption.get
+        errors.head shouldBe a[ShapeNotMaterialized]
+    }
+
+    it should "allow no-op SetNumberOfFlows(1) at pipe start without shape" in {
+        given FluePipeT = FluePipeT
+        val builder     = FlowOnlyIncrementalBuilder_15544
+            .makeFor[FluePipeT]
+            .withInitialDirection(
+                PipeInitialDirection    (
+                    azimuth     = AzimuthDirection.Front,
+                    inclination = InclinationDirection.Horizontal
+                )
+            )
+        val descr = builder.define(
+            SetFlowOnlyPipeProp_15544.SetRoughness        (1.mm         ),
+            FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)           ),
+            SetFlowOnlyPipeProp_15544.SetInnerShape         (PipeShape.Circle(20.cm)),
+            AddFlowOnlyPipeElement_15544.AddSectionSlopped("s", 1.meters)
+        )
+        descr.toFullDescr().isValid shouldBe true
+    }
+
     it should "allow merge on ascending pipe" in {
         given FluePipeT = FluePipeT
         val builder     = FlowOnlyIncrementalBuilder_15544

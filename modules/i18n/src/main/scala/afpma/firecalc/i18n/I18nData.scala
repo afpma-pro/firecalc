@@ -1029,7 +1029,6 @@ object I18nData:
             pressure_diff_requires_geometry        : StringFormat1,
             flow_resistance_requires_geometry_15544: StringFormat1,
             casing_too_small_for_liner             : StringFormat2,
-            no_shape_before_split                  : String,
             split                                  : String,
             merge                                  : String,
             flow_transition_area_rectangle         : StringFormat8,

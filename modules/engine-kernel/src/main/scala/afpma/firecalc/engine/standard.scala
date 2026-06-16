@@ -999,9 +999,6 @@ object standard {
         extends ConflictDetected
     case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
 
-    /** No inner shape defined before a SetNumberOfFlows — area conservation cannot be checked. */
-    case class NoShapeBeforeSplit(sectionTyp: PipeType) extends ConflictDetected
-
     /** Shape was set but not yet materialized into a physical element. */
     case class ShapeNotMaterialized(
         sectionTyp: PipeType,
@@ -1075,9 +1072,7 @@ object standard {
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
             case CasingTooSmallForLiner(linerDh, casingDh, _)     =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
-            case NoShapeBeforeSplit(_)                            =>
-                I18N.incremental_validation.conflicts.no_shape_before_split
-            case e: ShapeNotMaterialized                   =>
+            case e: ShapeNotMaterialized =>
                 val translatedOp = e.operation match
                     case ShapeNotMaterialized.Operation.SetInnerShape         => I18N.set_prop.SetInnerShape
                     case ShapeNotMaterialized.Operation.SetNumberOfFlows      => I18N.set_prop.SetNumberOfFlows

@@ -223,6 +223,41 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         errors.head shouldBe a[FlowSplitForbiddenOnAscendingPipe]
     }
 
+    it should "reject merge 2→1 when shape is set but not materialized" in {
+        // SetInnerShape → SetNumberOfFlows(2) → SetNumberOfFlows(1) without a length-bearing
+        // element in between: the merge to 1 flow is blocked by the materialized-shape guard.
+        given FluePipeT = FluePipeT
+        val builder     = FlowOnlyIncrementalBuilder_13384
+            .makeFor[FluePipeT]
+            .withInitialDirection(horizontalDir)
+        val descr       = builder.define(
+            SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
+            SetFlowOnlyPipeProp_13384.SetRoughness(1.mm),
+            // no length-bearing element → shape stays in ShapeState.Set
+            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
+            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)           )
+        )
+        val result      = descr.toFullDescr()
+        result.isValid shouldBe false
+        val errors      = result.toEither.left.toOption.get
+        errors.head shouldBe a[ShapeNotMaterialized]
+    }
+
+    it should "allow no-op SetNumberOfFlows(1) at pipe start without shape" in {
+        // SetNumberOfFlows(1) at pipe start (no previous shape) is a no-op — allowed.
+        given FluePipeT = FluePipeT
+        val builder     = FlowOnlyIncrementalBuilder_13384
+            .makeFor[FluePipeT]
+            .withInitialDirection(horizontalDir)
+        val descr       = builder.define(
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)           ),
+            SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
+        )
+        descr.toFullDescr().isValid shouldBe true
+    }
+
     it should "preserve pending check through no-op SetNumberOfFlows then reject non-conserved area" in {
         // SetNumberOfFlows(2) creates pending check. SetNumberOfFlows(2) again is no-op (preserves check).
         // SetInnerShape with non-conserved area clears check and produces error.
@@ -295,6 +330,48 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         val ExpectedDimRectangle(_, _, _, expectedHeight, expectedArea) = err.expectedDimension: @unchecked
         expectedHeight.to_cm.value shouldBe (20.0 +- 0.1 )
         expectedArea.to_cm2.value shouldBe  (100.0 +- 0.1)
+    }
+
+    it should "reject merge 2→1 when shape is set but not materialized" in {
+        // SetInnerShape → SetNumberOfFlows(2) → SetNumberOfFlows(1) without a length-bearing
+        // element in between: the merge to 1 flow is blocked by the materialized-shape guard.
+        given FluePipeT = FluePipeT
+        val builder     = ThermalIncrementalBuilder_13384
+            .makeFor[FluePipeT]
+            .withInitialDirection(horizontalDir)
+        val descr       = builder.define(
+            SetThermalPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)                              ),
+            SetThermalPipeProp_13384.SetRoughness   (1.mm                          ),
+            SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
+            SetThermalPipeProp_13384.SetLayer       (2.mm, WattsPerMeterKelvin(1.2)),
+            SetThermalPipeProp_13384.SetPipeLocation(PipeLocation.HeatedArea       ),
+            // no length-bearing element → shape stays in ShapeState.Set
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                                         )
+        )
+        val result      = descr.toFullDescr()
+        result.isValid shouldBe false
+        val errors      = result.toEither.left.toOption.get
+        errors.head shouldBe a[ShapeNotMaterialized]
+    }
+
+    it should "allow no-op SetNumberOfFlows(1) at pipe start without shape" in {
+        // SetNumberOfFlows(1) at pipe start (no previous shape) is a no-op — allowed.
+        // SetLayer requires SetInnerShape, so we put it after.
+        given FluePipeT = FluePipeT
+        val builder     = ThermalIncrementalBuilder_13384
+            .makeFor[FluePipeT]
+            .withInitialDirection(horizontalDir)
+        val descr       = builder.define(
+            SetThermalPipeProp_13384.SetRoughness        (1.mm                          ),
+            SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
+            SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                                         ),
+            SetThermalPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)                              ),
+            SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
+            AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
+        )
+        descr.toFullDescr().isValid shouldBe true
     }
 
 end AreaConservationSuite

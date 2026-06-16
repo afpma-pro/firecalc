@@ -386,7 +386,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         vState.andThen { st =>
                             stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
                                 validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).toValidatedNel
+                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
                                 )
                             }
                         }
