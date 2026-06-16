@@ -138,8 +138,8 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
         initDir match
             case Some(dir) =>
                 val dirVec = Vec3.fromAzimuthElevation(
-                    AzimuthDirection.toDegrees    (dir.azimuth    ),
-                    InclinationDirection.toDegrees(dir.inclination)
+                    dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                    InclinationDirection.toDegrees                       (dir.inclination)
                 )
                 val frame  = PipeFrame.initial(dirVec)
                 FlowOnlyPropsState_15544(

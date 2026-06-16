@@ -72,11 +72,17 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     protected def initialDirectionSig: Signal[PipeInitialDirection] = postFireboxInitialDir_var.signal
 
+    /**
+     * Opt-in flag for subclasses to render V7 wrapper-level elements
+     * (PipeInitialDirection, Position3D, auto-calc button) before the slot pipeline.
+     */
+    protected def renderWrapperElems: Boolean = false
+
     protected lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         initialDirectionSig
             .combineWith(welems_var.signal)
             .map: (initialDir, elems) =>
-                val azDeg = AzimuthDirection.toDegrees(initialDir.azimuth)
+                val azDeg = initialDir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0)
                 val elDeg = InclinationDirection.toDegrees(initialDir.inclination)
                 var frame: Option[PipeFrame] = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
                 val builder = Map.newBuilder[Int, PipeFrame]
@@ -93,59 +99,6 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                                 frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
                         case _ => ()
                 builder.result()
-
-    // ── Auto-calc: air distribution box position ─────────────────────────
-
-    /**
-     * Status signal for the air intake auto-calc button.
-     * Uses FINAL state (any direction + any shape in entire list), since we're
-     * aligning the pipe's endpoint to the air distrib box.
-     */
-    private lazy val airIntakeAutoCalcStatusSig: Signal[(Boolean, Option[String])] =
-        AutoCalcHelper.mkStatusSig(
-            hasFrameSig = frameBeforeByIdx.map(_.nonEmpty),
-            hasShapeSig = welems_var.signal.map(_.exists: (_, e) =>
-                summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384]].asInnerShape.isDefinedAt(e))
-        )
-
-    /**
-     * Compute position on the air distribution box boundary.
-     *
-     * Uses the FINAL pipe direction (replays all elements) since we're aligning
-     * the end of the last element to the air distrib box.
-     *
-     * The air distrib box is centered at (0, 0) with same width/depth as the firebox,
-     * bottom at z = −AIR_DISTRIB_HEIGHT_M, top at z = 0 (firebox floor).
-     *
-     * Z alignment (non-vertical): lowest point of pipe opening = air distrib bottom.
-     * Vertical Up: center of bottom face.
-     * Vertical Down: center of top face.
-     */
-    private def computeAirDistribPosition: Option[(Double, Double, Double)] =
-        val elems    = welems_var.now()
-        val frameOpt = AutoCalcHelper.replayFrame(elems, Int.MaxValue)
-        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, Int.MaxValue)
-        for
-            frame <- frameOpt
-            shape <- shapeOpt
-        yield
-            val fb  = firebox_var.now()
-            val box = AutoCalcHelper.TargetBox(
-                centerX   = 0.0,
-                centerY   = 0.0,
-                halfWidth = fb.firebox_width.value / 2.0,
-                halfDepth = fb.firebox_depth.value / 2.0,
-                bottomZ   = -AIR_DISTRIB_HEIGHT_M,
-                height    = AIR_DISTRIB_HEIGHT_M
-            )
-            AutoCalcHelper.computeBottomAlignedPosition(frame, shape, box)
-
-    /** Auto-calc button helper — generic over Position3D. */
-    private def airIntakeAutoCalcExtra[A](ctor: (Length, Length, Length) => A): Var[A] => HtmlElement =
-        AutoCalcHelper.autoCalcButton(
-            airIntakeAutoCalcStatusSig,
-            () => computeAirDistribPosition.map((x, y, z) => ctor(x.m, y.m, z.m))
-        )
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
@@ -510,7 +463,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                 case (i, aa: AddPressureDiff, x) => (i, aa, x)
             } { (_, _) => throw new Exception("ERROR: AddPressureDiff not implemented.") }
             .toSignal
-            .map(e => interleaveInsertSeparators(e, startIdx = 0))
+            .map(renderV7WrapperElems(renderWrapperElems))
 
     import FlowOnlyDefaultable_13384.given
 

@@ -470,14 +470,16 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         title         : String,
         content       : HtmlElement,
         isProperty    : Boolean,
-        legendIcon    : Option[HtmlElement] = None
+        legendIcon    : Option[HtmlElement] = None,
+        widthClass    : String              = "w-full"
     ): HtmlElement =
         DaisyUIInputs.FieldsetLegendWithContent(
             if isProperty then None else Some(title),
             content,
             bgClass     = if (isProperty) "bg-base-100" else "bg-base-200",
             borderClass = if (isProperty) "border-none" else "border-base-content/30",
-            legendIcon  = legendIcon
+            legendIcon  = legendIcon,
+            widthClass  = widthClass
         )
 
     protected def renderIncrDescr(

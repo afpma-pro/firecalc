@@ -182,7 +182,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             }
 
         "default direction is Right + Horizontal" in {
-            PipeInitialDirection.default.azimuth shouldBe AzimuthDirection.Right
+            PipeInitialDirection.default.azimuth shouldBe Some(AzimuthDirection.Right)
             PipeInitialDirection.default.inclination shouldBe InclinationDirection.Horizontal
         }
 

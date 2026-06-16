@@ -86,8 +86,8 @@ object PositionTracker:
             Some(
                 PipeFrame.initial(
                     Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees    (initialDirection.azimuth    ),
-                        InclinationDirection.toDegrees(initialDirection.inclination)
+                        initialDirection.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0                         ),
+                        InclinationDirection.toDegrees                                    (initialDirection.inclination)
                     )
                 )
             )

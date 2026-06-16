@@ -19,8 +19,6 @@ import afpma.firecalc.engine.api.*
 import afpma.firecalc.engine.cas_types.en13384.*
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en13384.typedefs.*
@@ -219,8 +217,5 @@ object CasType_13384_C2
             addRainCapEN13384_withHeightEquals2Diameter("element terminal (ζ = 1.5)") // ζ = 1.5 (QC2)
         )
 
-    override val connectorInitialFrame: Option[PipeFrame] =
-        Some(PipeFrame.initial(Vec3.Up))
-        // Purely vertical connector — no azimuth needed.
-        // TODO(azimuth-optional): Once PipeInitialDirection supports optional azimuth,
-        // this should become PipeInitialDirection(azimuth = None, inclination = InclinationDirection.Up)
+    override val connectorInitialDirection: Option[PipeInitialDirection] =
+        Some(PipeInitialDirection(InclinationDirection.Up))

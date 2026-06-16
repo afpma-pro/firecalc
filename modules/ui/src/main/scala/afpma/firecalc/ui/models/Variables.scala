@@ -314,8 +314,8 @@ def slotInitialFrameSig(idx: Int): Signal[Option[PipeFrame]] =
             Some(
                 PipeFrame.initial(
                     Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees    (dir.azimuth    ),
-                        InclinationDirection.toDegrees(dir.inclination)
+                        dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                        InclinationDirection.toDegrees                       (dir.inclination)
                     )
                 )
             )

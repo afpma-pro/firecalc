@@ -463,8 +463,8 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         Some(
             PipeFrame.initial(
                 Vec3.fromAzimuthElevation(
-                    AzimuthDirection.toDegrees    (dir.azimuth    ),
-                    InclinationDirection.toDegrees(dir.inclination)
+                    dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                    InclinationDirection.toDegrees                       (dir.inclination)
                 )
             )
         )

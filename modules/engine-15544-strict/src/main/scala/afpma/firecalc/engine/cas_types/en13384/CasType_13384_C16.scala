@@ -20,8 +20,6 @@ import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.en13384.*
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 
@@ -236,9 +234,5 @@ object CasType_13384_C16
             addRainCapEN13384_withHeightEquals2Diameter("element terminal"                                      )
         )
 
-    override val connectorInitialFrame: Option[PipeFrame] =
-        Some(PipeFrame.initial(Vec3.Rear))
-        // Horizontal rear exit → angles up via 90° elbow.
-        // Initial direction: Rear + Horizontal (confirmed by "sortie arrière" comment)
-        // TODO(azimuth-optional): Once PipeInitialDirection supports optional azimuth,
-        // this should become PipeInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Horizontal)
+    override val connectorInitialDirection: Option[PipeInitialDirection] =
+        Some(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))

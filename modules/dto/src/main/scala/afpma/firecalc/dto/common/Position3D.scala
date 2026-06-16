@@ -9,14 +9,18 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.Length
 import afpma.firecalc.units.coulombutils.cm
 
+import afpma.firecalc.i18n.*
+
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto
 
+import magnolia1.Transl
+
 final case class Position3D(
-    x: Length,
-    y: Length,
-    z: Length
+    @Transl(I(_.terms.x)) x: Length,
+    @Transl(I(_.terms.y)) y: Length,
+    @Transl(I(_.terms.z)) z: Length
 )
 
 extension (p: Position3D) def toVec3: Vec3 = Vec3(p.x.value, p.y.value, p.z.value)

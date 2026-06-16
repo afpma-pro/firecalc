@@ -70,8 +70,8 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         val dir = cleanFramedPostFireboxPipes.initialFrame.direction
         PipeFrame.initial(
             afpma.firecalc.units.Vec3.fromAzimuthElevation(
-                afpma.firecalc.dto.v4.AzimuthDirection.toDegrees    (dir.azimuth    ),
-                afpma.firecalc.dto.v4.InclinationDirection.toDegrees(dir.inclination)
+                dir.azimuth.map(afpma.firecalc.dto.v4.AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                afpma.firecalc.dto.v4.InclinationDirection.toDegrees                       (dir.inclination)
             )
         )
 

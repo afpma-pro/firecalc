@@ -60,7 +60,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
     private def exampleInitialFrame: Option[PipeFrame] =
         val initialDir = EngineState.example_projet_15544.post_firebox_pipes.initialFrame.direction
-        val azDeg      = AzimuthDirection.toDegrees(initialDir.azimuth)
+        val azDeg      = initialDir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0)
         val elDeg      = InclinationDirection.toDegrees(initialDir.inclination)
         Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
 

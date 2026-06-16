@@ -220,53 +220,6 @@ final case class DynamicFlowOnlyPipeSlotPanel(
         withInitialDirection = (e, _, _) => e
     )
 
-    /**
-     * Reactive check: is this slot the first HEAD_REGION slot (index 0) AND is it
-     * a `FlueSlot`?
-     *
-     * The auto-calc button auto-aligns the pipe's start to the firebox boundary —
-     * only the very first slot (index 0) actually touches the firebox, regardless
-     * of pipe type. Subsequent slots inherit their start from the previous slot's
-     * endpoint.
-     *
-     * The unified rule is: "auto-calc button is visible iff this slot is the first
-     * HEAD_REGION slot" — implemented here for `FlueSlot` and in
-     * `isFirstHeadSlotAndIsConnectorSig` (thermal panel) for `ConnectorSlot`.
-     * Delegates to the pure predicate in the companion object for testability.
-     */
-    private lazy val isFirstHeadSlotAndIsFlueSig: Signal[Boolean] =
-        postFireboxSlots_var.signal.map(slots => DynamicPipeSlotPanel.isFirstHeadSlotAndIsFlue(slots, slotIndex))
-
-    private def autoCalcStatusSig(posIdx: Int): Signal[(Boolean, Option[String])] =
-        AutoCalcHelper.mkStatusSig(
-            hasFrameSig = frameBeforeByIdx.map(_.contains(posIdx)),
-            hasShapeSig = welems_var.signal.map(_.filter(_._1 < posIdx).exists: (_, e) =>
-                summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544]].asInnerShape.isDefinedAt(e))
-        )
-
-    private def computeAutoPosition(posIdx: Int): Option[Position3D] =
-        val elems    = welems_var.now()
-        val frameOpt = AutoCalcHelper.replayFrame(elems, posIdx)
-        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, posIdx)
-        for
-            frame <- frameOpt
-            shape <- shapeOpt
-        yield
-            val fb  = firebox_var.now()
-            val box = AutoCalcHelper.fireboxTargetBox(
-                fb.firebox_width.value,
-                fb.firebox_depth.value,
-                fb.firebox_height.value
-            )
-            val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
-            Position3D(x.m, y.m, z.m)
-
-    private def autoCalcExtra(posIdx: Int): Var[Position3D] => HtmlElement =
-        AutoCalcHelper.autoCalcButton(
-            autoCalcStatusSig(posIdx),
-            () => computeAutoPosition(posIdx)
-        )
-
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal
             .combineWithDistinct(slotInitialFrameSig(slotIndex))

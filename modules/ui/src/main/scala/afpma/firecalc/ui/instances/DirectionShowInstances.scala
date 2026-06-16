@@ -47,6 +47,11 @@ object DirectionFormat:
     def compact(az: AzimuthDirection, incl: InclinationDirection)(using Locale): String =
         compact(AzimuthDirection.toDegrees(az), InclinationDirection.toDegrees(incl))
 
+    def compact(az: Option[AzimuthDirection], incl: InclinationDirection)(using Locale): String =
+        az match
+            case Some(a) => compact(a, incl)
+            case None    => compact(0.0, InclinationDirection.toDegrees(incl))
+
     def compact(azDeg: Double, elDeg: Double)(using Locale): String =
         val i18n         = I18N.direction_badge
         val isVertical   = math.abs(math.abs(elDeg) - 90.0) < 1e-6
