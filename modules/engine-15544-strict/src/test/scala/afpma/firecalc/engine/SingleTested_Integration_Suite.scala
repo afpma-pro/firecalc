@@ -17,7 +17,7 @@ import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 import afpma.firecalc.dto.v4.TypeOfAppliance
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
+import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 
@@ -128,7 +128,8 @@ class SingleTested_Integration_Suite extends AnyFlatSpec with Matchers:
         air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
         firebox                        = singleTestedFirebox,
         post_firebox_pipes             = FramedPostFireboxPipes(
-            PipeInitialFrame(PipeInitialDirection.default, Position3D(0.m, 0.m, 0.m)),
+            PipeInitialDirection.default,
+            PostFireboxStartPosition.Auto,
             slots = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (fluePipeDescr     ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(connectorPipeDescr),

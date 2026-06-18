@@ -110,7 +110,7 @@ object MCENPipeFixture_15544
     override def postFireboxInitialDirection = Some(
         PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
     )
-    override def postFireboxInitialPosition  = Some(Position3D.Origin)
+    // postFireboxInitialPosition uses default (None) — loader resolves Auto correctly
 
     val fluegas_h2o_perc_vol_nominal = None
     val fluegas_h2o_perc_vol_lowest  = None
@@ -321,7 +321,7 @@ object MCENPipeFixture_15544_CFCF
     override def postFireboxInitialDirection = Some(
         PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
     )
-    override def postFireboxInitialPosition  = Some(Position3D.Origin)
+    // postFireboxInitialPosition uses default (None) — loader resolves Auto correctly
 
     val fluegas_h2o_perc_vol_nominal = None
     val fluegas_h2o_perc_vol_lowest  = None

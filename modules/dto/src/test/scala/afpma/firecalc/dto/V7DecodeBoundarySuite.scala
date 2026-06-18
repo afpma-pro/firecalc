@@ -13,6 +13,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import io.circe.parser.*
 import io.circe.syntax.*
+import io.circe.yaml.scalayaml.parser as yamlParser
+import io.circe.yaml.scalayaml.printer as yamlPrinter
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -47,7 +49,7 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
         "decodes clean FramedPostFireboxPipes unchanged" in {
             val pipes   = FramedPostFireboxPipes.clean(
                 wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
-                wrapperPos(10.cm, 20.cm, 30.cm                                    ),
+                PostFireboxStartPosition.Manual(wrapperPos(10.cm, 20.cm, 30.cm)),
                 slots = Seq(
                     PostFireboxPipeDescrSlot_V7.FlueSlot(
                         Seq(
@@ -66,10 +68,8 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
 
         "handles NoFlueSlot unchanged" in {
             val pipes   = FramedPostFireboxPipes(
-                PipeInitialFrame(
-                    wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
-                    wrapperPos(0.cm, 0.cm, 0.cm                                       )
-                ),
+                wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                PostFireboxStartPosition.Manual(wrapperPos(0.cm, 0.cm, 0.cm)),
                 slots = Seq(
                     PostFireboxPipeDescrSlot_V7.NoFlueSlot,
                     PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
@@ -83,10 +83,8 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
 
         "decodes top-level SetNumberOfFlows as ChannelTopologyOp" in {
             val pipes   = FramedPostFireboxPipes(
-                PipeInitialFrame(
-                    wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
-                    wrapperPos(0.cm, 0.cm, 0.cm                                       )
-                ),
+                wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                PostFireboxStartPosition.Manual(wrapperPos(0.cm, 0.cm, 0.cm)),
                 slots = Seq(
                     PostFireboxPipeDescrSlot_V7.FlueSlot(
                         Seq(
@@ -103,11 +101,26 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
             decoded shouldBe Right(pipes)
         }
 
+        "decodes Auto position" in {
+            val pipes   = FramedPostFireboxPipes(
+                wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                PostFireboxStartPosition.Auto,
+                slots = Seq(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
+                )
+            )
+            val json    = pipes.asJson
+            val decoded = decode[FramedPostFireboxPipes](json.noSpaces)
+            decoded shouldBe Right(pipes)
+        }
+
         "cannot decode SetNumberOfFlows inside SetPropertiesInBatch.props" in {
             // SetNumberOfFlows is NOT a SetSingleProp in V7, so it cannot appear inside batch props.
             // Construct JSON manually with SetNumberOfFlows in a batch's props array.
             val malformedJson =
-                """{"initialDirection":{"azimuth":"Front","inclination":"Up"},"initialPosition":{"x":0,"y":0,"z":0},"slots":[{"ThermalFlueSlot":{"descr":[{"type":"SetPropertiesInBatch","batch_name":"test-batch","props":[{"type":"SetNumberOfFlows","n_flows":2}]}]}},{"ConnectorSlot":{"descr":[]}},{"ChimneySlot":{"descr":[]}}]}"""
+                """{"initialDirection":{"azimuth":"Front","inclination":"Up"},"initialPosition":{"Auto":{}},"slots":[{"ThermalFlueSlot":{"descr":[{"type":"SetPropertiesInBatch","batch_name":"test-batch","props":[{"type":"SetNumberOfFlows","n_flows":2}]}]}},{"ConnectorSlot":{"descr":[]}},{"ChimneySlot":{"descr":[]}}]}"""
             val decoded       = decode[FramedPostFireboxPipes](malformedJson)
             decoded.isLeft shouldBe true
         }
@@ -116,9 +129,146 @@ class V7DecodeBoundarySuite extends AnyFreeSpec with Matchers:
             // SetInitialDirection is a PipeTrackingOp, NOT a SetSingleProp in V7.
             // It cannot appear inside batch props.
             val malformedJson =
-                """{"initialDirection":{"azimuth":"Front","inclination":"Up"},"initialPosition":{"x":0,"y":0,"z":0},"slots":[{"ThermalFlueSlot":{"descr":[{"type":"SetPropertiesInBatch","batch_name":"test-batch","props":[{"type":"SetInitialDirection","azimuth":"Front","inclination":"Up"}]}]}},{"ConnectorSlot":{"descr":[]}},{"ChimneySlot":{"descr":[]}}]}"""
+                """{"initialDirection":{"azimuth":"Front","inclination":"Up"},"initialPosition":{"Auto":{}},"slots":[{"ThermalFlueSlot":{"descr":[{"type":"SetPropertiesInBatch","batch_name":"test-batch","props":[{"type":"SetInitialDirection","azimuth":"Front","inclination":"Up"}]}]}},{"ConnectorSlot":{"descr":[]}},{"ChimneySlot":{"descr":[]}}]}"""
             val decoded       = decode[FramedPostFireboxPipes](malformedJson)
             decoded.isLeft shouldBe true
+        }
+    }
+
+    // ─── YAML-specific edge-case tests (§7.2) ──────────────────────
+
+    "PostFireboxStartPosition YAML codec" - {
+
+        "encodes Auto as 'Auto: true' in YAML (not {} or null)" in {
+            val pipes = FramedPostFireboxPipes(
+                wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                PostFireboxStartPosition.Auto,
+                slots = Seq(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
+                )
+            )
+            val yaml  = yamlPrinter.print(pipes.asJson)
+            yaml should include("Auto: true")
+            yaml should not include "Auto: null"
+            yaml should not include "Auto: {}"
+        }
+
+        "decodes Auto from YAML with 'Auto: true'" in {
+            val pipes   = FramedPostFireboxPipes(
+                wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                PostFireboxStartPosition.Auto,
+                slots = Seq(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
+                )
+            )
+            val yaml    = yamlPrinter.print(pipes.asJson)
+            val parsed  = yamlParser.parse(yaml)
+            parsed.isRight shouldBe true
+            val decoded = decode[FramedPostFireboxPipes](parsed.toOption.get.noSpaces)
+            decoded shouldBe Right(pipes)
+        }
+
+        "decodes Auto from YAML with 'Auto: null' (backward compat)" in {
+            val pipes   = FramedPostFireboxPipes(
+                wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                PostFireboxStartPosition.Auto,
+                slots = Seq(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
+                )
+            )
+            // Simulate old YAML that had Auto: null
+            val yaml    = yamlPrinter.print(pipes.asJson).replace("Auto: true", "Auto: null")
+            val parsed  = yamlParser.parse(yaml)
+            parsed.isRight shouldBe true
+            val decoded = decode[FramedPostFireboxPipes](parsed.toOption.get.noSpaces)
+            decoded shouldBe Right(pipes)
+        }
+
+        "decodes Auto from YAML with 'Auto: {}' (backward compat)" in {
+            val pipes   = FramedPostFireboxPipes(
+                wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                PostFireboxStartPosition.Auto,
+                slots = Seq(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (Seq.empty)
+                )
+            )
+            // Simulate old YAML that had Auto: {}
+            val yaml    = yamlPrinter.print(pipes.asJson).replace("Auto: true", "Auto: {}")
+            val parsed  = yamlParser.parse(yaml)
+            parsed.isRight shouldBe true
+            val decoded = decode[FramedPostFireboxPipes](parsed.toOption.get.noSpaces)
+            decoded shouldBe Right(pipes)
+        }
+    }
+
+    "AirIntakePosition YAML codec" - {
+
+        "encodes InitialAuto as 'InitialAuto: true' in YAML" in {
+            val pipes = FramedAirIntakePipes(
+                initialDir = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                position   = AirIntakePosition.InitialAuto,
+                descr      = Seq.empty
+            )
+            val yaml  = yamlPrinter.print(pipes.asJson)
+            yaml should include("InitialAuto: true")
+        }
+
+        "encodes FinalAuto as 'FinalAuto: true' in YAML" in {
+            val pipes = FramedAirIntakePipes(
+                initialDir = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                position   = AirIntakePosition.FinalAuto,
+                descr      = Seq.empty
+            )
+            val yaml  = yamlPrinter.print(pipes.asJson)
+            yaml should include("FinalAuto: true")
+        }
+
+        "decodes InitialAuto from YAML with null value (backward compat)" in {
+            val pipes   = FramedAirIntakePipes(
+                initialDir = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                position   = AirIntakePosition.InitialAuto,
+                descr      = Seq.empty
+            )
+            val yaml    = yamlPrinter.print(pipes.asJson).replace("InitialAuto: true", "InitialAuto: null")
+            val parsed  = yamlParser.parse(yaml)
+            parsed.isRight shouldBe true
+            val decoded = decode[FramedAirIntakePipes](parsed.toOption.get.noSpaces)
+            decoded shouldBe Right(pipes)
+        }
+
+        "decodes FinalAuto from YAML with {} value (backward compat)" in {
+            val pipes   = FramedAirIntakePipes(
+                initialDir = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                position   = AirIntakePosition.FinalAuto,
+                descr      = Seq.empty
+            )
+            val yaml    = yamlPrinter.print(pipes.asJson).replace("FinalAuto: true", "FinalAuto: {}")
+            val parsed  = yamlParser.parse(yaml)
+            parsed.isRight shouldBe true
+            val decoded = decode[FramedAirIntakePipes](parsed.toOption.get.noSpaces)
+            decoded shouldBe Right(pipes)
+        }
+
+        "YAML round-trip preserves Manual positions" in {
+            val pos     = wrapperPos(100.cm, 200.cm, 300.cm)
+            val pipes   = FramedAirIntakePipes(
+                initialDir = wrapperDir(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                position   = AirIntakePosition.InitialManual(pos),
+                descr      = Seq.empty
+            )
+            val yaml    = yamlPrinter.print(pipes.asJson)
+            val parsed  = yamlParser.parse(yaml)
+            parsed.isRight shouldBe true
+            val decoded = decode[FramedAirIntakePipes](parsed.toOption.get.noSpaces)
+            decoded shouldBe Right(pipes)
         }
     }
 end V7DecodeBoundarySuite

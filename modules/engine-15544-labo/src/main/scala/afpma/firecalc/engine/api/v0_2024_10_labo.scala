@@ -25,6 +25,7 @@ trait v0_2024_10_labo_members extends v0_2024_10_mce_members:
 
         override def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None
         override def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = None
+        override def airIntakeInitialPosition   : Option[afpma.firecalc.dto.common.Position3D]           = None
 
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Labo_Application] = en15544_inputsVNel.map:
             i =>
@@ -38,7 +39,9 @@ trait v0_2024_10_labo_members extends v0_2024_10_mce_members:
                     i,
                     postFireboxPipeSlots,
                     postFireboxInitialDirection,
-                    postFireboxInitialPosition
+                    postFireboxInitialPosition,
+                    airIntakeInitialPosition,
+                    airIntakeDescriptors
                 )
 
     trait SimpleStoveProjectDescrFr_15544_Labo_Alg

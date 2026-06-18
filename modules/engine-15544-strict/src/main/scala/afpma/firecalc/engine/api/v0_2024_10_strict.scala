@@ -77,6 +77,7 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
 
         def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None
         def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = None
+        def airIntakeInitialPosition   : Option[afpma.firecalc.dto.common.Position3D]           = None
 
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Strict_Application] = en15544_inputsVNel.map:
             i =>
@@ -85,6 +86,7 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
                     postFireboxPipeSlots,
                     postFireboxInitialDirection,
                     postFireboxInitialPosition,
+                    airIntakeInitialPosition,
                     airIntakeDescriptors
                 )
 

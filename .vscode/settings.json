@@ -1,6 +1,6 @@
 {
     "files.watcherExclude": {
-        "**/target": true
+        "**/target/**": true
     },
     "metals.enableSemanticHighlighting": true,
     "editor.semanticHighlighting.enabled": true,
@@ -17,7 +17,7 @@
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.7+85-d4ba06e4-SNAPSHOT",
+    "metals.serverVersion": "1.6.7+89-cf9fcd7b-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 38615,
     "metals.suggestLatestUpgrade": "on",

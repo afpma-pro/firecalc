@@ -8,8 +8,10 @@ package afpma.firecalc.engine.impl.en15544.strict
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
+import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D, PipeShape}
+import afpma.firecalc.dto.v7.AirIntakePosition
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
+import afpma.firecalc.engine.models.geometry.AirDistributionBox
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.units.Vec3
@@ -76,6 +78,11 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
         AddFlowOnlyPipeElement_15544.AddSectionHorizontal("sortie foyer", 30.cm)
     )
 
+    private def airIntakeDescrRear(): Seq[FlowOnlyPipeDescr_13384] = Seq(
+        SetFlowOnlyPipeProp_13384.SetInnerShape(PipeShape.Circle(0.2.meters)),
+        AddFlowOnlyPipeElement_13384.AddSectionHorizontal("h1", 2.0.meters)
+    )
+
     "FireCalcYAML_Loader" - {
 
         "sanitizes V7 input" in {
@@ -89,13 +96,11 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
                 air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
                 firebox                        = mkSingleTested,
                 post_firebox_pipes             = FramedPostFireboxPipes(
-                    PipeInitialFrame(
-                        PipeInitialDirection(
-                            AzimuthDirection.Left,
-                            InclinationDirection.Horizontal
-                        ),
-                        Position3D          (0.cm, 0.cm, 0.cm)
+                    PipeInitialDirection(
+                        AzimuthDirection.Left,
+                        InclinationDirection.Horizontal
                     ),
+                    PostFireboxStartPosition.Auto,
                     slots = Seq(
                         PostFireboxPipeDescrSlot.FlueSlot(flueClean()),
                         PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
@@ -124,13 +129,203 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
                 air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
                 firebox                        = mkSingleTested,
                 post_firebox_pipes             = FramedPostFireboxPipes(
-                    PipeInitialFrame(PipeInitialDirection.default, Position3D(0.cm, 0.cm, 0.cm)),
+                    PipeInitialDirection.default,
+                    PostFireboxStartPosition.Auto,
                     slots = Seq.empty
                 )
             )
 
             val loader = FireCalcYAML_Loader(empty)
             loader.slotBuildResults should have size 0
+        }
+
+        "resolves Auto position through full loader path" in {
+            // Full integration: YAML with Auto position → loader → PipePositionComputer → algebra
+            // Firebox 33x33x52, direction Left/Horizontal, inner shape Rectangle(11x12)
+            // Expected: top-aligned on left face
+            //   z = fireboxHeight - innerHeight/2 = 0.52 - 0.06 = 0.46
+            //   x = -halfWidth = -0.165, y = 0
+            val yaml = FireCalcYAML_V7(
+                locale                         = Locale(Languages.Fr, None),
+                display_units                  = DisplayUnits.SI,
+                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                project_description            = ProjectDescr("test", "", Country.France),
+                local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
+                stove_params                   = mkStoveParams,
+                air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
+                firebox                        = mkSingleTested,
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialDirection(
+                        AzimuthDirection.Left,
+                        InclinationDirection.Horizontal
+                    ),
+                    PostFireboxStartPosition.Auto,
+                    slots = Seq(
+                        PostFireboxPipeDescrSlot.FlueSlot(flueClean()),
+                        PostFireboxPipeDescrSlot.ConnectorSlot(Seq.empty),
+                        PostFireboxPipeDescrSlot.ChimneySlot  (Seq.empty)
+                    )
+                )
+            )
+
+            val loader = FireCalcYAML_Loader(yaml)
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.postFireboxInitialPosition
+
+            pos shouldBe defined
+            val resolved = pos.get
+            // x = -halfWidth = -0.33/2 = -0.165
+            (math.abs(resolved.x.value - (-0.165)) < 1e-6) shouldBe true
+            // y = 0 (Left is pure -X)
+            (math.abs(resolved.y.value - 0.0) < 1e-6     ) shouldBe true
+            // z = fireboxHeight - innerHeight/2 = 0.52 - 0.12/2 = 0.46
+            (math.abs(resolved.z.value - 0.46) < 1e-6    ) shouldBe true
+        }
+
+        // ── airIntakeInitialPosition ─────────────────────────────────────
+
+        "airIntakeInitialPosition returns None for empty descriptors" in {
+            val yaml = FireCalcYAML_V7(
+                locale                         = Locale(Languages.Fr, None),
+                display_units                  = DisplayUnits.SI,
+                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                project_description            = ProjectDescr("test", "", Country.France),
+                local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
+                stove_params                   = mkStoveParams,
+                air_intake_pipes               = FramedAirIntakePipes.fromLegacy(Seq.empty),
+                firebox                        = mkSingleTested,
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialDirection.default,
+                    PostFireboxStartPosition.Auto,
+                    slots = Seq.empty
+                )
+            )
+
+            val loader = FireCalcYAML_Loader(yaml)
+            loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition shouldBe None
+        }
+
+        "airIntakeInitialPosition resolves InitialAuto via reverse computation" in {
+            // Single 2m horizontal section going Rear
+            // After replay from Origin: final = (0, 2, 0), direction = Rear
+            // Target connection (Rear): ray from center in -Rear=Front hits front face
+            //   x=0, y=-depth/2, z=adBoxZBottom+0.1
+            // Offset = target - rawFinal = (0, -0.165-2, -0.20+0.1) = (0, -2.165, -0.10)
+            val yaml = FireCalcYAML_V7(
+                locale                         = Locale(Languages.Fr, None),
+                display_units                  = DisplayUnits.SI,
+                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                project_description            = ProjectDescr("test", "", Country.France),
+                local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
+                stove_params                   = mkStoveParams,
+                air_intake_pipes               = FramedAirIntakePipes(
+                    initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
+                    position   = AirIntakePosition.InitialAuto,
+                    descr      = airIntakeDescrRear()
+                ),
+                firebox                        = mkSingleTested,
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialDirection.default,
+                    PostFireboxStartPosition.Auto,
+                    slots = Seq.empty
+                )
+            )
+
+            val loader = FireCalcYAML_Loader(yaml)
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            pos shouldBe defined
+
+            val resolved = pos.get
+            // x = 0 (Rear is pure +Y)
+            (math.abs(resolved.x.value - 0.0) < 1e-6                                ) shouldBe true
+            // y = -depth/2 - 2.0 = -0.165 - 2.0 = -2.165
+            (math.abs(resolved.y.value - (-0.165 - 2.0)) < 1e-6                     ) shouldBe true
+            // z = adBoxZBottom + 0.1 = -0.20 + 0.1 = -0.10
+            (math.abs(resolved.z.value - (AirDistributionBox.Z_BOTTOM + 0.1)) < 1e-6) shouldBe true
+        }
+
+        "airIntakeInitialPosition resolves FinalAuto same as InitialAuto" in {
+            val yaml = FireCalcYAML_V7(
+                locale                         = Locale(Languages.Fr, None),
+                display_units                  = DisplayUnits.SI,
+                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                project_description            = ProjectDescr("test", "", Country.France),
+                local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
+                stove_params                   = mkStoveParams,
+                air_intake_pipes               = FramedAirIntakePipes(
+                    initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal),
+                    position   = AirIntakePosition.FinalAuto,
+                    descr      = airIntakeDescrRear()
+                ),
+                firebox                        = mkSingleTested,
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialDirection.default,
+                    PostFireboxStartPosition.Auto,
+                    slots = Seq.empty
+                )
+            )
+
+            val loader = FireCalcYAML_Loader(yaml)
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            pos shouldBe defined
+
+            // Should match InitialAuto result
+            (math.abs(pos.get.x.value - 0.0) < 1e-6                                ) shouldBe true
+            (math.abs(pos.get.y.value - (-0.165 - 2.0)) < 1e-6                     ) shouldBe true
+            (math.abs(pos.get.z.value - (AirDistributionBox.Z_BOTTOM + 0.1)) < 1e-6) shouldBe true
+        }
+
+        "airIntakeInitialPosition returns Manual position as-is" in {
+            val manualPos = Position3D(1.5.meters, -3.0.meters, -0.05.meters)
+            val yaml      = FireCalcYAML_V7(
+                locale                         = Locale(Languages.Fr, None),
+                display_units                  = DisplayUnits.SI,
+                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                project_description            = ProjectDescr("test", "", Country.France),
+                local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
+                stove_params                   = mkStoveParams,
+                air_intake_pipes               = FramedAirIntakePipes(
+                    initialDir = PipeInitialDirection.default,
+                    position   = AirIntakePosition.InitialManual(manualPos),
+                    descr      = airIntakeDescrRear()
+                ),
+                firebox                        = mkSingleTested,
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialDirection.default,
+                    PostFireboxStartPosition.Auto,
+                    slots = Seq.empty
+                )
+            )
+
+            val loader = FireCalcYAML_Loader(yaml)
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            pos shouldBe Some(manualPos)
+        }
+
+        "airIntakeInitialPosition returns FinalManual position as-is" in {
+            val manualPos = Position3D(-0.5.meters, 1.0.meters, 0.1.meters)
+            val yaml      = FireCalcYAML_V7(
+                locale                         = Locale(Languages.Fr, None),
+                display_units                  = DisplayUnits.SI,
+                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                project_description            = ProjectDescr("test", "", Country.France),
+                local_conditions               = LocalConditions(0.meters, false, LocalConditions.ChimneyTermination.Classic),
+                stove_params                   = mkStoveParams,
+                air_intake_pipes               = FramedAirIntakePipes(
+                    initialDir = PipeInitialDirection.default,
+                    position   = AirIntakePosition.FinalManual(manualPos),
+                    descr      = airIntakeDescrRear()
+                ),
+                firebox                        = mkSingleTested,
+                post_firebox_pipes             = FramedPostFireboxPipes(
+                    PipeInitialDirection.default,
+                    PostFireboxStartPosition.Auto,
+                    slots = Seq.empty
+                )
+            )
+
+            val loader = FireCalcYAML_Loader(yaml)
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            pos shouldBe Some(manualPos)
         }
     }
 end V7LoaderSanitizationSuite

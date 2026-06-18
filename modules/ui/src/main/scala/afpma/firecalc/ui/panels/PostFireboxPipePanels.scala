@@ -379,18 +379,39 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     // ── NoFlueSlot phantom panel ─────────────────────────────────
 
     private def buildNoFlueSlotPanel: HtmlElement =
-        import afpma.firecalc.ui.models.{postFireboxInitialDir_var, postFireboxInitialPos_var}
-        val v7          = V7FormInstances()
+        import afpma.firecalc.ui.models.{
+            postFireboxInitialDir_var,
+            postFireboxStartPositionMode_var,
+            postFireboxEffectivePosition_sig
+        }
+        import afpma.firecalc.dto.v7.PostFireboxStartPosition
+        val v7           = V7FormInstances()
         import v7.given
-        val pipeTypeCls = "pipe-type-no-flue"
-        val dirWidget   = renderV7PropertyModal[PipeInitialDirection](
+        val pipeTypeCls  = "pipe-type-no-flue"
+        val dirWidget    = renderV7PropertyModal[PipeInitialDirection](
             title = I18N.set_prop.PipeInitialDirection,
             v     = postFireboxInitialDir_var
         )
-        val posWidget   = renderV7PropertyModal[Position3D](
-            title = I18N.set_prop.Position3D,
-            v     = postFireboxInitialPos_var
+        val posPresentationSig: Signal[Position3D] =
+            postFireboxStartPositionMode_var.signal.combineWith(postFireboxEffectivePosition_sig).map {
+                (mode, effPos) =>
+                    mode match
+                        case PostFireboxStartPosition.Manual(p) => p
+                        case PostFireboxStartPosition.Auto      => effPos
+            }
+        val manualPos    = ModeAwarePositionRow.reactivePositionVar(
+            posPresentationSig,
+            (newP: Position3D) => postFireboxStartPositionMode_var.set(PostFireboxStartPosition.Manual(newP)),
+            canWrite = () =>
+                postFireboxStartPositionMode_var.now() match
+                    case PostFireboxStartPosition.Manual(_) => true
+                    case PostFireboxStartPosition.Auto      => false
         )
+        val manualPosVar = manualPos.value
+        val posWidget    = renderV7PropertyModal[Position3D](
+            title = I18N.set_prop.Position3D,
+            v     = manualPosVar
+        ).amend(manualPos.binders)
         div(
             cls := s"$pipeTypeCls",
             div(

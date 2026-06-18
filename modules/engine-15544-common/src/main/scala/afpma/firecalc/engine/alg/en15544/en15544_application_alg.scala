@@ -66,6 +66,13 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def postFireboxInitialPosition: Option[afpma.firecalc.dto.common.Position3D] = None
 
     /**
+     * Wrapper-level initial position for air intake pipes (V7).
+     * Defaults to None for backward compatibility.
+     * Resolved from AirIntakePosition.Auto modes in the loader.
+     */
+    def airIntakeInitialPosition: Option[afpma.firecalc.dto.common.Position3D] = None
+
+    /**
      * Raw air intake pipe descriptors from the DTO.
      * Used by direction-reachability validation to walk the air intake bend chain.
      * Defaults to empty for engine variants that do not model an air intake.

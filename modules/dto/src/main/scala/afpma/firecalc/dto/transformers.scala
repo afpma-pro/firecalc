@@ -593,8 +593,8 @@ object transformers:
 
     // ─── V6 → V7 ──────────────────────────────────────────────────────
     //
-    // Extract SetInitialDirection/SetInitialPosition from the first slot's
-    // descriptor sequence into FramedPostFireboxPipes.initialFrame.direction/.initialFrame.position.
+    // Extract SetInitialDirection from the first slot's descriptor sequence into
+    // FramedPostFireboxPipes.initialDirection. Position is always Auto.
     // Strip SetFinalPosition from all slot descriptors.
     // Wrap in FramedPostFireboxPipes wrapper.
 
@@ -608,7 +608,7 @@ object transformers:
 
         object airIntake:
 
-            def extractFrame(
+            def extractDirectionAndPositionMode(
                 descrV6: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3]
             ): (PipeInitialDirection, afpma.firecalc.dto.v7.AirIntakePosition) =
                 val initialDir = descrV6
@@ -616,25 +616,21 @@ object transformers:
                     .lastOption
                     .getOrElse(PipeInitialDirection.default)
 
-                val finalPosOption   = descrV6.collect { case Prop3.SetFinalPosition(x, y, z) =>
-                    Position3D(x, y, z)
-                }.lastOption
-                val initialPosOption = descrV6.collect { case Prop3.SetInitialPosition(x, y, z) =>
-                    Position3D(x, y, z)
-                }.lastOption
+                // Only check for presence of position markers — actual values are discarded (V7 uses Auto).
+                val hasFinalPos   = descrV6.exists { case Prop3.SetFinalPosition(_, _, _) => true; case _ => false }
+                val hasInitialPos = descrV6.exists { case Prop3.SetInitialPosition(_, _, _) => true; case _ => false }
 
-                val position = finalPosOption match
-                    case Some(pos) => afpma.firecalc.dto.v7.AirIntakePosition.Final(pos)
-                    case None      =>
-                        val pos = initialPosOption.getOrElse(Position3D(0.cm, 0.cm, 0.cm))
-                        afpma.firecalc.dto.v7.AirIntakePosition.Initial(pos)
+                val position =
+                    if hasFinalPos then afpma.firecalc.dto.v7.AirIntakePosition.FinalAuto
+                    else if hasInitialPos then afpma.firecalc.dto.v7.AirIntakePosition.InitialAuto
+                    else afpma.firecalc.dto.v7.AirIntakePosition.FinalAuto
 
                 (initialDir, position)
 
             def normalize(
                 descrV6: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3]
             ): FramedAirIntakePipes =
-                val (initialDir, position) = extractFrame(descrV6)
+                val (initialDir, position) = extractDirectionAndPositionMode(descrV6)
 
                 def migrateAndStrip(
                     d: afpma.firecalc.dto.v4.FlowOnlyPipeDescr_13384_V3
@@ -663,33 +659,19 @@ object transformers:
             ): Option[PipeInitialDirection] =
                 d.collect { case Prop133.SetInitialDirection(az, incl) => PipeInitialDirection(az, incl) }.lastOption
 
-            def extractPosition15544(d: Seq[afpma.firecalc.dto.v4.FlowOnlyPipeDescr_15544_V3]): Option[Position3D] =
-                d.collect { case PropF155.SetInitialPosition(x, y, z) => Position3D(x, y, z) }.lastOption
-
-            def extractPosition13384(d: Seq[afpma.firecalc.dto.v4.ThermalPipeDescr_13384_V3]): Option[Position3D] =
-                d.collect { case Prop133.SetInitialPosition(x, y, z) => Position3D(x, y, z) }.lastOption
-
-            def extractFrame(
+            def extractDirection(
                 slots: Seq[PostFireboxPipeDescrSlot]
-            ): (PipeInitialDirection, Position3D) =
+            ): PipeInitialDirection =
                 val firstSlot = slots.find(_ != PostFireboxPipeDescrSlot.NoFlueSlot)
 
-                val (directionOpt, positionOpt) = firstSlot match
-                    case Some(PostFireboxPipeDescrSlot.FlueSlot(d))        =>
-                        (extractDirection15544(d), extractPosition15544(d))
-                    case Some(PostFireboxPipeDescrSlot.ThermalFlueSlot(d)) =>
-                        (extractDirection13384(d), extractPosition13384(d))
-                    case Some(PostFireboxPipeDescrSlot.ConnectorSlot(d))   =>
-                        (extractDirection13384(d), extractPosition13384(d))
-                    case Some(PostFireboxPipeDescrSlot.ChimneySlot(d))     =>
-                        (extractDirection13384(d), extractPosition13384(d))
-                    case _                                                 =>
-                        (None, None)
+                val directionOpt = firstSlot match
+                    case Some(PostFireboxPipeDescrSlot.FlueSlot(d))        => extractDirection15544(d)
+                    case Some(PostFireboxPipeDescrSlot.ThermalFlueSlot(d)) => extractDirection13384(d)
+                    case Some(PostFireboxPipeDescrSlot.ConnectorSlot(d))   => extractDirection13384(d)
+                    case Some(PostFireboxPipeDescrSlot.ChimneySlot(d))     => extractDirection13384(d)
+                    case _                                                 => None
 
-                (
-                    directionOpt.getOrElse(PipeInitialDirection.default),
-                    positionOpt.getOrElse (Position3D.Origin           )
-                )
+                directionOpt.getOrElse(PipeInitialDirection.default)
 
             def convertSlot(s: PostFireboxPipeDescrSlot): PostFireboxPipeDescrSlot_V7 =
                 s match
@@ -715,11 +697,11 @@ object transformers:
             def normalize(
                 slots: Seq[PostFireboxPipeDescrSlot]
             ): FramedPostFireboxPipes =
-                val (initialDirection, initialPosition) = extractFrame(slots)
-                val convertedSlots = slots.map(convertSlot)
+                val initialDirection = extractDirection(slots)
+                val convertedSlots   = slots.map(convertSlot)
 
                 FramedPostFireboxPipes.sanitize(
-                    FramedPostFireboxPipes(PipeInitialFrame(initialDirection, initialPosition), convertedSlots)
+                    FramedPostFireboxPipes(initialDirection, PostFireboxStartPosition.Auto, convertedSlots)
                 )
 
     // ── public[dto] wrappers (kept for test compatibility) ─────────────

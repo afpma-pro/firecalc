@@ -19,5 +19,5 @@ trait FramedBuilderSupport:
      * @param seq the framed sequence containing the initial frame
      * @return this builder
      */
-    def fromFramedSequence[D](seq: FramedPipeSequence[D]): this.type =
-        this.withInitialDirection(seq.initialFrame.direction)
+    def fromFramedSequence[D, P](seq: FramedPipeSequence[D, P]): this.type =
+        this.withInitialDirection(seq.initialDirection)

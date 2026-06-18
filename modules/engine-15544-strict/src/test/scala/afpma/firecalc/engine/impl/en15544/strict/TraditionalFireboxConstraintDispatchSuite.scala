@@ -11,7 +11,7 @@ import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
+import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
@@ -67,7 +67,8 @@ class TraditionalFireboxConstraintDispatchSuite extends AnyFreeSpec with Matcher
             air_intake_pipes               = FramedAirIntakePipes.fromLegacy(ExampleProject_15544.conduit_air_descr),
             firebox                        = firebox,
             post_firebox_pipes             = FramedPostFireboxPipes(
-                PipeInitialFrame(PipeInitialDirection.default, Position3D(0.m, 0.m, 0.m)),
+                PipeInitialDirection.default,
+                PostFireboxStartPosition.Auto,
                 slots = Seq(
                     PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                     PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),

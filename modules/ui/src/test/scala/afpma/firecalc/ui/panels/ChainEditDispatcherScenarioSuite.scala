@@ -59,7 +59,7 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
         ChainEditDispatcher(oldSlots, rawNewSlots, edit, RigidRotation, initialFrame)
 
     private def exampleInitialFrame: Option[PipeFrame] =
-        val initialDir = EngineState.example_projet_15544.post_firebox_pipes.initialFrame.direction
+        val initialDir = EngineState.example_projet_15544.post_firebox_pipes.initialDirection
         val azDeg      = initialDir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0)
         val elDeg      = InclinationDirection.toDegrees(initialDir.inclination)
         Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))

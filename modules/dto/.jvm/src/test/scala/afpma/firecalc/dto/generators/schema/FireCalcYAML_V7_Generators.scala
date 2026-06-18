@@ -17,7 +17,7 @@ import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.dto.v7.{FramedAirIntakePipes, AirIntakePosition}
-import afpma.firecalc.dto.common.{PipeInitialDirection, PipeInitialFrame, Position3D}
+import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
 
 import org.scalacheck.Gen
 
@@ -67,8 +67,10 @@ trait FireCalcYAML_V7_Generators
 
     def genAirIntakePosition: Gen[AirIntakePosition] =
         Gen.oneOf(
-            genPosition3D.map(AirIntakePosition.Initial.apply),
-            genPosition3D.map(AirIntakePosition.Final.apply  )
+            Gen.const        (AirIntakePosition.InitialAuto  ),
+            genPosition3D.map(AirIntakePosition.InitialManual),
+            Gen.const        (AirIntakePosition.FinalAuto    ),
+            genPosition3D.map(AirIntakePosition.FinalManual  )
         )
 
     def genFramedAirIntakePipes: Gen[FramedAirIntakePipes] =
@@ -101,9 +103,12 @@ trait FireCalcYAML_V7_Generators
         require(n >= 1 && n <= 8, s"n must be in [1,8], got $n")
         for
             initialDirection <- genPipeInitialDirection
-            initialPosition  <- genPosition3D
+            initialPosition  <- Gen.oneOf(
+                Gen.const        (afpma.firecalc.dto.v7.PostFireboxStartPosition.Auto  ),
+                genPosition3D.map(afpma.firecalc.dto.v7.PostFireboxStartPosition.Manual)
+            )
             slots            <- genSlotsN(n)
-        yield FramedPostFireboxPipes(PipeInitialFrame(initialDirection, initialPosition), slots)
+        yield FramedPostFireboxPipes(initialDirection, initialPosition, slots)
 
     def genSlotsN(n: Int): Gen[Seq[PostFireboxPipeDescrSlot_V7]] =
         require(n >= 1 && n <= 8, s"n must be in [1,8], got $n")

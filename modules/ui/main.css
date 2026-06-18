@@ -108,6 +108,33 @@ tr.insert-sep td {
     font-weight: 700 !important;
 }
 
+.btn-vlight-ocre {
+    background-color: var(--color-vlight-ocre);
+    border-color: var(--color-vlight-ocre);
+    color: var(--color-secondary-content);
+}
+
+.btn-vlight-ocre:hover {
+    background-color: var(--color-light-ocre);
+    border-color: var(--color-light-ocre);
+}
+
+.position3d-fit-content .flex-auto {
+    flex: 0 0 auto;
+    width: fit-content;
+}
+
+.position3d-fit-content .join,
+.position3d-fit-content .input,
+.position3d-fit-content .floating-label {
+    width: fit-content;
+}
+
+.position3d-fit-content input[type="number"] {
+    width: fit-content;
+    min-width: 6ch;
+}
+
 /* ── Pipe-type color tokens ─────────────────────────────────────── */
 .pipe-type-flue       { --pipe-border-color: #EE6622; --pipe-bg-color: rgba(238, 102, 34, 0.12); }
 .pipe-type-connector  { --pipe-border-color: #F59331; --pipe-bg-color: rgba(245, 147, 49, 0.12); }

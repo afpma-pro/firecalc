@@ -55,7 +55,8 @@ object GenerateExampleProjectFixture:
                     azimuth     = AzimuthDirection.Left,
                     inclination = InclinationDirection.Horizontal
                 ),
-                initialPosition  = Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
+                initialPosition  =
+                    PostFireboxStartPosition.Manual(Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm)),
                 slots            = Seq(
                     PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                     PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),

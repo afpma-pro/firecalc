@@ -15,6 +15,7 @@ import afpma.firecalc.ui.i18n.I18nData_UI.*
 import io.taig.babel.StringFormat1
 
 final case class I18nData_UI(
+    badges               : Badges,
     buttons              : Buttons,
     catalog              : Catalog,
     client_project_data  : ClientProjectData,
@@ -40,6 +41,11 @@ final case class I18nData_UI(
 )
 
 object I18nData_UI:
+
+    case class Badges(
+        auto_mode  : String,
+        manual_mode: String
+    )
 
     case class Buttons(
         select                    : String,

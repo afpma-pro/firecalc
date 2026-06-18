@@ -43,6 +43,7 @@ import cats.Show
 import cats.data.*
 import cats.syntax.show.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
@@ -411,60 +412,94 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
      * Render V7 wrapper elements (PipeInitialDirection/Position) for the first slot.
      * Extracted to avoid duplication between flow-only and thermal panels.
      *
-     * The auto-calc button for Position3D is wired directly here
-     * using shared AutoCalcHelper methods. No override ceremony needed in subclasses.
+     * Position row uses mode-aware controls:
+     *   - Auto mode: read-only effective position, "Auto" badge, "Set manually" button.
+     *   - Manual mode: editable position, "Manual" badge, "↺ Auto" reset button.
      *
      * @param isFirstSlot  whether this panel renders the first post-firebox slot
      * @param elems        the rendered element rows for the descriptor sequence
      * @return             wrapper elements prepended when isFirstSlot, otherwise unchanged
      */
+    private lazy val postFireboxWrapperElems: Seq[HtmlElement] =
+        import afpma.firecalc.ui.models.{
+            postFireboxInitialDir_var,
+            postFireboxStartPositionMode_var,
+            postFireboxEffectivePosition_sig
+        }
+        val v7 = V7FormInstances()
+        import v7.given
+
+        // Keep these wrapper rows stable across descriptor-row rerenders. In particular, the
+        // Position3D dialog must not be unmounted/closed when Auto/Manual mode changes or when
+        // the form emits a field edit.
+        val postFireboxPositionRow = renderPostFireboxPositionRow(
+            modeVar         = postFireboxStartPositionMode_var,
+            effectivePosSig = postFireboxEffectivePosition_sig
+        )
+
+        Seq[HtmlElement](
+            renderFixedElem[PipeInitialDirection]       (
+                title        = I18N.set_prop.PipeInitialDirection,
+                v            = postFireboxInitialDir_var,
+                isProperty   = true,
+                propertyShow = Some(summon[Show[PipeInitialDirection]])
+            ),
+            postFireboxPositionRow
+        )
+
     protected def renderV7WrapperElems(isFirstSlot: Boolean)(elems: Seq[HtmlElement]): Seq[HtmlElement] =
         if isFirstSlot then
-            import afpma.firecalc.ui.models.{
-                postFireboxInitialDir_var,
-                postFireboxInitialPos_var,
-                postFireboxSlots_var,
-                firebox_var
+            interleaveInsertSeparators (postFireboxWrapperElems ++ elems, startIdx = postFireboxWrapperElems.size)
+        else interleaveInsertSeparators(elems, startIdx                            = 0                           )
+
+    /**
+     * Mode-aware Position3D row for the post-firebox pipe (Auto/Manual, no selector).
+     * Auto: read-only effective position. Manual: editable; Auto→Manual preserves
+     * the last effective value. Writes are blocked while Auto so form echoes
+     * cannot flip Auto back to Manual.
+     */
+    private def renderPostFireboxPositionRow(
+        modeVar        : Var[PostFireboxStartPosition],
+        effectivePosSig: Signal[Position3D]
+    ): HtmlElement =
+        import afpma.firecalc.dto.v7.PostFireboxStartPosition
+        val v7 = V7FormInstances()
+        import v7.given
+
+        val displayedPosSig: Signal[Position3D] =
+            modeVar.signal.combineWith(effectivePosSig).map {
+                case (PostFireboxStartPosition.Manual(p), _) => p
+                case (PostFireboxStartPosition.Auto, effPos) => effPos
             }
-            val v7 = V7FormInstances()
-            import v7.given
 
-            val wrapperPositionAutoCalc: Var[Position3D] => HtmlElement =
-                val statusSig = AutoCalcHelper.mkStatusSig(
-                    hasFrameSig = Signal.fromValue(true), // wrapper direction always available
-                    hasShapeSig = postFireboxSlots_var.signal.map(AutoCalcHelper.firstSlotHasInnerShape)
-                )
-                val compute   = () =>
-                    for shape <- AutoCalcHelper.firstInnerShapeIn(postFireboxSlots_var.now())
-                    yield
-                        val fb    = firebox_var.now()
-                        val frame = AutoCalcHelper.wrapperDirectionToFrame(postFireboxInitialDir_var.now())
-                        val box   = AutoCalcHelper.fireboxTargetBox(
-                            fb.firebox_width.value,
-                            fb.firebox_depth.value,
-                            fb.firebox_height.value
-                        )
-                        val (x, y, z) = AutoCalcHelper.computeTopAlignedPosition(frame, shape, box)
-                        Position3D(x.m, y.m, z.m)
-                AutoCalcHelper.autoCalcButton[Position3D](statusSig, compute)
+        val dialog = ModeAwarePositionRow.modeAwarePositionDialog[PostFireboxStartPosition](
+            modeVar         = modeVar,
+            isAuto          = _ == PostFireboxStartPosition.Auto,
+            toAuto          = {
+                case PostFireboxStartPosition.Manual(_) => PostFireboxStartPosition.Auto
+                case auto                               => auto
+            },
+            toManual        = (_, p) => PostFireboxStartPosition.Manual(p),
+            displayedPosSig = displayedPosSig,
+            titleSig        = Val(I18N.set_prop.Position3D),
+            compactFormat   = (_, pos) => { import cats.syntax.show.*; s"${I18N.set_prop.Position3D}: ${pos.show}" },
+            canWrite        = () =>
+                modeVar.now() match
+                    case PostFireboxStartPosition.Manual(_) => true
+                    case PostFireboxStartPosition.Auto      => false
+        )
 
-            val fixedElems = Seq[HtmlElement](
-                renderFixedElem[PipeInitialDirection]       (
-                    title        = I18N.set_prop.PipeInitialDirection,
-                    v            = postFireboxInitialDir_var,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[PipeInitialDirection]])
-                ),
-                renderFixedElem[Position3D]                 (
-                    title        = I18N.set_prop.Position3D,
-                    v            = postFireboxInitialPos_var,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[Position3D]]),
-                    extra        = wrapperPositionAutoCalc
+        tr(
+            td(
+                div(
+                    wrapLine("", dialog.compactNode, isProperty = true, widthClass = "w-auto"),
+                    dialog.dialogNode
+                ).amend(
+                    cls := pipeTypeCls,
+                    dialog.binders
                 )
             )
-            interleaveInsertSeparators(fixedElems ++ elems, startIdx = fixedElems.size)
-        else interleaveInsertSeparators(elems, startIdx = 0)
+        )
 
     def wrapLine(
         title         : String,

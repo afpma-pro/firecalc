@@ -31,7 +31,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
 
     // Shared wrapper-level initial direction/position for tests
     val defaultInitialDir = PipeInitialDirection.default // Right + Horizontal
-    val defaultInitialPos = Position3D(0.m, 0.m, 0.m)
 
     // ── Test 1: Single vertical section ────────────────────────────────────────
 
@@ -44,7 +43,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -63,7 +61,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -81,7 +78,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -107,7 +103,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -133,7 +128,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -160,7 +154,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -182,7 +175,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -197,7 +189,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result = PositionTracker.computeFlowOnly15544(
             Seq.empty,
             defaultInitialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -218,7 +209,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result     = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -252,7 +242,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val result        = PositionTracker.computeFlowOnly15544(
             elems,
             initialDir,
-            defaultInitialPos,
             externalFrame,
             Vec3(0, 0, 0)
         )
@@ -280,7 +269,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val flueResult = PositionTracker.computeFlowOnly15544(
             flueElems,
             flueDir,
-            defaultInitialPos,
             None,
             Vec3(0, 0, 0)
         )
@@ -291,7 +279,6 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         val connResult = PositionTracker.computeFlowOnly15544(
             connElems,
             connDir,
-            defaultInitialPos,
             None,
             flueResult.finalPoint
         )

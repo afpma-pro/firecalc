@@ -24,12 +24,12 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
         result.initialDir shouldBe PipeInitialDirection.default
     }
 
-    it should "use default position (Initial, 0,0,0) when missing" in {
+    it should "use default position (FinalAuto) when missing" in {
         val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
             AddFlowOnlyPipeElement_13384_V3.AddSectionHorizontal("test", 10.cm)
         )
         val result = normalizeToFramedAirIntakePipes(descr)
-        result.position shouldBe AirIntakePosition.Initial(Position3D(0.cm, 0.cm, 0.cm))
+        result.position shouldBe AirIntakePosition.FinalAuto
     }
 
     it should "use last SetInitialDirection" in {
@@ -41,23 +41,23 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
         result.initialDir shouldBe PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
     }
 
-    it should "use last SetInitialPosition when no SetFinalPosition is present" in {
+    it should "use InitialAuto when SetInitialPosition is present and no SetFinalPosition" in {
         val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
             SetFlowOnlyPipeProp_13384_V3.SetInitialPosition(10.cm, 20.cm, 30.cm),
             SetFlowOnlyPipeProp_13384_V3.SetInitialPosition(40.cm, 50.cm, 60.cm)
         )
         val result = normalizeToFramedAirIntakePipes(descr)
-        result.position shouldBe AirIntakePosition.Initial(Position3D(40.cm, 50.cm, 60.cm))
+        result.position shouldBe AirIntakePosition.InitialAuto
     }
 
-    it should "use last SetFinalPosition as the position (Final mode)" in {
+    it should "use FinalAuto when SetFinalPosition is present" in {
         val descr  = Seq[FlowOnlyPipeDescr_13384_V3](
             SetFlowOnlyPipeProp_13384_V3.SetInitialPosition(10.cm, 20.cm, 30.cm   ),
             SetFlowOnlyPipeProp_13384_V3.SetFinalPosition  (100.cm, 200.cm, 300.cm),
             SetFlowOnlyPipeProp_13384_V3.SetFinalPosition  (400.cm, 500.cm, 600.cm)
         )
         val result = normalizeToFramedAirIntakePipes(descr)
-        result.position shouldBe AirIntakePosition.Final(Position3D(400.cm, 500.cm, 600.cm))
+        result.position shouldBe AirIntakePosition.FinalAuto
     }
 
     it should "strip migration-only properties from descriptors" in {
@@ -75,7 +75,7 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
     it should "handle empty descriptor sequence" in {
         val result = normalizeToFramedAirIntakePipes(Seq.empty)
         result.initialDir shouldBe PipeInitialDirection.default
-        result.position shouldBe AirIntakePosition.Initial(Position3D(0.cm, 0.cm, 0.cm))
+        result.position shouldBe AirIntakePosition.FinalAuto
         result.descr shouldBe empty
     }
 
@@ -106,10 +106,10 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
             )
         )
         val result = normalizeToFramedPostFireboxPipes(slots)
-        result.initialFrame.direction shouldBe PipeInitialDirection.default
+        result.initialDirection shouldBe PipeInitialDirection.default
     }
 
-    it should "use default position when first non-NoFlueSlot is missing it" in {
+    it should "use Auto position when first non-NoFlueSlot is missing it" in {
         val slots  = Seq[PostFireboxPipeDescrSlot](
             PostFireboxPipeDescrSlot.FlueSlot(
                 Seq(
@@ -118,7 +118,7 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
             )
         )
         val result = normalizeToFramedPostFireboxPipes(slots)
-        result.initialFrame.position shouldBe Position3D(0.cm, 0.cm, 0.cm)
+        result.initialPosition shouldBe PostFireboxStartPosition.Auto
     }
 
     it should "use last SetInitialDirection in the first non-NoFlueSlot" in {
@@ -135,13 +135,13 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
             )
         )
         val result = normalizeToFramedPostFireboxPipes(slots)
-        result.initialFrame.direction shouldBe PipeInitialDirection(
+        result.initialDirection shouldBe PipeInitialDirection(
             AzimuthDirection.Front,
             InclinationDirection.Horizontal
         )
     }
 
-    it should "use last SetInitialPosition in the first non-NoFlueSlot" in {
+    it should "always use Auto position (V6 position values are discarded)" in {
         val slots  = Seq[PostFireboxPipeDescrSlot](
             PostFireboxPipeDescrSlot.FlueSlot(
                 Seq(
@@ -151,7 +151,7 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
             )
         )
         val result = normalizeToFramedPostFireboxPipes(slots)
-        result.initialFrame.position shouldBe Position3D(40.cm, 50.cm, 60.cm)
+        result.initialPosition shouldBe PostFireboxStartPosition.Auto
     }
 
     it should "skip NoFlueSlot when searching for initial frame" in {
@@ -167,7 +167,7 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
             )
         )
         val result = normalizeToFramedPostFireboxPipes(slots)
-        result.initialFrame.direction shouldBe PipeInitialDirection(
+        result.initialDirection shouldBe PipeInitialDirection(
             AzimuthDirection.Right,
             InclinationDirection.Horizontal
         )
@@ -179,14 +179,14 @@ class V6ToV7TransformerSuite extends AnyFlatSpec with Matchers:
             PostFireboxPipeDescrSlot.NoFlueSlot
         )
         val result = normalizeToFramedPostFireboxPipes(slots)
-        result.initialFrame.direction shouldBe PipeInitialDirection.default
-        result.initialFrame.position shouldBe Position3D(0.cm, 0.cm, 0.cm)
+        result.initialDirection shouldBe PipeInitialDirection.default
+        result.initialPosition shouldBe PostFireboxStartPosition.Auto
     }
 
     it should "handle empty slot sequence" in {
         val result = normalizeToFramedPostFireboxPipes(Seq.empty)
-        result.initialFrame.direction shouldBe PipeInitialDirection.default
-        result.initialFrame.position shouldBe Position3D(0.cm, 0.cm, 0.cm)
+        result.initialDirection shouldBe PipeInitialDirection.default
+        result.initialPosition shouldBe PostFireboxStartPosition.Auto
         result.slots shouldBe empty
     }
 

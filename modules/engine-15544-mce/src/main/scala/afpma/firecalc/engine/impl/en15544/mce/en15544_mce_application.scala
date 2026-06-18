@@ -43,16 +43,18 @@ object EN15544_MCE_Application:
         bs845: BS845_Alg,
         wComb: WoodCombustionAlg
     )(
-        i             : models.en15544.Inputs_15544_MCE,
-        pfbSlots      : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = Seq.empty,
-        initialDir    : Option[afpma.firecalc.dto.common.PipeInitialDirection] = None,
-        initialPos    : Option[afpma.firecalc.dto.common.Position3D]           = None,
-        airIntakeDescr: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = Seq.empty
+        i                  : models.en15544.Inputs_15544_MCE,
+        pfbSlots           : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = Seq.empty,
+        initialDir         : Option[afpma.firecalc.dto.common.PipeInitialDirection] = None,
+        initialPos         : Option[afpma.firecalc.dto.common.Position3D]           = None,
+        airIntakeInitialPos: Option[afpma.firecalc.dto.common.Position3D]           = None,
+        airIntakeDescr     : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = Seq.empty
     ): EN15544_MCE_Application = new EN15544_MCE_Application(f, bs845, wComb) {
         override lazy val inputs                : models.en15544.Inputs_15544_MCE                        = i
         override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = pfbSlots
         override def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = initialDir
         override def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = initialPos
+        override def airIntakeInitialPosition   : Option[afpma.firecalc.dto.common.Position3D]           = airIntakeInitialPos
         override def airIntakeDescriptors       : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = airIntakeDescr
     }
 

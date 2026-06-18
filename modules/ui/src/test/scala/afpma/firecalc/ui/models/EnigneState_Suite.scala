@@ -13,6 +13,8 @@ import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.dto.common.Position3D
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.v7.AirIntakePosition
+import afpma.firecalc.dto.v7.PostFireboxStartPosition
 import afpma.firecalc.units.coulombutils.*
 
 import io.circe.*
@@ -74,13 +76,15 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
             "stores the original initial frame at FramedPostFireboxPipes level" in {
                 val pipes = EngineState.example_projet_15544.post_firebox_pipes
 
-                pipes.initialFrame.direction shouldBe (
+                pipes.initialDirection shouldBe                               (
                     PipeInitialDirection(
                         AzimuthDirection.Left,
                         InclinationDirection.Horizontal
                     )
                 )
-                pipes.initialFrame.position.shouldBe  (Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm))
+                pipes.initialPosition shouldBe PostFireboxStartPosition.Manual(
+                    Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm)
+                )
             }
 
             "keeps vertical direction-change absDir pins as explicit azimuth None" in {
@@ -94,6 +98,24 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
                         AbsoluteDirection(None, InclinationDirection.Up)
                     )
                 )
+            }
+        }
+
+        "empty state defaults" - {
+            "empty post-firebox position is Auto" in {
+                EngineState.empty.post_firebox_pipes.initialPosition shouldBe PostFireboxStartPosition.Auto
+            }
+
+            "minimal post-firebox position is Auto" in {
+                EngineState.minimal.post_firebox_pipes.initialPosition shouldBe PostFireboxStartPosition.Auto
+            }
+
+            "empty air intake position is FinalAuto" in {
+                EngineState.empty.air_intake_pipes.position shouldBe AirIntakePosition.FinalAuto
+            }
+
+            "minimal air intake position is FinalAuto" in {
+                EngineState.minimal.air_intake_pipes.position shouldBe AirIntakePosition.FinalAuto
             }
         }
 

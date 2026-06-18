@@ -192,23 +192,121 @@ val firebox_var =
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
+import afpma.firecalc.engine.models.geometry.{PipePositionComputer, AirDistributionBox}
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.dto.v7.FramedAirIntakePipes
 
-lazy val airintake_positions_sig: Signal[PipePositionResult] =
-    engineStateVar.signal
-        .map: engine =>
-            val framed = engine.air_intake_pipes
-            val pos3D  = framed.rawPosition
-            val (startPt, finalPt) = framed.positionPoints
+/** Stored Auto/Manual mode for the air intake pipe position. */
+lazy val airIntakePositionMode_var: Var[AirIntakePosition] =
+    engineStateVar.zoomLazy(_.air_intake_pipes.position): (g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(position = x))
 
+/** Wrapper-level initial direction for the air intake pipe. */
+lazy val airIntakeInitialDir_var: Var[PipeInitialDirection] =
+    engineStateVar.zoomLazy(_.air_intake_pipes.initialDir): (g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(initialDir = x))
+
+/** Descriptor sequence for the air intake pipe. */
+lazy val airIntakeDescr_var: Var[Seq[FlowOnlyPipeDescr_13384]] =
+    engineStateVar.zoomLazy(_.air_intake_pipes.descr): (g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(descr = x))
+
+/**
+ * Effective air intake position derived from mode × direction × firebox × descriptor sequence.
+ * Returns (startPoint, optionalFinalPoint) for PositionTracker.
+ *
+ * - InitialAuto: reverse-compute start so pipe terminates at air distribution box surface.
+ * - InitialManual(pos): start at stored pos; no final constraint.
+ * - FinalAuto: reverse-compute start so pipe terminates at air distribution box surface.
+ * - FinalManual(pos): start at origin; final constraint at stored pos.
+ *
+ * Note: InitialAuto and FinalAuto are geometrically identical — both use the reverse
+ * computation (replay descriptors from origin, offset so end lands at box).
+ * The Initial/Final distinction is purely a migration label (SetInitialPosition vs
+ * SetFinalPosition found in V3 descriptors).
+ */
+lazy val airIntakeEffectivePosition_sig: Signal[(Position3D, Option[Position3D])] =
+    airIntakePositionMode_var.signal
+        .combineWith(airIntakeInitialDir_var.signal)
+        .combineWith(airIntakeDescr_var.signal)
+        .combineWith(firebox_var.signal)
+        .map: (mode, initialDir, descr, fb) =>
+            val fbWidth = fb.firebox_width.value
+            val fbDepth = fb.firebox_depth.value
+            mode match
+                case AirIntakePosition.InitialManual(pos) =>
+                    (pos, None)
+                case AirIntakePosition.FinalManual(pos)   =>
+                    (Position3D.Origin, Some(pos))
+                case AirIntakePosition.InitialAuto        =>
+                    // Reverse computation: start offset so last descriptor element ends at box
+                    val offset = PipePositionComputer.computeAirIntakeFinalAuto(
+                        descr      = descr,
+                        initialDir = initialDir,
+                        boxXWidth  = fbWidth,
+                        boxYDepth  = fbDepth,
+                        boxZBottom = AirDistributionBox.Z_BOTTOM,
+                        boxZHeight = AirDistributionBox.Z_HEIGHT
+                    )
+                    (offset, None)
+                case AirIntakePosition.FinalAuto          =>
+                    val offset = PipePositionComputer.computeAirIntakeFinalAuto(
+                        descr      = descr,
+                        initialDir = initialDir,
+                        boxXWidth  = fbWidth,
+                        boxYDepth  = fbDepth,
+                        boxZBottom = AirDistributionBox.Z_BOTTOM,
+                        boxZHeight = AirDistributionBox.Z_HEIGHT
+                    )
+                    (offset, None)
+
+/**
+ * Displayed position for the air intake Position3D form.
+ *
+ * Initial modes (InitialAuto, InitialManual) display the start position.
+ * Final modes (FinalAuto, FinalManual) display the final/end position.
+ *
+ * For FinalAuto, the final position is the connection point on the air
+ * distribution box surface, computed by the same replay as the start offset.
+ */
+lazy val airIntakeDisplayedPosition_sig: Signal[Position3D] =
+    airIntakePositionMode_var.signal
+        .combineWith(airIntakeInitialDir_var.signal)
+        .combineWith(airIntakeDescr_var.signal)
+        .combineWith(firebox_var.signal)
+        .combineWith(airIntakeEffectivePosition_sig)
+        .map: t =>
+            val (mode, initialDir, descr, fb, startPos, finalPos) = t
+            val fbWidth = fb.firebox_width.value
+            val fbDepth = fb.firebox_depth.value
+            mode match
+                case AirIntakePosition.InitialManual(p) => p
+                case AirIntakePosition.FinalManual(p)   => p
+                case AirIntakePosition.InitialAuto      =>
+                    // Display the start offset (first element of effective tuple)
+                    startPos
+                case AirIntakePosition.FinalAuto        =>
+                    // Display the final connection point (end position)
+                    PipePositionComputer.computeAirIntakeConnectionPoint     (
+                        descr      = descr,
+                        initialDir = initialDir,
+                        boxXWidth  = fbWidth,
+                        boxYDepth  = fbDepth,
+                        boxZBottom = AirDistributionBox.Z_BOTTOM,
+                        boxZHeight = AirDistributionBox.Z_HEIGHT
+                    )
+
+lazy val airintake_positions_sig: Signal[PipePositionResult] =
+    airIntakeInitialDir_var.signal
+        .combineWith(airIntakeDescr_var.signal)
+        .combineWith(airIntakeEffectivePosition_sig)
+        .map: (initialDir, descr, effectiveStart, effectiveFinal) =>
             PositionTracker.computeFlowOnly13384(
-                framed.descr,
-                initialDirection = framed.initialDir,
-                initialPosition  = pos3D,
+                descr,
+                initialDirection = initialDir,
                 externalFrame    = None,
-                startPoint       = startPt,
-                finalPoint       = finalPt
+                startPoint       = effectiveStart.toVec3,
+                finalPoint       = effectiveFinal.map(_.toVec3)
             )
         .distinct
 
@@ -236,17 +334,52 @@ lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot_V7]] =
 
 /** Wrapper-level initial direction for the post-firebox pipe chain. */
 lazy val postFireboxInitialDir_var: Var[PipeInitialDirection] =
-    engineStateVar.zoomLazy(_.post_firebox_pipes.initialFrame.direction): (g, x) =>
-        g.copy(post_firebox_pipes =
-            g.post_firebox_pipes.copy(initialFrame = PipeInitialFrame(x, g.post_firebox_pipes.initialFrame.position))
-        )
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialDirection): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialDirection = x))
 
-/** Wrapper-level initial position for the post-firebox pipe chain. */
-lazy val postFireboxInitialPos_var: Var[Position3D] =
-    engineStateVar.zoomLazy(_.post_firebox_pipes.initialFrame.position): (g, x) =>
-        g.copy(post_firebox_pipes =
-            g.post_firebox_pipes.copy(initialFrame = PipeInitialFrame(g.post_firebox_pipes.initialFrame.direction, x))
-        )
+/** Stored Auto/Manual mode for the post-firebox pipe start position. */
+lazy val postFireboxStartPositionMode_var: Var[PostFireboxStartPosition] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialPosition): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialPosition = x))
+
+/**
+ * Auto-computed post-firebox start position from direction × firebox × firstSlotShape.
+ * Independent of mode — used only when mode is Auto (see postFireboxEffectivePosition_sig).
+ */
+lazy val postFireboxAutoPosition_sig: Signal[Position3D] =
+    postFireboxInitialDir_var.signal
+        .combineWith(firebox_var.signal)
+        .combineWith(postFireboxSlots_var.signal)
+        .map: (dir, fb, slots) =>
+            val firstShape = PipePositionComputer.firstInnerShapeIn(slots)
+            firstShape match
+                case Some(shape) =>
+                    PipePositionComputer.computePostFireboxStart (
+                        direction  = dir,
+                        boxXWidth  = fb.firebox_width.value,
+                        boxYDepth  = fb.firebox_depth.value,
+                        boxZBottom = 0.0,
+                        boxZHeight = fb.firebox_height.value,
+                        innerShape = shape
+                    )
+                case None        =>
+                    // No inner shape found in first slot — fallback to firebox top center.
+                    // This is the correct position for a vertical pipe (Up/Down direction)
+                    // and a reasonable default when shape info is missing.
+                    Position3D(0.0.m, 0.0.m, fb.firebox_height.value.m)
+
+/**
+ * Effective post-firebox start position derived from mode × autoPosition.
+ * In Auto mode, returns the reactively computed position.
+ * In Manual mode, returns the stored position directly (ignores autoPosition).
+ */
+lazy val postFireboxEffectivePosition_sig: Signal[Position3D] =
+    postFireboxStartPositionMode_var.signal
+        .combineWith(postFireboxAutoPosition_sig)
+        .map: (mode, autoPos) =>
+            mode match
+                case PostFireboxStartPosition.Manual(pos) => pos
+                case PostFireboxStartPosition.Auto        => autoPos
 
 /**
  * App-wide Var for the post-firebox rotation offer toast.
@@ -327,16 +460,18 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
     postFireboxSlots_var.signal
         .combineWith(
             slotFinalFrames_sig,
-            firebox_var.signal,
             postFireboxInitialDir_var.signal,
-            postFireboxInitialPos_var.signal
+            postFireboxEffectivePosition_sig
         )
-        .map: (slots, frames, firebox, initialDir, initialPos) =>
-            val fbHeightM  = firebox.firebox_height.value
-            // Slot 0 starts at the wrapper's initialPosition; fallback to firebox height + 1
+        .map: (slots, frames, initialDir, effectivePosition) =>
+            // Slot 0 starts at the effective position (Auto: computed, Manual: stored)
             val slot0Start =
-                if slots.isEmpty then Vec3(0, 0, fbHeightM + 1.0)
-                else initialPos.toVec3
+                if slots.isEmpty then
+                    // Intentional: origin (0,0,0) for empty slot list.
+                    // Previously used firebox_height + 1 as a sentinel, but with no slots there's
+                    // nothing to position — origin is the clean default.
+                    Vec3(0, 0, 0)
+                else effectivePosition.toVec3
             slots.zipWithIndex
                 .foldLeft((Vector.empty[PipePositionResult], slot0Start)):
                     case ((results, startPoint), (slot, idx)) =>
@@ -346,7 +481,6 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                 PositionTracker.computeFlowOnly15544(
                                     descr,
                                     initialDirection = initialDir,
-                                    initialPosition  = initialPos,
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
@@ -354,7 +488,6 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                 PositionTracker.computeThermal13384(
                                     descr,
                                     initialDirection = initialDir,
-                                    initialPosition  = initialPos,
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
@@ -362,7 +495,6 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                 PositionTracker.computeThermal13384(
                                     descr,
                                     initialDirection = initialDir,
-                                    initialPosition  = initialPos,
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )
@@ -370,7 +502,6 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
                                 PositionTracker.computeThermal13384(
                                     descr,
                                     initialDirection = initialDir,
-                                    initialPosition  = initialPos,
                                     externalFrame    = prevFrame,
                                     startPoint       = startPoint
                                 )

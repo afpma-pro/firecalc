@@ -4,7 +4,8 @@
  */
 package afpma.firecalc.dto.common
 
-trait FramedPipeSequence[D] {
-    def initialFrame: PipeInitialFrame
-    def descriptors : Seq[D]
+trait FramedPipeSequence[D, P] {
+    def initialDirection: PipeInitialDirection
+    def position        : P
+    def descriptors     : Seq[D]
 }

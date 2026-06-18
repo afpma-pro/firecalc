@@ -13,7 +13,6 @@ import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.AirIntakePosition
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -184,7 +183,6 @@ object PositionTracker:
     def computeFlowOnly13384(
         elems           : Seq[FlowOnlyPipeDescr_13384],
         initialDirection: PipeInitialDirection,
-        initialPosition : Position3D,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
@@ -204,7 +202,6 @@ object PositionTracker:
     def computeFlowOnly15544(
         elems           : Seq[FlowOnlyPipeDescr_15544],
         initialDirection: PipeInitialDirection,
-        initialPosition : Position3D,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
@@ -224,7 +221,6 @@ object PositionTracker:
     def computeThermal13384(
         elems           : Seq[ThermalPipeDescr_13384],
         initialDirection: PipeInitialDirection,
-        initialPosition : Position3D,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
@@ -240,16 +236,6 @@ object PositionTracker:
             finalPoint,
             mapThermal13384
         )
-
-    def calculateAutoCalcTarget(result: PipePositionResult, posMode: AirIntakePosition): Position3D =
-        posMode match
-            case AirIntakePosition.Initial(pos) => pos
-            case AirIntakePosition.Final(_)     =>
-                Position3D(
-                    result.finalPoint.x.meters,
-                    result.finalPoint.y.meters,
-                    result.finalPoint.z.meters
-                )
 
     private def horizontalDirection(frame: Option[PipeFrame]): Vec3 =
         frame match

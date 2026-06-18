@@ -180,9 +180,10 @@ object all:
     export afpma.firecalc.dto.v7.FramedPostFireboxPipes
     export afpma.firecalc.dto.v7.FramedAirIntakePipes
     export afpma.firecalc.dto.common.PipeInitialDirection
-    export afpma.firecalc.dto.common.PipeInitialFrame
     export afpma.firecalc.dto.common.Position3D
     export afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+    export afpma.firecalc.dto.v7.PostFireboxStartPosition
+    export afpma.firecalc.dto.v7.AirIntakePosition
 
     // Extension methods
     export afpma.firecalc.dto.FireboxAvailabilityExtensions.allows

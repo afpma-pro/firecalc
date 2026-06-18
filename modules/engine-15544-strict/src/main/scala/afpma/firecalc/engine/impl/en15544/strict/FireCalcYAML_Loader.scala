@@ -15,6 +15,9 @@ import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PipePositionComputer
+import afpma.firecalc.engine.models.geometry.AirDistributionBox
+import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
@@ -25,6 +28,7 @@ import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.syntax.all.*
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384.toFullDescr
+import afpma.firecalc.units.coulombutils.*
 
 import scala.util.*
 
@@ -67,7 +71,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     // Slot-indexed build results from PipeChainGeneric. Used by the UI for
     // position tracking, per-slot IdsMapping, and final PipeFrame extraction.
     private val cleanInitialPipeFrame: PipeFrame =
-        val dir = cleanFramedPostFireboxPipes.initialFrame.direction
+        val dir = cleanFramedPostFireboxPipes.initialDirection
         PipeFrame.initial(
             afpma.firecalc.units.Vec3.fromAzimuthElevation(
                 dir.azimuth.map(afpma.firecalc.dto.v4.AzimuthDirection.toDegrees).getOrElse(0.0            ),
@@ -147,6 +151,63 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
         summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
 
+    /** Resolve Auto/Manual post-firebox position to a concrete Position3D. */
+    private def resolvePostFireboxPosition: Option[Position3D] =
+        cleanFramedPostFireboxPipes.initialPosition match
+            case PostFireboxStartPosition.Manual(pos) => Some(pos)
+            case PostFireboxStartPosition.Auto        =>
+                PipePositionComputer.firstInnerShapeIn(cleanFramedPostFireboxPipes.slots).flatMap { shape =>
+                    fb.dimensions.base match
+                        case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
+                            Some(
+                                PipePositionComputer.computePostFireboxStart (
+                                    direction  = cleanFramedPostFireboxPipes.initialDirection,
+                                    boxXWidth  = width.value,
+                                    boxYDepth  = depth.value,
+                                    boxZBottom = 0.0,
+                                    boxZHeight = fb.dimensions.height.value,
+                                    innerShape = shape
+                                )
+                            )
+                }
+
+    /** Resolve Auto/Manual air intake position to a concrete Position3D. */
+    private def resolveAirIntakePosition: Option[Position3D] =
+        import afpma.firecalc.dto.v7.AirIntakePosition
+        if fcProj.air_intake_pipes.descr.isEmpty then None
+        else
+            fcProj.air_intake_pipes.position match
+                case AirIntakePosition.InitialManual(pos) => Some(pos)
+                case AirIntakePosition.FinalManual(pos)   => Some(pos)
+                case AirIntakePosition.InitialAuto        =>
+                    fb.dimensions.base match
+                        case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
+                            Some(
+                                PipePositionComputer.computeAirIntakeFinalAuto     (
+                                    descr      = fcProj.air_intake_pipes.descr,
+                                    initialDir = fcProj.air_intake_pipes.initialDir,
+                                    boxXWidth  = width.value,
+                                    boxYDepth  = depth.value,
+                                    boxZBottom = AirDistributionBox.Z_BOTTOM,
+                                    boxZHeight = AirDistributionBox.Z_HEIGHT
+                                )
+                            )
+                        case _                                                                              => None
+                case AirIntakePosition.FinalAuto          =>
+                    fb.dimensions.base match
+                        case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
+                            Some(
+                                PipePositionComputer.computeAirIntakeFinalAuto     (
+                                    descr      = fcProj.air_intake_pipes.descr,
+                                    initialDir = fcProj.air_intake_pipes.initialDir,
+                                    boxXWidth  = width.value,
+                                    boxYDepth  = depth.value,
+                                    boxZBottom = AirDistributionBox.Z_BOTTOM,
+                                    boxZHeight = AirDistributionBox.Z_HEIGHT
+                                )
+                            )
+                        case _                                                                              => None
+
     private def mkStrictAlg[F <: Firebox_15544](
         fb: F
     )(using
@@ -164,8 +225,9 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             val stoveParams                          = fcProj.stove_params
             val airIntakePipe                        = self.airIntakePipe
             override def postFireboxPipeSlots        = normalizedPostFireboxSlots
-            override def postFireboxInitialDirection = Some(cleanFramedPostFireboxPipes.initialFrame.direction)
-            override def postFireboxInitialPosition  = Some(cleanFramedPostFireboxPipes.initialFrame.position)
+            override def postFireboxInitialDirection = Some(cleanFramedPostFireboxPipes.initialDirection)
+            override def postFireboxInitialPosition  = resolvePostFireboxPosition
+            override def airIntakeInitialPosition    = resolveAirIntakePosition
             override def airIntakeDescriptors        = fcProj.air_intake_pipes.descr
 
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =

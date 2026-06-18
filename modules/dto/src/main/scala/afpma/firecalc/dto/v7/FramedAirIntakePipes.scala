@@ -4,59 +4,68 @@
  */
 package afpma.firecalc.dto.v7
 
+import afpma.firecalc.dto.common.CirceEnumCodecs.{decodeManualPos, isUnitJson}
 import afpma.firecalc.dto.common.FramedPipeSequence
 import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.common.PipeInitialFrame
 import afpma.firecalc.dto.common.Position3D
-import afpma.firecalc.units.Vec3
-import afpma.firecalc.dto.common.toVec3
+
 import afpma.firecalc.dto.instances.V7Instances
 
-import io.circe.Decoder
-import io.circe.Encoder
-import io.circe.generic.semiauto
+import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 
+/**
+ * Auto/Manual mode selector for the air intake pipe position.
+ *
+ * Flat 4-case enum: Initial/Final x Auto/Manual.
+ * Auto modes carry no position — the value is always recomputed.
+ * Manual modes store a user override.
+ */
 enum AirIntakePosition:
-    case Initial(pos: Position3D)
-    case Final(pos: Position3D)
+    case InitialAuto
+    case InitialManual(position: Position3D)
+    case FinalAuto
+    case FinalManual(position: Position3D)
 
 object AirIntakePosition:
-    given Encoder[AirIntakePosition] = semiauto.deriveEncoder
-    given Decoder[AirIntakePosition] = semiauto.deriveDecoder
+    given Encoder[AirIntakePosition] = Encoder.instance {
+        // Use Json.fromBoolean(true) for unit cases so YAML preserves them (empty {} becomes null).
+        case AirIntakePosition.InitialAuto      => Json.obj("InitialAuto" -> Json.fromBoolean(true))
+        case AirIntakePosition.InitialManual(p) =>
+            Json.obj("InitialManual" -> Json.obj("position" -> summon[Encoder[Position3D]].apply(p)))
+        case AirIntakePosition.FinalAuto        => Json.obj("FinalAuto" -> Json.fromBoolean(true))
+        case AirIntakePosition.FinalManual(p)   =>
+            Json.obj("FinalManual" -> Json.obj("position" -> summon[Encoder[Position3D]].apply(p)))
+    }
+
+    given Decoder[AirIntakePosition] = Decoder.instance { c =>
+        c.focus.flatMap(_.asObject) match
+            case Some(obj) =>
+                val m = obj.toMap
+                if m.get("InitialAuto").exists(isUnitJson) then Right(AirIntakePosition.InitialAuto)
+                else
+                    m.get("InitialManual") match
+                        case Some(v) => decodeManualPos(v).map(AirIntakePosition.InitialManual)
+                        case None    =>
+                            if m.get("FinalAuto").exists(isUnitJson) then Right(AirIntakePosition.FinalAuto)
+                            else
+                                m.get("FinalManual") match
+                                    case Some(v) => decodeManualPos(v).map(AirIntakePosition.FinalManual)
+                                    case None    => Left(DecodingFailure("AirIntakePosition", c.history))
+            case None      => Left(DecodingFailure("AirIntakePosition", c.history))
+    }
 
 final case class FramedAirIntakePipes(
     initialDir: PipeInitialDirection,
     position  : AirIntakePosition,
     descr     : Seq[FlowOnlyPipeDescr_13384_V4]
-) extends FramedPipeSequence[FlowOnlyPipeDescr_13384_V4] {
+) extends FramedPipeSequence[FlowOnlyPipeDescr_13384_V4, AirIntakePosition] {
 
-    /**
-     * The initial frame defines the starting orientation and position.
-     *
-     * If the pipe is anchored to the FINAL position (`AirIntakePosition.Final`),
-     * the initial position is treated as `Position3D.Origin` (0,0,0).
-     * The actual start point of the pipe chain is then computed by the
-     * `PositionTracker` via reverse calculation from the final anchor point.
-     */
-    override def initialFrame: PipeInitialFrame =
-        position match {
-            case AirIntakePosition.Initial(pos) => PipeInitialFrame(initialDir, pos)
-            case AirIntakePosition.Final(_)     => PipeInitialFrame(initialDir, Position3D.Origin)
-        }
+    override def initialDirection: PipeInitialDirection = initialDir
 
     override def descriptors: Seq[FlowOnlyPipeDescr_13384_V4] = descr
 }
 
 object FramedAirIntakePipes:
-    extension (p: FramedAirIntakePipes)
-        def rawPosition: Position3D = p.position match
-            case AirIntakePosition.Initial(pos) => pos
-            case AirIntakePosition.Final(pos)   => pos
-
-        def positionPoints: (Vec3, Option[Vec3]) = p.position match
-            case AirIntakePosition.Initial(pos) => (pos.toVec3, None               )
-            case AirIntakePosition.Final(pos)   => (Vec3(0, 0, 0), Some(pos.toVec3))
-
     import V7Instances.given
 
     given Encoder[FramedAirIntakePipes] = io.circe.Encoder.instance[FramedAirIntakePipes] { pipes =>
@@ -78,6 +87,6 @@ object FramedAirIntakePipes:
     def fromLegacy(
         descr     : Seq[FlowOnlyPipeDescr_13384_V4],
         initialDir: PipeInitialDirection = PipeInitialDirection.default,
-        position  : AirIntakePosition    = AirIntakePosition.Initial(Position3D.Origin)
+        position  : AirIntakePosition    = AirIntakePosition.FinalAuto
     ): FramedAirIntakePipes =
         FramedAirIntakePipes(initialDir, position, descr)

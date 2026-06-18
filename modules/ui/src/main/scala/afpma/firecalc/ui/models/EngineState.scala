@@ -53,7 +53,7 @@ object EngineState:
                 azimuth     = AzimuthDirection.Left,
                 inclination = InclinationDirection.Horizontal
             ), // Left,
-            initialPosition  = Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
+            initialPosition  = PostFireboxStartPosition.Manual(Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm)),
             slots            = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
@@ -121,7 +121,7 @@ object EngineState:
         firebox                        = defaultable.firebox_traditional_empty.default,
         post_firebox_pipes             = FramedPostFireboxPipes.clean(
             initialDirection = PipeInitialDirection.default,
-            initialPosition  = Position3D(0.cm, 0.cm, 0.cm),
+            initialPosition  = PostFireboxStartPosition.Auto,
             slots            = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (Seq.empty),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty),
@@ -144,11 +144,7 @@ object EngineState:
                 azimuth     = AzimuthDirection.Right,
                 inclination = InclinationDirection.Horizontal
             ),
-            initialPosition  = Position3D(
-                x = (+33.0 / 2).cm,
-                y = (33.0 / 2 - 18.0 / 2).cm,
-                z = (52 - 18.0 / 2).cm
-            ),
+            initialPosition  = PostFireboxStartPosition.Auto,
             slots            = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot {
                     import FluePipe_Module_15544.*

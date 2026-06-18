@@ -8,12 +8,12 @@ package afpma.firecalc.dto
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.common.PipeInitialFrame
 import afpma.firecalc.dto.common.Position3D
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxStartPosition
 
 import org.scalacheck.Gen
 import org.scalactic.anyvals.PosInt
@@ -63,6 +63,12 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             z <- genCoord
         yield Position3D(x, y, z)
 
+    private val genStartPosition: Gen[PostFireboxStartPosition] =
+        Gen.oneOf(
+            Gen.const             (PostFireboxStartPosition.Auto  ),
+            genInitialPosition.map(PostFireboxStartPosition.Manual)
+        )
+
     private val genAnySlot: Gen[PostFireboxPipeDescrSlot_V7] =
         Gen.oneOf(
             PostFireboxPipeDescrSlot_V7.FlueSlot       (Seq.empty),
@@ -75,9 +81,9 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
     private val genPipes: Gen[FramedPostFireboxPipes] =
         for
             dir   <- genInitialDirection
-            pos   <- genInitialPosition
+            pos   <- genStartPosition
             slots <- Gen.nonEmptyListOf(genAnySlot)
-        yield FramedPostFireboxPipes(PipeInitialFrame(dir, pos), slots)
+        yield FramedPostFireboxPipes(dir, pos, slots)
 
     // ── Direction degree-value properties ────────────────────────────
 
@@ -245,18 +251,49 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             }
     }
 
+    // ── PostFireboxStartPosition properties ─────────────────────────
+
+    "PostFireboxStartPosition" - {
+
+        "Auto case has no position" in {
+            PostFireboxStartPosition.Auto match
+                case PostFireboxStartPosition.Auto => // ok
+                case _                             => fail("Expected Auto")
+        }
+
+        "Manual case stores position" in
+            forAll(genInitialPosition) { pos =>
+                PostFireboxStartPosition.Manual(pos) match
+                    case PostFireboxStartPosition.Manual(p) => p shouldBe pos
+                    case _                                  => fail("Expected Manual")
+            }
+
+        "Manual position is reconstructible" in
+            forAll(genInitialPosition) { pos =>
+                val manual = PostFireboxStartPosition.Manual(pos)
+                manual shouldBe PostFireboxStartPosition.Manual(pos)
+            }
+    }
+
     // ── FramedPostFireboxPipes structural invariants ──────────────────────
 
     "FramedPostFireboxPipes" - {
 
         "always has non-null initial direction" in
             forAll(genPipes) { pipes =>
-                pipes.initialFrame.direction should not be null
+                pipes.initialDirection should not be null
             }
 
-        "always has non-null initial position" in
+        "always has non-null initial position enum" in
             forAll(genPipes) { pipes =>
-                pipes.initialFrame.position should not be null
+                pipes.initialPosition should not be null
+            }
+
+        "Manual position is non-null" in
+            forAll(genInitialPosition) { pos =>
+                PostFireboxStartPosition.Manual(pos) match
+                    case PostFireboxStartPosition.Manual(p) => p should not be null
+                    case _                                  => fail("Expected Manual")
             }
 
         "always has at least one slot" in
@@ -267,7 +304,8 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
         "survives case equality check" in
             forAll(genPipes) { pipes =>
                 val copy = FramedPostFireboxPipes(
-                    PipeInitialFrame(pipes.initialFrame.direction, pipes.initialFrame.position),
+                    pipes.initialDirection,
+                    pipes.initialPosition,
                     pipes.slots
                 )
                 copy shouldBe pipes
@@ -276,7 +314,8 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
         "slot count is preserved through copy" in
             forAll(genPipes) { pipes =>
                 val copy = FramedPostFireboxPipes(
-                    PipeInitialFrame(pipes.initialFrame.direction, pipes.initialFrame.position),
+                    pipes.initialDirection,
+                    pipes.initialPosition,
                     pipes.slots
                 )
                 copy.slots.size shouldBe pipes.slots.size
