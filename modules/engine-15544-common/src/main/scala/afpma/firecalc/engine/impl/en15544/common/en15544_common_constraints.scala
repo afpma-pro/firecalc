@@ -119,9 +119,12 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
         )
 
     def validateDirectionReachability(): VNel[Unit] =
-        val initialFrame = en15544.postFireboxInitialDirection.map(PostFireboxFrameHelpers.toPipeFrame)
-        val pfbErrors    = DirectionReachability.checkPostFireboxChain(en15544.postFireboxPipeSlots, initialFrame)
-        val airErrors    = DirectionReachability.checkAirIntakeChain(en15544.airIntakeDescriptors)
+        val initialFrame = en15544.incrInputs.postFirebox.initialDirection.map(PostFireboxFrameHelpers.toPipeFrame)
+        val pfbErrors    = DirectionReachability.checkPostFireboxChain(en15544.incrInputs.postFirebox.slots, initialFrame)
+        val airIntake    = en15544.incrInputs.airIntake
+        val airErrors    = DirectionReachability.checkAirIntakeChain(airIntake.descr)(using
+            airIntake.AirIntakePipe_Module.airIntakeElemExtractors
+        )
         val allErrors    = pfbErrors ++ airErrors
         if allErrors.isEmpty then Valid(())
         else Invalid(NonEmptyList.fromListUnsafe(allErrors))

@@ -25,6 +25,7 @@ import afpma.firecalc.engine.alg.en15544.FireboxConstraints
 import afpma.firecalc.engine.alg.en15544.StoveConstraintContext
 import afpma.firecalc.engine.impl.en16510.EN16510_1_2022_Formulas
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en13384.typedefs.*
@@ -357,8 +358,8 @@ abstract class EN15544_V_2023_Common_Application
          * the LAST `PipeResult` of Stage 1 into the Stage 2 chain, and concatenates results.
          */
         lazy val postFireboxPipeResults: VNelMcalcErr[Vector[(PipeType, PipeResult)]] =
-            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
-            val pfbSlots = en15544.postFireboxPipeSlots
+            import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
+            val pfbSlots = en15544.incrInputs.postFirebox.slots
             // Resolve Stage 1 first, then resolve HA givens for Stage 2.
             flueRegionPipeResults.andThen { case (stage1Results, stage1Seed) =>
                 (
@@ -802,15 +803,15 @@ abstract class EN15544_V_2023_Common_Application
         // Both SetInnerShape prop instructions and AddSectionShapeChange elements can introduce a
         // Rectangle shape that must satisfy the 1:4 aspect-ratio constraint.
         val flueRegionShapes: Seq[PipeShape] =
-            postFireboxPipeSlots.flatMap:
-                case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        =>
+            en15544.incrInputs.postFirebox.slots.flatMap:
+                case PostFireboxPipeSlot.FlueSlot(descr)        =>
                     descr.collect:
                         case SetFlowOnlyPipeProp_15544.SetInnerShape(shape)                 => shape
                         case AddFlowOnlyPipeElement_15544.AddSectionShapeChange(_, toShape) => toShape
-                case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) =>
+                case PostFireboxPipeSlot.ThermalFlueSlot(descr) =>
                     descr.collect:
                         case SetThermalPipeProp_13384.SetInnerShape(shape) => shape
-                case _                                                  => Seq.empty
+                case _                                          => Seq.empty
         val checks =
             flueRegionShapes.zipWithIndex.map: (shape, idx) =>
                 shape match

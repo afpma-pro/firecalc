@@ -258,7 +258,6 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
         "Auto case has no position" in {
             PostFireboxStartPosition.Auto match
                 case PostFireboxStartPosition.Auto => // ok
-                case _                             => fail("Expected Auto")
         }
 
         "Manual case stores position" in

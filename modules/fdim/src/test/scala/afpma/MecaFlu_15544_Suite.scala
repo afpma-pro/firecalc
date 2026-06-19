@@ -43,7 +43,7 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 
     val f       = EN15544_Strict_Formulas.make
     val inputs  = strict_ex01_colonne_ascendante.en15544_inputsVNel.toOption.get
-    val en15544 = EN15544_Strict_Application.make(f)(inputs)
+    val en15544 = EN15544_Strict_Application.make(f)(inputs, strict_ex01_colonne_ascendante.en15544_incrInputs)
 
     given PipeType = FluePipeT
 

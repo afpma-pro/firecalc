@@ -17,6 +17,7 @@ import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.models.en13384.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.ops.HasOutsideSurfaceInLocation
 import afpma.firecalc.engine.ops.HasUnheatedHeightInsideAndOutside
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -37,6 +38,11 @@ trait ThermalAirIntakePipe_Module extends AirIntakePipe_Common_Module:
     export incremental.{name as _, *}
     export FullDescrResult.*
 
+    // IncrDescr resolves to ThermalPipeDescr_13384 (V4) here; summon the existing V4 extractor.
+    def airIntakeElemExtractors: FrameReplay.ElemExtractors[IncrDescr] =
+        import afpma.firecalc.engine.models.geometry.PipeDescrExtractors.given
+        summon[FrameReplay.ElemExtractors[IncrDescr]]
+
 // type FlowOnlyAirIntakePipe = FlowOnlyAirIntakePipe_Module.PipeCanBe
 trait FlowOnlyAirIntakePipe_Module extends AirIntakePipe_Common_Module:
     type _IncrementalBuilder = FlowOnlyIncrementalBuilder_13384 {
@@ -46,6 +52,11 @@ trait FlowOnlyAirIntakePipe_Module extends AirIntakePipe_Common_Module:
     val incremental = afpma.firecalc.engine.impl.en13384.FlowOnlyIncrementalBuilder_13384.makeFor[AirIntakePipeT]
     export incremental.{name as _, *}
     export FullDescrResult.*
+
+    // IncrDescr resolves to FlowOnlyPipeDescr_13384 (V4) here; summon the existing V4 extractor.
+    def airIntakeElemExtractors: FrameReplay.ElemExtractors[IncrDescr] =
+        import afpma.firecalc.engine.models.geometry.PipeDescrExtractors.given
+        summon[FrameReplay.ElemExtractors[IncrDescr]]
 
 type ConnectorPipe = ConnectorPipe_Module.PipeCanBe
 

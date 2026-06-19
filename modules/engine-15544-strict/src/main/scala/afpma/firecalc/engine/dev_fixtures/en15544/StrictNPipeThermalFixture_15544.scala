@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -164,12 +164,12 @@ object StrictNPipeThermalFixture_15544
     //   Slot 2 — ConnectorSlot: short steel connector (inherits Up frame)
     //   Slot 3 — ChimneySlot: insulated chimney (inherits Up frame)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         import ConnectorPipe_Module as CPM
         import ChimneyPipe_Module as CHPM
         val slot0 =
             import FluePipe_Module_15544.*
-            PostFireboxPipeDescrSlot_V7.FlueSlot(
+            PostFireboxPipeSlot.FlueSlot(
                 Seq(
                     roughness           (3.mm                      ),
                     innerShape(rectangle(11.1.cm, 12.2.cm)),
@@ -183,7 +183,7 @@ object StrictNPipeThermalFixture_15544
             )
         val slot1 =
             import FluePipe_Module_13384.*
-            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
+            PostFireboxPipeSlot.ThermalFlueSlot(
                 Seq(
                     innerShape(rectangle(11.1.cm, 11.1.cm)),
                     pipeLocation      (PipeLocation.HeatedArea        ),
@@ -198,7 +198,7 @@ object StrictNPipeThermalFixture_15544
             // Slot 1 — ThermalFlueSlot: ascending vertical column (thermal, inherits Up frame)
             slot1,
             // Slot 2 — ConnectorSlot: short steel connector (inherits Up frame)
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot(
+            PostFireboxPipeSlot.ConnectorSlot(
                 Seq (
                     CPM.roughness (Material_13384.WeldedSteel()),
                     CPM.innerShape(circle(130.mm)              ),
@@ -208,7 +208,7 @@ object StrictNPipeThermalFixture_15544
                 )
             ),
             // Slot 3 — ChimneySlot: insulated chimney (inherits Up frame)
-            PostFireboxPipeDescrSlot_V7.ChimneySlot  (
+            PostFireboxPipeSlot.ChimneySlot  (
                 Seq(
                     CHPM.roughness         (1.mm                                           ),
                     CHPM.innerShape(circle(130.mm)),

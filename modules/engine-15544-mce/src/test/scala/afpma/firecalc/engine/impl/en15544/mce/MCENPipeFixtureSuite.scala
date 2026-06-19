@@ -43,7 +43,7 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
 
         "overrides postFireboxPipeSlots with a 4-slot N-pipe vector containing 2 ThermalFlueSlots" in {
             val slots            = MCENPipeFixture_15544.postFireboxPipeSlots
-            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
+            import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
             slots.size should be >= 4
             // First two slots must be ThermalFlueSlots (multi-flue segment)
             val thermalFlueSlots = slots.collect { case s @ ThermalFlueSlot(_) => s }
@@ -100,7 +100,7 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
 
         "overrides postFireboxPipeSlots with a 6-slot [C, F, C, F, Cterm, CH] vector" in {
             val slots = MCENPipeFixture_15544_CFCF.postFireboxPipeSlots
-            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
+            import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
             slots.size shouldBe 6
             slots(0) match
                 case ConnectorSlot(_) => ()

@@ -23,6 +23,8 @@ import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_133
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.standard.*
 
@@ -37,47 +39,19 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     lazy val inputs: Inputs_15544
 
     /**
-     * The ordered post-firebox pipe descriptor slots from the DTO.
+     * Raw IncrDescr/seed input layer — '''sibling to `inputs`''' (NOT nested inside it).
+     * `inputs: Inputs_15544` is the FullDescr-input layer (materialized-pipe inputs);
+     * `incrInputs` is the raw IncrDescr/seed layer (feedstock for `DirectionReachability`
+     * + N-pipe fold). See [[IncrementalPipeInputs_15544]] for the layer distinction.
      *
-     * Abstract — every concrete `Application` MUST provide this. Typical wiring is via
-     * the `WithPipeChain_15544_*` trait family (e.g. `WithPipeChain_15544_MCE` produces
-     * `[ThermalFlueSlot, ConnectorSlot, ChimneySlot]`); the `*_Application.make` factory
-     * then forwards the trait's value into the Application instance.
-     *
-     * Previously had a default `[FlueSlot, ConnectorSlot, ChimneySlot]` which silently
-     * masked wiring bugs (an Application that forgot to forward `pfbSlots` would inherit
-     * the flow-only default and fail at runtime in MCE mode with "FlueSlot in flue
-     * region"). Made abstract to force explicit wiring.
+     * Consumers reach the framed wrappers directly:
+     *   - `incrInputs.postFirebox.slots` / `.initialDirection` / `.positionMode` / `.resolvedPosition`
+     *   - `incrInputs.airIntake.descr` / `.initialDirection` / `.positionMode` / `.resolvedPosition`
+     *   - `incrInputs.airIntake.AirIntakePipe_Module.airIntakeElemExtractors` (path-coupled —
+     *     descr + extractor come from the same `incrInputs.airIntake` path so the
+     *     path-dependent types unify).
      */
-    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7]
-
-    /**
-     * Wrapper-level initial direction for post-firebox pipes (V7).
-     * Used to seed the first pipe's initial frame in flueRegionPipeResults folds.
-     * Defaults to None for backward compatibility.
-     */
-    def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None
-
-    /**
-     * Wrapper-level initial position for post-firebox pipes (V7).
-     * Defaults to None for backward compatibility.
-     * Threaded alongside direction for consistency; position is not used for frame seeding.
-     */
-    def postFireboxInitialPosition: Option[afpma.firecalc.dto.common.Position3D] = None
-
-    /**
-     * Wrapper-level initial position for air intake pipes (V7).
-     * Defaults to None for backward compatibility.
-     * Resolved from AirIntakePosition.Auto modes in the loader.
-     */
-    def airIntakeInitialPosition: Option[afpma.firecalc.dto.common.Position3D] = None
-
-    /**
-     * Raw air intake pipe descriptors from the DTO.
-     * Used by direction-reachability validation to walk the air intake bend chain.
-     * Defaults to empty for engine variants that do not model an air intake.
-     */
-    def airIntakeDescriptors: Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4] = Seq.empty
+    lazy val incrInputs: IncrementalPipeInputs_15544
 
     export EN15544_V_2023_Application_Alg.{ErrorGen}
 

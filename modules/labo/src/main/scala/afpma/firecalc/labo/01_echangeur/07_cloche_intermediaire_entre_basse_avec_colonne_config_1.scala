@@ -91,53 +91,59 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
     val fluegas_h2o_perc_vol_nominal = None
     val fluegas_h2o_perc_vol_lowest  = None
 
+    val airIntakeDescr: Seq[AirIntakePipe_Module.IncrDescr] =
+        import AirIntakePipe_Module.*
+        Seq(
+            addFlowResistance      ("grille", 1.680.unitless, hydraulic_diameter = 11.9.cm               ),
+            pipeLocation           (Area.Exterieure                                                      ),
+            roughness              (Tube_PVC                                                             ), // Tube PVC
+            innerShape(circle(11.9.cm)),
+            layer                  (e                                            = 2.mm, λ = 1.3.W_per_mK),
+            addSectionVertical     ("entrée verticale", -120.5.cm                                        ),
+            addCoudeCourbe90_unsafe(
+                "H",
+                9.6.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+            ), // Front (TOCHECK)
+
+            pipeLocation           (Area.NonChauffee                                                     ),
+            addSectionHorizontal   ("traversée mur", 68.8.cm                                             ),
+            addSectionHorizontal   ("horizontal en combles", 0.0.cm                                      ),
+            pipeLocation           (Area.DansLaPieceDuPoele                                              ),
+            addCoudeCourbe90_unsafe(
+                "vertical en combles",
+                9.6.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+            ), // Down (TOCHECK)
+
+            addSectionVertical     ("P01", -196.1.cm                                                     ),
+            addSectionVertical     ("anémomètre", -39.5.cm                                               ),
+            addSectionVertical     ("capteur humidité", -104.cm                                          ),
+
+            // DELETED (INCONSISTENT)
+            // addCoudeCourbe90_unsafe("coude courbe 90 avt descente 4", 9.6.cm, roll = 180.degrees), // ERROR TOFIX
+
+            addSectionVertical     ("descente 4", -38.7.cm       ),
+            addCoudeCourbe90_unsafe(
+                "coude courbe 90 après descente 4",
+                9.6.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+            ), // Up (TOCHECK)
+            // addFlowResistance("clapet zeta = 0.3!", 0.3.unitless: ζ), // déjà avec la grille à supprimer car déjà dans la grille
+            addSectionVertical     ("clapet zeta = 0.3!", 23.7.cm),
+            addSectionVertical     ("P02!", 55.2.cm              ),
+            addSectionVertical     ("final vers foyer", 63.8.cm  )
+        )
+
     val airIntakePipe =
         import AirIntakePipe_Module.*
         incremental
             .withInitialDirection(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
-            .define(
-                addFlowResistance      ("grille", 1.680.unitless, hydraulic_diameter = 11.9.cm               ),
-                pipeLocation           (Area.Exterieure                                                      ),
-                roughness              (Tube_PVC                                                             ), // Tube PVC
-                innerShape(circle(11.9.cm)),
-                layer                  (e                                            = 2.mm, λ = 1.3.W_per_mK),
-                addSectionVertical     ("entrée verticale", -120.5.cm                                        ),
-                addCoudeCourbe90_unsafe(
-                    "H",
-                    9.6.cm,
-                    absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
-                ), // Front (TOCHECK)
-
-                pipeLocation           (Area.NonChauffee                                                     ),
-                addSectionHorizontal   ("traversée mur", 68.8.cm                                             ),
-                addSectionHorizontal   ("horizontal en combles", 0.0.cm                                      ),
-                pipeLocation           (Area.DansLaPieceDuPoele                                              ),
-                addCoudeCourbe90_unsafe(
-                    "vertical en combles",
-                    9.6.cm,
-                    absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
-                ), // Down (TOCHECK)
-
-                addSectionVertical     ("P01", -196.1.cm                                                     ),
-                addSectionVertical     ("anémomètre", -39.5.cm                                               ),
-                addSectionVertical     ("capteur humidité", -104.cm                                          ),
-
-                // DELETED (INCONSISTENT)
-                // addCoudeCourbe90_unsafe("coude courbe 90 avt descente 4", 9.6.cm, roll = 180.degrees), // ERROR TOFIX
-
-                addSectionVertical     ("descente 4", -38.7.cm       ),
-                addCoudeCourbe90_unsafe(
-                    "coude courbe 90 après descente 4",
-                    9.6.cm,
-                    absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
-                ), // Up (TOCHECK)
-                // addFlowResistance("clapet zeta = 0.3!", 0.3.unitless: ζ), // déjà avec la grille à supprimer car déjà dans la grille
-                addSectionVertical     ("clapet zeta = 0.3!", 23.7.cm),
-                addSectionVertical     ("P02!", 55.2.cm              ),
-                addSectionVertical     ("final vers foyer", 63.8.cm  )
-            )
+            .define(airIntakeDescr*)
             .toFullDescr()
             .extractPipe
+
+    override def airIntakeDescriptors = airIntakeDescr
 
     val combustionAirPipe =
         import CombustionAirPipe_Module_13384.*

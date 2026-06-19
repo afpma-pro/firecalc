@@ -15,7 +15,6 @@ import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import afpma.firecalc.units.Vec3
@@ -56,7 +55,10 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
 
         "works with sanitized slots + wrapper initialFrame" in {
             val sanitized = cleanSlots.map(FramedPostFireboxPipes.sanitizeSlot)
-            val result    = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
+            val result    = DirectionReachability.checkPostFireboxChain(
+                PostFireboxPipeSlot.fromDto(sanitized          ),
+                Some                       (wrapperInitialFrame)
+            )
             result.isEmpty.shouldBe(true)
         }
 
@@ -73,7 +75,10 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
                 )
             )
             val sanitized    = failingSlots.map(FramedPostFireboxPipes.sanitizeSlot)
-            val result       = DirectionReachability.checkPostFireboxChain(sanitized, Some(wrapperInitialFrame))
+            val result       = DirectionReachability.checkPostFireboxChain(
+                PostFireboxPipeSlot.fromDto(sanitized          ),
+                Some                       (wrapperInitialFrame)
+            )
             result.isEmpty.shouldBe(false)
         }
 
@@ -85,8 +90,8 @@ class DirectionReachabilityV7IntegrationSuite extends AnyFreeSpec with Matchers:
                 )
             )
             val result    = DirectionReachability.checkPostFireboxChain(
-                sanitized :+ FramedPostFireboxPipes.sanitizeSlot(extraFlue),
-                Some(wrapperInitialFrame)
+                PostFireboxPipeSlot.fromDto(sanitized :+ FramedPostFireboxPipes.sanitizeSlot(extraFlue)),
+                Some                       (wrapperInitialFrame                                        )
             )
             result.isEmpty.shouldBe(true)
         }

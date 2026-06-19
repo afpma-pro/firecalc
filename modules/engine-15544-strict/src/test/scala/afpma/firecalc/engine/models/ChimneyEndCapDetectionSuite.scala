@@ -10,8 +10,8 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.PipeShape.Circle
 import afpma.firecalc.dto.v7.endsWithSingularFlowResistance
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.ChimneySlot
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.ConnectorSlot
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.ChimneySlot
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.ConnectorSlot
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.dev_fixtures.en15544.v20241001.EmptyHeadRegionFixture_15544

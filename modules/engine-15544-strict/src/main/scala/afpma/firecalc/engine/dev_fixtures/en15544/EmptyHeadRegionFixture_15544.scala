@@ -14,6 +14,7 @@ import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as EP4
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
@@ -141,10 +142,10 @@ object EmptyHeadRegionFixture_15544
     //   - conceptualFluePipeResult (falls back to firebox_PipeResult)
     //   - t_F                    (falls back to firebox_PipeResult.gas_temp_end)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         Seq(
             // Slot 0 — ConnectorSlot: short vertical steel connector
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot(
+            PostFireboxPipeSlot.ConnectorSlot(
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),
@@ -154,7 +155,7 @@ object EmptyHeadRegionFixture_15544
                 )
             ),
             // Slot 1 — ChimneySlot: insulated chimney
-            PostFireboxPipeDescrSlot_V7.ChimneySlot  (
+            PostFireboxPipeSlot.ChimneySlot  (
                 Seq(
                     SP4.SetRoughness      (1.mm                                          ),
                     SP4.SetInnerShape(circle(130.mm)),

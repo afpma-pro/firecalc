@@ -17,10 +17,12 @@ import afpma.firecalc.engine.ops.en13384.mkforEN13384
 
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
 import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake_PreFireboxOnly
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544_Strict
 import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.PipeWithGasFlowOps
@@ -46,19 +48,11 @@ object EN15544_Strict_Application:
     def make(
         f: EN15544_V_2023_Formulas_Alg
     )(
-        i                  : Inputs_15544_Strict,
-        pfbSlots           : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = Seq.empty,
-        initialDir         : Option[afpma.firecalc.dto.common.PipeInitialDirection] = None,
-        initialPos         : Option[afpma.firecalc.dto.common.Position3D]           = None,
-        airIntakeInitialPos: Option[afpma.firecalc.dto.common.Position3D]           = None,
-        airIntakeDescr     : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = Seq.empty
+        i          : Inputs_15544_Strict,
+        _incrInputs: IncrementalPipeInputs_15544_Strict
     ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
-        override lazy val inputs                : Inputs_15544                                           = i
-        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = pfbSlots
-        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = initialDir
-        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = initialPos
-        override def airIntakeInitialPosition   : Option[afpma.firecalc.dto.common.Position3D]           = airIntakeInitialPos
-        override def airIntakeDescriptors       : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = airIntakeDescr
+        override lazy val inputs    : Inputs_15544_Strict                = i
+        override lazy val incrInputs: IncrementalPipeInputs_15544_Strict = _incrInputs
     }
 
 sealed abstract class EN15544_Strict_Application(
@@ -290,8 +284,8 @@ sealed abstract class EN15544_Strict_Application(
          * Interleaved `ConnectorSlot` in the flue region is computed using Thermal 13384.
          */
         override protected lazy val flueRegionPipeResults: VNelMcalcErr[(Vector[PipeResult], PipeBuildSeed)] =
-            import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
-            val pfbSlots            = en15544.postFireboxPipeSlots
+            import PostFireboxPipeSlot.*
+            val pfbSlots            = en15544.incrInputs.postFirebox.slots
             // Locate the last FluePipeT slot; the flue region is slots up to and including it.
             val lastFluePipeSlotIdx = pfbSlots.lastIndexWhere {
                 case FlueSlot(_) | ThermalFlueSlot(_) => true
@@ -301,7 +295,7 @@ sealed abstract class EN15544_Strict_Application(
                 Validated.validNel(
                     (
                         Vector.empty[PipeResult],
-                        PipeBuildSeed.fromFrame(en15544.postFireboxInitialDirection.map(toPipeFrame))
+                        PipeBuildSeed.fromFrame(en15544.incrInputs.postFirebox.initialDirection.map(toPipeFrame))
                     )
                 )
             else
@@ -321,7 +315,8 @@ sealed abstract class EN15544_Strict_Application(
                     en15544.en13384_heatingAppliance_massFlows
                 )
 
-                val initialSeed = PipeBuildSeed.fromFrame(en15544.postFireboxInitialDirection.map(toPipeFrame))
+                val initialSeed =
+                    PipeBuildSeed.fromFrame(en15544.incrInputs.postFirebox.initialDirection.map(toPipeFrame))
 
                 // Build PipeSlot for each flue region slot, threading descriptor seed through
                 // the fold accumulator (no mutable state).

@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -157,14 +157,14 @@ object StrictWithoutConnectorFixture_15544
     //   Slot 1 — ConnectorSlot: empty descriptors → Without → PipeSlot.noop
     //   Slot 2 — ChimneySlot: insulated chimney (inherits state from flue)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         Seq(
             // Slot 0 — FlueSlot: use the FULL fluePipeDescr (same as default single-slot)
-            PostFireboxPipeDescrSlot_V7.FlueSlot     (fluePipeDescr   ),
+            PostFireboxPipeSlot.FlueSlot     (fluePipeDescr   ),
             // Slot 1 — ConnectorSlot: empty descriptors → builds to Without → PipeSlot.noop
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot(Seq.empty       ),
+            PostFireboxPipeSlot.ConnectorSlot(Seq.empty       ),
             // Slot 2 — ChimneySlot: standard chimney
-            PostFireboxPipeDescrSlot_V7.ChimneySlot  (chimneyPipeDescr)
+            PostFireboxPipeSlot.ChimneySlot  (chimneyPipeDescr)
         )
 
 end StrictWithoutConnectorFixture_15544

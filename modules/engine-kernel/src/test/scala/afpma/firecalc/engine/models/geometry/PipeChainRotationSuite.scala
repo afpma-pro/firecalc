@@ -26,7 +26,6 @@ private given ext: FrameReplay.ElemExtractors[TBend] = FrameReplay.ElemExtractor
     withDirChangeAbsDir = (e, newAbsDir) =>
         e match
             case x: TBend => x.copy(absDir = newAbsDir)
-            case _ => e
 )
 
 /**

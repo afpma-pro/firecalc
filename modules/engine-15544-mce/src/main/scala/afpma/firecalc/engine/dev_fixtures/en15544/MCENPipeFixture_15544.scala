@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as TP4
 
@@ -187,10 +187,10 @@ object MCENPipeFixture_15544
     //   Slot 2 — ConnectorSlot: short steel connector (inherits Up frame)
     //   Slot 3 — ChimneySlot: insulated steel chimney (inherits Up frame)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         Seq(
             // Slot 0 — ThermalFlueSlot #1: horizontal exit from firebox + 90° turn upward
-            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
+            PostFireboxPipeSlot.ThermalFlueSlot(
                 Seq(
                     SP4.SetPipeLocation       (PipeLocation.HeatedArea   ),
                     SP4.SetRoughness          (3.mm                      ),
@@ -205,14 +205,14 @@ object MCENPipeFixture_15544
                 )
             ),
             // Slot 1 — ThermalFlueSlot #2: ascending vertical column (continues from Up frame)
-            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
+            PostFireboxPipeSlot.ThermalFlueSlot(
                 Seq(
                     SP4.SetInnerShape(rectangle(11.1.cm, 11.1.cm)),
                     TP4.AddSectionVertical("F2-colonne ascendante", 3.737.m)
                 )
             ),
             // Slot 2 — ConnectorSlot: short steel connector (inherits Up frame from Slot 1)
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
+            PostFireboxPipeSlot.ConnectorSlot  (
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),
@@ -222,7 +222,7 @@ object MCENPipeFixture_15544
                 )
             ),
             // Slot 3 — ChimneySlot: insulated steel chimney
-            PostFireboxPipeDescrSlot_V7.ChimneySlot    (
+            PostFireboxPipeSlot.ChimneySlot    (
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),
@@ -386,10 +386,10 @@ object MCENPipeFixture_15544_CFCF
     // Exercises the Connector-first head seed path in
     // `en15544_mce_application.flueRegionPipeResults` (path (b)).
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         Seq  (
             // Slot 0 — ConnectorSlot #1: head connector (first slot, Connector-first)
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
+            PostFireboxPipeSlot.ConnectorSlot  (
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),
@@ -399,7 +399,7 @@ object MCENPipeFixture_15544_CFCF
                 )
             ),
             // Slot 1 — ThermalFlueSlot #1: horizontal flue + 90° turn upward
-            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
+            PostFireboxPipeSlot.ThermalFlueSlot(
                 Seq(
                     SP4.SetPipeLocation       (PipeLocation.HeatedArea   ),
                     SP4.SetRoughness          (3.mm                      ),
@@ -414,7 +414,7 @@ object MCENPipeFixture_15544_CFCF
                 )
             ),
             // Slot 2 — ConnectorSlot #2: interleaved head connector
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
+            PostFireboxPipeSlot.ConnectorSlot  (
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),
@@ -424,14 +424,14 @@ object MCENPipeFixture_15544_CFCF
                 )
             ),
             // Slot 3 — ThermalFlueSlot #2: ascending vertical column
-            PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
+            PostFireboxPipeSlot.ThermalFlueSlot(
                 Seq(
                     SP4.SetInnerShape(rectangle(11.1.cm, 11.1.cm)),
                     TP4.AddSectionVertical("F2-colonne ascendante", 3.737.m)
                 )
             ),
             // Slot 4 — ConnectorSlot: terminal connector
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot  (
+            PostFireboxPipeSlot.ConnectorSlot  (
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),
@@ -441,7 +441,7 @@ object MCENPipeFixture_15544_CFCF
                 )
             ),
             // Slot 5 — ChimneySlot: insulated steel chimney
-            PostFireboxPipeDescrSlot_V7.ChimneySlot    (
+            PostFireboxPipeSlot.ChimneySlot    (
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(130.mm)              ),

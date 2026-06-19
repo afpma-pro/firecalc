@@ -94,51 +94,57 @@ object `01_cloche_medianne_entree_haute_config_1`
     val fluegas_h2o_perc_vol_nominal = None
     val fluegas_h2o_perc_vol_lowest  = None
 
+    val airIntakeDescr: Seq[AirIntakePipe_Module.IncrDescr] =
+        import AirIntakePipe_Module.*
+        Seq(
+            addFlowResistance      ("grille", 1.2.unitless, hydraulic_diameter = 154.mm                ),
+            pipeLocation           (Area.Exterieure                                                    ),
+            roughness              (Tube_PVC                                                           ), // Tube PVC
+            innerShape(circle(154.mm)),
+            layer                  (e                                          = 2.mm, λ = 1.3.W_per_mK),
+            addSectionVertical     ("entrée verticale", 114.5.cm + 12.2.cm                             ),
+            addCoudeCourbe90_unsafe(
+                "coude courbe 90° (R=12.2cm)",
+                12.2.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+            ), // Front (TOCHECK)
+
+            pipeLocation           (Area.NonChauffee                                                   ),
+            addSectionHorizontal   ("traversée mur", 62.8.cm                                           ), // non cohérent sur sketchup
+
+            addSectionHorizontal   ("horizontal en combles", 0.0.cm      ),
+            pipeLocation           (Area.DansLaPieceDuPoele              ),
+            addCoudeCourbe90_unsafe(
+                "vertical en combles",
+                12.2.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
+            ), // Down (TOCHECK)
+
+            addSectionVertical     ("P01", -196.1.cm                     ),
+            addSectionVertical     ("anémomètre", -39.5.cm               ),
+            addSectionVertical     ("capteur humidité", -104.cm          ),
+            addSectionVertical     ("descente 4", -38.7.cm               ),
+            addCoudeCourbe90_unsafe(
+                "coude courbe 90° (R=12.2cm)",
+                12.2.cm,
+                absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+            ), // Front (TOCHECK)
+
+            addSectionHorizontal   ("avt clapet", 23.7.cm                ),
+            addFlowResistance      ("clapet zeta = 0.3!", 0.3.unitless: ζ),
+            addSectionHorizontal   ("P02!", 55.2.cm                      ),
+            addSectionHorizontal   ("final vers foyer", 63.8.cm          )
+        )
+
     val airIntakePipe =
         import AirIntakePipe_Module.*
         incremental
             .withInitialDirection(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
-            .define(
-                addFlowResistance      ("grille", 1.2.unitless, hydraulic_diameter = 154.mm                ),
-                pipeLocation           (Area.Exterieure                                                    ),
-                roughness              (Tube_PVC                                                           ), // Tube PVC
-                innerShape(circle(154.mm)),
-                layer                  (e                                          = 2.mm, λ = 1.3.W_per_mK),
-                addSectionVertical     ("entrée verticale", 114.5.cm + 12.2.cm                             ),
-                addCoudeCourbe90_unsafe(
-                    "coude courbe 90° (R=12.2cm)",
-                    12.2.cm,
-                    absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
-                ), // Front (TOCHECK)
-
-                pipeLocation           (Area.NonChauffee                                                   ),
-                addSectionHorizontal   ("traversée mur", 62.8.cm                                           ), // non cohérent sur sketchup
-
-                addSectionHorizontal   ("horizontal en combles", 0.0.cm      ),
-                pipeLocation           (Area.DansLaPieceDuPoele              ),
-                addCoudeCourbe90_unsafe(
-                    "vertical en combles",
-                    12.2.cm,
-                    absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
-                ), // Down (TOCHECK)
-
-                addSectionVertical     ("P01", -196.1.cm                     ),
-                addSectionVertical     ("anémomètre", -39.5.cm               ),
-                addSectionVertical     ("capteur humidité", -104.cm          ),
-                addSectionVertical     ("descente 4", -38.7.cm               ),
-                addCoudeCourbe90_unsafe(
-                    "coude courbe 90° (R=12.2cm)",
-                    12.2.cm,
-                    absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
-                ), // Front (TOCHECK)
-
-                addSectionHorizontal   ("avt clapet", 23.7.cm                ),
-                addFlowResistance      ("clapet zeta = 0.3!", 0.3.unitless: ζ),
-                addSectionHorizontal   ("P02!", 55.2.cm                      ),
-                addSectionHorizontal   ("final vers foyer", 63.8.cm          )
-            )
+            .define(airIntakeDescr*)
             .toFullDescr()
             .extractPipe
+
+    override def airIntakeDescriptors = airIntakeDescr
 
     val combustionAirPipe =
         import CombustionAirPipe_Module_13384.*

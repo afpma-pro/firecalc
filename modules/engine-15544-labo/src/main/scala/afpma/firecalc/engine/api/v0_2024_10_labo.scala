@@ -35,14 +35,7 @@ trait v0_2024_10_labo_members extends v0_2024_10_mce_members:
                     net_calorific_value_of_dry_wood = net_calorific_value_of_dry_wood
                 )(labcond)
                 val wComb = new WoodCombustionImpl
-                EN15544_Labo_Application.make(f, bs845, wComb, labcond)(
-                    i,
-                    postFireboxPipeSlots,
-                    postFireboxInitialDirection,
-                    postFireboxInitialPosition,
-                    airIntakeInitialPosition,
-                    airIntakeDescriptors
-                )
+                EN15544_Labo_Application.make(f, bs845, wComb, labcond)(i, en15544_incrInputs)
 
     trait SimpleStoveProjectDescrFr_15544_Labo_Alg
         extends StoveProjectDescr_15544_Labo_Alg

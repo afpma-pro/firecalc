@@ -11,7 +11,6 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 
@@ -49,7 +48,7 @@ object DirectionReachability:
         (failures.map(elemIdx => IncompatibleDirectionInPipe(label, idx, elemIdx)), endFrame)
 
     def checkPostFireboxChain(
-        slots       : Seq[PostFireboxPipeDescrSlot_V7],
+        slots       : Seq[PostFireboxPipeSlot],
         initialFrame: Option[PipeFrame]
     ): List[IncompatibleDirectionInPipe] =
         import PipeDescrExtractors.given
@@ -58,18 +57,18 @@ object DirectionReachability:
             .foldLeft((List.empty[IncompatibleDirectionInPipe], initialFrame)):
                 case ((errs, frame), (slot, slotIdx)) =>
                     slot match
-                        case PostFireboxPipeDescrSlot_V7.NoFlueSlot             =>
+                        case PostFireboxPipeSlot.NoFlueSlot             =>
                             (errs, frame)
-                        case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        =>
+                        case PostFireboxPipeSlot.FlueSlot(descr)        =>
                             val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Flue", frame)
                             (errs ++ newErrs, newFrame)
-                        case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) =>
+                        case PostFireboxPipeSlot.ThermalFlueSlot(descr) =>
                             val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Flue", frame)
                             (errs ++ newErrs, newFrame)
-                        case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)   =>
+                        case PostFireboxPipeSlot.ConnectorSlot(descr)   =>
                             val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Connector", frame)
                             (errs ++ newErrs, newFrame)
-                        case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     =>
+                        case PostFireboxPipeSlot.ChimneySlot(descr)     =>
                             val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Chimney", frame)
                             (errs ++ newErrs, newFrame)
             ._1

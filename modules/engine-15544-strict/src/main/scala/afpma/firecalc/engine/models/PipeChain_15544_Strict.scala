@@ -7,10 +7,10 @@ package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.ValidatedNel
@@ -68,8 +68,8 @@ object PipeChain_15544_Strict:
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
-    /** Convert V4 YAML fields to V7 descriptor slots for generic topology processing. */
-    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot_V7] =
+    /** Convert V4 YAML fields to V7 descriptor slots (engine-side enum) for generic topology processing. */
+    def toSlots(d: Descriptors): Vector[PostFireboxPipeSlot] =
         Vector(
             FlueSlot     (d.flue     ),
             ConnectorSlot(d.connector),

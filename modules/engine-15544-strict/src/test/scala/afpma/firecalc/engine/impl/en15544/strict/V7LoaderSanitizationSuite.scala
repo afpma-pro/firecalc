@@ -169,7 +169,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             )
 
             val loader = FireCalcYAML_Loader(yaml)
-            val pos    = loader.stoveProjectDescr_EN15544_Strict.postFireboxInitialPosition
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.en15544_incrInputs.postFirebox.resolvedPosition
 
             pos shouldBe defined
             val resolved = pos.get
@@ -201,7 +201,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             )
 
             val loader = FireCalcYAML_Loader(yaml)
-            loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition shouldBe None
+            loader.stoveProjectDescr_EN15544_Strict.en15544_incrInputs.airIntake.resolvedPosition shouldBe None
         }
 
         "airIntakeInitialPosition resolves InitialAuto via reverse computation" in {
@@ -231,7 +231,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             )
 
             val loader = FireCalcYAML_Loader(yaml)
-            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.en15544_incrInputs.airIntake.resolvedPosition
             pos shouldBe defined
 
             val resolved = pos.get
@@ -265,7 +265,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             )
 
             val loader = FireCalcYAML_Loader(yaml)
-            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.en15544_incrInputs.airIntake.resolvedPosition
             pos shouldBe defined
 
             // Should match InitialAuto result
@@ -297,7 +297,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             )
 
             val loader = FireCalcYAML_Loader(yaml)
-            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.en15544_incrInputs.airIntake.resolvedPosition
             pos shouldBe Some(manualPos)
         }
 
@@ -324,7 +324,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             )
 
             val loader = FireCalcYAML_Loader(yaml)
-            val pos    = loader.stoveProjectDescr_EN15544_Strict.airIntakeInitialPosition
+            val pos    = loader.stoveProjectDescr_EN15544_Strict.en15544_incrInputs.airIntake.resolvedPosition
             pos shouldBe Some(manualPos)
         }
     }

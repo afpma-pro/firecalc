@@ -11,7 +11,9 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.impl.en15544.labo.EN15544_Labo_Application.LabConditions
 import afpma.firecalc.engine.impl.en15544.mce.*
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en13384.typedefs.T_L_override
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544_MCE
 import afpma.firecalc.engine.models.en15544.Inputs_15544_MCE
 import afpma.firecalc.engine.wood_combustion.WoodCombustionAlg
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Alg
@@ -39,19 +41,11 @@ object EN15544_Labo_Application:
         wComb        : WoodCombustionAlg,
         labConditions: LabConditions
     )(
-        i                  : Inputs_15544_MCE,
-        pfbSlots           : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = Seq.empty,
-        initialDir         : Option[afpma.firecalc.dto.common.PipeInitialDirection] = None,
-        initialPos         : Option[afpma.firecalc.dto.common.Position3D]           = None,
-        airIntakeInitialPos: Option[afpma.firecalc.dto.common.Position3D]           = None,
-        airIntakeDescr     : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = Seq.empty
+        i          : Inputs_15544_MCE,
+        _incrInputs: IncrementalPipeInputs_15544_MCE
     ): EN15544_Labo_Application = new EN15544_Labo_Application(f, bs845, wComb)(labConditions) {
-        override lazy val inputs                : Inputs_15544_MCE                                       = i
-        override lazy val postFireboxPipeSlots  : Seq[afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7] = pfbSlots
-        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = initialDir
-        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = initialPos
-        override def airIntakeInitialPosition   : Option[afpma.firecalc.dto.common.Position3D]           = airIntakeInitialPos
-        override def airIntakeDescriptors       : Seq[afpma.firecalc.dto.v7.FlowOnlyPipeDescr_13384_V4]  = airIntakeDescr
+        override lazy val inputs    : Inputs_15544_MCE                = i
+        override lazy val incrInputs: IncrementalPipeInputs_15544_MCE = _incrInputs
     }
 
     case class AmbiantAir_Temperatures(

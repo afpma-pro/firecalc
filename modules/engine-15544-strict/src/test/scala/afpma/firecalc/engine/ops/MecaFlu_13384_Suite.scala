@@ -92,7 +92,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             "PipeResult" in {
                 val f             = EN15544_Strict_Formulas.make
                 val inputs        = CasType_15544_C2.en15544_inputsVNel.toOption.get
-                val en15544       = EN15544_Strict_Application.make(f)(inputs)
+                val en15544       = EN15544_Strict_Application.make(f)(inputs, CasType_15544_C2.en15544_incrInputs)
                 val chimney_elems = {
                     // Build the typed chimney pipe via PipeChain_15544_Strict, which
                     // chains frames from flue → connector → chimney descriptors.

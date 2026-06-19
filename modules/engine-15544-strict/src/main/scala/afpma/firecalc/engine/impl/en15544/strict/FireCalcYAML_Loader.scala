@@ -16,7 +16,10 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipePositionComputer
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.AirDistributionBox
+import afpma.firecalc.engine.models.geometry.AirIntakePositionMode
+import afpma.firecalc.engine.models.geometry.PostFireboxStartPositionMode
 import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
@@ -192,7 +195,6 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                                     boxZHeight = AirDistributionBox.Z_HEIGHT
                                 )
                             )
-                        case _                                                                              => None
                 case AirIntakePosition.FinalAuto          =>
                     fb.dimensions.base match
                         case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
@@ -206,7 +208,6 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                                     boxZHeight = AirDistributionBox.Z_HEIGHT
                                 )
                             )
-                        case _                                                                              => None
 
     private def mkStrictAlg[F <: Firebox_15544](
         fb: F
@@ -224,9 +225,12 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             val localConditions                      = fcProj.local_conditions
             val stoveParams                          = fcProj.stove_params
             val airIntakePipe                        = self.airIntakePipe
-            override def postFireboxPipeSlots        = normalizedPostFireboxSlots
+            override def postFireboxPipeSlots        = PostFireboxPipeSlot.fromDto(normalizedPostFireboxSlots)
             override def postFireboxInitialDirection = Some(cleanFramedPostFireboxPipes.initialDirection)
+            override def postFireboxPositionMode     =
+                PostFireboxStartPositionMode.fromDto(cleanFramedPostFireboxPipes.initialPosition)
             override def postFireboxInitialPosition  = resolvePostFireboxPosition
+            override def airIntakePositionMode       = AirIntakePositionMode.fromDto(fcProj.air_intake_pipes.position)
             override def airIntakeInitialPosition    = resolveAirIntakePosition
             override def airIntakeDescriptors        = fcProj.air_intake_pipes.descr
 

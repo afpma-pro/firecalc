@@ -20,6 +20,7 @@ import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 
@@ -233,10 +234,10 @@ object NPipeTopologyFixture_15544
     //   Slot 2 inherits "Right/Horizontal", ends "Left/Up" after bends
     //   Slot 3/4 inherit "Left/Up" (vertical)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot_V7] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         Seq     (
             // Slot 0 — FlueSlot #1: horizontal exit from firebox, then turn downward
-            PostFireboxPipeDescrSlot_V7.FlueSlot     (
+            PostFireboxPipeSlot.FlueSlot     (
                 Seq(
                     FP4.SetRoughness           (3.mm                ),
                     FP4.SetInnerShape(rectangle(43.cm, 40.cm)),
@@ -249,7 +250,7 @@ object NPipeTopologyFixture_15544
                 )
             ),
             // Slot 1 — FlueSlot #2: descending vertical column (continues from Down)
-            PostFireboxPipeDescrSlot_V7.FlueSlot     (
+            PostFireboxPipeSlot.FlueSlot     (
                 Seq(
                     EP4.AddSectionVertical     ("F2-Car. 2", -109.cm),
                     EP4.AddSectionVertical     ("F2-Car. 3", -244.cm),
@@ -268,7 +269,7 @@ object NPipeTopologyFixture_15544
                 )
             ),
             // Slot 2 — FlueSlot #3: ascending vertical column back to top
-            PostFireboxPipeDescrSlot_V7.FlueSlot     (
+            PostFireboxPipeSlot.FlueSlot     (
                 Seq(
                     FP4.SetInnerShape(rectangle(21.cm, 32.cm)),
                     EP4.AddSectionVertical("F3-Car. 10", 244.cm),
@@ -276,7 +277,7 @@ object NPipeTopologyFixture_15544
                 )
             ),
             // Slot 3 — ConnectorSlot: short vertical steel connector
-            PostFireboxPipeDescrSlot_V7.ConnectorSlot(
+            PostFireboxPipeSlot.ConnectorSlot(
                 Seq (
                     SP4.SetRoughness (Material_13384.WeldedSteel()),
                     SP4.SetInnerShape(circle(25.cm)               ),
@@ -286,7 +287,7 @@ object NPipeTopologyFixture_15544
                 )
             ),
             // Slot 4 — ChimneySlot: insulated chimney pipe
-            PostFireboxPipeDescrSlot_V7.ChimneySlot  (
+            PostFireboxPipeSlot.ChimneySlot  (
                 Seq(
                     SP4.SetRoughness      (1.mm                                         ),
                     SP4.SetInnerShape(circle(250.mm)),
