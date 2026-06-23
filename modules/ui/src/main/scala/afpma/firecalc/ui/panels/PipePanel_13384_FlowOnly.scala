@@ -184,6 +184,26 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     propertyShow = Some(summon[Show[SetInnerShape]])
                 )
             }
+            // Dev-only variant (SetInnerShapePreventSectionGeometryChangeAuto, backend-forbidden).
+            // Not reachable from any UI menu; this clause only satisfies exhaustiveness of the
+            // splitMatchSeq over the FlowOnly 13384 prop ADT. Rendered identically to plain
+            // SetInnerShape (read-only shape display) should a dev ever load such a project.
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_13384, XtraOutputs                      ),
+                (Int, SetInnerShapePreventSectionGeometryChangeAuto, XtraOutputs),
+                HtmlElement
+            ] { case (i, aa: SetInnerShapePreventSectionGeometryChangeAuto, x) =>
+                (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInnerShapePreventSectionGeometryChangeAuto]  (
+                    iaax._1,
+                    I18N.set_prop.SetInnerShape,
+                    iaax._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetInnerShapePreventSectionGeometryChangeAuto]])
+                )
+            }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetRoughness, XtraOutputs), HtmlElement] {
                 case (i, aa: SetRoughness, x) => (i, aa, x)
             } { (iaax, sig) =>

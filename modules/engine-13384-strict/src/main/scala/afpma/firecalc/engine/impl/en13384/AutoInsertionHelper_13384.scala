@@ -40,6 +40,7 @@ object AutoInsertionHelper_13384:
     def maybeInsertSectionGeometryChange(
         alg                  : IncrementalBuilderAlg,
         s                    : alg.PipeElDescr,
+        preventAuto          : Boolean,
         prevInnerGeomO       : Option[PipeShape],
         currentShapeO        : Option[PipeShape],
         idIncr               : alg.IdIncr,
@@ -48,21 +49,26 @@ object AutoInsertionHelper_13384:
         elementName          : String,
         makeSectionGeomChange: (Area, Area) => alg.PipeElDescr
     )(using nf: NbOfFlows): ValidatedNel[Nothing, NonEmptyList[(alg.IdIncr, alg.NamedPipeElDescr)]] =
-        prevInnerGeomO match
-            case None                =>
-                NonEmptyList.one((idIncr, alg.NamedPipeElDescr(elIdx, pt, elementName, s))).validNel
-            case Some(prevInnerGeom) =>
-                currentShapeO match
-                    case None               =>
-                        NonEmptyList.one((idIncr, alg.NamedPipeElDescr(elIdx, pt, elementName, s))).validNel
-                    case Some(currentShape) =>
-                        if prevInnerGeom == currentShape then
-                            NonEmptyList.one((idIncr, alg.NamedPipeElDescr(elIdx, pt, elementName, s))).validNel
-                        else
-                            val prevEquivArea = PipeShape.Circle(prevInnerGeom.dh).area
-                            val currEquivArea = PipeShape.Circle(currentShape.dh).area
-                            val sectGeomCh    = makeSectionGeomChange(prevEquivArea, currEquivArea)
-                            NonEmptyList(
-                                (idIncr, alg.NamedPipeElDescr(elIdx, pt, "section geometry change", sectGeomCh)),
-                                (idIncr, alg.NamedPipeElDescr(elIdx.incr(1), pt, elementName, s)               ) :: Nil
-                            ).validNel
+        val CURR = NonEmptyList.one((idIncr, alg.NamedPipeElDescr(elIdx, pt, elementName, s))).validNel
+        if preventAuto then
+            // Dev-only escape hatch (SetInnerShapePreventSectionGeometryChangeAuto):
+            // skip the automatic SectionGeometryChange element. Area-conservation
+            // validation has already run in updateStateBeforeConversionStep; only the
+            // transition element is suppressed here.
+            CURR
+        else
+            prevInnerGeomO match
+                case None                => CURR
+                case Some(prevInnerGeom) =>
+                    currentShapeO match
+                        case None               => CURR
+                        case Some(currentShape) =>
+                            if prevInnerGeom == currentShape then CURR
+                            else
+                                val prevEquivArea = PipeShape.Circle(prevInnerGeom.dh).area
+                                val currEquivArea = PipeShape.Circle(currentShape.dh).area
+                                val sectGeomCh    = makeSectionGeomChange(prevEquivArea, currEquivArea)
+                                NonEmptyList(
+                                    (idIncr, alg.NamedPipeElDescr(elIdx, pt, "section geometry change", sectGeomCh)),
+                                    (idIncr, alg.NamedPipeElDescr(elIdx.incr(1), pt, elementName, s)               ) :: Nil
+                                ).validNel

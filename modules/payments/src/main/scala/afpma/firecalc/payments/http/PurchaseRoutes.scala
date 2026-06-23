@@ -122,6 +122,13 @@ class PurchaseRoutes[F[_]: Async](
                     response <- Forbidden(createErrorResponse(ex))
                 yield response
 
+            // Backend-forbidden DTO (dev-only escape hatch sent to backend) - 403 Forbidden
+            case ex: ForbiddenDtoException =>
+                for
+                    _        <- logger.warn(s"Backend-forbidden DTO rejected: ${ex.getMessage}")
+                    response <- Forbidden(createErrorResponse(ex))
+                yield response
+
             // Business logic errors - 422 Unprocessable Entity
             case ex: CustomerValidationException =>
                 for

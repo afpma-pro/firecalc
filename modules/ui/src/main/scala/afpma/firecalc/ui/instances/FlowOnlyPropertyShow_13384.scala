@@ -31,9 +31,13 @@ class FlowOnlyPropertyShow_13384(using DisplayUnits, Locale):
     private def showXYZ(x: Length, y: Length, z: Length): String =
         s"X = ${x.toUnit[Centimeter].showP}, Y = ${y.toUnit[Centimeter].showP}, Z = ${z.toUnit[Centimeter].showP}"
 
-    given Show[SetInnerShape]    = Show.show(s => showPipeShape.show(s.shape))
-    given Show[SetRoughness]     = Show.show(s => s.roughness.showP)
-    given Show[SetMaterial]      = Show.show(s => s.material.show)
-    given Show[SetNumberOfFlows] = Show.show(s => s.n_flows.show)
+    given Show[SetInnerShape]                                 = Show.show(s => showPipeShape.show(s.shape))
+    // Dev-only variant (backend-forbidden, not menu-reachable). Show mirrors SetInnerShape
+    // so the PipePanel_13384_FlowOnly exhaustiveness clause can render it read-only.
+    given Show[SetInnerShapePreventSectionGeometryChangeAuto] =
+        Show.show(s => showPipeShape.show(s.shape))
+    given Show[SetRoughness]                                  = Show.show(s => s.roughness.showP)
+    given Show[SetMaterial]                                   = Show.show(s => s.material.show)
+    given Show[SetNumberOfFlows]                              = Show.show(s => s.n_flows.show)
 
 end FlowOnlyPropertyShow_13384

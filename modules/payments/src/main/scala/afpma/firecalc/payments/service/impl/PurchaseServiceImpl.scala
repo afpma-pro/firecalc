@@ -20,6 +20,7 @@ import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.api.v1.requiresLicenseFee
 import afpma.firecalc.payments.util.LogSanitizer
 import afpma.firecalc.payments.util.MetadataFireboxDecoder
+import afpma.firecalc.payments.util.MetadataForbiddenDtoChecker
 
 import cats.effect.Async
 import cats.syntax.all.*
@@ -52,6 +53,20 @@ class PurchaseServiceImpl[F[_]: Async](
                                 Async[F].raiseError(FireboxTypeDisabledException(firebox.typeName))
                             else Async[F].unit
                         case None          =>
+                            Async[F].unit
+                case None           =>
+                    Async[F].unit
+
+            // Reject dev-only backend-forbidden DTOs (e.g. SetInnerShapePreventSectionGeometryChangeAuto)
+            // before any database side effect. Mirrors the firebox guard above. The check decodes+migrates
+            // the uploaded project YAML and runs BackendForbiddenDtoChecker; decode failures pass through
+            // silently (surfaced later by the report factory) so we don't double-report.
+            _ <- request.productMetadata match
+                case Some(metadata) =>
+                    MetadataForbiddenDtoChecker.findForbidden(metadata) match
+                        case Some(forbidden) =>
+                            Async[F].raiseError(ForbiddenDtoException(forbidden.getClass.getSimpleName))
+                        case None            =>
                             Async[F].unit
                 case None           =>
                     Async[F].unit

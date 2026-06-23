@@ -12,6 +12,7 @@ import afpma.firecalc.dto.common.AppendLayerDescr
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
 
 import afpma.firecalc.domain.{
+    IsBackendForbidden,
     IsDirectionChange,
     IsLengthBearingPipeElement,
     IsPressureDiff,
@@ -34,6 +35,17 @@ sealed trait SetThermalPipeProp_13384_V4 extends ThermalPreElementOp_13384_V4
 object SetThermalPipeProp_13384_V4:
 
     sealed trait SetSingleProp extends SetThermalPipeProp_13384_V4
+
+    // Dev-only DSL escape hatch: skips the automatic SectionGeometryChange element
+    // insertion when the inner shape changes. Rejected by the payments backend via
+    // `IsBackendForbidden` if it appears on the wire. See `IsBackendForbidden` scaladoc.
+    @Transl(I(_.set_prop.SetInnerShape))
+    case class SetInnerShapePreventSectionGeometryChangeAuto(
+        @Transl(I(_.terms.pipe_shape._self))
+        shape: PipeShape
+    ) extends SetSingleProp
+        with SetsInnerShape
+        with IsBackendForbidden
 
     @Transl(I(_.set_prop.SetInnerShape))
     case class SetInnerShape(
@@ -116,6 +128,18 @@ object SetThermalPipeProp_13384_V4:
 
     extension (props: Seq[SetSingleProp])
 
+        /**
+         * Extracts the inner shape set by a plain `SetInnerShape` op.
+         *
+         * Intentionally matches ONLY `SetInnerShape` — not the dev-only
+         * `SetInnerShapePreventSectionGeometryChangeAuto` variant (which also extends
+         * `SetsInnerShape`). The dev-only variant is a DSL escape hatch rejected by the
+         * backend; surfacing it in user-facing form logic (lined-flue casing/liner
+         * derivation, UI forms) would be a latent trap. A dev who nests the prevent
+         * variant inside a `LinedFlue` batch will get `None` here, which is the correct
+         * safe-failure: the lined-flue validation then reports a missing inner shape.
+         * Do NOT widen this to `case _: SetsInnerShape`.
+         */
         def extractInnerShape: Option[PipeShape] =
             props.collectFirst { case SetInnerShape(shape) => shape }
 

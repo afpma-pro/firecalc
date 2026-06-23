@@ -153,44 +153,46 @@ object `01_cloche_medianne_entree_haute_config_1`
             .define(
                 // addPressureDiff("dispositif de réglage d'air", 3.2.unitless: ζ), // ???
 
-                pipeLocation              (Area.AirDansLePoele       ),
-                roughness (Material_13384.WeldedSteel()),
-                innerShape(rectangle(27.cm, 16.cm)     ),
-                layer                     (e = 1.cm, λ = 1.3.W_per_mK),
-                addSectionHorizontal      ("entrée P03 TC03", 18.cm  ),
+                pipeLocation              (Area.AirDansLePoele                                                                  ),
+                roughness(Material_13384.WeldedSteel()),
+                innerShape                (rectangle(27.cm, 16.cm), preventAutoSectionGeometryChange    = true                  ),
+                layer                     (e                                                            = 1.cm, λ = 1.3.W_per_mK),
+                addSectionHorizontal      ("entrée P03 TC03", 18.cm                                                             ),
                 addSharpAngle_90deg_unsafe(
                     "angle vif 90°",
                     absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
                 ), // Up
 
-                innerShape(rectangle(36.cm, 36.cm)),
-                addSectionVertical        ("montée", 7.3.cm          ),
+                innerShape                (rectangle(36.cm, 36.cm), preventAutoSectionGeometryChange    = true                  ),
+                addSectionVertical        ("montée", 7.3.cm                                                                     ),
                 addSharpAngle_90deg_unsafe(
                     "angle vif 90°",
                     absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
                 ), // Left (TOCHECK / arbitrary)
 
-                channelsSplit             (11                        ),
-                innerShape(rectangle(6.6.cm, 8.7.cm)),
-                addSectionHorizontal      ("sous sole", 25.cm        ),
+                channelsSplit             (11                                                                                   ),
+                innerShape                (rectangle(6.6.cm, 17.9.cm), preventAutoSectionGeometryChange = true                  ),
+                addSectionHorizontal      ("workaround", 0.1.cm                                                                 ),
+                innerShape                (rectangle(6.6.cm, 8.7.cm), preventAutoSectionGeometryChange  = true                  ),
+                addSectionHorizontal      ("sous sole", 25.cm                                                                   ),
                 addSharpAngle_90deg       (
                     "angle vif 90°",
                     absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
                 ), // Up
 
-                innerShape(rectangle(6.6.cm, 3.3.cm)),
-                addSectionVertical        ("montée", 27.3.cm         ),
+                innerShape                (rectangle(6.6.cm, 3.3.cm), preventAutoSectionGeometryChange  = true                  ),
+                addSectionVertical        ("montée", 27.3.cm                                                                    ),
                 addSharpAngle_90deg_unsafe(
                     "angle vif 90°",
                     absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                 ), // Right (TOCHECK / arbitrary)
 
-                innerShape(rectangle(26.4.cm, 1.8.cm)),
-                addSectionHorizontal      ("injecteurs", 2.cm        ),
-                innerShape(rectangle(31.6.cm, 1.cm)  ),
-                addSectionHorizontal      ("injecteurs", 2.cm        ),
-                innerShape(rectangle(37.2.cm, 0.4.cm)),
-                addSectionHorizontal      ("injecteurs", 1.5.cm      )
+                innerShape                (rectangle(26.4.cm, 1.8.cm), preventAutoSectionGeometryChange = true                  ),
+                addSectionHorizontal      ("injecteurs", 2.cm                                                                   ),
+                innerShape                (rectangle(31.6.cm, 1.cm), preventAutoSectionGeometryChange   = true                  ),
+                addSectionHorizontal      ("injecteurs", 2.cm                                                                   ),
+                innerShape                (rectangle(37.2.cm, 0.4.cm), preventAutoSectionGeometryChange = true                  ),
+                addSectionHorizontal      ("injecteurs", 1.5.cm                                                                 )
             )
             .toFullDescr()
             .extractPipe
@@ -220,72 +222,72 @@ object `01_cloche_medianne_entree_haute_config_1`
     val fluePipeDescr =
         import FluePipe_Module_13384.*
         Seq (
-            pipeLocation                (Area.Accumulateur                     ),
+            pipeLocation                (Area.Accumulateur                                                                               ),
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(18.cm)               ),
-            layer                       (e = 3.cm, λ   = 1.3.W_per_mK          ),
-            addSectionHorizontal        ("sortie foyer", 11.cm                 ),
-            pipeLocation                (Area.DansLaPieceDuPoele               ),
-            layer                       (e = 2.5.cm, λ = 0.057.W_per_mK        ),
-            addSectionHorizontal        ("horizontal TC04", 30.5.cm            ),
-            addSectionHorizontal        ("horizontal vers échangeur", 30.9.cm  ),
-            roughness                   (Refractory_Bricks                     ),
-            pipeLocation                (Area.Accumulateur                     ),
-            layer                       (e = 3.cm, λ   = 1.3.W_per_mK          ),
-            innerShape(rectangle(16.2.cm, 22.2.cm) ),
-            addSectionHorizontal        ("horizontal carneaux TC31", 34.3.cm   ),
-            addSectionHorizontal        ("horizontal milieu de cloche", 33.2.cm),
+            layer                       (e                                                             = 3.cm, λ   = 1.3.W_per_mK        ),
+            addSectionHorizontal        ("sortie foyer", 11.cm                                                                           ),
+            pipeLocation                (Area.DansLaPieceDuPoele                                                                         ),
+            layer                       (e                                                             = 2.5.cm, λ = 0.057.W_per_mK      ),
+            addSectionHorizontal        ("horizontal TC04", 30.5.cm                                                                      ),
+            addSectionHorizontal        ("horizontal vers échangeur", 30.9.cm                                                            ),
+            roughness                   (Refractory_Bricks                                                                               ),
+            pipeLocation                (Area.Accumulateur                                                                               ),
+            layer                       (e                                                             = 3.cm, λ   = 1.3.W_per_mK        ),
+            innerShape                  (rectangle(16.2.cm, 22.2.cm), preventAutoSectionGeometryChange = true                            ),
+            addSectionHorizontal        ("horizontal carneaux TC31", 34.3.cm                                                             ),
+            addSectionHorizontal        ("horizontal milieu de cloche", 33.2.cm                                                          ),
             addCoudeCourbe90_unsafe     (
                 "coude courbe 90°",
                 R      = 30.cm,
                 absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
             ), // Down
 
-            innerShape(rectangle(55.4.cm, 55.5.cm)),
-            addSectionVertical          ("descente dans la cloche TC30", -11.cm),
-            addSectionVertical          ("descente dans la cloche", 77.cm      ),
+            innerShape                  (rectangle(55.4.cm, 55.5.cm), preventAutoSectionGeometryChange = true                            ),
+            addSectionVertical          ("descente dans la cloche TC30", -11.cm                                                          ),
+            addSectionVertical          ("descente dans la cloche", 77.cm                                                                ),
             addCoudeCourbe90_unsafe     (
                 "coude courbe 90°",
                 R      = 30.cm,
                 absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
             ), // Left (TOCHECK)
 
-            addSectionHorizontal        ("vers colonne", 28.7.cm               ),
+            addSectionHorizontal        ("vers colonne", 28.7.cm                                                                         ),
             addSharpAngle_90deg_unsafe  (
                 "angle vif 90°",
                 absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
             ), // Up
 
-            addSectionVertical          ("colonne P09", 77.7.cm                ),
-            addSectionVertical          ("colonne", 113.7.cm                   )
+            addSectionVertical          ("colonne P09", 77.7.cm                                                                          ),
+            addSectionVertical          ("colonne", 113.7.cm                                                                             )
         )
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
-        Seq (
-            roughness (Material_13384.WeldedSteel()),
-            innerShape(circle(18.cm)               ),
-            layer             (e = 0.1.cm, λ = 15.W_per_mK),
-            pipeLocation      (Area.DansLaPieceDuPoele    ),
-            addSectionVertical("raccord", 4.cm            )
+        Seq(
+            roughness(Material_13384.WeldedSteel()),
+            innerShape        (circle(18.cm), preventAutoSectionGeometryChange = true                   ),
+            layer             (e                                               = 0.1.cm, λ = 15.W_per_mK),
+            pipeLocation      (Area.DansLaPieceDuPoele                                                  ),
+            addSectionVertical("raccord", 4.cm                                                          )
         )
 
     val chimneyPipeDescr =
         import ChimneyPipe_Module.*
-        Seq (
-            roughness (Material_13384.WeldedSteel()),
-            innerShape(circle(18.cm)               ),
-            layer             (e = 2.5.cm, λ = 0.096.W_per_mK    ),
-            pipeLocation      (Area.DansLaPieceDuPoele           ),
-            addSectionVertical("CF analyseur de comb", 18.5.cm   ),
-            addSectionVertical("CF prise de pression", 19.0.cm   ),
-            addSectionVertical("CF intérieur", 20.5.cm           ),
-            pipeLocation      (Area.NonChauffee                  ),
-            addSectionVertical("CF combles", 170.0.cm            ),
-            addSectionVertical("CF traversée de toiture", 33.7.cm),
-            pipeLocation      (Area.Exterieure                   ),
-            addSectionVertical("CF P11", 160.6.cm                ),
-            addSectionVertical("CF débouché", 44.3.cm            ),
+        Seq(
+            roughness(Material_13384.WeldedSteel()),
+            innerShape        (circle(18.cm), preventAutoSectionGeometryChange = true                      ),
+            layer             (e                                               = 2.5.cm, λ = 0.096.W_per_mK),
+            pipeLocation      (Area.DansLaPieceDuPoele                                                     ),
+            addSectionVertical("CF analyseur de comb", 18.5.cm                                             ),
+            addSectionVertical("CF prise de pression", 19.0.cm                                             ),
+            addSectionVertical("CF intérieur", 20.5.cm                                                     ),
+            pipeLocation      (Area.NonChauffee                                                            ),
+            addSectionVertical("CF combles", 170.0.cm                                                      ),
+            addSectionVertical("CF traversée de toiture", 33.7.cm                                          ),
+            pipeLocation      (Area.Exterieure                                                             ),
+            addSectionVertical("CF P11", 160.6.cm                                                          ),
+            addSectionVertical("CF débouché", 44.3.cm                                                      ),
             addFlowResistance ("element terminal", 1.2.unitless: ζ)
         )
 

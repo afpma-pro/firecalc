@@ -9,6 +9,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.domain.SetsInnerShape
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
@@ -207,6 +208,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
         val prevInnerGeomO     = prevs.lastInnerGeom
 
         val vels: ValidatedNel[IncrementalValidation_Error, NonEmptyList[(PipeIdx, Option[String], PipeElDescr)]] =
+            // Dev-only escape hatch: if the op batch preceding this add-element set the
+            // inner shape via SetInnerShapePreventSectionGeometryChangeAuto, skip the
+            // automatic SectionGeometryChange insertion for this element.
+            val preventAuto = convStep.allPreElementOpsUntilNextAddElement.exists {
+                case (_, _: SetInnerShapePreventSectionGeometryChangeAuto) => true
+                case _ => false
+            }
             addElementOp match
                 case op @ (_: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain |
                     _: AddSectionHorizontal | _: AddSectionVertical) =>
@@ -218,16 +226,23 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                             currentFrame = st.currentFrame
                         )
                     flowOnlyStraightSection15544.make(op).andThen { s =>
-                        prevInnerGeomO match
-                            case None => NonEmptyList.one((elIdx, None, s)).validNel
-                            case Some(prevInnerGeom) if (prevInnerGeom == s.geometry) =>
-                                NonEmptyList.one((elIdx, None, s)).validNel
-                            case Some(prevInnerGeom) =>
-                                val sectGeomCh = SectionGeometryChange(from = prevInnerGeom, to = s.geometry)
-                                NonEmptyList(
-                                    (elIdx, Some("section geometry change"), sectGeomCh),
-                                    (elIdx.incr(1), None, s                            ) :: Nil
-                                ).validNel[IncrementalValidation_Error]
+                        if preventAuto then
+                            // Dev-only escape hatch: skip the automatic SectionGeometryChange
+                            // element. Area-conservation validation already ran in
+                            // updateStateBeforeConversionStep; only the transition element
+                            // is suppressed here.
+                            NonEmptyList.one((elIdx, None, s)).validNel[IncrementalValidation_Error]
+                        else
+                            prevInnerGeomO match
+                                case None => NonEmptyList.one((elIdx, None, s)).validNel
+                                case Some(prevInnerGeom) if (prevInnerGeom == s.geometry) =>
+                                    NonEmptyList.one((elIdx, None, s)).validNel
+                                case Some(prevInnerGeom) =>
+                                    val sectGeomCh = SectionGeometryChange(from = prevInnerGeom, to = s.geometry)
+                                    NonEmptyList(
+                                        (elIdx, Some("section geometry change"), sectGeomCh),
+                                        (elIdx.incr(1), None, s                            ) :: Nil
+                                    ).validNel[IncrementalValidation_Error]
                     }
 
                 case op: AddDirectionChange =>
@@ -248,7 +263,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                             SectionGeometryChangeCtx_15544(
                                 stateOps.getInnerShape(st),
                                 convStep.allPreElementOpsUntilNextAddElement.exists {
-                                    case (_, _: SetInnerShape) => true
+                                    case (_, _: SetsInnerShape) => true
                                     case _ => false
                                 },
                                 pt
@@ -308,16 +323,26 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
     ): ValidatedResult[PropsState] =
         convStep.allPreElementOpsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
+                def applyInnerShapeSet(
+                    vState: ValidatedNel[IncrementalValidation_Error, PropsState],
+                    g     : PipeShape
+                ): ValidatedNel[IncrementalValidation_Error, PropsState] =
+                    vState.andThen { st =>
+                        stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
+                            FlowAreaConservation
+                                .validateSetInnerShape(st, g, pt)(using stateOps)
+                                .toValidatedNel
+                                .map(s => stateOps.setInnerShape(s, g))
+                        }
+                    }
                 op match
                     case SetInnerShape(g)                                     =>
-                        vState.andThen { st =>
-                            stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
-                                FlowAreaConservation
-                                    .validateSetInnerShape(st, g, pt)(using stateOps)
-                                    .toValidatedNel
-                                    .map(s => stateOps.setInnerShape(s, g))
-                            }
-                        }
+                        applyInnerShapeSet(vState, g)
+                    case SetInnerShapePreventSectionGeometryChangeAuto(g)     =>
+                        // Same state update as plain SetInnerShape (area-conservation
+                        // validation still runs); only the later auto-insertion is
+                        // suppressed (handled at the mkFullElementsDescr call site).
+                        applyInnerShapeSet(vState, g)
                     case SetRoughness(r)                                      =>
                         vState.map(_.modify(_.roughness).setTo(r.some))
                     case SetMaterial(lm)                                      =>
@@ -337,9 +362,21 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
 
     // builder methods for Atomic modifiers
 
-    def innerShape(shape: PipeShape) =
+    /**
+     * Sets the inner pipe shape. When `preventAutoSectionGeometryChange` is `true`,
+     * emits the dev-only `SetInnerShapePreventSectionGeometryChangeAuto` DTO, which
+     * suppresses the automatic SectionGeometryChange element insertion on the next
+     * length-bearing element. This is a DSL-only escape hatch: any project carrying
+     * the resulting DTO is rejected by the payments backend (`IsBackendForbidden`).
+     * When `false`, collapses to the plain `SetInnerShape` so normal projects never
+     * carry the dev-only variant on the wire.
+     */
+    def innerShape(shape: PipeShape, preventAutoSectionGeometryChange: Boolean) =
+        if preventAutoSectionGeometryChange then SetInnerShapePreventSectionGeometryChangeAuto(shape)
+        else SetInnerShape                                                                    (shape)
+    def innerShape(shape: PipeShape)                                            =
         SetInnerShape(shape)
-    def roughness(r: Roughness)      =
+    def roughness(r: Roughness)                                                 =
         SetRoughness(r)
 
     def material(material: Material_15544) =

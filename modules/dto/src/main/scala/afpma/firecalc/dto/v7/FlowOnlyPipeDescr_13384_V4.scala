@@ -8,6 +8,7 @@ package afpma.firecalc.dto.v7
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.domain.{
+    IsBackendForbidden,
     IsDirectionChange,
     IsLengthBearingPipeElement,
     IsPressureDiff,
@@ -29,6 +30,17 @@ sealed trait FlowOnlyPreElementOp_13384_V4 extends FlowOnlyPipeDescr_13384_V4
 sealed trait SetFlowOnlyPipeProp_13384_V4 extends FlowOnlyPreElementOp_13384_V4
 
 object SetFlowOnlyPipeProp_13384_V4:
+
+    // Dev-only DSL escape hatch: skips the automatic SectionGeometryChange element
+    // insertion when the inner shape changes. Rejected by the payments backend via
+    // `IsBackendForbidden` if it appears on the wire. See `IsBackendForbidden` scaladoc.
+    @Transl(I(_.set_prop.SetInnerShape))
+    case class SetInnerShapePreventSectionGeometryChangeAuto(
+        @Transl(I(_.terms.pipe_shape._self))
+        shape: PipeShape
+    ) extends SetFlowOnlyPipeProp_13384_V4
+        with SetsInnerShape
+        with IsBackendForbidden
 
     @Transl(I(_.set_prop.SetInnerShape))
     case class SetInnerShape(

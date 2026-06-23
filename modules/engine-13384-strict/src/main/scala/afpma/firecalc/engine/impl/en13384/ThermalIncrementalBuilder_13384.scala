@@ -11,6 +11,7 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.domain.SetsInnerShape
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
@@ -250,7 +251,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         SectionGeometryChangeCtx_13384(
                             stateOps.getInnerShape(st),
                             convStep.allPreElementOpsUntilNextAddElement.exists {
-                                case (_, _: SetInnerShape) => true
+                                case (_, _: SetsInnerShape) => true
                                 case _ => false
                             },
                             pt
@@ -270,10 +271,18 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
         val elIdx          = PipeIdx(prevs.elems.size)
         val prevInnerGeomO = prevs.lastInnerGeom
+        // Dev-only escape hatch: if the op batch preceding this add-element set the
+        // inner shape via SetInnerShapePreventSectionGeometryChangeAuto, skip the
+        // automatic SectionGeometryChange insertion for this element.
+        val preventAuto    = convStep.allPreElementOpsUntilNextAddElement.exists {
+            case (_, _: SetInnerShapePreventSectionGeometryChangeAuto) => true
+            case _ => false
+        }
         el.andThen { s =>
             AutoInsertionHelper_13384.maybeInsertSectionGeometryChange(
                 this,
                 s,
+                preventAuto,
                 prevInnerGeomO,
                 stateOps.getInnerShape(st),
                 idIncr,
@@ -329,29 +338,39 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         def updateVNelState(vState: ValidatedNel[IncrementalValidation_Error, PropsState])(
             atom: SetSingleProp
         ): ValidatedNel[IncrementalValidation_Error, PropsState] =
-            atom match
-                case SetInnerShape(g)            =>
-                    vState.andThen { st =>
-                        stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
-                            FlowAreaConservation
-                                .validateSetInnerShape(st, g, pt)(using stateOps)
-                                .toValidatedNel
-                                .map(s => stateOps.setInnerShape(s, g))
-                        }
+            def applyInnerShapeSet(
+                vState: ValidatedNel[IncrementalValidation_Error, PropsState],
+                g     : PipeShape
+            ): ValidatedNel[IncrementalValidation_Error, PropsState] =
+                vState.andThen { st =>
+                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
+                        FlowAreaConservation
+                            .validateSetInnerShape(st, g, pt)(using stateOps)
+                            .toValidatedNel
+                            .map(s => stateOps.setInnerShape(s, g))
                     }
-                case SetOuterShape(g)            =>
+                }
+            atom match
+                case SetInnerShape(g)                                 =>
+                    applyInnerShapeSet(vState, g)
+                case SetInnerShapePreventSectionGeometryChangeAuto(g) =>
+                    // Same state update as plain SetInnerShape (area-conservation
+                    // validation still runs); only the later auto-insertion is
+                    // suppressed (handled at the mkFullElementsDescr call site).
+                    applyInnerShapeSet(vState, g)
+                case SetOuterShape(g)                                 =>
                     vState.map(_.modify(_.outer_shape).setTo(g.some))
-                case SetThickness(t)             =>
+                case SetThickness(t)                                  =>
                     vState andThen: v =>
                         stateOps.getInnerShape(v) match
                             case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
                             case Some(ig) =>
                                 v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
-                case SetRoughness(r)             =>
+                case SetRoughness(r)                                  =>
                     vState.map(_.modify(_.roughness).setTo(r.some))
-                case SetMaterial(lm)             =>
+                case SetMaterial(lm)                                  =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                case SetLayer(e, lambda)         =>
+                case SetLayer(e, lambda)                              =>
                     val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayerRequiresSectionGeometry(pt)))
                     vGeom.andThen: geom =>
                         vState.map(
@@ -360,7 +379,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape)
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
-                case SetLayers(ldescrs)          =>
+                case SetLayers(ldescrs)                               =>
                     val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
@@ -370,11 +389,11 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                 .modify(_.outer_shape)
                                 .setTo(ldescrs.compute_outer_shape(geom).some)
                         )
-                case SetAirSpaceAfterLayers(asp) =>
+                case SetAirSpaceAfterLayers(asp)                      =>
                     vState.map(_.modify(_.airSpace_afterLayers).setTo(asp.some))
-                case SetPipeLocation(loc)        =>
+                case SetPipeLocation(loc)                             =>
                     vState.map(_.modify(_.pipeLoc).setTo(loc.some))
-                case SetDuctType(duct)           =>
+                case SetDuctType(duct)                                =>
                     vState.map(_.modify(_.ductType).setTo(duct.some))
 
         convStep.allPreElementOpsUntilNextAddElement
@@ -456,13 +475,25 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     // builder methods for Atomic modifiers
 
-    def innerShape(shape: PipeShape)          =
+    /**
+     * Sets the inner pipe shape. When `preventAutoSectionGeometryChange` is `true`,
+     * emits the dev-only `SetInnerShapePreventSectionGeometryChangeAuto` DTO, which
+     * suppresses the automatic SectionGeometryChange element insertion on the next
+     * length-bearing element. This is a DSL-only escape hatch: any project carrying
+     * the resulting DTO is rejected by the payments backend (`IsBackendForbidden`).
+     * When `false`, collapses to the plain `SetInnerShape` so normal projects never
+     * carry the dev-only variant on the wire.
+     */
+    def innerShape(shape: PipeShape, preventAutoSectionGeometryChange: Boolean) =
+        if preventAutoSectionGeometryChange then SetInnerShapePreventSectionGeometryChangeAuto(shape)
+        else SetInnerShape                                                                    (shape)
+    def innerShape(shape: PipeShape)                                            =
         SetInnerShape(shape)
-    def outer_shape(shape: PipeShape)         =
+    def outer_shape(shape: PipeShape)                                           =
         SetOuterShape(shape)
-    @deprecated def thickness(t: QtyD[Meter]) =
+    @deprecated def thickness(t: QtyD[Meter])                                   =
         SetThickness(t)
-    def roughness(r: Roughness)               =
+    def roughness(r: Roughness)                                                 =
         SetRoughness(r)
 
     def material(lm: Material_13384) =

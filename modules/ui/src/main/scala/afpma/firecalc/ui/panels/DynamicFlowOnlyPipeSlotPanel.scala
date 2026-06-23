@@ -330,6 +330,26 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     propertyShow = Some(summon[Show[SetInnerShape]])
                 )
             }
+            // Dev-only variant (SetInnerShapePreventSectionGeometryChangeAuto, backend-forbidden).
+            // Not reachable from any UI menu; this clause only satisfies exhaustiveness of the
+            // splitMatchSeq over the FlowOnly 15544 prop ADT. Rendered identically to plain
+            // SetInnerShape (read-only shape display) should a dev ever load such a project.
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs                      ),
+                (Int, SetInnerShapePreventSectionGeometryChangeAuto, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: SetInnerShapePreventSectionGeometryChangeAuto, x) =>
+                (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SetInnerShapePreventSectionGeometryChangeAuto]  (
+                    iix._1,
+                    I18N.set_prop.SetInnerShape,
+                    iix._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetInnerShapePreventSectionGeometryChangeAuto]])
+                )
+            }
             .handleCase[(Int, FlowOnlyPipeDescr_15544, XtraOutputs), (Int, SetRoughness, XtraOutputs), HtmlElement] {
                 case (i, incr: SetRoughness, x) => (i, incr, x)
             } { (iix, sig) =>

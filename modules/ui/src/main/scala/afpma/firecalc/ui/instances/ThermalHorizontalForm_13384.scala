@@ -232,6 +232,10 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_SetInnerShape: Form[SetInnerShape] =
         autoDeriveAndOverwriteFieldNames[SetInnerShape]
 
+    given horizontal_form_SetInnerShapePreventSectionGeometryChangeAuto
+        : Form[SetInnerShapePreventSectionGeometryChangeAuto] =
+        autoDeriveAndOverwriteFieldNames[SetInnerShapePreventSectionGeometryChangeAuto]
+
     given horizontal_form_SetOuterShape: Form[SetOuterShape] =
         autoDeriveAndOverwriteFieldNames[SetOuterShape]
 
