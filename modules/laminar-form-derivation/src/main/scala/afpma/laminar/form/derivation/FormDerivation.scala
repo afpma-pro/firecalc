@@ -199,15 +199,24 @@ object FormDerivation extends AutoDerivation[Form]:
             _isExternalUpdate = false
         }
 
-        // Apply onSubtypeSwitch only for dropdown-initiated subtype changes
-        val subtypeSwitchBinder: Seq[Binder[HtmlElement]] = onSubtypeSwitch.toSeq.map { transform =>
+        // Commit dropdown-initiated subtype switches to the parent `variable`.
+        // A custom `onSubtypeSwitch` transform (e.g. Firebox caching + dimension
+        // syncing) takes precedence; otherwise the new subtype's cached/default
+        // value is committed as-is. Without this commit, switching a sealed-trait
+        // select (e.g. PipeLocation inside a SetPipeLocation pop-up dialog) would
+        // not update the parent var until a field in the newly-revealed subtype
+        // form is edited — the switch would be silently lost when the dialog is
+        // closed without touching any field.
+        val effectiveTransform: (A, A) => A = onSubtypeSwitch.getOrElse((_, nd) => nd)
+
+        val subtypeSwitchBinder: Binder[HtmlElement] =
             var_subt_label_curr.signal.changes --> Observer[String] { newLabel =>
                 if !_isExternalUpdate then
                     val prevValue = variable.now()
                     val newIdx    = subt_labels.indexOf(newLabel)
                     if newIdx >= 0 then
                         val newDefault  = vars_subt(newIdx).now()
-                        val transformed = transform(prevValue, newDefault)
+                        val transformed = effectiveTransform(prevValue, newDefault)
                         // Write directly to `variable` so external observers
                         // (like image panels) always receive the new subtype,
                         // even when `transformed == newDefault` (e.g. switching
@@ -219,7 +228,6 @@ object FormDerivation extends AutoDerivation[Form]:
                         variable.set         (transformed)
                         _isExternalUpdate = false
             }
-        }
 
         def isSubtypeLabelCurrentlySelected(subt_label: String): Signal[Boolean] =
             var_subt_label_curr.signal.map(_ == subt_label)

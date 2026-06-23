@@ -32,14 +32,22 @@ trait Form[A]:
     def configuredFieldName: Option[String] = None
 
     /**
-     * Hook called when the user switches sealed-trait subtypes via the UI dropdown.
+     * Optional transform applied when the user switches sealed-trait subtypes via
+     * the UI dropdown, *before* the new value is committed to the parent var.
      * `transform(previousValue, newSubtypeDefault) => adjustedValue`.
+     *
+     * The library always commits the switch to the parent var (using the
+     * adjusted value when this hook is set, or the new subtype's cached/default
+     * value otherwise). The hook therefore only customizes *what* gets committed
+     * (e.g. preserving firebox dimensions across subtypes, or restoring a cached
+     * value) — it is no longer required to make the switch commit at all.
+     *
      * NOT called on external writes (project load, catalog selection).
      * Only meaningful for sealed-trait forms produced by `split`.
      */
     protected[form] var _onSubtypeSwitch: Option[(A, A) => A] = None
 
-    /** Set the subtype-switch hook. Returns this for chaining. */
+    /** Set the subtype-switch transform hook. Returns this for chaining. */
     def withOnSubtypeSwitch(f: (A, A) => A): Form[A] =
         _onSubtypeSwitch = Some(f)
         this
