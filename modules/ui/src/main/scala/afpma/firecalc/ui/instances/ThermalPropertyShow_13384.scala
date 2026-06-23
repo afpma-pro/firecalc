@@ -32,9 +32,6 @@ class ThermalPropertyShow_13384(using DisplayUnits, Locale):
         PipeShape.show_PipeShape_valueIn_noUnit
     )
 
-    private def showXYZ(x: Length, y: Length, z: Length): String =
-        s"X = ${x.toUnit[Centimeter].showP}, Y = ${y.toUnit[Centimeter].showP}, Z = ${z.toUnit[Centimeter].showP}"
-
     given Show[SetPropertiesInBatch]                          = Show.show(_.batch_name)
     given Show[LinedFlue]                                     = Show.show(_.batch_name)
     given Show[SetInnerShape]                                 = Show.show(s => showPipeShape.show(s.shape))

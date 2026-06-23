@@ -5,15 +5,14 @@
 
 package afpma.firecalc.dto.generators.pipe_descr
 
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.generators.base.*
 import afpma.firecalc.dto.v3.Material_15544_V2
+import afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4
 import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.*
-import afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4
+
 import org.scalacheck.Gen
 
 /**

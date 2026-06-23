@@ -13,25 +13,23 @@ import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Stric
 import afpma.firecalc.engine.impl.en15544.strict.{*, given}
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384.toFullDescr
 import afpma.firecalc.engine.models.en15544.firebox.*
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.PipePositionComputer
-import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
-import afpma.firecalc.engine.models.geometry.AirDistributionBox
-import afpma.firecalc.engine.models.geometry.AirIntakePositionMode
-import afpma.firecalc.engine.models.geometry.PostFireboxStartPositionMode
-import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
+import afpma.firecalc.engine.models.geometry.AirDistributionBox
+import afpma.firecalc.engine.models.geometry.AirIntakePositionMode
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PipePositionComputer
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
+import afpma.firecalc.engine.models.geometry.PostFireboxStartPositionMode
 import afpma.firecalc.engine.standard.*
 
 import cats.data.NonEmptyList
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.syntax.all.*
-import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384.toFullDescr
-import afpma.firecalc.units.coulombutils.*
 
 import scala.util.*
 

@@ -65,8 +65,8 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
     private val genStartPosition: Gen[PostFireboxStartPosition] =
         Gen.oneOf(
-            Gen.const             (PostFireboxStartPosition.Auto  ),
-            genInitialPosition.map(PostFireboxStartPosition.Manual)
+            Gen.const             (PostFireboxStartPosition.Auto        ),
+            genInitialPosition.map(PostFireboxStartPosition.Manual.apply)
         )
 
     private val genAnySlot: Gen[PostFireboxPipeDescrSlot_V7] =

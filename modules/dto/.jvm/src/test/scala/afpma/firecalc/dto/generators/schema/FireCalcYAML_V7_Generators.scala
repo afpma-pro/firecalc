@@ -67,10 +67,10 @@ trait FireCalcYAML_V7_Generators
 
     def genAirIntakePosition: Gen[AirIntakePosition] =
         Gen.oneOf(
-            Gen.const        (AirIntakePosition.InitialAuto  ),
-            genPosition3D.map(AirIntakePosition.InitialManual),
-            Gen.const        (AirIntakePosition.FinalAuto    ),
-            genPosition3D.map(AirIntakePosition.FinalManual  )
+            Gen.const        (AirIntakePosition.InitialAuto        ),
+            genPosition3D.map(AirIntakePosition.InitialManual.apply),
+            Gen.const        (AirIntakePosition.FinalAuto          ),
+            genPosition3D.map(AirIntakePosition.FinalManual.apply  )
         )
 
     def genFramedAirIntakePipes: Gen[FramedAirIntakePipes] =
@@ -104,8 +104,8 @@ trait FireCalcYAML_V7_Generators
         for
             initialDirection <- genPipeInitialDirection
             initialPosition  <- Gen.oneOf(
-                Gen.const        (afpma.firecalc.dto.v7.PostFireboxStartPosition.Auto  ),
-                genPosition3D.map(afpma.firecalc.dto.v7.PostFireboxStartPosition.Manual)
+                Gen.const        (afpma.firecalc.dto.v7.PostFireboxStartPosition.Auto        ),
+                genPosition3D.map(afpma.firecalc.dto.v7.PostFireboxStartPosition.Manual.apply)
             )
             slots            <- genSlotsN(n)
         yield FramedPostFireboxPipes(initialDirection, initialPosition, slots)

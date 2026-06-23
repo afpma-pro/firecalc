@@ -9,15 +9,13 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.dto.v4.TypeOfAppliance
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 

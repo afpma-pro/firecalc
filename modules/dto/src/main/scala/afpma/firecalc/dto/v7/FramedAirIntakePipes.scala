@@ -44,12 +44,12 @@ object AirIntakePosition:
                 if m.get("InitialAuto").exists(isUnitJson) then Right(AirIntakePosition.InitialAuto)
                 else
                     m.get("InitialManual") match
-                        case Some(v) => decodeManualPos(v).map(AirIntakePosition.InitialManual)
+                        case Some(v) => decodeManualPos(v).map(AirIntakePosition.InitialManual.apply)
                         case None    =>
                             if m.get("FinalAuto").exists(isUnitJson) then Right(AirIntakePosition.FinalAuto)
                             else
                                 m.get("FinalManual") match
-                                    case Some(v) => decodeManualPos(v).map(AirIntakePosition.FinalManual)
+                                    case Some(v) => decodeManualPos(v).map(AirIntakePosition.FinalManual.apply)
                                     case None    => Left(DecodingFailure("AirIntakePosition", c.history))
             case None      => Left(DecodingFailure("AirIntakePosition", c.history))
     }

@@ -38,7 +38,7 @@ object PostFireboxStartPosition:
                 if m.get("Auto").exists(isUnitJson) then Right(PostFireboxStartPosition.Auto)
                 else
                     m.get("Manual") match
-                        case Some(v) => decodeManualPos(v).map(PostFireboxStartPosition.Manual)
+                        case Some(v) => decodeManualPos(v).map(PostFireboxStartPosition.Manual.apply)
                         case None    => Left(DecodingFailure("PostFireboxStartPosition", c.history))
             case None      => Left(DecodingFailure("PostFireboxStartPosition", c.history))
     }

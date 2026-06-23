@@ -8,17 +8,17 @@ package afpma.firecalc.engine.impl.en15544.strict
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D, PipeShape}
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.common.PipeShape
+import afpma.firecalc.dto.common.Position3D
 import afpma.firecalc.dto.v7.AirIntakePosition
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
-import afpma.firecalc.engine.models.geometry.AirDistributionBox
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
-import afpma.firecalc.units.Vec3
+import afpma.firecalc.engine.models.geometry.AirDistributionBox
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

@@ -5,8 +5,6 @@
 
 package afpma.firecalc.ui.panels
 
-import afpma.firecalc.units.coulombutils.*
-
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.implicits.I18N

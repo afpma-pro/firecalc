@@ -16,8 +16,6 @@ import afpma.firecalc.ui.displayUnits
 import cats.Show
 import cats.syntax.show.*
 
-import coulomb.policy.standard.given
-
 import io.taig.babel.Locale
 
 /** Show instances for 15544 flow-only SetProperty subtypes (compact summary display). */
@@ -27,9 +25,6 @@ class FlowOnlyPropertyShow_15544(using DisplayUnits, Locale):
         PipeShape.show_PipeShape_valueCm_noUnit,
         PipeShape.show_PipeShape_valueIn_noUnit
     )
-
-    private def showXYZ(x: Length, y: Length, z: Length): String =
-        s"X = ${x.toUnit[Centimeter].showP}, Y = ${y.toUnit[Centimeter].showP}, Z = ${z.toUnit[Centimeter].showP}"
 
     given Show[SetInnerShape]                                 = Show.show(s => showPipeShape.show(s.shape))
     // Dev-only variant (backend-forbidden, not menu-reachable). Show mirrors SetInnerShape

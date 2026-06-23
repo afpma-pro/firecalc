@@ -9,9 +9,9 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
@@ -23,9 +23,8 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 import afpma.firecalc.engine.models.en15544.typedefs.*
 
-import io.taig.babel.Locale
 import io.taig.babel.Languages
-
+import io.taig.babel.Locale
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

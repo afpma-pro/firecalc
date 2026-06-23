@@ -5,24 +5,23 @@
 
 package afpma.firecalc.engine.impl.en15544.strict
 
-import io.scalaland.chimney.dsl.*
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.LocalRegulations
-import afpma.firecalc.units.coulombutils.*
 
-import io.taig.babel.Locale
+import io.scalaland.chimney.dsl.*
 import io.taig.babel.Languages
-
+import io.taig.babel.Locale
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

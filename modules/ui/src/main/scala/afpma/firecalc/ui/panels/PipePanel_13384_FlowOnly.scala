@@ -4,6 +4,7 @@
  */
 
 package afpma.firecalc.ui.panels
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
@@ -12,22 +13,17 @@ import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_13384.*
 import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
-import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
-import afpma.firecalc.ui.models.{
-    anglePresetsSignal,
-    firebox_var,
-    flowResistancePresetsSignal,
-    postFireboxInitialDir_var
-}
-
+import afpma.firecalc.ui.models.anglePresetsSignal
+import afpma.firecalc.ui.models.flowResistancePresetsSignal
+import afpma.firecalc.ui.models.postFireboxInitialDir_var
 import afpma.firecalc.ui.utils.combineWithDistinct
+
 import cats.Show
 
 import com.raquo.laminar.api.L.*
@@ -40,25 +36,6 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
 
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
-
-    private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384] = AutoCalcHelper.ElemExtractors(
-        asInitialDirection  = PartialFunction.empty,
-        asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
-        asInnerShape        = { case sis: SetInnerShape => sis.shape },
-        withDirChangeAbsDir = (e, newAbsDir) =>
-            e match
-                case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
-                case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
-                case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
-                case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
-                case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
-                case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
-                case _ => e
-    )
 
     type In = FlowOnlyPipeDescr_13384
 

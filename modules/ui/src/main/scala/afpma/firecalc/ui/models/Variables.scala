@@ -194,7 +194,6 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
 import afpma.firecalc.engine.models.geometry.{PipePositionComputer, AirDistributionBox}
 import afpma.firecalc.units.Vec3
-import afpma.firecalc.dto.v7.FramedAirIntakePipes
 
 /** Stored Auto/Manual mode for the air intake pipe position. */
 lazy val airIntakePositionMode_var: Var[AirIntakePosition] =

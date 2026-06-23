@@ -5,11 +5,10 @@
 
 package afpma.firecalc.engine.models.geometry
 
-import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.units.Vec3
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
@@ -187,8 +186,6 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
-        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
-        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
 
         runPipeline(
             elems,
@@ -206,8 +203,6 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
-        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.*
-        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
 
         runPipeline(
             elems,
@@ -225,8 +220,6 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None
     ): PipePositionResult =
-        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
-        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
 
         runPipeline(
             elems,

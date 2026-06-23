@@ -5,19 +5,19 @@
 
 package afpma.firecalc.engine.models.geometry
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
+
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import afpma.firecalc.units.Vec3
 
 /**
  * DirectionReachability parity tests for V7 migration.

@@ -5,14 +5,18 @@
 
 package afpma.firecalc.engine.models.geometry
 
-import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.units.Vec3
+import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
-import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D, PipeShape}
-import afpma.firecalc.dto.common.PipeShape.{Circle, Square, Rectangle}
-
-import coulomb.policy.standard.given
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.common.PipeShape
+import afpma.firecalc.dto.common.PipeShape.Circle
+import afpma.firecalc.dto.common.PipeShape.Rectangle
+import afpma.firecalc.dto.common.PipeShape.Square
+import afpma.firecalc.dto.common.Position3D
+import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*

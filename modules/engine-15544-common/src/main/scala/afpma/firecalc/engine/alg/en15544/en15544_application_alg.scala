@@ -20,11 +20,10 @@ import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
-import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544
-import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.standard.*
 

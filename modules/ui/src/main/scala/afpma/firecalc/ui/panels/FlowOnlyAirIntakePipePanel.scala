@@ -4,41 +4,35 @@
  */
 
 package afpma.firecalc.ui.panels
+import afpma.firecalc.units.Vec3
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AbsoluteDirection
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_13384.*
-import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_13384.*
 import afpma.firecalc.dto.v7.AirIntakePosition
-import afpma.firecalc.ui.instances.V7FormInstances
 
 import afpma.firecalc.i18n.implicits.I18N
 
-import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.engine.models.AirIntakePipeT
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_13384
-import afpma.firecalc.units.Vec3
-
-import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import afpma.firecalc.ui.*
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
+import afpma.firecalc.ui.instances.V7FormInstances
 import afpma.firecalc.ui.models.*
 
+import cats.Show
 import cats.data.*
 import cats.syntax.all.*
-import cats.Show
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
-import afpma.laminar.form.Form.as_HtmlElement
-import afpma.laminar.form.daisyui.DaisyUIInputs
-import org.scalajs.dom.HTMLDialogElement
-
 import _root_.coulomb.*
 import _root_.coulomb.policy.standard.given
-
+import afpma.laminar.form.daisyui.DaisyUIInputs
 import io.taig.babel.Locale
 
 final case class FlowOnlyAirIntakePipePanel()(using Locale, DisplayUnits) extends PipePanel_13384_FlowOnly:

@@ -5,15 +5,13 @@
 
 package afpma.firecalc.engine.models.geometry
 
-import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.units.Vec3
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-
-import coulomb.policy.standard.given
 
 /**
  * Pure geometry computation for pipe start positions.
