@@ -307,7 +307,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         expectedArea.to_cm2.value shouldBe  (100.0 +- 0.1)
                     }
 
-                    "split 20×10 cm → 2×10×9.99 cm: within 1 cm² tolerance passes" in {
+                    "split 20×10 cm → 2×10×9.99 cm: within 5 cm² tolerance passes" in {
                         // 20×10 = 200 cm² × 1 = 200 cm²  vs  10×9.99 = 99.9 cm² × 2 = 199.8 cm²  (0.2 cm² short — within tolerance)
                         builder.withInitialDirection(
                             PipeInitialDirection    (

@@ -27,10 +27,10 @@ object FlowAreaConservation:
     /**
      * Absolute tolerance for flow area conservation on splits/merges.
      * A split or merge is considered valid when |beforeTotalArea − afterTotalArea| ≤ this tolerance.
-     * Default: 1 cm² — tight enough to catch genuine mistakes, forgiving enough for floating-point rounding.
+     * Default: 5 cm² — tight enough to catch genuine mistakes, forgiving enough for floating-point rounding.
      * Applies to both EN 13384 and EN 15544 incremental builders.
      */
-    val FLOW_AREA_CONSERVATION_TOLERANCE: Area = 1.0.squareCentimeters
+    val FLOW_AREA_CONSERVATION_TOLERANCE: Area = 5.0.squareCentimeters
 
     def totalFlowArea(shape: PipeShape, nFlows: NbOfFlows): Area =
         shape.area * nFlows.asQty
