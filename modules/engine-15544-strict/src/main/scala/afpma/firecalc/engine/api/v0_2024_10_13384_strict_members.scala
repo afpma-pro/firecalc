@@ -6,10 +6,15 @@
 package afpma.firecalc.engine.api
 
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.engine.impl.en13384.EN13384_FlowOnlyAirIntake_Assembly
 import afpma.firecalc.engine.impl.en13384.EN13384_ThermalAirIntake_Assembly
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.ValidatedNel
@@ -50,8 +55,20 @@ trait v0_2024_10_13384_strict_members extends v0_2024_10_13384_core:
         def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
         def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
+        /** Initial direction for the connector pipe — uses PipeInitialDirection with optional azimuth. */
+        def connectorInitialDirection: Option[PipeInitialDirection]
+
+        private def toPipeFrame(dir: PipeInitialDirection): PipeFrame =
+            PipeFrame.initial(
+                Vec3.fromAzimuthElevation(
+                    dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                    InclinationDirection.toDegrees                       (dir.inclination)
+                )
+            )
+
         private lazy val pipeChain = PipeChain_13384.build(
-            PipeChain_13384.Descriptors(connectorPipeDescr, chimneyPipeDescr)
+            PipeChain_13384.Descriptors  (connectorPipeDescr, chimneyPipeDescr),
+            connectorInitialDirection.map(toPipeFrame                         )
         )
 
         override lazy val connectorPipe: ValidatedNel[IncrementalValidation_Error, ConnectorPipe] =

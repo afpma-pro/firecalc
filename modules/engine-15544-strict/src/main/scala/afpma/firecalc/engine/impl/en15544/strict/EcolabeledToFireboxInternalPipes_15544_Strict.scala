@@ -41,11 +41,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
             // val DEFAULT_LAYER = layer(e = 1.cm, λ = 1.3.W_per_mK) // added for EN13384, not applicable to EN 15544
 
             val start_00_common = Seq(
-                setInitialDirection    (
-                    azimuth     = AzimuthDirection.Front,
-                    inclination = InclinationDirection.Horizontal
-                ), // Front (arbitrary)
-                roughness              (3.mm)
+                roughness(3.mm)
                 // pipeLocation        (PipeLocation.HeatedArea            ), // added for EN13384, not applicable for EN 15544
             )
 
@@ -156,6 +152,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 case Version.V2 => (start_00_common ++ start_01_version_2 ++ end_common)
 
             val fullDescr = CombustionAirPipe_Module_15544.incremental
+                .withInitialDirection                                 (PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal))
                 .define(recombined_incr_descr*)
                 .toFullDescr()
-            CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)
+            CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr                                                                    )

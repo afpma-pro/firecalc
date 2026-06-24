@@ -79,6 +79,22 @@ object lucide:
         path  (d  := "m9 9 6 6"                 )
     )
 
+    def `circle-alert` = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := "24",
+        height         := "24",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := "2",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-circle-alert-icon lucide-circle-alert",
+        circle(cx := "12", cy := "12", r  := "10"               ),
+        line  (x1 := "12", y1 := "8", x2  := "12", y2    := "12"),
+        line  (x1 := "12", y1 := "16", x2 := "12.01", y2 := "16")
+    )
+
     def `chevron-down` = svg(
         xmlns          := "http://www.w3.org/2000/svg",
         width          := "24",
@@ -120,6 +136,23 @@ object lucide:
         cls            := "lucide lucide-corner-down-right-icon lucide-corner-down-right",
         path(d := "M15 10l5 5-5 5"         ),
         path(d := "M4 4v7a4 4 0 0 0 4 4h12")
+    )
+
+    def `arrows-left-right`(w: Int = 24, h: Int = 24, stroke_width: Double = 2) = svg(
+        xmlns          := "http://www.w3.org/2000/svg",
+        width          := s"$w",
+        height         := s"$h",
+        viewBox        := "0 0 24 24",
+        fill           := "none",
+        stroke         := "currentColor",
+        strokeWidth    := s"$stroke_width",
+        strokeLinecap  := "round",
+        strokeLinejoin := "round",
+        cls            := "lucide lucide-arrows-left-right-icon lucide-arrows-left-right",
+        path(d := "m21 16-4 4-4-4"),
+        path(d := "M17 20V4"      ),
+        path(d := "m3 8 4-4 4 4"  ),
+        path(d := "M7 4v16"       )
     )
 
     def `chevron-right` = svg(

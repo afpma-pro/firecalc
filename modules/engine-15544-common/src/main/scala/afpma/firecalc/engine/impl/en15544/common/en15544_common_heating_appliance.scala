@@ -53,13 +53,13 @@ trait EN15544_Common_HeatingAppliance { en15544: EN15544_V_2023_Common_Applicati
         val ap             = atDraftMin_LoadNominal
         (
             ap.Σ_p_R_and_Σ_p_u,
-            ap.outputs.pipesResult_15544.map(_.Σ_ph_until_fluepipe_end: Pressure),
-            airIntake_PipeResult.andThen    (_.en13384_pr_all                   ),
-            ap.outputs.pipesResult_15544.andThen: pr =>
+            ap.outputs.pipesResult_15544.accumulateErrors.map(_.Σ_ph_until_fluepipe_end: Pressure),
+            airIntake_PipeResult.andThen                     (_.en13384_pr_all                   ),
+            ap.outputs.pipesResult_15544.accumulateErrors.andThen: pr =>
                 pr.connector match
                     case Some(c) => c.en13384_pr_all
                     case None    => 0.0.pascals.validNel,
-            ap.outputs.pipesResult_15544.andThen(_.chimney.en13384_pr_all)
+            ap.outputs.pipesResult_15544.accumulateErrors.andThen(_.chimney.en13384_pr_all)
         )
             .mapN:
                 (

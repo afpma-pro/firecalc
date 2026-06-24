@@ -18,7 +18,7 @@ import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
@@ -27,6 +27,7 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.instances.V7FormInstances
 import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
@@ -42,6 +43,7 @@ import cats.Show
 import cats.data.*
 import cats.syntax.show.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
@@ -188,6 +190,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         aa                    : AA,
         sig                   : Signal[(Int, AA, XtraOutputs)],
         isProperty            : Boolean,
+        controls              : Boolean                                                                = true,
         extra                 : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
         badgeFinalDirVar      : Var[AA] => Option[Var[Option[AbsoluteDirection]]]                      = (_: Var[AA]) => None,
         afterBadge            : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
@@ -218,7 +221,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             afterBadgeNode
         )
 
-        val (complexIncrNode, detailed_columns) = propertyShow match
+        val complexIncrNode: HtmlElement = propertyShow match
             case Some(show) if isProperty =>
                 // Compact property rendering with click-to-edit dialog
                 lazy val dialogNode: HtmlElement = dialogTag(
@@ -262,83 +265,269 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     cls <-- vizHighlightSignal(i)
                 )
 
-                val incrNode = renderIdWithIncrDescr[AA](i, (i, aa), sig, propertyWrapper, Some(span()))
-                (incrNode, Seq.empty)
+                val incrNode =
+                    if controls then renderIdWithIncrDescr[AA](i, (i, aa), sig, propertyWrapper, Some(span()))
+                    else propertyWrapper
+                incrNode
 
-            case _ =>
+            case _ => {
                 // Standard rendering (non-property or no Show instance)
-                val node              = formNode
                 val isDirectionChange = badgeFinalDirVar(elem_v).isDefined
                 val dcIcon            = Option.when(isDirectionChange)(span(lucide.`corner-down-right`(16, 16)))
                 val sectionCls        = if isDirectionChange then "pipe-section-dc" else "pipe-section-straight"
-                val header_and_node   = renderIncrDescr(title, node, isProperty, legendIcon = dcIcon).amend(
-                    binders,
-                    idAttr := vizFieldsetId(i),
-                    cls    := s"$pipeTypeCls $sectionCls",
-                    cls <-- vizHighlightSignal(i)
-                )
-                val summary_node      = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon)
-                if !isProperty then
-                    header_and_node.amend(cls := "ml-[20px]")
-                    summary_node.amend   (cls := "ml-[20px]")
-                summary_node.amend(cls := s"$pipeTypeCls $sectionCls")
-                val incrNode          = renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
 
-                given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
-                given Show[Pressure]          = Show.show(v => "%.1f Pa".format(v.value))
-                given Show[TCelsius]          = Show.show(v => "%.0f °C".format(v.value))
-                given Show[TempD[Fahrenheit]] = shows.defaults.show_Fahrenheit_0
-                given Show[Length]            = Show.show(v => "%.2f".format(v.value))
-                given Show[ζ]                 = Show.show(z => "%.1f ζ".format(z))
+                given Show[ζ] = Show.show(z => s"${"%.1f".format(z)} ζ")
 
-                val cols = Seq(
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle))
+                val detailRow = div(
+                    cls := "grid grid-cols-9 text-center gap-x-1 border-t border-base-content/20 pt-1 mt-[1rem]",
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.cross_section,
+                        br  (                                                                                       ),
+                        span(text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle)))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch])
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.length,
+                        br  (                                                                                 ),
+                        span(text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch]))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit])
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.temp,
+                        br  (                                                                             ),
+                        span(text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit]))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]))
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.speed,
+                        br  (                                                                                       ),
+                        span(text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]), "—"))
                     ),
-                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
-                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
-                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP))
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.ph,
+                        br  (                                     ),
+                        span(text <-- xtra_sig.mapShow(_.ph.showP))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero))
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.pr,
+                        br  (                                                   ),
+                        span(text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP))
+                    ),
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.zeta,
+                        br  (                                                         ),
+                        span(text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP), "—"))
+                    ),
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.turn,
+                        br  (                                                                                  ),
+                        span(text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP), "—"))
+                    ),
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.net,
+                        br  (                                                                                      ),
+                        span(text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero), "—"))
                     )
                 )
-                (incrNode, cols)
 
-        tr(
-            td(complexIncrNode),
-            children(detailed_columns) <-- expertModeOn
+                val combinedNode = div(
+                    cls := "flex flex-col",
+                    formNode,
+                    children <-- expertModeOn.map(expert => if expert then Seq[HtmlElement](detailRow) else Seq.empty)
+                )
+
+                val mlCls       = if !isProperty then "ml-[20px]" else ""
+                val headerNode  = renderIncrDescr(title, combinedNode, isProperty, legendIcon = dcIcon).amend(
+                    binders,
+                    idAttr := vizFieldsetId(i),
+                    cls    := s"$pipeTypeCls $sectionCls $mlCls".trim,
+                    cls <-- vizHighlightSignal(i)
+                )
+                val summaryNode = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon).amend(
+                    cls := s"$pipeTypeCls $sectionCls $mlCls".trim
+                )
+                val result: HtmlElement =
+                    if controls then renderIdWithIncrDescr[AA](i, (i, aa), sig, headerNode, Some(summaryNode))
+                    else headerNode
+                result
+            }
+        complexIncrNode
+
+    /**
+     * Render a fixed (non-movable, non-deletable) element.
+     * Used for wrapper-level fields (e.g. PipeInitialDirection/Position)
+     * that live outside the slot descriptor sequence.
+     *
+     * Simplified version of renderElemTyped: no delete/move/duplicate controls,
+     * no renderIdWithIncrDescr, no XtraOutputs signal, no viz highlighting.
+     * Note: cannot delegate to renderElemTyped because renderFixedElem accepts
+     * arbitrary types (AA) while renderElemTyped requires AA <: Elem.
+     */
+    protected def renderFixedElem[AA](
+        title       : String,
+        v           : Var[AA],
+        isProperty  : Boolean                = true,
+        propertyShow: Option[Show[AA]]       = None,
+        extra       : Var[AA] => HtmlElement = (_: Var[AA]) => span()
+    )(using DF[AA]): HtmlElement =
+        val extraNode = extra(v)
+        val formNode  = div(
+            cls := "flex flex-row justify-start items-end gap-2",
+            div(cls := "flex-none", v.as_HtmlElement),
+            extraNode
+        )
+
+        propertyShow match
+            case Some(show) if isProperty =>
+                lazy val dialogNode: HtmlElement = dialogTag(
+                    cls := "modal",
+                    div (
+                        cls := "modal-box w-11/12 max-w-5xl",
+                        h3 (cls := "font-bold text-lg mb-4", title),
+                        formNode,
+                        div(
+                            cls := "modal-action",
+                            button(
+                                cls := "btn btn-sm btn-primary",
+                                I18N_UI.buttons.close,
+                                onClick --> { _ =>
+                                    dialogNode.ref.asInstanceOf[HTMLDialogElement].close()
+                                }
+                            )
+                        )
+                    ),
+                    form(method := "dialog", cls := "modal-backdrop", button("close"))
+                )
+
+                val compactNode = div(
+                    cls := "cursor-pointer py-1",
+                    span(
+                        cls := "underline decoration-dashed decoration-base-content/50 hover:decoration-base-content",
+                        text <-- v.signal.map(a => s"$title: ${show.show(a)}")
+                    ),
+                    onClick --> { _ =>
+                        dialogNode.ref.asInstanceOf[HTMLDialogElement].showModal()
+                    }
+                )
+
+                div(
+                    wrapLine(title, compactNode, isProperty = true),
+                    dialogNode
+                ).amend(cls := pipeTypeCls)
+            case _                        =>
+                div    (
+                    wrapLine(title, formNode, isProperty)
+                ).amend(cls := pipeTypeCls)
+
+    /**
+     * Render V7 wrapper elements (PipeInitialDirection/Position) for the first slot.
+     * Extracted to avoid duplication between flow-only and thermal panels.
+     *
+     * Position row uses mode-aware controls:
+     *   - Auto mode: read-only effective position, "Auto" badge, "Set manually" button.
+     *   - Manual mode: editable position, "Manual" badge, "↺ Auto" reset button.
+     *
+     * @param isFirstSlot  whether this panel renders the first post-firebox slot
+     * @param elems        the rendered element rows for the descriptor sequence
+     * @return             wrapper elements prepended when isFirstSlot, otherwise unchanged
+     */
+    private lazy val postFireboxWrapperElems: Seq[HtmlElement] =
+        import afpma.firecalc.ui.models.{
+            postFireboxInitialDir_var,
+            postFireboxStartPositionMode_var,
+            postFireboxEffectivePosition_sig
+        }
+        val v7 = V7FormInstances()
+        import v7.given
+
+        // Keep these wrapper rows stable across descriptor-row rerenders. In particular, the
+        // Position3D dialog must not be unmounted/closed when Auto/Manual mode changes or when
+        // the form emits a field edit.
+        val postFireboxPositionRow = renderPostFireboxPositionRow(
+            modeVar         = postFireboxStartPositionMode_var,
+            effectivePosSig = postFireboxEffectivePosition_sig
+        )
+
+        Seq[HtmlElement](
+            renderFixedElem[PipeInitialDirection]       (
+                title        = I18N.set_prop.PipeInitialDirection,
+                v            = postFireboxInitialDir_var,
+                isProperty   = true,
+                propertyShow = Some(summon[Show[PipeInitialDirection]])
+            ),
+            postFireboxPositionRow
+        )
+
+    protected def renderV7WrapperElems(isFirstSlot: Boolean)(elems: Seq[HtmlElement]): Seq[HtmlElement] =
+        if isFirstSlot then
+            interleaveInsertSeparators (postFireboxWrapperElems ++ elems, startIdx = postFireboxWrapperElems.size)
+        else interleaveInsertSeparators(elems, startIdx                            = 0                           )
+
+    /**
+     * Mode-aware Position3D row for the post-firebox pipe (Auto/Manual, no selector).
+     * Auto: read-only effective position. Manual: editable; Auto→Manual preserves
+     * the last effective value. Writes are blocked while Auto so form echoes
+     * cannot flip Auto back to Manual.
+     */
+    private def renderPostFireboxPositionRow(
+        modeVar        : Var[PostFireboxStartPosition],
+        effectivePosSig: Signal[Position3D]
+    ): HtmlElement =
+        import afpma.firecalc.dto.v7.PostFireboxStartPosition
+        val v7 = V7FormInstances()
+        import v7.given
+
+        val displayedPosSig: Signal[Position3D] =
+            modeVar.signal.combineWith(effectivePosSig).map {
+                case (PostFireboxStartPosition.Manual(p), _) => p
+                case (PostFireboxStartPosition.Auto, effPos) => effPos
+            }
+
+        val dialog = ModeAwarePositionRow.modeAwarePositionDialog[PostFireboxStartPosition](
+            modeVar         = modeVar,
+            isAuto          = _ == PostFireboxStartPosition.Auto,
+            toAuto          = {
+                case PostFireboxStartPosition.Manual(_) => PostFireboxStartPosition.Auto
+                case auto                               => auto
+            },
+            toManual        = (_, p) => PostFireboxStartPosition.Manual(p),
+            displayedPosSig = displayedPosSig,
+            titleSig        = Val(I18N.set_prop.Position3D),
+            compactFormat   = (_, pos) => { import cats.syntax.show.*; s"${I18N.set_prop.Position3D}: ${pos.show}" },
+            canWrite        = () =>
+                modeVar.now() match
+                    case PostFireboxStartPosition.Manual(_) => true
+                    case PostFireboxStartPosition.Auto      => false
+        )
+
+        div(
+            wrapLine("", dialog.compactNode, isProperty = true, widthClass = "w-auto"),
+            dialog.dialogNode
+        ).amend(
+            cls := pipeTypeCls,
+            dialog.binders
         )
 
     def wrapLine(
         title         : String,
         content       : HtmlElement,
         isProperty    : Boolean,
-        legendIcon    : Option[HtmlElement] = None
+        legendIcon    : Option[HtmlElement] = None,
+        widthClass    : String              = "w-full"
     ): HtmlElement =
         DaisyUIInputs.FieldsetLegendWithContent(
             if isProperty then None else Some(title),
             content,
             bgClass     = if (isProperty) "bg-base-100" else "bg-base-200",
             borderClass = if (isProperty) "border-none" else "border-base-content/30",
-            legendIcon  = legendIcon
+            legendIcon  = legendIcon,
+            widthClass  = widthClass
         )
 
     protected def renderIncrDescr(
@@ -414,8 +603,29 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     protected lazy val panelOpened: Var[Boolean] = panelOpenedVar(vizFieldsetIdPrefix)
 
+    /**
+     * Warning signal for this panel. Override to activate warnings.
+     * Default: deactivated (no warning icon shown).
+     */
+    protected def warningVnelSig: Signal[ValidatedNel[PanelStatusHelper.PanelWarning, Unit]] =
+        Signal.fromValue(Validated.Valid(()))
+
+    /** Warning icon element: `circle-alert` with tooltip when invalid, invisible span when valid. */
+    def warningIcon =
+        warningVnelSig.map:
+            case Validated.Invalid(_) =>
+                DaisyUITooltip (
+                    ttContent  = p(cls := "text-xs", I18N.direction_badge.direction_incompatible_warning),
+                    element    = span(cls := "text-primary", lucide.`circle-alert`),
+                    ttStyle    = PanelStatusHelper.tooltipStyleClsNameForWarnings,
+                    ttPosition = "tooltip-bottom"
+                ).node
+            case Validated.Valid(_)   => span(cls := "invisible")
+
     protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
-        statusIcon.map(n => Some(div(n)))
+        statusIcon
+            .combineWithDistinct(warningIcon)
+            .map((err, warn) => Some(div(cls := "flex items-center gap-1", err, warn)))
 
     /** Optional prefix element rendered before the title in the accordion header. */
     protected def accordionTitlePrefix: Option[HtmlElement] = None
@@ -433,9 +643,6 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 titleString,
                 xtra_sig             = titleXtraSig,
                 quadrionSubtotal_sig = quadrionSubtotal_sig,
-                bottomContent_sig    = expertModeOn
-                    .combineWithDistinct(panelOpened.signal)
-                    .map((expert, open) => Option.when(expert && open)(detailed_headers_title)),
                 titlePrefix          = accordionTitlePrefix,
                 titleNode            = titleNodeOpt
             ),
@@ -443,29 +650,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             opened  = panelOpened
         )
 
-    def duShow[USI: ShowUnit, UIMP: ShowUnit]: String =
-        s"[${du.showUnitsOneOf[USI, UIMP]}]"
-
     val _I = I18N_UI.details_columns
-
-    private val expertColCls = "w-20 min-w-20 text-center"
-
-    lazy val detailed_headers_title: HtmlElement = div(
-        cls := "flex items-center text-xs font-normal -ml-4 -mr-12 py-1",
-        div(cls := "flex-1"), // spacer matching first table column
-        div(
-            cls := "flex items-center border-t border-secondary-content/30 pt-1",
-            div(cls := expertColCls, div(_I.cross_section), div(duShow[Centimeter, Inch])     ),
-            div(cls := expertColCls, div(_I.length), div(duShow[Meter, Inch])                 ),
-            div(cls := expertColCls, div(_I.temp), div(duShow[Celsius, Fahrenheit])           ),
-            div(cls := expertColCls, div(_I.speed), div(duShow[Meter / Second, Foot / Second])),
-            div(cls := expertColCls, div(_I.ph), div("[Pa]")                                  ),
-            div(cls := expertColCls, div(_I.pr), div("[Pa]")                                  ),
-            div(cls := expertColCls, div(_I.zeta), div("[ζ]")                                 ),
-            div(cls := expertColCls, div(_I.turn), div("[Pa]")                                ),
-            div(cls := expertColCls, div(_I.net), div("[Pa]")                                 )
-        )
-    )
 
     // -------------------------------------------------------------------------
     // Insert-between-rows: dialog + separator rows
@@ -528,28 +713,34 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     private lazy val insertDialog = new InsertElementDialog
 
     protected def mkInsertSeparatorRow(idx: Int): HtmlElement =
-        tr(
-            cls := "insert-sep group/isep",
-            td(
-                colSpan := 100,
-                cls     := "!p-0 !border-none",
-                div(
-                    cls := "h-0 flex items-center justify-start ml-[5rem] top-[5rem]",
-                    button(
-                        cls := "btn btn-ghost btn-xs btn-circle opacity-20 group-hover/isep:opacity-100 group-hover/isep:btn-secondary transition-all duration-150",
-                        lucide.plus,
-                        onClick --> { _ => insertDialog.open(idx) }
-                    )
+        div(
+            cls := "insert-sep group/isep !p-0 !border-none",
+            div(
+                cls := "h-0 flex items-center justify-start ml-[5rem]",
+                button(
+                    cls := "btn btn-ghost btn-xs btn-circle opacity-20 group-hover/isep:opacity-100 group-hover/isep:btn-secondary transition-all duration-150",
+                    lucide.plus,
+                    onClick --> { _ => insertDialog.open(idx) }
                 )
             )
         )
 
-    protected def interleaveInsertSeparators(rows: Seq[HtmlElement]): Seq[HtmlElement] =
+    protected def interleaveInsertSeparators(
+        rows    : Seq[HtmlElement],
+        startIdx: Int
+    ): Seq[HtmlElement] =
+        def emptyOrMakeInsertSeparatorRow(i: Int) =
+            if (i >= startIdx) mkInsertSeparatorRow(i - startIdx)
+            else span()
         if rows.isEmpty then rows
         else
-            rows.head +: rows.tail.zipWithIndex.flatMap { case (row, i) =>
-                mkInsertSeparatorRow(i + 1) :: row :: Nil
-            }
+            val tailParts =
+                if rows.tail.isEmpty then Seq(emptyOrMakeInsertSeparatorRow(1))
+                else
+                    rows.tail.zipWithIndex.flatMap { case (row, i) =>
+                        emptyOrMakeInsertSeparatorRow(i + 1) :: row :: Nil
+                    }
+            emptyOrMakeInsertSeparatorRow(0) +: rows.head +: tailParts
 
     lazy val content = div(
         cls := "py-4 gap-2",
@@ -557,12 +748,9 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             cls := "flex flex-col gap-2 relative overflow-x-auto",
             div(
                 cls := "relative",
-                // table start
-                table(
-                    cls := "table table-xs table-pin-cols",
-
-                    // table rows with insert separators between them
-                    children <-- rendered_elems_sig.map(interleaveInsertSeparators)
+                div(
+                    cls := "flex flex-col gap-2",
+                    children <-- rendered_elems_sig
                 )
             ),
             div(cls := "flex-none", TagTreeMenuComponent(tagTreeMenu, command_bus.writer, elems_size_v).node),

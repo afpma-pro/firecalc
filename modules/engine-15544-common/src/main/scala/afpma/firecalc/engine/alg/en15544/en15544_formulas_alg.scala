@@ -12,6 +12,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import coulomb.*
 
@@ -104,7 +105,7 @@ trait EN15544_V_2023_Formulas_Alg:
 
     lazy val t_burnout_default    : TCelsius
     lazy val t_burnout_in_standard: TCelsius
-    def t_burnout_calc: (Firebox_15544) => t_burnout
+    def t_burnout_calc: Firebox_15544 => VNelMcalcErr[t_burnout]
 
     // Section "4.8.3", "Flue gas temperature in the flue pipe"
     def t_fluepipe_calc: (t_burnout, L_Z, L_N) => t_fluepipe

@@ -28,13 +28,13 @@ trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544] extends F
                 case Dimensions.Base.Squared(w, d) => (w, d)
             val (az, incl) = fireboxInitialDirection
             FireboxPipe_Module_13384.incremental
+                .withInitialDirection(PipeInitialDirection(az, incl))
                 .define(
-                    setInitialDirection(az, incl                  ),
-                    pipeLocation       (PipeLocation.HeatedArea   ), // added for EN13384
+                    pipeLocation      (PipeLocation.HeatedArea   ), // added for EN13384
                     innerShape(rectangle(width, depth)),
-                    roughness          (2.mm                      ), // TOFIX: 3mm or 2mm ???
-                    layer              (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
-                    addSectionVertical (
+                    roughness         (2.mm                      ), // TOFIX: 3mm or 2mm ???
+                    layer             (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
+                    addSectionVertical(
                         "ascension dans foyer",
                         // TOFIX: found in CalculPdM-v0.2.30
                         // - we consider the whole vertical length ? but different injection height...

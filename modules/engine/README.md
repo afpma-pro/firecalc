@@ -67,14 +67,14 @@ sbt ~engine/run
 sbt engine/test
 
 # Run specific test suite
-sbt "~engine/testOnly *InterpolationSuite"
-sbt "~engine/testOnly *strict_p1_decouverte_Suite"
-sbt "~engine/testOnly *mce_p1_decouverte_Suite"
-sbt "~engine/testOnly *velocity_limits_Suite"
-sbt "~engine/testOnly *ThermalResistance_Suite"
-sbt "~engine/testOnly *cas_types_15544_v20241001_Suite"
-sbt "~engine/testOnly *cas_types_13384_C2_Suite"
-sbt "~engine/testOnly *cas_types_13384_C16_Suite"
+sbt "engine-kernel/testOnly *InterpolationSuite"
+sbt "engine-15544-strict/testOnly *strict_p1_decouverte_Suite"
+sbt "engine-15544-mce/testOnly *mce_p1_decouverte_Suite"
+sbt "engine-15544-strict/testOnly *velocity_limits_Suite"
+sbt "engine-15544-strict/testOnly *ThermalResistance_Suite"
+sbt "engine-15544-strict/testOnly *cas_types_15544_v20241001_Suite"
+sbt "engine-13384-strict/testOnly *cas_types_13384_C2_Suite"
+sbt "engine-13384-strict/testOnly *cas_types_13384_C16_Suite"
 ```
 
 ### Publishing
@@ -97,14 +97,12 @@ sbt "engine / scalafix"
 sbt "engine / scalafix RemoveUnused"
 ```
 
-### Module Dependencies
-
-```
 engine depends on:
-├── dto         # Data transfer objects
-├── units       # Physical units system
-└── i18n        # Internationalization
-```
+├── engine-kernel  # Pure calculation foundation
+├── domain         # Shared domain types
+├── dto            # Data transfer objects
+├── units          # Physical units system
+└── i18n           # Internationalization
 
 ## 📖 Related Documentation
 
@@ -117,7 +115,7 @@ engine depends on:
 - [Units Module](../units/) - Physical units
 - [UI Module](../ui/) - Frontend (uses engine via Scala.js)
 - [FDIM Module](../fdim/) - Fluid dynamics test cases
-- [Labo Module](../labo/) - Laboratory test cases
+- [EN15544 Labo Module](../engine-15544-labo/) - Labo-mode calculation engine
 
 ## 🧪 Test Modules
 
@@ -156,7 +154,10 @@ During implementation, several points required interpretation or clarification. 
 
 Look for `// __INTERPRETATION__` comments in the code for specific implementation decisions.
 
+Note: While this README lives in `modules/engine/`, the actual `// __INTERPRETATION__` markers are distributed across source files in `engine-kernel` (2 source files) and `engine-13384-strict` (5 source files), not in the engine module itself.
+
 ### Testing Strategy
+
 
 - **Unit tests**: Core calculation functions
 - **Integration tests**: Complete calculation workflows  

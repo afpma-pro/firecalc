@@ -23,8 +23,6 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
-import io.taig.babel.Locale
-
 /**
  * EN 15544 constraints for [[TraditionalFirebox]] fireboxes.
  *
@@ -48,7 +46,7 @@ given traditionalConstraints: FireboxConstraints[TraditionalFirebox] =
         override def firebox_custom_constraints(
             firebox: TraditionalFirebox,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] =
+        ): List[FireboxError] =
             import ctx.*
             flow_rate match
                 case None            => MissingFlowRate :: Nil

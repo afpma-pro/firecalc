@@ -4,6 +4,7 @@
  */
 
 package afpma.firecalc.payments.service
+import afpma.firecalc.domain.FireboxAvailability
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
@@ -28,7 +29,8 @@ object PurchaseService:
         orderService       : OrderService[F],
         paymentService     : PaymentService[F],
         emailService       : EmailService[F],
-        productCopyConfig  : ProductCopyConfig
+        productCopyConfig  : ProductCopyConfig,
+        fireboxAvailability: FireboxAvailability
     )(implicit logger: Logger[F]): F[PurchaseService[F]] =
         Async[F].pure(
             new PurchaseServiceImpl[F](
@@ -40,6 +42,7 @@ object PurchaseService:
                 orderService,
                 paymentService,
                 emailService,
-                productCopyConfig
+                productCopyConfig,
+                fireboxAvailability
             )
         )

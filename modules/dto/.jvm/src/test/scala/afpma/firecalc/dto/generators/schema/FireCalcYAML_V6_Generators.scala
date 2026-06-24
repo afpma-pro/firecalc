@@ -81,7 +81,7 @@ trait FireCalcYAML_V6_Generators
      *   - N=2 → either [Flue, Chimney] or [Connector, Chimney].
      *   - N≥3 → [Flue+, (optional Connector), Chimney].
      */
-    def genPostFireboxPipesN(n: Int): Gen[Seq[PostFireboxPipeDescrSlot]] =
+    def genFramedPostFireboxPipesN(n: Int): Gen[Seq[PostFireboxPipeDescrSlot]] =
         require(n >= 1 && n <= 8, s"n must be in [1,8], got $n")
         n match
             case 1 =>
@@ -113,8 +113,8 @@ trait FireCalcYAML_V6_Generators
                 )
 
     /** Generate a valid post-firebox pipe sequence with N chosen uniformly from [1, 8]. */
-    def genPostFireboxPipes: Gen[Seq[PostFireboxPipeDescrSlot]] =
-        Gen.choose(1, 8).flatMap(genPostFireboxPipesN)
+    def genFramedPostFireboxPipes: Gen[Seq[PostFireboxPipeDescrSlot]] =
+        Gen.choose(1, 8).flatMap(genFramedPostFireboxPipesN)
 
     /**
      * Generate a complete FireCalcYAML_V6 instance.
@@ -132,7 +132,7 @@ trait FireCalcYAML_V6_Generators
             stoveParams      <- genStoveParams
             airIntake        <- genFlowOnlyPipeDescr_13384_V3_Seq
             firebox          <- genFirebox_V4
-            postFireboxPipes <- genPostFireboxPipes
+            postFireboxPipes <- genFramedPostFireboxPipes
         yield FireCalcYAML_V6                       (
             version                        = FireCalcYAML_V6.VERSION,
             locale                         = locale,

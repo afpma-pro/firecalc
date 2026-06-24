@@ -51,6 +51,9 @@ object FormDerivation extends AutoDerivation[Form]:
 
     case class WrappedWithEphemeralId[A](id: Int, a: A)
 
+    private[derivation] def shouldUseOverwriteConfig(overwrite: FormConfig): Boolean =
+        !overwrite.isDefaultLike
+
     // =========================================================================
     // Magnolia join (case class derivation)
     // =========================================================================
@@ -119,15 +122,19 @@ object FormDerivation extends AutoDerivation[Form]:
                 _.typeclass.asInstanceOf[Form[A]]
             )
 
-            renderSumTypeWithSelectAndOptions(
+            val subt_disabled_labels = config.disabledOptionIds
+
+            renderSumTypeWithSelectAndOptions (
                 v,
                 var_subt_label_curr,
-                value_to_subt_label = fieldNameForSubtypeFromValue(sealedTrait),
-                select_field_label  = config.shownFieldName,
-                subt_defaultables   = subt_defaultables,
-                subt_labels         = subt_labels,
-                subt_typeclasses    = subt_typeclasses,
-                onSubtypeSwitch     = _onSubtypeSwitch
+                value_to_subt_label  = fieldNameForSubtypeFromValue(sealedTrait),
+                select_field_label   = config.shownFieldName,
+                subt_defaultables    = subt_defaultables,
+                subt_labels          = subt_labels,
+                subt_disabled_labels = subt_disabled_labels,
+                subt_typeclasses     = subt_typeclasses,
+                onSubtypeSwitch      = _onSubtypeSwitch,
+                parentConfig         = config
             )
 
     // =========================================================================
@@ -135,21 +142,24 @@ object FormDerivation extends AutoDerivation[Form]:
     // =========================================================================
 
     private def renderSumTypeWithSelectAndOptions[A](
-        variable           : Var[A],
-        var_subt_label_curr: Var[String],
-        value_to_subt_label: A => String,
-        select_field_label : Option[String],
-        subt_defaultables  : IArray[Defaultable[A]],
-        subt_labels        : IArray[String],
-        subt_typeclasses   : IArray[Form[A]],
-        onSubtypeSwitch    : Option[(A, A) => A]
+        variable            : Var[A],
+        var_subt_label_curr : Var[String],
+        value_to_subt_label : A => String,
+        select_field_label  : Option[String],
+        subt_defaultables   : IArray[Defaultable[A]],
+        subt_labels         : IArray[String],
+        subt_disabled_labels: Signal[Set[String]],
+        subt_typeclasses    : IArray[Form[A]],
+        onSubtypeSwitch     : Option[(A, A) => A],
+        parentConfig        : FormConfig
     )(using renderer: FormRenderer): HtmlElement =
         val a_init = variable.now()
 
         val selectNode = renderer.sumTypeSelect(
-            select_field_label,
-            var_subt_label_curr,
-            subt_labels
+            label           = select_field_label,
+            selected        = var_subt_label_curr,
+            options         = subt_labels,
+            disabledOptions = subt_disabled_labels
         )
 
         val subt_forms_final: IArray[Form[A]] = subt_typeclasses
@@ -189,19 +199,35 @@ object FormDerivation extends AutoDerivation[Form]:
             _isExternalUpdate = false
         }
 
-        // Apply onSubtypeSwitch only for dropdown-initiated subtype changes
-        val subtypeSwitchBinder: Seq[Binder[HtmlElement]] = onSubtypeSwitch.toSeq.map { transform =>
+        // Commit dropdown-initiated subtype switches to the parent `variable`.
+        // A custom `onSubtypeSwitch` transform (e.g. Firebox caching + dimension
+        // syncing) takes precedence; otherwise the new subtype's cached/default
+        // value is committed as-is. Without this commit, switching a sealed-trait
+        // select (e.g. PipeLocation inside a SetPipeLocation pop-up dialog) would
+        // not update the parent var until a field in the newly-revealed subtype
+        // form is edited — the switch would be silently lost when the dialog is
+        // closed without touching any field.
+        val effectiveTransform: (A, A) => A = onSubtypeSwitch.getOrElse((_, nd) => nd)
+
+        val subtypeSwitchBinder: Binder[HtmlElement] =
             var_subt_label_curr.signal.changes --> Observer[String] { newLabel =>
                 if !_isExternalUpdate then
                     val prevValue = variable.now()
                     val newIdx    = subt_labels.indexOf(newLabel)
                     if newIdx >= 0 then
                         val newDefault  = vars_subt(newIdx).now()
-                        val transformed = transform(prevValue, newDefault)
-                        if transformed != newDefault
-                        then vars_subt(newIdx).set(transformed)
+                        val transformed = effectiveTransform(prevValue, newDefault)
+                        // Write directly to `variable` so external observers
+                        // (like image panels) always receive the new subtype,
+                        // even when `transformed == newDefault` (e.g. switching
+                        // back to a previously-visited subtype whose cached
+                        // value equals the current var content — Airstream
+                        // deduplicates equal values on `.changes`).
+                        _isExternalUpdate = true
+                        vars_subt(newIdx).set(transformed)
+                        variable.set         (transformed)
+                        _isExternalUpdate = false
             }
-        }
 
         def isSubtypeLabelCurrentlySelected(subt_label: String): Signal[Boolean] =
             var_subt_label_curr.signal.map(_ == subt_label)
@@ -223,7 +249,7 @@ object FormDerivation extends AutoDerivation[Form]:
         val nodes = vars_subt
             .zip(subt_forms_final)
             .map: (var_subt, subt_form) =>
-                subt_form.render(var_subt, FormConfig.default)
+                subt_form.render(var_subt, parentConfig.withoutFieldName)
             .toIndexedSeq
 
         renderer
@@ -263,12 +289,12 @@ object FormDerivation extends AutoDerivation[Form]:
             .getOrElse(NameUtils.titleCase(param.label))
 
     private def formConfigFrom[A](caseClass: CaseClass[Form, A], overwrite: FormConfig): FormConfig =
-        if overwrite != FormConfig.default then overwrite
+        if shouldUseOverwriteConfig(overwrite         ) then overwrite
         else
             caseClass.annotations
                 .find(_.isInstanceOf[FormConfig])
                 .map(_.asInstanceOf[FormConfig])
-                .getOrElse(FormConfig.default)
+                .getOrElse         (FormConfig.default)
 
     private def renderParam[A](
         caseClass: CaseClass[Form, A],

@@ -6,6 +6,7 @@
 package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.dto.common.PipeShape
+import afpma.firecalc.units.Vec3
 
 /**
  * Spatial position of a single physical pipe segment.

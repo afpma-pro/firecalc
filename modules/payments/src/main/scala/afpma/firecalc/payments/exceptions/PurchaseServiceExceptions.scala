@@ -428,3 +428,47 @@ final case class ExternalServiceException(
         "reason"    -> reason
     )
 }
+
+final case class ProductFireboxMismatchException(
+    productId: String,
+    message  : String
+) extends PurchaseServiceError(
+        message
+    ) {
+    override def errorCode: String              = "PRODUCT_FIREBOX_MISMATCH"
+    override def context  : Map[String, String] = Map(
+        "productId" -> productId
+    )
+}
+
+final case class FireboxTypeDisabledException(
+    typeName: String
+) extends PurchaseServiceError(
+        s"Firebox type '$typeName' is currently disabled for purchase"
+    ) {
+    override def errorCode: String              = "firebox_type_disabled"
+    override def context  : Map[String, String] = Map(
+        "firebox_type" -> typeName
+    )
+}
+
+/**
+ * Raised when a decoded FireCalc project DTO tree contains an `IsBackendForbidden`
+ * instance — i.e. a dev-only DSL escape hatch (such as
+ * `SetInnerShapePreventSectionGeometryChangeAuto`) was sent to the payments backend.
+ *
+ * Checked early, in `createPurchaseIntent`, before any database side effect, by
+ * decoding+migrating the uploaded project YAML and running `BackendForbiddenDtoChecker`.
+ * Mirrors the `FireboxTypeDisabledException` guard pattern. Mapped to HTTP 403
+ * Forbidden by `PurchaseRoutes.handlePurchaseServiceError`.
+ */
+final case class ForbiddenDtoException(
+    typeName: String
+) extends PurchaseServiceError(
+        s"Backend-forbidden DTO type '$typeName' is not allowed in a project submitted to the backend"
+    ) {
+    override def errorCode: String              = "backend_forbidden_dto"
+    override def context  : Map[String, String] = Map(
+        "dto_type" -> typeName
+    )
+}

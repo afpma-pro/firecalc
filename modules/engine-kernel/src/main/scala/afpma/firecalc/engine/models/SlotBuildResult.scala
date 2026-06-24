@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.models
 
+import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
@@ -21,12 +22,14 @@ import cats.data.ValidatedNel
  * @param pipe           the validated pipe model, type-erased to Any
  * @param idsMappingFn   maps UI element index (idIncr: Int) to section result index (Option[Int]),
  *                       wrapped in ValidatedNel to propagate incremental build errors
- * @param finalFrame     the pipe's final PipeFrame after all elements, used to seed the next slot
+ * @param nextSeed       the immutable descriptor-build state to seed the next slot
  */
 case class SlotBuildResult(
     pipeType    : PipeType,
     label       : String,
     pipe        : ValidatedNel[IncrementalValidation_Error, Any],
     idsMappingFn: ValidatedNel[IncrementalValidation_Error, Int => Option[Int]],
-    finalFrame  : Option[PipeFrame]
-)
+    nextSeed    : PipeBuildSeed
+):
+    def finalFrame : Option[PipeFrame] = nextSeed.frame
+    def finalNFlows: NbOfFlows         = nextSeed.nFlows

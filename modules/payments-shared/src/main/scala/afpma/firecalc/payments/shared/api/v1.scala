@@ -8,6 +8,8 @@ package afpma.firecalc.payments.shared.api
 import java.util.Base64
 import java.util.UUID
 
+import afpma.firecalc.dto.all.Firebox
+
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -19,6 +21,59 @@ object v1:
     object ProductId:
         given Encoder[ProductId] = Encoder[UUID].contramap(_.value)
         given Decoder[ProductId] = Decoder[UUID].map(ProductId.apply)
+
+    case class Sku(value: String) extends AnyVal
+    object Sku:
+        given Encoder[Sku] = Encoder[String].contramap(_.value)
+        given Decoder[Sku] = Decoder[String].map(Sku.apply)
+
+        val licenseFeeSuffix = "WITH_FIREBOX_LICENSE_FEE"
+
+        def isLicenseFeeProduct(productId: ProductId): Boolean =
+            ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
+                || DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
+                || StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id == productId
+
+    /** Typeclass: is this firebox type subject to an additional license fee? */
+    trait SubjectToLicenseFee[-F <: Firebox]:
+        def requiresLicenseFee(firebox: F): Boolean
+
+    object SubjectToLicenseFee:
+
+        def apply[F <: Firebox](using ev: SubjectToLicenseFee[F]): SubjectToLicenseFee[F] = ev
+
+        given SubjectToLicenseFee[Firebox.Ecolabeled] =
+            new SubjectToLicenseFee[Firebox.Ecolabeled]:
+                def requiresLicenseFee(firebox: Firebox.Ecolabeled): Boolean = true
+
+        given SubjectToLicenseFee[Firebox.Door15aFirebox_Catalog] =
+            new SubjectToLicenseFee[Firebox.Door15aFirebox_Catalog]:
+                def requiresLicenseFee(firebox: Firebox.Door15aFirebox_Catalog): Boolean = true
+
+        given SubjectToLicenseFee[Firebox.Traditional] =
+            new SubjectToLicenseFee[Firebox.Traditional]:
+                def requiresLicenseFee(firebox: Firebox.Traditional): Boolean = false
+
+        given SubjectToLicenseFee[Firebox.AFPMA_PRSE] =
+            new SubjectToLicenseFee[Firebox.AFPMA_PRSE]:
+                def requiresLicenseFee(firebox: Firebox.AFPMA_PRSE): Boolean = false
+
+        given SubjectToLicenseFee[Firebox.SingleTested] =
+            new SubjectToLicenseFee[Firebox.SingleTested]:
+                def requiresLicenseFee(firebox: Firebox.SingleTested): Boolean = false
+
+    extension (firebox: Firebox)
+        def requiresLicenseFee: Boolean = firebox match
+            case e: Firebox.Ecolabeled             =>
+                SubjectToLicenseFee[Firebox.Ecolabeled].requiresLicenseFee(e)
+            case d: Firebox.Door15aFirebox_Catalog =>
+                SubjectToLicenseFee[Firebox.Door15aFirebox_Catalog].requiresLicenseFee(d)
+            case t: Firebox.Traditional            =>
+                SubjectToLicenseFee[Firebox.Traditional].requiresLicenseFee(t)
+            case a: Firebox.AFPMA_PRSE             =>
+                SubjectToLicenseFee[Firebox.AFPMA_PRSE].requiresLicenseFee(a)
+            case s: Firebox.SingleTested           =>
+                SubjectToLicenseFee[Firebox.SingleTested].requiresLicenseFee(s)
 
     case class OrderId(value: UUID) extends AnyVal
     object OrderId:
@@ -38,7 +93,7 @@ object v1:
     /** Product information for catalog display and purchase */
     case class ProductInfo(
         id         : ProductId,
-        sku        : String,
+        sku        : Sku,
         exampleCopy: YamlTemplateSeed,
         price      : BigDecimal,
         currency   : String, // "EUR", "USD"
@@ -278,7 +333,7 @@ object v1:
     object ProductionProductCatalog:
         val PDF_REPORT_EN_15544_2023 = ProductInfo(
             id          = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")),
-            sku         = "pdf_report_EN_15544_2023",
+            sku         = Sku("pdf_report_EN_15544_2023"),
             exampleCopy = YamlTemplateSeed(
                 Map     (
                     "fr"      -> ProductCopy(
@@ -302,13 +357,42 @@ object v1:
             taxExempt   = true
         )
 
-        val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
+        val PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE = ProductInfo(
+            id          = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440001")),
+            sku         = Sku("pdf_report_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE"),
+            exampleCopy = YamlTemplateSeed(
+                Map     (
+                    "fr"      -> ProductCopy(
+                        "Note de calcul EN 15544:2023 + Licence foyer",
+                        "Note de calcul conforme à la norme NF EN 15544:2023 avec licence foyer"
+                    ),
+                    "en"      -> ProductCopy(
+                        "Calculation Report EN 15544:2023 + Firebox License",
+                        "Calculation report compliant with NF EN 15544:2023 with firebox license"
+                    ),
+                    "default" -> ProductCopy(
+                        "Calculation Report EN 15544:2023 + Firebox License",
+                        "Calculation report compliant with NF EN 15544:2023 with firebox license"
+                    )
+                )
+            ),
+            price       = BigDecimal(139.00),
+            currency    = "EUR",
+            active      = true,
+            taxRate     = BigDecimal("0.0"),
+            taxExempt   = true
+        )
+
+        val allProducts: List[ProductInfo] = List(
+            PDF_REPORT_EN_15544_2023,
+            PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE
+        )
 
     /** Development product catalog - use in development/testing */
     object DevelopmentProductCatalog:
         val PDF_REPORT_EN_15544_2023 = ProductInfo(
             id          = ProductId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000002")),
-            sku         = "pdf_report_EN_15544_2023",
+            sku         = Sku("pdf_report_EN_15544_2023"),
             exampleCopy = YamlTemplateSeed(
                 Map     (
                     "fr"      -> ProductCopy(
@@ -332,13 +416,42 @@ object v1:
             taxExempt   = true
         )
 
-        val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
+        val PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE = ProductInfo(
+            id          = ProductId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000003")),
+            sku         = Sku("pdf_report_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE"),
+            exampleCopy = YamlTemplateSeed(
+                Map     (
+                    "fr"      -> ProductCopy(
+                        "Note de calcul EN 15544:2023 + Licence foyer",
+                        "Note de calcul conforme à la norme NF EN 15544:2023 avec licence foyer"
+                    ),
+                    "en"      -> ProductCopy(
+                        "Calculation Report EN 15544:2023 + Firebox License",
+                        "Calculation report compliant with NF EN 15544:2023 with firebox license"
+                    ),
+                    "default" -> ProductCopy(
+                        "Calculation Report EN 15544:2023 + Firebox License",
+                        "Calculation report compliant with NF EN 15544:2023 with firebox license"
+                    )
+                )
+            ),
+            price       = BigDecimal(139.00),
+            currency    = "EUR",
+            active      = true,
+            taxRate     = BigDecimal("0.0"),
+            taxExempt   = true
+        )
+
+        val allProducts: List[ProductInfo] = List(
+            PDF_REPORT_EN_15544_2023,
+            PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE
+        )
 
     /** Staging product catalog - use in staging environment for testing production-like products */
     object StagingProductCatalog:
         val PDF_REPORT_EN_15544_2023 = ProductInfo(
-            id          = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")), // Same ID as production
-            sku         = "pdf_report_EN_15544_2023",
+            id          = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")),
+            sku         = Sku("pdf_report_EN_15544_2023"),
             exampleCopy = YamlTemplateSeed(
                 Map     (
                     "fr"      -> ProductCopy(
@@ -362,7 +475,36 @@ object v1:
             taxExempt   = true
         )
 
-        val allProducts: List[ProductInfo] = List(PDF_REPORT_EN_15544_2023)
+        val PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE = ProductInfo(
+            id          = ProductId(java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440001")),
+            sku         = Sku("pdf_report_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE"),
+            exampleCopy = YamlTemplateSeed(
+                Map     (
+                    "fr"      -> ProductCopy(
+                        "Note de calcul EN 15544:2023 + Licence foyer",
+                        "Note de calcul conforme à la norme NF EN 15544:2023 avec licence foyer"
+                    ),
+                    "en"      -> ProductCopy(
+                        "Calculation Report EN 15544:2023 + Firebox License",
+                        "Calculation report compliant with NF EN 15544:2023 with firebox license"
+                    ),
+                    "default" -> ProductCopy(
+                        "Calculation Report EN 15544:2023 + Firebox License",
+                        "Calculation report compliant with NF EN 15544:2023 with firebox license"
+                    )
+                )
+            ),
+            price       = BigDecimal(139.00),
+            currency    = "EUR",
+            active      = true,
+            taxRate     = BigDecimal("0.0"),
+            taxExempt   = true
+        )
+
+        val allProducts: List[ProductInfo] = List(
+            PDF_REPORT_EN_15544_2023,
+            PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE
+        )
 
     /** Trait representing a product catalog */
     sealed trait ProductCatalog:

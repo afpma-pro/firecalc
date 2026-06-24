@@ -17,6 +17,7 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 
@@ -26,12 +27,15 @@ import scala.scalajs.js.annotation.*
 import _root_.coulomb.policy.standard.given
 import afpma.laminar.form.Form
 import afpma.laminar.form.Form.as_HtmlElement
+import afpma.laminar.form.FormConfig
 import afpma.laminar.form.FormRenderer
 import afpma.laminar.form.daisyui.DaisyUIVertical
 import afpma.laminar.form.derivation.FormDerivation
 import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import io.scalaland.chimney.dsl.*
 import io.taig.babel.Locale
+
+import afpma.firecalc.ui.config.UIConfig
 
 case class FireboxComponent(
     v: Var[Firebox]
@@ -43,43 +47,47 @@ case class FireboxComponent(
 
     import FireboxComponent.*
 
-    val showEcolabeledV1Img = firebox_var.signal.map:
-        case eco: Firebox.Ecolabeled if eco.version == Left("Version 1") => true
-        case _ => false
-
-    val showEcolabeledV2Img = firebox_var.signal.map:
-        case eco: Firebox.Ecolabeled if eco.version == Right("Version 2") => true
-        case _ => false
-
-    val showAFPMAPRSEImg = firebox_var.signal.map:
-        case _: Firebox.AFPMA_PRSE => true
-        case _ => false
-
-    val nodeSeq_Ecolabeled_V1 = Seq(
+    private def ecolabeledV1Nodes = Seq(
         div(cls := "col-span-2 justify-center align-center", ecolabeled_v1_side_img),
         div(cls := "row-span-1", ecolabeled_front_img                              ),
         div(cls := "row-span-1", ecolabeled_top_img                                )
     )
 
-    val nodeSeq_Ecolabeled_V2 = Seq(
+    private def ecolabeledV2Nodes = Seq(
         div(cls := "col-span-2 justify-center align-center", ecolabeled_v2_side_img),
         div(cls := "row-span-1", ecolabeled_front_img                              ),
         div(cls := "row-span-1", ecolabeled_top_img                                )
     )
 
-    val nodeSeq_AFPMAPRSE = Seq(
+    private def afpmaPrseNodes = Seq(
         div(cls := "row-span-1 col-span-1", afpma_prse_side_img),
         div(cls := "row-span-1 col-span-1", afpma_prse_top_img )
     )
 
+    val fireboxImages_sig: Signal[Seq[HtmlElement]] = firebox_var.signal.map:
+        case eco: Firebox.Ecolabeled if eco.version == Left("Version 1")  => ecolabeledV1Nodes
+        case eco: Firebox.Ecolabeled if eco.version == Right("Version 2") => ecolabeledV2Nodes
+        case _  : Firebox.AFPMA_PRSE                                      => afpmaPrseNodes
+        case _ => Seq.empty
+
     lazy val node =
         import vertical_form.given
+        val formConfig = FormConfig.default.withDisabledOptionIds(
+            Signal.fromValue {
+                val avail = UIConfig.uiAvailability
+                (List   (
+                    avail.traditional    -> I18N.firebox_names.traditional,
+                    avail.ecolabeled     -> I18N.firebox_names.ecolabeled,
+                    avail.afpmaPrse      -> I18N.firebox_names.afpma_prse,
+                    avail.singleTested   -> I18N.firebox_names.single_tested,
+                    avail.door15aCatalog -> I18N.firebox_names.door_15a_firebox
+                ).collect { case (enabled, name) if !enabled => name }).toSet
+            }
+        )
         div(
             cls := "grid grid-flow-col grid-cols-3 grid-rows-2 gap-10",
-            div(cls := "row-span-2", v.as_HtmlElement, outputResults),
-            children(nodeSeq_Ecolabeled_V1) <-- showEcolabeledV1Img,
-            children(nodeSeq_Ecolabeled_V2) <-- showEcolabeledV2Img,
-            children(nodeSeq_AFPMAPRSE) <-- showAFPMAPRSEImg
+            div(cls := "row-span-2", v.as_HtmlElement(formConfig), outputResults),
+            children <-- fireboxImages_sig
         )
 
     val DISABLED_TRUE_SIG = Var(true).signal

@@ -15,6 +15,18 @@ import afpma.firecalc.domain.InclinationDirection.*
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.units.Vec3
+
+case class TBend(angle: Double, absDir: Option[AbsoluteDirection])
+
+private given ext: FrameReplay.ElemExtractors[TBend] = FrameReplay.ElemExtractors(
+    asInitialDirection  = PartialFunction.empty,
+    asDirectionChange   = { case TBend(angle, absDir) => (angle.degrees, absDir) },
+    asInnerShape        = PartialFunction.empty,
+    withDirChangeAbsDir = (e, newAbsDir) =>
+        e match
+            case x: TBend => x.copy(absDir = newAbsDir)
+)
 
 /**
  * Tests for PipeChainRotation using a minimal test-local DTO hierarchy.
@@ -22,23 +34,6 @@ import org.scalatest.matchers.should.*
  * We define TestElem locally so tests are self-contained (no UI-module dependency).
  */
 class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
-
-    // ── Minimal test DTO ──────────────────────────────────────────────────
-
-    sealed trait TestElem
-    case class TSetDir(az: AzimuthDirection, incl: InclinationDirection) extends TestElem
-    case class TBend(angle: Double, absDir: Option[AbsoluteDirection])   extends TestElem
-    case class TSection(len: Double)                                     extends TestElem
-
-    private given ext: FrameReplay.ElemExtractors[TestElem] = FrameReplay.ElemExtractors(
-        asInitialDirection  = { case TSetDir(az, incl) => (az, incl) },
-        asDirectionChange   = { case TBend(angle, absDir) => (angle.degrees, absDir) },
-        asInnerShape        = PartialFunction.empty,
-        withDirChangeAbsDir = (e, newAbsDir) =>
-            e match
-                case x: TBend => x.copy(absDir = newAbsDir)
-                case _ => e
-    )
 
     val eps = 1e-6
 
@@ -60,9 +55,8 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
 
     "PipeChainRotation.rewriteDownstreamPins" should "be a no-op when editedIdx >= scopeEndIdx" in {
         val elems  = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(90.0, Some(absDirRight)),
-            2 -> TBend(90.0, Some(absDirFront))
+            0 -> TBend(90.0, Some(absDirRight)),
+            1 -> TBend(90.0, Some(absDirFront))
         )
         val result = PipeChainRotation.rewriteDownstreamPins(elems, elems, editedIdx = 5, scopeEndIdx = 3)
         result shouldBe elems
@@ -72,10 +66,9 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
 
     it should "return unchanged sequence when no downstream elements have absDir" in {
         val elems  = Seq(
-            0 -> TSetDir(Rear, Horizontal),
+            0 -> TBend(90.0, None),
             1 -> TBend(90.0, None),
-            2 -> TSection(1.0),
-            3 -> TBend(90.0, None)
+            2 -> TBend(90.0, None)
         )
         val result = PipeChainRotation.rewriteDownstreamPins(elems, elems, editedIdx = 0, scopeEndIdx = 4)
         result shouldBe elems
@@ -85,23 +78,27 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
 
     it should "rewrite a downstream absDir to preserve relative shape" in {
         // Valid geometric scenario (all bends reachable at 90°):
-        //   SetDir(Rear), BendA(90°→Right), BendB(90°→Rear)
+        //   S0(Symmetry) → BendA(90°→Right), BendB(90°→Rear)
         // Edit BendA absDir to Left (also 90° from Rear, so reachable).
         // Old incoming frame at B: direction=Right. recoverRelative(Right-frame, Rear, 90°) = (Left, 0°).
         // New incoming frame at B: direction=Left. relativeTarget(Left-frame, Left, 0°, 90°) = Front.
         val oldElems = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(90.0, Some(absDirRight)),
-            2 -> TBend(90.0, Some(absDirRear))
+            0 -> TBend(90.0, Some(absDirRight)),
+            1 -> TBend(90.0, Some(absDirRear))
         )
         val newElems = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(90.0, Some(absDirLeft)), // edited: A now points Left
-            2 -> TBend(90.0, Some(absDirRear))  // B unchanged yet; will be rewritten
+            0 -> TBend(90.0, Some(absDirLeft)), // edited: A now points Left
+            1 -> TBend(90.0, Some(absDirRear))  // B unchanged yet; will be rewritten
         )
-        val result   = PipeChainRotation.rewriteDownstreamPins(oldElems, newElems, editedIdx = 1, scopeEndIdx = 3)
+        val result   = PipeChainRotation.rewriteDownstreamPins(
+            oldElems,
+            newElems,
+            editedIdx    = 0,
+            scopeEndIdx  = 2,
+            initialFrame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(0.0, 0.0)))
+        )
 
-        val (_, rewrittenB) = result(2)
+        val (_, rewrittenB) = result(1)
         rewrittenB match
             case TBend(_, Some(ad)) =>
                 ad.inclination shouldBe Horizontal
@@ -112,30 +109,40 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
     // ── Test 4: Roundtrip stability ────────────────────────────────────────
 
     it should "be stable on roundtrip: rotate A Right→Left→Right restores original B" in {
-        // Valid chain: SetDir(Rear), BendA(90°→Right), BendB(90°→Rear)
+        // Valid chain: S0(Symmetry), BendA(90°→Right), BendB(90°→Rear)
         // From test 3 we know: editing A to Left makes B→Front.
         // Roundtrip: edit A Right→Left, then back Left→Right.
         // B should return to Rear.
         val original = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(90.0, Some(absDirRight)),
-            2 -> TBend(90.0, Some(absDirRear))
+            0 -> TBend(90.0, Some(absDirRight)),
+            1 -> TBend(90.0, Some(absDirRear))
         )
 
         // Step 1: edit A to Left
         val step1New   = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(90.0, Some(absDirLeft)),
-            2 -> TBend(90.0, Some(absDirRear))
+            0 -> TBend(90.0, Some(absDirLeft)),
+            1 -> TBend(90.0, Some(absDirRear))
         )
-        val afterStep1 = PipeChainRotation.rewriteDownstreamPins(original, step1New, editedIdx = 1, scopeEndIdx = 3)
+        val afterStep1 = PipeChainRotation.rewriteDownstreamPins(
+            original,
+            step1New,
+            editedIdx    = 0,
+            scopeEndIdx  = 2,
+            initialFrame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(0.0, 0.0)))
+        )
 
         // Step 2: edit A back to Right
-        val step2New   = afterStep1.updated(1, 1 -> TBend(90.0, Some(absDirRight)))
-        val afterStep2 = PipeChainRotation.rewriteDownstreamPins(afterStep1, step2New, editedIdx = 1, scopeEndIdx = 3)
+        val step2New   = afterStep1.updated(0, 0 -> TBend(90.0, Some(absDirRight)))
+        val afterStep2 = PipeChainRotation.rewriteDownstreamPins(
+            afterStep1,
+            step2New,
+            editedIdx    = 0,
+            scopeEndIdx  = 2,
+            initialFrame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(0.0, 0.0)))
+        )
 
         // BendB should be restored to Rear
-        val (_, rewrittenB) = afterStep2(2)
+        val (_, rewrittenB) = afterStep2(1)
         rewrittenB match
             case TBend(_, Some(ad)) =>
                 ad.inclination shouldBe Horizontal
@@ -146,31 +153,35 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
     // ── Test 5: Mid-scope absDir=None is preserved ─────────────────────────
 
     it should "leave absDir=None elements unchanged and still rewrite pinned ones" in {
-        // Valid chain: SetDir(Rear), BendA(90°→Right), BendB-None, BendC(90°→Rear)
+        // Valid chain: S0(Symmetry), BendA(90°→Right), BendB-None, BendC(90°→Rear)
         // Edit A to Left; B stays None, C gets rewritten (structural check only)
         val oldElems = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(90.0, Some(absDirRight)),
-            2 -> TBend(90.0, None),            // no pin — should stay None
-            3 -> TBend(90.0, Some(absDirRear)) // pinned, reachable from Right-frame at 90°
+            0 -> TBend(90.0, Some(absDirRight)),
+            1 -> TBend(90.0, None),            // no pin — should stay None
+            2 -> TBend(90.0, Some(absDirRear)) // pinned, reachable from Right-frame at 90°
         )
         val newElems = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(90.0, Some(absDirLeft)), // edited to Left
-            2 -> TBend(90.0, None),
-            3 -> TBend(90.0, Some(absDirRear))
+            0 -> TBend(90.0, Some(absDirLeft)), // edited to Left
+            1 -> TBend(90.0, None),
+            2 -> TBend(90.0, Some(absDirRear))
         )
-        val result   = PipeChainRotation.rewriteDownstreamPins(oldElems, newElems, editedIdx = 1, scopeEndIdx = 4)
+        val result   = PipeChainRotation.rewriteDownstreamPins(
+            oldElems,
+            newElems,
+            editedIdx    = 0,
+            scopeEndIdx  = 3,
+            initialFrame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(0.0, 0.0)))
+        )
 
-        // Element at index 2 must remain None
+        // Element at index 1 must remain None
+        result(1) match
+            case (1, TBend(_, None)) => succeed
+            case other => fail(s"Expected absDir=None at index 1, got $other")
+
+        // Element at index 2 must have been rewritten (Some)
         result(2) match
-            case (2, TBend(_, None)) => succeed
-            case other => fail(s"Expected absDir=None at index 2, got $other")
-
-        // Element at index 3 must have been rewritten (Some)
-        result(3) match
-            case (3, TBend(_, Some(_))) => succeed
-            case other => fail(s"Expected absDir=Some at index 3, got $other")
+            case (2, TBend(_, Some(_))) => succeed
+            case other => fail(s"Expected absDir=Some at index 2, got $other")
     }
 
     // ── Test 6: Vertical pipe edge case ───────────────────────────────────
@@ -178,17 +189,23 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
     it should "handle vertical pipe (Up) with horizontal bend correctly" in {
         // Pipe going Up, then bends 90° to Rear (horizontal)
         val elems    = Seq(
-            0 -> TSetDir(Rear, Up),
+            0 -> TBend(90.0, Some(absDir(Rear, Horizontal))),
             1 -> TBend(90.0, Some(absDir(Rear, Horizontal))),
             2 -> TBend(90.0, Some(absDir(Right, Horizontal)))
         )
-        // Edit: change initial direction to Up (same), edit bend1 to Right+Horizontal
+        // Edit: keep the Up initialFrame and edit bend1 to Right+Horizontal
         val newElems = Seq(
-            0 -> TSetDir(Rear, Up),
+            0 -> TBend(90.0, Some(absDir(Rear, Horizontal))),
             1 -> TBend(90.0, Some(absDir(Right, Horizontal))), // edited
             2 -> TBend(90.0, Some(absDir(Right, Horizontal)))
         )
-        val result   = PipeChainRotation.rewriteDownstreamPins(elems, newElems, editedIdx = 1, scopeEndIdx = 3)
+        val result   = PipeChainRotation.rewriteDownstreamPins(
+            elems,
+            newElems,
+            editedIdx    = 1,
+            scopeEndIdx  = 3,
+            initialFrame = Some(PipeFrame.initial(Vec3.Up))
+        )
 
         result(2) match
             case (2, TBend(_, Some(ad))) =>
@@ -202,17 +219,21 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
     it should "not crash when absDir is degenerate (parallel to incoming direction)" in {
         // BendA points Rear (same as incoming direction) → recoverRelative returns (Right, 0)
         val elems    = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(0.01, Some(absDirRear)), // nearly zero angle, absDir=Rear
-            2 -> TBend(90.0, Some(absDirRight))
+            0 -> TBend(0.01, Some(absDirRear)), // nearly zero angle, absDir=Rear
+            1 -> TBend(90.0, Some(absDirRight))
         )
         val newElems = Seq(
-            0 -> TSetDir(Rear, Horizontal),
-            1 -> TBend(0.01, Some(absDirRight)), // edited to Right
-            2 -> TBend(90.0, Some(absDirRight))
+            0 -> TBend(0.01, Some(absDirRight)), // edited to Right
+            1 -> TBend(90.0, Some(absDirRight))
         )
         noException should be thrownBy {
-            PipeChainRotation.rewriteDownstreamPins(elems, newElems, editedIdx = 1, scopeEndIdx = 3)
+            PipeChainRotation.rewriteDownstreamPins   (
+                elems,
+                newElems,
+                editedIdx    = 0,
+                scopeEndIdx  = 2,
+                initialFrame = Some(PipeFrame.initial(Vec3.Rear))
+            )
         }
     }
 
@@ -249,14 +270,14 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
 
     // ── Test 10: cross-slot initialFrame ──────────────────────────────────
 
-    it should "cross-slot: initialFrame lets rewrite work without SetInitialDirection" in {
-        // Chain WITHOUT SetInitialDirection — just two direction changes.
+    it should "cross-slot: initialFrame lets rewrite work without descriptor direction" in {
+        // Chain without descriptor direction — just two direction changes.
         // We supply initialFrame = PipeFrame.initial(Vec3.fromAzimuthElevation(0, 0))
         // which corresponds to Rear direction (azimuth=0, elevation=0).
         //
         // elems[0] = TBend(90°, absDir=Right)  — after initial Rear frame, bends toward Right
         // elems[1] = TBend(90°, absDir=Front)  — after Right frame, bends toward Front
-        val elems: Seq[(Int, TestElem)] = Seq(
+        val elems: Seq[(Int, TBend)] = Seq(
             0 -> TBend(90.0, Some(absDirRight)),
             1 -> TBend(90.0, Some(absDirFront))
         )
@@ -269,7 +290,7 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
         val initFrame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(0.0, 0.0)))
 
         // Edit elems[0].absDir from Right to Left; rewrite elems[1]
-        val newElems: Seq[(Int, TestElem)] = Seq(
+        val newElems: Seq[(Int, TBend)] = Seq(
             0 -> TBend(90.0, Some(absDirLeft)), // edited: now pointing Left
             1 -> TBend(90.0, Some(absDirFront)) // will be rewritten
         )
@@ -297,7 +318,7 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
 
     "PipeChainRotation.downstreamPinCount" should "count only pinned elements in scope" in {
         val elems = Seq(
-            0 -> TSetDir(Rear, Horizontal),
+            0 -> TBend(90.0, Some(absDirRear)),
             1 -> TBend(90.0, Some(absDirRight)), // editedIdx — excluded
             2 -> TBend(90.0, Some(absDirFront)), // in scope, pinned — count
             3 -> TBend(90.0, None),              // in scope, no pin — skip
@@ -352,14 +373,14 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
 
     it should "roundtrip: rotate chain first-bend through two edits and return within 0.1°" in {
         val trials   = 20
-        val chainLen = 4 // TSetDir + 3 TBends
+        val chainLen = 4 // 4 TBends
 
         val horizontalAbsDirs = Seq(absDirRear, absDirRight, absDirFront, absDirLeft)
 
-        def buildChain(firstPinDir: AbsoluteDirection): Seq[(Int, TestElem)] =
+        def buildChain(firstPinDir: AbsoluteDirection): Seq[(Int, TBend)] =
             Seq(
-                0 -> TSetDir(Rear, Horizontal),
-                1 -> TBend(90.0, Some(firstPinDir)),
+                0 -> TBend(90.0, Some(firstPinDir)),
+                1 -> TBend(90.0, None),
                 2 -> TBend(90.0, None),
                 3 -> TBend(90.0, None)
             )
@@ -373,12 +394,24 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
             // Edit 1: change first TBend absDir to intermediate
             val step1New   = original.updated(1, 1 -> TBend(90.0, Some(intermediateAbsDir)))
             val afterStep1 =
-                PipeChainRotation.rewriteDownstreamPins(original, step1New, editedIdx = 1, scopeEndIdx = chainLen)
+                PipeChainRotation.rewriteDownstreamPins   (
+                    original,
+                    step1New,
+                    editedIdx    = 1,
+                    scopeEndIdx  = chainLen,
+                    initialFrame = Some(PipeFrame.initial(Vec3.Rear))
+                )
 
             // Edit 2: change back to original
             val step2New   = afterStep1.updated(1, 1 -> TBend(90.0, Some(originalAbsDir)))
             val afterStep2 =
-                PipeChainRotation.rewriteDownstreamPins(afterStep1, step2New, editedIdx = 1, scopeEndIdx = chainLen)
+                PipeChainRotation.rewriteDownstreamPins   (
+                    afterStep1,
+                    step2New,
+                    editedIdx    = 1,
+                    scopeEndIdx  = chainLen,
+                    initialFrame = Some(PipeFrame.initial(Vec3.Rear))
+                )
 
             // Verify the edited element's absDir matches original within 0.1°
             val (_, origElem ) = original(1)

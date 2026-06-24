@@ -472,6 +472,16 @@ object CommonInstances:
         import Roughness.given
         encodeUsingConversion[QtyD[Meter], Roughness](using encoder_QtyD_meter)
 
+    // PosLength
+
+    given decoder_PosLength: Decoder[PosLength] =
+        import PosLength.given
+        decodeUsingConversion[QtyD[Meter], PosLength](using decoder_QtyD_meter)
+
+    given encoder_PosLength: Encoder[PosLength] =
+        import PosLength.given
+        encodeUsingConversion[QtyD[Meter], PosLength](using encoder_QtyD_meter)
+
     // Slope
 
     given Decoder[Slope] = deriveDecoderForEnum[Slope](Slope.valueOf)

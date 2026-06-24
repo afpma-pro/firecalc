@@ -4,26 +4,26 @@
  */
 
 package afpma.firecalc.ui.panels
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_13384.*
 
 import afpma.firecalc.i18n.implicits.given
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
-import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.anglePresetsSignal
-import afpma.firecalc.ui.models.firebox_var
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
-
+import afpma.firecalc.ui.models.postFireboxInitialDir_var
 import afpma.firecalc.ui.utils.combineWithDistinct
+
 import cats.Show
 
 import com.raquo.laminar.api.L.*
@@ -37,25 +37,6 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
 
-    private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384] = AutoCalcHelper.ElemExtractors(
-        asInitialDirection  = { case SetInitialDirection(az, incl) => (az, incl) },
-        asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
-        asInnerShape        = { case sis: SetInnerShape => sis.shape },
-        withDirChangeAbsDir = (e, newAbsDir) =>
-            e match
-                case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
-                case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
-                case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
-                case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
-                case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
-                case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
-                case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
-                case _ => e
-    )
-
     type In = FlowOnlyPipeDescr_13384
 
     import hastranslations.given
@@ -66,82 +47,35 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     private given flowOnlyPropertyShow_13384: FlowOnlyPropertyShow_13384 = FlowOnlyPropertyShow_13384()
     import flowOnlyPropertyShow_13384.given
 
-    private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
-        welems_var.signal.map: elems =>
-            var frame: Option[PipeFrame] = None
-            val builder = Map.newBuilder[Int, PipeFrame]
-            for (idx, elem) <- elems do
-                elem match
-                    case SetInitialDirection(az, incl) =>
-                        val azDeg = AzimuthDirection.toDegrees(az)
-                        val elDeg = InclinationDirection.toDegrees(incl)
-                        frame = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
-                    case _                             => ()
-                frame.foreach(f => builder += (idx -> f))
-                elem match
-                    case dc: AddDirectionChange =>
-                        for
-                            f  <- frame
-                            fd <- dc.absDir
-                        do
-                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                            frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
-                    case _ => ()
-            builder.result()
-
-    // ── Auto-calc: air distribution box position ─────────────────────────
+    protected def initialDirectionSig: Signal[PipeInitialDirection] = postFireboxInitialDir_var.signal
 
     /**
-     * Status signal for the air intake auto-calc button.
-     * Uses FINAL state (any direction + any shape in entire list), since we're
-     * aligning the pipe's endpoint to the air distrib box.
+     * Opt-in flag for subclasses to render V7 wrapper-level elements
+     * (PipeInitialDirection, Position3D, auto-calc button) before the slot pipeline.
      */
-    private lazy val airIntakeAutoCalcStatusSig: Signal[(Boolean, Option[String])] =
-        AutoCalcHelper.mkStatusSig(
-            hasFrameSig = frameBeforeByIdx.map(_.nonEmpty),
-            hasShapeSig = welems_var.signal.map(_.exists: (_, e) =>
-                summon[AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_13384]].asInnerShape.isDefinedAt(e))
-        )
+    protected def renderWrapperElems: Boolean = false
 
-    /**
-     * Compute position on the air distribution box boundary.
-     *
-     * Uses the FINAL pipe direction (replays all elements) since we're aligning
-     * the end of the last element to the air distrib box.
-     *
-     * The air distrib box is centered at (0, 0) with same width/depth as the firebox,
-     * bottom at z = −AIR_DISTRIB_HEIGHT_M, top at z = 0 (firebox floor).
-     *
-     * Z alignment (non-vertical): lowest point of pipe opening = air distrib bottom.
-     * Vertical Up: center of bottom face.
-     * Vertical Down: center of top face.
-     */
-    private def computeAirDistribPosition: Option[(Double, Double, Double)] =
-        val elems    = welems_var.now()
-        val frameOpt = AutoCalcHelper.replayFrame(elems, Int.MaxValue)
-        val shapeOpt = AutoCalcHelper.lastShapeBefore(elems, Int.MaxValue)
-        for
-            frame <- frameOpt
-            shape <- shapeOpt
-        yield
-            val fb  = firebox_var.now()
-            val box = AutoCalcHelper.TargetBox(
-                centerX   = 0.0,
-                centerY   = 0.0,
-                halfWidth = fb.firebox_width.value / 2.0,
-                halfDepth = fb.firebox_depth.value / 2.0,
-                bottomZ   = -AIR_DISTRIB_HEIGHT_M,
-                height    = AIR_DISTRIB_HEIGHT_M
-            )
-            AutoCalcHelper.computeBottomAlignedPosition(frame, shape, box)
-
-    /** Auto-calc button helper — generic over SetInitialPosition / SetFinalPosition. */
-    private def airIntakeAutoCalcExtra[A](ctor: (Length, Length, Length) => A): Var[A] => HtmlElement =
-        AutoCalcHelper.autoCalcButton(
-            airIntakeAutoCalcStatusSig,
-            () => computeAirDistribPosition.map((x, y, z) => ctor(x.m, y.m, z.m))
-        )
+    protected lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
+        initialDirectionSig
+            .combineWith(welems_var.signal)
+            .map: (initialDir, elems) =>
+                val azDeg = initialDir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0)
+                val elDeg = InclinationDirection.toDegrees(initialDir.inclination)
+                var frame: Option[PipeFrame] = Some(PipeFrame.initial(Vec3.fromAzimuthElevation(azDeg, elDeg)))
+                val builder = Map.newBuilder[Int, PipeFrame]
+                for (idx, elem) <- elems do
+                    frame.foreach(f => builder += (idx -> f))
+                    elem match
+                        case dc: AddDirectionChange =>
+                            for
+                                f  <- frame
+                                fd <- dc.absDir
+                            do
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
+                        case _ => ()
+                builder.result()
 
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
         welems_var.signal
@@ -227,6 +161,26 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                     propertyShow = Some(summon[Show[SetInnerShape]])
                 )
             }
+            // Dev-only variant (SetInnerShapePreventSectionGeometryChangeAuto, backend-forbidden).
+            // Not reachable from any UI menu; this clause only satisfies exhaustiveness of the
+            // splitMatchSeq over the FlowOnly 13384 prop ADT. Rendered identically to plain
+            // SetInnerShape (read-only shape display) should a dev ever load such a project.
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_13384, XtraOutputs                      ),
+                (Int, SetInnerShapePreventSectionGeometryChangeAuto, XtraOutputs),
+                HtmlElement
+            ] { case (i, aa: SetInnerShapePreventSectionGeometryChangeAuto, x) =>
+                (i, aa, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SetInnerShapePreventSectionGeometryChangeAuto]  (
+                    iaax._1,
+                    I18N.set_prop.SetInnerShape,
+                    iaax._2,
+                    sig,
+                    isProperty   = true,
+                    propertyShow = Some(summon[Show[SetInnerShapePreventSectionGeometryChangeAuto]])
+                )
+            }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetRoughness, XtraOutputs), HtmlElement] {
                 case (i, aa: SetRoughness, x) => (i, aa, x)
             } { (iaax, sig) =>
@@ -258,56 +212,11 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             ] { case (i, aa: SetNumberOfFlows, x) => (i, aa, x) } { (iaax, sig) =>
                 renderElemTyped[SetNumberOfFlows]  (
                     iaax._1,
-                    I18N.set_prop.SetNumberOfFlows,
+                    I18N.set_prop.SetNumberOfFlows_fieldName,
                     iaax._2,
                     sig,
                     isProperty   = true,
                     propertyShow = Some(summon[Show[SetNumberOfFlows]])
-                )
-            }
-            .handleCase[
-                (Int, FlowOnlyPipeDescr_13384, XtraOutputs),
-                (Int, SetInitialDirection, XtraOutputs    ),
-                HtmlElement
-            ] { case (i, aa: SetInitialDirection, x) =>
-                (i, aa, x)
-            } { (iaax, sig) =>
-                renderElemTyped[SetInitialDirection]  (
-                    iaax._1,
-                    I18N.set_prop.SetInitialDirection,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialDirection]])
-                )
-            }
-            .handleCase[
-                (Int, FlowOnlyPipeDescr_13384, XtraOutputs),
-                (Int, SetInitialPosition, XtraOutputs     ),
-                HtmlElement
-            ] { case (i, aa: SetInitialPosition, x) =>
-                (i, aa, x)
-            } { (iaax, sig) =>
-                renderElemTyped[SetInitialPosition]  (
-                    iaax._1,
-                    I18N.set_prop.SetInitialPosition,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[SetInitialPosition]])
-                )
-            }
-            .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, SetFinalPosition, XtraOutputs), HtmlElement] {
-                case (i, aa: SetFinalPosition, x) => (i, aa, x)
-            } { (iaax, sig) =>
-                renderElemTyped[SetFinalPosition]  (
-                    iaax._1,
-                    I18N.set_prop.SetFinalPosition,
-                    iaax._2,
-                    sig,
-                    isProperty   = true,
-                    propertyShow = Some(summon[Show[SetFinalPosition]]),
-                    extra        = airIntakeAutoCalcExtra(SetFinalPosition.apply)
                 )
             }
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddSectionSlopped, XtraOutputs), HtmlElement] {
@@ -551,6 +460,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                 case (i, aa: AddPressureDiff, x) => (i, aa, x)
             } { (_, _) => throw new Exception("ERROR: AddPressureDiff not implemented.") }
             .toSignal
+            .map(renderV7WrapperElems(renderWrapperElems))
 
     import FlowOnlyDefaultable_13384.given
 
@@ -622,7 +532,17 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             TagTreeMenu.Leaf[AddElbows_2x45],
             TagTreeMenu.Leaf[AddElbows_3x30],
             TagTreeMenu.Leaf[AddElbows_4x22p5],
-            TagTreeMenu.Leaf[AddAngleAdjustable]
+            TagTreeMenu.Modal[FlowOnlyPipeDescr_13384]         (
+                txt          = I18N_UI.catalog.angle_presets_from_catalog,
+                modalContent = (onSelect) =>
+                    AnglePresetCatalogSelectComponent(
+                        entriesSignal = anglePresetsSignal,
+                        onSelect      = onSelect.contramap[AnglePresetCatalogEntry](e =>
+                            AddFlowOnlyPipeElement_13384.AddAngleAdjustable(e.reference, e.angle, e.zeta)
+                        )
+                    ).node
+            ),
+            TagTreeMenu.Leaf[AddAngleAdjustable]               (I18N_UI.catalog.custom_angle_bend)
         )
     )
 
@@ -631,14 +551,6 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
         next = List(
-            TagTreeMenu.Group (
-                txt  = I18N.set_prop._position_and_direction,
-                next = List(
-                    TagTreeMenu.Leaf[SetInitialPosition],
-                    TagTreeMenu.Leaf[SetInitialDirection],
-                    TagTreeMenu.Leaf[SetFinalPosition]
-                )
-            ),
             TagTreeMenu.Group (
                 txt  = I18N.set_prop._material_and_roughness,
                 next = List(

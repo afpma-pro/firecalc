@@ -20,7 +20,7 @@ import cats.data.ValidatedNel
  * The topology grammar:
  * {{{
  *   PostFireboxChain   := HEAD_REGION  TERMINAL_CONNECTOR  CHIMNEY
- *   HEAD_REGION        := empty  OR  arbitrary sequence of Flue/Connector ending with FluePipe
+ *   HEAD_REGION        := empty  OR  [NoFlueSlot]  OR  sequence of Flue/Connector ending with FluePipe
  *   TERMINAL_CONNECTOR := ConnectorPipeT   (mandatory slot; descriptor may be empty)
  *   CHIMNEY            := ChimneyPipeT     (mandatory, exactly one, last)
  * }}}
@@ -29,7 +29,7 @@ import cats.data.ValidatedNel
  *   - HEAD_REGION may be empty (EN 13384-only pipelines + legacy V6 YAML).
  *   - HEAD_REGION may start with either FluePipe or ConnectorPipe.
  *   - HEAD_REGION may contain any arrangement of FluePipe/ConnectorPipe (no alternation constraint).
- *   - HEAD_REGION, if non-empty, must end with a FluePipe.
+ *   - HEAD_REGION, if non-empty (and not a lone NoFlueSlot), must end with a FluePipe.
  *
  * Construct via `PostFireboxPipeChain.validated`.
  */
@@ -59,15 +59,15 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
     def fluePipeRegion: Vector[PipeSlot] = headRegion
 
     /**
-     * The terminal ConnectorPipeT slot between HEAD_REGION and CHIMNEY.
+     * The terminal ConnectorPipeT slot, always positioned second-to-last
+     * (immediately before the chimney) under the validated grammar.
      *
-     * Under the validated grammar this slot is mandatory; returning an
-     * `Option` keeps the accessor total for defensive reads but a validated
-     * chain always has `Some`.
+     * Returning an `Option` keeps the accessor total for defensive reads
+     * but a validated chain always has `Some`.
      */
     def terminalConnectorSlot: Option[PipeSlot] =
-        val candidateIdx = lastFluePipeIdx + 1
-        if candidateIdx >= 0 && candidateIdx < slots.size - 1 then
+        val candidateIdx = slots.size - 2
+        if candidateIdx >= 0 && candidateIdx < slots.size then
             val s = slots(candidateIdx)
             if s.pipeType == ConnectorPipeT then Some(s) else None
         else None
@@ -111,7 +111,7 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
     /** The terminal connector result, if a ConnectorPipeT terminal slot exists. */
     def terminalConnectorResult(results: Vector[PipeResult]): Option[PipeResult] =
-        terminalConnectorSlot.map(_ => results(lastFluePipeIdx + 1))
+        terminalConnectorSlot.map(_ => results(slots.size - 2))
 
     /** Alias — see [[terminalConnectorResult]]. */
     def connectorResult(results: Vector[PipeResult]): Option[PipeResult] = terminalConnectorResult(results)
@@ -183,7 +183,7 @@ object PostFireboxPipeChain:
 
         // ── HEAD_REGION rules ────────────────────────────────────────────
         //   H1: may be empty (empty head is legal)
-        //   H2: contains only FluePipeT or ConnectorPipeT (chimney already
+        //   H2: contains only FluePipeT, ConnectorPipeT, or NoFluePipeT (chimney already
         //       handled by chimneyOnlyLastRule; anything else is a type
         //       error outside this validator's remit)
         //   H3: when non-empty, must end with FluePipeT (cannot end with

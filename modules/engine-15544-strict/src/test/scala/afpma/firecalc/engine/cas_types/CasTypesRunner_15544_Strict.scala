@@ -92,7 +92,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
         ap.firebox_PipeResult.getOrThrow
         ap.postFireboxPipeResults.getOrThrow
 
-        val pipesResult_15544 = ap.outputs.pipesResult_15544.getOrThrow
+        val pipesResult_15544 = ap.outputs.pipesResult_15544.accumulateErrors.getOrThrow
         emit(pipesResult_15544.showAsCliTable)
 
         seperate_tables

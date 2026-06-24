@@ -7,13 +7,16 @@ package afpma.firecalc.engine.impl.en13384
 
 import algebra.instances.all.given
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.domain.SetsInnerShape
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
+import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -26,11 +29,11 @@ import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_I
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
-import afpma.firecalc.engine.models.geometry.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
 import afpma.firecalc.engine.typeclasses.*
 
 import cats.data.*
@@ -58,6 +61,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     import AddThermalPipeElement_13384.*
     import SetThermalPipeProp_13384.*
+    import ThermalChannelTopologyOp_13384.*
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.hasInnerShapeAtPos
@@ -75,15 +79,43 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override type SetProp    = SetThermalPipeProp_13384
     override type AddElement = AddThermalPipeElement_13384
 
+    override type PreElementOp      = ThermalPreElementOp_13384
+    override type ChannelTopologyOp = ThermalChannelTopologyOp_13384
+
+    /**
+     * Wrapper-level initial direction (V7).
+     * When defined, seeds the initial/current frame in mkInitPropsState.
+     * Replaces descriptor-level SetInitialDirection after V6→V7 migration.
+     */
+    protected var wrapperInitialDirection: Option[PipeInitialDirection] = None
+
+    /**
+     * Set wrapper-level initial direction.
+     * @param dir the initial direction
+     * @return this builder (for chaining)
+     */
+    def withInitialDirection(dir: PipeInitialDirection): this.type =
+        wrapperInitialDirection = Some(dir)
+        this
+
     extension (addElement: AddElement) override def name: String = addElement.name
 
     override protected def isForbiddenAddElementAtStart(
         addElement: AddElement
-    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+    ): Boolean =
+        addElement match
+            case _: AddDirectionChange => true
+            case _ => false
 
     override protected def isForbiddenAddElementAtEnd(
         addElement: AddElement
-    ): Boolean = addElement.isInstanceOf[AddDirectionChange]
+    ): Boolean =
+        addElement match
+            case _: AddDirectionChange => true
+            case _ => false
+
+    override protected def isTrailingAllowed(preOp: PreElementOp): Boolean =
+        false
 
     override type PT <: PipeType_EN13384
 
@@ -108,7 +140,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 convStep.allRemainingOps
                     .map(_._2)
                     .find:
-                        case _: SetProp                                                                       => false
+                        case _: PreElementOp                                                                  => false
                         case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain)               => true
                         case _: AddSectionHorizontal                                                          => true
                         case _: AddSectionVertical                                                            => true
@@ -124,10 +156,24 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     extension (piDescr: PipeIncrDescr) override def listIncrDescr(): Vector[Id_IncrDescr] = piDescr.idescrs
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
-        ThermalPropsState_13384(
-            // by default, use non concentric air ducts (see EN 13384 7.8.1)
-            ductType = Some(DuctType.NonConcentricDuctsHighThermalResistance)
-        )
+        val initDir = wrapperInitialDirection
+        initDir match
+            case Some(dir) =>
+                val dirVec = Vec3.fromAzimuthElevation(
+                    dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                    InclinationDirection.toDegrees                       (dir.inclination)
+                )
+                val frame  = PipeFrame.initial(dirVec)
+                ThermalPropsState_13384    (
+                    ductType     = Some(DuctType.NonConcentricDuctsHighThermalResistance),
+                    initialFrame = Some(frame),
+                    currentFrame = Some(frame)
+                )
+            case None      =>
+                ThermalPropsState_13384(
+                    // by default, use non concentric air ducts (see EN 13384 7.8.1)
+                    ductType = Some(DuctType.NonConcentricDuctsHighThermalResistance)
+                )
 
     override protected def mkInitPipeFullDescr(iPipeIncrDescr: PipeIncrDescr): PipeFullDescr =
         PipeFullDescr(elements = Vector.empty, iPipeIncrDescr.pipeType)
@@ -135,10 +181,15 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     override protected def currentFrameFromPropsState(s: PropsState): Option[PipeFrame] =
         s.currentFrame
 
+    override protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows =
+        stateOps.getNFlows(s)
+
     override protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState =
-        // Only apply if the pipe itself did not already define an initial direction
-        if s.initialFrame.isDefined then s
-        else s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+        // External frame from seed always takes precedence — V7 enforces initial direction at wrapper level, not descriptor level.
+        s.copy(initialFrame = Some(frame), currentFrame = Some(frame))
+
+    override protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState =
+        s.copy(nFlows = nFlows)
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
@@ -183,26 +234,30 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 thermalStraightSection13384.make(op)
 
             case op: AddDirectionChange =>
-                given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
-                    stateOps.getInnerShape(st),
-                    convStep.nextSectionLengthOpt,
-                    pt,
-                    dirBeforePreviousDC = st.dirBeforePreviousDC,
-                    currentFrame        = st.currentFrame
-                )
-                thermalDirectionChange13384.make(op)
+                stateOps.validateMaterialized(st, Operation.AddDirectionChange, pt).andThen { _ =>
+                    given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
+                        stateOps.getInnerShape(st),
+                        convStep.nextSectionLengthOpt,
+                        pt,
+                        dirBeforePreviousDC = st.dirBeforePreviousDC,
+                        currentFrame        = st.currentFrame
+                    )
+                    thermalDirectionChange13384.make(op)
+                }
 
             case op: AddSectionChange =>
-                given SectionGeometryChangeCtx_13384 =
-                    SectionGeometryChangeCtx_13384(
-                        stateOps.getInnerShape(st),
-                        convStep.allSetPropsUntilNextAddElement.exists {
-                            case (_, _: SetInnerShape) => true
-                            case _ => false
-                        },
-                        pt
-                    )
-                thermalSectionGeometryChange13384.make(op)
+                stateOps.validateMaterialized(st, Operation.AddSectionChange, pt).andThen { _ =>
+                    given SectionGeometryChangeCtx_13384 =
+                        SectionGeometryChangeCtx_13384(
+                            stateOps.getInnerShape(st),
+                            convStep.allPreElementOpsUntilNextAddElement.exists {
+                                case (_, _: SetsInnerShape) => true
+                                case _ => false
+                            },
+                            pt
+                        )
+                    thermalSectionGeometryChange13384.make(op)
+                }
 
             case op: AddFlowResistance =>
                 given FlowResistanceCtx_13384 =
@@ -214,22 +269,43 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     FlowResistanceCtx_13384(stateOps.getInnerShape(st), pt)
                 thermalPressureDiff13384.make(op)
 
-        val elIdx = PipeIdx(prevs.elems.size)
-        el.map: el =>
-            NonEmptyList.one:
-                idIncr -> el.named(elIdx, pt, addElementOp.name)
+        val elIdx          = PipeIdx(prevs.elems.size)
+        val prevInnerGeomO = prevs.lastInnerGeom
+        // Dev-only escape hatch: if the op batch preceding this add-element set the
+        // inner shape via SetInnerShapePreventSectionGeometryChangeAuto, skip the
+        // automatic SectionGeometryChange insertion for this element.
+        val preventAuto    = convStep.allPreElementOpsUntilNextAddElement.exists {
+            case (_, _: SetInnerShapePreventSectionGeometryChangeAuto) => true
+            case _ => false
+        }
+        el.andThen { s =>
+            AutoInsertionHelper_13384.maybeInsertSectionGeometryChange(
+                this,
+                s,
+                preventAuto,
+                prevInnerGeomO,
+                stateOps.getInnerShape(st),
+                idIncr,
+                elIdx,
+                pt,
+                addElementOp.name,
+                SectionGeometryChange.make
+            )
+        }
 
     override protected def updateStateAfterConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
-        convStep.findNextAddElement.map(_._2) match
-            case None                                                        => propsState.validNel
-            case Some(_ @AddSectionSlopped(_, _))                            => propsState.validNel
-            case Some(_ @AddSectionSloppedForceManualElevationGain(_, _, _)) => propsState.validNel
-
-            case Some(_ @AddSectionHorizontal(_, _)) => propsState.validNel
-            case Some(_ @AddSectionVertical(_, _))   => propsState.validNel
+        val nextAdd = convStep.findNextAddElement
+        nextAdd.map(_._2) match
+            case None                                =>
+                propsState.validNel
+            case Some(
+                    _: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal |
+                    _: AddSectionVertical
+                ) =>
+                stateOps.materialize(propsState).validNel
             case Some(addDC: AddDirectionChange)     =>
                 // Update direction tracking if absDir is defined and we have a current frame
                 addDC.absDir match
@@ -248,10 +324,11 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                     .validNel
                             case None        => propsState.validNel
                     case None     => propsState.validNel
-            case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
+            case Some(_ @AddFlowResistance(_, _, _)) =>
+                propsState.validNel
             case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
             case Some(op: AddSectionChange)          =>
-                propsState.modify(_.innerShape).setTo(op.to_shape.some).validNel
+                stateOps.setInnerShape(propsState, op.to_shape).validNel
 
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
@@ -259,78 +336,83 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     ): ValidatedResult[PropsState] =
 
         def updateVNelState(vState: ValidatedNel[IncrementalValidation_Error, PropsState])(
-            atom: SetProp
+            atom: SetSingleProp
         ): ValidatedNel[IncrementalValidation_Error, PropsState] =
+            def applyInnerShapeSet(
+                vState: ValidatedNel[IncrementalValidation_Error, PropsState],
+                g     : PipeShape
+            ): ValidatedNel[IncrementalValidation_Error, PropsState] =
+                vState.andThen { st =>
+                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
+                        FlowAreaConservation
+                            .validateSetInnerShape(st, g, pt)(using stateOps)
+                            .toValidatedNel
+                            .map(s => stateOps.setInnerShape(s, g))
+                    }
+                }
             atom match
-                case SetInnerShape(g)                          =>
-                    vState.map(_.modify(_.innerShape).setTo(g.some))
-                case SetOuterShape(g)                          =>
+                case SetInnerShape(g)                                 =>
+                    applyInnerShapeSet(vState, g)
+                case SetInnerShapePreventSectionGeometryChangeAuto(g) =>
+                    // Same state update as plain SetInnerShape (area-conservation
+                    // validation still runs); only the later auto-insertion is
+                    // suppressed (handled at the mkFullElementsDescr call site).
+                    applyInnerShapeSet(vState, g)
+                case SetOuterShape(g)                                 =>
                     vState.map(_.modify(_.outer_shape).setTo(g.some))
-                case SetThickness(t)                           =>
+                case SetThickness(t)                                  =>
                     vState andThen: v =>
-                        v.innerShape match
+                        stateOps.getInnerShape(v) match
                             case None     => ThicknessRequiresInnerGeometry(pt).invalidNel
                             case Some(ig) =>
                                 v.modify(_.outer_shape).setTo(ig.expandGeomWithThickness(t).some).validNel
-                case SetRoughness(r)                           =>
+                case SetRoughness(r)                                  =>
                     vState.map(_.modify(_.roughness).setTo(r.some))
-                case SetMaterial(lm)                           =>
+                case SetMaterial(lm)                                  =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
-                case SetLayer(e, lambda)                       =>
-                    val vGeom = vState.andThen(_.getValidated(_.innerShape, LayerRequiresSectionGeometry(pt)))
+                case SetLayer(e, lambda)                              =>
+                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayerRequiresSectionGeometry(pt)))
                     vGeom.andThen: geom =>
                         vState.map(
                             _.modify(_.layers)
                                 .setTo(List(AppendLayerDescr.FromLambdaUsingThickness(e, lambda)).some)
-                                .modify(_.outer_shape) // also update outer geometry using thickness of layer
+                                .modify(_.outer_shape)
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
-                case SetLayers(ldescrs)                        =>
-                    val vGeom = vState.andThen(_.getValidated(_.innerShape, LayersRequireInnerShape(pt)))
+                case SetLayers(ldescrs)                               =>
+                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
                         vState.map(
                             _.modify(_.layers)
                                 .setTo(ldescrs.some)
-                                .modify(_.outer_shape) // also update outer geometry using thickness of layer
+                                .modify(_.outer_shape)
                                 .setTo(ldescrs.compute_outer_shape(geom).some)
                         )
-                case SetAirSpaceAfterLayers(asp)               =>
+                case SetAirSpaceAfterLayers(asp)                      =>
                     vState.map(_.modify(_.airSpace_afterLayers).setTo(asp.some))
-                case SetPipeLocation(loc)                      =>
+                case SetPipeLocation(loc)                             =>
                     vState.map(_.modify(_.pipeLoc).setTo(loc.some))
-                case SetDuctType(duct)                         =>
+                case SetDuctType(duct)                                =>
                     vState.map(_.modify(_.ductType).setTo(duct.some))
-                case SetNumberOfFlows(nf)                      =>
-                    vState.map(_.modify(_.nFlows).setTo(nf.some))
-                case SetInitialDirection(azimuth, inclination) =>
-                    val dir   = Vec3.fromAzimuthElevation(
-                        AzimuthDirection.toDegrees    (azimuth    ),
-                        InclinationDirection.toDegrees(inclination)
-                    )
-                    val frame = PipeFrame.initial(dir)
-                    vState.map(
-                        _.copy(
-                            initialFrame = Some(frame),
-                            currentFrame = Some(frame)
-                        )
-                    )
-                case _: SetInitialPosition => vState
-                case _: SetFinalPosition => vState
-                case SetPropertiesInBatch(_, _, _) =>
-                    throw new Exception("DEV ERROR: SetPropertiesInBatch should not be a possible case here.")
-                case _: LinedFlue =>
-                    throw new Exception("DEV ERROR: LinedFlue should not be a possible case here.")
 
-        convStep.allSetPropsUntilNextAddElement
-            .foldLeft(propsState.validNel) { case (vState, (_, atom)) =>
-                atom match
+        convStep.allPreElementOpsUntilNextAddElement
+            .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
+                op match
+                    case prop: SetSingleProp =>
+                        updateVNelState(vState)(prop)
+                    case ThermalChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
+                        vState.andThen { st =>
+                            stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
+                                validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
+                                )
+                            }
+                        }
                     case SetPropertiesInBatch(batch_name, props, _) =>
                         props.foldLeft(vState)(updateVNelState(_)(_))
-                    case lf: LinedFlue =>
+                    case lf  : LinedFlue     =>
                         expandLinedFlue(vState, lf, updateVNelState)
-                    case otherAtom                                  =>
-                        updateVNelState(vState)(otherAtom)
             }
 
     /**
@@ -393,26 +475,29 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     // builder methods for Atomic modifiers
 
-    def innerShape(shape: PipeShape)          =
+    /**
+     * Sets the inner pipe shape. When `preventAutoSectionGeometryChange` is `true`,
+     * emits the dev-only `SetInnerShapePreventSectionGeometryChangeAuto` DTO, which
+     * suppresses the automatic SectionGeometryChange element insertion on the next
+     * length-bearing element. This is a DSL-only escape hatch: any project carrying
+     * the resulting DTO is rejected by the payments backend (`IsBackendForbidden`).
+     * When `false`, collapses to the plain `SetInnerShape` so normal projects never
+     * carry the dev-only variant on the wire.
+     */
+    def innerShape(shape: PipeShape, preventAutoSectionGeometryChange: Boolean) =
+        if preventAutoSectionGeometryChange then SetInnerShapePreventSectionGeometryChangeAuto(shape)
+        else SetInnerShape                                                                    (shape)
+    def innerShape(shape: PipeShape)                                            =
         SetInnerShape(shape)
-    def outer_shape(shape: PipeShape)         =
+    def outer_shape(shape: PipeShape)                                           =
         SetOuterShape(shape)
-    @deprecated def thickness(t: QtyD[Meter]) =
+    @deprecated def thickness(t: QtyD[Meter])                                   =
         SetThickness(t)
-    def roughness(r: Roughness)               =
+    def roughness(r: Roughness)                                                 =
         SetRoughness(r)
 
     def material(lm: Material_13384) =
         SetMaterial(lm)
-
-    def setInitialDirection(azimuth: AzimuthDirection, inclination: InclinationDirection) =
-        SetInitialDirection(azimuth, inclination)
-
-    def setInitialPosition(x: Length, y: Length, z: Length) =
-        SetInitialPosition(x, y, z)
-
-    def setFinalPosition(x: Length, y: Length, z: Length) =
-        SetFinalPosition(x, y, z)
 
     def layer(e: Length, tr: SquareMeterKelvinPerWatt) =
         layers(AppendLayerDescr.FromThermalResistanceUsingThickness(e, tr))
@@ -554,14 +639,16 @@ object ThermalIncrementalBuilder_13384:
     def makeFor[PType <: PipeType_EN13384](using
         ptype: PType,
         tt1  : TypeTest[ThermalPipeDescr_13384, SetThermalPipeProp_13384],
-        tt2  : TypeTest[ThermalPipeDescr_13384, AddThermalPipeElement_13384]
+        tt2  : TypeTest[ThermalPipeDescr_13384, AddThermalPipeElement_13384],
+        tt3  : TypeTest[ThermalPipeDescr_13384, ThermalPreElementOp_13384]
     ): ThermalIncrementalBuilder_13384 {
         // type PipeElDescr    = PipeElDescr0
         type PT = PType
     } =
         new ThermalIncrementalBuilder_13384:
-            override given typeTestSetProp   : TypeTest[IncrDescr, SetProp]    = tt1
-            override given typeTestAddElement: TypeTest[IncrDescr, AddElement] = tt2
+            override given typeTestSetProp     : TypeTest[IncrDescr, SetProp]      = tt1
+            override given typeTestAddElement  : TypeTest[IncrDescr, AddElement]   = tt2
+            override given typeTestPreElementOp: TypeTest[IncrDescr, PreElementOp] = tt3
             type PT = PType
             given pt: PT = ptype
 

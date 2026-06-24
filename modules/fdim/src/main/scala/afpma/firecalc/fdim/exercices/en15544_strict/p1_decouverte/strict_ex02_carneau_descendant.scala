@@ -58,31 +58,30 @@ object strict_ex02_carneau_descendant
         ash_pit_height                   = 5.cm
     )
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ), // "Right"
-
-            roughness              (3.mm                                                                           ),
+            roughness           (3.mm                                                                           ),
             innerShape(rectangle(16.1.cm, 15.3.cm)),
-            addSectionHorizontal   ("sortie foyer", 28.6.cm                                                        ),
-            addSharpAngle_90deg    (
+            addSectionHorizontal("sortie foyer", 28.6.cm                                                        ),
+            addSharpAngle_90deg (
                 "virage avant descente",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)
             ), // Down
 
             innerShape(rectangle(16.1.cm, 11.1.cm)),
-            addSectionVertical     ("descente", -36.7.cm                                                           ),
-            addSharpAngle_90deg    (
+            addSectionVertical  ("descente", -36.7.cm                                                           ),
+            addSharpAngle_90deg (
                 "virage 90° avant colonne",
                 AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
             ), // Rear
 
-            addSectionHorizontal   ("vers colonne", 22.6.cm                                                        ),
-            addSharpAngle_90deg    ("virage 90°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
+            addSectionHorizontal("vers colonne", 22.6.cm                                                        ),
+            addSharpAngle_90deg ("virage 90°", AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)), // Up
 
             addSectionVertical("colonne", 4.134.m)
         )

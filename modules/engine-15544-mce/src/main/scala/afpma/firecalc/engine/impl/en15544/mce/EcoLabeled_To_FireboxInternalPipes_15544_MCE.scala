@@ -39,12 +39,8 @@ object Ecolabeled_To_FireboxInternalPipes_15544_MCE
             val TOFIX_ARBITRARY_LENGTH = 15.cm
 
             val start_00_common = Seq(
-                setInitialDirection    (
-                    azimuth     = AzimuthDirection.Front,
-                    inclination = InclinationDirection.Horizontal
-                ), // Front (arbitrary)
-                roughness              (3.mm                   ),
-                pipeLocation           (PipeLocation.HeatedArea) // added for EN13384
+                roughness   (3.mm                   ),
+                pipeLocation(PipeLocation.HeatedArea) // added for EN13384
             )
 
             val CHAMBRE_DETENTE_INNER_SHAPE =
@@ -156,6 +152,9 @@ object Ecolabeled_To_FireboxInternalPipes_15544_MCE
                 case Version.V2 => (start_00_common ++ start_01_version_2 ++ end_common)
 
             CombustionAirPipe_Module_13384.incremental
+                .withInitialDirection(
+                    PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                ) // Front (arbitrary)
                 .define(recombined_incr_descr*)
                 .toFullDescr()
                 .extractPipe

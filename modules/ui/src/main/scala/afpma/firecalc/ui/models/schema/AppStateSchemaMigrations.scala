@@ -13,6 +13,7 @@ import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3
 import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4
 import afpma.firecalc.ui.models.schema.v5.AppStateSchema_V5
 import afpma.firecalc.ui.models.schema.v6.AppStateSchema_V6
+import afpma.firecalc.ui.models.schema.v7.AppStateSchema_V7
 
 import scala.util.Failure
 import scala.util.Success
@@ -123,6 +124,16 @@ object AppStateSchemaMigrations:
             .withFieldConst(_.version, AppStateSchema_V6.VERSION)
             .buildTransformer
 
+    given Transformer[AppStateSchema_V6, AppStateSchema_V7] =
+        Transformer
+            .define[AppStateSchema_V6, AppStateSchema_V7]
+            .withFieldConst(_.version, AppStateSchema_V7.VERSION)
+            .withFieldComputed(
+                _.engine_state,
+                v6 => v6.engine_state.transformInto[afpma.firecalc.dto.v7.FireCalcYAML_V7]
+            )
+            .buildTransformer
+
     /**
      * Migrate raw YAML data to the latest schema version.
      *
@@ -151,7 +162,8 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV2ToV3)
                     .flatMap(migrateFromV3ToV4)
                     .flatMap(migrateFromV4ToV5)
-                    .flatMap(migrateFromV5ToV6) match
+                    .flatMap(migrateFromV5ToV6)
+                    .flatMap(migrateFromV6ToV7) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
                         dom.console.warn(s"Failed to migrate V1 to $V_LATEST: ${e.getMessage()}")
@@ -169,7 +181,8 @@ object AppStateSchemaMigrations:
                     .flatMap(migrateFromV2ToV3)
                     .flatMap(migrateFromV3ToV4)
                     .flatMap(migrateFromV4ToV5)
-                    .flatMap(migrateFromV5ToV6) match
+                    .flatMap(migrateFromV5ToV6)
+                    .flatMap(migrateFromV6ToV7) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
                         dom.console.warn(s"Failed to migrate V2 to $V_LATEST: ${e.getMessage()}")
@@ -180,7 +193,8 @@ object AppStateSchemaMigrations:
                 decodeV3(rawData)
                     .flatMap(migrateFromV3ToV4)
                     .flatMap(migrateFromV4ToV5)
-                    .flatMap(migrateFromV5ToV6) match
+                    .flatMap(migrateFromV5ToV6)
+                    .flatMap(migrateFromV6ToV7) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
                         dom.console.warn(s"Failed to migrate V3 to $V_LATEST: ${e.getMessage()}")
@@ -190,7 +204,8 @@ object AppStateSchemaMigrations:
                 // V4 - decode and migrate to V6
                 decodeV4(rawData)
                     .flatMap(migrateFromV4ToV5)
-                    .flatMap(migrateFromV5ToV6) match
+                    .flatMap(migrateFromV5ToV6)
+                    .flatMap(migrateFromV6ToV7) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
                         dom.console.warn(s"Failed to migrate V4 to $V_LATEST: ${e.getMessage()}")
@@ -199,7 +214,8 @@ object AppStateSchemaMigrations:
             case Some(5) =>
                 // V5 - decode and migrate to V6
                 decodeV5(rawData)
-                    .flatMap(migrateFromV5ToV6) match
+                    .flatMap(migrateFromV5ToV6)
+                    .flatMap(migrateFromV6ToV7) match
                     case Success(v_latest) => Some(v_latest)
                     case Failure(e)        =>
                         dom.console.warn(s"Failed to migrate V5 to $V_LATEST: ${e.getMessage()}")
@@ -207,7 +223,9 @@ object AppStateSchemaMigrations:
 
             case Some(6) =>
                 // Current version - decode directly
-                decodeV6(rawData).toOption
+                decodeV6(rawData).toOption.flatMap(v6 => migrateFromV6ToV7(v6).toOption)
+            case Some(7) =>
+                decodeV7(rawData).toOption
 
             case Some(version) =>
                 dom.console.log(s"Unknown schema version: $version")
@@ -310,6 +328,27 @@ object AppStateSchemaMigrations:
         Try {
             dom.console.log("Migrating AppStateSchema from V5 to V6")
             schema.transformInto[AppStateSchema_V6]
+        }
+
+    /** Decode V7 schema from YAML string. */
+    private def decodeV7(yaml: String): Try[AppStateSchema_V7] =
+        import afpma.firecalc.ui.models.schema.v7.AppStateSchema_V7.given
+        yamlParser.parse(yaml) match
+            case Right(json) =>
+                json.as[AppStateSchema_V7] match
+                    case Right(schema) => Success(schema)
+                    case Left(err)     => Failure(new RuntimeException(s"Failed to decode V7: ${err.getMessage()}"))
+            case Left(err)   => Failure(new RuntimeException(s"Failed to parse V7 YAML: ${err.getMessage()}"))
+
+    /**
+     * Migrate from V6 to V7 schema.
+     *
+     * Uses Chimney transformer to convert engine_state from FireCalcYAML_V6 to FireCalcYAML_V7.
+     */
+    private def migrateFromV6ToV7(schema: AppStateSchema_V6): Try[AppStateSchema_V7] =
+        Try {
+            dom.console.log("Migrating AppStateSchema from V6 to V7")
+            schema.transformInto[AppStateSchema_V7]
         }
 
     /**

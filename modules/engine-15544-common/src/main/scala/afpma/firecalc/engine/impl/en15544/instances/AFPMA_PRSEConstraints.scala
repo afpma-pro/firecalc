@@ -11,8 +11,6 @@ import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.en15544.firebox.AFPMA_PRSE
 import afpma.firecalc.engine.standard.*
 
-import io.taig.babel.Locale
-
 /**
  * EN 15544 constraints for [[AFPMA_PRSE]] fireboxes.
  *
@@ -25,6 +23,6 @@ given afpmaPrseConstraints: FireboxConstraints[AFPMA_PRSE] =
         override def firebox_custom_constraints(
             firebox: AFPMA_PRSE,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] = Nil
+        ): List[FireboxError] = Nil
 
 end afpmaPrseConstraints

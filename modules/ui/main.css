@@ -7,7 +7,7 @@
 @import "./style.css";
 
 /* @source "./src/main/scala/"; */
-@source "./target/scala-3.8.3/firecalc-ui-fastopt"; 
+@source "./target/scala-3.8.4/firecalc-ui-fastopt"; 
 
 @plugin "@tailwindcss/typography";
 
@@ -106,6 +106,33 @@ tr.insert-sep td {
 }
 .viz-highlighted > .fieldset-legend {
     font-weight: 700 !important;
+}
+
+.btn-vlight-ocre {
+    background-color: var(--color-vlight-ocre);
+    border-color: var(--color-vlight-ocre);
+    color: var(--color-secondary-content);
+}
+
+.btn-vlight-ocre:hover {
+    background-color: var(--color-light-ocre);
+    border-color: var(--color-light-ocre);
+}
+
+.position3d-fit-content .flex-auto {
+    flex: 0 0 auto;
+    width: fit-content;
+}
+
+.position3d-fit-content .join,
+.position3d-fit-content .input,
+.position3d-fit-content .floating-label {
+    width: fit-content;
+}
+
+.position3d-fit-content input[type="number"] {
+    width: fit-content;
+    min-width: 6ch;
 }
 
 /* ── Pipe-type color tokens ─────────────────────────────────────── */

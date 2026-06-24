@@ -7,9 +7,9 @@ package afpma.firecalc.ui.models.schema
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AddFlowOnlyPipeElement_15544_V3
-import afpma.firecalc.dto.v4.AddThermalPipeElement_13384_V3
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.units.coulombutils.meters
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.ui.instances.defaultable
@@ -50,7 +50,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val result = AppStateSchemaMigrations.migrateToLatest(rawData)
 
         // Then
-        result shouldBe None
+        result `shouldBe` None
     }
 
     it should "return None for whitespace-only data" in {
@@ -432,8 +432,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
 
         // Then - migrated to latest (V6)
-        result shouldBe defined
-        result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+        result `shouldBe` defined
+        result.get.version.unwrap `shouldBe` AppStateSchema.LATEST_VERSION
     }
 
     it should "bump engine_state version from 4 to latest" in {
@@ -444,8 +444,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val result = AppStateSchemaMigrations.migrateToLatest(v4Yaml)
 
         // Then
-        result shouldBe defined
-        result.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+        result `shouldBe` defined
+        result.get.engine_state.version.unwrap `shouldBe` AppStateSchema.LATEST_VERSION
     }
 
     behavior of "SchemaMigrations V5 to V6 migration"
@@ -461,8 +461,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
 
         // Then - migrated to latest (V6)
-        result shouldBe defined
-        result.get.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+        result `shouldBe` defined
+        result.get.version.unwrap `shouldBe` AppStateSchema.LATEST_VERSION
     }
 
     it should "bump engine_state version from 5 to 6" in {
@@ -473,8 +473,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
 
         // Then
-        result shouldBe defined
-        result.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+        result `shouldBe` defined
+        result.get.engine_state.version.unwrap `shouldBe` AppStateSchema.LATEST_VERSION
     }
 
     it should "restructure V5 separate pipe fields into V6 PostFireboxPipeDescrSlot sequence" in {
@@ -485,37 +485,37 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val result = AppStateSchemaMigrations.migrateToLatest(v5Yaml)
 
         // Then - post_firebox_pipes should contain 3 slots (flue, connector, chimney)
-        result shouldBe defined
+        result `shouldBe` defined
         val pipes = result.get.engine_state.post_firebox_pipes
-        pipes should have size 3
+        pipes.slots should have size 3
 
         // Verify each slot carries the correct payload (catches cross-wiring bugs)
-        pipes(0) match
-            case PostFireboxPipeDescrSlot.FlueSlot(descrs) =>
+        pipes.slots(0) match
+            case PostFireboxPipeDescrSlot_V7.FlueSlot(descrs) =>
                 descrs should have size 1
                 descrs.head match
-                    case AddFlowOnlyPipeElement_15544_V3.AddSectionSlopped(_, length) =>
-                        length shouldBe 1.0.meters
+                    case AddFlowOnlyPipeElement_15544_V4.AddSectionSlopped(_, length) =>
+                        length `shouldBe` 1.0.meters
                     case other                                                        => fail(s"unexpected flue descriptor: $other")
-            case other                                     => fail(s"expected FlueSlot at index 0, got: $other")
+            case other                                        => fail(s"expected FlueSlot at index 0, got: $other")
 
-        pipes(1) match
-            case PostFireboxPipeDescrSlot.ConnectorSlot(descrs) =>
+        pipes.slots(1) match
+            case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descrs) =>
                 descrs should have size 1
                 descrs.head match
-                    case AddThermalPipeElement_13384_V3.AddSectionSlopped(_, length) =>
-                        length shouldBe 2.5.meters
+                    case AddThermalPipeElement_13384_V4.AddSectionSlopped(_, length) =>
+                        length `shouldBe` 2.5.meters
                     case other                                                       => fail(s"unexpected connector descriptor: $other")
-            case other                                          => fail(s"expected ConnectorSlot at index 1, got: $other")
+            case other                                             => fail(s"expected ConnectorSlot at index 1, got: $other")
 
-        pipes(2) match
-            case PostFireboxPipeDescrSlot.ChimneySlot(descrs) =>
+        pipes.slots(2) match
+            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descrs) =>
                 descrs should have size 1
                 descrs.head match
-                    case AddThermalPipeElement_13384_V3.AddSectionSlopped(_, length) =>
-                        length shouldBe 5.0.meters
+                    case AddThermalPipeElement_13384_V4.AddSectionSlopped(_, length) =>
+                        length `shouldBe` 5.0.meters
                     case other                                                       => fail(s"unexpected chimney descriptor: $other")
-            case other                                        => fail(s"expected ChimneySlot at index 2, got: $other")
+            case other                                           => fail(s"expected ChimneySlot at index 2, got: $other")
     }
 
     // ─── .fcalc file format: full AppStateSchema round-trip ─────────────────────
@@ -540,10 +540,10 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val loaded = AppStateSchemaHelper.decodeFromFile(yaml)
 
         // Then - all fields preserved
-        loaded.isSuccess shouldBe true
-        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
-        loaded.get.sensitive_data.customer.first_name shouldBe "Jean"
-        loaded.get.sensitive_data.customer.last_name shouldBe "Dupont"
+        loaded.isSuccess `shouldBe` true
+        loaded.get.engine_state.version.unwrap `shouldBe` AppStateSchema.LATEST_VERSION
+        loaded.get.sensitive_data.customer.first_name `shouldBe` "Jean"
+        loaded.get.sensitive_data.customer.last_name `shouldBe` "Dupont"
     }
 
     it should "load legacy engine-state-only .fcalc files via fallback" in {
@@ -558,8 +558,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
         val loaded = AppStateSchemaHelper.decodeFromFile(legacyYaml)
 
         // Then - loads successfully with default sensitive_data
-        loaded.isSuccess shouldBe true
-        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+        loaded.isSuccess `shouldBe` true
+        loaded.get.engine_state.version.unwrap `shouldBe` AppStateSchema.LATEST_VERSION
     }
 
     it should "not include sensitive_data in engine-state-only encoding" in {
@@ -575,7 +575,7 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
         // And - it should still be a valid FireCalcYAML
         val decoded = FireCalcYAMLMigrations.decodeAndMigrateTry(engineYaml)
-        decoded.isSuccess shouldBe true
+        decoded.isSuccess `shouldBe` true
     }
 
     it should "load a V4 engine-state-only .fcalc file via decodeFromFile fallback" in {
@@ -592,8 +592,8 @@ class SchemaMigrationsTest extends AnyFlatSpec with Matchers {
 
         // Then - should succeed via the FireCalcYAMLMigrations fallback
         withClue(s"decodeFromFile failed: ${loaded.failed.toOption.map(_.getMessage)}\n") {
-            loaded.isSuccess shouldBe true
+            loaded.isSuccess `shouldBe` true
         }
-        loaded.get.engine_state.version.unwrap shouldBe AppStateSchema.LATEST_VERSION
+        loaded.get.engine_state.version.unwrap `shouldBe` AppStateSchema.LATEST_VERSION
     }
 }

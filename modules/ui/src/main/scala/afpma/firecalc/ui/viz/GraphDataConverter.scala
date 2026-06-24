@@ -106,11 +106,14 @@ object GraphDataConverter:
         if neighbor.exists(isDirectionChange) then neighborName.toVector
         else (currentName ++ neighborName).toVector
 
-    /** Floor min / ceil max to the nearest multiple of `step`; empty input → (0, 0). */
+    /** Floor min / ceil max to `step`; empty, non-finite, or flat input gets a non-zero span. */
     private def niceRange(ys: Vector[Double], step: Double): (Double, Double) =
-        val mn = ys.minOption.getOrElse(0.0)
-        val mx = ys.maxOption.getOrElse(0.0)
-        (math.floor(mn / step) * step, math.ceil(mx / step) * step)
+        val finiteYs = ys.filter(_.isFinite)
+        val mn       = finiteYs.minOption.getOrElse(0.0)
+        val mx       = finiteYs.maxOption.getOrElse(0.0)
+        val lo       = math.floor(mn / step) * step
+        val hi       = math.ceil(mx / step) * step
+        if lo == hi then (lo - step, hi + step) else (lo, hi)
 
     // Series colors
     private object GraphSeriesColors:
@@ -122,15 +125,17 @@ object GraphDataConverter:
     private val RegistreAirPressureColor = "#FAAF4C"
 
     // Background band colors (matching 3D viz pipe group palette, ~12% opacity)
-    private val BandColors: Map[String, String] = Map(
-        "Air Intake"     -> "rgba(17, 153, 255, 0.12)", // Blue #19F
-        "Combustion Air" -> "rgba(88, 184, 255, 0.12)", // Light Blue #58B8FF
-        "Registre d'air" -> "rgba(88, 184, 255, 0.12)", // Same as Combustion Air
-        "Firebox"        -> "rgba(188, 33, 50, 0.12)",  // Red #BC2132
-        "Flue"           -> "rgba(238, 102, 34, 0.12)", // Orange #E62
-        "Connector"      -> "rgba(245, 147, 49, 0.20)", // OrangeYellow #F59331 (higher opacity to differentiate from Flue)
-        "Chimney"        -> "rgba(255, 220, 56, 0.12)"  // Yellow #FFDC38
-    )
+    private val BandColors: Map[String, String] =
+        val opa = 0.24
+        Map    (
+            "Air Intake"     -> s"rgba(17, 153, 255, $opa)", // Blue #19F
+            "Combustion Air" -> s"rgba(88, 184, 255, $opa)", // Light Blue #58B8FF
+            "Registre d'air" -> s"rgba(88, 184, 255, $opa)", // Same as Combustion Air
+            "Firebox"        -> s"rgba(188, 33, 50, $opa)", // Red #BC2132
+            "Flue"           -> s"rgba(238, 102, 34, $opa)", // Orange #E62
+            "Connector"      -> s"rgba(245, 147, 49, $opa)", // OrangeYellow #F59331 (higher opacity to differentiate from Flue)
+            "Chimney"        -> s"rgba(255, 220, 56, $opa)" // Yellow #FFDC38
+        )
 
     /** Resolve band color for a pipe name, handling slot-indexed names like "Slot0:Flue". */
     private def bandColorFor(pipeName: String): String = pipeName match
@@ -150,6 +155,7 @@ object GraphDataConverter:
     private def make_PipeSectionResult_Manual(
         section_name          : String,
         pu                    : ValidatedNel[MecaFlu_Error, Pressure],
+        v_start               : FlowVelocity,
         v_end                 : FlowVelocity
     ): PipeSectionResult[?] =
         PipeSectionResult
@@ -162,6 +168,7 @@ object GraphDataConverter:
                 _innerShape_end       = Circle(100.mm),
                 _crossSectionArea_end = Circle(100.mm).area,
                 _pu                   = pu,
+                _v_start              = v_start,
                 _v_end                = v_end
             )
 
@@ -204,10 +211,11 @@ object GraphDataConverter:
                     Σ_pu.map(pu => Σ_ph + (0.0.pascals - Σ_pR) + (0.0.pascals - pu))
 
         val registreAirSectionVNel = airIntake.map: air_intake_res =>
-            make_PipeSectionResult_Manual   (
+            make_PipeSectionResult_Manual     (
                 "registre d'air",
-                pu    = delta_pressure,
-                v_end = air_intake_res.v_end.getOrElse(0.m_per_s)
+                pu      = delta_pressure,
+                v_start = air_intake_res.v_start.getOrElse(0.m_per_s),
+                v_end   = air_intake_res.v_end.getOrElse(0.m_per_s)
             )
 
         val registreAir: VNelMcalcErr[PipeResult] = registreAirSectionVNel.map: registreAirSection =>
@@ -245,6 +253,7 @@ object GraphDataConverter:
                     val section = make_PipeSectionResult_Manual(
                         section_name = pr.typ.show,
                         pu           = pr.pu,
+                        v_start      = pr.v_start.getOrElse(0.m_per_s),
                         v_end        = pr.v_end.getOrElse(0.m_per_s)
                     )
                     runningLength += section.section_length.value
@@ -255,15 +264,11 @@ object GraphDataConverter:
 
         if allSections.isEmpty then ChartData(series = Vector.empty, yAxes = Vector.empty, xAxisLabel = "")
         else
-            // Zero-length sections (synthetic "Registre d'air" pressure-delta anchor,
-            // SingularFlowResistance singular-loss elements, etc.) render as two stacked
-            // duplicate velocity markers at the same x — visual noise with no physical
-            // information. Strip them from velocity; pressure / temperature / elevation
-            // keep them because their y-jump at the section boundary IS the information.
-            val velocitySections = allSections.filter(ps => ps.xEnd - ps.xStart > 1e-9)
-
+            // All series use allSections so that index-based neighbor lookups
+            // (tooltip titles, highlight targets) produce consistent labels across
+            // every series at the same x-position.
             val tempPoints     = buildSeriesPoints(allSections, "temperature")
-            val velocityPoints = buildSeriesPoints(velocitySections, "velocity")
+            val velocityPoints = buildSeriesPoints(allSections, "velocity")
             val elevPoints     = buildSeriesPoints(allSections, "elevation")
             val pressPoints    = buildSeriesPoints(allSections, "pressure")
 
@@ -314,7 +319,7 @@ object GraphDataConverter:
             // aligns on every multiple of 5. Right axis (temperature): floor/ceil to 25 and
             // carry the tick count of the left primary grid so the two axes' horizontal
             // gridlines coincide 1:1 across the chart.
-            val (leftMin, leftMax) = niceRange((pressPoints ++ velocityPoints ++ elevPoints).map(_.y), 5.0)
+            val (leftMin, leftMax) = niceRange((pressPoints ++ velocityPoints ++ elevPoints).map(_.y), 2.0)
             val (tempMin, tempMax) = niceRange(tempPoints.map(_.y), 25.0)
             val primaryTickCount = ((leftMax - leftMin) / 5.0).toInt + 1
             val tempStepSize: Double =

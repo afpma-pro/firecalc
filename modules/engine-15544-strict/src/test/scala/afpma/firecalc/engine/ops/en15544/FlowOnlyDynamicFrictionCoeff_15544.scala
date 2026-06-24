@@ -38,46 +38,46 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
 
     private val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
 
-    // TODO: make tests more DRY
-
     "tronçon court selon cas type 15544 C2 => 2 angles alternés à 90°" - {
         "zeta = (0.44, 0.44) ???" in {
             import FluePipe_Module_15544.*
             val accu =
                 FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            AzimuthDirection.Rear,
+                            InclinationDirection.Horizontal
+                        )
+                    )
                     .define(
-                        setInitialDirection    (
-                            azimuth     = AzimuthDirection.Rear,
-                            inclination = InclinationDirection.Horizontal
-                        ), // Rear
-                        roughness              (3.mm              ),
+                        roughness           (3.mm              ),
                         innerShape(rectangle(24.cm, 20.cm)),
-                        addSectionHorizontal   ("Car. 3", 179.2.cm),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("Car. 3", 179.2.cm),
+                        addSharpAngle_90deg (
                             "virage 90° 3-4",
                             AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                         ), // Right
 
-                        addSectionHorizontal   ("Car. 4", 22.cm   ),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("Car. 4", 22.cm   ),
+                        addSharpAngle_90deg (
                             "virage 90° 4-5",
                             AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
                         ), // Rear
 
-                        addSectionHorizontal   ("Car. 5", 8.cm    ),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("Car. 5", 8.cm    ),
+                        addSharpAngle_90deg (
                             "virage 90° 5-6",
                             AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                         ), // Right
 
-                        addSectionHorizontal   ("Car. 6", 22.cm   ),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("Car. 6", 22.cm   ),
+                        addSharpAngle_90deg (
                             "virage 90° 6-7",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
                         ), // Front
 
                         innerShape(rectangle(24.cm, 19.cm)),
-                        addSectionHorizontal   ("Car. 7", 190.cm  )
+                        addSectionHorizontal("Car. 7", 190.cm  )
                     )
                     .toFullDescr()
                     .toOption
@@ -109,24 +109,26 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             import FluePipe_Module_15544.*
             val accu =
                 FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            AzimuthDirection.Rear,
+                            InclinationDirection.Horizontal
+                        )
+                    )
                     .define(
-                        setInitialDirection    (
-                            azimuth     = AzimuthDirection.Rear,
-                            inclination = InclinationDirection.Horizontal
-                        ), // Rear
-                        roughness              (3.mm                     ),
+                        roughness           (3.mm                     ),
                         innerShape(rectangle(20.cm, 20.cm)),
-                        addSectionHorizontal   ("debut carneau", 1.meters),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("debut carneau", 1.meters),
+                        addSharpAngle_90deg (
                             "virage 1",
                             AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                         ), // Right
-                        addSectionHorizontal   ("tronçon court", 10.cm   ),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("tronçon court", 10.cm   ),
+                        addSharpAngle_90deg (
                             "virage 2",
                             AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
                         ), // Rear
-                        addSectionHorizontal   ("fin carneau", 1.meters  )
+                        addSectionHorizontal("fin carneau", 1.meters  )
                     )
                     .toFullDescr()
                     .toOption
@@ -158,24 +160,26 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             import FluePipe_Module_15544.*
             val accu =
                 FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            AzimuthDirection.Rear,
+                            InclinationDirection.Horizontal
+                        )
+                    )
                     .define(
-                        setInitialDirection    (
-                            azimuth     = AzimuthDirection.Rear,
-                            inclination = InclinationDirection.Horizontal
-                        ), // Rear
-                        roughness              (3.mm                     ),
+                        roughness           (3.mm                     ),
                         innerShape(rectangle(20.cm, 20.cm)),
-                        addSectionHorizontal   ("debut carneau", 1.meters),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("debut carneau", 1.meters),
+                        addSharpAngle_90deg (
                             "virage 1",
                             AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                         ), // Right
-                        addSectionHorizontal   ("tronçon court", 5.cm    ),
-                        addSharpAngle_90deg    (
+                        addSectionHorizontal("tronçon court", 5.cm    ),
+                        addSharpAngle_90deg (
                             "virage 2",
                             AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
                         ), // Rear
-                        addSectionHorizontal   ("fin carneau", 1.meters  )
+                        addSectionHorizontal("fin carneau", 1.meters  )
                     )
                     .toFullDescr()
                     .toOption
@@ -207,24 +211,26 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             import FluePipe_Module_15544.*
             val accu =
                 FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            AzimuthDirection.Rear,
+                            InclinationDirection.Horizontal
+                        )
+                    )
                     .define(
-                        setInitialDirection    (
-                            azimuth     = AzimuthDirection.Rear,
-                            inclination = InclinationDirection.Horizontal
-                        ), // Rear
-                        roughness              (3.mm                     ),
+                        roughness           (3.mm                     ),
                         innerShape(rectangle(20.cm, 20.cm)),
-                        addSectionHorizontal   ("debut carneau", 1.meters),
-                        addSharpAngle_45deg    (
+                        addSectionHorizontal("debut carneau", 1.meters),
+                        addSharpAngle_45deg (
                             "virage 1",
                             AbsoluteDirection(AzimuthDirection.RearRight, InclinationDirection.Horizontal)
                         ), // RearRight (45° from Rear towards Right)
-                        addSectionHorizontal   ("tronçon court", 10.cm   ),
-                        addSharpAngle_45deg    (
+                        addSectionHorizontal("tronçon court", 10.cm   ),
+                        addSharpAngle_45deg (
                             "virage 2",
                             AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                         ), // Right
-                        addSectionHorizontal   ("fin carneau", 1.meters  )
+                        addSectionHorizontal("fin carneau", 1.meters  )
                     )
                     .toFullDescr()
                     .toOption
@@ -258,29 +264,31 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             import FluePipe_Module_15544.*
             val accu =
                 FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            AzimuthDirection.Rear,
+                            InclinationDirection.Horizontal
+                        )
+                    )
                     .define(
-                        setInitialDirection    (
-                            azimuth     = AzimuthDirection.Rear,
-                            inclination = InclinationDirection.Horizontal
-                        ), // Rear
-                        roughness              (3.mm                     ),
+                        roughness           (3.mm                     ),
                         innerShape(rectangle(20.cm, 20.cm)),
-                        addSectionHorizontal   ("debut carneau", 1.meters),
-                        addSharpAngle_30deg    (
+                        addSectionHorizontal("debut carneau", 1.meters),
+                        addSharpAngle_30deg (
                             "virage 1",
                             AbsoluteDirection(AzimuthDirection.Custom(30.degrees), InclinationDirection.Horizontal)
                         ), // 30° from Rear towards Right
-                        addSectionHorizontal   ("tronçon court 12", 10.cm),
-                        addSharpAngle_30deg    (
+                        addSectionHorizontal("tronçon court 12", 10.cm),
+                        addSharpAngle_30deg (
                             "virage 2",
                             AbsoluteDirection(AzimuthDirection.Custom(60.degrees), InclinationDirection.Horizontal)
                         ), // 60°
-                        addSectionHorizontal   ("tronçon court 23", 10.cm),
-                        addSharpAngle_30deg    (
+                        addSectionHorizontal("tronçon court 23", 10.cm),
+                        addSharpAngle_30deg (
                             "virage 3",
                             AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                         ), // Right (90°)
-                        addSectionHorizontal   ("fin carneau", 1.meters  )
+                        addSectionHorizontal("fin carneau", 1.meters  )
                     )
                     .toFullDescr()
                     .toOption

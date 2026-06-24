@@ -6,15 +6,21 @@
 package afpma.firecalc.engine
 
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.units.coulombutils.given
+
+import afpma.firecalc.domain.NbOfFlows
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.dto.FireboxAvailabilityExtensions.localizedTypeName
 
+import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.TermConstraintError
+import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.engine.models.en15544.PressureRequirement
 import afpma.firecalc.engine.models.gtypedefs.v
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
@@ -125,6 +131,7 @@ object standard {
         case e: MecaFlu_Error               => e.show // Uses ShowUsingLocale[MecaFlu_Error]
         case e: IncrementalValidation_Error => e.show // Uses ShowUsingLocale[IncrementalValidation_Error]
         case e: ErrorsInOtherSectionType    => e.show // Uses ShowUsingLocale[ErrorsInOtherSectionType]
+        case e: FireboxTypeDisabledError    => e.show // Uses ShowUsingLocale[FireboxTypeDisabledError]
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
@@ -144,6 +151,11 @@ object standard {
     case object InvalidTypeOfAppliance_PelletsIncompatibleWithWoodLogFuelType  extends Inputs_Error
     case object InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType extends Inputs_Error
     case object StoveParamsSizingInputMissing                                  extends Inputs_Error
+    case class IncompatibleDirectionInPipe(
+        pipeLabel   : String,
+        slotIndex   : Int,
+        elementIndex: Int
+    ) extends Inputs_Error
 
     object Inputs_Error:
         given ShowUsingLocale[Inputs_Error] = showUsingLocale:
@@ -153,6 +165,12 @@ object standard {
                 I18N.inputs_error.invald_type_of_appliance.wood_logs_incompatible_with_pellets_fuel_type
             case e: StoveParamsSizingInputMissing.type                                  =>
                 I18N.inputs_error.stove_params_sizing_input_missing
+            case e: IncompatibleDirectionInPipe                                         =>
+                I18N.inputs_error.incompatible_direction_in_pipe(
+                    e.pipeLabel,
+                    e.slotIndex.toString,
+                    e.elementIndex.toString
+                )
 
     // EN 15544
 
@@ -183,8 +201,9 @@ object standard {
         case e: InjectorVelocityAboveMaximum     => Show[InjectorVelocityAboveMaximum].show(e)
         case e: MissingFlowRate                  => Show[MissingFlowRate].show(e)
         case e: AirIntakePipeShapeMismatch       => e.show
-        case e: FireboxErrorCustom               => e.reason
-        case e: InvalidFireboxConstraint         => e.show
+        case TBurnoutNotSet => TBurnoutNotSet.show
+        case e: FireboxErrorCustom       => e.reason
+        case e: InvalidFireboxConstraint => e.show
 
     case class InvalidFireboxConstraint(error: TermConstraintError[?]) extends FireboxError
     object InvalidFireboxConstraint:
@@ -256,63 +275,72 @@ object standard {
         given ShowUsingLocale[AirIntakePipeShapeMismatch] = showUsingLocale: e =>
             I18N.errors.air_intake_pipe_shape_mismatch(e.expected, e.actual)
 
+    case object TBurnoutNotSet extends FireboxError:
+        given ShowUsingLocale[TBurnoutNotSet.type] = showUsingLocale: e =>
+            I18N.errors.t_burnout_not_set
+
     sealed trait InvalidTermValue[T] extends FireboxError:
-        def termName : String
+        def termName : LocalizedString
         def termValue: T
         given showT  : Show[T] = scala.compiletime.deferred
 
     given show_InvalidTermValue: [T: Show] => ShowUsingLocale[InvalidTermValue[T]] = showUsingLocale:
         case x: TermValueShouldBeDefined             =>
-            I18N.errors.term_should_be_defined(x.termName, "[none]")
+            I18N.errors.term_should_be_defined(x.termName.show, "[none]")
         case x: TermValueShouldBeGreaterOrEqThan[?]  =>
-            I18N.errors.term_should_be_greater_or_eq_than(x.termName, x.minValue.show, x.termValue.show)
+            I18N.errors.term_should_be_greater_or_eq_than(x.termName.show, x.minValue.show, x.termValue.show)
         case x: TermValueShouldBeGreaterThan[?]      =>
-            I18N.errors.term_should_be_greater_than(x.termName, x.minValue.show, x.termValue.show)
+            I18N.errors.term_should_be_greater_than(x.termName.show, x.minValue.show, x.termValue.show)
         case x: TermValueShouldBeLessOrEqThan[?]     =>
-            I18N.errors.term_should_be_less_or_eq_than(x.termName, x.maxValue.show, x.termValue.show)
+            I18N.errors.term_should_be_less_or_eq_than(x.termName.show, x.maxValue.show, x.termValue.show)
         case x: TermValueShouldBeLessThan[?]         =>
-            I18N.errors.term_should_be_less_than(x.termName, x.maxValue.show, x.termValue.show)
+            I18N.errors.term_should_be_less_than(x.termName.show, x.maxValue.show, x.termValue.show)
         case x: TermValueShouldBeBetweenInclusive[?] =>
-            I18N.errors.term_should_be_between_inclusive(x.termName, x.minValue.show, x.maxValue.show, x.termValue.show)
+            I18N.errors.term_should_be_between_inclusive(
+                x.termName.show,
+                x.minValue.show,
+                x.maxValue.show,
+                x.termValue.show
+            )
         case x: TermValueCustom[?]                   =>
-            x.message
+            x.message.show
 
     case class TermValueShouldBeDefined(
-        override val termName: String
+        override val termName: LocalizedString
     ) extends InvalidTermValue[Unit]:
         override val termValue: Unit       = ()
         override given showT  : Show[Unit] = Show.show(_ => "[none]")
 
     case class TermValueShouldBeGreaterOrEqThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         minValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeGreaterThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         minValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeLessOrEqThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         maxValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeLessThan[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         maxValue              : T
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
     case class TermValueShouldBeBetweenInclusive[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
         minValue              : T,
         maxValue              : T
@@ -320,9 +348,9 @@ object standard {
         override given showT: Show[T] = Show[T]
 
     case class TermValueCustom[T: Show](
-        override val termName : String,
+        override val termName : LocalizedString,
         override val termValue: T,
-        val message           : String
+        val message           : LocalizedString
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
@@ -762,6 +790,10 @@ object standard {
         // Exception errors
         case class UnexpectedThrowable(e: Throwable, override val sectionTyp: PipeType) extends MecaFlu_Error
 
+        // Bridges an MCalc_Error that surfaced during pipe computation
+        // (e.g. TBurnoutNotSet from t_fluepipe) into the MecaFlu layer
+        case class ComputationError(error: MCalc_Error, override val sectionTyp: PipeType) extends MecaFlu_Error
+
         // Thermal resistance computation errors (context-aware)
         case class ThermalResistanceNotApplicableForCombustionAir(override val sectionTyp: PipeType)
             extends MecaFlu_Error
@@ -817,8 +849,9 @@ object standard {
                 I18N.mecaflu.errors.mean_temperature_calculation_errors(errs.toList.map(_.show).mkString(", "))
             case NoStraightSectionDefinedForTemperatureCalc(ref, _) =>
                 I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
+            case ComputationError(err, _)                           => err.show
             case x: SingularFlowResistanceCoeffError => x.show
-            case x: FluePipeShapeSequenceError => x.show
+            case x: FluePipeShapeSequenceError       => x.show
 
     // Incremental Builder Validation Errors
 
@@ -917,20 +950,53 @@ object standard {
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
     case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
     case class GeometryWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
+    case class FlowSplitRequiresInnerShapeBeforeDirectionChange(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
+    case class FlowMergeRequiresInnerShapeBeforeDirectionChange(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
+    case class FlowMergeRequiresLengthBearingSectionBeforeDirectionChange(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
+    case class FlowSplitForbiddenOnAscendingPipe(
+        sectionTyp        : PipeType,
+        directionChangeRef: String
+    ) extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
-            case _: ThicknessRequiresInnerGeometry         =>
+            case _: ThicknessRequiresInnerGeometry                             =>
                 I18N.incremental_validation.prerequisites.thickness_requires_inner_geometry
-            case _: LayerRequiresSectionGeometry           =>
+            case _: LayerRequiresSectionGeometry                               =>
                 I18N.incremental_validation.prerequisites.layer_requires_section_geometry
-            case _: LayersRequireInnerShape                => I18N.incremental_validation.prerequisites.layers_require_inner_shape
-            case _: DirectionChangeRequiresSectionGeometry =>
+            case _: LayersRequireInnerShape                                    => I18N.incremental_validation.prerequisites.layers_require_inner_shape
+            case _: DirectionChangeRequiresSectionGeometry                     =>
                 I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
-            case _: FinalDirWithoutInitialDirection        =>
+            case _: FinalDirWithoutInitialDirection                            =>
                 I18N.incremental_validation.prerequisites.final_dir_without_initial_direction
-            case _: GeometryWithoutInitialDirection        =>
+            case _: GeometryWithoutInitialDirection                            =>
                 I18N.incremental_validation.prerequisites.geometry_without_initial_direction
+            case e: FlowSplitRequiresInnerShapeBeforeDirectionChange           =>
+                I18N.incremental_validation.prerequisites.flow_split_requires_inner_shape_before_direction_change(
+                    e.directionChangeRef
+                )
+            case e: FlowMergeRequiresInnerShapeBeforeDirectionChange           =>
+                I18N.incremental_validation.prerequisites.flow_merge_requires_inner_shape_before_direction_change(
+                    e.directionChangeRef
+                )
+            case e: FlowMergeRequiresLengthBearingSectionBeforeDirectionChange =>
+                I18N.incremental_validation.prerequisites
+                    .flow_merge_requires_length_bearing_section_before_direction_change(
+                        e.directionChangeRef
+                    )
+            case e: FlowSplitForbiddenOnAscendingPipe                          =>
+                I18N.incremental_validation.prerequisites.flow_split_forbidden_on_ascending_pipe(
+                    e.directionChangeRef
+                )
 
     // Conflict errors
     sealed trait ConflictDetected extends IncrementalValidation_Error
@@ -942,6 +1008,63 @@ object standard {
     case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
     case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
+
+    /** Shape was set but not yet materialized into a physical element. */
+    case class ShapeNotMaterialized(
+        sectionTyp: PipeType,
+        operation : ShapeNotMaterialized.Operation
+    ) extends ConflictDetected
+
+    object ShapeNotMaterialized:
+        enum Operation:
+            case SetInnerShape
+            case SetNumberOfFlows
+            case AddDirectionChange
+            case AddSectionChange
+            case AddSectionShapeChange
+            case AddFlowResistance
+            case AddPressureDiff
+
+    // Expected dimension for informative error messages on flow split/merge area violations
+    sealed trait ExpectedDimension
+    case class ExpectedDimRectangle(
+        enteredWidth  : QtyD[Meter],
+        enteredHeight : QtyD[Meter],
+        enteredArea   : Area,
+        expectedHeight: QtyD[Meter],
+        expectedArea  : Area
+    ) extends ExpectedDimension
+    case class ExpectedDimSquare(
+        enteredSide : QtyD[Meter],
+        enteredArea : Area,
+        expectedSide: QtyD[Meter],
+        expectedArea: Area
+    ) extends ExpectedDimension
+    case class ExpectedDimCircle(
+        enteredDiameter : QtyD[Meter],
+        enteredArea     : Area,
+        expectedDiameter: QtyD[Meter],
+        expectedArea    : Area
+    ) extends ExpectedDimension
+
+    enum FlowAreaTransition:
+        case Split, Merge
+
+    case class PendingFlowAreaCheck(
+        beforeShape: PipeShape,
+        beforeFlows: NbOfFlows,
+        afterFlows : NbOfFlows,
+        transition : FlowAreaTransition
+    )
+
+    case class FlowTransitionChangesTotalCrossSection(
+        transition       : FlowAreaTransition,
+        beforeTotalArea  : Area,
+        beforeFlows      : NbOfFlows,
+        afterFlows       : NbOfFlows,
+        expectedDimension: ExpectedDimension,
+        sectionTyp       : PipeType
+    ) extends ConflictDetected
 
     object ConflictDetected:
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
@@ -959,6 +1082,52 @@ object standard {
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
             case CasingTooSmallForLiner(linerDh, casingDh, _)     =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
+            case e: ShapeNotMaterialized =>
+                val translatedOp = e.operation match
+                    case ShapeNotMaterialized.Operation.SetInnerShape         => I18N.set_prop.SetInnerShape
+                    case ShapeNotMaterialized.Operation.SetNumberOfFlows      => I18N.set_prop.SetNumberOfFlows
+                    case ShapeNotMaterialized.Operation.AddDirectionChange    => I18N.set_prop.AddDirectionChange
+                    case ShapeNotMaterialized.Operation.AddSectionChange      => I18N.set_prop.AddSectionChange
+                    case ShapeNotMaterialized.Operation.AddSectionShapeChange => I18N.add_element.AddSectionShapeChange
+                    case ShapeNotMaterialized.Operation.AddFlowResistance     => I18N.add_element.AddFlowResistance
+                    case ShapeNotMaterialized.Operation.AddPressureDiff       => I18N.add_element.AddPressureDiff
+                I18N.incremental_validation.conflicts.shape_not_materialized(translatedOp)
+            case e: FlowTransitionChangesTotalCrossSection =>
+                val transitionLabel = e.transition match
+                    case FlowAreaTransition.Split => I18N.incremental_validation.conflicts.split
+                    case FlowAreaTransition.Merge => I18N.incremental_validation.conflicts.merge
+                e.expectedDimension match
+                    case ExpectedDimRectangle(enteredWidth, enteredHeight, enteredArea, expectedHeight, expectedArea) =>
+                        I18N.incremental_validation.conflicts.flow_transition_area_rectangle(
+                            transitionLabel,
+                            s"${e.afterFlows.unwrap}",
+                            expectedArea.showP,
+                            enteredWidth.showP,
+                            enteredHeight.showP,
+                            enteredArea.showP,
+                            expectedHeight.showP,
+                            expectedArea.showP
+                        )
+                    case ExpectedDimSquare(enteredSide, enteredArea, expectedSide, expectedArea)                      =>
+                        I18N.incremental_validation.conflicts.flow_transition_area_square(
+                            transitionLabel,
+                            s"${e.afterFlows.unwrap}",
+                            expectedArea.showP,
+                            enteredSide.showP,
+                            enteredArea.showP,
+                            expectedSide.showP,
+                            expectedArea.showP
+                        )
+                    case ExpectedDimCircle(enteredDiameter, enteredArea, expectedDiameter, expectedArea)              =>
+                        I18N.incremental_validation.conflicts.flow_transition_area_circle(
+                            transitionLabel,
+                            s"${e.afterFlows.unwrap} flows",
+                            expectedArea.showP,
+                            enteredDiameter.showP,
+                            enteredArea.showP,
+                            expectedDiameter.showP,
+                            expectedArea.showP
+                        )
 
     // Forbidden element position errors
     sealed trait ForbiddenElementPosition extends IncrementalValidation_Error
@@ -972,6 +1141,13 @@ object standard {
                 I18N.incremental_validation.forbidden_element_position.forbidden_at_start(name)
             case ForbiddenAddElementAtEnd(_, name)   =>
                 I18N.incremental_validation.forbidden_element_position.forbidden_at_end(name)
+
+    // FireboxTypeDisabledError — circuit-breaker for UI-disabled firebox types
+    case class FireboxTypeDisabledError(typeName: String) extends MCalc_Error
+
+    object FireboxTypeDisabledError:
+        given ShowUsingLocale[FireboxTypeDisabledError] = showUsingLocale: e =>
+            I18N.errors.firebox_type_disabled(e.typeName.localizedTypeName)
 
     // ErrorsInOtherSectionType
     case object ErrorsInOtherSectionType extends MCalc_Error

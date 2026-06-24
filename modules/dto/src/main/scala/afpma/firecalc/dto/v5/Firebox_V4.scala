@@ -136,7 +136,7 @@ object Firebox_V4:
         @Transl(I(_.firebox.afpma_prse.combustion_air_manifold_height))
         combustion_air_manifold_height       : Length,
         @Transl(I(_.firebox.afpma_prse.outside_air_inlet_lip))
-        outside_air_inlet_lip                : Length,
+        outside_air_inlet_lip                : PosLength,
         @Transl(I(_.firebox.afpma_prse.height_of_air_feed_to_columns))
         height_of_air_feed_to_columns        : Length,
         @Transl(I(_.firebox.afpma_prse.number_of_air_columns_feeding_firebox))
@@ -168,7 +168,7 @@ object Firebox_V4:
         @Transl(I(_.firebox.single_tested.mean_firebox_temperature))
         mean_firebox_temperature              : Option[TCelsius],
         @Transl(I(_.firebox.single_tested.t_burnout))
-        t_burnout                             : TCelsius,
+        t_burnout                             : Option[TCelsius],
         @Transl(I(_.firebox.single_tested.efficiency_nominal))
         efficiency_nominal                    : Percentage,
         @Transl(I(_.firebox.single_tested.efficiency_reduced))

@@ -13,11 +13,15 @@ import afpma.firecalc.utils.Log
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.standard.{MCalc_Error, TBurnoutNotSet}
 import afpma.firecalc.engine.models.en15544.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
+
+import cats.syntax.all.catsSyntaxValidatedId
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
@@ -217,8 +221,11 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
     final lazy val t_burnout_in_standard = 550.degreesCelsius
 
     override lazy val t_burnout_calc =
-        case t: Firebox_15544.SingleTested => t.tBurnout.toUnit[Celsius]
-        case _: Firebox_15544              => t_burnout_default
+        case t: Firebox_15544.SingleTested =>
+            t.tBurnout match
+                case Some(tb) => (tb.toUnit[Celsius]: t_burnout).validNel[MCalc_Error]
+                case None     => TBurnoutNotSet.invalidNel[t_burnout]
+        case _: Firebox_15544              => (t_burnout_default: t_burnout).validNel[MCalc_Error]
 
     override lazy val t_fluepipe_calc =
         (tburnout, lz, lzCalculated) =>

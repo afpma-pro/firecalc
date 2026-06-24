@@ -208,11 +208,11 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
 
     // Section "4.8.3", "Flue gas temperature in the flue pipe"
 
-    def t_burnout: t_burnout =
+    override def t_burnout: VNel[t_burnout] =
         formulas.t_burnout_calc(inputs.design.firebox)
 
-    def t_fluepipe(L_Z: QtyD[Meter]): t_fluepipe =
-        formulas.t_fluepipe_calc(t_burnout, L_Z, L_Z_calculated)
+    def t_fluepipe(L_Z: QtyD[Meter]): VNel[t_fluepipe] =
+        t_burnout.map(tb => formulas.t_fluepipe_calc(tb, L_Z, L_Z_calculated))
 
     /**
      * Compute mean temperature of the gas in the fluepipe, between two points given their distances from the firebox outlet
@@ -231,19 +231,19 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
      * @return
      */
     def t_fluepipe_mean(lz1: QtyD[Meter], lz2: QtyD[Meter]): VNel[t_fluepipe] =
-        val tb = t_burnout
-        val ln = L_Z_calculated
-        (
-            1.0 / (lz2 - lz1).value
-                *
-                (tb.toUnit[Celsius].value * ln.to_m.value) / 0.83
-                *
-                (
-                    math.exp(0.83 * (lz1 / ln).value)
-                        -
-                            math.exp(0.83 * (lz2 / ln).value)
-                )
-        ).degreesCelsius.validNelE
+        t_burnout.map: tb =>
+            val ln = L_Z_calculated
+            (
+                1.0 / (lz2 - lz1).value
+                    *
+                    (tb.toUnit[Celsius].value * ln.to_m.value) / 0.83
+                    *
+                    (
+                        math.exp(0.83 * (lz1 / ln).value)
+                            -
+                                math.exp(0.83 * (lz2 / ln).value)
+                    )
+            ).degreesCelsius
 
     // Section "4.9", "Calculation of flow mechanics"
 

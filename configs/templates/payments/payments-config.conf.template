@@ -90,6 +90,18 @@ payments {
     # Use ["*"] to allow all origins (development only, not recommended for production).
     # Example: ["https://firecalc.afpma.pro", "https://staging.firecalc.afpma.pro"]
     # cors-allowed-origins = ["*"]
+
+    # Firebox availability switches (optional — defaults to all-enabled)
+    # Each switch controls whether a given firebox type is available for purchase.
+    # Valid keys: traditional, ecolabeled, afpma-prse, single-tested, door15a-catalog
+    # Omitting the entire block or individual keys defaults to enabled (safe for upgrades).
+    firebox-availability {
+      traditional = true
+      ecolabeled = true
+      afpma-prse = true
+      single-tested = true
+      door15a-catalog = true
+    }
   }
 }
 

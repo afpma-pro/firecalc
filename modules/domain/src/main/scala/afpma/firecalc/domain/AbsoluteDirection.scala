@@ -6,6 +6,7 @@
 package afpma.firecalc.domain
 
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.units.Vec3
 
 /**
  * Azimuth direction in the horizontal plane, relative to the stove.
@@ -101,8 +102,16 @@ object AbsoluteDirection:
             case _                                                   => Some(azimuth)
         new AbsoluteDirection(az, inclination)
 
+    /** Create an AbsoluteDirection from a vector. */
+    def fromVec3(vec: Vec3): AbsoluteDirection =
+        val azimuthDeg   = math.toDegrees(math.atan2(vec.x, vec.y)                                   )
+        val elevationDeg = math.toDegrees(math.atan2(vec.z, math.sqrt(vec.x * vec.x + vec.y * vec.y)))
+        apply(AzimuthDirection.fromDegrees(azimuthDeg), InclinationDirection.fromDegrees(elevationDeg))
+
     /** Convert to (azimuthDeg, elevationDeg) pair. Returns 0.0 azimuth when None. */
     def toAzimuthElevationDeg(fd: AbsoluteDirection): (Double, Double) =
         val azDeg = fd.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0)
         val elDeg = InclinationDirection.toDegrees(fd.inclination)
         (azDeg, elDeg)
+
+extension (vec: Vec3) def toAbsoluteDirection: AbsoluteDirection = AbsoluteDirection.fromVec3(vec)

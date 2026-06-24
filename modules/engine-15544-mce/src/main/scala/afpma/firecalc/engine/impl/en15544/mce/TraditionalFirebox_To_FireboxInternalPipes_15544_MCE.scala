@@ -29,12 +29,12 @@ object TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
             import CombustionAirPipe_Module_13384.*
             import firebox.*
             CombustionAirPipe_Module_13384.incremental
+                .withInitialDirection(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))
                 .define(
-                    setInitialDirection           (AzimuthDirection.Rear, InclinationDirection.Horizontal),
-                    pipeLocation                  (PipeLocation.HeatedArea                               ), // added for EN13384
+                    pipeLocation                  (PipeLocation.HeatedArea   ), // added for EN13384
                     innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
-                    layer                         (e = 1.cm, λ = 1.3.W_per_mK                            ), // added for EN13384
-                    roughness                     (3.mm                                                  ), // TOFIX: 3mm or 2mm ???
+                    layer                         (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
+                    roughness                     (3.mm                      ), // TOFIX: 3mm or 2mm ???
                     addFlowResistance_crossSection(
                         "porte",
                         h66_coeffPerteDeChargePorte,

@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.models.geometry
 
+import afpma.firecalc.units.Vec3
+
 /**
  * Local frame that rides along a pipe.
  * direction: unit vector in the direction of flow
@@ -49,9 +51,6 @@ case class PipeFrame(direction: Vec3, upRef: Vec3):
     /** Returns (azimuth, elevation) of direction in absolute coordinates (degrees) */
     def directionAsAbsolute: (Double, Double) = direction.toAzimuthElevation
 
-    /** Display string for UI using 3-tier cardinal logic */
-    def directionDisplayString: String = direction.toDisplayString
-
     /**
      * Compute the roll angle (degrees) such that `applyBend(deflectionDeg, roll)` produces `targetDir`.
      * Returns None if the angle between `direction` and `targetDir` is not approximately `deflectionDeg`
@@ -94,9 +93,25 @@ case class PipeFrame(direction: Vec3, upRef: Vec3):
         rollAngleForOutputDirection(targetDir, 90.0)
 
     /**
+     * Check whether `target` is geometrically reachable from this frame at the given deflection angle.
+     *
+     * A direction is reachable if the angle between the current frame direction and the target
+     * is approximately equal to the deflection angle (within ~1° tolerance).
+     *
+     * This is a pure function with no side effects, suitable for use in both UI and engine code.
+     *
+     * @param target the target direction as a unit Vec3
+     * @param deflectionDeg the deflection angle in degrees
+     * @return true if the target is reachable at the given deflection angle
+     */
+    def isReachable(target: Vec3, deflectionDeg: Double): Boolean =
+        rollAngleForOutputDirection(target, deflectionDeg).isDefined
+
+    /**
      * Compute the deflection angle (degrees) required to reach `targetDir` from the current direction.
      * Returns `direction.angleTo(targetDir.normalized)`.
      */
+
     def computeRequiredDeflection(targetDir: Vec3): Double =
         direction.angleTo(targetDir.normalized)
 

@@ -122,6 +122,10 @@ object PipeShape:
     ) extends PipeShape:
         def area           : QtyD[(Meter ^ 2)] = (side * side)
         def perimeterWetted: QtyD[Meter]       = (side * 4.0 )
+    object Square:
+        def fromArea(area: Area) =
+            val equiv_side = math.sqrt(area.toUnit[Meter ^ 2].value).withUnit[Meter]
+            Square(equiv_side)
 
     @Transl(I(_.terms.pipe_shape.rectangle))
     case class Rectangle(
@@ -157,3 +161,25 @@ object PipeShape:
                 case Circle(diameter) => Circle(diameter + dt)
                 case Square(side)     => Square(side + dt)
                 case Rectangle(a, b)  => Rectangle(a + dt, b + dt)
+
+enum ShapeState:
+    case Empty // No shape set yet
+    case Set(shape: PipeShape) // Shape set, but not yet materialized
+    case Materialized(shape: PipeShape) // Shape set and used in a length-bearing element
+
+object ShapeState:
+    def fromOptional(shape: Option[PipeShape], materialized: Boolean): ShapeState =
+        shape match
+            case Some(s) if materialized => ShapeState.Materialized(s)
+            case Some(s)                 => ShapeState.Set(s)
+            case None                    => ShapeState.Empty
+
+    extension (state: ShapeState)
+        def shape: Option[PipeShape] = state match
+            case ShapeState.Set(s)          => Some(s)
+            case ShapeState.Materialized(s) => Some(s)
+            case ShapeState.Empty           => None
+
+        def isMaterialized: Boolean = state match
+            case ShapeState.Materialized(_) => true
+            case _                          => false

@@ -9,6 +9,7 @@ import afpma.firecalc.units.coulombutils.VolumeFlow
 
 import afpma.firecalc.dto.all.PipeShape
 
+import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.*
@@ -20,8 +21,6 @@ import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.TermValueShouldBeLessOrEqThan
 
 import coulomb.policy.standard.given
-
-import io.taig.babel.Locale
 
 /**
  * Computed values made available to constraint generators.
@@ -48,13 +47,35 @@ case class ConstraintContext(
  *
  * Each method returns a `Seq[Option[TermConstraint[T]]]` that is evaluated
  * and dispatched by the application layer.
+ *
+ * TODO(registry) — per-module firebox dispatch:
+ *
+ * Today `FireboxConstraintsResolver.resolve` (in impl.en15544.common) hard-codes
+ * a match over every subtype and summons each given individually. That couples
+ * `common` to all concrete fireboxes — the opposite of this typeclass's intent
+ * (`common` should know only the typeclass, never summon instances one by one).
+ *
+ * Target design:
+ *   - Each firebox lives in its own module and contributes its
+ *     `given FireboxConstraints[T]` plus a runtime type-test (e.g. a small
+ *     `FireboxConstraintsEntry` pairing a `ClassTag[T]`/`isInstanceOf` guard
+ *     with the instance).
+ *   - A registry (`List[FireboxConstraintsEntry]` / typemap) is assembled at the
+ *     composition root from the per-module contributions.
+ *   - `common` resolves `fc` by querying the registry by runtime type; it never
+ *     names a concrete subtype. Adding a firebox = registering an entry in its
+ *     own module, with zero edits to `common`.
+ *   - Trade-off: lose the sealed-match exhaustiveness check; mitigate with a
+ *     "no entry for firebox X" runtime error and a registry-completeness test.
+ *   - On completion, delete `FireboxConstraintsResolver` and drop the
+ *     `instances`→subtype coupling entirely.
  */
 trait FireboxConstraints[-F <: Firebox_15544]:
 
     /** Checks consistency of internal load values in this specific firebox */
     private def internal_constraint_firebox_nominal_load_in_range(
         firebox: F
-    )(using Locale): Option[TermConstraint[m_B]] =
+    ): Option[TermConstraint[m_B]] =
 
         (firebox.min_load.value, firebox.nominal_load, firebox.max_load) match
             case (minO, Some(nom), maxO) =>
@@ -68,7 +89,7 @@ trait FireboxConstraints[-F <: Firebox_15544]:
                             else
                                 Left(
                                     TermValueShouldBeBetweenInclusive[m_B](
-                                        I18N.firebox.load_size_nominal,
+                                        LocalizedString.from(I18N.firebox.load_size_nominal),
                                         nom,
                                         min,
                                         max
@@ -79,7 +100,7 @@ trait FireboxConstraints[-F <: Firebox_15544]:
                             else
                                 Left(
                                     TermValueShouldBeGreaterOrEqThan[m_B](
-                                        I18N.firebox.load_size_nominal,
+                                        LocalizedString.from(I18N.firebox.load_size_nominal),
                                         nom,
                                         min
                                     )
@@ -90,7 +111,7 @@ trait FireboxConstraints[-F <: Firebox_15544]:
                             else
                                 Left(
                                     TermValueShouldBeLessOrEqThan[m_B](
-                                        I18N.firebox.load_size_nominal,
+                                        LocalizedString.from(I18N.firebox.load_size_nominal),
                                         nom,
                                         max
                                     )
@@ -154,12 +175,12 @@ trait FireboxConstraints[-F <: Firebox_15544]:
     def firebox_custom_constraints(
         firebox: F,
         ctx    : FireboxConstraintContext
-    )                             (using Locale): List[FireboxError]
+    ): List[FireboxError]
 
     /** Validate internal firebox-specific constraints not covered by EN 15544. */
     def internal_firebox_custom_constraints(
         firebox: F
-    )(using Locale): List[FireboxError] =
+    ): List[FireboxError] =
         val allTermConstraints_on_local_m_B =
             AllTermConstraints[m_B](
                 Seq(

@@ -28,7 +28,7 @@ trait CommonTypes_Generators extends PrimitiveGenerators:
         Gen.const(StandardOrComputationMethod.EN_15544_2023)
 
     def genCountry: Gen[Country] =
-        Gen.oneOf(Country.France, Country.Belgique, Country.Autriche)
+        Gen.oneOf(Country.France, Country.Belgique)
 
     def genProjectDescr: Gen[ProjectDescr] =
         for

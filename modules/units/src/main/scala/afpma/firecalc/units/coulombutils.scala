@@ -33,6 +33,9 @@ import scala.util.Failure
 import magnolia1.Transl
 
 object coulombutils:
+    // Pin default locale to FR so all String.format / printf calls use commas (,) as decimal separator,
+    // regardless of the host OS locale. Single global setting — no per-call Locale.FRANCE needed.
+    private val _ = java.util.Locale.setDefault(java.util.Locale.FRANCE)
     export conversions.*
     export monoids.given
     export shows.defaults.given
@@ -198,6 +201,13 @@ object coulombutils:
     object Roughness:
         given Conversion[QtyD[Meter], Roughness] = identity
         extension (r: Roughness) def unwrap: QtyD[Meter] = r
+
+    /** Length that accepts zero (>= 0). NOT strictly positive. */
+    opaque type PosLength <: QtyD[Meter] = QtyD[Meter]
+    object PosLength:
+        given Conversion[QtyD[Meter], PosLength] = identity
+        given Conversion[PosLength, QtyD[Meter]] = identity
+        extension (p: PosLength) def unwrap: QtyD[Meter] = p
 
     // %.2f
     type JoulesPerKilogramKelvin = QtyD[Joule / (Kilogram * Kelvin)]

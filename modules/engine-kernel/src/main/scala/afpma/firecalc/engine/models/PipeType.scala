@@ -20,6 +20,7 @@ object PipeType:
         case FluePipeT          => I18N.pipe_type.connector
         case ConnectorPipeT     => I18N.pipe_type.channel
         case ChimneyPipeT       => I18N.pipe_type.chimney
+        case NoFluePipeT        => I18N.pipe_type.no_flue
 
 case object AirIntakePipeT extends PipeType
 type AirIntakePipeT = AirIntakePipeT.type
@@ -40,6 +41,9 @@ type ConnectorPipeT = ConnectorPipeT.type
 case object ChimneyPipeT extends PipeType
 type ChimneyPipeT = ChimneyPipeT.type
 
+case object NoFluePipeT extends PipeType
+type NoFluePipeT = NoFluePipeT.type
+
 type PipeType_EN13384 = AirIntakePipeT | CombustionAirPipeT | FireboxPipeT | FluePipeT | ConnectorPipeT | ChimneyPipeT
 type PipeType_EN15544 = CombustionAirPipeT | FireboxPipeT | FluePipeT
 
@@ -49,3 +53,4 @@ given FireboxPipeT       = FireboxPipeT
 given FluePipeT          = FluePipeT
 given ConnectorPipeT     = ConnectorPipeT
 given ChimneyPipeT       = ChimneyPipeT
+given NoFluePipeT        = NoFluePipeT

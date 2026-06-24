@@ -3,6 +3,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 -->
 
+> **Note:** While this document lives in `modules/engine/`, the actual `// __INTERPRETATION__` markers are distributed across source files in `engine-kernel` (2 source files) and `engine-13384-strict` (5 source files), not in the engine module itself.
+
 # INTERPRETATIONS possibles vis à vis de EN13384
 
 Lors de l'implémentation de la norme, plusieurs points ont amené à des questionnements ou interprétations particulières qui demanderaient à être clarifiées dans une prochaine révision.

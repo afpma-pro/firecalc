@@ -12,6 +12,7 @@ import afpma.firecalc.engine.models.FireboxPipe_15544
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384
 import afpma.firecalc.engine.models.FluePipe_15544
 
+import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
 import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.*
 
@@ -26,11 +27,12 @@ class exercice_15544_strict_algebra_Suite extends AnyFreeSpec with Matchers {
     type VNel[A] = Validated[NonEmptyList[String], A]
 
     private val pipeChain = PipeChain_15544_Strict.build(
-        PipeChain_15544_Strict.Descriptors(
+        PipeChain_15544_Strict.Descriptors                            (
             strict_ex01_colonne_ascendante.fluePipeDescr,
             strict_ex01_colonne_ascendante.connectorPipeDescr,
             strict_ex01_colonne_ascendante.chimneyPipeDescr
-        )
+        ),
+        strict_ex01_colonne_ascendante.postFireboxInitialDirection.map(toPipeFrame)
     )
 
     "ex01_colonne_ascendante" - {

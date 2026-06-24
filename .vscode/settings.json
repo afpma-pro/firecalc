@@ -1,6 +1,6 @@
 {
     "files.watcherExclude": {
-        "**/target": true
+        "**/target/**": true
     },
     "metals.enableSemanticHighlighting": true,
     "editor.semanticHighlighting.enabled": true,
@@ -17,7 +17,7 @@
     "makefile.configureOnOpen": false,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
-    "metals.serverVersion": "1.6.7+21-7150cac2-SNAPSHOT",
+    "metals.serverVersion": "1.6.7+107-46835c26-SNAPSHOT",
     "metals.startMcpServer": true,
     "metals.mcpServerPort": 38615,
     "metals.suggestLatestUpgrade": "on",
@@ -186,5 +186,6 @@
     },
     "metals.inlayHints.implicitArguments.enable": false,
     "metals.bloopSbtAlreadyInstalled": true,
-    "metals.sbtScript": "sbt"
+    "metals.sbtScript": "sbt",
+    "metals.enableBestEffort": true
 }

@@ -25,21 +25,18 @@ Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 ## Testing
 
 ```
-sbt "~engine/test"
-sbt "~engine/testOnly *InterpolationSuite"
-sbt "~engine/testOnly *strict_p1_decouverte_Suite"
-sbt "~engine/testOnly *strict_p5_appl_Suite"
-sbt "~engine/testOnly *mce_p1_decouverte_Suite"
-sbt "~engine/testOnly *ex01_colonne_ascendante_Suite"
-sbt "~engine/testOnly *velocity_limits_Suite"
-sbt "~engine/testOnly 
-sbt "~engine/testOnly *ThermalResistance_Suite"
-sbt "~engine/testOnly *labo_Suite"
-sbt "~engine/testOnly *cas_types_15544_v20241001_Suite"
-
-sbt "~engine/testOnly *cas_types_13384_C2_Suite"
-sbt "~engine/testOnly *cas_types_13384_C16_Suite"
-
+sbt "engine-15544-strict/test"
+sbt "engine-kernel/testOnly *InterpolationSuite"
+sbt "engine-15544-strict/testOnly *strict_p1_decouverte_Suite"
+sbt "fdim/testOnly *strict_p5_appl_Suite"
+sbt "engine-15544-mce/testOnly *mce_p1_decouverte_Suite"
+sbt "fdim/testOnly *ex01_colonne_ascendante_Suite"
+sbt "engine-15544-strict/testOnly *velocity_limits_Suite"
+sbt "engine-15544-strict/testOnly *ThermalResistance_Suite"
+sbt "labo/testOnly *labo_Suite"
+sbt "engine-15544-strict/testOnly *cas_types_15544_v20241001_Suite"
+sbt "engine-13384-strict/testOnly *cas_types_13384_C2_Suite"
+sbt "engine-13384-strict/testOnly *cas_types_13384_C16_Suite"
 ```
 
 ## Scalafix

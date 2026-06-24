@@ -5,6 +5,8 @@
 
 package afpma.firecalc.payments.shared.api
 
+import afpma.firecalc.payments.shared.api.v1.Sku
+
 import io.taig.babel.Locale
 
 final case class ProductCopyMissingException(sku: String, locale: Locale)
@@ -16,13 +18,13 @@ final case class ProductCopyMissingException(sku: String, locale: Locale)
 object ProductCopyResolver:
     import BackendCompatibleLanguage.toLocale
 
-    def resolve(sku: String, locale: Locale)(using config: ProductCopyConfig): ProductCopy =
-        val byLocale = config.entries.getOrElse(sku, Map.empty)
+    def resolve(sku: Sku, locale: Locale)(using config: ProductCopyConfig): ProductCopy =
+        val byLocale = config.entries.getOrElse(sku.value, Map.empty)
         byLocale
             .get(locale.printLanguageTag)
             .orElse(byLocale.get("default"))
-            .getOrElse(throw ProductCopyMissingException(sku, locale))
+            .getOrElse(throw ProductCopyMissingException(sku.value, locale))
 
     /** Convenience overload: resolve by language rather than locale. */
-    def resolve(sku: String, lang: BackendCompatibleLanguage)(using ProductCopyConfig): ProductCopy =
+    def resolve(sku: Sku, lang: BackendCompatibleLanguage)(using ProductCopyConfig): ProductCopy =
         resolve(sku, lang.toLocale)

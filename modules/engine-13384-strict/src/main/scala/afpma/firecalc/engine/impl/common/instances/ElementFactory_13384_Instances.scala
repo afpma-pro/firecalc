@@ -27,6 +27,7 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 import coulomb.syntax.*
+import afpma.firecalc.units.Vec3
 
 object ElementFactory_13384_Instances:
 

@@ -129,41 +129,45 @@ object CasType_13384_C2
 
     val airIntakePipe =
         import AirIntakePipe_Module.*
-        define(
-            // arbitrary defined, not specified in reference example for engine validation
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Front,
-                inclination = InclinationDirection.Horizontal
-            ), // "Front"
-            pipeLocation           (PipeLocation.HeatedArea),
-            roughness              (5.mm                   ), // TubeFlexEnPE = 5.mm
+        AirIntakePipe_Module.incremental
+            .withInitialDirection(
+                PipeInitialDirection    (
+                    azimuth     = AzimuthDirection.Front,
+                    inclination = InclinationDirection.Horizontal
+                )
+            )
+            .define(
+                // arbitrary defined, not specified in reference example for engine validation
+                pipeLocation(PipeLocation.HeatedArea),
+                roughness   (5.mm                   ), // TubeFlexEnPE = 5.mm
 
-            addFlowResistance              (
-                "grille (ζ = 1.7)",
-                zeta               = 1.7.unitless,
-                hydraulic_diameter = 50.mm
-            ), // ajouté dans QC2 (cf hypothese général entrée d'air avec zeta = 1.7)
+                addFlowResistance              (
+                    "grille (ζ = 1.7)",
+                    zeta               = 1.7.unitless,
+                    hydraulic_diameter = 50.mm
+                ), // ajouté dans QC2 (cf hypothese général entrée d'air avec zeta = 1.7)
 
-            innerShape(circle(50.mm)),
-            layer                          (
-                e                  = 0.1.mm, // ???
-                λ                  = 0.51.W_per_mK // PE-HD selon Wikipedia, valeur haute (https://fr.wikipedia.org/wiki/Poly%C3%A9thyl%C3%A8ne_haute_densit%C3%A9)
-            ),
-            addSectionHorizontal           ("hz", 30.cm)
-        ).toFullDescr().extractPipe
+                innerShape(circle(50.mm)),
+                layer                          (
+                    e                  = 0.1.mm, // ???
+                    λ                  = 0.51.W_per_mK // PE-HD selon Wikipedia, valeur haute (https://fr.wikipedia.org/wiki/Poly%C3%A9thyl%C3%A8ne_haute_densit%C3%A9)
+                ),
+                addSectionHorizontal           ("hz", 30.cm)
+            )
+            .toFullDescr()
+            .extractPipe
 
     val connectorPipeDescr =
         import ConnectorPipe_Module.*
         Seq (
-            setInitialDirection (azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up), // "Up"
             roughness (Material_13384.WeldedSteel()),
             innerShape(circle(100.mm)              ),
-            layer               (
+            layer             (
                 e  = 1.mm, // 1mm in QC2
                 tr = 0.0.m2_K_per_W // R = 0 car conduit métallique non isolé
             ),
-            pipeLocation        (PipeLocation.HeatedArea                                               ),
-            addSectionVertical  ("montée", 1.34.m                                                      )
+            pipeLocation      (PipeLocation.HeatedArea),
+            addSectionVertical("montée", 1.34.m       )
         )
 
     // T450 N1 W Vm L50012 G
@@ -212,3 +216,6 @@ object CasType_13384_C2
             // zeta = 0.81 dans KESA (selon note de calcul)
             addRainCapEN13384_withHeightEquals2Diameter("element terminal (ζ = 1.5)") // ζ = 1.5 (QC2)
         )
+
+    override val connectorInitialDirection: Option[PipeInitialDirection] =
+        Some(PipeInitialDirection(InclinationDirection.Up))

@@ -34,9 +34,10 @@ class PostFireboxPipeDescrSlotHeadRegionSuite extends AnyFreeSpec with Matchers 
     private val genThermal  : Gen[PostFireboxPipeDescrSlot] = Gen.const(ThermalFlueSlot(Seq.empty))
     private val genConnector: Gen[PostFireboxPipeDescrSlot] = Gen.const(ConnectorSlot(Seq.empty)  )
     private val genChimney  : Gen[PostFireboxPipeDescrSlot] = Gen.const(ChimneySlot(Seq.empty)    )
+    private val genNoFlue   : Gen[PostFireboxPipeDescrSlot] = Gen.const(NoFlueSlot)
 
     private val genAnySlot: Gen[PostFireboxPipeDescrSlot] =
-        Gen.oneOf(genFlue, genThermal, genConnector, genChimney)
+        Gen.oneOf(genFlue, genThermal, genConnector, genChimney, genNoFlue)
 
     private val genSlotSeq: Gen[Seq[PostFireboxPipeDescrSlot]] =
         Gen.choose(0, 8).flatMap(n => Gen.listOfN(n, genAnySlot))

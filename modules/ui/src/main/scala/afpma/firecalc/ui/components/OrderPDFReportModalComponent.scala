@@ -4,11 +4,15 @@
  */
 
 package afpma.firecalc.ui.components
+
 import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.dto.FireboxAvailabilityExtensions.allows
 import afpma.firecalc.dto.common.DisplayUnits
+import afpma.firecalc.dto.v5.Firebox_V4
 
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.shared.api.v1.requiresLicenseFee
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
@@ -20,6 +24,8 @@ import afpma.firecalc.ui.daisyui.*
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.instances.transformers.given
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.models.BillingLanguage
+import afpma.firecalc.ui.models.schema.v1.BillingInfoWithLanguage
 import afpma.firecalc.ui.utils.PaymentsBackendApiConnectivity
 
 import cats.syntax.show.toShow
@@ -34,7 +40,7 @@ import org.scalajs.dom.HTMLDialogElement
 
 case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Component:
 
-    protected final case class PDFReportOrderingState(
+    final case class PDFReportOrderingState(
         cgv_accepted                      : Boolean        = false,
         // send_validation_code_btn_shown: Boolean = false,
         // send_validation_code_btn_active: Boolean = false,
@@ -66,9 +72,6 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
     private val verify_and_process_response_var =
         Var[Option[Either[String, VerifyAndProcessResponse]]](None)
 
-    private val create_purchase_intent_response_var =
-        Var[Option[Either[String, CreatePurchaseIntentResponse]]](None)
-
     private val six_digits_code_var =
         pdf_report_ordering_var.zoomLazy(_.six_digits_code)((x, c) => x.copy(six_digits_code = c))
 
@@ -86,6 +89,41 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
     val billing_email_valid_sig = billing_email_sig.map { email =>
         validateEmail(email)
     }
+
+    private val currentFireboxSig: Signal[Firebox_V4] =
+        engineStateVar.signal.map(_.firebox)
+
+    private val backendAllowsFireboxSig: Signal[Boolean] =
+        currentFireboxSig.map(fb => UIConfig.backendAvailability.allows(fb))
+
+    // Combined signals for navbar button state
+    private val buttonConditionsSig: Signal[(Boolean, Boolean)] =
+        conditions_and_results_satisfied_except_emissions_sig
+            .combineWith(backendAllowsFireboxSig)
+
+    // Combined emissions + backend for onClick handler
+    private val onClickFiltersSig: Signal[(Boolean, Boolean)] =
+        emissions_and_efficiency_values_satisfied_sig
+            .combineWith(backendAllowsFireboxSig)
+
+    private val requiresLicenseFeeSignal: Signal[Boolean] =
+        currentFireboxSig.map(_.requiresLicenseFee)
+
+    private val baseProductPrice: BigDecimal =
+        ViteEnv.buildMode match
+            case BuildMode.Development => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.price
+            case BuildMode.Staging     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.price
+            case BuildMode.Production  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.price
+
+    private val feeProductPrice: BigDecimal =
+        ViteEnv.buildMode match
+            case BuildMode.Development =>
+                v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+            case BuildMode.Staging     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+            case BuildMode.Production  =>
+                v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.price
+
+    private val licenseFeePrice: BigDecimal = feeProductPrice - baseProductPrice
 
     private def validateEmail(email: String): Boolean =
         if email.trim.isEmpty then false
@@ -105,6 +143,142 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                 cgv_accepted && conn && !validation_code_sent && email_valid
             }
 
+    private val create_purchase_intent_response_var =
+        Var[Option[Either[OrderFlowError, CreatePurchaseIntentResponse]]](None)
+
+    // Imports for API requests
+    import io.circe.*
+    import io.circe.syntax.*
+    import io.circe.parser.*
+    import io.scalaland.chimney.dsl.*
+    import java.util.UUID
+    import scala.scalajs.js
+    import scala.util.{Try, Success, Failure}
+
+    private def convertProjectToBase64(fireCalcYaml: FireCalcYAML): Try[String] =
+        import afpma.firecalc.dto.FireCalcYAMLMigrations
+        FireCalcYAMLMigrations.encodeToYamlTry(fireCalcYaml).flatMap { yamlString =>
+            Try {
+                val textEncoder = js.Dynamic.newInstance(js.Dynamic.global.TextEncoder)()
+                val utf8Bytes   = textEncoder.encode(yamlString)
+                val byteArray   = utf8Bytes.asInstanceOf[js.typedarray.Uint8Array]
+                val binString   = (0 until byteArray.length)
+                    .map { i =>
+                        js.Dynamic.global.String.fromCodePoint(byteArray(i)).asInstanceOf[String]
+                    }
+                    .mkString("")
+                js.Dynamic.global.btoa(binString).asInstanceOf[String]
+            }
+        }
+
+    private def makePurchaseCreateIntentRequest()(using
+        locale: Locale
+    ): EventStream[Either[OrderFlowError, CreatePurchaseIntentResponse]] =
+        val billingInfo = billingInfoVar.now()
+        val language: BillingLanguage = locale.transformInto[BillingLanguage]
+        val requiresFee             = engineStateVar.now().firebox.requiresLicenseFee
+        val productId               = (ViteEnv.buildMode, requiresFee) match
+            case (BuildMode.Development, true ) =>
+                v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Development, false) => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case (BuildMode.Staging, true     ) =>
+                v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Staging, false    ) => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.id
+            case (BuildMode.Production, true  ) =>
+                v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE.id
+            case (BuildMode.Production, false ) => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.id
+        val billingInfoWithLanguage = BillingInfoWithLanguage.fromBillingInfoAndLanguage(
+            billing_info = billingInfo,
+            language     = language
+        )
+        val customerInfo: CustomerInfo = billingInfoWithLanguage.transformInto[CustomerInfo]
+        val currentProject          = engineStateVar.now()
+        val productMetadataResult: Either[OrderFlowError, FileDescriptionWithContent] =
+            convertProjectToBase64(currentProject) match
+                case Success(base64Content) =>
+                    Right(
+                        FileDescriptionWithContent(
+                            filename = s"project${FIRECALC_FILE_EXTENSION}",
+                            mimeType = "application/yaml",
+                            content  = base64Content
+                        )
+                    )
+                case Failure(error)         =>
+                    val errorMsg = s"Failed to convert project to base64: ${error.getMessage}"
+                    dom.console.error(errorMsg                       )
+                    Left             (OrderFlowGenericError(errorMsg))
+        productMetadataResult match
+            case Left(error) =>
+                return EventStream.fromValue(Left(error), emitOnce = true)
+            case Right(_)    =>
+                ()
+        val createPurchaseIntentRequest = CreatePurchaseIntentRequest(
+            productId       = productId,
+            productMetadata = productMetadataResult.toOption,
+            customer        = customerInfo
+        )
+        val requestBody = createPurchaseIntentRequest.asJson.noSpaces
+        FetchStream
+            .post(
+                url = UIConfig.Endpoints.createPurchaseIntent,
+                init => {
+                    init.body   (requestBody                         )
+                    init.headers("Content-Type" -> "application/json")
+                }
+            )
+            .recoverToTry
+            .map { tryResponse =>
+                tryResponse match
+                    case scala.util.Success(responseText) =>
+                        decode[CreatePurchaseIntentResponse](responseText) match
+                            case Right(response) => Right(response)
+                            case Left(_)         =>
+                                decode[ErrorResponseEnvelope](responseText) match
+                                    case Right(errorEnvelope) if errorEnvelope.error == "firebox_type_disabled" =>
+                                        Left(OrderFlowBackendDisallowed(errorEnvelope.error))
+                                    case Right(errorEnvelope)                                                   =>
+                                        Left(OrderFlowGenericError(s"${errorEnvelope.error}: ${errorEnvelope.message}"))
+                                    case Left(decodeError)                                                      =>
+                                        Left(
+                                            OrderFlowGenericError(
+                                                s"Failed to decode response : ${decodeError.getMessage}\n=> Response:\n'${responseText}'"
+                                            )
+                                        )
+                    case scala.util.Failure(fetchError)   =>
+                        Left(OrderFlowGenericError(s"Network error: ${fetchError.getMessage}"))
+            }
+
+    private def handlePurchaseCreateIntentResponse(): Observer[Either[OrderFlowError, CreatePurchaseIntentResponse]] =
+        Observer[Either[OrderFlowError, CreatePurchaseIntentResponse]] {
+            case Right(response) =>
+                pdf_report_ordering_var.update         (
+                    _.copy      (
+                        purchase_token       = Some(response.purchase_token),
+                        validation_code_sent = true
+                    )
+                )
+                create_purchase_intent_response_var.set(Some(Right(response)))
+            case Left(error)     =>
+                create_purchase_intent_response_var.set(Some(Left(error)))
+                pdf_report_ordering_var.update         (
+                    _.copy(
+                        validation_code_sent = false,
+                        purchase_token       = None
+                    )
+                )
+        }
+
+    private val orderButtonSection = OrderButtonSection(
+        currentFireboxSig                   = currentFireboxSig,
+        create_purchase_intent_response_var = create_purchase_intent_response_var,
+        send_validation_code_btn_shown_sig  = send_validation_code_btn_shown_sig,
+        send_validation_code_btn_active_sig = send_validation_code_btn_active_sig,
+        validation_code_sent_sig            = validation_code_sent_sig,
+        billing_email_sig                   = billing_email_sig,
+        onSendCode                          = () => makePurchaseCreateIntentRequest(),
+        sendCodeResponseObserver            = handlePurchaseCreateIntentResponse()
+    )
+
     val send_validation_code_btn_clicked_bus    = new EventBus[Unit]
     val send_validation_code_btn_clicked_stream = send_validation_code_btn_clicked_bus.events
 
@@ -120,152 +294,6 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
     val disabledAttr: HtmlAttr[Boolean] = htmlAttr("disabled", BooleanAsAttrPresenceCodec)
 
     private def hiddenUnless(bool_sig: Signal[Boolean]) = bool_sig.map(if (_) "" else "hidden")
-
-    // Imports for API requests
-    import io.circe.*
-    import io.circe.syntax.*
-    import io.circe.parser.*
-    import io.scalaland.chimney.dsl.*
-    import java.util.UUID
-    import scala.scalajs.js
-    import scala.util.{Try, Success, Failure}
-
-    /**
-     * Convert AppState (FireCalcYAML) to base64-encoded YAML string using UTF-8 safe encoding.
-     * Uses TextEncoder to properly handle Unicode characters (e.g., Greek letters like ζ)
-     * that are outside the Latin1 range, which standard btoa() cannot handle.
-     */
-    private def convertProjectToBase64(fireCalcYaml: FireCalcYAML): Try[String] =
-        import afpma.firecalc.dto.FireCalcYAMLMigrations
-        // Use dto migrations module to convert to YAML string
-        FireCalcYAMLMigrations.encodeToYamlTry(fireCalcYaml).flatMap { yamlString =>
-            Try {
-                // Use TextEncoder to convert UTF-8 string to bytes
-                val textEncoder = js.Dynamic.newInstance(js.Dynamic.global.TextEncoder)()
-                val utf8Bytes   = textEncoder.encode(yamlString)
-
-                // Convert Uint8Array bytes to binary string
-                val byteArray = utf8Bytes.asInstanceOf[js.typedarray.Uint8Array]
-                val binString = (0 until byteArray.length)
-                    .map { i =>
-                        js.Dynamic.global.String.fromCodePoint(byteArray(i)).asInstanceOf[String]
-                    }
-                    .mkString("")
-
-                // Encode binary string to base64
-                js.Dynamic.global.btoa(binString).asInstanceOf[String]
-            }
-        }
-
-    def makePurchaseCreateIntentRequest()(using
-        locale: Locale
-    ): EventStream[Either[String, CreatePurchaseIntentResponse]] =
-        val billingInfo = billingInfoVar.now()
-
-        // Get language from current locale
-        val language: BillingLanguage = locale.transformInto[BillingLanguage]
-
-        // Select product ID based on build mode
-        val productId = ViteEnv.buildMode match
-            case BuildMode.Development => v1.DevelopmentProductCatalog.PDF_REPORT_EN_15544_2023.id
-            case BuildMode.Staging     => v1.StagingProductCatalog.PDF_REPORT_EN_15544_2023.id
-            case BuildMode.Production  => v1.ProductionProductCatalog.PDF_REPORT_EN_15544_2023.id
-
-        // Use transformers to convert BillingInfo + language to CustomerInfo
-        val billingInfoWithLanguage = BillingInfoWithLanguage.fromBillingInfoAndLanguage(
-            billing_info = billingInfo,
-            language     = language
-        )
-
-        val customerInfo: CustomerInfo = billingInfoWithLanguage.transformInto[CustomerInfo]
-
-        // Convert current project state to base64-encoded YAML
-        val currentProject = engineStateVar.now()
-        val productMetadataResult: Either[String, FileDescriptionWithContent] = convertProjectToBase64(
-            currentProject
-        ) match
-            case Success(base64Content) =>
-                Right(
-                    FileDescriptionWithContent(
-                        filename = s"project${FIRECALC_FILE_EXTENSION}",
-                        mimeType = "application/yaml",
-                        content  = base64Content
-                    )
-                )
-            case Failure(error)         =>
-                val errorMsg = s"Failed to convert project to base64: ${error.getMessage}"
-                dom.console.error(errorMsg)
-                // dom.console.error(error.getStackTrace().toList.mkString("\n"))
-                Left             (errorMsg)
-
-        // If conversion failed, return error immediately
-        productMetadataResult match
-            case Left(errorMsg) =>
-                return EventStream.fromValue(Left(errorMsg), emitOnce = true)
-            case Right(_)       =>
-                () // Continue with request
-
-        val createPurchaseIntentRequest = CreatePurchaseIntentRequest(
-            productId       = productId,
-            productMetadata = productMetadataResult.toOption,
-            customer        = customerInfo
-        )
-
-        // Create the request body as JSON string
-        val requestBody = createPurchaseIntentRequest.asJson.noSpaces
-
-        // Make the POST request with proper headers and handle both success and error responses
-        FetchStream
-            .post(
-                url = UIConfig.Endpoints.createPurchaseIntent,
-                init => {
-                    init.body   (requestBody                         )
-                    init.headers("Content-Type" -> "application/json")
-                }
-            )
-            .recoverToTry
-            .map { tryResponse =>
-                tryResponse match
-                    case scala.util.Success(responseText) =>
-                        // Try to decode as success response first
-                        decode[CreatePurchaseIntentResponse](responseText) match
-                            case Right(response) => Right(response)
-                            case Left(_)         =>
-                                // If that fails, try to decode as error response
-                                decode[ErrorResponseEnvelope](responseText) match
-                                    case Right(errorEnvelope) =>
-                                        Left(s"${errorEnvelope.error}: ${errorEnvelope.message}")
-                                    case Left(decodeError)    =>
-                                        Left(
-                                            s"Failed to decode response : ${decodeError.getMessage}\n=> Response:\n'${responseText}'"
-                                        )
-                    case scala.util.Failure(fetchError)   =>
-                        Left(s"Network error: ${fetchError.getMessage}")
-            }
-
-    def handlePurchaseCreateIntentResponse(): Observer[Either[String, CreatePurchaseIntentResponse]] =
-        Observer[Either[String, CreatePurchaseIntentResponse]] {
-            case Right(response)    =>
-                // Store the purchase token in the state on success
-                pdf_report_ordering_var.update         (
-                    _.copy      (
-                        purchase_token       = Some(response.purchase_token),
-                        validation_code_sent = true
-                    )
-                )
-                // Clear any previous errors
-                create_purchase_intent_response_var.set(Some(Right(response)))
-            case Left(errorMessage) =>
-                // Store error in state for display
-                create_purchase_intent_response_var.set(Some(Left(errorMessage)))
-                // Reset state to allow retry
-                pdf_report_ordering_var.update         (
-                    _.copy(
-                        validation_code_sent = false,
-                        purchase_token       = None
-                    )
-                )
-        }
 
     def makeVerifyAndProcessRequest(): EventStream[Either[String, VerifyAndProcessResponse]] =
         // Get purchase token, verification code, and email from state
@@ -357,25 +385,29 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                 cls := "flex items-stretch gap-2",
                 DaisyUITooltip (
                     ttContent  = div(
-                        text <-- conditions_and_results_satisfied_except_emissions_sig
+                        text <-- buttonConditionsSig
                             .combineWith(emissions_and_efficiency_values_satisfied_sig)
-                            .map { case (conditions_ok, emissions_ok) =>
-                                if      (!conditions_ok) I18N_UI.tooltips.order_pdf_report_not_possible
-                                else if (!emissions_ok ) I18N_UI.tooltips.order_pdf_report_emissions_warning
+                            .map { (conditionsOk, backendAllows, emissionsOk) =>
+                                if (!backendAllows) I18N_UI.firebox.order_disabled.tooltip
+                                else if (!conditionsOk) I18N_UI.tooltips.order_pdf_report_not_possible
+                                else if (!emissionsOk) I18N_UI.tooltips.order_pdf_report_emissions_warning
                                 else I18N_UI.tooltips.order_pdf_report
                             }
                     ),
                     element    = div(
                         tabIndex := 0,
                         role     := "button",
-                        disabledAttr <-- conditions_and_results_satisfied_except_emissions_not_sig,
-                        cls      := "btn btn-outline hover:btn-secondary rounded-field",
+                        disabledAttr <-- buttonConditionsSig
+                            .map { (conditionsOk, backendAllows) => !conditionsOk || !backendAllows },
                         cls(
                             "text-base-content"
-                        ) <-- conditions_and_results_satisfied_except_emissions_sig,
+                        ) <-- buttonConditionsSig
+                            .map { (c, b) => c && b },
                         cls(
                             "text-base-content/40 hover:text-base-content"
-                        ) <-- conditions_and_results_satisfied_except_emissions_not_sig,
+                        ) <-- buttonConditionsSig
+                            .map { (c, b) => !c || !b },
+                        cls      := "btn btn-outline hover:btn-secondary rounded-field",
                         div(
                             cls := "h-4 flex items-center justify-center",
                             I18N_UI.buttons.order_pdf_report
@@ -386,9 +418,11 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                         ),
                         onClick
                             .compose(
-                                _.withCurrentValueOf(emissions_and_efficiency_values_satisfied_sig)
-                            ) --> { (_, emissionsOk) =>
-                            if (emissionsOk) {
+                                _.withCurrentValueOf(onClickFiltersSig)
+                            ) --> { (_, emissionsOk, backendAllows) =>
+                            if (!backendAllows) {
+                                // Backend doesn't allow this firebox — do nothing
+                            } else if (emissionsOk) {
                                 // Direct flow to main modal
                                 mainModal.ref.asInstanceOf[HTMLDialogElement].showModal()
                             } else {
@@ -444,7 +478,34 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                     br             (                                                                                   ),
                     p              (I18N_UI.pdf_ordering.modal.report.will_be_sent_to_email                            ),
                     br             (                                                                                   ),
-                    p(b(I18N_UI.pdf_ordering.modal.report.price)),
+                    div            (
+                        cls          := "space-y-1",
+                        div(
+                            cls := "flex justify-between text-sm",
+                            span(I18N_UI.pdf_ordering.modal.report.line_name),
+                            span(s"${baseProductPrice} EUR"                 )
+                        )
+                    ),
+                    child <-- requiresLicenseFeeSignal.map { requiresFee =>
+                        if requiresFee then
+                            div(
+                                cls := "space-y-1",
+                                div(
+                                    cls := "flex justify-between text-sm",
+                                    span(I18N_UI.pdf_ordering.modal.license_fee.line_name),
+                                    span(s"${licenseFeePrice} EUR"                       )
+                                )
+                            )
+                        else emptyNode
+                    },
+                    child <-- requiresLicenseFeeSignal.map { requiresFee =>
+                        val total = if requiresFee then feeProductPrice else baseProductPrice
+                        div(
+                            cls := "flex justify-between font-bold border-t pt-2 mt-2",
+                            span(I18N_UI.pdf_ordering.modal.total),
+                            span(s"$total EUR"                   )
+                        )
+                    },
                     br             (                                                                                   ),
                     ul             (
                         I18N_UI.pdf_ordering.modal.order_steps.title,
@@ -583,68 +644,7 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                             div(cls := "flex-1", ""        )
                         )
                     ),
-
-                    // SEND 6-DIGIT VALIDATION CODE
-
-                    button         (
-                        cls          := "btn btn-block h-24 mt-6",
-                        cls <-- hiddenUnless(send_validation_code_btn_shown_sig),
-                        disabledAttr <-- send_validation_code_btn_active_sig
-                            .combineWith(create_purchase_intent_response_var.signal)
-                            .map:
-                                case (btn_active, Some(Left(_))) => false // Allow retry after error
-                                case (btn_active, _            ) => !btn_active
-                        ,
-                        onClick.flatMap(_ =>
-                            makePurchaseCreateIntentRequest()
-                        ) --> handlePurchaseCreateIntentResponse(),
-                        div(
-                            cls := "flex flex-row items-center w-full gap-3",
-                            div(cls := "flex-none w-14", ""),
-                            div(
-                                cls := "flex-none w-14",
-                                child <-- create_purchase_intent_response_var.signal
-                                    .combineWith(validation_code_sent_sig)
-                                    .map:
-                                        case (Some(Left(_)), _) =>
-                                            lucide.`square-x`(w = 32, h = 32, stroke_width = 2)
-                                        case (_, true         ) =>
-                                            lucide.`square-check`(w = 32, h = 32, stroke_width = 2)
-                                        case _ =>
-                                            lucide.square(w = 32, h = 32, stroke_width = 2)
-                            ),
-                            div(
-                                cls := "flex flex-initial",
-                                child <-- create_purchase_intent_response_var.signal
-                                    .combineWith(validation_code_sent_sig)
-                                    .combineWith(send_validation_code_btn_active_sig)
-                                    .combineWith(billing_email_sig)
-                                    .map: (response, code_sent, btn_active, billing_email) =>
-                                        response match
-                                            case Some(Left(errorMsg)) =>
-                                                p(
-                                                    cls := "text-xl",
-                                                    I18N_UI.pdf_ordering.modal.validation.error_prefix
-                                                        .apply(errorMsg)
-                                                )
-                                            case _                    =>
-                                                p(
-                                                    cls := "text-xl",
-                                                    (code_sent, btn_active) match
-                                                        case (true, _     ) =>
-                                                            I18N_UI.pdf_ordering.modal.validation.code_sent_to
-                                                                .apply(billing_email)
-                                                        case (false, true ) =>
-                                                            I18N_UI.pdf_ordering.modal.validation.send_code_to
-                                                                .apply(billing_email)
-                                                        case (false, false) =>
-                                                            I18N_UI.pdf_ordering.modal.validation.invalid_email
-                                                                .apply(billing_email)
-                                                )
-                            ),
-                            div(cls := "flex-1", ""        )
-                        )
-                    ),
+                    orderButtonSection.node,
 
                     // Button + 6-digit code validation Input form
 

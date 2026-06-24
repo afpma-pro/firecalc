@@ -14,15 +14,15 @@ object ChannelsDSL_13384_Instances:
     // Instance for ThermalPipeDescr_13384
     given thermal13384: ChannelsDSL[ThermalPipeDescr_13384] with
         def channelsSplit(n: Int) =
-            SetThermalPipeProp_13384.SetNumberOfFlows(n.flows)
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows(n.flows)
 
         def channelsJoin() =
-            SetThermalPipeProp_13384.SetNumberOfFlows(1.flow)
+            ThermalChannelTopologyOp_13384.SetNumberOfFlows(1.flow)
 
     // Instance for FlowOnlyPipeDescr_13384
     given flowOnly13384: ChannelsDSL[FlowOnlyPipeDescr_13384] with
         def channelsSplit(n: Int) =
-            SetFlowOnlyPipeProp_13384.SetNumberOfFlows(n.flows)
+            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(n.flows)
 
         def channelsJoin() =
-            SetFlowOnlyPipeProp_13384.SetNumberOfFlows(1.flow)
+            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(1.flow)

@@ -22,6 +22,7 @@ import afpma.firecalc.payments.shared.api.CustomerInfo
 import afpma.firecalc.payments.shared.api.OrderId
 import afpma.firecalc.payments.shared.api.ProductCopyConfig
 import afpma.firecalc.payments.shared.api.ProductCopyResolver
+import afpma.firecalc.payments.shared.api.v1
 import afpma.firecalc.payments.util.LogSanitizer
 
 import cats.effect.Async
@@ -442,7 +443,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
         existingGoCardlessCustomerId: Option[String] // = None
     )(using lang: BackendCompatibleLanguage): F[BillingRequest] =
         val amountInCents = (amount * 100).toInt
-        val copy          = ProductCopyResolver.resolve(product.sku, lang)(using productCopyConfig)
+        val copy          = ProductCopyResolver.resolve(v1.Sku(product.sku), lang)(using productCopyConfig)
         val request       = CreateBillingRequestRequest(
             mandate_request = MandateRequest(
                 currency = "EUR",
@@ -977,7 +978,7 @@ class GoCardlessPaymentServiceImpl[F[_]: Async](
             // Use the language from the order to ensure consistency
             languageFromOrder = order.language
 
-            productCopy = ProductCopyResolver.resolve(product.sku, languageFromOrder)(using productCopyConfig)
+            productCopy = ProductCopyResolver.resolve(v1.Sku(product.sku), languageFromOrder)(using productCopyConfig)
 
             paymentLinkEmail = PaymentLinkEmail(
                 email       = EmailAddress.unsafeFromString(customerEmail),

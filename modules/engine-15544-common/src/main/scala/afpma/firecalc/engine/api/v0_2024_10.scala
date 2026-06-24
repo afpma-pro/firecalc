@@ -12,6 +12,10 @@ import afpma.firecalc.i18n.LocalizedAlg
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
 import afpma.firecalc.engine.impl.en15544.common.EN15544_V_2023_Common_Application
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.AirIntakePositionMode
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
+import afpma.firecalc.engine.models.geometry.PostFireboxStartPositionMode
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
@@ -95,11 +99,62 @@ trait v0_2024_10_core extends v0_2024_10_13384_core:
         self =>
 
         /**
-         * The ordered post-firebox pipe descriptor slots from the DTO.
+         * The ordered post-firebox pipe descriptor slots, typed against the engine-side
+         * [[PostFireboxPipeSlot]] enum (a mirror of the DTO wire-format enum
+         * `PostFireboxPipeDescrSlot_V7`).
          * Defaults to empty; override with the actual `post_firebox_pipes` from FireCalcYAML V6
-         * to support arbitrary N-pipe topologies.
+         * to support arbitrary N-pipe topologies. Read by [[en15544_incrInputs]].
          */
-        def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] = Seq.empty
+        def postFireboxPipeSlots: Seq[PostFireboxPipeSlot] = Seq.empty
+
+        /**
+         * Wrapper-level initial direction for post-firebox pipes (V7), read by
+         * [[en15544_incrInputs]]. Defaults to `None` for backward compatibility.
+         */
+        def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None
+
+        /**
+         * Raw air intake pipe descriptors, typed via the per-app `AirIntakePipe_Module`
+         * machinery so the field resolves to FlowOnly V4 descr (strict) or Thermal V4
+         * descr (MCE/labo) depending on the application's `AirIntakePipe_Module_T`.
+         * Read by [[en15544_incrInputs]]. Defaults to empty for engine variants that
+         * do not model an air intake.
+         */
+        def airIntakeDescriptors: Seq[AirIntakePipe_Module.IncrDescr] = Seq.empty
+
+        /**
+         * Raw user-intent mode for the post-firebox pipe start position (Auto vs Manual
+         * override) — engine mirror of the DTO `PostFireboxStartPosition` enum. Read by
+         * [[en15544_incrInputs]]. Defaults to [[PostFireboxStartPositionMode.Auto]]
+         * (matches the pre-refactor behaviour where `postFireboxInitialPosition` resolved
+         * to `None` for auto-resolution).
+         */
+        def postFireboxPositionMode: PostFireboxStartPositionMode = PostFireboxStartPositionMode.Auto
+
+        /**
+         * Raw user-intent mode for the air intake pipe position (Initial/Final × Auto/Manual)
+         * — engine mirror of the DTO `AirIntakePosition` enum. Read by [[en15544_incrInputs]].
+         * Defaults to [[AirIntakePositionMode.FinalAuto]] (matches the pre-refactor behaviour
+         * where `airIntakeInitialPosition` resolved to `None` for auto-resolution).
+         */
+        def airIntakePositionMode: AirIntakePositionMode = AirIntakePositionMode.FinalAuto
+
+        /**
+         * Loader-resolved post-firebox start position projection — `None` for Auto modes,
+         * `Some(pos)` for Manual or Auto-resolved-from-geometry. Read by [[en15544_incrInputs]]
+         * into `FramedIncrPostFireboxPipes.resolvedPosition`. Co-located with
+         * [[postFireboxPositionMode]] per the (β) decision. Defaults to `None` for engine
+         * variants that do not perform loader resolution.
+         */
+        def postFireboxInitialPosition: Option[afpma.firecalc.dto.common.Position3D] = None
+
+        /**
+         * Loader-resolved air intake position projection — `None` for Auto modes (or when
+         * no air intake is modeled), `Some(pos)` for Manual or Auto-resolved-from-geometry.
+         * Read by [[en15544_incrInputs]] into `FramedIncrAirIntakePipe.resolvedPosition`.
+         * Co-located with [[airIntakePositionMode]] per the (β) decision. Defaults to `None`.
+         */
+        def airIntakeInitialPosition: Option[afpma.firecalc.dto.common.Position3D] = None
 
         type EN15544_Alg <: EN15544_V_2023_Common_Application {
             type AirIntakePipe_Module_T     = self.AirIntakePipe_Module_T
@@ -133,6 +188,17 @@ trait v0_2024_10_core extends v0_2024_10_13384_core:
         def en15544_pipesVNel: VNelMcalcErr[Pipes_15544]
 
         def en15544_inputsVNel: VNelMcalcErr[Inputs_15544]
+
+        /**
+         * Raw IncrDescr/seed input layer — bundles the framed wrappers
+         * ([[afpma.firecalc.engine.models.en15544.FramedIncrPostFireboxPipes]] +
+         * [[afpma.firecalc.engine.models.en15544.FramedIncrAirIntakePipe]]) from the
+         * project-trait override points above. Plain `def` (NO `VNelMcalcErr` wrapping):
+         * the IncrDescr-input layer carries already-validated passthrough values;
+         * validation runs in `DirectionReachability` + later `mkPipeFromIncrDescr`,
+         * not here.
+         */
+        def en15544_incrInputs: IncrementalPipeInputs_15544
 
         def design: Design
 

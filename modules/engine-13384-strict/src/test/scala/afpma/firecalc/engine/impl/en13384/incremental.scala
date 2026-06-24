@@ -8,6 +8,7 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v4.{AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -44,14 +45,17 @@ class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with Incr
                     val λ0          = WattsPerMeterKelvin(1.2)
 
                     val p =
-                        builder.define(
-                            setInitialDirection (AzimuthDirection.Rear, InclinationDirection.Horizontal),
-                            innerShape(square(d0)),
-                            layer               (e0, λ0                                                ),
-                            roughness           (2.mm                                                  ),
-                            pipeLocation        (HeatedArea                                            ),
-                            addSectionHorizontal("first", 2.meters                                     )
-                        )
+                        builder
+                            .withInitialDirection(
+                                PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
+                            )
+                            .define(
+                                innerShape(square(d0)),
+                                layer               (e0, λ0           ),
+                                roughness           (2.mm             ),
+                                pipeLocation        (HeatedArea       ),
+                                addSectionHorizontal("first", 2.meters)
+                            )
 
                     val vRepr = p.toFullDescr()
 

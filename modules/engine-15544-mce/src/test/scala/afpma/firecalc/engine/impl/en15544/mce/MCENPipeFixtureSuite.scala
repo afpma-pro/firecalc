@@ -43,16 +43,24 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
 
         "overrides postFireboxPipeSlots with a 4-slot N-pipe vector containing 2 ThermalFlueSlots" in {
             val slots            = MCENPipeFixture_15544.postFireboxPipeSlots
-            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
             slots.size should be >= 4
             // First two slots must be ThermalFlueSlots (multi-flue segment)
-            val thermalFlueSlots = slots.collect { case s: ThermalFlueSlot => s }
+            val thermalFlueSlots = slots.collect { case s @ ThermalFlueSlot(_) => s }
             thermalFlueSlots.size should be >= 2
             // Slot ordering: ThermalFlueSlot, ThermalFlueSlot, ConnectorSlot, ChimneySlot
-            slots(0) shouldBe a[ThermalFlueSlot]
-            slots(1) shouldBe a[ThermalFlueSlot]
-            slots(2) shouldBe a[ConnectorSlot]
-            slots(3) shouldBe a[ChimneySlot]
+            slots(0) match
+                case ThermalFlueSlot(_) => ()
+                case other              => fail(s"Expected ThermalFlueSlot, got $other")
+            slots(1) match
+                case ThermalFlueSlot(_) => ()
+                case other              => fail(s"Expected ThermalFlueSlot, got $other")
+            slots(2) match
+                case ConnectorSlot(_) => ()
+                case other            => fail(s"Expected ConnectorSlot, got $other")
+            slots(3) match
+                case ChimneySlot(_) => ()
+                case other          => fail(s"Expected ChimneySlot, got $other")
         }
 
         "drives the MCE chain-aware Stage 1 path over multiple ThermalFlueSlots" in {
@@ -92,14 +100,26 @@ class MCENPipeFixtureSuite extends AnyFreeSpec with Matchers:
 
         "overrides postFireboxPipeSlots with a 6-slot [C, F, C, F, Cterm, CH] vector" in {
             val slots = MCENPipeFixture_15544_CFCF.postFireboxPipeSlots
-            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
             slots.size shouldBe 6
-            slots(0) shouldBe a[ConnectorSlot]
-            slots(1) shouldBe a[ThermalFlueSlot]
-            slots(2) shouldBe a[ConnectorSlot]
-            slots(3) shouldBe a[ThermalFlueSlot]
-            slots(4) shouldBe a[ConnectorSlot]
-            slots(5) shouldBe a[ChimneySlot]
+            slots(0) match
+                case ConnectorSlot(_) => ()
+                case other            => fail(s"Expected ConnectorSlot, got $other")
+            slots(1) match
+                case ThermalFlueSlot(_) => ()
+                case other              => fail(s"Expected ThermalFlueSlot, got $other")
+            slots(2) match
+                case ConnectorSlot(_) => ()
+                case other            => fail(s"Expected ConnectorSlot, got $other")
+            slots(3) match
+                case ThermalFlueSlot(_) => ()
+                case other              => fail(s"Expected ThermalFlueSlot, got $other")
+            slots(4) match
+                case ConnectorSlot(_) => ()
+                case other            => fail(s"Expected ConnectorSlot, got $other")
+            slots(5) match
+                case ChimneySlot(_) => ()
+                case other          => fail(s"Expected ChimneySlot, got $other")
         }
 
         "runs the MCE chain-aware Stage 1 path on a Connector-first head" in {

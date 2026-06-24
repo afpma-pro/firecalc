@@ -16,13 +16,13 @@ Comprehensive guides, design decisions, and development resources for contributo
 
 - **[Setup & Installation](dev/guides/)** - Getting started with development
 - **[Electron Desktop App](dev/guides/electron/)** - Electron-specific documentation
-- **[Architecture & Design](dev/design/)** - Technical decisions and patterns
-- **[Testing Resources](dev/testing/)** - Test data and testing guides
+- **[Architecture & Design](dev/guides/)** (planned) — Technical decisions and patterns
+- **[Testing Resources](dev/guides/)** (planned) — Test data and testing guides
 
 ### For End Users
 **[User Documentation →](user/README.md)**
 
-*Coming soon* - End-user guides, tutorials, and reference materials.
+*See the **[Installation Guide](user/INSTALLATION_GUIDE.md)** — end-user documentation.
 
 ## 🗂️ Module-Specific Documentation
 

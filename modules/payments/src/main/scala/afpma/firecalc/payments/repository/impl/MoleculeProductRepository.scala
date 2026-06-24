@@ -168,23 +168,20 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
 
     def upsert(productInfo: api.v1.ProductInfo): F[domain.Product] =
         for
-            _ <- logger.info(s"Upserting product: ${productInfo.sku} (id: ${productInfo.id.value})")
+            _ <- logger.info(s"Upserting product: ${productInfo.sku.value} (id: ${productInfo.id.value})")
 
-            // Check if product exists
             existingProduct <- findById(productInfo.id)
 
-            // Parse currency from string
             currency <- Async[F].fromOption(
                 domain.Currency.fromString(productInfo.currency),
                 new IllegalArgumentException(s"Invalid currency: ${productInfo.currency}")
             )
 
-            // Create or update based on existence
             product <- existingProduct match
                 case Some(_) =>
                     update(
                         productInfo.id,
-                        productInfo.sku,
+                        productInfo.sku.value,
                         productInfo.price,
                         currency,
                         productInfo.active,
@@ -194,7 +191,7 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                 case None    =>
                     create(
                         productInfo.id,
-                        productInfo.sku,
+                        productInfo.sku.value,
                         productInfo.price,
                         currency,
                         productInfo.active,
@@ -202,5 +199,5 @@ class MoleculeProductRepository[F[_]: Async: Logger](using conn: Conn, ec: Execu
                         productInfo.taxExempt
                     )
 
-            _ <- logger.info(s"Upserted product: ${productInfo.id.value} (sku=${productInfo.sku})")
+            _ <- logger.info(s"Upserted product: ${productInfo.id.value} (sku=${productInfo.sku.value})")
         yield product

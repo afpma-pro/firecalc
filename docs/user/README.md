@@ -5,17 +5,7 @@ Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 
 # User Documentation
 
-*This section is currently under development.*
-
-## Coming Soon
-
-End-user documentation will include:
-
-- **Getting Started Guide** - Introduction to FireCalc
-- **User Manual** - Complete feature reference
-- **Tutorials** - Step-by-step guides for common tasks
-- **FAQ** - Frequently asked questions
-- **Troubleshooting** - Common issues and solutions
+See the **[Installation Guide](INSTALLATION_GUIDE.md)** for getting started with FireCalc.
 
 ## For Developers
 

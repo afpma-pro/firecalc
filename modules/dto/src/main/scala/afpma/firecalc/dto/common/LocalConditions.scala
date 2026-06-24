@@ -69,9 +69,8 @@ object LocalConditions:
 
             val Classic = ChimneyLocationOnRoof.from(ChimneyHeightAboveRidgeline.MoreThan40cm)
 
-            def I18N_WRoof(using
-                Locale
-            ): afpma.firecalc.i18n.I18nData.LocalConditions.ChimneyTermination.ChimneyLocationOnRoof =
+            def I18N_WRoof
+                : Locale ?=> afpma.firecalc.i18n.I18nData.LocalConditions.ChimneyTermination.ChimneyLocationOnRoof =
                 I18N.local_conditions.chimney_termination.chimney_location_on_roof
 
             // Reduce amount of availabe constructors
@@ -186,9 +185,8 @@ object LocalConditions:
 
             val Classic = AdjacentBuildings.from(HorizontalDistanceBetweenChimneyAndAdjacentBuildings.MoreThan15m)
 
-            def I18N_WAdj(using
-                Locale
-            ): afpma.firecalc.i18n.I18nData.LocalConditions.ChimneyTermination.AdjacentBuildings =
+            def I18N_WAdj
+                : Locale ?=> afpma.firecalc.i18n.I18nData.LocalConditions.ChimneyTermination.AdjacentBuildings =
                 I18N.local_conditions.chimney_termination.adjacent_buildings
 
             def from(

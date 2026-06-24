@@ -15,6 +15,7 @@ import afpma.firecalc.ui.i18n.I18nData_UI.*
 import io.taig.babel.StringFormat1
 
 final case class I18nData_UI(
+    badges               : Badges,
     buttons              : Buttons,
     catalog              : Catalog,
     client_project_data  : ClientProjectData,
@@ -23,8 +24,8 @@ final case class I18nData_UI(
     default_element_names: DefaultElementNames,
     default_names        : DefaultNames,
     details_columns      : DetailsColumns,
-    direction_badge      : DirectionBadge,
     errors               : Errors,
+    firebox              : Firebox,
     footer               : Footer,
     global_error         : GlobalError,
     indicators           : Indicators,
@@ -41,6 +42,11 @@ final case class I18nData_UI(
 
 object I18nData_UI:
 
+    case class Badges(
+        auto_mode  : String,
+        manual_mode: String
+    )
+
     case class Buttons(
         select                    : String,
         add                       : String,
@@ -52,29 +58,32 @@ object I18nData_UI:
         menu                      : String,
         order_pdf_report          : String,
         redo                      : String,
+        switch_dimensions         : String,
         undo                      : String,
         units                     : String
     )
 
     case class Catalog(
-        _self                  : String,
-        select_from_catalog    : String,
-        manager_title          : String,
-        download_section       : String,
-        afpma_catalog_page     : String,
-        loaded_entries         : String,
-        no_catalog_loaded      : String,
-        import_catalog_button  : String,
-        clear_all_button       : String,
-        door_15a_fireboxes     : String,
-        single_tested_fireboxes: String,
-        pipe_presets           : String,
-        casing_presets         : String,
-        flow_resistance_presets: String,
-        angle_presets          : String,
-        simple_pipe            : String,
-        lined_flue             : String,
-        errors                 : Catalog.Errors
+        _self                     : String,
+        select_from_catalog       : String,
+        manager_title             : String,
+        download_section          : String,
+        afpma_catalog_page        : String,
+        loaded_entries            : String,
+        no_catalog_loaded         : String,
+        import_catalog_button     : String,
+        clear_all_button          : String,
+        door_15a_fireboxes        : String,
+        single_tested_fireboxes   : String,
+        pipe_presets              : String,
+        casing_presets            : String,
+        flow_resistance_presets   : String,
+        angle_presets             : String,
+        angle_presets_from_catalog: String,
+        custom_angle_bend         : String,
+        simple_pipe               : String,
+        lined_flue                : String,
+        errors                    : Catalog.Errors
     )
 
     object Catalog:
@@ -157,6 +166,8 @@ object I18nData_UI:
             button_cancel              : String,
             title                      : String,
             report                     : Modal.Report,
+            license_fee                : Modal.LicenseFee,
+            total                      : String,
             order_steps                : Modal.OrderSteps,
             accept_terms_and_conditions: String,
             link                       : String,
@@ -170,7 +181,12 @@ object I18nData_UI:
             final case class Report(
                 compliant_with_standard: String,
                 will_be_sent_to_email  : String,
-                price                  : String
+                price                  : String,
+                line_name              : String
+            )
+
+            final case class LicenseFee(
+                line_name: String
             )
 
             final case class OrderSteps(
@@ -245,39 +261,6 @@ object I18nData_UI:
         back_to_projects: String
     )
 
-    case class DirectionBadge(
-        label                         : String,
-        tooltip_direction             : String,
-        tooltip_azimuth               : StringFormat1,
-        tooltip_elevation             : StringFormat1,
-        tooltip_roll                  : StringFormat1,
-        tooltip_convention_up         : String,
-        tooltip_convention_horizontal : String,
-        tooltip_convention_down       : String,
-        cardinal_up                   : String,
-        cardinal_down                 : String,
-        cardinal_rear                 : String,
-        cardinal_front                : String,
-        cardinal_right                : String,
-        cardinal_left                 : String,
-        cardinal_rear_right           : String,
-        cardinal_front_right          : String,
-        cardinal_front_left           : String,
-        cardinal_rear_left            : String,
-        relative_left                 : String,
-        relative_right                : String,
-        relative_up                   : String,
-        relative_down                 : String,
-        relative_theta                : String,
-        relative_dir_label            : String,
-        abs_dir_label                 : String,
-        direction_incompatible_warning: String,
-        cardinal_horizontal           : String,
-        custom_btn                    : String,
-        custom_dialog_title           : String,
-        custom_option                 : StringFormat1
-    )
-
     case class Tooltips(
         load_project                      : StringFormat1,
         new_project                       : String,
@@ -323,6 +306,20 @@ case class Errors(
     value_gt_0              : StringFormat1,
     value_is_undefined      : String
 )
+
+final case class Firebox(
+    order_disabled       : Firebox.OrderDisabled,
+    backend_not_available: Firebox.BackendNotAvailable
+)
+
+object Firebox:
+    final case class OrderDisabled(
+        tooltip      : String,
+        error_message: String
+    )
+    final case class BackendNotAvailable(
+        tooltip: String
+    )
 
 case class GlobalError(
     title          : String,
