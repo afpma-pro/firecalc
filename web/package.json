@@ -1,6 +1,6 @@
 {
   "name": "firecalc-desktop",
-  "version": "0.9.0-b21-SNAPSHOT+engine-0.3.0-b21-SNAPSHOT",
+  "version": "0.9.0-b21+engine-0.3.0-b21",
   "description": "FireCalc AFPMA - Dimensioning software for one-off masonry heaters (EN 15544, EN 13384).",
   "main": "electron-app/src/main.js",
   "type": "module",
