@@ -97,27 +97,25 @@ abstract class EN15544_MCE_Application(
 
     val combustionDuration = inputs.combustionDuration
 
-    def en13384_η_W_calc(fluegas_co2_dry: Percentage): Percentage =
+    def en13384_η_W_calc(fluegas_co2_dry: Percentage): VNelMcalcErr[Percentage] =
         // 2. calculé à partir de taux de CO2 ou O2 + tamb + tg + wood compo ?
-        bs845.perfect_combustion_efficiency_given_CO2_dry         (
-            wood          = inputs.wood,
-            t_flue_gas    = t_burnout,
-            t_ambiant_air = formulas.t_outside_air_mean,
-            co2_dry_perc  = fluegas_co2_dry
-        )
+        t_burnout.map: tb =>
+            bs845.perfect_combustion_efficiency_given_CO2_dry         (
+                wood          = inputs.wood,
+                t_flue_gas    = tb,
+                t_ambiant_air = formulas.t_outside_air_mean,
+                co2_dry_perc  = fluegas_co2_dry
+            )
 
     lazy val en13384_η_WN: VNelMcalcErr[Percentage] =
-        Validated.validNel:
-            inputs.design.firebox match
-                case tstd: SingleTested  => tstd.efficiency_nominal
-                case _   : Firebox_15544 => en13384_η_W_calc(inputs.fluegas_co2_dry_nominal)
+        inputs.design.firebox match
+            case tstd: SingleTested  => Validated.validNel(tstd.efficiency_nominal)
+            case _   : Firebox_15544 => en13384_η_W_calc(inputs.fluegas_co2_dry_nominal)
 
     lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] =
-        (
-            inputs.design.firebox match
-                case tstd: SingleTested  => tstd.efficiency_reduced
-                case _   : Firebox_15544 => inputs.fluegas_co2_dry_lowest.map(en13384_η_W_calc)
-        ).map(Validated.validNel)
+        inputs.design.firebox match
+            case tstd: SingleTested  => tstd.efficiency_reduced.map(Validated.validNel)
+            case _   : Firebox_15544 => inputs.fluegas_co2_dry_lowest.map(en13384_η_W_calc)
 
     lazy val energy_in_nominal_load = energy_in_wet_wood(m_B)
     lazy val energy_in_minimal_load = m_B_min.map(mb_min => energy_in_wet_wood(mb_min))
@@ -570,24 +568,26 @@ abstract class EN15544_MCE_Application(
                                                 fdResult
                                             ) match
                                                 case Validated.Valid(pipe)  =>
-                                                    firebox_PipeResult.andThen: cc =>
-                                                        ops_en13384.ThermalMecaFlu_13384
-                                                            .makePipeResult                (
-                                                                fd                 = FluePipe_Module_13384.unwrap(pipe),
-                                                                hafg               = en15544_mce.en13384_heatingAppliance_fluegas,
-                                                                hamf               = en15544_mce.en13384_heatingAppliance_massFlows,
-                                                                temp_start         = en15544_mce.t_burnout,
-                                                                last_pipe_density  = computeAt match
-                                                                    case ComputeAt.Mean   => cc.last_density_mean
-                                                                    case ComputeAt.Middle => cc.last_density_middle
-                                                                ,
-                                                                last_pipe_velocity = computeAt match
-                                                                    case ComputeAt.Mean   => cc.last_velocity_mean
-                                                                    case ComputeAt.Middle => cc.last_velocity_middle
-                                                                ,
-                                                                gas                = FlueGas
-                                                            )
-                                                            .toValidatedNel
+                                                    en15544_mce.t_burnout.andThen: tBurnout =>
+                                                        firebox_PipeResult.andThen: cc =>
+                                                            ops_en13384.ThermalMecaFlu_13384
+                                                                .makePipeResult                (
+                                                                    fd                 = FluePipe_Module_13384.unwrap(pipe),
+                                                                    hafg               = en15544_mce.en13384_heatingAppliance_fluegas,
+                                                                    hamf               =
+                                                                        en15544_mce.en13384_heatingAppliance_massFlows,
+                                                                    temp_start         = tBurnout,
+                                                                    last_pipe_density  = computeAt match
+                                                                        case ComputeAt.Mean   => cc.last_density_mean
+                                                                        case ComputeAt.Middle => cc.last_density_middle
+                                                                    ,
+                                                                    last_pipe_velocity = computeAt match
+                                                                        case ComputeAt.Mean   => cc.last_velocity_mean
+                                                                        case ComputeAt.Middle => cc.last_velocity_middle
+                                                                    ,
+                                                                    gas                = FlueGas
+                                                                )
+                                                                .toValidatedNel
                                                 case Validated.Invalid(nel) => Validated.Invalid(nel)
 
                             val seedDensity : Option[Density]      =
@@ -604,26 +604,27 @@ abstract class EN15544_MCE_Application(
                                             pr.last_velocity_mean.orElse(pr.last_velocity_middle)
                                         case ComputeAt.Middle => pr.last_velocity_middle
                                 }
-                            val initialUpstream = UpstreamState(
-                                temp_start         = en15544_mce.t_burnout,
-                                last_pipe_density  = seedDensity,
-                                last_pipe_velocity = seedVelocity
-                            )
-                            val folded = slots.foldLeft[Either[
-                                afpma.firecalc.engine.standard.MecaFlu_Error,
-                                (UpstreamState, Vector[PipeResult])
-                            ]](Right((initialUpstream, Vector.empty))) { case (acc, slot) =>
-                                acc.flatMap { case (upstream, results) =>
-                                    slot.compute(upstream, p).map { pr =>
-                                        val nextUpstream =
-                                            UpstreamState.fromPipeResult(pr, computeAt)
-                                        (nextUpstream, results :+ pr)
+                            en15544_mce.t_burnout.andThen: tBurnout =>
+                                val initialUpstream = UpstreamState(
+                                    temp_start         = tBurnout,
+                                    last_pipe_density  = seedDensity,
+                                    last_pipe_velocity = seedVelocity
+                                )
+                                val folded          = slots.foldLeft[Either[
+                                    afpma.firecalc.engine.standard.MecaFlu_Error,
+                                    (UpstreamState, Vector[PipeResult])
+                                ]](Right((initialUpstream, Vector.empty))) { case (acc, slot) =>
+                                    acc.flatMap { case (upstream, results) =>
+                                        slot.compute(upstream, p).map { pr =>
+                                            val nextUpstream =
+                                                UpstreamState.fromPipeResult(pr, computeAt)
+                                            (nextUpstream, results :+ pr)
+                                        }
                                     }
                                 }
-                            }
-                            folded match
-                                case Right((_, results)) => Validated.validNel((results, lastSeed))
-                                case Left(err)           => Validated.invalidNel(err)
+                                folded match
+                                    case Right((_, results)) => Validated.validNel((results, lastSeed))
+                                    case Left(err)           => Validated.invalidNel(err)
                         }
 
     end MCEAtParams

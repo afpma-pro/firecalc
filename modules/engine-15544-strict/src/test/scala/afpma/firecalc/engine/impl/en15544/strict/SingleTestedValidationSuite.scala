@@ -18,7 +18,9 @@ import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.LocalRegulations
+import afpma.firecalc.engine.standard.TBurnoutNotSet
 
+import cats.data.Validated
 import io.scalaland.chimney.dsl.*
 import io.taig.babel.Languages
 import io.taig.babel.Locale
@@ -53,10 +55,11 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
 
     private def stubSingleTestedDTO(
         maxFuelMass                               : Double,
-        coMgNm3                                   : Option[Double] = None,
-        fireboxDepth                              : Length         = 0.44.meters,
-        fireboxWidth                              : Length         = 0.42.meters,
-        fireboxHeight                             : Length         = 0.6.meters
+        coMgNm3                                   : Option[Double]   = None,
+        fireboxDepth                              : Length           = 0.44.meters,
+        fireboxWidth                              : Length           = 0.42.meters,
+        fireboxHeight                             : Length           = 0.6.meters,
+        tBurnout                                  : Option[TCelsius] = Some(550.degreesCelsius)
     ): Firebox.SingleTested =
         Firebox.SingleTested(
             reference                              = "Test SingleTested",
@@ -69,7 +72,7 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
             is_glass_surface_ratio_below_one_fifth = true,
             glass_area                             = 0.25.squareMeters,
             mean_firebox_temperature               = Some(700.degreesCelsius),
-            t_burnout                              = 550.degreesCelsius,
+            t_burnout                              = tBurnout,
             efficiency_nominal                     = 80.percent,
             efficiency_reduced                     = None,
             heat_output_reduced                    = HeatOutputReduced.NotDefined,
@@ -181,5 +184,26 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
                 )
             )
             app.validateResultsExceptEmissionsValues(Country.France).isValid shouldBe true
+        }
+
+        // ── t_burnout required ────────────────────────────────────────
+
+        "t_burnout = None → TBurnoutNotSet validation error" in {
+            val app    = loadApp(
+                buildEngineState(
+                    stubSingleTestedDTO(
+                        maxFuelMass = 18.5,
+                        tBurnout    = None
+                    ),
+                    stubStoveParams    (18.5)
+                )
+            )
+            val result = app.validateResultsExceptEmissionsValues(Country.France)
+            result.isValid shouldBe false
+            result match
+                case Validated.Invalid(nel) =>
+                    nel.toList should contain(TBurnoutNotSet)
+                case Validated.Valid(_)     =>
+                    fail("Expected validation to fail with TBurnoutNotSet")
         }
     }

@@ -168,7 +168,7 @@ object Firebox_V4:
         @Transl(I(_.firebox.single_tested.mean_firebox_temperature))
         mean_firebox_temperature              : Option[TCelsius],
         @Transl(I(_.firebox.single_tested.t_burnout))
-        t_burnout                             : TCelsius,
+        t_burnout                             : Option[TCelsius],
         @Transl(I(_.firebox.single_tested.efficiency_nominal))
         efficiency_nominal                    : Percentage,
         @Transl(I(_.firebox.single_tested.efficiency_reduced))

@@ -201,8 +201,9 @@ object standard {
         case e: InjectorVelocityAboveMaximum     => Show[InjectorVelocityAboveMaximum].show(e)
         case e: MissingFlowRate                  => Show[MissingFlowRate].show(e)
         case e: AirIntakePipeShapeMismatch       => e.show
-        case e: FireboxErrorCustom               => e.reason
-        case e: InvalidFireboxConstraint         => e.show
+        case TBurnoutNotSet => TBurnoutNotSet.show
+        case e: FireboxErrorCustom       => e.reason
+        case e: InvalidFireboxConstraint => e.show
 
     case class InvalidFireboxConstraint(error: TermConstraintError[?]) extends FireboxError
     object InvalidFireboxConstraint:
@@ -273,6 +274,10 @@ object standard {
     object AirIntakePipeShapeMismatch:
         given ShowUsingLocale[AirIntakePipeShapeMismatch] = showUsingLocale: e =>
             I18N.errors.air_intake_pipe_shape_mismatch(e.expected, e.actual)
+
+    case object TBurnoutNotSet extends FireboxError:
+        given ShowUsingLocale[TBurnoutNotSet.type] = showUsingLocale: e =>
+            I18N.errors.t_burnout_not_set
 
     sealed trait InvalidTermValue[T] extends FireboxError:
         def termName : LocalizedString
@@ -785,6 +790,10 @@ object standard {
         // Exception errors
         case class UnexpectedThrowable(e: Throwable, override val sectionTyp: PipeType) extends MecaFlu_Error
 
+        // Bridges an MCalc_Error that surfaced during pipe computation
+        // (e.g. TBurnoutNotSet from t_fluepipe) into the MecaFlu layer
+        case class ComputationError(error: MCalc_Error, override val sectionTyp: PipeType) extends MecaFlu_Error
+
         // Thermal resistance computation errors (context-aware)
         case class ThermalResistanceNotApplicableForCombustionAir(override val sectionTyp: PipeType)
             extends MecaFlu_Error
@@ -840,8 +849,9 @@ object standard {
                 I18N.mecaflu.errors.mean_temperature_calculation_errors(errs.toList.map(_.show).mkString(", "))
             case NoStraightSectionDefinedForTemperatureCalc(ref, _) =>
                 I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
+            case ComputationError(err, _)                           => err.show
             case x: SingularFlowResistanceCoeffError => x.show
-            case x: FluePipeShapeSequenceError => x.show
+            case x: FluePipeShapeSequenceError       => x.show
 
     // Incremental Builder Validation Errors
 

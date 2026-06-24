@@ -88,7 +88,7 @@ object SingleTestedXlsxImporter:
             is_glass_surface_ratio_below_one_fifth = glassRatioBelow,
             glass_area                             = reqDbl(GlassArea, "glass area").withUnit[(Meter ^ 2)],
             mean_firebox_temperature               = dbl(MeanFireboxTemp).map(_.degreesCelsius),
-            t_burnout                              = reqDbl(TBurnout, "burnout temperature").degreesCelsius,
+            t_burnout                              = Some(reqDbl(TBurnout, "burnout temperature").degreesCelsius),
             efficiency_nominal                     = reqDbl(EffNominal, "nominal efficiency").withUnit[Percent],
             efficiency_reduced                     = dbl(EffReduced).map(_.withUnit[Percent]),
             heat_output_reduced                    = heatMode,

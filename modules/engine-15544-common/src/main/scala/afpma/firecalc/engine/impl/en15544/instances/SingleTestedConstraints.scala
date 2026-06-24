@@ -107,13 +107,25 @@ given singleTestedConstraints: (FireboxConstraints[SingleTested] & RemovedFirebo
                 )
             )
 
-        // ── No firebox-specific constraints ───────────────────────────────────
+        // ── Firebox-specific constraints ──────────────────────────────────────
         override def firebox_custom_constraints(
             firebox: SingleTested,
             ctx    : FireboxConstraintContext
         ): List[FireboxError] =
-            AllTermConstraints(pellets_load_burn_duration_constraints(firebox))
-                .checkAllAndCombineWhenDefined(firebox.pellets_load_burn_duration)
-                .map(_.foldToErrDeep(InvalidFireboxConstraint.apply)) match
-                case Some(xs) => xs
-                case None     => Nil
+            val tBurnoutErrors =
+                if firebox.tBurnout.isEmpty then TBurnoutNotSet :: Nil
+                else Nil
+
+            val pelletErrors =
+                AllTermConstraints(pellets_load_burn_duration_constraints(firebox))
+                    .checkAllAndCombineWhenDefined(firebox.pellets_load_burn_duration)
+                    .map(_.foldToErrDeep(InvalidFireboxConstraint.apply)) match
+                    case Some(xs) => xs
+                    case None     => Nil
+
+            tBurnoutErrors ++ pelletErrors
+            // TBurnoutNotSet is checked here (constraint layer) so it surfaces
+            // through firebox_custom_constraints_sig → all_cons_signal → statusCons.
+            // The formula layer (t_burnout_calc) also produces TBurnoutNotSet,
+            // which flows through postFireboxPipeResults independently — no
+            // cross-contamination with combustionAir or firebox pipe results.

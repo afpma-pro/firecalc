@@ -49,7 +49,7 @@ final case class DaisyUIVerticalAccordionAndJoin(
 
     lazy val subtotal_quadrions_sig = results_en15544_outputs.map:
         case Validated.Valid(outputs) =>
-            outputs.pipesResult_15544 match
+            outputs.pipesResult_15544.accumulateErrors match
                 case Validated.Valid(presults) =>
                     val out = presults.Σ_pu.andThen(Σ_pu =>
                         presults.`Σ_ph-Σ_pR-Σ_pu`.map(`Σ_ph-Σ_pR-Σ_pu` =>

@@ -199,7 +199,7 @@ object std:
             is_glass_surface_ratio_below_one_fifth: Boolean,
             glass_area                            : GlassArea,
             meanFireboxTemperature                : Option[TCelsius],
-            tBurnout                              : TCelsius,
+            tBurnout                              : Option[TCelsius],
             efficiency_nominal                    : Percentage,
             efficiency_reduced                    : Option[Percentage],
             pn_reduced                            : HeatOutputReduced,
@@ -423,7 +423,7 @@ object std:
 
     case class Outputs(
         technicalSpecs        : TechnicalSpecficiations,
-        pipesResult_15544     : VNelMcalcErr[PipesResult_15544],
+        pipesResult_15544     : PipesResult_15544_VNelMcalcErr,
         reference_temperatures: ReferenceTemperatures,
         efficiencies_values   : EfficienciesValues
         // pressureRequirement_EN15544: VNelString[PressureRequirement],

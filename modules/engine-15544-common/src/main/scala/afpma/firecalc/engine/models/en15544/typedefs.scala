@@ -449,7 +449,7 @@ object typedefs:
 
     case class EstimatedOutputTemperatures(
         t_firebox             : TCelsius,
-        t_firebox_outlet      : TCelsius,
+        t_firebox_outlet      : ValidatedNel[MCalc_Error, TCelsius],
         t_stove_out           : ValidatedNel[MCalc_Error, TCelsius],
         t_chimney_out         : ValidatedNel[MCalc_Error, TCelsius],
         t_chimney_wall_top_out: ValidatedNel[MCalc_Error, TCelsius]

@@ -68,7 +68,7 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         ap.connector_PipeResult.getOrThrow
         ap.chimney_PipeResult.getOrThrow
 
-        val pipesResult_15544 = ap.outputs.pipesResult_15544.getOrThrow
+        val pipesResult_15544 = ap.outputs.pipesResult_15544.accumulateErrors.getOrThrow
         println(pipesResult_15544.showAsCliTable)
 
         println(ap.pressureRequirement_EN15544.toOption.map(_.showAsCliTable).getOrElse("ERROR (pressure requirement)"))

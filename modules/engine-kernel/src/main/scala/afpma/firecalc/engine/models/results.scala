@@ -444,7 +444,7 @@ case class PipesResult_13384_VNelString(
 
 }
 
-case class PipesResult_15544_VNelString(
+case class PipesResult_15544_VNelMcalcErr(
     airIntake    : VNelMcalcErr[PipeResult],
     combustionAir: VNelMcalcErr[PipeResult],
     firebox      : VNelMcalcErr[PipeResult],

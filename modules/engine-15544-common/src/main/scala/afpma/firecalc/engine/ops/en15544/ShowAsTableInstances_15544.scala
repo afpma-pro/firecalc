@@ -78,10 +78,10 @@ class ShowAsTableInstances_15544(using Locale):
 
     given showAsTable_EstimatedOutputTemperatures: ShowAsTable[EstimatedOutputTemperatures] =
         ShowAsTable.mkLightFor(I18N.headers.estimated_output_temperatures_15544): ts =>
-            (I18N.en15544.terms_xtra.t_BR.name                       :: ts.t_firebox.show                         :: Nil) ::
-                (I18N.en15544.terms_xtra.t_burnout.name              :: ts.t_firebox_outlet.show                  :: Nil) ::
-                (I18N.en15544.terms_xtra.t_stove_out.name            :: ts.t_stove_out.toOption.showOrElse("-")   :: Nil) ::
-                (I18N.en15544.terms_xtra.t_chimney_out.name          :: ts.t_chimney_out.toOption.showOrElse("-") :: Nil) ::
+            (I18N.en15544.terms_xtra.t_BR.name                       :: ts.t_firebox.show                            :: Nil) ::
+                (I18N.en15544.terms_xtra.t_burnout.name              :: ts.t_firebox_outlet.toOption.showOrElse("-") :: Nil) ::
+                (I18N.en15544.terms_xtra.t_stove_out.name            :: ts.t_stove_out.toOption.showOrElse("-")      :: Nil) ::
+                (I18N.en15544.terms_xtra.t_chimney_out.name          :: ts.t_chimney_out.toOption.showOrElse("-")    :: Nil) ::
                 (I18N.en15544.terms_xtra.t_chimney_wall_top_out.name :: ts.t_chimney_wall_top_out.toOption.showOrElse(
                     "-"
                 )                                                    :: Nil) ::

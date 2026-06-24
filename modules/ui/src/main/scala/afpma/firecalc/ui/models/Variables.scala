@@ -625,16 +625,13 @@ lazy val results_en15544_outputs: Signal[VNelMcalcErr[Outputs]] =
     results_en15544_strict_sig.mapVNelE(strict => strict.primary.outputs)
 
 lazy val results_en15544_air_intake_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.airIntake))
+    results_en15544_outputs.flatMapVNelE(_.pipesResult_15544.airIntake)
 
 lazy val results_en15544_combustion_air_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.combustionAir))
+    results_en15544_outputs.flatMapVNelE(_.pipesResult_15544.combustionAir)
 
 lazy val results_en15544_firebox_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.firebox))
+    results_en15544_outputs.flatMapVNelE(_.pipesResult_15544.firebox)
 
 lazy val results_en15544_estimated_output_temperatures: Signal[VNelMcalcErr[EstimatedOutputTemperatures]] =
     results_en15544_strict_sig.mapVNelE(strict => strict.primary.estimated_output_temperatures)
@@ -685,7 +682,7 @@ def makeQuadrionSubtotalForSingle(
 )(using Locale): Signal[Option[QuadrionSubtotal]] =
     outputsSig.map:
         case Validated.Valid(outputs) =>
-            outputs.pipesResult_15544.map(toPipeResult) match
+            outputs.pipesResult_15544.accumulateErrors.map(toPipeResult) match
                 case Validated.Valid(pres) =>
                     Some(
                         QuadrionSubtotal   (
@@ -709,9 +706,9 @@ def makeQuadrionSubtotalForFirebox(
             None
         case Validated.Valid(outputs) =>
             val cc_intlair_pres =
-                outputs.pipesResult_15544.map(to_cc_intlair_pres)
+                outputs.pipesResult_15544.accumulateErrors.map(to_cc_intlair_pres)
             val cc_firebox_pres =
-                outputs.pipesResult_15544.map(to_cc_firebox_pres)
+                outputs.pipesResult_15544.accumulateErrors.map(to_cc_firebox_pres)
             (cc_intlair_pres, cc_firebox_pres) match
                 case (Valid(cc_intlair_pres), Valid(cc_firebox_pres)) =>
                     Some(

@@ -556,6 +556,7 @@ object I18nData:
         term_constraint_max_error              : StringFormat3,
         glass_area_too_large                   : StringFormat2,
         glass_surface_ratio_not_confirmed      : String,
+        t_burnout_not_set                      : String,
         firebox_height_out_of_range            : StringFormat3,
         inconsistent_max_load_accross_inputs   : StringFormat3,
         firebox_base_surface_not_in_range      : StringFormat3,

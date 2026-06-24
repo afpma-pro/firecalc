@@ -106,7 +106,7 @@ class FireboxAvailabilitySuite extends AnyFreeSpec with Matchers:
         is_glass_surface_ratio_below_one_fifth = false,
         glass_area                             = 1.0.cm2,
         mean_firebox_temperature               = None,
-        t_burnout                              = 20.0.degreesCelsius,
+        t_burnout                              = Some(20.0.degreesCelsius),
         efficiency_nominal                     = 0.8.percent,
         efficiency_reduced                     = None,
         heat_output_reduced                    = HeatOutputReduced.FromTypeTest(1.0.kW),

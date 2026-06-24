@@ -187,7 +187,7 @@ object SingleTestedTemplateWriter:
             "Température de fin de combustion",
             "Burnout temperature",
             "°C",
-            v(_.t_burnout.value, 700.0)
+            vOpt(_.t_burnout.map(_.value))
         )
 
         // ── Efficiency ──

@@ -193,10 +193,10 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     // Section "4.8.2", "Mean firebox temperature"
     def t_BR: t_BR
 
-    def t_burnout: t_burnout
+    def t_burnout: VNel[t_burnout]
 
     // Section "4.8.3", "Flue gas temperature in the flue pipe"
-    def t_fluepipe     (L_Z: QtyD[Meter]                  ): t_fluepipe
+    def t_fluepipe     (L_Z: QtyD[Meter]                  ): VNel[t_fluepipe]
     def t_fluepipe_mean(lz1: QtyD[Meter], lz2: QtyD[Meter]): VNel[t_fluepipe]
 
     // EN13384 variables
@@ -283,7 +283,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val estimated_output_temperatures: EstimatedOutputTemperatures
 
         // Aggregated pipe results
-        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString
+        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelMcalcErr
 
         // Outputs
         lazy val outputs: Outputs

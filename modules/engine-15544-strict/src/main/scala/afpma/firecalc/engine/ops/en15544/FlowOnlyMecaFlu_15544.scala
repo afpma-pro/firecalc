@@ -454,7 +454,14 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                         // because `gasTemperature` is only invoked with `elem.typ ==
                         // FluePipeT` for flue pipe elements. Nothing to return as
                         // "identity" in that case — plan issue E2.
-                        en15544.t_fluepipe(totalLengthUntil(elem))
+                        en15544
+                            .t_fluepipe(totalLengthUntil(elem))
+                            .toEither
+                            .leftMap(e => MecaFlu_Error.ComputationError(e.head, FluePipeT))
+                            .fold      (
+                                err => MecaFluOps.throwMecaFluError(err),
+                                v => QtyDAtPosition.constant(v).atPos
+                            )
             case NoFluePipeT        =>
                 QtyDAtPosition.constant(tempStartOverride.getOrElse(en15544.t_BR)).atPos
             case _                  =>

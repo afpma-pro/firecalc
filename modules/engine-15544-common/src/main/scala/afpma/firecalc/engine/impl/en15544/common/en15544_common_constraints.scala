@@ -143,9 +143,11 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
             // So this EN 16510 constraint does not need to pass. Even if it does in practice.
             // ap.validateSeasonalEfficiency(countryCode),
 
-            ap.validateCitedConstraints,
-            // Firebox
-            ap.validateFireboxSpecificConstraints
+            // Firebox-specific constraints first (e.g. TBurnoutNotSet) so that
+            // missing-input errors surface before cited constraints that may
+            // depend on those values being valid.
+            ap.validateFireboxSpecificConstraints,
+            ap.validateCitedConstraints
             // TODO: any missing validation ?
             // - extra conditions for EN 13384 ?
         ).sequence[VNel, Unit].map(_ => ())

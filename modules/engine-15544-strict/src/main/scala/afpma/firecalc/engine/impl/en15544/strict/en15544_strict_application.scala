@@ -502,25 +502,26 @@ sealed abstract class EN15544_Strict_Application(
                             case ComputeAt.Mean   => pr.last_velocity_mean.orElse(pr.last_velocity_middle)
                             case ComputeAt.Middle => pr.last_velocity_middle
                     }
-                    val initialUpstream = UpstreamState(
-                        temp_start         = en15544.t_burnout,
-                        last_pipe_density  = seedDensity,
-                        last_pipe_velocity = seedVelocity
-                    )
-                    val folded = slots.foldLeft[Either[
-                        afpma.firecalc.engine.standard.MecaFlu_Error,
-                        (UpstreamState, Vector[PipeResult])
-                    ]](Right((initialUpstream, Vector.empty))) { case (acc, slot) =>
-                        acc.flatMap { case (upstream, results) =>
-                            slot.compute(upstream, p).map { pr =>
-                                val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
-                                (nextUpstream, results :+ pr)
+                    en15544.t_burnout.andThen: tBurnout =>
+                        val initialUpstream = UpstreamState(
+                            temp_start         = tBurnout,
+                            last_pipe_density  = seedDensity,
+                            last_pipe_velocity = seedVelocity
+                        )
+                        val folded          = slots.foldLeft[Either[
+                            afpma.firecalc.engine.standard.MecaFlu_Error,
+                            (UpstreamState, Vector[PipeResult])
+                        ]](Right((initialUpstream, Vector.empty))) { case (acc, slot) =>
+                            acc.flatMap { case (upstream, results) =>
+                                slot.compute(upstream, p).map { pr =>
+                                    val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
+                                    (nextUpstream, results :+ pr)
+                                }
                             }
                         }
-                    }
-                    folded match
-                        case Right((_, results)) => Validated.validNel((results, lastSeed))
-                        case Left(err)           => Validated.invalidNel(err)
+                        folded match
+                            case Right((_, results)) => Validated.validNel((results, lastSeed))
+                            case Left(err)           => Validated.invalidNel(err)
                 }
 
     end StrictAtParams

@@ -157,7 +157,7 @@ trait Firebox_V4_Generators extends Firebox_V3_Generators:
             co2_dry_lowest             <- Gen.option(Gen.choose(6.0, 12.0).map(_.percent)          )
             pellets_load_burn_duration <- Gen.option(Gen.choose(20.0, 120.0).map(_.minutes)        )
             mean_firebox_temperature   <- Gen.option(Gen.choose(200.0, 600.0).map(_.degreesCelsius))
-            t_burnout                  <- Gen.choose(500.0, 900.0).map(_.degreesCelsius)
+            t_burnout                  <- Gen.choose(500.0, 900.0).map(d => Some(d.degreesCelsius))
             is_glass_below_one_fifth   <- Gen.oneOf(true, false)
             glass_area                 <- Gen.choose(500.0, 2000.0).map(_.cm2)
             emissions_values           <- genEmissionsAndEfficiencyValues_DTO

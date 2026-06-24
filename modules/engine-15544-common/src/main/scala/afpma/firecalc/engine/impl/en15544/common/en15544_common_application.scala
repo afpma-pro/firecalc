@@ -567,14 +567,14 @@ abstract class EN15544_V_2023_Common_Application
 
         // Section "4.9.2", "Calculation of the standing pressure (p_h)"
         lazy val Σ_p_R_and_Σ_p_u: VNelMcalcErr[Pressure] =
-            outputs.pipesResult_15544.andThen(_.`Σ_pR+Σ_pu`)
+            outputs.pipesResult_15544.accumulateErrors.andThen(_.`Σ_pR+Σ_pu`)
 
         lazy val Σ_p_h: VNelMcalcErr[Pressure] =
-            outputs.pipesResult_15544.map(_.Σ_ph)
+            outputs.pipesResult_15544.accumulateErrors.map(_.Σ_ph)
 
         // Section "4.10.1", "Pressure requirement"
         lazy val pressureRequirement_EN15544: VNelMcalcErr[PressureRequirement] =
-            outputs.pipesResult_15544.andThen(pr =>
+            outputs.pipesResult_15544.accumulateErrors.andThen(pr =>
                 (pr.`Σ_pR+Σ_pu`).map: `Σ_pR+Σ_pu` =>
                     PressureRequirement          (
                         sum_pr_pu           = `Σ_pR+Σ_pu`,
@@ -661,18 +661,17 @@ abstract class EN15544_V_2023_Common_Application
             )
 
         // Aggregated pipe results — concrete, uses the tagged postFirebox vector
-        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString =
-            PipesResult_15544_VNelString(
+        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelMcalcErr =
+            PipesResult_15544_VNelMcalcErr(
                 airIntake_PipeResult(using params),
                 combustionAir_PipeResult,
                 firebox_PipeResult,
                 postFireboxPipeResults
             )
-        lazy val outputs                : Outputs                      =
-            val pipesResult = pipesResult_15544_VNelS.accumulateErrors
+        lazy val outputs                : Outputs                        =
             models.en15544.std.Outputs(
                 techSpecs,
-                pipesResult,
+                pipesResult_15544_VNelS,
                 reference_temperatures,
                 efficiencies_values
             )

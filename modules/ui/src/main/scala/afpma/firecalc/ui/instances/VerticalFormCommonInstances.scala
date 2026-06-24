@@ -431,7 +431,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     given given_Firebox_SingleTested: DF[Firebox.SingleTested] =
         import defaultable.qty_d.zeroWithUnit
-        given defaultable_TCelsius: Defaultable[TCelsius] = defaultable.given_TCelsius
         given DF[TestStandard] = given_TestStandard
         given DF[String]       = string_emptyAsDefault_alwaysValid
         given DF[Length]       = vertical_form_Length_cm
@@ -443,7 +442,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given optMass : DF[Option[Mass]]          = vertical_form_Option_QtyD_Kilogram
         given dimDF   : DF[Dimensionless]         = given_QtyD_Dimensionless
         given optDim  : DF[Option[Dimensionless]] = vertical_form_Option_QtyD_Dimensionless
-        given tempDF  : DF[TCelsius]              = given_TCelsius
         given optTemp : DF[Option[TCelsius]]      = vertical_form_Option_TCelsius
         given DF[HeatOutputReduced.NotDefined_Or_Tested] = given_HeatOutputReduced_NotDefined_Or_Tested
         // EmissionsAndEfficiencyValues_DTO (emissions_values)
