@@ -11,6 +11,7 @@ import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
+import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
@@ -52,7 +53,8 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
         val flowOnlyDynamicFrictionCoeff_15544                        = FlowOnlyDynamicFrictionCoeff_15544()
 
         val pipeChain  = PipeChain_15544_Strict.build(
-            PipeChain_15544_Strict.Descriptors(ex.fluePipeDescr, ex.connectorPipeDescr, ex.chimneyPipeDescr)
+            PipeChain_15544_Strict.Descriptors(ex.fluePipeDescr, ex.connectorPipeDescr, ex.chimneyPipeDescr),
+            ex.postFireboxInitialDirection.map(toPipeFrame                                                 )
         )
         val pipeConcat =
             pipeChain.fluePipe match

@@ -7,6 +7,7 @@ package afpma.firecalc.engine.ops
 
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
+import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
 import afpma.firecalc.engine.models.FlueGas
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.models.FluePipe_Module_15544.*
@@ -32,11 +33,12 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
     given Locale = Locales.en
 
     private val pipeChain       = PipeChain_15544_Strict.build(
-        PipeChain_15544_Strict.Descriptors(
+        PipeChain_15544_Strict.Descriptors                            (
             strict_ex01_colonne_ascendante.fluePipeDescr,
             strict_ex01_colonne_ascendante.connectorPipeDescr,
             strict_ex01_colonne_ascendante.chimneyPipeDescr
-        )
+        ),
+        strict_ex01_colonne_ascendante.postFireboxInitialDirection.map(toPipeFrame)
     )
     val channel_pipe_full_descr = pipeChain.fluePipe.toOption.get
     val channel_pipe_elems      = channel_pipe_full_descr

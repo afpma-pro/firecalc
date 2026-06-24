@@ -9,7 +9,6 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.Vec3
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 

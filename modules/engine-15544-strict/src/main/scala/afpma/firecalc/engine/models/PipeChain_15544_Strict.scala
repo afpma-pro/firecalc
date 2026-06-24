@@ -44,11 +44,14 @@ object PipeChain_15544_Strict:
         def connectorPipeMappings = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(connectorPipeResult)
         def chimneyPipeMappings   = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(chimneyPipeResult)
 
-    def build(d: Descriptors): Built =
+    def build(
+        d               : Descriptors,
+        flueInitialFrame: Option[PipeFrame] = None
+    ): Built =
         import FluePipe_Module_15544.FullDescrResult.given
         import FluePipe_Module_15544.toFullDescrWithSeed
         // Flue pipe → capture final frame
-        val initialSeed    = PipeBuildSeed.default
+        val initialSeed    = PipeBuildSeed.fromFrame(flueInitialFrame)
         val flueResult     = FluePipe_Module_15544.incremental
             .define(d.flue*)
             .toFullDescrWithSeed(initialSeed)
