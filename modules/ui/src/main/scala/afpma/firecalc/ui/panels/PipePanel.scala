@@ -221,7 +221,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             afterBadgeNode
         )
 
-        val (complexIncrNode, detailed_columns) = propertyShow match
+        val complexIncrNode: HtmlElement = propertyShow match
             case Some(show) if isProperty =>
                 // Compact property rendering with click-to-edit dialog
                 lazy val dialogNode: HtmlElement = dialogTag(
@@ -268,71 +268,101 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 val incrNode =
                     if controls then renderIdWithIncrDescr[AA](i, (i, aa), sig, propertyWrapper, Some(span()))
                     else propertyWrapper
-                (incrNode, Seq.empty)
+                incrNode
 
-            case _ =>
+            case _ => {
                 // Standard rendering (non-property or no Show instance)
-                val node              = formNode
                 val isDirectionChange = badgeFinalDirVar(elem_v).isDefined
                 val dcIcon            = Option.when(isDirectionChange)(span(lucide.`corner-down-right`(16, 16)))
                 val sectionCls        = if isDirectionChange then "pipe-section-dc" else "pipe-section-straight"
-                val header_and_node   = renderIncrDescr(title, node, isProperty, legendIcon = dcIcon).amend(
-                    binders,
-                    idAttr := vizFieldsetId(i),
-                    cls    := s"$pipeTypeCls $sectionCls",
-                    cls <-- vizHighlightSignal(i)
-                )
-                val summary_node      = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon)
-                if !isProperty then
-                    header_and_node.amend(cls := "ml-[20px]")
-                    summary_node.amend   (cls := "ml-[20px]")
-                summary_node.amend(cls := s"$pipeTypeCls $sectionCls")
-                val incrNode          =
-                    if controls then renderIdWithIncrDescr[AA](i, (i, aa), sig, header_and_node, Some(summary_node))
-                    else header_and_node
 
-                given Show[Velocity]          = Show.show(v => "%.1f".format(v.value))
-                given Show[Pressure]          = Show.show(v => "%.1f Pa".format(v.value))
-                given Show[TCelsius]          = Show.show(v => "%.0f °C".format(v.value))
+                given Show[Velocity]          = Show.show(v => s"${"%.1f".format(v.value)} m/s")
+                given Show[Pressure]          = Show.show(v => s"${"%.1f".format(v.value)} Pa")
+                given Show[TCelsius]          = Show.show(v => s"${"%.0f".format(v.value)} °C")
                 given Show[TempD[Fahrenheit]] = shows.defaults.show_Fahrenheit_0
-                given Show[Length]            = Show.show(v => "%.2f".format(v.value))
-                given Show[ζ]                 = Show.show(z => "%.1f ζ".format(z))
+                given Show[Length]            = Show.show(v => s"${"%.2f".format(v.value)} m")
+                given Show[ζ]                 = Show.show(z => s"${"%.1f".format(z)} ζ")
 
-                val cols = Seq(
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle))
+                val detailRow = div(
+                    cls := "grid grid-cols-9 text-center gap-x-1 border-t border-base-content/20 pt-1 mt-[1rem]",
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.cross_section,
+                        br  (                                                                                       ),
+                        span(text <-- xtra_sig.mapShow(x => show_PipeShape_value_cm_or_in.show(x.innerShape_middle)))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch])
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.length,
+                        br  (                                                                                 ),
+                        span(text <-- xtra_sig.mapShow(_.section_length.to_m.showP_orImpUnits_IfNonZero[Inch]))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit])
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.temp,
+                        br  (                                                                             ),
+                        span(text <-- xtra_sig.mapShow(_.gas_temp_middle.showP_orImpUnitsTemp[Fahrenheit]))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]))
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.speed,
+                        br  (                                                                                       ),
+                        span(text <-- xtra_sig.mapOptionShow(_.v_middle.map(_.showP_orImpUnits[Foot / Second]), "—"))
                     ),
-                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(_.ph.showP_IfNonZero)     ),
-                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP) ),
-                    td(cls := s"$expertColCls font-normal", text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP))),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP))
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.ph,
+                        br  (                                     ),
+                        span(text <-- xtra_sig.mapShow(_.ph.showP))
                     ),
-                    td(
-                        cls := s"$expertColCls font-normal",
-                        text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero))
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.pr,
+                        br  (                                                   ),
+                        span(text <-- xtra_sig.mapShow(x => (-1.0 * x.pR).showP))
+                    ),
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.zeta,
+                        br  (                                                         ),
+                        span(text <-- xtra_sig.mapOptionShow(_.zeta.map(_.showP), "—"))
+                    ),
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.turn,
+                        br  (                                                                                  ),
+                        span(text <-- xtra_sig.mapVNelShow(_.pu.asVNelString.map(pu => (-1.0 * pu).showP), "—"))
+                    ),
+                    div(
+                        cls := "text-[0.65rem] text-base-content/50",
+                        _I.net,
+                        br  (                                                                                      ),
+                        span(text <-- xtra_sig.mapVNelShow(_.`ph-(pR+pu)`.asVNelString.map(_.showP_IfNonZero), "—"))
                     )
                 )
-                (incrNode, cols)
 
-        tr(
-            td(complexIncrNode),
-            children(detailed_columns) <-- expertModeOn
-        )
+                val combinedNode = div(
+                    cls := "flex flex-col",
+                    formNode,
+                    children <-- expertModeOn.map(expert => if expert then Seq[HtmlElement](detailRow) else Seq.empty)
+                )
+
+                val mlCls       = if !isProperty then "ml-[20px]" else ""
+                val headerNode  = renderIncrDescr(title, combinedNode, isProperty, legendIcon = dcIcon).amend(
+                    binders,
+                    idAttr := vizFieldsetId(i),
+                    cls    := s"$pipeTypeCls $sectionCls $mlCls".trim,
+                    cls <-- vizHighlightSignal(i)
+                )
+                val summaryNode = wrapLine(title, mkBadge(compact = true), isProperty, legendIcon = dcIcon).amend(
+                    cls := s"$pipeTypeCls $sectionCls $mlCls".trim
+                )
+                val result: HtmlElement =
+                    if controls then renderIdWithIncrDescr[AA](i, (i, aa), sig, headerNode, Some(summaryNode))
+                    else headerNode
+                result
+            }
+        complexIncrNode
 
     /**
      * Render a fixed (non-movable, non-deletable) element.
@@ -391,22 +421,14 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     }
                 )
 
-                tr(
-                    td(
-                        div(
-                            wrapLine(title, compactNode, isProperty = true),
-                            dialogNode
-                        ).amend(cls := pipeTypeCls)
-                    )
-                )
+                div(
+                    wrapLine(title, compactNode, isProperty = true),
+                    dialogNode
+                ).amend(cls := pipeTypeCls)
             case _                        =>
-                tr(
-                    td(
-                        div(
-                            wrapLine(title, formNode, isProperty)
-                        ).amend(cls := pipeTypeCls)
-                    )
-                )
+                div    (
+                    wrapLine(title, formNode, isProperty)
+                ).amend(cls := pipeTypeCls)
 
     /**
      * Render V7 wrapper elements (PipeInitialDirection/Position) for the first slot.
@@ -489,16 +511,12 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     case PostFireboxStartPosition.Auto      => false
         )
 
-        tr(
-            td(
-                div(
-                    wrapLine("", dialog.compactNode, isProperty = true, widthClass = "w-auto"),
-                    dialog.dialogNode
-                ).amend(
-                    cls := pipeTypeCls,
-                    dialog.binders
-                )
-            )
+        div(
+            wrapLine("", dialog.compactNode, isProperty = true, widthClass = "w-auto"),
+            dialog.dialogNode
+        ).amend(
+            cls := pipeTypeCls,
+            dialog.binders
         )
 
     def wrapLine(
@@ -630,9 +648,6 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 titleString,
                 xtra_sig             = titleXtraSig,
                 quadrionSubtotal_sig = quadrionSubtotal_sig,
-                bottomContent_sig    = expertModeOn
-                    .combineWithDistinct(panelOpened.signal)
-                    .map((expert, open) => Option.when(expert && open)(detailed_headers_title)),
                 titlePrefix          = accordionTitlePrefix,
                 titleNode            = titleNodeOpt
             ),
@@ -640,29 +655,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             opened  = panelOpened
         )
 
-    def duShow[USI: ShowUnit, UIMP: ShowUnit]: String =
-        s"[${du.showUnitsOneOf[USI, UIMP]}]"
-
     val _I = I18N_UI.details_columns
-
-    private val expertColCls = "w-20 min-w-20 text-center"
-
-    lazy val detailed_headers_title: HtmlElement = div(
-        cls := "flex items-center text-xs font-normal -ml-4 -mr-12 py-1",
-        div(cls := "flex-1"), // spacer matching first table column
-        div(
-            cls := "flex items-center border-t border-secondary-content/30 pt-1",
-            div(cls := expertColCls, div(_I.cross_section), div(duShow[Centimeter, Inch])     ),
-            div(cls := expertColCls, div(_I.length), div(duShow[Meter, Inch])                 ),
-            div(cls := expertColCls, div(_I.temp), div(duShow[Celsius, Fahrenheit])           ),
-            div(cls := expertColCls, div(_I.speed), div(duShow[Meter / Second, Foot / Second])),
-            div(cls := expertColCls, div(_I.ph), div("[Pa]")                                  ),
-            div(cls := expertColCls, div(_I.pr), div("[Pa]")                                  ),
-            div(cls := expertColCls, div(_I.zeta), div("[ζ]")                                 ),
-            div(cls := expertColCls, div(_I.turn), div("[Pa]")                                ),
-            div(cls := expertColCls, div(_I.net), div("[Pa]")                                 )
-        )
-    )
 
     // -------------------------------------------------------------------------
     // Insert-between-rows: dialog + separator rows
@@ -725,18 +718,14 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     private lazy val insertDialog = new InsertElementDialog
 
     protected def mkInsertSeparatorRow(idx: Int): HtmlElement =
-        tr(
-            cls := "insert-sep group/isep",
-            td(
-                colSpan := 100,
-                cls     := "!p-0 !border-none",
-                div(
-                    cls := "h-0 flex items-center justify-start ml-[5rem] top-[5rem]",
-                    button(
-                        cls := "btn btn-ghost btn-xs btn-circle opacity-20 group-hover/isep:opacity-100 group-hover/isep:btn-secondary transition-all duration-150",
-                        lucide.plus,
-                        onClick --> { _ => insertDialog.open(idx) }
-                    )
+        div(
+            cls := "insert-sep group/isep !p-0 !border-none",
+            div(
+                cls := "h-0 flex items-center justify-start ml-[5rem]",
+                button(
+                    cls := "btn btn-ghost btn-xs btn-circle opacity-20 group-hover/isep:opacity-100 group-hover/isep:btn-secondary transition-all duration-150",
+                    lucide.plus,
+                    onClick --> { _ => insertDialog.open(idx) }
                 )
             )
         )
@@ -764,9 +753,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             cls := "flex flex-col gap-2 relative overflow-x-auto",
             div(
                 cls := "relative",
-                // table start
-                table(
-                    cls := "table table-xs table-pin-cols",
+                div(
+                    cls := "flex flex-col gap-2",
                     children <-- rendered_elems_sig
                 )
             ),
