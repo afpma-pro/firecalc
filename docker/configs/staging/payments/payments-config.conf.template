@@ -67,10 +67,10 @@ payments {
     # Omitting the entire block or individual keys defaults to enabled (safe for upgrades).
     firebox-availability {
       traditional = true
-      ecolabeled = true
+      ecolabeled = false
       afpma-prse = true
       single-tested = true
-      door15a-catalog = true
+      door15a-catalog = false
     }
   }
 }
