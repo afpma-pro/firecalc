@@ -276,12 +276,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 val dcIcon            = Option.when(isDirectionChange)(span(lucide.`corner-down-right`(16, 16)))
                 val sectionCls        = if isDirectionChange then "pipe-section-dc" else "pipe-section-straight"
 
-                given Show[Velocity]          = Show.show(v => s"${"%.1f".format(v.value)} m/s")
-                given Show[Pressure]          = Show.show(v => s"${"%.1f".format(v.value)} Pa")
-                given Show[TCelsius]          = Show.show(v => s"${"%.0f".format(v.value)} °C")
-                given Show[TempD[Fahrenheit]] = shows.defaults.show_Fahrenheit_0
-                given Show[Length]            = Show.show(v => s"${"%.2f".format(v.value)} m")
-                given Show[ζ]                 = Show.show(z => s"${"%.1f".format(z)} ζ")
+                given Show[ζ] = Show.show(z => s"${"%.1f".format(z)} ζ")
 
                 val detailRow = div(
                     cls := "grid grid-cols-9 text-center gap-x-1 border-t border-base-content/20 pt-1 mt-[1rem]",
