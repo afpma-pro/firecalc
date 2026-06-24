@@ -66,7 +66,7 @@ COPY --from=builder /usr/local/cargo/bin/typst /usr/local/bin/typst
 
 # Copy the pre-built JAR file from build context
 # This assumes the JAR has been built outside the Docker build process
-COPY modules/payments/target/scala-3.8.3/firecalc-payments-assembly.jar /app/firecalc-payments-assembly.jar
+COPY modules/payments/target/scala-3.8.4/firecalc-payments-assembly.jar /app/firecalc-payments-assembly.jar
 
 # Copy logos for invoice and report generation (Typst requires files on filesystem)
 # The logos are copied from modules/*/configs/*.jpg which were placed there during the build
