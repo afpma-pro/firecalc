@@ -31,10 +31,9 @@ import scala.util.Success
  *     with `forbidden.getClass.getSimpleName` before any database side effect.
  *   - `None` if no forbidden DTO is found, OR if the metadata is absent / not a
  *     `FileDescriptionWithContent`, OR if decode/migrate fails, OR if the
- *     decoded value is not the latest `FireCalcYAML` version. These pass-through
- *     cases mirror `MetadataFireboxDecoder.extractFirebox`'s silent-failure
- *     behaviour — decode errors are surfaced later by the report factory's own
- *     `loadYAMLString` step, not here (avoids double error paths).
+ *     decoded value is not the latest `FireCalcYAML` version. Decode errors
+ *     are surfaced later by the report factory's own `loadYAMLString` step,
+ *     not here (avoids double error paths).
  */
 object MetadataForbiddenDtoChecker:
 

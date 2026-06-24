@@ -5,23 +5,30 @@
 
 package afpma.firecalc.payments.util
 
-import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.Firebox
 import afpma.firecalc.payments.shared.api.FileDescriptionWithContent
-import afpma.firecalc.payments.shared.api.ProductMetadata
 
-import io.circe.yaml.scalayaml.parser as yamlParser
+import scala.util.Success
 
 object MetadataFireboxDecoder:
 
-    def extractFirebox(metadata: ProductMetadata): Option[Firebox] =
-        metadata match
-            case fdc: FileDescriptionWithContent =>
-                decodeFirebox(fdc.content)
+    /**
+     * Extract the firebox from uploaded product metadata.
+     *
+     * Returns:
+     *   - `Right(firebox)` on successful decode and migration
+     *   - `Left(error)` with a descriptive message on any failure
+     *     (bad base64, unparseable YAML, unknown schema version, migration failure)
+     */
+    def extractFirebox(metadata: FileDescriptionWithContent): Either[String, Firebox] =
+        decodeFirebox(metadata.content)
 
-    private def decodeFirebox(base64Yaml: String): Option[Firebox] =
+    private def decodeFirebox(base64Yaml: String): Either[String, Firebox] =
         for
-            yaml  <- Base64StringDecoder.decodeToString(base64Yaml).toOption
-            ac    <- yamlParser.parse(yaml).toOption
-            fcYml <- ac.as[FireCalcYAML].toOption
-        yield fcYml.firebox
+            yaml <- Base64StringDecoder.decodeToString(base64Yaml)
+            fc   <- FireCalcYAMLMigrations.decodeAndMigrateTry(yaml) match
+                case Success(fc)             => Right(fc)
+                case scala.util.Failure(err) =>
+                    Left(s"decode_and_migrate failed: ${err.getMessage}")
+        yield fc.firebox

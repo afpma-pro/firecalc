@@ -46,15 +46,15 @@ class PurchaseServiceImpl[F[_]: Async](
 
             // Check disabled-firebox as the first business validation (zero side effects before this point)
             _ <- request.productMetadata match
-                case Some(metadata) =>
-                    MetadataFireboxDecoder.extractFirebox(metadata) match
-                        case Some(firebox) =>
+                case Some(fdc: FileDescriptionWithContent) =>
+                    MetadataFireboxDecoder.extractFirebox(fdc) match
+                        case Right(firebox) =>
                             if !fireboxAvailability.allows(firebox) then
                                 Async[F].raiseError(FireboxTypeDisabledException(firebox.typeName))
                             else Async[F].unit
-                        case None          =>
+                        case Left(_)        =>
                             Async[F].unit
-                case None           =>
+                case None                                  =>
                     Async[F].unit
 
             // Reject dev-only backend-forbidden DTOs (e.g. SetInnerShapePreventSectionGeometryChangeAuto)
@@ -129,9 +129,9 @@ class PurchaseServiceImpl[F[_]: Async](
 
             // Validate product-license-fee compatibility
             _ <- request.productMetadata match
-                case Some(metadata) =>
-                    MetadataFireboxDecoder.extractFirebox(metadata) match
-                        case Some(firebox) =>
+                case Some(fdc: FileDescriptionWithContent) =>
+                    MetadataFireboxDecoder.extractFirebox(fdc) match
+                        case Right(firebox) =>
                             val locale       = request.customer.language.toLocale
                             val i18nErrors   = I18N_Payments(using locale).errors
                             val requiresFee  = firebox.requiresLicenseFee
@@ -152,9 +152,9 @@ class PurchaseServiceImpl[F[_]: Async](
                                     )
                                 )
                             else Async[F].unit
-                        case None          =>
+                        case Left(_)        =>
                             Async[F].unit
-                case None           =>
+                case None                                  =>
                     Async[F].unit
 
             // Use the UUID-based method since we have the customer entity with its UUID

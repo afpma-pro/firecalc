@@ -192,35 +192,37 @@ object MetadataFireboxDecoderTest extends TestSuite:
         test("extractFirebox - traditional firebox") {
             val metadata = fileMetadata(encodeYaml(traditionalYaml))
             val result   = MetadataFireboxDecoder.extractFirebox(metadata)
-            assert(result.isDefined)
+            assert(result.isRight)
         }
 
         test("extractFirebox - ecolabeled firebox") {
             val metadata = fileMetadata(encodeYaml(ecolabeledYaml))
             val result   = MetadataFireboxDecoder.extractFirebox(metadata)
-            assert(result.isDefined)
+            assert(result.isRight)
         }
 
-        test("extractFirebox - invalid YAML returns None") {
+        test("extractFirebox - invalid YAML returns Left with error") {
             val metadata = fileMetadata(encodeYaml(invalidYaml))
             val result   = MetadataFireboxDecoder.extractFirebox(metadata)
-            assert(result.isEmpty)
+            assert(result.isLeft                                                       )
+            assert(result.swap.toOption.exists(_.contains("decode_and_migrate failed")))
         }
 
-        test("extractFirebox - invalid base64 returns None") {
+        test("extractFirebox - invalid base64 returns Left with error") {
             val metadata = FileDescriptionWithContent(
                 filename = "test.yaml",
                 mimeType = "application/x-yaml",
                 content  = "not-valid-base64!!!"
             )
             val result   = MetadataFireboxDecoder.extractFirebox(metadata)
-            assert(result.isEmpty)
+            assert(result.isLeft                                    )
+            assert(result.swap.toOption.exists(_.contains("Base64")))
         }
 
-        test("extractFirebox - empty content returns None") {
+        test("extractFirebox - empty content returns Left with error") {
             val metadata = fileMetadata(encodeYaml(""))
             val result   = MetadataFireboxDecoder.extractFirebox(metadata)
-            assert(result.isEmpty)
+            assert(result.isLeft)
         }
 
     }
