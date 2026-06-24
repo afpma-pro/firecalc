@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.dto.FireboxAvailabilityExtensions.allows
 import afpma.firecalc.dto.common.DisplayUnits
 import afpma.firecalc.dto.v5.Firebox_V4
 
@@ -91,6 +92,19 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
 
     private val currentFireboxSig: Signal[Firebox_V4] =
         engineStateVar.signal.map(_.firebox)
+
+    private val backendAllowsFireboxSig: Signal[Boolean] =
+        currentFireboxSig.map(fb => UIConfig.backendAvailability.allows(fb))
+
+    // Combined signals for navbar button state
+    private val buttonConditionsSig: Signal[(Boolean, Boolean)] =
+        conditions_and_results_satisfied_except_emissions_sig
+            .combineWith(backendAllowsFireboxSig)
+
+    // Combined emissions + backend for onClick handler
+    private val onClickFiltersSig: Signal[(Boolean, Boolean)] =
+        emissions_and_efficiency_values_satisfied_sig
+            .combineWith(backendAllowsFireboxSig)
 
     private val requiresLicenseFeeSignal: Signal[Boolean] =
         currentFireboxSig.map(_.requiresLicenseFee)
@@ -371,25 +385,29 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                 cls := "flex items-stretch gap-2",
                 DaisyUITooltip (
                     ttContent  = div(
-                        text <-- conditions_and_results_satisfied_except_emissions_sig
+                        text <-- buttonConditionsSig
                             .combineWith(emissions_and_efficiency_values_satisfied_sig)
-                            .map { case (conditions_ok, emissions_ok) =>
-                                if      (!conditions_ok) I18N_UI.tooltips.order_pdf_report_not_possible
-                                else if (!emissions_ok ) I18N_UI.tooltips.order_pdf_report_emissions_warning
+                            .map { (conditionsOk, backendAllows, emissionsOk) =>
+                                if (!backendAllows) I18N_UI.firebox.order_disabled.tooltip
+                                else if (!conditionsOk) I18N_UI.tooltips.order_pdf_report_not_possible
+                                else if (!emissionsOk) I18N_UI.tooltips.order_pdf_report_emissions_warning
                                 else I18N_UI.tooltips.order_pdf_report
                             }
                     ),
                     element    = div(
                         tabIndex := 0,
                         role     := "button",
-                        disabledAttr <-- conditions_and_results_satisfied_except_emissions_not_sig,
-                        cls      := "btn btn-outline hover:btn-secondary rounded-field",
+                        disabledAttr <-- buttonConditionsSig
+                            .map { (conditionsOk, backendAllows) => !conditionsOk || !backendAllows },
                         cls(
                             "text-base-content"
-                        ) <-- conditions_and_results_satisfied_except_emissions_sig,
+                        ) <-- buttonConditionsSig
+                            .map { (c, b) => c && b },
                         cls(
                             "text-base-content/40 hover:text-base-content"
-                        ) <-- conditions_and_results_satisfied_except_emissions_not_sig,
+                        ) <-- buttonConditionsSig
+                            .map { (c, b) => !c || !b },
+                        cls      := "btn btn-outline hover:btn-secondary rounded-field",
                         div(
                             cls := "h-4 flex items-center justify-center",
                             I18N_UI.buttons.order_pdf_report
@@ -400,9 +418,11 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                         ),
                         onClick
                             .compose(
-                                _.withCurrentValueOf(emissions_and_efficiency_values_satisfied_sig)
-                            ) --> { (_, emissionsOk) =>
-                            if (emissionsOk) {
+                                _.withCurrentValueOf(onClickFiltersSig)
+                            ) --> { (_, emissionsOk, backendAllows) =>
+                            if (!backendAllows) {
+                                // Backend doesn't allow this firebox — do nothing
+                            } else if (emissionsOk) {
                                 // Direct flow to main modal
                                 mainModal.ref.asInstanceOf[HTMLDialogElement].showModal()
                             } else {

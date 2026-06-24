@@ -308,13 +308,17 @@ case class Errors(
 )
 
 final case class Firebox(
-    order_disabled: Firebox.OrderDisabled
+    order_disabled       : Firebox.OrderDisabled,
+    backend_not_available: Firebox.BackendNotAvailable
 )
 
 object Firebox:
     final case class OrderDisabled(
         tooltip      : String,
         error_message: String
+    )
+    final case class BackendNotAvailable(
+        tooltip: String
     )
 
 case class GlobalError(

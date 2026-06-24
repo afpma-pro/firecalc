@@ -67,6 +67,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
     private lazy val firebox_type_avail_sig: Signal[Boolean] =
         firebox_var.signal.map(fb => UIConfig.uiAvailability.allows(fb))
 
+    // Backend availability check (PDF ordering)
+    private lazy val firebox_backend_avail_sig: Signal[Boolean] =
+        firebox_var.signal.map(fb => UIConfig.backendAvailability.allows(fb))
+
     /** Sum of pressures available for 'combustion air pipe' and 'firebox pipe' */
     lazy val firebox_pressures_avail_signal =
         firebox_type_avail_sig
@@ -116,13 +120,31 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                 title   = Title.WithQuadrionSubtotal(
                     I18N.panels.firebox,
                     xtra_sig             = firebox_var.signal
-                        .combineWithDistinct(firebox_type_avail_sig, all_cons_signal, firebox_pressures_avail_signal)
-                        .map: (fb, typeAvail, all_cons, fb_press_avail) =>
+                        .combineWithDistinct(
+                            firebox_type_avail_sig,
+                            firebox_backend_avail_sig,
+                            all_cons_signal,
+                            firebox_pressures_avail_signal
+                        )
+                        .map: (fb, typeAvail, backendAvail, all_cons, fb_press_avail) =>
                             val typeDisabledIcon =
                                 if !typeAvail then
                                     Some(
                                         DaisyUITooltip (
                                             ttContent  = span(cls := "text-xs", I18N_UI.firebox.order_disabled.tooltip),
+                                            element    = span(cls := "text-warning", lucide.`triangle-alert`()),
+                                            ttStyle    = "tooltip-warning",
+                                            ttPosition = "tooltip-bottom"
+                                        ).node
+                                    )
+                                else None
+
+                            val backendNotAvailableIcon =
+                                if !backendAvail then
+                                    Some(
+                                        DaisyUITooltip (
+                                            ttContent  =
+                                                span(cls := "text-xs", I18N_UI.firebox.backend_not_available.tooltip),
                                             element    = span(cls := "text-warning", lucide.`triangle-alert`()),
                                             ttStyle    = "tooltip-warning",
                                             ttPosition = "tooltip-bottom"
@@ -179,11 +201,15 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                             ).node
 
                             val allChildren =
-                                typeDisabledIcon.toList ++ List(
+                                List(
                                     statusCons,
-                                    statusOther,
-                                    p(FireboxComponent.showDimensionsSummary.show(fb))
-                                )
+                                    statusOther
+                                ) ++
+                                    typeDisabledIcon.toList ++
+                                    backendNotAvailableIcon.toList ++
+                                    List(
+                                        p(FireboxComponent.showDimensionsSummary.show(fb))
+                                    )
                             span(
                                 cls := "flex flex-row gap-x-2",
                                 children <-- Signal.fromValue(allChildren)
