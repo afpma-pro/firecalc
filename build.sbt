@@ -1270,11 +1270,20 @@ lazy val reports = (project in file("modules/reports"))
             "com.lihaoyi" %% "os-lib" % "0.11.4",
 
             // java-typst
-            "io.github.fatihcatalkaya" % "java-typst" % "1.4.0"
+            "io.github.fatihcatalkaya" % "java-typst" % "1.4.0",
+
+            // testing
+            "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
         )
     )
     .settings(watchI18nSources("i18n"))
-    .dependsOn(engine.jvm, engine_13384_strict.jvm, engine_15544_strict.jvm, utils.jvm)
+    .dependsOn(
+        engine.jvm,
+        engine_13384_strict.jvm,
+        engine_15544_strict.jvm,
+        engine_15544_strict.jvm % "test->test",
+        utils.jvm
+    )
 
 lazy val xlsx_catalog = (project in file("modules/xlsx_catalog"))
     .settings   (

@@ -3,7 +3,7 @@
  * Copyright (2026) Association Française du Poêle Maçonné Artisanal
  */
 
-package afpma.firecalc.engine.impl.en15544.strict
+package afpma.firecalc.reports
 
 import afpma.firecalc.units.coulombutils.*
 
@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.gtypedefs.ζ
-import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V2
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
@@ -25,10 +25,22 @@ import cats.syntax.show.*
 import coulomb.*
 import coulomb.policy.standard.given
 
+import afpma.firecalc.engine.utils.showAsCliTable
+import afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544
+import io.taig.babel.Locale
+import io.taig.babel.Locales
 import java.nio.file.Path
+import java.nio.file.Files
 import java.nio.file.Paths
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+
+import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
+import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
+import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3_V2
+import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
+import io.github.fatihcatalkaya.javatypst.JavaTypst
 
 /**
  * Snapshot test: transcribe the combustion-air pipe FullDescr for both
@@ -47,11 +59,16 @@ import org.scalatest.matchers.should.Matchers
  *   D1 = inner_wall_thickness_D1                          (inner wall thickness)
  *   Ls = injector_width_side_wall_Ls                      (lateral injector width)
  *   Lr = injector_width_rear_wall_Lr                      (rear injector width)
+ *   Lt = injector_width_door_wall_Lt                      (under-door injector width)
+ *   E  = width_between_two_air_columns_sides_E / rear_E  (reinforcement bar width)
  */
-class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matchers:
+class EcolabeledFireboxPipeSuite extends AnyFreeSpec with Matchers:
 
-    given FireboxToCombustionAirPipe_15544_Strict[Ecolabeled] =
-        EcolabeledToFireboxInternalPipes_15544_Strict
+    given Locale = Locales.en
+    given sat15544: ShowAsTableInstances_15544 = new ShowAsTableInstances_15544
+    import sat15544.given
+
+    import afpma.firecalc.engine.impl.en15544.strict.given_FireboxToCombustionAirPipe_15544_Strict_Ecolabeled
 
     // ── Shared fixture values (CasType_15544_C3) ──────────────────────────
 
@@ -150,29 +167,103 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
             height_of_first_row_of_air_injectors_X  = p.heightFirstRowInjectors
         )
 
+    // ── Formula mappings ─────────────────────────────────────────────────
+    // Maps element name → (length formula, shape formula) using single-letter
+    // suffixes from the source variables (see class doc-comment).
+
+    private case class ElementFormulas(length: String, shape: String)
+
+    // Shared "end_common" formulas (same for V1 and V2)
+    // Does NOT include "angle vif 90°" — that angle inherits different shapes per version.
+    private val sharedFormulas: Map[String, ElementFormulas] = Map(
+        "vers centre chambre de détente"    -> ElementFormulas(
+            length = "W / 2.0",
+            shape  = "— (inherited)"
+        ),
+        "vers colonnes d'air"               -> ElementFormulas(
+            length = "(2.0 * A / 2.0 + 2.0 * B / 2.0) / 4.0 + D1 + S / 2.0",
+            shape  = "2·air_columns_total_width_side_wall + air_columns_total_width_rear_wall  ×  W"
+        ),
+        "virage au pied des colonnes d'air" -> ElementFormulas(
+            length = "—",
+            shape  = "— (inherited)"
+        ),
+        "remontée dans les colonnes d'air"  -> ElementFormulas(
+            length = "W / 2.0 + FLOOR_THICKNESS + Y * 2.0",
+            shape  = "2·air_columns_total_width_side_wall + air_columns_total_width_rear_wall  ×  S"
+        ),
+        "virage 90° avant injecteur"        -> ElementFormulas(
+            length = "—",
+            shape  = "— (inherited)"
+        ),
+        "injecteurs"                        -> ElementFormulas(
+            length = "D1 + S / 2.0",
+            shape  = "(8·Ls + 4·Lr + Lt - 12·E)  ×  Z"
+        )
+    )
+
+    // V1 overrides: start section + angle inherits détente chamber shape
+    private def v1Formulas: Map[String, ElementFormulas] =
+        sharedFormulas ++ Map                           (
+            "-"                            -> ElementFormulas(
+                length = "0",
+                shape  = "(A - 6) × (B - 6)"
+            ),
+            "angle vif 90°"                -> ElementFormulas(
+                length = "—",
+                shape  = "(A - 6) × (B - 6)"
+            ),
+            "chambre de détente (-> Haut)" -> ElementFormulas(
+                length = "15 cm (TOFIX)",
+                shape  = "(A - 6) × (B - 6)"
+            )
+        )
+
+    // V2 overrides: air-intake circle shape + angle inherits circle
+    private def v2Formulas: Map[String, ElementFormulas] =
+        sharedFormulas ++ Map(
+            "vers centre chambre de détente" -> ElementFormulas(
+                length = "W / 2.0",
+                shape  = "◯  perimeterWetted"
+            ),
+            "angle vif 90°"                  -> ElementFormulas(
+                length = "—",
+                shape  = "◯  perimeterWetted"
+            )
+        )
+
     // ── Formatting helpers ───────────────────────────────────────────────
 
-    private def fmtShape(shape: PipeShape): String = shape.show
+    // Strip trailing ".0" from numeric values (48.0 -> 48, 90.0 -> 90, 3.0 -> 3)
+    private def stripDotZero(s: String): String =
+        s.replaceAll("\\.0(\\s|/|\\*|\\+|\\-|°|mm|cm|x|\\)|\\(|,|$)", "$1")
+
+    private def fmtShape(shape: PipeShape): String =
+        stripDotZero(shape.show)
 
     private def fmtLength(q: Length): String =
-        f"${q.toUnit[Centimeter].value}%.2f cm"
+        stripDotZero(f"${q.toUnit[Centimeter].value}%.2f cm")
 
     private def fmtAngle(q: Angle): String =
-        f"${q.toUnit[Degree].value}%.1f °"
+        stripDotZero(f"${q.toUnit[Degree].value}%.1f °")
 
     private def fmtRoughness(r: Roughness): String =
-        f"${r.unwrap.toUnit[Milli * Meter].value}%.1f mm"
+        stripDotZero(f"${r.unwrap.toUnit[Milli * Meter].value}%.1f mm")
 
     private def fmtZeta(z: ζ): String =
-        f"${z.toUnit[Unitless].value}%.2f"
+        stripDotZero(f"${z.toUnit[Unitless].value}%.2f")
 
     private def fmtPressure(p: QtyD[Pascal]): String =
-        f"${p.toUnit[Pascal].value}%.1f Pa"
+        stripDotZero(f"${p.toUnit[Pascal].value}%.1f Pa")
 
     private def fmtArea(a: Area): String =
-        f"${a.toUnit[Centi * Meter ^ 2].value}%.2f cm²"
+        stripDotZero(f"${a.toUnit[Centi * Meter ^ 2].value}%.2f cm²")
 
-    private def elementRow(idx: Int, named: NamedPipeElDescr): String =
+    private def elementRow(
+        idx     : Int,
+        named   : NamedPipeElDescr,
+        formulas: Map[String, ElementFormulas]
+    ): String =
         val name = named.name
         val el   = named.el
 
@@ -206,28 +297,37 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
 
         val extraStr = el match
             case dc: DirectionChange        =>
-                val angles = dc.angleN2 match
-                    case Some(n2) => s"${fmtAngle(dc.angleN1)} / ${fmtAngle(n2)}"
-                    case None     => fmtAngle(dc.angleN1)
-                s"angle=$angles"
+                s"angle=${fmtAngle(dc.angleN1)}"
             case sr: SingularFlowResistance => s"ζ=${fmtZeta(sr.zeta)}"
             case pd: PressureDiff           => s"Δp=${fmtPressure(pd.pa)}"
             case _ => ""
 
-        s"| $idx | $name | $typeLabel | $lengthStr | $shapeStr | $roughnessStr | $elevStr | $extraStr |"
+        val lengthFormulaStr = formulas
+            .get(name)
+            .fold("—"): f =>
+                if f.length != "—" then stripDotZero(f.length)
+                else "—"
+        val shapeFormulaStr  = formulas
+            .get(name)
+            .fold("—"): f =>
+                if f.shape != "—" && f.shape != "— (inherited)" then stripDotZero(f.shape)
+                else "—"
 
-    private def formatFullDescrAsTable(fullDescr: CombustionAirPipe_15544): String =
-        // CombustionAirPipe_15544 = FullDescrResult.PipeCanBe = FullDescr
-        // Use the type test to unwrap
+        s"| $idx | $name | $typeLabel | $lengthStr | $lengthFormulaStr | $shapeStr | $shapeFormulaStr | $roughnessStr | $elevStr | $extraStr |"
+
+    private def formatFullDescrAsTable(
+        fullDescr: CombustionAirPipe_15544,
+        formulas : Map[String, ElementFormulas]
+    ): String =
         val pipeFullDescr: FlowOnlyPipeDescr_15544.PipeFullDescr =
             fullDescr.asInstanceOf[FlowOnlyPipeDescr_15544.PipeFullDescr]
 
         val header =
-            """|#  | Name | Type | Length | Shape | Roughness | Elev. Gain | Extra
-               |---|------|------|--------|-------|-----------|------------|------""".stripMargin
+            """|#  | Name | Type | Length | Length Formula | Shape | Shape Formula | Roughness | Elev. Gain | Extra
+               |---|------|------|--------|----------------|-------|---------------|-----------|------------|------""".stripMargin
 
         val rows = pipeFullDescr.elems.zipWithIndex.map:
-            case (named, idx) => elementRow(idx, named)
+            case (named, idx) => elementRow(idx, named, formulas)
 
         (header :: rows.toList).mkString("\n")
 
@@ -235,7 +335,7 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
 
     private def snapshotPath(name: String): Path =
         Paths.get(
-            "modules/engine-15544-strict/src/test/resources/snapshots/EcolabeledCombustionAirPipeFullDescrSuite",
+            "modules/reports/src/test/resources/snapshots/EcolabeledFireboxPipeSuite",
             name
         )
 
@@ -247,7 +347,7 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
         result.isValid shouldBe true
 
         val pipe  = result.toOption.get
-        val table = formatFullDescrAsTable(pipe)
+        val table = formatFullDescrAsTable(pipe, v1Formulas)
         SnapshotAssert.assertMatches(table, snapshotPath("version1_combustion_air.md"))
     }
 
@@ -257,8 +357,67 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
         result.isValid shouldBe true
 
         val pipe  = result.toOption.get
-        val table = formatFullDescrAsTable(pipe)
+        val table = formatFullDescrAsTable(pipe, v2Formulas)
         SnapshotAssert.assertMatches(table, snapshotPath("version2_combustion_air.md"))
     }
 
-end EcolabeledCombustionAirPipeFullDescrSuite
+    "Ecolabeled V1 firebox dimensions" in {
+        val firebox: Firebox_15544 = makeV1(sharedEcolabeledParams)
+        val table = firebox.showAsCliTable
+        SnapshotAssert.assertMatches(table, snapshotPath("version1_firebox_dimensions.md"))
+    }
+
+    "Ecolabeled V2 firebox dimensions" in {
+        val firebox: Firebox_15544 = makeV2(sharedEcolabeledParams)
+        val table = firebox.showAsCliTable
+        SnapshotAssert.assertMatches(table, snapshotPath("version2_firebox_dimensions.md"))
+    }
+
+    // ── PDF report generation ────────────────────────────────────────────
+
+    private def generatePdf(
+        casType: StoveProjectDescr_15544_Strict_Alg,
+        appName: String
+    ): Unit =
+        given io.taig.babel.Locale = Locales.fr
+
+        val appOpt = casType.en15544_Alg.toOption
+        appOpt shouldBe defined
+        val app: EN15544_Strict_Application = appOpt.get
+
+        val typstFactory =
+            new TypstReportFactory_15544_Strict                 (
+                isDraft                  = true,
+                checkPressureReq13384    = false,
+                checkTemperatureReq13384 = false
+            ):
+                override val en15544_app            : EN15544_Strict_Application         = app
+                override val stove_proj_15544_strict: StoveProjectDescr_15544_Strict_Alg = casType
+                override val atParams = app.primary.asInstanceOf[en15544_app.AtParams]
+
+        val typstString = typstFactory.build()
+        typstString.length should be > 0
+
+        val pdfBytes = JavaTypst.render(typstString)
+        pdfBytes.length should be > 0
+
+        val outPath = Paths.get(
+            "modules/reports/src/test/resources/generated-reports",
+            appName
+        )
+        Files.createDirectories(outPath.getParent)
+        Files.write            (outPath, pdfBytes)
+
+        val outFile = outPath.toFile
+        outFile.exists() shouldBe true
+        outFile.length() should be > 0L
+
+    "Ecolabeled V1 PDF report" in {
+        generatePdf(CasType_15544_C3, "ecolabeled-v1-report.pdf")
+    }
+
+    "Ecolabeled V2 PDF report" in {
+        generatePdf(CasType_15544_C3_V2, "ecolabeled-v2-report.pdf")
+    }
+
+end EcolabeledFireboxPipeSuite

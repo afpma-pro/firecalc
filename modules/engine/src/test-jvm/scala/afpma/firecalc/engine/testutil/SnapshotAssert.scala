@@ -24,7 +24,7 @@ import java.nio.file.{Files, Path}
  *
  * ```bash
  * # Regenerate snapshots for a single suite
- * FIRECALC_UPDATE_SNAPSHOTS=1 sbt "engine_15544_strict/testOnly *EcolabeledCombustionAirPipeFullDescrSuite"
+ * FIRECALC_UPDATE_SNAPSHOTS=1 sbt "reports/testOnly *EcolabeledFireboxPipeSuite"
  *
  * # Regenerate snapshots for all suites in a module
  * FIRECALC_UPDATE_SNAPSHOTS=1 sbt "engine_15544_strict/test"
