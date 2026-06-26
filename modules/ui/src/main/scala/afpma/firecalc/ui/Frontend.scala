@@ -34,11 +34,13 @@ object Frontend {
             import models.project.{ProjectManager, ProjectStorage, ProjectIndex}
             ProjectManager.activeProjectIdVar.now().foreach { id =>
                 ProjectStorage.save(id, schemaVal)
-                val name = schemaVal.engine_state.project_description.reference
+                val name        = schemaVal.engine_state.project_description.reference
+                val defaultName =
+                    if name.nonEmpty then name else I18N_UI(using localeVar.now()).project_selector.no_name
                 ProjectIndex.updateEntry(
                     id,
                     _.copy        (
-                        name         = if name.nonEmpty then name else "Sans titre",
+                        name         = defaultName,
                         lastModified = scala.scalajs.js.Date.now()
                     )
                 )

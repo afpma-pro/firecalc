@@ -7,6 +7,7 @@ package afpma.firecalc.ui.models.project
 
 import afpma.firecalc.ui.models.AppStateSchemaHelper
 import afpma.firecalc.ui.models.schema.AppStateSchema
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import com.raquo.airstream.state.Var
 
@@ -81,11 +82,14 @@ object ProjectManager:
             ProjectStorage.save(id, schema                    )
             saveFireboxCache   (id, fireboxCacheStateVar.now())
             // Update index metadata
-            val name = schema.engine_state.project_description.reference
+            val name        = schema.engine_state.project_description.reference
+            val defaultName =
+                if name.nonEmpty then name
+                else I18N_UI(using afpma.firecalc.ui.models.localeVar.now()).project_selector.no_name
             ProjectIndex.updateEntry(
                 id,
                 _.copy        (
-                    name         = if name.nonEmpty then name else "Sans titre",
+                    name         = defaultName,
                     lastModified = scala.scalajs.js.Date.now()
                 )
             )
@@ -122,11 +126,14 @@ object ProjectManager:
         val id   = generateProjectId()
         val name = schema.engine_state.project_description.reference
         val now  = scala.scalajs.js.Date.now()
-        ProjectStorage.save  (id, schema)
+        ProjectStorage.save(id, schema)
+        val defaultName =
+            if name.nonEmpty then name
+            else I18N_UI(using afpma.firecalc.ui.models.localeVar.now()).project_selector.no_name
         ProjectIndex.addEntry(
-            ProjectEntry(id, if name.nonEmpty then name else "Importé", lastModified = now, createdAt = now)
+            ProjectEntry(id, defaultName, lastModified = now, createdAt = now)
         )
-        switchToProject      (id        )
+        switchToProject(id)
         id
 
     def saveFireboxCache(id: ProjectId, cache: afpma.firecalc.ui.models.FireboxCacheState): Unit =
