@@ -108,11 +108,13 @@ object ProjectManager:
             import afpma.firecalc.ui.models.undoManager
             activeProjectIdVar.set(None)
             undoManager.reset     (    )
-        ProjectStorage.delete                         (id)
-        org.scalajs.dom.window.localStorage.removeItem(
+        ProjectStorage.delete                                  (id)
+        org.scalajs.dom.window.localStorage.removeItem         (
             afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value)
         )
-        ProjectIndex.removeEntry                      (id)
+        ProjectIndex.removeEntry                               (id)
+        // Allow the storage warning dialog to show again after freeing space
+        afpma.firecalc.ui.components.StorageWarningDialog.reset(  )
 
     /** Create a new project from imported AppStateSchema (e.g., from file open). */
     def openFromFile(schema: AppStateSchema): ProjectId =
@@ -129,11 +131,21 @@ object ProjectManager:
 
     def saveFireboxCache(id: ProjectId, cache: afpma.firecalc.ui.models.FireboxCacheState): Unit =
         import io.circe.Encoder
+        import scala.scalajs.js
         val json = Encoder[afpma.firecalc.ui.models.FireboxCacheState].apply(cache).noSpaces
-        org.scalajs.dom.window.localStorage.setItem(
-            afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value),
-            json
-        )
+        try
+            org.scalajs.dom.window.localStorage.setItem(
+                afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value),
+                json
+            )
+        catch
+            case ex: js.JavaScriptException if LocalStorageUtils.isQuotaExceeded(ex) =>
+                val (usage, perKey) = LocalStorageUtils.estimateStorageUsage()
+                afpma.firecalc.ui.components.StorageWarningDialog.show(usage, perKey)
+            case _ : js.JavaScriptException                                          =>
+                org.scalajs.dom.console.error(
+                    s"[ProjectManager] Failed to save firebox cache ${id.value} — localStorage unavailable"
+                )
 
     private def loadFireboxCache(id: ProjectId): afpma.firecalc.ui.models.FireboxCacheState =
         val key = afpma.firecalc.ui.models.schema.LocalStorageKeys.projectFireboxCache(id.value)

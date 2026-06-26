@@ -10,6 +10,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.components.GlobalErrorDialog
+import afpma.firecalc.ui.components.StorageWarningDialog
 import afpma.firecalc.ui.services.CatalogImageStore
 import afpma.firecalc.ui.services.VersionService
 import afpma.firecalc.ui.views.*
@@ -45,14 +46,44 @@ object Frontend {
         }
 
     lazy val writeCatalogSubscription = catalogStateVar.signal.changes.distinct
-        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> catalogWebStorageVar.writer
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS)
+        --> Observer[CatalogState] { state =>
+            try catalogWebStorageVar.set(state)
+            catch
+                case ex: js.JavaScriptException if models.project.LocalStorageUtils.isQuotaExceeded(ex) =>
+                    val (usage, perKey) = models.project.LocalStorageUtils.estimateStorageUsage()
+                    afpma.firecalc.ui.components.StorageWarningDialog.show(usage, perKey)
+                case ex: js.JavaScriptException                                                         =>
+                    dom.console.error(
+                        s"[Frontend] Failed to save catalog state — localStorage unavailable: ${ex.getMessage}"
+                    )
+        }
 
     lazy val writeUIStateSubscription = uiStateVar.signal.changes.distinct
-        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> uiStateWebStorageVar.writer
+        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS)
+        --> Observer[UIState] { state =>
+            try uiStateWebStorageVar.set(state)
+            catch
+                case ex: js.JavaScriptException if models.project.LocalStorageUtils.isQuotaExceeded(ex) =>
+                    val (usage, perKey) = models.project.LocalStorageUtils.estimateStorageUsage()
+                    afpma.firecalc.ui.components.StorageWarningDialog.show(usage, perKey)
+                case ex: js.JavaScriptException                                                         =>
+                    dom.console.error(
+                        s"[Frontend] Failed to save UI state — localStorage unavailable: ${ex.getMessage}"
+                    )
+        }
 
     lazy val writeFireboxCacheSubscription = fireboxCacheStateVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> Observer[FireboxCacheState] { cache =>
-        fireboxCacheWebStorageVar.set(cache)
+        try fireboxCacheWebStorageVar.set(cache)
+        catch
+            case ex: js.JavaScriptException if models.project.LocalStorageUtils.isQuotaExceeded(ex) =>
+                val (usage, perKey) = models.project.LocalStorageUtils.estimateStorageUsage()
+                afpma.firecalc.ui.components.StorageWarningDialog.show(usage, perKey)
+            case ex: js.JavaScriptException                                                         =>
+                dom.console.error(
+                    s"[Frontend] Failed to save firebox cache — localStorage unavailable: ${ex.getMessage}"
+                )
         models.project.ProjectManager.activeProjectIdVar.now().foreach { id =>
             models.project.ProjectManager.saveFireboxCache(id, cache)
         }
@@ -163,7 +194,8 @@ object Frontend {
         VersionService.logVersionToConsole()
 
         // Initialize global error dialog i18n using the current locale
-        GlobalErrorDialog.setI18n(I18N_UI(using localeVar.now()).global_error)
+        GlobalErrorDialog.setI18n   (I18N_UI(using localeVar.now()).global_error   )
+        StorageWarningDialog.setI18n(I18N_UI(using localeVar.now()).storage_warning)
 
         def isTransactionLoop(msg: String): Boolean =
             msg.contains("Transaction depth exceeded") || msg.contains("maxDepth")

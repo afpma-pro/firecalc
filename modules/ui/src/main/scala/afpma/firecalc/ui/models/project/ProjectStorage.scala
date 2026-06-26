@@ -9,6 +9,10 @@ import afpma.firecalc.ui.models.AppStateSchemaHelper
 import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
 import afpma.firecalc.ui.models.schema.LocalStorageKeys
+import afpma.firecalc.ui.components.StorageWarningDialog
+
+import org.scalajs.dom
+import scala.scalajs.js
 
 object ProjectStorage:
 
@@ -25,12 +29,21 @@ object ProjectStorage:
     def save(id: ProjectId, schema: AppStateSchema): Unit =
         AppStateSchemaHelper.encodeToYaml(schema) match
             case scala.util.Success(yaml) =>
-                org.scalajs.dom.window.localStorage.setItem(
-                    LocalStorageKeys.projectAppState(id.value),
-                    yaml
-                )
+                try
+                    dom.window.localStorage.setItem(
+                        LocalStorageKeys.projectAppState(id.value),
+                        yaml
+                    )
+                catch
+                    case ex: js.JavaScriptException if LocalStorageUtils.isQuotaExceeded(ex) =>
+                        val (usage, perKey) = LocalStorageUtils.estimateStorageUsage()
+                        StorageWarningDialog.show(usage, perKey)
+                    case _ : js.JavaScriptException                                          =>
+                        dom.console.error(
+                            s"[ProjectStorage] Failed to save project ${id.value} — localStorage unavailable"
+                        )
             case scala.util.Failure(e)    =>
-                org.scalajs.dom.console.error(s"Failed to save project ${id.value}: ${e.getMessage}")
+                dom.console.error(s"Failed to save project ${id.value}: ${e.getMessage}")
 
     def delete(id: ProjectId): Unit =
         org.scalajs.dom.window.localStorage.removeItem(
