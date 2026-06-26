@@ -11,6 +11,7 @@ import cats.Show
 import cats.data.*
 import cats.syntax.all.*
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
@@ -167,6 +168,26 @@ trait FieldsetInputs:
                 makeId        = _.show,
                 getById       = getById,
                 optionalField = OptionalField.No
+            )
+
+    final case class SelectFieldsetLabelAndInputReactive[A](
+        labelOpt       : Option[String],
+        selectedVar    : Var[A],
+        optionsSig     : Signal[Seq[A]],
+        show           : A => String,
+        makeId         : A => String,
+        optionalField  : OptionalField  = OptionalField.No,
+        disabledOptions: Signal[Set[A]] = Var(Set.empty[A]).signal
+    ) extends FieldsetLabelAndInput[String](labelOpt, optionalField = optionalField):
+        def inputNode: L.HtmlElement =
+            SelectAndOptionsOnlyReactive      (
+                selectedVar,
+                labelOpt,
+                optionsSig,
+                show,
+                makeId,
+                selectCls       = "select",
+                disabledOptions = disabledOptions
             )
 
     final case class FieldsetLegend_WithLabelAndInputSeq(

@@ -622,6 +622,19 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                     }
                 )
 
+                // Override actualAirIntakePipeShape with reactive select from sibling field
+                val fcWithOverride = fc.withFieldOverride[Firebox.Door15aFirebox_Catalog](
+                    "actualAirIntakePipeShape", // TODO: make this type safe using zio schema or similar type-level helper lib ?
+                    (pv: Var[Firebox.Door15aFirebox_Catalog]) =>
+                        FormDerivation.selectFromSiblingField[Firebox.Door15aFirebox_Catalog, PipeShape] (
+                            parentVar  = pv,
+                            getOptions = _.expectedAirIntakePipeShapes.toSeq,
+                            getCurrent = _.actualAirIntakePipeShape,
+                            setCurrent = (p, a) => p.copy(actualAirIntakePipeShape = a),
+                            label      = Some(I18N.firebox.door_15a_firebox.actual_air_intake_pipe_shape)
+                        )(using PipeShape.show_PipeShape, renderer)
+                )
+
                 div(
                     binders,
                     button                (
@@ -629,7 +642,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                         I18N_UI.catalog.select_from_catalog,
                         onClick --> { _ => modal.open() }
                     ),
-                    autoDerivedForm.render(v, fc),
+                    autoDerivedForm.render(v, fcWithOverride),
                     modal.node
                 )
         .withFieldName(I18N.firebox_names.door_15a_firebox)

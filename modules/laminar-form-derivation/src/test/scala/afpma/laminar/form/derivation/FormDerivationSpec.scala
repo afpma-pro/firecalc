@@ -718,4 +718,53 @@ object FormDerivationSpec extends TestSuite:
         // =====================================================================
         // Annotation-driven field name resolution
         // =====================================================================
+
+        // =====================================================================
+        // selectFromSiblingField — signal logic (no DOM)
+        // =====================================================================
+
+        test("selectFromSiblingField signal logic") {
+
+            test("zoomedVar reads current value from parent") {
+                import com.raquo.airstream.state.Var
+
+                case class Parent(items: List[Int], chosen: Int)
+                val parentVar = Var(Parent(List(1, 2, 3), 2))
+                val zoomedVar = parentVar.zoomLazy(_.chosen)((p, v) => p.copy(chosen = v))
+
+                // Read through zoomed var
+                assert(zoomedVar.now() == 2)
+
+                // Write through zoomed var
+                zoomedVar.set(3                          )
+                assert       (parentVar.now().chosen == 3)
+                assert       (zoomedVar.now() == 3       )
+            }
+
+            test("zoomedVar write updates parent correctly") {
+                import com.raquo.airstream.state.Var
+
+                case class Parent(data: List[String], pick: String)
+                val parentVar = Var(Parent(List("x", "y"), "x"))
+                val zoomedVar = parentVar.zoomLazy(_.pick)((p, v) => p.copy(pick = v))
+
+                zoomedVar.set("y")
+                val updated = parentVar.now()
+                assert(updated.pick == "y"           )
+                assert(updated.data == List("x", "y")) // data unchanged
+            }
+
+            test("zoomedVar preserves unrelated parent fields") {
+                import com.raquo.airstream.state.Var
+
+                case class Parent(options: List[String], selected: String)
+                val parentVar = Var(Parent(List("a", "b"), "a"))
+                val zoomedVar = parentVar.zoomLazy(_.selected)((p, v) => p.copy(selected = v))
+
+                zoomedVar.set("b")
+                val updated = parentVar.now()
+                assert(updated.selected == "b"          )
+                assert(updated.options == List("a", "b")) // options unchanged
+            }
+        }
     }

@@ -6,8 +6,11 @@
 package afpma.laminar.form
 
 import scala.annotation.StaticAnnotation
+import scala.reflect.ClassTag
 
 import com.raquo.airstream.core.Signal
+import com.raquo.airstream.state.Var
+import com.raquo.laminar.api.L.HtmlElement
 
 import magnolia1.TypeInfo
 
@@ -21,17 +24,32 @@ class FieldName(val value: String) extends StaticAnnotation
  */
 case class FormConfig(
     fieldName                   : Option[String],
-    fieldNamesForParams         : Map[String, String] = Map(),
-    showFieldName               : Boolean             = true,
-    disabledOptionIds           : Signal[Set[String]] = Signal.fromValue(Set.empty),
-    hasDisabledOptionIdsOverride: Boolean             = false
+    fieldNamesForParams         : Map[String, String]                                             = Map(),
+    showFieldName               : Boolean                                                         = true,
+    disabledOptionIds           : Signal[Set[String]]                                             = Signal.fromValue(Set.empty),
+    hasDisabledOptionIdsOverride: Boolean                                                         = false,
+    _fieldOverrides             : Map[String, (ClassTag[?], Any => FormRenderer ?=> HtmlElement)] = Map.empty
 ) extends StaticAnnotation:
 
+    /**
+     * Whether this config carries no explicit overrides.
+     *
+     * A config is default-like only when ALL of:
+     * - no field name,
+     * - no per-param field name overrides,
+     * - field names are shown (default),
+     * - no disabled-option-ids override,
+     * - no per-field render overrides (`_fieldOverrides` is empty).
+     *
+     * Used by `formConfigFrom` to decide whether to honour the passed-in
+     * config or fall back to annotations derived from the case class.
+     */
     def isDefaultLike: Boolean =
         fieldName.isEmpty &&
             fieldNamesForParams.isEmpty &&
             showFieldName &&
-            !hasDisabledOptionIdsOverride
+            !hasDisabledOptionIdsOverride &&
+            _fieldOverrides.isEmpty
 
     def updateFieldNameWith(f: Option[String] => Option[String]): FormConfig =
         withFieldNameOpt(f(fieldName))
@@ -59,6 +77,26 @@ case class FormConfig(
 
     def withDisabledOptionIds(ids: Signal[Set[String]]): FormConfig =
         copy(disabledOptionIds = ids, hasDisabledOptionIdsOverride = true)
+
+    /**
+     * Register a per-field render override, keyed by param label.
+     *
+     * The override function receives a `Var[P]` where `P` is the parent case class
+     * type. The `ClassTag[P]` is captured at registration time and used to verify
+     * the cast at render time.
+     */
+    def withFieldOverride[P: ClassTag](
+        label: String,
+        fn   : Var[P] => FormRenderer ?=> HtmlElement
+    ): FormConfig =
+        val tag = summon[ClassTag[P]]
+        val wrapped: Any => FormRenderer ?=> HtmlElement = { (raw: Any) =>
+            fn(raw.asInstanceOf[Var[P]])
+        }
+        this.copy(_fieldOverrides = _fieldOverrides.updated(label, (tag, wrapped)))
+
+    def fieldOverride(label: String): Option[(ClassTag[?], Any => FormRenderer ?=> HtmlElement)] =
+        _fieldOverrides.get(label)
 
 object FormConfig:
     val default: FormConfig = FormConfig(fieldName = None)

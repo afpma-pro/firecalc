@@ -99,6 +99,21 @@ object DaisyUIHorizontal extends FormRenderer:
             )
             .node
 
+    def selectRequiredReactive[A: Show](
+        v         : Var[A],
+        label     : Option[String],
+        optionsSig: Signal[Seq[A]]
+    ): HtmlElement =
+        DaisyUIInputs
+            .LabelledSelectInputReactive(
+                selectedVar = v,
+                optionsSig  = optionsSig,
+                show        = (a: A) => a.show,
+                makeId      = (a: A) => a.show,
+                labelStart  = label
+            )
+            .node
+
     // Numeric with units
 
     def numericWithUnitsInput(
