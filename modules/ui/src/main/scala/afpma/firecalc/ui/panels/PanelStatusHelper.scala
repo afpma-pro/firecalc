@@ -27,6 +27,7 @@ object PanelStatusHelper:
 
     object PanelWarning:
         case object DirectionIncompatible extends PanelWarning
+        case object AirIntakePipeMissing  extends PanelWarning
 
     /** CSS text class name for warnings. */
     def textClsNameForWarnings: String = "text-warning"

@@ -39,6 +39,24 @@ sealed trait PipeShape:
         val numerator: Area = (area.toUnit[Meter ^ 2] * 4.0)
         (numerator / perimeterWetted.toUnit[Meter])
 
+    /**
+     * Compare two pipe shapes with 0.1 cm precision.
+     * Accounts for floating-point drift from unit conversions and intermediate calculations.
+     * Two shapes are equal when their dimensions round to the same tenth-of-centimeter.
+     * For Rectangle, comparison is order-sensitive (a vs b matters).
+     * Cross-variant comparisons (Circle vs Square, etc.) always return false.
+     */
+    def equalsTolerance(other: PipeShape): Boolean =
+        (this, other) match
+            case (PipeShape.Circle(d1), PipeShape.Circle(d2)              ) => roundCm1(d1) == roundCm1(d2)
+            case (PipeShape.Square(s1), PipeShape.Square(s2)              ) => roundCm1(s1) == roundCm1(s2)
+            case (PipeShape.Rectangle(a1, b1), PipeShape.Rectangle(a2, b2)) =>
+                roundCm1(a1) == roundCm1(a2) && roundCm1(b1) == roundCm1(b2)
+            case _ => false
+
+    private inline def roundCm1(q: QtyD[Meter]): Double =
+        math.round(q.toUnit[Centimeter].value * 10.0) / 10.0
+
 object PipeShape:
 
     val show_PipeShape_valueIn_noUnit: Show[PipeShape] =

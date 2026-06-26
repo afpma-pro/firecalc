@@ -189,18 +189,19 @@ object standard {
         override final def sectionTyp: PipeType = FireboxPipeT
 
     given ShowUsingLocale[FireboxError] = showUsingLocale:
-        case e: InvalidTermValue[?]              => show_InvalidTermValue(using e.showT).show(e)
-        case e: InconsistentMaxLoadAccrossInputs => Show[InconsistentMaxLoadAccrossInputs].show(e)
-        case e: FireboxBaseSurfaceNotInRange     => Show[FireboxBaseSurfaceNotInRange].show(e)
-        case e: FireboxBaseRatioInvalid          => Show[FireboxBaseRatioInvalid].show(e)
-        case e: FireboxBaseMinWidthInvalid       => Show[FireboxBaseMinWidthInvalid].show(e)
-        case e: GlassAreaTooLarge                => Show[GlassAreaTooLarge].show(e)
-        case e: GlassSurfaceRatioNotConfirmed    => Show[GlassSurfaceRatioNotConfirmed].show(e)
-        case e: FireboxHeightOutOfRange          => Show[FireboxHeightOutOfRange].show(e)
-        case e: InjectorVelocityBelowMinimum     => Show[InjectorVelocityBelowMinimum].show(e)
-        case e: InjectorVelocityAboveMaximum     => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: MissingFlowRate                  => Show[MissingFlowRate].show(e)
-        case e: AirIntakePipeShapeMismatch       => e.show
+        case e: InvalidTermValue[?]                => show_InvalidTermValue(using e.showT).show(e)
+        case e: InconsistentMaxLoadAccrossInputs   => Show[InconsistentMaxLoadAccrossInputs].show(e)
+        case e: FireboxBaseSurfaceNotInRange       => Show[FireboxBaseSurfaceNotInRange].show(e)
+        case e: FireboxBaseRatioInvalid            => Show[FireboxBaseRatioInvalid].show(e)
+        case e: FireboxBaseMinWidthInvalid         => Show[FireboxBaseMinWidthInvalid].show(e)
+        case e: GlassAreaTooLarge                  => Show[GlassAreaTooLarge].show(e)
+        case e: GlassSurfaceRatioNotConfirmed      => Show[GlassSurfaceRatioNotConfirmed].show(e)
+        case e: FireboxHeightOutOfRange            => Show[FireboxHeightOutOfRange].show(e)
+        case e: InjectorVelocityBelowMinimum       => Show[InjectorVelocityBelowMinimum].show(e)
+        case e: InjectorVelocityAboveMaximum       => Show[InjectorVelocityAboveMaximum].show(e)
+        case e: MissingFlowRate                    => Show[MissingFlowRate].show(e)
+        case e: AirIntakePipeShapeMismatch         => e.show
+        case e: AirIntakePipeShapeTopologyMismatch => e.show
         case TBurnoutNotSet => TBurnoutNotSet.show
         case e: FireboxErrorCustom       => e.reason
         case e: InvalidFireboxConstraint => e.show
@@ -274,6 +275,11 @@ object standard {
     object AirIntakePipeShapeMismatch:
         given ShowUsingLocale[AirIntakePipeShapeMismatch] = showUsingLocale: e =>
             I18N.errors.air_intake_pipe_shape_mismatch(e.expected, e.actual)
+
+    case class AirIntakePipeShapeTopologyMismatch(declared: String, computed: String) extends FireboxError
+    object AirIntakePipeShapeTopologyMismatch:
+        given ShowUsingLocale[AirIntakePipeShapeTopologyMismatch] = showUsingLocale: e =>
+            I18N.errors.air_intake_pipe_shape_topology_mismatch(e.declared, e.computed)
 
     case object TBurnoutNotSet extends FireboxError:
         given ShowUsingLocale[TBurnoutNotSet.type] = showUsingLocale: e =>

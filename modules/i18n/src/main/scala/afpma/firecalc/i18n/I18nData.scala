@@ -204,7 +204,8 @@ object I18nData:
         tested                                     : Firebox_15544.Tested,
         traditional                                : Firebox_15544.Traditional,
         single_tested                              : Firebox_15544.SingleTested,
-        door_15a_firebox                           : Firebox_15544.Door15aFirebox
+        door_15a_firebox                           : Firebox_15544.Door15aFirebox,
+        air_intake_pipe_missing_warning            : String
     )
 
     object Firebox_15544:
@@ -571,6 +572,7 @@ object I18nData:
         velocity_position_at_end               : String,
         missing_flow_rate                      : String,
         air_intake_pipe_shape_mismatch         : StringFormat2,
+        air_intake_pipe_shape_topology_mismatch: StringFormat2,
         value_out_of_bound                     : StringFormat5,
         could_not_interpolate                  : StringFormat7,
         empty_data_set                         : String,
