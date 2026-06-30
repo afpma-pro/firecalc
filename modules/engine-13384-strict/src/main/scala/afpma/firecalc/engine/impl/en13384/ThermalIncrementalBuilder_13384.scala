@@ -234,30 +234,34 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 thermalStraightSection13384.make(op)
 
             case op: AddDirectionChange =>
-                stateOps.validateMaterialized(st, Operation.AddDirectionChange, pt).andThen { _ =>
-                    given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
-                        stateOps.getInnerShape(st),
-                        convStep.nextSectionLengthOpt,
-                        pt,
-                        dirBeforePreviousDC = st.dirBeforePreviousDC,
-                        currentFrame        = st.currentFrame
-                    )
-                    thermalDirectionChange13384.make(op)
-                }
+                stateOps
+                    .validateMaterialized(st, Operation.AddDirectionChange, pt, idIncr.unwrap, addElementOp.name)
+                    .andThen { _ =>
+                        given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
+                            stateOps.getInnerShape(st),
+                            convStep.nextSectionLengthOpt,
+                            pt,
+                            dirBeforePreviousDC = st.dirBeforePreviousDC,
+                            currentFrame        = st.currentFrame
+                        )
+                        thermalDirectionChange13384.make(op)
+                    }
 
             case op: AddSectionChange =>
-                stateOps.validateMaterialized(st, Operation.AddSectionChange, pt).andThen { _ =>
-                    given SectionGeometryChangeCtx_13384 =
-                        SectionGeometryChangeCtx_13384(
-                            stateOps.getInnerShape(st),
-                            convStep.allPreElementOpsUntilNextAddElement.exists {
-                                case (_, _: SetsInnerShape) => true
-                                case _ => false
-                            },
-                            pt
-                        )
-                    thermalSectionGeometryChange13384.make(op)
-                }
+                stateOps
+                    .validateMaterialized(st, Operation.AddSectionChange, pt, idIncr.unwrap, addElementOp.name)
+                    .andThen { _ =>
+                        given SectionGeometryChangeCtx_13384 =
+                            SectionGeometryChangeCtx_13384(
+                                stateOps.getInnerShape(st),
+                                convStep.allPreElementOpsUntilNextAddElement.exists {
+                                    case (_, _: SetsInnerShape) => true
+                                    case _ => false
+                                },
+                                pt
+                            )
+                        thermalSectionGeometryChange13384.make(op)
+                    }
 
             case op: AddFlowResistance =>
                 given FlowResistanceCtx_13384 =
@@ -334,8 +338,13 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
+        val nextElemName = convStep.findNextAddElement.map(_._2.name).getOrElse("?")
 
-        def updateVNelState(vState: ValidatedNel[IncrementalValidation_Error, PropsState])(
+        def updateVNelState(
+            vState  : ValidatedNel[IncrementalValidation_Error, PropsState],
+            idIncr  : Int,
+            elemName: String
+        )(
             atom: SetSingleProp
         ): ValidatedNel[IncrementalValidation_Error, PropsState] =
             def applyInnerShapeSet(
@@ -343,9 +352,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 g     : PipeShape
             ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                 vState.andThen { st =>
-                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
+                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt, idIncr, elemName).andThen { _ =>
                         FlowAreaConservation
-                            .validateSetInnerShape(st, g, pt)(using stateOps)
+                            .validateSetInnerShape(st, g, pt, idIncr, elemName)(using stateOps)
                             .toValidatedNel
                             .map(s => stateOps.setInnerShape(s, g))
                     }
@@ -400,19 +409,21 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
                 op match
                     case prop: SetSingleProp =>
-                        updateVNelState(vState)(prop)
+                        updateVNelState(vState, idIncr, nextElemName)(prop)
                     case ThermalChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
-                            stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
-                                validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
-                                )
-                            }
+                            stateOps
+                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, idIncr, nextElemName)
+                                .andThen { _ =>
+                                    validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                        FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
+                                    )
+                                }
                         }
                     case SetPropertiesInBatch(batch_name, props, _) =>
-                        props.foldLeft(vState)(updateVNelState(_)(_))
+                        props.foldLeft(vState)((vs, prop) => updateVNelState(vs, idIncr, nextElemName)(prop))
                     case lf  : LinedFlue     =>
-                        expandLinedFlue(vState, lf, updateVNelState)
+                        expandLinedFlue(vState, lf, idIncr, nextElemName, updateVNelState)
             }
 
     /**
@@ -425,7 +436,13 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     private def expandLinedFlue(
         vState         : ValidatedNel[IncrementalValidation_Error, PropsState],
         lf             : LinedFlue,
-        updateVNelState: ValidatedNel[IncrementalValidation_Error, PropsState] => SetSingleProp => ValidatedNel[
+        idIncr         : Int,
+        elemName       : String,
+        updateVNelState: (
+            ValidatedNel[IncrementalValidation_Error, PropsState],
+            Int,
+            String
+        ) => SetSingleProp => ValidatedNel[
             IncrementalValidation_Error,
             PropsState
         ]
@@ -434,7 +451,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
         // Apply liner's non-layer props (material, inner shape, roughness, etc.)
         val nonLayerLinerProps = liner.props.filterNot(_.isInstanceOf[SetLayers]).filterNot(_.isInstanceOf[SetLayer])
-        val afterLinerProps    = nonLayerLinerProps.foldLeft(vState)(updateVNelState(_)(_))
+        val afterLinerProps    =
+            nonLayerLinerProps.foldLeft(vState)((vs, prop) => updateVNelState(vs, idIncr, elemName)(prop))
 
         // Extract layers from liner and casing
         val linerLayers  = liner.props.extractLayers
@@ -467,7 +485,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
         // Combine all layers and apply
         val combinedLayers = linerLayers ++ airSpaceLayer ++ casingLayers
-        if combinedLayers.nonEmpty then updateVNelState(afterLinerProps)(SetLayers(combinedLayers))
+        if combinedLayers.nonEmpty then updateVNelState(afterLinerProps, idIncr, elemName)(SetLayers(combinedLayers))
         else afterLinerProps
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances

@@ -1024,8 +1024,10 @@ object standard {
 
     /** Shape was set but not yet materialized into a physical element. */
     case class ShapeNotMaterialized(
-        sectionTyp: PipeType,
-        operation : ShapeNotMaterialized.Operation
+        sectionTyp  : PipeType,
+        operation   : ShapeNotMaterialized.Operation,
+        elementIndex: Int,
+        elementName : String
     ) extends ConflictDetected
 
     object ShapeNotMaterialized:
@@ -1076,7 +1078,9 @@ object standard {
         beforeFlows      : NbOfFlows,
         afterFlows       : NbOfFlows,
         expectedDimension: ExpectedDimension,
-        sectionTyp       : PipeType
+        sectionTyp       : PipeType,
+        elementIndex     : Int,
+        elementName      : String
     ) extends ConflictDetected
 
     object ConflictDetected:
@@ -1104,11 +1108,14 @@ object standard {
                     case ShapeNotMaterialized.Operation.AddSectionShapeChange => I18N.add_element.AddSectionShapeChange
                     case ShapeNotMaterialized.Operation.AddFlowResistance     => I18N.add_element.AddFlowResistance
                     case ShapeNotMaterialized.Operation.AddPressureDiff       => I18N.add_element.AddPressureDiff
-                I18N.incremental_validation.conflicts.shape_not_materialized(translatedOp)
+                I18N.incremental_validation.conflicts.shape_not_materialized(translatedOp) +
+                    I18N.incremental_validation.conflicts.element_ref(e.elementIndex.toString, e.elementName)
             case e: FlowTransitionChangesTotalCrossSection =>
                 val transitionLabel = e.transition match
                     case FlowAreaTransition.Split => I18N.incremental_validation.conflicts.split
                     case FlowAreaTransition.Merge => I18N.incremental_validation.conflicts.merge
+                val elementRef      =
+                    I18N.incremental_validation.conflicts.element_ref(e.elementIndex.toString, e.elementName)
                 e.expectedDimension match
                     case ExpectedDimRectangle(enteredWidth, enteredHeight, enteredArea, expectedHeight, expectedArea) =>
                         I18N.incremental_validation.conflicts.flow_transition_area_rectangle(
@@ -1120,7 +1127,7 @@ object standard {
                             enteredArea.showP,
                             expectedHeight.showP,
                             expectedArea.showP
-                        )
+                        ) + elementRef
                     case ExpectedDimSquare(enteredSide, enteredArea, expectedSide, expectedArea)                      =>
                         I18N.incremental_validation.conflicts.flow_transition_area_square(
                             transitionLabel,
@@ -1130,7 +1137,7 @@ object standard {
                             enteredArea.showP,
                             expectedSide.showP,
                             expectedArea.showP
-                        )
+                        ) + elementRef
                     case ExpectedDimCircle(enteredDiameter, enteredArea, expectedDiameter, expectedArea)              =>
                         I18N.incremental_validation.conflicts.flow_transition_area_circle(
                             transitionLabel,
@@ -1140,7 +1147,7 @@ object standard {
                             enteredArea.showP,
                             expectedDiameter.showP,
                             expectedArea.showP
-                        )
+                        ) + elementRef
 
     // Forbidden element position errors
     sealed trait ForbiddenElementPosition extends IncrementalValidation_Error

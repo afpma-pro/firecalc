@@ -115,9 +115,11 @@ object FlowAreaConservation:
      * Uses PropsStateOps typeclass for state access — eliminates copy-paste across builders.
      */
     def validateSetInnerShape[S](
-        st        : S,
-        afterShape: PipeShape,
-        pt        : PipeType
+        st          : S,
+        afterShape  : PipeShape,
+        pt          : PipeType,
+        elementIndex: Int,
+        elementName : String
     )(using ops: PropsStateOps[S]): Either[FlowTransitionChangesTotalCrossSection, S] =
         ops.getPendingFlowAreaCheck(st) match
             case None        =>
@@ -137,6 +139,8 @@ object FlowAreaConservation:
                             beforeFlows       = check.beforeFlows,
                             afterFlows        = check.afterFlows,
                             expectedDimension = expectedDimension,
-                            sectionTyp        = pt
+                            sectionTyp        = pt,
+                            elementIndex      = elementIndex,
+                            elementName       = elementName
                         )
                     )

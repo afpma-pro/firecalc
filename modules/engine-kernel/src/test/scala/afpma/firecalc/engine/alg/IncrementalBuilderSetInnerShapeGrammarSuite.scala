@@ -140,13 +140,14 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             propsState: PropsState,
             convStep  : ConversionStep
         ): ValidatedResult[PropsState] =
+            val nextElemName = convStep.findNextAddElement.map(_._2.name).getOrElse("?")
             convStep.allPreElementOpsUntilNextAddElement
-                .foldLeft(propsState.validNel[IncrementalValidation_Error]) { case (vState, (_, setPropOp)) =>
+                .foldLeft(propsState.validNel[IncrementalValidation_Error]) { case (vState, (idIncr, setPropOp)) =>
                     setPropOp match
                         case GrammarSetInnerShape(shape) =>
                             vState.andThen { st =>
                                 if !st.shapeMaterialized && st.geometry.isDefined then
-                                    ShapeNotMaterialized(pt, Operation.SetInnerShape).invalidNel
+                                    ShapeNotMaterialized(pt, Operation.SetInnerShape, idIncr, nextElemName).invalidNel
                                 else st.copy(geometry = Some(shape), shapeMaterialized = false).validNel
                             }
                         case GrammarSetRoughness(_)      =>
@@ -156,7 +157,12 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
                         case GrammarSetNumberOfFlows(_) =>
                             vState.andThen { st =>
                                 if !st.shapeMaterialized && st.geometry.isDefined then
-                                    ShapeNotMaterialized(pt, Operation.SetNumberOfFlows).invalidNel
+                                    ShapeNotMaterialized(
+                                        pt,
+                                        Operation.SetNumberOfFlows,
+                                        idIncr,
+                                        nextElemName
+                                    ).invalidNel
                                 else st.validNel
                             }
                         case _                          => vState
@@ -207,16 +213,34 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
                         case None    => DirectionChangeRequiresSectionGeometry(pt).invalidNel
                         case Some(_) =>
                             (!st.shapeMaterialized && st.geometry.isDefined) match
-                                case true  => ShapeNotMaterialized(pt, Operation.AddDirectionChange).invalidNel
+                                case true  =>
+                                    ShapeNotMaterialized(
+                                        pt,
+                                        Operation.AddDirectionChange,
+                                        idIncr.unwrap,
+                                        addElementOp.name
+                                    ).invalidNel
                                 case false =>
                                     NonEmptyList.one((idIncr, GrammarElZeroLength(n).named(elIdx, pt, n))).validNel
                 case GrammarFlowResistance(n)    =>
                     (!st.shapeMaterialized && st.geometry.isDefined) match
-                        case true  => ShapeNotMaterialized(pt, Operation.AddFlowResistance).invalidNel
+                        case true  =>
+                            ShapeNotMaterialized(
+                                pt,
+                                Operation.AddFlowResistance,
+                                idIncr.unwrap,
+                                addElementOp.name
+                            ).invalidNel
                         case false => NonEmptyList.one((idIncr, GrammarElZeroLength(n).named(elIdx, pt, n))).validNel
                 case GrammarPressureDiff(n)      =>
                     (!st.shapeMaterialized && st.geometry.isDefined) match
-                        case true  => ShapeNotMaterialized(pt, Operation.AddPressureDiff).invalidNel
+                        case true  =>
+                            ShapeNotMaterialized(
+                                pt,
+                                Operation.AddPressureDiff,
+                                idIncr.unwrap,
+                                addElementOp.name
+                            ).invalidNel
                         case false => NonEmptyList.one((idIncr, GrammarElZeroLength(n).named(elIdx, pt, n))).validNel
                 case _                           =>
                     sys.error(s"Unexpected grammar test add-element: $addElementOp")

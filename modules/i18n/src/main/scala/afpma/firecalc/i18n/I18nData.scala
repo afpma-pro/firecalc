@@ -1037,7 +1037,8 @@ object I18nData:
             flow_transition_area_rectangle         : StringFormat8,
             flow_transition_area_square            : StringFormat7,
             flow_transition_area_circle            : StringFormat7,
-            shape_not_materialized                 : StringFormat1
+            shape_not_materialized                 : StringFormat1,
+            element_ref                            : StringFormat2
         )
 
         case class ForbiddenElementPosition(

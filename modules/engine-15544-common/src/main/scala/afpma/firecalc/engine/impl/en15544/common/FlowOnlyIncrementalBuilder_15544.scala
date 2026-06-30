@@ -246,30 +246,34 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                     }
 
                 case op: AddDirectionChange =>
-                    stateOps.validateMaterialized(st, Operation.AddDirectionChange, pt).andThen { _ =>
-                        given DirectionChangeCtx_15544 =
-                            DirectionChangeCtx_15544(
-                                stateOps.getInnerShape(st),
-                                pt,
-                                dirBeforePreviousDC = st.dirBeforePreviousDC,
-                                currentFrame        = st.currentFrame
-                            )
-                        directionChange15544.make(op).map(dc => NonEmptyList.one((elIdx, None, dc)))
-                    }
+                    stateOps
+                        .validateMaterialized(st, Operation.AddDirectionChange, pt, idIncr.unwrap, addElementOp.name)
+                        .andThen { _ =>
+                            given DirectionChangeCtx_15544 =
+                                DirectionChangeCtx_15544(
+                                    stateOps.getInnerShape(st),
+                                    pt,
+                                    dirBeforePreviousDC = st.dirBeforePreviousDC,
+                                    currentFrame        = st.currentFrame
+                                )
+                            directionChange15544.make(op).map(dc => NonEmptyList.one((elIdx, None, dc)))
+                        }
 
                 case op: AddSectionShapeChange =>
-                    stateOps.validateMaterialized(st, Operation.AddSectionShapeChange, pt).andThen { _ =>
-                        given SectionGeometryChangeCtx_15544 =
-                            SectionGeometryChangeCtx_15544(
-                                stateOps.getInnerShape(st),
-                                convStep.allPreElementOpsUntilNextAddElement.exists {
-                                    case (_, _: SetsInnerShape) => true
-                                    case _ => false
-                                },
-                                pt
-                            )
-                        sectionGeometryChange15544.make(op).asNonEmptyList
-                    }
+                    stateOps
+                        .validateMaterialized(st, Operation.AddSectionShapeChange, pt, idIncr.unwrap, addElementOp.name)
+                        .andThen { _ =>
+                            given SectionGeometryChangeCtx_15544 =
+                                SectionGeometryChangeCtx_15544(
+                                    stateOps.getInnerShape(st),
+                                    convStep.allPreElementOpsUntilNextAddElement.exists {
+                                        case (_, _: SetsInnerShape) => true
+                                        case _ => false
+                                    },
+                                    pt
+                                )
+                            sectionGeometryChange15544.make(op).asNonEmptyList
+                        }
 
                 case op: AddFlowResistance =>
                     given FlowResistanceCtx_15544 =
@@ -321,6 +325,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
+        val nextElemName = convStep.findNextAddElement.map(_._2.name).getOrElse("?")
         convStep.allPreElementOpsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
                 def applyInnerShapeSet(
@@ -328,11 +333,12 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                     g     : PipeShape
                 ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                     vState.andThen { st =>
-                        stateOps.validateMaterialized(st, Operation.SetInnerShape, pt).andThen { _ =>
-                            FlowAreaConservation
-                                .validateSetInnerShape(st, g, pt)(using stateOps)
-                                .toValidatedNel
-                                .map(s => stateOps.setInnerShape(s, g))
+                        stateOps.validateMaterialized(st, Operation.SetInnerShape, pt, idIncr, nextElemName).andThen {
+                            _ =>
+                                FlowAreaConservation
+                                    .validateSetInnerShape(st, g, pt, idIncr, nextElemName)(using stateOps)
+                                    .toValidatedNel
+                                    .map(s => stateOps.setInnerShape(s, g))
                         }
                     }
                 op match
@@ -349,11 +355,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
-                            stateOps.validateMaterialized(st, Operation.SetNumberOfFlows, pt).andThen { _ =>
-                                validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
-                                )
-                            }
+                            stateOps
+                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, idIncr, nextElemName)
+                                .andThen { _ =>
+                                    validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                        FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
+                                    )
+                                }
                         }
             }
 
