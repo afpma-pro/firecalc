@@ -29,10 +29,14 @@ object Frontend {
     import models.*
 
     lazy val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
+        // Capture the active project ID at mutation time (before debounce) so that
+        // rapid project navigation cannot cause a debounced save to write to the
+        // wrong project's localStorage key.
+        .map(schemaVal => (schemaVal, models.project.ProjectManager.activeProjectIdVar.now()))
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS)
-        --> Observer[schema.AppStateSchema] { schemaVal =>
-            import models.project.{ProjectManager, ProjectStorage, ProjectIndex}
-            ProjectManager.activeProjectIdVar.now().foreach { id =>
+        --> Observer[(schema.AppStateSchema, Option[models.project.ProjectId])] { (schemaVal, projectIdOpt) =>
+            import models.project.{ProjectStorage, ProjectIndex}
+            projectIdOpt.foreach { id =>
                 ProjectStorage.save(id, schemaVal)
                 val name        = schemaVal.engine_state.project_description.reference
                 val defaultName =
