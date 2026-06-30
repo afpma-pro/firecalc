@@ -28,15 +28,15 @@ object Frontend {
 
     import models.*
 
-    lazy val writeUnifiedSchemaSubscription = appStateSchemaVar.signal.changes.distinct
-        // Capture the active project ID at mutation time (before debounce) so that
-        // rapid project navigation cannot cause a debounced save to write to the
-        // wrong project's localStorage key.
-        .map(schemaVal => (schemaVal, models.project.ProjectManager.activeProjectIdVar.now()))
-        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS)
-        --> Observer[(schema.AppStateSchema, Option[models.project.ProjectId])] { (schemaVal, projectIdOpt) =>
+    lazy val writeUnifiedSchemaSubscription =
+        utils.debounceWithStaleGuard        (
+            signal         = appStateSchemaVar.signal,
+            readIdentity   = () => models.project.ProjectManager.activeProjectIdVar.now(),
+            identitySignal = models.project.ProjectManager.activeProjectIdVar.signal,
+            debounceMs     = LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS
+        ) { schemaVal =>
             import models.project.{ProjectStorage, ProjectIndex}
-            projectIdOpt.foreach { id =>
+            models.project.ProjectManager.activeProjectIdVar.now().foreach { id =>
                 ProjectStorage.save(id, schemaVal)
                 val name        = schemaVal.engine_state.project_description.reference
                 val defaultName =
@@ -49,7 +49,7 @@ object Frontend {
                     )
                 )
             }
-        }
+        } --> Observer[Unit](_ => ())
 
     lazy val writeCatalogSubscription = catalogStateVar.signal.changes.distinct
         .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS)
@@ -79,21 +79,26 @@ object Frontend {
                     )
         }
 
-    lazy val writeFireboxCacheSubscription = fireboxCacheStateVar.signal.changes.distinct
-        .debounce(LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS) --> Observer[FireboxCacheState] { cache =>
-        try fireboxCacheWebStorageVar.set(cache)
-        catch
-            case ex: js.JavaScriptException if models.project.LocalStorageUtils.isQuotaExceeded(ex) =>
-                val (usage, perKey) = models.project.LocalStorageUtils.estimateStorageUsage()
-                afpma.firecalc.ui.components.StorageWarningDialog.show(usage, perKey)
-            case ex: js.JavaScriptException                                                         =>
-                dom.console.error(
-                    s"[Frontend] Failed to save firebox cache — localStorage unavailable: ${ex.getMessage}"
-                )
-        models.project.ProjectManager.activeProjectIdVar.now().foreach { id =>
-            models.project.ProjectManager.saveFireboxCache(id, cache)
-        }
-    }
+    lazy val writeFireboxCacheSubscription =
+        utils.debounceWithStaleGuard        (
+            signal         = fireboxCacheStateVar.signal,
+            readIdentity   = () => models.project.ProjectManager.activeProjectIdVar.now(),
+            identitySignal = models.project.ProjectManager.activeProjectIdVar.signal,
+            debounceMs     = LAMINAR_WEBSTORAGE_DEFAULT_SYNC_DELAY_MS
+        ) { cache =>
+            try fireboxCacheWebStorageVar.set(cache)
+            catch
+                case ex: js.JavaScriptException if models.project.LocalStorageUtils.isQuotaExceeded(ex) =>
+                    val (usage, perKey) = models.project.LocalStorageUtils.estimateStorageUsage()
+                    afpma.firecalc.ui.components.StorageWarningDialog.show(usage, perKey)
+                case ex: js.JavaScriptException                                                         =>
+                    dom.console.error(
+                        s"[Frontend] Failed to save firebox cache — localStorage unavailable: ${ex.getMessage}"
+                    )
+            models.project.ProjectManager.activeProjectIdVar.now().foreach { id =>
+                models.project.ProjectManager.saveFireboxCache(id, cache)
+            }
+        } --> Observer[Unit](_ => ())
 
     private val undoSnapshotObserver = Observer[schema.AppStateSchema](undoManager.pushSnapshot(_))
 
