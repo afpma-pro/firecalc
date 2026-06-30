@@ -1133,7 +1133,8 @@ object I18nData:
     )
 
     case class BuilderErrors(
-        errors_in_other_section_type: String
+        errors_in_other_section_type: String,
+        results_not_computed        : String
     )
 
     case class TopologyErrors(

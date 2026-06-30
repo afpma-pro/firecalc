@@ -28,6 +28,8 @@ import afpma.firecalc.engine.models.en15544.typedefs.PressureRequirement
 import afpma.firecalc.engine.models.en15544.typedefs.η
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top_min
+import afpma.firecalc.ui.models.project.ProjectId
+import afpma.firecalc.ui.models.project.ProjectManager.activeProjectIdVar
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 
@@ -570,19 +572,55 @@ lazy val postFireboxPipeResults_sig: Signal[VNelMcalcErr[Vector[(PipeType, PipeR
 
 // Results for EN15544 Strict
 
-lazy val results_en15544_strict_sig: Signal[VNelMcalcErr[EN15544_Strict_Application]] =
+/**
+ * Debounced EN15544 strict computation with project-ID staleness detection.
+ *
+ * During the debounce window after a project switch, the signal returns
+ * `ResultsNotComputed` (filtered from panel displays) instead of stale
+ * values from the previous project.
+ */
+lazy val resultsWithProjectSig: Signal[(ProjectId, VNelMcalcErr[EN15544_Strict_Application])] =
     engineStateHelperVar.signal
-        // emits at most once during interval (prevent too much computing)
-        // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
+        .combineWith(activeProjectIdVar.signal)
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
-        .map: helper =>
+        .map { (helper, projectIdOpt) =>
+            val projectId      = projectIdOpt.getOrElse(ProjectId(""))
             val currentFirebox = helper.fcProj.firebox
-            if !UIConfig.uiAvailability.allows(currentFirebox) then
-                Validated.invalidNel(FireboxTypeDisabledError(currentFirebox.typeName))
-            else
-                scala.util.Try(helper.make_en15544_Strict_Application) match
-                    case scala.util.Success(result) => result
-                    case scala.util.Failure(e)      => Validated.invalidNel(UnexpectedDevError(e.getMessage))
+            val result         =
+                if !UIConfig.uiAvailability.allows(currentFirebox) then
+                    Validated.invalidNel(FireboxTypeDisabledError(currentFirebox.typeName))
+                else
+                    scala.util.Try(helper.make_en15544_Strict_Application) match
+                        case scala.util.Success(r) => r
+                        case scala.util.Failure(e) => Validated.invalidNel(UnexpectedDevError(e.getMessage))
+            (projectId, result)
+        }
+
+/**
+ * Raw debounced result (no staleness check) — for activation defaults so the
+ *  previous computation's derived values carry over when switching sizing methods.
+ */
+lazy val results_en15544_strict_raw_sig: Signal[VNelMcalcErr[EN15544_Strict_Application]] =
+    resultsWithProjectSig.map(_._2)
+
+/**
+ * Staleness-checked result — for error display and panel status.
+ *  Returns ResultsNotComputed when the project ID at computation time doesn't
+ *  match the current active project, preventing stale data from being shown.
+ */
+lazy val results_en15544_strict_sig: Signal[VNelMcalcErr[EN15544_Strict_Application]] =
+    resultsWithProjectSig
+        .combineWith(activeProjectIdVar.signal)
+        .map {
+            (
+                computedProjectId  : ProjectId,
+                vnel               : VNelMcalcErr[EN15544_Strict_Application],
+                currentProjectIdOpt: Option[ProjectId]
+            ) =>
+                val currentProjectId = currentProjectIdOpt.getOrElse(ProjectId(""))
+                if computedProjectId == currentProjectId then vnel
+                else Validated.invalidNel(ResultsNotComputed)
+        }
 
 lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
     results_en15544_strict_sig

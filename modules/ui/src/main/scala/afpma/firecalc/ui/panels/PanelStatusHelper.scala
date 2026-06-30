@@ -8,6 +8,7 @@ package afpma.firecalc.ui.panels
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
+import afpma.firecalc.engine.standard.ResultsNotComputed
 import afpma.firecalc.engine.standard.HasSectionTypError
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 import afpma.firecalc.engine.standard.MCalc_Error
@@ -84,6 +85,7 @@ object PanelStatusHelper:
             case Validated.Valid(a)     => a.validNel
             case Validated.Invalid(nel) =>
                 val errs = nel.filter:
+                    case ResultsNotComputed => false
                     case x: HasSectionTypError =>
                         if (keepSectionTyp(x.sectionTyp)) true else false
                     case _ => true

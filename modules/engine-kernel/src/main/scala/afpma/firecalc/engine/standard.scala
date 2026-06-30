@@ -132,9 +132,16 @@ object standard {
         case e: IncrementalValidation_Error => e.show // Uses ShowUsingLocale[IncrementalValidation_Error]
         case e: ErrorsInOtherSectionType    => e.show // Uses ShowUsingLocale[ErrorsInOtherSectionType]
         case e: FireboxTypeDisabledError    => e.show // Uses ShowUsingLocale[FireboxTypeDisabledError]
+        case ResultsNotComputed => I18N.builder_errors.results_not_computed
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
+
+    /**
+     * Signals that computation results are not yet available (debounce window or project switch).
+     * Filtered from panel error displays — consumers should treat as "no data".
+     */
+    case object ResultsNotComputed extends MCalc_Error
 
     /**
      * Restriction — certain slot topologies are not yet supported in the flue region
