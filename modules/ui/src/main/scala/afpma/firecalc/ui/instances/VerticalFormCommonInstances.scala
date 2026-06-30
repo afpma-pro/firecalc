@@ -400,10 +400,14 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         val locVar: Var[L] = globalVar.zoomLazy(zoomIn)(zoomOut)
 
         val syncLocalToExt = locVar.signal.distinct.changes
+            // Capture the external value at the moment the form changes. If extVar
+            // is modified between that moment and the debounce firing (e.g., a project
+            // switch), the stale form value must NOT overwrite the new project's state.
+            .map((l: L) => (l, extVar.now(): E))
             .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
             .withCurrentValueOf(extVar)
             .collect {
-                case (l, e) if localToExtSyncCond(l, e) => locToExt(l)
+                case (l, extAtChange, eNow) if extAtChange == eNow && localToExtSyncCond(l, eNow) => locToExt(l)
             } --> extVar.writer
 
         val syncExtToLocal = extVar.signal.distinct.changes
