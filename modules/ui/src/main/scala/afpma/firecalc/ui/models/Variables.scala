@@ -545,16 +545,6 @@ lazy val chimneyEndCapInputs_sig: Signal[Option[(PipePositionResult, PipeShape)]
 
 // ── Per-slot accessor helpers ────────────────────────────────────
 
-/** Per-slot pipe result (type-erased). Returns Invalid if slot index out of bounds. */
-def slotPipeResultSig(idx: Int): Signal[ValidatedNel[IncrementalValidation_Error, Any]] =
-    slotBuildResults_sig.map: results =>
-        results
-            .lift(idx)
-            .map(_.pipe)
-            .getOrElse(
-                Validated.invalidNel(FluePipeNotDefinedYet) // fallback — slot doesn't exist
-            )
-
 /** Per-slot IdsMapping function (Int → Option[Int]). Returns Invalid if slot index out of bounds. */
 def slotMappingFnSig(idx: Int): Signal[ValidatedNel[IncrementalValidation_Error, Int => Option[Int]]] =
     slotBuildResults_sig.map: results =>

@@ -177,13 +177,13 @@ final case class DynamicThermalPipeSlotPanel(
         slotBuildResults_sig
             .combineWithDistinct(pipeResult_vnel_signal, pressureSumCheck_sig, velocityCheck_sig)
             .map: (results, pipeResultV, pressureV, velocityV) =>
-                val buildV = results
-                    .lift(slotIndex)
-                    .map(_.pipe)
-                    .getOrElse(
+                results.lift(slotIndex) match
+                    case Some(result) if result.upstreamFailure =>
+                        ErrorsInOtherSectionType.invalidNel
+                    case Some(result)                           =>
+                        result.pipe *> pipeResultV *> pressureV *> velocityV
+                    case None                                   =>
                         Validated.invalidNel(ChimneyPipeNotDefinedYet)
-                    )
-                buildV *> pipeResultV *> pressureV *> velocityV
 
     // ── Quadrion subtotal ────────────────────────────────────────
 

@@ -182,13 +182,13 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 citedConstraintsCheck_sig
             )
             .map: (results, pipeResultV, pressureV, velocityV, shapeV, citedV) =>
-                val buildV = results
-                    .lift(slotIndex)
-                    .map(_.pipe)
-                    .getOrElse(
+                results.lift(slotIndex) match
+                    case Some(result) if result.upstreamFailure =>
+                        ErrorsInOtherSectionType.invalidNel
+                    case Some(result)                           =>
+                        result.pipe *> pipeResultV *> pressureV *> velocityV *> shapeV *> citedV
+                    case None                                   =>
                         Validated.invalidNel(FluePipeNotDefinedYet)
-                    )
-                buildV *> pipeResultV *> pressureV *> velocityV *> shapeV *> citedV
 
     // ── Quadrion subtotal ────────────────────────────────────────
 
