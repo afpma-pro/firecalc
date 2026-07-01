@@ -181,7 +181,13 @@ final case class DynamicThermalPipeSlotPanel(
                     case Some(result) if result.upstreamFailure =>
                         ErrorsInOtherSectionType.invalidNel
                     case Some(result)                           =>
-                        result.pipe *> pipeResultV *> pressureV *> velocityV
+                        // When pipe build fails, use its error directly — combining with
+                        // pipeResultV via `*>` would duplicate the same extraction error
+                        // because both paths (PipeChainGeneric and en15544_common_application)
+                        // independently call extractPipe on the same descriptor.
+                        result.pipe match
+                            case Validated.Invalid(_) => result.pipe
+                            case _                    => pipeResultV *> pressureV *> velocityV
                     case None                                   =>
                         Validated.invalidNel(ChimneyPipeNotDefinedYet)
 

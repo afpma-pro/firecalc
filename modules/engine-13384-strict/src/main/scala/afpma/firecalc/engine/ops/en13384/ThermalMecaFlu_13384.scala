@@ -547,8 +547,11 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                                         //    - for CombustionAirPipeT when AirIntakePipe is not defined
                                         0.0.pascals
                                     case _                                   =>
-                                        throw new IllegalStateException(
-                                            s"${curr.fullRef} : illegal state when computing 'en13384_pg' for '${pt}'"
+                                        MecaFluOps.throwMecaFluError(
+                                            MecaFlu_Error.MissingUpstreamSeedValues(
+                                                s"${curr.fullRef}: upstream density and velocity are None when computing 'en13384_pg' for '${pt}' — indicates an upstream pipe extraction failure",
+                                                pt
+                                            )
                                         )
 
                     // some previous element in current pipe

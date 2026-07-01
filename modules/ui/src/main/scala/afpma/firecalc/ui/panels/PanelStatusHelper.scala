@@ -11,6 +11,7 @@ import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
 import afpma.firecalc.engine.standard.ResultsNotComputed
 import afpma.firecalc.engine.standard.HasSectionTypError
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
+import afpma.firecalc.engine.standard.InvalidConstraint
 import afpma.firecalc.engine.standard.MCalc_Error
 
 import cats.data.*
@@ -86,7 +87,9 @@ object PanelStatusHelper:
             case Validated.Invalid(nel) =>
                 val errs = nel.filter:
                     case ResultsNotComputed => false
-                    case x: HasSectionTypError =>
+                    case ic: InvalidConstraint  =>
+                        ic.sectionTyp.fold(true)(keepSectionTyp)
+                    case x : HasSectionTypError =>
                         if (keepSectionTyp(x.sectionTyp)) true else false
                     case _ => true
                 if (errs.nonEmpty)

@@ -1058,6 +1058,7 @@ object I18nData:
         heat_transfer_coefficient_errors                    : StringFormat1,
         mean_temperature_calculation_errors                 : StringFormat1,
         no_straight_section_for_temperature_calc            : StringFormat1,
+        missing_upstream_seed_values                        : StringFormat1,
 
         // Firebox type errors
         unexpected_firebox_type: StringFormat1,

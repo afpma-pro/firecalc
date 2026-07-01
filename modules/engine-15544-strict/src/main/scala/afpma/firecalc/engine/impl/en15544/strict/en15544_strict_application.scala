@@ -334,47 +334,39 @@ sealed abstract class EN15544_Strict_Application(
                                         .toFullDescrWithSeed(seed)
                                     val fdResult: FluePipe_Module_15544.FullDescrResult =
                                         flueResult.map((ids, fd, _) => (ids, fd))
-                                    val nextSeed   = flueResult.map(_._3).getOrElse(seed)
-                                    val pipeV      =
-                                        FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult)
-                                    pipeV match
-                                        case Validated.Valid(pipe) =>
-                                            Validated.validNel(
-                                                (
-                                                    acc :+ tcFlowOnly15544.mkSlot(
-                                                        FluePipeT,
-                                                        "Flue",
-                                                        FlueGas,
-                                                        FluePipe_Module_15544.unwrap(pipe)
-                                                    ),
-                                                    nextSeed
-                                                )
+                                    val nextSeed   = flueResult.map(_._3).toOption.getOrElse(seed)
+                                    FluePipe_Module_15544.FullDescrResult
+                                        .extractPipe(fdResult)
+                                        .map(pipe =>
+                                            (
+                                                acc :+ tcFlowOnly15544.mkSlot(
+                                                    FluePipeT,
+                                                    "Flue",
+                                                    FlueGas,
+                                                    FluePipe_Module_15544.unwrap(pipe)
+                                                ),
+                                                nextSeed
                                             )
-                                        case _                     =>
-                                            Validated.validNel((acc :+ PipeSlot.noop(FluePipeT, "Flue"), nextSeed))
+                                        )
                                 case ThermalFlueSlot(descr) =>
                                     val v4Descr               = descr
                                     val (fdResult, nextSeedV) =
                                         FluePipe_Module_13384
                                             .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
-                                    val nextSeed              = nextSeedV.getOrElse(seed)
-                                    val pipeV                 =
-                                        FluePipe_Module_13384.FullDescrResult.extractPipe(fdResult)
-                                    pipeV match
-                                        case Validated.Valid(pipe) =>
-                                            Validated.validNel(
-                                                (
-                                                    acc :+ tcThermal13384.mkSlot(
-                                                        FluePipeT,
-                                                        "Flue",
-                                                        FlueGas,
-                                                        FluePipe_Module_13384.unwrap(pipe)
-                                                    ),
-                                                    nextSeed
-                                                )
+                                    val nextSeed              = nextSeedV.toOption.getOrElse(seed)
+                                    FluePipe_Module_13384.FullDescrResult
+                                        .extractPipe(fdResult)
+                                        .map(pipe =>
+                                            (
+                                                acc :+ tcThermal13384.mkSlot(
+                                                    FluePipeT,
+                                                    "Flue",
+                                                    FlueGas,
+                                                    FluePipe_Module_13384.unwrap(pipe)
+                                                ),
+                                                nextSeed
                                             )
-                                        case _                     =>
-                                            Validated.validNel((acc :+ PipeSlot.noop(FluePipeT, "Flue"), nextSeed))
+                                        )
                                 case ConnectorSlot(descr)   =>
                                     val v4Descr = descr
                                     if v4Descr.isEmpty then
@@ -385,26 +377,24 @@ sealed abstract class EN15544_Strict_Application(
                                         val (fdResult, nextSeedV) =
                                             ConnectorPipe_Module
                                                 .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
-                                        val nextSeed              = nextSeedV.getOrElse(seed)
-                                        val pipeV                 =
-                                            ConnectorPipe_Module.FullDescrResult.extractPipe(fdResult)
-                                        pipeV match
-                                            case Validated.Valid(pipe) =>
-                                                val connSlot = ConnectorPipe_Module.foldPipeCanBe(pipe)(
-                                                    onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
-                                                    onFullDescr = fd =>
-                                                        tcThermal13384.mkSlot(
-                                                            ConnectorPipeT,
-                                                            "Connector",
-                                                            FlueGas,
-                                                            ConnectorPipe_Module.unwrap(fd)
-                                                        )
+                                        val nextSeed              = nextSeedV.toOption.getOrElse(seed)
+                                        ConnectorPipe_Module.FullDescrResult
+                                            .extractPipe(fdResult)
+                                            .map(pipe =>
+                                                (
+                                                    acc :+ ConnectorPipe_Module.foldPipeCanBe(pipe)  (
+                                                        onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
+                                                        onFullDescr = fd =>
+                                                            tcThermal13384.mkSlot(
+                                                                ConnectorPipeT,
+                                                                "Connector",
+                                                                FlueGas,
+                                                                ConnectorPipe_Module.unwrap(fd)
+                                                            )
+                                                    ),
+                                                    nextSeed
                                                 )
-                                                Validated.validNel((acc :+ connSlot, nextSeed))
-                                            case _                     =>
-                                                Validated.validNel(
-                                                    (acc :+ PipeSlot.noop(ConnectorPipeT, "Connector"), nextSeed)
-                                                )
+                                            )
                                 case ChimneySlot(_)         =>
                                     // Unreachable: the chimney is always terminal (after the last
                                     // FluePipeT), so it cannot appear inside the flue region.

@@ -756,7 +756,17 @@ object standard {
         given ShowUsingLocale[EfficiencyIsTooLow] = showUsingLocale: e =>
             I18N.en15544_errors.efficiency_is_too_low(e.eff.show, e.min_eff.show)
 
-    case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error
+    case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error:
+        /**
+         * Extract sectionTyp from inner TypedError when it wraps a HasSectionTypError
+         * (e.g. FireboxError → FireboxPipeT). Generic constraint violations
+         * (MinError, MaxError, GenericError) return None — they remain global.
+         */
+        def sectionTyp: Option[PipeType] = error match
+            case TermConstraintError.TypedError(_, nestedErr: HasSectionTypError, _) =>
+                Some(nestedErr.sectionTyp)
+            case _                                                                   => None
+
     object InvalidConstraint:
         given ShowUsingLocale[InvalidConstraint] = showUsingLocale(_.error.failMsg)
 
@@ -835,6 +845,10 @@ object standard {
         case class NoStraightSectionDefinedForTemperatureCalc(sectionRef: String, override val sectionTyp: PipeType)
             extends MecaFlu_Error
 
+        // Missing upstream seed values (density/velocity) for en13384_pg calculation
+        // — signals that an upstream pipe extraction failure was not caught earlier
+        case class MissingUpstreamSeedValues(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+
         // All error messages are provided via I18N translations
         given ShowUsingLocale[MecaFlu_Error] = showUsingLocale:
             case UnexpectedFireboxType(reason)                      => I18N.mecaflu.errors.unexpected_firebox_type(reason)
@@ -862,6 +876,8 @@ object standard {
                 I18N.mecaflu.errors.mean_temperature_calculation_errors(errs.toList.map(_.show).mkString(", "))
             case NoStraightSectionDefinedForTemperatureCalc(ref, _) =>
                 I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
+            case MissingUpstreamSeedValues(reason, _)               =>
+                I18N.mecaflu.errors.missing_upstream_seed_values(reason)
             case ComputationError(err, _)                           => err.show
             case x: SingularFlowResistanceCoeffError => x.show
             case x: FluePipeShapeSequenceError       => x.show
