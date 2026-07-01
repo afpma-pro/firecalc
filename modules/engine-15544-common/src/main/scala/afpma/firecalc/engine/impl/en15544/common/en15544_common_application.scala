@@ -750,7 +750,7 @@ abstract class EN15544_V_2023_Common_Application
                 case _ => None
 
         lazy val validateCitedConstraints: VNelMcalcErr[Unit] =
-            citedConstraints.checkAndReturnVNelError.leftMap(_.map(InvalidConstraint.apply))
+            citedConstraints.checkFireboxConstraints
 
         lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit] =
             val fbCtx = FireboxConstraintContext(
