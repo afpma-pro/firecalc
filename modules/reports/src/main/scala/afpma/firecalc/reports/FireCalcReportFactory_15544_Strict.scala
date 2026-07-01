@@ -28,9 +28,25 @@ import io.taig.babel.Locale
 
 trait FireCalcReportFactory_15544_Strict:
 
-    def loadYAMLFile                  (yamlFile  : File  ): Op[FireCalcReportFactory_15544_Strict]
-    def loadYAMLString                (yamlString: String): Op[FireCalcReportFactory_15544_Strict]
-    def loadAndValidateFireCalcProject(
+    def loadYAMLFile  (yamlFile  : File  ): Op[FireCalcReportFactory_15544_Strict]
+    def loadYAMLString(yamlString: String): Op[FireCalcReportFactory_15544_Strict]
+
+    /**
+     * Load a project and run full EN 15544 validation before report generation.
+     * Returns Left if the engine application fails to build or if result
+     * validation (pressure, temperature, etc.) finds errors.
+     */
+    def loadFireCalcProject_AndValidate(
+        fcProj: StoveProjectDescr_15544_Strict_Alg
+    ): Op[FireCalcReportFactory_15544_Strict]
+
+    /**
+     * Load a project for report generation without running EN 15544 result validations.
+     * Use when the engine has already been run and you want a PDF despite
+     * validation warnings (e.g. InvalidPressureRequirement).
+     * Returns Left only if the engine application itself failed to build.
+     */
+    def loadFireCalcProject_NoValidate(
         fcProj: StoveProjectDescr_15544_Strict_Alg
     ): Op[FireCalcReportFactory_15544_Strict]
 
@@ -82,7 +98,7 @@ object FireCalcReportFactory_15544_Strict:
             FireCalcYAMLMigrations.decodeAndMigrateTry(yamlString) match
                 case Success(fc) =>
                     val stoveProj = StoveProjectDescr.makeFor_EN15544_Strict(fc)
-                    loadAndValidateFireCalcProject(stoveProj)
+                    loadFireCalcProject_AndValidate(stoveProj)
                 case Failure(e)  =>
                     Left(
                         YAMLDecodingException(
@@ -92,23 +108,42 @@ object FireCalcReportFactory_15544_Strict:
                         )
                     )
 
-        override def loadAndValidateFireCalcProject(fireCalcProj: StoveProjectDescr_15544_Strict_Alg) =
-            val countryCode = fireCalcProj.project.country
+        private def newImpl(
+            en15544_appl: EN15544_Strict_Application,
+            fireCalcProj: StoveProjectDescr_15544_Strict_Alg
+        ): FireCalcReportFactory_15544_Strict_Impl =
+            new FireCalcReportFactory_15544_Strict_Impl {
+                appl      = Some(en15544_appl)
+                fcProj    = Some(fireCalcProj)
+                typString = None
+            }
+
+        private def withApplication(
+            fireCalcProj: StoveProjectDescr_15544_Strict_Alg
+        )(
+            fn: EN15544_Strict_Application => Op[FireCalcReportFactory_15544_Strict]
+        ): Op[FireCalcReportFactory_15544_Strict] =
             fireCalcProj.en15544_Alg match
-                case Valid(en15544_appl) =>
-                    en15544_appl.validateResultsExceptEmissionsValues(countryCode) match
-                        case Invalid(e) =>
-                            Left(EN15544ValidationException(e.toList.map(_.toString)))
-                        case Valid(_)   =>
-                            Right(
-                                new FireCalcReportFactory_15544_Strict_Impl {
-                                    appl      = Some(en15544_appl)
-                                    fcProj    = Some(fireCalcProj)
-                                    typString = None
-                                }
-                            )
+                case Valid(en15544_appl) => fn(en15544_appl)
                 case Invalid(e)          =>
                     Left(EN15544ValidationException(e.toList.map(_.toString)))
+
+        override def loadFireCalcProject_AndValidate(
+            fireCalcProj: StoveProjectDescr_15544_Strict_Alg
+        ): Op[FireCalcReportFactory_15544_Strict] =
+            withApplication(fireCalcProj): en15544_appl =>
+                val countryCode = fireCalcProj.project.country
+                en15544_appl.validateResultsExceptEmissionsValues(countryCode) match
+                    case Invalid(e) =>
+                        Left(EN15544ValidationException(e.toList.map(_.toString)))
+                    case Valid(_)   =>
+                        Right(newImpl(en15544_appl, fireCalcProj))
+
+        override def loadFireCalcProject_NoValidate(
+            fireCalcProj: StoveProjectDescr_15544_Strict_Alg
+        ): Op[FireCalcReportFactory_15544_Strict] =
+            withApplication(fireCalcProj): en15544_appl =>
+                Right(newImpl(en15544_appl, fireCalcProj))
 
         private def compileAndRenderTypString(
             isDraft                 : Boolean,

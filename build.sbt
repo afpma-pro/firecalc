@@ -537,7 +537,8 @@ lazy val engineValidation = (project in file("modules/engine-validation"))
         engine_15544_common.jvm,
         engine_15544_common.jvm % "test->test",
         engine_15544_strict.jvm,
-        engine_15544_strict.jvm % "test->test"
+        engine_15544_strict.jvm % "test->test",
+        reports
     )
 
 // =========
