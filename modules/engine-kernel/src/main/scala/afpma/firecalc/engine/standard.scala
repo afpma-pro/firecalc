@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine
 
+import scala.annotation.nowarn
+
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.units.coulombutils.given
 
@@ -1057,7 +1059,9 @@ object standard {
             case AddPressureDiff
 
     // Expected dimension for informative error messages on flow split/merge area violations
+    // ⚠ DEPRECATED: flow area check deactivated — see FlowAreaConservation
     sealed trait ExpectedDimension
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class ExpectedDimRectangle(
         enteredWidth  : QtyD[Meter],
         enteredHeight : QtyD[Meter],
@@ -1065,12 +1069,14 @@ object standard {
         expectedHeight: QtyD[Meter],
         expectedArea  : Area
     ) extends ExpectedDimension
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class ExpectedDimSquare(
         enteredSide : QtyD[Meter],
         enteredArea : Area,
         expectedSide: QtyD[Meter],
         expectedArea: Area
     ) extends ExpectedDimension
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class ExpectedDimCircle(
         enteredDiameter : QtyD[Meter],
         enteredArea     : Area,
@@ -1078,9 +1084,11 @@ object standard {
         expectedArea    : Area
     ) extends ExpectedDimension
 
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     enum FlowAreaTransition:
         case Split, Merge
 
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class PendingFlowAreaCheck(
         beforeShape: PipeShape,
         beforeFlows: NbOfFlows,
@@ -1088,6 +1096,7 @@ object standard {
         transition : FlowAreaTransition
     )
 
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class FlowTransitionChangesTotalCrossSection(
         transition       : FlowAreaTransition,
         beforeTotalArea  : Area,
@@ -1100,6 +1109,9 @@ object standard {
     ) extends ConflictDetected
 
     object ConflictDetected:
+        // @deprecated usage: FlowTransitionChangesTotalCrossSection / ExpectedDim* are dormant
+        // while FLOW_AREA_CHECK_ENABLED = false. See FlowAreaConservation banner.
+        @nowarn("cat=deprecation")
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
             case CannotSetGeometryBeforeChange(_)                 =>
                 I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
